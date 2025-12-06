@@ -1,14 +1,14 @@
 // src/components/screens/Library.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { BookOpen, ShieldCheck, Film, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText } from 'lucide-react';
+import { BookOpen, ShieldCheck, Film, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText, Layers, Dumbbell, Wrench } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { PageLayout, PageGrid, NoWidgetsEnabled } from '../ui';
 import { getReadings, getVideos, getCourses } from '../../services/contentService';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 
-const LibraryCard = ({ title, description, icon: Icon, onClick }) => {
+const LibraryCard = ({ title, description, icon: Icon, onClick, color, bgColor }) => {
   return (
     <button
       onClick={onClick}
@@ -17,8 +17,8 @@ const LibraryCard = ({ title, description, icon: Icon, onClick }) => {
     >
       <div className="text-center mb-4 w-full">
         <div
-          className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors
-            bg-corporate-teal/10 text-corporate-teal group-hover:bg-corporate-teal/20"
+          className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors
+            ${bgColor || 'bg-corporate-teal/10'} ${color || 'text-corporate-teal'} group-hover:bg-opacity-80`}
         >
           <Icon className="w-10 h-10" />
         </div>
@@ -75,57 +75,58 @@ const Library = () => {
   }, []);
 
   const libraryItems = useMemo(() => {
+    // Hardcoded list based on new architecture requirements
+    // We bypass feature flags for the core 5 pillars to ensure they always show
     const allLibraryItems = [
       {
-        featureId: 'course-library',
         id: 'programs',
         title: 'Programs',
         description: 'Structured learning paths to master specific leadership capabilities.',
-        icon: ShieldCheck,
-        screen: 'programs-index'
+        icon: Layers,
+        screen: 'programs-index',
+        color: 'text-corporate-navy',
+        bgColor: 'bg-corporate-navy/10'
       },
       {
-        featureId: 'leadership-videos',
         id: 'workouts',
         title: 'Workouts',
         description: 'Practical training sessions to build skills through practice.',
-        icon: Film,
-        screen: 'workouts-index'
+        icon: Dumbbell,
+        screen: 'workouts-index',
+        color: 'text-corporate-teal',
+        bgColor: 'bg-corporate-teal/10'
       },
       {
-        featureId: 'reading-hub',
-        id: 'readings',
-        title: 'Read & Reps',
-        description: 'Curated books and articles with actionable exercises.',
-        icon: BookOpen,
-        screen: 'read-reps-index'
-      },
-      {
-        featureId: 'strat-templates',
-        id: 'tools',
-        title: 'Tools',
-        description: 'Checklists, templates, and job aids for quick application.',
-        icon: FileText,
-        screen: 'tools-index'
-      },
-      {
-        featureId: 'course-library', // Using course-library as proxy for Skills for now
         id: 'skills',
         title: 'Skills',
         description: 'Browse content by specific leadership capabilities.',
         icon: Zap,
-        screen: 'skills-index'
+        screen: 'skills-index',
+        color: 'text-corporate-orange',
+        bgColor: 'bg-corporate-orange/10'
+      },
+      {
+        id: 'readings',
+        title: 'Read & Reps',
+        description: 'Curated books and articles with actionable exercises.',
+        icon: BookOpen,
+        screen: 'read-reps-index',
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-50'
+      },
+      {
+        id: 'tools',
+        title: 'Tools',
+        description: 'Checklists, templates, and job aids for quick application.',
+        icon: Wrench,
+        screen: 'tools-index',
+        color: 'text-slate-600',
+        bgColor: 'bg-slate-100'
       }
     ];
 
-    return allLibraryItems
-      .filter(item => isFeatureEnabled(item.featureId))
-      .sort((a, b) => {
-        const orderA = getFeatureOrder(a.featureId);
-        const orderB = getFeatureOrder(b.featureId);
-        return orderA - orderB;
-      });
-  }, [isFeatureEnabled, getFeatureOrder]);
+    return allLibraryItems;
+  }, []);
 
   const handleCardClick = (item) => {
     if (navigate && typeof navigate === 'function') {
@@ -153,13 +154,13 @@ const Library = () => {
 
   return (
     <PageLayout
-      title="Content"
+      title="Content Library"
       subtitle="Your complete leadership development ecosystem."
       icon={BookOpen}
       navigate={navigate}
       breadcrumbs={[
         { label: 'Home', path: 'dashboard' },
-        { label: 'Library', path: null }
+        { label: 'Content', path: null }
       ]}
     >
       <WidgetRenderer widgetId="content-library-main" scope={scope}>

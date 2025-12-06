@@ -25,19 +25,14 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
   const { identityStatement, habitAnchor, whyStatement } = useAppServices();
   const [showAnchors, setShowAnchors] = useState(false);
 
-  const menuItems = [
+    const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'development-plan', label: 'Dev Plan', icon: Target },
     
-    { type: 'section', label: 'Library' },
-    { id: 'programs-index', label: 'Programs', icon: Layers },
-    { id: 'workouts-index', label: 'Workouts', icon: Dumbbell },
-    { id: 'skills-index', label: 'Skills', icon: Zap },
-    { id: 'read-reps-index', label: 'Read & Reps', icon: BookOpen },
-    { id: 'tools-index', label: 'Tools', icon: Wrench },
-    
-    { type: 'section', label: 'Coaching' },
-    { id: 'coaching-hub', label: 'Coaching Hub', icon: MessageSquare },
+    { type: 'section', label: 'The Arena' },
+    { id: 'library', label: 'Content', icon: BookOpen },
+    { id: 'community', label: 'Community', icon: Users },
+    { id: 'coaching-hub', label: 'Coaching', icon: MessageSquare },
     
     { type: 'section', label: 'Personal' },
     { id: 'locker', label: 'Your Locker', icon: Archive },
