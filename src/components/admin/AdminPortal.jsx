@@ -91,16 +91,35 @@ const AdminPortal = () => {
     );
   }
 
-  const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'tests', label: 'Test Center', icon: TestTube2 },
-    { id: 'devplan', label: 'Dev Plan', icon: Calendar },
-    { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
-    { id: 'content', label: 'Content Mgmt', icon: Database },
-    { id: 'features', label: 'Widget Lab', icon: FlaskConical },
-    { id: 'docs', label: 'Docs', icon: BookOpen },
-    { id: 'system', label: 'System', icon: Settings },
-    // { id: 'users', label: 'User Mgmt', icon: Users }, // Future
+  const navGroups = [
+    {
+      title: 'Overview',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }
+      ]
+    },
+    {
+      title: 'Management',
+      items: [
+        { id: 'devplan', label: 'Dev Plan', icon: Calendar },
+        { id: 'content', label: 'Content Mgmt', icon: Database }
+      ]
+    },
+    {
+      title: 'Engineering',
+      items: [
+        { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
+        { id: 'features', label: 'Widget Lab', icon: FlaskConical },
+        { id: 'system', label: 'System', icon: Settings },
+        { id: 'tests', label: 'Test Center', icon: TestTube2 }
+      ]
+    },
+    {
+      title: 'Resources',
+      items: [
+        { id: 'docs', label: 'Docs', icon: BookOpen }
+      ]
+    }
   ];
 
   const renderContent = () => {
@@ -127,61 +146,73 @@ const AdminPortal = () => {
   };
 
   return (
-    <div className="min-h-full bg-gray-50 flex flex-col">
-      {/* Admin Header - Clean light style matching app */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-corporate-teal/10 rounded-xl">
-              <ShieldAlert className="w-8 h-8 text-corporate-teal" />
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Admin Header */}
+      <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-corporate-teal/10 rounded-lg">
+              <ShieldAlert className="w-6 h-6 text-corporate-teal" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-corporate-navy">
+              <h1 className="text-xl font-bold text-corporate-navy">
                 Admin Command Center
               </h1>
-              <p className="text-slate-500 text-sm mt-0.5">
-                Logged in as: <span className="font-medium text-corporate-navy">{user.email}</span>
-              </p>
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>{user.email}</span>
+                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                <span className="font-medium text-corporate-teal">v{APP_VERSION}</span>
+              </div>
             </div>
           </div>
-          <div className="bg-slate-100 px-4 py-2 rounded-lg border border-slate-200">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Environment</span>
-            <div className="font-bold text-corporate-navy">Production (v{APP_VERSION})</div>
+          <div className="bg-slate-100 px-3 py-1.5 rounded-md border border-slate-200">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Production</span>
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="flex space-x-8">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
-                    flex items-center gap-2 py-4 px-2 border-b-2 transition-colors font-medium text-sm
-                    ${isActive 
-                      ? 'border-corporate-teal text-corporate-navy' 
-                      : 'border-transparent text-gray-500 hover:text-corporate-navy hover:border-gray-300'}
-                  `}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-corporate-teal' : ''}`} />
-                  {tab.label}
-                </button>
-              );
-            })}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar Navigation */}
+        <div className="w-64 bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0">
+          <div className="p-4 space-y-6">
+            {navGroups.map((group, idx) => (
+              <div key={idx}>
+                <h3 className="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  {group.title}
+                </h3>
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveTab(item.id)}
+                        className={`
+                          w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                          ${isActive 
+                            ? 'bg-corporate-teal/10 text-corporate-teal' 
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-corporate-navy'}
+                        `}
+                      >
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-corporate-teal' : 'text-slate-400'}`} />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-8 max-w-7xl mx-auto w-full relative">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 min-h-[600px] p-6">
-          {renderContent()}
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[600px] p-6">
+              {renderContent()}
+            </div>
+          </div>
         </div>
       </div>
     </div>

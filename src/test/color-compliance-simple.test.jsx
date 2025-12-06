@@ -57,7 +57,7 @@ describe('Corporate Color Compliance - Core Tests', () => {
       
       forbiddenColors.forEach(color => {
         expect(isApprovedColor(color), 
-          `Color ${color} should be FORBIDDEN but was approved`
+          `Color ${color} is NOT a corporate color. Please replace it with one of the approved colors: Navy (#002E47), Orange (#E04E1B), Teal (#47A88D), Subtle Teal (#349881), Light Gray (#FCFCFA), or White (#FFFFFF).`
         ).toBe(false)
       })
     })
@@ -84,24 +84,26 @@ describe('Corporate Color Compliance - Core Tests', () => {
     })
 
     it('should reject non-corporate rgba colors', () => {
+      const errorMsg = "Non-corporate RGBA color detected. Please use an RGBA version of a corporate color (Navy, Orange, Teal, etc.).";
+
       // Purple rgba - FORBIDDEN
-      expect(isApprovedColor('rgba(124, 58, 237, 0.5)')).toBe(false)
+      expect(isApprovedColor('rgba(124, 58, 237, 0.5)'), errorMsg).toBe(false)
       
       // Amber rgba - FORBIDDEN
-      expect(isApprovedColor('rgba(245, 158, 11, 0.8)')).toBe(false)
+      expect(isApprovedColor('rgba(245, 158, 11, 0.8)'), errorMsg).toBe(false)
       
       // Red rgba - FORBIDDEN
-      expect(isApprovedColor('rgba(220, 38, 38, 0.7)')).toBe(false)
+      expect(isApprovedColor('rgba(220, 38, 38, 0.7)'), errorMsg).toBe(false)
       
       // Green rgba - FORBIDDEN
-      expect(isApprovedColor('rgba(16, 185, 129, 0.4)')).toBe(false)
+      expect(isApprovedColor('rgba(16, 185, 129, 0.4)'), errorMsg).toBe(false)
       
       // Blue rgba - FORBIDDEN
-      expect(isApprovedColor('rgba(37, 99, 235, 0.6)')).toBe(false)
+      expect(isApprovedColor('rgba(37, 99, 235, 0.6)'), errorMsg).toBe(false)
       
       // Random non-corporate colors
-      expect(isApprovedColor('rgba(100, 100, 100, 0.5)')).toBe(false)
-      expect(isApprovedColor('rgba(200, 50, 50, 0.3)')).toBe(false)
+      expect(isApprovedColor('rgba(100, 100, 100, 0.5)'), errorMsg).toBe(false)
+      expect(isApprovedColor('rgba(200, 50, 50, 0.3)'), errorMsg).toBe(false)
     })
   })
 
