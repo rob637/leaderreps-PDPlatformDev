@@ -18,9 +18,9 @@ import MilestoneTimeline from './developmentplan/MilestoneTimeline';
 import ProgressBreakdown from './developmentplan/ProgressBreakdown';
 import { Button, Card, EmptyState } from './developmentplan/DevPlanComponents';
 import { generatePlanFromAssessment, normalizeSkillCatalog } from './developmentplan/devPlanUtils';
-import { PageLayout, Card as UICard } from '../ui';
-import { DashboardCard } from '../ui/DashboardCard';
+import { PageLayout, Card as UICard, NoWidgetsEnabled } from '../ui';
 import WidgetRenderer from '../admin/WidgetRenderer';
+import { useFeatures } from '../../providers/FeatureProvider';
 
 // FIXED: Import adapter utilities
 import { 
@@ -39,27 +39,6 @@ const LoadingBlock = ({ title = 'Loading…', description = 'Preparing your deve
     </Card>
   </div>
 );
-
-const DevPlanDashboard = ({ setView, hasPlan }) => {
-  const items = [
-    { id: hasPlan ? 'tracker' : 'baseline', title: 'Current Plan', description: hasPlan ? 'Track your weekly progress.' : 'Start your development journey.', icon: Target, color: 'text-corporate-teal', bgColor: 'bg-corporate-teal/10' },
-    { id: 'scan', title: 'Progress Scan', description: 'Update your progress and metrics.', icon: TrendingUp, color: 'text-blue-600', bgColor: 'bg-blue-50' },
-    { id: 'detail', title: 'Plan Details', description: 'View detailed breakdown of your plan.', icon: ClipboardList, color: 'text-purple-600', bgColor: 'bg-purple-50' },
-    { id: 'timeline', title: 'Timeline', description: 'View your milestones and roadmap.', icon: Flag, color: 'text-orange-600', bgColor: 'bg-orange-50' },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-      {items.map(item => (
-        <DashboardCard 
-          key={item.id}
-          {...item}
-          onClick={() => setView(item.id)}
-        />
-      ))}
-    </div>
-  );
-};
 
 // --- NEW HELPER (10/30/25) ---
 // Finds the first rep matching the plan's first focus area and saves it
@@ -115,6 +94,7 @@ const findAndSetTargetRep = async (newPlan, metadata, writer) => {
 
 export default function DevelopmentPlan(props) {
   const services = useAppServices();
+  const { isFeatureEnabled } = useFeatures();
   const {
     db, userId, isAuthReady, isLoading: isServicesLoading,
     developmentPlanData, updateDevelopmentPlanData, 
@@ -239,7 +219,7 @@ export default function DevelopmentPlan(props) {
     // When plan data exists AND we just completed baseline, switch to tracker
     // Otherwise, let the user navigate freely between views
     if (adaptedDevelopmentPlanData?.currentPlan && justCompletedBaseline) {
-      if (view !== 'tracker') {
+      if (view !== 'dashboard') {
         const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
         if (isDeveloperMode) {
           if (localStorage.getItem('arena-developer-mode') === 'true') {
@@ -247,7 +227,7 @@ export default function DevelopmentPlan(props) {
           }
         }
         setJustCompletedBaseline(false); // Clear flag
-        setView('tracker');
+        setView('dashboard');
       }
       return;
     }
@@ -514,19 +494,30 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     ? adaptedDevelopmentPlanData.assessmentHistory[adaptedDevelopmentPlanData.assessmentHistory.length - 1] 
     : null;
 
-  // ===== GUARDS =====
-  if (!isAuthReady) return <LoadingBlock title="Authenticating…" description="Connecting securely..." />;
-  if (isServicesLoading) return <LoadingBlock title="Loading..." />;
-  if (!services || !userId) return <LoadingBlock title="Services unavailable" description="Please refresh or contact support." />;
-
   // ===== WIDGET LOGIC =====
   // Create scope for widgets on this screen
   const widgetScope = useMemo(() => ({
     // Data
     developmentPlanData: adaptedDevelopmentPlanData,
+    plan: adaptedDevelopmentPlanData?.currentPlan,
+    cycle: adaptedDevelopmentPlanData?.cycle || 1,
+    globalMetadata,
+    
+    // Actions
+    onEditPlan: handleEditPlan,
+    onScan: () => setView('scan'),
+    onDetail: () => setView('detail'),
+    onTimeline: () => setView('timeline'),
+    onComplete: handleCompleteBaseline,
+    onCompleteScan: handleCompleteScan,
+    onBack: () => setView('dashboard'),
+    onUpdatePlan: handleEditPlan,
+    onNavigateToTracker: () => setView('dashboard'),
+    onStartProgressScan: () => setView('scan'),
     
     // Navigation
     navigate,
+    setView,
     
     // Icons (for baseline-assessment widget)
     ClipboardList,
@@ -538,7 +529,16 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     
     // Components
     Card: UICard,
-  }), [adaptedDevelopmentPlanData, navigate]);
+    PlanTracker,
+    MilestoneTimeline,
+    DetailedPlanView,
+    BaselineAssessment
+  }), [adaptedDevelopmentPlanData, navigate, globalMetadata]);
+
+  // ===== GUARDS =====
+  if (!isAuthReady) return <LoadingBlock title="Authenticating…" description="Connecting securely..." />;
+  if (isServicesLoading) return <LoadingBlock title="Loading..." />;
+  if (!services || !userId) return <LoadingBlock title="Services unavailable" description="Please refresh or contact support." />;
 
   // ===== RENDER =====
   const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
@@ -548,7 +548,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       title="Development Plan"
       subtitle="Your roadmap to leadership excellence."
       icon={Target}
-      backTo={view === 'dashboard' ? 'dashboard' : null}
+      backTo={view !== 'dashboard' ? 'dashboard' : null}
       onBack={view !== 'dashboard' ? () => setView('dashboard') : undefined}
       navigate={navigate}
     >
@@ -574,10 +574,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
         </div>
       )}
 
-      {view === 'dashboard' && (
-        <DevPlanDashboard setView={setView} hasPlan={hasCurrentPlan} />
-      )}
-
+      {/* Full Screen Modes */}
       {view === 'baseline' && (
         <BaselineAssessment
           onComplete={handleCompleteBaseline}
@@ -593,47 +590,73 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
           globalMetadata={globalMetadata}
           skillCatalog={combinedSkillCatalog}
           onCompleteScan={handleCompleteScan}
-          onBack={() => setView('tracker')}
+          onBack={() => setView('dashboard')}
           isLoading={isSaving}
         />
       )}
 
-      {/* REQ #4 (BUG FIX): Updated props passed to DetailedPlanView */}
-      {view === 'detail' && (
-        <DetailedPlanView
-          developmentPlanData={adaptedDevelopmentPlanData}
-          globalMetadata={globalMetadata}
-          onUpdatePlan={handleEditPlan}
-          onNavigateToTracker={() => setView('tracker')}
-          onStartProgressScan={() => setView('scan')}
-        />
-      )}
+      {/* Dashboard / Widget View */}
+      {view === 'dashboard' && (
+        <div className="space-y-8">
+          {/* 1. Tracker Widget */}
+          {isFeatureEnabled('dev-plan-tracker') && hasCurrentPlan && (
+            <WidgetRenderer widgetId="dev-plan-tracker" scope={widgetScope}>
+              <PlanTracker
+                plan={adaptedDevelopmentPlanData?.currentPlan}
+                cycle={adaptedDevelopmentPlanData?.cycle || 1}
+                globalMetadata={globalMetadata}
+                onEditPlan={handleEditPlan}
+                onScan={() => setView('scan')}
+                onDetail={() => setView('detail')} // Keep these for now, they might just scroll or do nothing if stacked
+                onTimeline={() => setView('timeline')}
+              />
+            </WidgetRenderer>
+          )}
 
-      {view === 'timeline' && (
-        <MilestoneTimeline
-          plan={adaptedDevelopmentPlanData?.currentPlan}
-          globalMetadata={globalMetadata}
-          onBack={() => setView('tracker')}
-        />
-      )}
+          {/* 2. Timeline Widget */}
+          {isFeatureEnabled('dev-plan-timeline') && hasCurrentPlan && (
+            <WidgetRenderer widgetId="dev-plan-timeline" scope={widgetScope}>
+              <MilestoneTimeline
+                plan={adaptedDevelopmentPlanData?.currentPlan}
+                globalMetadata={globalMetadata}
+                onBack={() => {}} // No back button needed when stacked
+              />
+            </WidgetRenderer>
+          )}
 
-      {view === 'tracker' && (
-        <>
-          {/* Baseline Assessment Widget */}
-          <div className="mb-4">
-            <WidgetRenderer widgetId="baseline-assessment" scope={widgetScope} />
-          </div>
+          {/* 3. Details Widget */}
+          {isFeatureEnabled('dev-plan-details') && hasCurrentPlan && (
+            <WidgetRenderer widgetId="dev-plan-details" scope={widgetScope}>
+              <DetailedPlanView
+                developmentPlanData={adaptedDevelopmentPlanData}
+                globalMetadata={globalMetadata}
+                onUpdatePlan={handleEditPlan}
+                onNavigateToTracker={() => {}}
+                onStartProgressScan={() => setView('scan')}
+              />
+            </WidgetRenderer>
+          )}
+
+          {/* 4. Baseline Widget (if no plan) */}
+          {!hasCurrentPlan && isFeatureEnabled('dev-plan-baseline') && (
+             <WidgetRenderer widgetId="dev-plan-baseline" scope={widgetScope}>
+                <BaselineAssessment
+                  onComplete={handleCompleteBaseline}
+                  isLoading={isSaving}
+                  initialData={latestAssessment}
+                  mode={props.mode}
+                />
+             </WidgetRenderer>
+          )}
           
-          <PlanTracker
-            plan={adaptedDevelopmentPlanData?.currentPlan}
-            cycle={adaptedDevelopmentPlanData?.cycle || 1}
-            globalMetadata={globalMetadata}
-            onEditPlan={handleEditPlan}
-            onScan={() => setView('scan')}
-            onDetail={() => setView('detail')}
-            onTimeline={() => setView('timeline')}
-          />
-        </>
+          {/* Fallback */}
+          {!isFeatureEnabled('dev-plan-tracker') && 
+           !isFeatureEnabled('dev-plan-timeline') && 
+           !isFeatureEnabled('dev-plan-details') && 
+           !isFeatureEnabled('dev-plan-baseline') && (
+             <NoWidgetsEnabled moduleName="Development Plan" />
+          )}
+        </div>
       )}
     </PageLayout>
   );

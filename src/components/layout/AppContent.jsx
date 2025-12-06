@@ -2,7 +2,7 @@
 
 import React, { Suspense, useCallback, useState, useEffect } from 'react';
 import { signOut, updateProfile } from 'firebase/auth';
-import { LogOut, Loader, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { LogOut, Loader, Settings, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
 import MobileBottomNav from './MobileBottomNav.jsx';
 import ArenaSidebar from './ArenaSidebar.jsx';
@@ -104,6 +104,19 @@ const AppContent = ({
           <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300 bg-corporate-light-gray md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2">
             
             <main className="flex-1 flex flex-col overflow-hidden relative md:rounded-3xl">
+              {/* Global Back Button Header */}
+              {canGoBack && (
+                <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center shadow-sm z-10 shrink-0">
+                  <button 
+                    onClick={goBack}
+                    className="flex items-center text-corporate-navy hover:text-corporate-teal transition-colors font-medium"
+                  >
+                    <ArrowLeft className="w-5 h-5 mr-2" />
+                    Back
+                  </button>
+                </div>
+              )}
+
               <div className="flex-1 overflow-y-auto">
                 <Suspense
                   fallback={

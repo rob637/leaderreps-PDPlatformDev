@@ -529,6 +529,8 @@ const CommunityScreen = ({ simulatedTier }) => {
     // --- Consume Services ---
     const { db, user, navigate, LEADERSHIP_TIERS, featureFlags, isAdmin, membershipData, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
     const { isFeatureEnabled, getFeatureOrder } = useFeatures();
+    const { getUnlockedResources } = useDevPlan();
+    
     // Use safeUser structure even if user context is briefly null during auth changes
     const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]); // cite: useAppServices.jsx (provides user)
     
@@ -572,8 +574,13 @@ const CommunityScreen = ({ simulatedTier }) => {
             setIsLoadingThreads(true);
             try {
                 const threads = await contentService.getContent(db, CONTENT_COLLECTIONS.COMMUNITY);
+                
+                // Filter by unlocked resources
+                const unlockedIds = getUnlockedResources('community');
+                const unlockedThreads = threads.filter(t => unlockedIds.has(t.id));
+                
                 // Map to expected format if needed
-                const mappedThreads = threads.map(t => ({
+                const mappedThreads = unlockedThreads.map(t => ({
                     ...t,
                     ownerName: t.author || t.ownerName,
                     ownerId: t.authorId || t.ownerId,
@@ -653,74 +660,15 @@ const CommunityScreen = ({ simulatedTier }) => {
         
         // Icons
         Users, MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
-        Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video
-    };
-
-    // --- Render Logic ---
-    const renderContent = () => {
-        switch(view) {
-            case 'my-threads':
-                return isFeatureEnabled('my-discussions') ? (
-                    <MyThreadsView user={safeUser} allThreads={allThreads} />
-                ) : null;
-            
-            case 'mastermind':
-                return isFeatureEnabled('mastermind') ? (
-                    <Card title="Mastermind Groups" icon={Users}>
-                        <div className="p-8 text-center text-gray-500">
-                            <h3 className="text-lg font-bold mb-2">Mastermind Groups</h3>
-                            <p>Join a small group of peers for focused growth and accountability.</p>
-                            <p className="text-xs mt-4 text-gray-400">(Feature Module Placeholder)</p>
-                        </div>
-                    </Card>
-                ) : null;
-
-            case 'mentorship':
-                return isFeatureEnabled('mentor-match') ? (
-                    <Card title="Mentor Match" icon={UserPlus}>
-                        <div className="p-8 text-center text-gray-500">
-                            <h3 className="text-lg font-bold mb-2">Mentor Match</h3>
-                            <p>Find a mentor or become one to accelerate your leadership journey.</p>
-                            <p className="text-xs mt-4 text-gray-400">(Feature Module Placeholder)</p>
-                        </div>
-                    </Card>
-                ) : null;
-
-            case 'events':
-                return isFeatureEnabled('live-events') ? (
-                    <Card title="Live Events" icon={Video}>
-                        <div className="p-8 text-center text-gray-500">
-                            <h3 className="text-lg font-bold mb-2">Live Events</h3>
-                            <p>Register for upcoming webinars, workshops, and live Q&A sessions.</p>
-                            <p className="text-xs mt-4 text-gray-400">(Feature Module Placeholder)</p>
-                        </div>
-                    </Card>
-                ) : null;
-
-            case 'resources':
-                return <CommunityResourcesView db={db} />;
-
-            case 'notifications':
-                return <NotificationsView />;
-            case 'new-thread':
-                return <NewThreadView setView={setView} />;
-            case 'dashboard':
-                return <CommunityDashboard navItems={navItems} setView={setView} />;
-            case 'home':
-            default:
-                return isFeatureEnabled('community-feed') ? (
-                    <CommunityHomeView
-                        setView={setView}
-                        user={safeUser} // Pass safeUser
-                        currentTierFilter={currentTierFilter}
-                        setCurrentTierFilter={setCurrentTierFilter}
-                        filteredThreads={filteredThreads} // Pass filtered data
-                        tierMeta={tierMeta} // Pass tier metadata
-                    />
-                ) : (
-                    <WidgetRenderer widgetId="community-feed-disabled" scope={scope} />
-                );
-        }
+        Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video,
+        
+        // Components
+        CommunityHomeView,
+        MyThreadsView,
+        CommunityResourcesView,
+        NotificationsView,
+        NewThreadView,
+        Card
     };
 
     // --- Main Render ---
@@ -734,16 +682,10 @@ const CommunityScreen = ({ simulatedTier }) => {
             title="Community"
             subtitle="Connect, share insights, and grow with fellow leaders."
             icon={Users}
-            backTo={view === 'dashboard' ? 'dashboard' : null}
-            onBack={view !== 'dashboard' ? () => setView('dashboard') : undefined}
             navigate={navigate}
         >
             {/* Main Layout Grid (Sidebar + Content) */}
-            {view === 'dashboard' ? (
-                 <WidgetRenderer widgetId="community-dashboard" scope={scope}>
-                    {renderContent()}
-                 </WidgetRenderer>
-            ) : navItems.length > 1 ? (
+            {navItems.length > 1 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 max-w-[860px] mx-auto">
                     {/* Sidebar Navigation */}
                     <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start"> {/* Make sidebar sticky */}
@@ -751,8 +693,48 @@ const CommunityScreen = ({ simulatedTier }) => {
                     </aside>
 
                     {/* Main Content Area */}
-                    <main className="lg:col-span-5">
-                        {renderContent()}
+                    <main className="lg:col-span-5 space-y-6">
+                        {/* Render enabled widgets directly */}
+                        {isFeatureEnabled('community-feed') && (
+                            <WidgetRenderer widgetId="community-feed" scope={scope}>
+                                <CommunityHomeView
+                                    setView={setView}
+                                    user={safeUser}
+                                    currentTierFilter={currentTierFilter}
+                                    setCurrentTierFilter={setCurrentTierFilter}
+                                    filteredThreads={filteredThreads}
+                                    tierMeta={tierMeta}
+                                />
+                            </WidgetRenderer>
+                        )}
+                        
+                        {isFeatureEnabled('my-discussions') && view === 'my-threads' && (
+                            <MyThreadsView user={safeUser} allThreads={allThreads} />
+                        )}
+                        
+                        {isFeatureEnabled('mastermind') && view === 'mentorship' && (
+                             <Card title="Mastermind Groups" icon={Users}>
+                                <div className="p-8 text-center text-gray-500">
+                                    <h3 className="text-lg font-bold mb-2">Mastermind Groups</h3>
+                                    <p>Join a small group of peers for focused growth and accountability.</p>
+                                    <p className="text-xs mt-4 text-gray-400">(Feature Module Placeholder)</p>
+                                </div>
+                            </Card>
+                        )}
+                        
+                        {isFeatureEnabled('live-events') && view === 'events' && (
+                            <Card title="Live Events" icon={Video}>
+                                <div className="p-8 text-center text-gray-500">
+                                    <h3 className="text-lg font-bold mb-2">Live Events</h3>
+                                    <p>Register for upcoming webinars, workshops, and live Q&A sessions.</p>
+                                    <p className="text-xs mt-4 text-gray-400">(Feature Module Placeholder)</p>
+                                </div>
+                            </Card>
+                        )}
+                        
+                        {view === 'resources' && <CommunityResourcesView db={db} />}
+                        {view === 'notifications' && <NotificationsView />}
+                        {view === 'new-thread' && <NewThreadView setView={setView} />}
                     </main>
                 </div>
             ) : (

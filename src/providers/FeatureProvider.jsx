@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { FEATURE_METADATA } from '../config/widgetTemplates';
 
 const FeatureContext = createContext();
@@ -88,6 +88,18 @@ export const FeatureProvider = ({ children, db }) => {
     await setDoc(featureDocRef, updates, { merge: true });
   };
 
+  const saveFeature = async (featureId, data) => {
+    if (!db) return;
+    const featureDocRef = doc(db, 'config', 'features');
+    await setDoc(featureDocRef, { [featureId]: data }, { merge: true });
+  };
+
+  const deleteFeature = async (featureId) => {
+    if (!db) return;
+    const featureDocRef = doc(db, 'config', 'features');
+    await updateDoc(featureDocRef, { [featureId]: deleteField() });
+  };
+
   const isFeatureEnabled = (featureId) => {
     const feature = features[featureId];
     if (typeof feature === 'object' && feature !== null) {
@@ -113,6 +125,8 @@ export const FeatureProvider = ({ children, db }) => {
       features, 
       toggleFeature, 
       updateFeatureOrder, 
+      saveFeature,
+      deleteFeature,
       isFeatureEnabled, 
       getFeatureOrder, 
       loading 

@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PageLayout } from '../ui/PageLayout.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { useDevPlan } from '../../hooks/useDevPlan';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { 
   Loader, Users, Calendar, MessageSquare, Video, 
   Clock, ChevronLeft, ChevronRight, Play, Bot, UserCheck,
   CalendarDays, ExternalLink
 } from 'lucide-react';
-import { DashboardCard } from '../ui/DashboardCard';
+import { useFeatures } from '../../providers/FeatureProvider';
+import WidgetRenderer from '../admin/WidgetRenderer';
+import { NoWidgetsEnabled } from '../ui';
 
 // ============================================
 // TAB NAVIGATION
@@ -395,35 +398,17 @@ const MyCoachingSection = ({ registeredSessions, pastSessions, onCancel }) => (
   </div>
 );
 
-const CoachingDashboard = ({ setActiveTab }) => {
-  const items = [
-    { id: 'live', title: 'Live Coaching', description: 'Join upcoming workshops and open gym sessions.', icon: Calendar, color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
-    { id: 'ondemand', title: 'On-Demand', description: 'Practice with AI roleplay and access resources.', icon: Bot, color: 'text-violet-600', bgColor: 'bg-violet-50' },
-    { id: 'my', title: 'My Coaching', description: 'View your registered sessions and history.', icon: UserCheck, color: 'text-teal-600', bgColor: 'bg-teal-50' },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {items.map(item => (
-        <DashboardCard 
-          key={item.id}
-          {...item}
-          onClick={() => setActiveTab(item.id)}
-        />
-      ))}
-    </div>
-  );
-};
-
 // ============================================
 // MAIN COACHING HUB COMPONENT
 // ============================================
 const CoachingHub = () => {
   const { db, navigate, user } = useAppServices();
+  const { isFeatureEnabled } = useFeatures();
+  const { getUnlockedResources } = useDevPlan();
   const [sessions, setSessions] = useState([]);
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('live'); // Default to live
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
 
   // Fetch coaching sessions
@@ -435,13 +420,20 @@ const CoachingHub = () => {
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Filter by unlocked resources
+      const unlockedIds = getUnlockedResources('coaching');
+      // Also include sessions the user is already registered for, even if locked (edge case)
+      // But for now, strict locking.
+      const unlockedItems = items.filter(item => unlockedIds.has(item.id));
+
       // Sort by date client-side to avoid index requirement
-      items.sort((a, b) => {
+      unlockedItems.sort((a, b) => {
         const dateA = a.date ? new Date(a.date) : new Date(0);
         const dateB = b.date ? new Date(b.date) : new Date(0);
         return dateA - dateB;
       });
-      setSessions(items);
+      setSessions(unlockedItems);
       setLoading(false);
     }, (error) => {
       console.error('Error fetching sessions:', error);
@@ -526,6 +518,25 @@ const CoachingHub = () => {
     }
   };
 
+  // Scope for widgets
+  const scope = {
+    sessions,
+    registrations,
+    registeredSessions,
+    upcomingSessions,
+    pastSessions,
+    handleRegister,
+    handleCancel,
+    navigate,
+    viewMode,
+    setViewMode,
+    CalendarView,
+    SessionCard,
+    OnDemandSection,
+    MyCoachingSection,
+    registeredIds
+  };
+
   return (
     <PageLayout 
       title="Coaching Hub" 
@@ -534,15 +545,13 @@ const CoachingHub = () => {
         { label: 'Home', path: 'dashboard' },
         { label: 'Coaching Hub', path: null }
       ]}
-      backTo={activeTab === 'dashboard' ? 'dashboard' : null}
-      onBack={activeTab !== 'dashboard' ? () => setActiveTab('dashboard') : undefined}
     >
       <div className="max-w-6xl mx-auto">
         
-        {/* Tab Navigation - Hide on Dashboard */}
-        {activeTab !== 'dashboard' && (
-          <div className="flex items-center justify-between border-b border-slate-200 mb-6 overflow-x-auto">
-            <div className="flex">
+        {/* Tab Navigation */}
+        <div className="flex items-center justify-between border-b border-slate-200 mb-6 overflow-x-auto">
+          <div className="flex">
+            {isFeatureEnabled('coaching-upcoming-sessions') && (
               <TabButton 
                 active={activeTab === 'live'} 
                 onClick={() => setActiveTab('live')}
@@ -550,12 +559,16 @@ const CoachingHub = () => {
                 label="Live Coaching"
                 badge={upcomingSessions.length}
               />
+            )}
+            {isFeatureEnabled('coaching-on-demand') && (
               <TabButton 
                 active={activeTab === 'ondemand'} 
                 onClick={() => setActiveTab('ondemand')}
                 icon={Bot}
                 label="On-Demand"
               />
+            )}
+            {isFeatureEnabled('coaching-my-sessions') && (
               <TabButton 
                 active={activeTab === 'my'} 
                 onClick={() => setActiveTab('my')}
@@ -563,26 +576,26 @@ const CoachingHub = () => {
                 label="My Coaching"
                 badge={registeredSessions.length}
               />
-            </div>
-            
-            {activeTab === 'live' && (
-              <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
-                <button 
-                  onClick={() => setViewMode('list')}
-                  className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
-                >
-                  List
-                </button>
-                <button 
-                  onClick={() => setViewMode('calendar')}
-                  className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'calendar' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
-                >
-                  Calendar
-                </button>
-              </div>
             )}
           </div>
-        )}
+          
+          {activeTab === 'live' && (
+            <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+              <button 
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
+              >
+                List
+              </button>
+              <button 
+                onClick={() => setViewMode('calendar')}
+                className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'calendar' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
+              >
+                Calendar
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Tab Content */}
         {loading ? (
@@ -591,53 +604,61 @@ const CoachingHub = () => {
           </div>
         ) : (
           <>
-            {/* Dashboard View */}
-            {activeTab === 'dashboard' && (
-              <CoachingDashboard setActiveTab={setActiveTab} />
-            )}
-
             {/* Live Coaching Tab */}
-            {activeTab === 'live' && (
-              viewMode === 'calendar' ? (
-                <CalendarView 
-                  sessions={upcomingSessions}
-                  onViewDetails={(s) => console.log('View details:', s)}
-                />
-              ) : (
-                <div className="space-y-4">
-                  {upcomingSessions.length === 0 ? (
-                    <div className="bg-slate-50 rounded-xl border border-dashed border-slate-300 p-12 text-center">
-                      <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-bold text-slate-600 mb-2">No Upcoming Sessions</h3>
-                      <p className="text-slate-400">Check back later for new coaching opportunities.</p>
-                    </div>
-                  ) : (
-                    upcomingSessions.map(session => (
-                      <SessionCard 
-                        key={session.id}
-                        session={session}
-                        onRegister={handleRegister}
-                        onCancel={handleCancel}
-                        isRegistered={registeredIds.has(session.id)}
-                      />
-                    ))
-                  )}
-                </div>
-              )
+            {activeTab === 'live' && isFeatureEnabled('coaching-upcoming-sessions') && (
+              <WidgetRenderer widgetId="coaching-upcoming-sessions" scope={scope}>
+                {viewMode === 'calendar' ? (
+                  <CalendarView 
+                    sessions={upcomingSessions}
+                    onViewDetails={(s) => console.log('View details:', s)}
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    {upcomingSessions.length === 0 ? (
+                      <div className="bg-slate-50 rounded-xl border border-dashed border-slate-300 p-12 text-center">
+                        <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-bold text-slate-600 mb-2">No Upcoming Sessions</h3>
+                        <p className="text-slate-400">Check back later for new coaching opportunities.</p>
+                      </div>
+                    ) : (
+                      upcomingSessions.map(session => (
+                        <SessionCard 
+                          key={session.id}
+                          session={session}
+                          onRegister={handleRegister}
+                          onCancel={handleCancel}
+                          isRegistered={registeredIds.has(session.id)}
+                        />
+                      ))
+                    )}
+                  </div>
+                )}
+              </WidgetRenderer>
             )}
 
             {/* On-Demand Tab */}
-            {activeTab === 'ondemand' && (
-              <OnDemandSection navigate={navigate} />
+            {activeTab === 'ondemand' && isFeatureEnabled('coaching-on-demand') && (
+              <WidgetRenderer widgetId="coaching-on-demand" scope={scope}>
+                <OnDemandSection navigate={navigate} />
+              </WidgetRenderer>
             )}
 
             {/* My Coaching Tab */}
-            {activeTab === 'my' && (
-              <MyCoachingSection 
-                registeredSessions={registeredSessions}
-                pastSessions={pastSessions}
-                onCancel={handleCancel}
-              />
+            {activeTab === 'my' && isFeatureEnabled('coaching-my-sessions') && (
+              <WidgetRenderer widgetId="coaching-my-sessions" scope={scope}>
+                <MyCoachingSection 
+                  registeredSessions={registeredSessions}
+                  pastSessions={pastSessions}
+                  onCancel={handleCancel}
+                />
+              </WidgetRenderer>
+            )}
+            
+            {/* Fallback if no tabs are enabled */}
+            {!isFeatureEnabled('coaching-upcoming-sessions') && 
+             !isFeatureEnabled('coaching-on-demand') && 
+             !isFeatureEnabled('coaching-my-sessions') && (
+               <NoWidgetsEnabled moduleName="Coaching Hub" />
             )}
           </>
         )}

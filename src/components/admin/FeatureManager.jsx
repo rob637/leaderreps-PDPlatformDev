@@ -14,7 +14,7 @@ import { Button, ProgressBar } from '../screens/developmentplan/DevPlanComponent
 import { ENHANCEMENT_IDEAS } from '../../data/enhancementIdeas';
 
 const FeatureManager = () => {
-  const { features, toggleFeature, updateFeatureOrder, isFeatureEnabled } = useFeatures();
+  const { features, toggleFeature, updateFeatureOrder, isFeatureEnabled, saveFeature, deleteFeature } = useFeatures();
   const { 
     user, 
     dailyPracticeData, 

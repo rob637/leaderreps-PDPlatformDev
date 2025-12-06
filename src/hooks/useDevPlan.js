@@ -291,6 +291,44 @@ export const useDevPlan = () => {
     await updateDevelopmentPlanData(updates);
   }, [currentWeek, updateDevelopmentPlanData]);
 
+  // 5. Helper: Get Unlocked Resources
+  const getUnlockedResources = useCallback((type = 'all') => {
+    if (!masterPlan || masterPlan.length === 0) return new Set();
+    
+    const unlockedIds = new Set();
+    
+    // Iterate through all weeks up to currentWeekIndex
+    // Note: currentWeekIndex is 0-based, so we include it.
+    const maxIndex = Math.min(currentWeekIndex, masterPlan.length - 1);
+    
+    for (let i = 0; i <= maxIndex; i++) {
+      const week = masterPlan[i];
+      if (!week) continue;
+      
+      // Helper to add IDs from an array of items
+      const addIds = (items) => {
+        if (Array.isArray(items)) {
+          items.forEach(item => {
+            if (item.resourceId) unlockedIds.add(item.resourceId);
+            if (item.contentItemId) unlockedIds.add(item.contentItemId);
+          });
+        }
+      };
+
+      if (type === 'all' || type === 'content') {
+        addIds(week.contentItems);
+      }
+      if (type === 'all' || type === 'community') {
+        addIds(week.communityItems);
+      }
+      if (type === 'all' || type === 'coaching') {
+        addIds(week.coachingItems);
+      }
+    }
+    
+    return unlockedIds;
+  }, [masterPlan, currentWeekIndex]);
+
   return {
     loading: loadingPlan,
     masterPlan,
@@ -299,6 +337,7 @@ export const useDevPlan = () => {
     initializePlan,
     toggleItemComplete,
     completeWeek,
+    getUnlockedResources, // Expose the helper
     simulatedNow, // Expose for UI if needed
     user // Expose user for access control
   };
