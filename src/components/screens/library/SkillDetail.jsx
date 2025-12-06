@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../../services/useAppServices.jsx';
+import { useDevPlan } from '../../../hooks/useDevPlan';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { PageLayout } from '../../ui/PageLayout.jsx';
 import { Loader, PlayCircle, Video, BookOpen, FileText, Zap, ArrowRight } from 'lucide-react';
@@ -7,6 +8,7 @@ import { Card, Button, Badge } from '../../screens/developmentplan/DevPlanCompon
 
 const SkillDetail = ({ navParams }) => {
   const { db, navigate } = useAppServices();
+  const { masterPlan, currentWeek } = useDevPlan();
   const [skill, setSkill] = useState(null);
   const [relatedContent, setRelatedContent] = useState({
     programs: [],
@@ -16,6 +18,27 @@ const SkillDetail = ({ navParams }) => {
   });
   const [loading, setLoading] = useState(true);
   const skillId = navParams?.id;
+
+  // Calculate Unlocked Resources
+  const unlockedResourceIds = useMemo(() => {
+      if (!masterPlan || masterPlan.length === 0) return new Set();
+      const ids = new Set();
+      const currentWeekNum = currentWeek?.weekNumber || 1;
+
+      masterPlan.forEach(week => {
+          if (week.weekNumber <= currentWeekNum) {
+              if (week.content && Array.isArray(week.content)) {
+                  week.content.forEach(item => {
+                      if (!item) return;
+                      if (item.resourceId) ids.add(String(item.resourceId).toLowerCase());
+                      if (item.contentItemId) ids.add(String(item.contentItemId).toLowerCase());
+                      if (item.id) ids.add(String(item.id).toLowerCase());
+                  });
+              }
+          }
+      });
+      return ids;
+  }, [masterPlan, currentWeek]);
 
   useEffect(() => {
     const fetchSkillData = async () => {
@@ -47,13 +70,21 @@ const SkillDetail = ({ navParams }) => {
             id: doc.id,
             ...doc.data()
           }));
+
+          // Filter by unlock status
+          const unlockedContent = allContent.filter(c => {
+              if (c.isHiddenUntilUnlocked) {
+                  return unlockedResourceIds.has(String(c.id).toLowerCase());
+              }
+              return true;
+          });
           
           // Group by type
           setRelatedContent({
-            programs: allContent.filter(c => c.type === 'PROGRAM'),
-            workouts: allContent.filter(c => c.type === 'WORKOUT'),
-            readReps: allContent.filter(c => c.type === 'READ_REP'),
-            tools: allContent.filter(c => c.type === 'TOOL')
+            programs: unlockedContent.filter(c => c.type === 'PROGRAM'),
+            workouts: unlockedContent.filter(c => c.type === 'WORKOUT'),
+            readReps: unlockedContent.filter(c => c.type === 'READ_REP'),
+            tools: unlockedContent.filter(c => c.type === 'TOOL')
           });
         }
       } catch (error) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
+import { useDevPlan } from '../../../hooks/useDevPlan';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { Loader, Dumbbell, Search, SlidersHorizontal, ArrowRight } from 'lucide-react';
 import { DifficultyBadge, DurationBadge, TierBadge, SkillTag } from '../../ui/ContentBadges.jsx';
@@ -8,6 +9,7 @@ import SkillFilter from '../../ui/SkillFilter.jsx';
 
 const WorkoutsIndex = () => {
   const { db, navigate } = useAppServices();
+  const { masterPlan, currentWeek } = useDevPlan();
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,10 +27,39 @@ const WorkoutsIndex = () => {
     return () => unsubscribe();
   }, [db]);
 
+  // Calculate Unlocked Resources
+  const unlockedResourceIds = useMemo(() => {
+      if (!masterPlan || masterPlan.length === 0) return new Set();
+      const ids = new Set();
+      const currentWeekNum = currentWeek?.weekNumber || 1;
+
+      masterPlan.forEach(week => {
+          if (week.weekNumber <= currentWeekNum) {
+              if (week.content && Array.isArray(week.content)) {
+                  week.content.forEach(item => {
+                      if (!item) return;
+                      if (item.resourceId) ids.add(String(item.resourceId).toLowerCase());
+                      if (item.contentItemId) ids.add(String(item.contentItemId).toLowerCase());
+                      if (item.id) ids.add(String(item.id).toLowerCase());
+                  });
+              }
+          }
+      });
+      return ids;
+  }, [masterPlan, currentWeek]);
+
   // Filter workouts
   const filteredWorkouts = useMemo(() => {
     let result = workouts;
     
+    // Content Locking Filter
+    result = result.filter(w => {
+        if (w.isHiddenUntilUnlocked) {
+             return unlockedResourceIds.has(String(w.id).toLowerCase());
+        }
+        return true;
+    });
+
     // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
