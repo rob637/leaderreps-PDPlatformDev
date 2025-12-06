@@ -638,8 +638,8 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
           )}
 
           {/* 4. Baseline Widget (if no plan) */}
-          {!hasCurrentPlan && isFeatureEnabled('dev-plan-baseline') && (
-             <WidgetRenderer widgetId="dev-plan-baseline" scope={widgetScope}>
+          {!hasCurrentPlan && isFeatureEnabled('baseline-assessment') && (
+             <WidgetRenderer widgetId="baseline-assessment" scope={widgetScope}>
                 <BaselineAssessment
                   onComplete={handleCompleteBaseline}
                   isLoading={isSaving}
@@ -653,7 +653,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
           {!isFeatureEnabled('dev-plan-tracker') && 
            !isFeatureEnabled('dev-plan-timeline') && 
            !isFeatureEnabled('dev-plan-details') && 
-           !isFeatureEnabled('dev-plan-baseline') && (
+           !isFeatureEnabled('baseline-assessment') && (
              <NoWidgetsEnabled moduleName="Development Plan" />
           )}
         </div>
