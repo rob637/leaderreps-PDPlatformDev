@@ -104,8 +104,8 @@ const AppContent = ({
           <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300 bg-corporate-light-gray md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2">
             
             <main className="flex-1 flex flex-col overflow-hidden relative md:rounded-3xl">
-              {/* Global Back Button Header */}
-              {canGoBack && (
+              {/* Global Back Button Header - REMOVED to save whitespace */}
+              {/* {canGoBack && (
                 <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center shadow-sm z-10 shrink-0">
                   <button 
                     onClick={goBack}
@@ -115,7 +115,7 @@ const AppContent = ({
                     Back
                   </button>
                 </div>
-              )}
+              )} */}
 
               <div className="flex-1 overflow-y-auto">
                 <Suspense
