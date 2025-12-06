@@ -9,7 +9,6 @@
 const { setGlobalOptions } = require("firebase-functions");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onRequest } = require("firebase-functions/v2/https");
-const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -18,9 +17,6 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 admin.initializeApp();
 const db = admin.firestore();
 
-// Define the Gemini API key as a secret
-const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
-
 // Global options for cost control
 setGlobalOptions({ maxInstances: 10, region: "us-central1" });
 
@@ -28,11 +24,12 @@ setGlobalOptions({ maxInstances: 10, region: "us-central1" });
  * GEMINI AI PROXY
  * Secure endpoint for making Gemini API calls from the frontend
  * Keeps the API key secure on the server side
+ * 
+ * Set the API key using: firebase functions:config:set gemini.apikey="YOUR_API_KEY"
  */
 exports.geminiProxy = onRequest(
   {
     cors: true,
-    secrets: [GEMINI_API_KEY],
   },
   async (req, res) => {
     // Only allow POST requests
@@ -49,11 +46,12 @@ exports.geminiProxy = onRequest(
         return;
       }
 
-      // Get the API key from the secret
-      const apiKey = GEMINI_API_KEY.value();
+      // Get the API key from environment variable or functions config
+      const apiKey = process.env.GEMINI_API_KEY || 
+                    (require("firebase-functions").config().gemini?.apikey);
       
       if (!apiKey) {
-        logger.error("GEMINI_API_KEY secret is not configured");
+        logger.error("GEMINI_API_KEY is not configured. Set with: firebase functions:config:set gemini.apikey=\"YOUR_KEY\"");
         res.status(500).json({ error: "AI service not configured" });
         return;
       }

@@ -10,7 +10,8 @@ import {
   Loader,
   Settings,
   Calendar,
-  BookOpen
+  BookOpen,
+  TestTube2
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
@@ -19,6 +20,7 @@ import ContentAdminHome from './ContentAdminHome'; // Existing component
 import SystemWidgets from './SystemWidgets';
 import DevPlanManager from './DevPlanManager';
 import DocumentationCenter from './DocumentationCenter';
+import TestCenter from './TestCenter';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -91,6 +93,7 @@ const AdminPortal = () => {
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'tests', label: 'Test Center', icon: TestTube2 },
     { id: 'devplan', label: 'Dev Plan', icon: Calendar },
     { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
     { id: 'content', label: 'Content Mgmt', icon: Database },
@@ -104,6 +107,8 @@ const AdminPortal = () => {
     switch (activeTab) {
       case 'dashboard':
         return <AdminDashboard />;
+      case 'tests':
+        return <TestCenter />;
       case 'devplan':
         return <DevPlanManager />;
       case 'diagnostics':
