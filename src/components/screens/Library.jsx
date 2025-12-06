@@ -85,8 +85,8 @@ const Library = () => {
         description: 'Curated books and articles with actionable exercises.',
         icon: BookOpen,
         screen: 'read-reps-index',
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-50'
+        color: 'text-corporate-navy',
+        bgColor: 'bg-corporate-navy/10'
       },
       {
         id: 'tools',
@@ -94,8 +94,8 @@ const Library = () => {
         description: 'Checklists, templates, and job aids for quick application.',
         icon: Wrench,
         screen: 'tools-index',
-        color: 'text-slate-600',
-        bgColor: 'bg-slate-100'
+        color: 'text-corporate-teal',
+        bgColor: 'bg-corporate-teal/10'
       }
     ];
 
@@ -128,7 +128,7 @@ const Library = () => {
 
   return (
     <PageLayout
-      title="Content Library"
+      title="Content"
       subtitle="Your complete leadership development ecosystem."
       icon={BookOpen}
       navigate={navigate}

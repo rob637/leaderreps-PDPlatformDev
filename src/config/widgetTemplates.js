@@ -105,12 +105,12 @@ export const WIDGET_TEMPLATES = {
   if (weekNum <= 1) {
     return (
       <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
-        <div className="text-center py-1 px-2">
-          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-1">
-            <Clock className="w-4 h-4 text-slate-400" />
+        <div className="text-center py-0 px-2">
+          <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-1">
+            <Clock className="w-3 h-3 text-slate-400" />
           </div>
-          <p className="text-sm font-medium text-slate-600 mb-0.5">Coming Soon</p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs font-medium text-slate-600 mb-0">Coming Soon</p>
+          <p className="text-[10px] text-slate-500">
             Available Week 2.
           </p>
         </div>
@@ -145,24 +145,24 @@ export const WIDGET_TEMPLATES = {
     return (
       <Card title="LIS Maker" icon={PenTool} accent="NAVY">
         <div className="space-y-2">
-          <div className="bg-teal-50 p-3 rounded-xl border border-teal-100">
-            <h4 className="font-bold text-teal-900 mb-1">Build Your Identity</h4>
-            <p className="text-sm text-teal-800 mb-2">
+          <div className="bg-teal-50 p-2 rounded-xl border border-teal-100">
+            <h4 className="font-bold text-teal-900 mb-0 text-sm">Build Your Identity</h4>
+            <p className="text-xs text-teal-800 mb-1">
               Your Leadership Identity Statement (LIS) anchors you in who you want to be.
             </p>
-            <p className="text-xs text-teal-600 italic mb-1">
+            <p className="text-[10px] text-teal-600 italic mb-0">
               Try this format: "I am a [Core Value] leader who [Action] to create [Impact]."
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0">
               Your Statement
             </label>
             <textarea 
               value={identityStatement}
               onChange={(e) => setIdentityStatement(e.target.value)}
-              className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm min-h-[80px]"
+              className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-xs min-h-[60px]"
               placeholder="I am a..."
             />
           </div>
@@ -170,7 +170,7 @@ export const WIDGET_TEMPLATES = {
           <div className="flex gap-2">
             <button 
               onClick={() => setEditing(false)}
-              className="flex-1 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+              className="flex-1 py-1 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors text-xs"
             >
               Cancel
             </button>
@@ -179,9 +179,9 @@ export const WIDGET_TEMPLATES = {
                 handleSaveIdentity(identityStatement);
                 setEditing(false);
               }}
-              className="flex-1 py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-1 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2 text-xs"
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-3 h-3" />
               Save
             </button>
           </div>
@@ -203,27 +203,27 @@ export const WIDGET_TEMPLATES = {
             </div>
           )}
           
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <CheckCircle className="w-5 h-5 text-green-500" />
-            <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Grounding Rep Complete!</span>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <CheckCircle className="w-4 h-4 text-green-500" />
+            <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider">Grounding Rep Complete!</span>
           </div>
           
-          <Quote className="w-6 h-6 text-yellow-300 mx-auto mb-1 opacity-60" />
+          <Quote className="w-4 h-4 text-yellow-300 mx-auto mb-0 opacity-60" />
           
-          <p className="text-lg font-serif font-medium text-slate-800 italic px-4 leading-tight">
+          <p className="text-sm font-serif font-medium text-slate-800 italic px-4 leading-tight">
             "{identityStatement}"
           </p>
           
-          <div className="mt-3 flex justify-center gap-3">
+          <div className="mt-1 flex justify-center gap-3">
             <button 
-              className="text-xs font-bold text-slate-500 hover:text-slate-700 uppercase tracking-wider flex items-center gap-1"
+              className="text-[10px] font-bold text-slate-500 hover:text-slate-700 uppercase tracking-wider flex items-center gap-1"
               onClick={handleClose}
             >
               <X className="w-3 h-3" />
               Close
             </button>
             <button 
-              className="text-xs font-bold text-yellow-700 hover:text-yellow-800 uppercase tracking-wider flex items-center gap-1"
+              className="text-[10px] font-bold text-yellow-700 hover:text-yellow-800 uppercase tracking-wider flex items-center gap-1"
               onClick={() => setEditing(true)}
             >
               Edit
@@ -238,14 +238,14 @@ export const WIDGET_TEMPLATES = {
   if (groundingRepDone) {
     return (
       <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
-        <div className="text-center py-1">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <CheckCircle className="w-5 h-5 text-green-500" />
-            <span className="text-sm font-bold text-green-600">Complete for Today!</span>
+        <div className="text-center py-0">
+          <div className="flex items-center justify-center gap-2 mb-0">
+            <CheckCircle className="w-4 h-4 text-green-500" />
+            <span className="text-xs font-bold text-green-600">Complete for Today!</span>
           </div>
           <button
             onClick={handleReveal}
-            className="text-xs font-medium text-slate-500 hover:text-slate-700 underline"
+            className="text-[10px] font-medium text-slate-500 hover:text-slate-700 underline"
           >
             View Your LIS Again
           </button>
@@ -261,11 +261,11 @@ export const WIDGET_TEMPLATES = {
         <div className="text-center py-0">
           <button
             onClick={handleReveal}
-            className="group relative w-full py-3 px-4 bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 rounded-xl border-2 border-dashed border-yellow-300 hover:border-yellow-400 hover:from-yellow-100 hover:via-orange-100 hover:to-yellow-100 transition-all duration-300"
+            className="group relative w-full py-2 px-4 bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 rounded-xl border-2 border-dashed border-yellow-300 hover:border-yellow-400 hover:from-yellow-100 hover:via-orange-100 hover:to-yellow-100 transition-all duration-300"
           >
             <div className="flex flex-col items-center gap-1">
-              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <Zap className="w-5 h-5 text-yellow-600 group-hover:text-yellow-700" />
+              <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <Zap className="w-4 h-4 text-yellow-600 group-hover:text-yellow-700" />
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-800 mb-0">Ground Yourself</p>
@@ -1652,7 +1652,7 @@ const LockerReminders = () => {
             {/* Toggle Switch */}
             <button
               onClick={() => updateReminder(reminder.id, { enabled: !reminder.enabled })}
-              className={\`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 \${
+              className={\`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 \${
                 reminder.enabled ? 'bg-teal-600' : 'bg-slate-200'
               }\`}
             >

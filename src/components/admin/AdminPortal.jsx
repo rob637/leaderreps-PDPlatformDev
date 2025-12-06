@@ -24,8 +24,6 @@ import { doc, getDoc } from 'firebase/firestore';
 // eslint-disable-next-line no-undef
 const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
 
-import MigrationTool from './MigrationTool';
-
 const AdminPortal = () => {
   const { user, db } = useAppServices();
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -94,7 +92,6 @@ const AdminPortal = () => {
     { id: 'devplan', label: 'Dev Plan', icon: Calendar },
     { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
     { id: 'content', label: 'Content Mgmt', icon: Database },
-    { id: 'migration', label: 'Migration', icon: Database },
     { id: 'features', label: 'Widget Lab', icon: FlaskConical },
     { id: 'system', label: 'System', icon: Settings },
     // { id: 'users', label: 'User Mgmt', icon: Users }, // Future

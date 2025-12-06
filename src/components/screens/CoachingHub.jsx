@@ -539,11 +539,11 @@ const CoachingHub = () => {
 
   return (
     <PageLayout 
-      title="Coaching Hub" 
+      title="Coaching" 
       subtitle="Live sessions, on-demand practice, and personalized coaching"
       breadcrumbs={[
         { label: 'Home', path: 'dashboard' },
-        { label: 'Coaching Hub', path: null }
+        { label: 'Coaching', path: null }
       ]}
     >
       <div className="max-w-6xl mx-auto">
