@@ -637,8 +637,8 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
             </WidgetRenderer>
           )}
 
-          {/* 4. Baseline Widget (if no plan) */}
-          {!hasCurrentPlan && isFeatureEnabled('baseline-assessment') && (
+          {/* 4. Baseline Widget (Always show if enabled - handles its own completed state) */}
+          {isFeatureEnabled('baseline-assessment') && (
              <WidgetRenderer widgetId="baseline-assessment" scope={widgetScope}>
                 <BaselineAssessment
                   onComplete={handleCompleteBaseline}
