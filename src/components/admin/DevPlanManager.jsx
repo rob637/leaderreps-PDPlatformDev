@@ -1520,81 +1520,72 @@ const DevPlanReportModal = ({ weeks, onClose }) => {
                     </div>
                   </div>
                   
-                  {/* Week Details */}
-                  <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                    {/* Skills & Pillars */}
-                    <div>
-                      <div className="font-bold text-slate-600 text-xs uppercase mb-1">Skills</div>
-                      <div className="flex flex-wrap gap-1">
-                        {(week.skills || []).map((skill, i) => (
-                          <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{skill}</span>
-                        ))}
-                      </div>
-                      <div className="font-bold text-slate-600 text-xs uppercase mb-1 mt-2">Pillars</div>
-                      <div className="flex flex-wrap gap-1">
-                        {(week.pillars || []).map((pillar, i) => (
-                          <span key={i} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">{pillar}</span>
-                        ))}
-                      </div>
+                  {/* Week Details - Daily Breakdown */}
+                  <div className="p-3">
+                    <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
+                      {[1, 2, 3, 4, 5, 6, 7].map(dayNum => {
+                        const dayItems = [
+                          ...(week.content || []).map(i => ({ ...i, type: 'content', label: i.contentItemLabel })),
+                          ...(week.community || []).map(i => ({ ...i, type: 'community', label: i.communityItemLabel })),
+                          ...(week.coaching || []).map(i => ({ ...i, type: 'coaching', label: i.coachingItemLabel })),
+                          ...(week.reps || week.dailyReps || []).map(i => ({ ...i, type: 'rep', label: i.repLabel }))
+                        ].filter(item => item.recommendedWeekDay === dayNum);
+
+                        return (
+                          <div key={dayNum} className="bg-slate-50 rounded p-2 min-h-[100px]">
+                            <div className="text-xs font-bold text-slate-400 uppercase mb-2 text-center">Day {dayNum}</div>
+                            {dayItems.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {dayItems.map((item, idx) => (
+                                  <div key={idx} className="text-[10px] p-1.5 bg-white rounded border border-slate-200 shadow-sm">
+                                    <div className="flex items-center gap-1 mb-0.5">
+                                      {item.type === 'content' && <BookOpen className="w-3 h-3 text-blue-500" />}
+                                      {item.type === 'community' && <Users className="w-3 h-3 text-purple-500" />}
+                                      {item.type === 'coaching' && <GraduationCap className="w-3 h-3 text-orange-500" />}
+                                      {item.type === 'rep' && <Zap className="w-3 h-3 text-yellow-500" />}
+                                      <span className="font-bold text-slate-700 capitalize">{item.type}</span>
+                                    </div>
+                                    <div className="text-slate-600 leading-tight line-clamp-2" title={item.label}>
+                                      {item.label}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-[10px] text-slate-300 text-center italic py-4">No items</div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                    
-                    {/* Content */}
-                    <div>
-                      <div className="font-bold text-slate-600 text-xs uppercase mb-1">
-                        <BookOpen className="w-3 h-3 inline mr-1" />
-                        Content ({countItems(week.content)})
-                      </div>
-                      <ul className="text-xs text-slate-600 space-y-0.5">
-                        {(week.content || []).slice(0, 3).map((c, i) => (
-                          <li key={i} className="truncate">
-                            • [{c.contentItemType}] {c.contentItemLabel}
-                          </li>
+
+                    {/* Anytime / Unscheduled Items */}
+                    <div className="mt-3 pt-3 border-t border-slate-100">
+                      <div className="text-xs font-bold text-slate-400 uppercase mb-2">Anytime / Unscheduled</div>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          ...(week.content || []).map(i => ({ ...i, type: 'content', label: i.contentItemLabel })),
+                          ...(week.community || []).map(i => ({ ...i, type: 'community', label: i.communityItemLabel })),
+                          ...(week.coaching || []).map(i => ({ ...i, type: 'coaching', label: i.coachingItemLabel })),
+                          ...(week.reps || week.dailyReps || []).map(i => ({ ...i, type: 'rep', label: i.repLabel }))
+                        ].filter(item => !item.recommendedWeekDay).map((item, idx) => (
+                          <div key={idx} className="text-[10px] px-2 py-1 bg-slate-50 rounded border border-slate-200 flex items-center gap-1.5">
+                            {item.type === 'content' && <BookOpen className="w-3 h-3 text-blue-500" />}
+                            {item.type === 'community' && <Users className="w-3 h-3 text-purple-500" />}
+                            {item.type === 'coaching' && <GraduationCap className="w-3 h-3 text-orange-500" />}
+                            {item.type === 'rep' && <Zap className="w-3 h-3 text-yellow-500" />}
+                            <span className="text-slate-600 max-w-[200px] truncate">{item.label}</span>
+                          </div>
                         ))}
-                        {countItems(week.content) > 3 && (
-                          <li className="text-slate-400">...and {countItems(week.content) - 3} more</li>
+                        {[
+                          ...(week.content || []),
+                          ...(week.community || []),
+                          ...(week.coaching || []),
+                          ...(week.reps || week.dailyReps || [])
+                        ].filter(item => !item.recommendedWeekDay).length === 0 && (
+                          <span className="text-xs text-slate-400 italic">All items are scheduled for specific days.</span>
                         )}
-                      </ul>
-                    </div>
-                    
-                    {/* Community & Coaching */}
-                    <div>
-                      <div className="font-bold text-slate-600 text-xs uppercase mb-1">
-                        <Users className="w-3 h-3 inline mr-1" />
-                        Community ({countItems(week.community)})
                       </div>
-                      <ul className="text-xs text-slate-600 space-y-0.5">
-                        {(week.community || []).map((c, i) => (
-                          <li key={i} className="truncate">• {c.communityItemLabel}</li>
-                        ))}
-                      </ul>
-                      <div className="font-bold text-slate-600 text-xs uppercase mb-1 mt-2">
-                        <GraduationCap className="w-3 h-3 inline mr-1" />
-                        Coaching ({countItems(week.coaching)})
-                      </div>
-                      <ul className="text-xs text-slate-600 space-y-0.5">
-                        {(week.coaching || []).map((c, i) => (
-                          <li key={i} className="truncate">• {c.coachingItemLabel}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    
-                    {/* Reps */}
-                    <div>
-                      <div className="font-bold text-slate-600 text-xs uppercase mb-1">
-                        <Zap className="w-3 h-3 inline mr-1" />
-                        Daily Reps ({countItems(week.reps) + countItems(week.dailyReps)})
-                      </div>
-                      <ul className="text-xs text-slate-600 space-y-0.5">
-                        {(week.reps || week.dailyReps || []).map((r, i) => (
-                          <li key={i} className="truncate">• {r.repLabel}</li>
-                        ))}
-                      </ul>
-                      {week.reflectionPrompt && (
-                        <>
-                          <div className="font-bold text-slate-600 text-xs uppercase mb-1 mt-2">Reflection</div>
-                          <p className="text-xs text-slate-500 italic">{week.reflectionPrompt}</p>
-                        </>
-                      )}
                     </div>
                   </div>
                 </div>
