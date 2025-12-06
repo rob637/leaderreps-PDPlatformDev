@@ -78,35 +78,43 @@ const Library = () => {
     const allLibraryItems = [
       {
         featureId: 'course-library',
-        id: 'courses',
-        title: 'Courses',
-        description: 'Structured leadership courses and learning paths to develop your skills.',
+        id: 'programs',
+        title: 'Programs',
+        description: 'Structured learning paths to master specific leadership capabilities.',
         icon: ShieldCheck,
-        screen: 'course-library'
+        screen: 'programs-index'
+      },
+      {
+        featureId: 'leadership-videos',
+        id: 'workouts',
+        title: 'Workouts',
+        description: 'Practical training sessions to build skills through practice.',
+        icon: Film,
+        screen: 'workouts-index'
       },
       {
         featureId: 'reading-hub',
         id: 'readings',
-        title: 'Reading & Reps',
-        description: 'Curated business readings with actionable exercises and practice opportunities.',
+        title: 'Read & Reps',
+        description: 'Curated books and articles with actionable exercises.',
         icon: BookOpen,
-        screen: 'business-readings'
-      },
-      {
-        featureId: 'leadership-videos',
-        id: 'media',
-        title: 'Media',
-        description: 'Video content, leader talks, and multimedia resources for visual learners.',
-        icon: Film,
-        screen: 'leadership-videos'
+        screen: 'read-reps-index'
       },
       {
         featureId: 'strat-templates',
-        id: 'templates',
-        title: 'Strategic Templates',
-        description: 'Downloadable worksheets and tools for your team.',
+        id: 'tools',
+        title: 'Tools',
+        description: 'Checklists, templates, and job aids for quick application.',
         icon: FileText,
-        screen: 'strat-templates'
+        screen: 'tools-index'
+      },
+      {
+        featureId: 'course-library', // Using course-library as proxy for Skills for now
+        id: 'skills',
+        title: 'Skills',
+        description: 'Browse content by specific leadership capabilities.',
+        icon: Zap,
+        screen: 'skills-index'
       }
     ];
 
@@ -149,7 +157,10 @@ const Library = () => {
       subtitle="Your complete leadership development ecosystem."
       icon={BookOpen}
       navigate={navigate}
-      backTo="dashboard"
+      breadcrumbs={[
+        { label: 'Home', path: 'dashboard' },
+        { label: 'Library', path: null }
+      ]}
     >
       <WidgetRenderer widgetId="content-library-main" scope={scope}>
         {libraryItems.length > 0 ? (

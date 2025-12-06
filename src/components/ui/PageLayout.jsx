@@ -7,6 +7,7 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { BreadcrumbNav } from './BreadcrumbNav';
+import { useNavigation } from '../../providers/NavigationProvider';
 
 /**
  * PageLayout - Standardized layout wrapper for all feature screens
@@ -35,10 +36,10 @@ export const PageLayout = ({
   description, // Alias for subtitle (backward compatibility)
   backTo = 'dashboard',
   backLabel = 'Back to Dashboard',
-  navigate,
+  navigate: propNavigate,
   onNavigate, // Alias for navigate (backward compatibility)
   showBack = true,
-  breadcrumbs,
+  breadcrumbs: propBreadcrumbs,
   accentColor = 'teal',
   headerActions,
   badge,
@@ -48,6 +49,13 @@ export const PageLayout = ({
   sidebar,
   sidebarLeft = false,
 }) => {
+  const { breadcrumbs: contextBreadcrumbs, navigate: contextNavigate } = useNavigation();
+  
+  // Use prop navigate if provided, otherwise use context
+  const navigate = propNavigate || onNavigate || contextNavigate;
+  
+  // Prefer prop breadcrumbs if provided, otherwise use context
+  const activeBreadcrumbs = propBreadcrumbs || contextBreadcrumbs;
   // Support both prop names for compatibility
   const nav = navigate || onNavigate;
   const sub = subtitle || description;
@@ -61,7 +69,7 @@ export const PageLayout = ({
   const hasSidebar = !!sidebar;
 
   // Construct breadcrumbs for backward compatibility if not explicitly provided
-  const effectiveBreadcrumbs = breadcrumbs || (showBack ? [
+  const effectiveBreadcrumbs = activeBreadcrumbs || (showBack ? [
     { label: backLabel.replace('Back to ', ''), path: backTo },
     { label: title, path: null }
   ] : []);

@@ -72,7 +72,10 @@ const Locker = () => {
       subtitle="Your repository of completed reps, wins, and reflections."
       icon={Archive}
       navigate={navigate}
-      backTo="dashboard"
+      breadcrumbs={[
+        { label: 'Home', path: 'dashboard' },
+        { label: 'Your Locker', path: null }
+      ]}
       accentColor="teal"
     >
       <WidgetRenderer widgetId="locker-controller" scope={scope} />

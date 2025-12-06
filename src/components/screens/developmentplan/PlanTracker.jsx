@@ -73,6 +73,7 @@ const PlanTracker = ({
     // Helper to normalize items
     const normalize = (items, typePrefix) => (items || []).map(item => ({
       id: item[`${typePrefix}Id`] || item.id,
+      resourceId: item[`${typePrefix}Id`] || item.id,
       label: item[`${typePrefix}Label`] || item.label,
       type: item[`${typePrefix}Type`] || item.type,
       required: item.isRequiredContent ?? true,
@@ -84,6 +85,7 @@ const PlanTracker = ({
     const normalizeReps = (items) => (items || []).map(item => ({
       id: item.repId || item.id,
       repId: item.repId || item.id,
+      resourceId: item.repId || item.id,
       label: item.repLabel || item.label,
       repLabel: item.repLabel || item.label,
       repType: item.repType || item.type,

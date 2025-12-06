@@ -10,9 +10,10 @@ const ScreenMap = {
   'development-plan': lazy(() =>
     import('../components/screens/DevelopmentPlan.jsx')
   ),
-  'coaching-lab': lazy(() => import('../components/screens/CoachingLabScreen.jsx')),
+  'coaching-lab': lazy(() => import('../components/screens/CoachingHub.jsx')),
+  'coaching-hub': lazy(() => import('../components/screens/CoachingHub.jsx')),
   'locker': lazy(() => import('../components/screens/Locker.jsx')),
-  'labs': lazy(() => import('../components/screens/CoachingLabScreen.jsx')), // Alias for backward compatibility
+  'labs': lazy(() => import('../components/screens/CoachingHub.jsx')), // Alias for backward compatibility
   'daily-practice': lazy(() =>
     import('../components/screens/DailyPractice.jsx')
   ),
@@ -49,6 +50,33 @@ const ScreenMap = {
   'debug-data': lazy(() => import('../components/screens/DebugDataViewer.jsx')),
   'library': lazy(() =>
     import('../components/screens/Library.jsx')
+  ),
+  'programs-index': lazy(() =>
+    import('../components/screens/library/ProgramsIndex.jsx')
+  ),
+  'program-detail': lazy(() =>
+    import('../components/screens/library/ProgramDetail.jsx')
+  ),
+  'workouts-index': lazy(() =>
+    import('../components/screens/library/WorkoutsIndex.jsx')
+  ),
+  'workout-detail': lazy(() =>
+    import('../components/screens/library/WorkoutDetail.jsx')
+  ),
+  'skills-index': lazy(() =>
+    import('../components/screens/library/SkillsIndex.jsx')
+  ),
+  'skill-detail': lazy(() =>
+    import('../components/screens/library/SkillDetail.jsx')
+  ),
+  'tools-index': lazy(() =>
+    import('../components/screens/library/ToolsIndex.jsx')
+  ),
+  'read-reps-index': lazy(() =>
+    import('../components/screens/library/ReadRepsIndex.jsx')
+  ),
+  'read-rep-detail': lazy(() =>
+    import('../components/screens/library/ReadRepDetail.jsx')
   ),
   'admin-content-home': lazy(() =>
     import('../components/admin/ContentAdminHome.jsx')

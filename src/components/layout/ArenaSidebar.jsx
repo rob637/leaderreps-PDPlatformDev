@@ -12,7 +12,11 @@ import {
   ChevronRight,
   ShieldCheck,
   Beaker,
-  Anchor
+  Anchor,
+  Layers,
+  Dumbbell,
+  Zap,
+  Wrench
 } from 'lucide-react';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -24,9 +28,18 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'development-plan', label: 'Dev Plan', icon: Target },
-    { id: 'library', label: 'Content', icon: BookOpen },
-    { id: 'community', label: 'Community', icon: Users },
-    { id: 'coaching-lab', label: 'Coaching', icon: MessageSquare },
+    
+    { type: 'section', label: 'Library' },
+    { id: 'programs-index', label: 'Programs', icon: Layers },
+    { id: 'workouts-index', label: 'Workouts', icon: Dumbbell },
+    { id: 'skills-index', label: 'Skills', icon: Zap },
+    { id: 'read-reps-index', label: 'Read & Reps', icon: BookOpen },
+    { id: 'tools-index', label: 'Tools', icon: Wrench },
+    
+    { type: 'section', label: 'Coaching' },
+    { id: 'coaching-hub', label: 'Coaching Hub', icon: MessageSquare },
+    
+    { type: 'section', label: 'Personal' },
     { id: 'locker', label: 'Your Locker', icon: Archive },
   ];
 

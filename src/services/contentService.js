@@ -24,16 +24,24 @@ import {
 /**
  * Content Schema (for all content types):
  * {
+ *   id: string (PK)
+ *   type: 'PROGRAM' | 'WORKOUT' | 'EXERCISE' | 'REP' | 'READ_REP' | 'TOOL' | 'SKILL'
  *   title: string
  *   description: string
- *   url: string (for readings/videos) or null (for courses with modules)
+ *   slug: string
+ *   
+ *   // Hierarchy Fields
+ *   parentId: string (optional, ID of parent content)
+ *   parentType: string (optional, type of parent content)
+ *   sequenceOrder: number (order within parent)
+ *   
+ *   // Metadata
  *   tier: 'free' | 'premium'
- *   category: string (e.g., 'leadership', 'management', 'communication')
+ *   category: string
  *   isActive: boolean
- *   thumbnail: string (optional - URL to image)
- *   dateAdded: timestamp
- *   dateModified: timestamp
- *   order: number (for sorting)
+ *   thumbnail: string
+ *   createdAt: timestamp
+ *   updatedAt: timestamp
  *   metadata: object (type-specific fields)
  * }
  */

@@ -74,6 +74,18 @@ export {
   ActiveFilters 
 } from './FilterBar';
 
+// Content Metadata Components
+export { 
+  DifficultyBadge, 
+  DurationBadge, 
+  TierBadge, 
+  SkillTag, 
+  EnrollmentBadge, 
+  LockedBadge,
+  MetadataRow 
+} from './ContentBadges';
+export { default as SkillFilter } from './SkillFilter';
+
 // List Components
 export { List, ListItem, ListItemAction, ListSection } from './ListItem';
 

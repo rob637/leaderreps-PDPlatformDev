@@ -1,5 +1,6 @@
 // src/providers/NavigationProvider.jsx
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
+import { getBreadcrumbs } from '../config/breadcrumbConfig';
 
 const NavigationContext = createContext(null);
 
@@ -11,12 +12,18 @@ export const NavigationProvider = ({
   currentScreen, 
   navParams 
 }) => {
+  
+  const breadcrumbs = useMemo(() => {
+    return getBreadcrumbs(currentScreen, navParams);
+  }, [currentScreen, navParams]);
+
   const value = {
     navigate,
     canGoBack,
     goBack,
     currentScreen,
-    navParams
+    navParams,
+    breadcrumbs
   };
 
   return (

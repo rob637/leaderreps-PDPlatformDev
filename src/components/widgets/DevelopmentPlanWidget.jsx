@@ -51,11 +51,20 @@ const DevelopmentPlanWidget = ({ scope }) => {
   const progressPercent = requiredItems.length > 0 ? (requiredCompletedCount / requiredItems.length) * 100 : 0;
 
   const getItemIcon = (type) => {
-    switch (type) {
+    const normalizedType = (type || '').toUpperCase();
+    switch (normalizedType) {
+      case 'WORKOUT': return Video;
+      case 'PROGRAM': return Play;
+      case 'SKILL': return Zap;
+      case 'TOOL': return FileText;
+      case 'READ_AND_REP': return BookOpen;
+      case 'LEADER_CIRCLE': return Users;
+      case 'OPEN_GYM': return Users;
+      // Legacy support
       case 'workout': return Video;
       case 'read_and_rep': return BookOpen;
       case 'leader_circle': return Users;
-      case 'open_gym': return Users; // Or another icon
+      case 'open_gym': return Users;
       default: return Circle;
     }
   };
@@ -69,22 +78,32 @@ const DevelopmentPlanWidget = ({ scope }) => {
       return;
     }
 
-    if (item.resourceId) {
+    const resourceId = item.resourceId || item.id;
+
+    if (resourceId) {
       setLoadingResource(item.id);
       try {
-        // Determine collection based on type
-        let collectionName = CONTENT_COLLECTIONS.READINGS;
-        if (item.resourceType === 'video') collectionName = CONTENT_COLLECTIONS.VIDEOS;
-        else if (item.resourceType === 'community') collectionName = CONTENT_COLLECTIONS.COMMUNITY;
-        else if (item.resourceType === 'coaching') collectionName = CONTENT_COLLECTIONS.COACHING;
-        
-        const docRef = doc(db, collectionName, item.resourceId);
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-          setViewingResource({ id: docSnap.id, ...docSnap.data(), resourceType: item.resourceType });
+        // Try fetching from the new unified 'content' collection first
+        const contentRef = doc(db, 'content', resourceId);
+        const contentSnap = await getDoc(contentRef);
+
+        if (contentSnap.exists()) {
+           setViewingResource({ id: contentSnap.id, ...contentSnap.data(), resourceType: contentSnap.data().type });
         } else {
-          alert("Resource not found. It may have been deleted.");
+            // Fallback to legacy collections if not found in 'content'
+            let collectionName = CONTENT_COLLECTIONS.READINGS;
+            if (item.resourceType === 'video') collectionName = CONTENT_COLLECTIONS.VIDEOS;
+            else if (item.resourceType === 'community') collectionName = CONTENT_COLLECTIONS.COMMUNITY;
+            else if (item.resourceType === 'coaching') collectionName = CONTENT_COLLECTIONS.COACHING;
+            
+            const docRef = doc(db, collectionName, resourceId);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+              setViewingResource({ id: docSnap.id, ...docSnap.data(), resourceType: item.resourceType });
+            } else {
+              alert("Resource not found. It may have been deleted.");
+            }
         }
       } catch (error) {
         console.error("Error fetching resource:", error);
