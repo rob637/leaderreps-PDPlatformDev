@@ -18,6 +18,7 @@ import {
     Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video, BookOpen, FileText
 } from 'lucide-react';
 import { Button, Card, LoadingSpinner, PageLayout, NoWidgetsEnabled } from '../ui';
+import { DashboardCard } from '../ui/DashboardCard';
 
 /* =========================================================
    PALETTE (use CSS variables from src/styles/global.css)
@@ -492,6 +493,38 @@ const CommunityResourcesView = ({ db }) => {
    MAIN COMPONENT: CommunityScreen (Router)
 ========================================================= */
 
+const CommunityDashboard = ({ navItems, setView }) => {
+  // Filter out notifications from the dashboard grid
+  const dashboardItems = navItems.filter(item => item.screen !== 'notifications');
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+      {dashboardItems.map((item) => (
+        <DashboardCard
+          key={item.screen}
+          title={item.label}
+          description={getCommunityDescription(item.screen)}
+          icon={item.icon}
+          onClick={() => setView(item.screen)}
+          color="text-corporate-teal"
+          bgColor="bg-corporate-teal/10"
+        />
+      ))}
+    </div>
+  );
+};
+
+const getCommunityDescription = (screen) => {
+  switch (screen) {
+    case 'home': return 'Join the conversation, share insights, and connect with peers.';
+    case 'my-threads': return 'Track your discussions and responses.';
+    case 'mentorship': return 'Find a mentor or join a mastermind group.';
+    case 'events': return 'Register for upcoming webinars and live sessions.';
+    case 'resources': return 'Access community guidelines and helpful documents.';
+    default: return 'Access this community feature.';
+  }
+};
+
 const CommunityScreen = ({ simulatedTier }) => {
     // --- Consume Services ---
     const { db, user, navigate, LEADERSHIP_TIERS, featureFlags, isAdmin, membershipData, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
@@ -512,14 +545,15 @@ const CommunityScreen = ({ simulatedTier }) => {
     });
 
     // --- Local State ---
-    const [view, setView] = useState('home'); // Controls which sub-view is displayed
+    const [view, setView] = useState('dashboard'); // Controls which sub-view is displayed
     const [currentTierFilter, setCurrentTierFilter] = useState('All'); // Filter for the home feed
     const [allThreads, setAllThreads] = useState([]);
     const [isLoadingThreads, setIsLoadingThreads] = useState(true);
 
     // Effect to set initial view based on enabled features
     useEffect(() => {
-        if (view === 'home' && !isFeatureEnabled('community-feed')) {
+        // Only redirect if we are NOT on the dashboard and the current view is disabled
+        if (view !== 'dashboard' && view === 'home' && !isFeatureEnabled('community-feed')) {
             // If home is disabled, try to find the first enabled feature
             if (isFeatureEnabled('my-discussions')) setView('my-threads');
             else if (isFeatureEnabled('mastermind')) setView('mentorship');
@@ -670,6 +704,8 @@ const CommunityScreen = ({ simulatedTier }) => {
                 return <NotificationsView />;
             case 'new-thread':
                 return <NewThreadView setView={setView} />;
+            case 'dashboard':
+                return <CommunityDashboard navItems={navItems} setView={setView} />;
             case 'home':
             default:
                 return isFeatureEnabled('community-feed') ? (
@@ -698,11 +734,16 @@ const CommunityScreen = ({ simulatedTier }) => {
             title="Community"
             subtitle="Connect, share insights, and grow with fellow leaders."
             icon={Users}
-            backTo="dashboard"
+            backTo={view === 'dashboard' ? 'dashboard' : null}
+            onBack={view !== 'dashboard' ? () => setView('dashboard') : undefined}
             navigate={navigate}
         >
             {/* Main Layout Grid (Sidebar + Content) */}
-            {navItems.length > 1 ? (
+            {view === 'dashboard' ? (
+                 <WidgetRenderer widgetId="community-dashboard" scope={scope}>
+                    {renderContent()}
+                 </WidgetRenderer>
+            ) : navItems.length > 1 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 max-w-[860px] mx-auto">
                     {/* Sidebar Navigation */}
                     <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start"> {/* Make sidebar sticky */}

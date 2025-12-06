@@ -19,6 +19,7 @@ import ProgressBreakdown from './developmentplan/ProgressBreakdown';
 import { Button, Card, EmptyState } from './developmentplan/DevPlanComponents';
 import { generatePlanFromAssessment, normalizeSkillCatalog } from './developmentplan/devPlanUtils';
 import { PageLayout, Card as UICard } from '../ui';
+import { DashboardCard } from '../ui/DashboardCard';
 import WidgetRenderer from '../admin/WidgetRenderer';
 
 // FIXED: Import adapter utilities
@@ -38,6 +39,27 @@ const LoadingBlock = ({ title = 'Loading…', description = 'Preparing your deve
     </Card>
   </div>
 );
+
+const DevPlanDashboard = ({ setView, hasPlan }) => {
+  const items = [
+    { id: hasPlan ? 'tracker' : 'baseline', title: 'Current Plan', description: hasPlan ? 'Track your weekly progress.' : 'Start your development journey.', icon: Target, color: 'text-corporate-teal', bgColor: 'bg-corporate-teal/10' },
+    { id: 'scan', title: 'Progress Scan', description: 'Update your progress and metrics.', icon: TrendingUp, color: 'text-blue-600', bgColor: 'bg-blue-50' },
+    { id: 'detail', title: 'Plan Details', description: 'View detailed breakdown of your plan.', icon: ClipboardList, color: 'text-purple-600', bgColor: 'bg-purple-50' },
+    { id: 'timeline', title: 'Timeline', description: 'View your milestones and roadmap.', icon: Flag, color: 'text-orange-600', bgColor: 'bg-orange-50' },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+      {items.map(item => (
+        <DashboardCard 
+          key={item.id}
+          {...item}
+          onClick={() => setView(item.id)}
+        />
+      ))}
+    </div>
+  );
+};
 
 // --- NEW HELPER (10/30/25) ---
 // Finds the first rep matching the plan's first focus area and saves it
@@ -189,9 +211,9 @@ export default function DevelopmentPlan(props) {
   }, [skillCatalog, virtualSkillCatalog]);
 
   // Local view-state (router-in-component)
-  // tracker | baseline | scan | detail | timeline
+  // tracker | baseline | scan | detail | timeline | dashboard
   const hasCurrentPlan = !!(adaptedDevelopmentPlanData && adaptedDevelopmentPlanData.currentPlan);
-  const [view, setView] = useState(props.view || (hasCurrentPlan ? 'tracker' : 'baseline'));
+  const [view, setView] = useState(props.view || 'dashboard');
 
   // Sync view with props (navigation params)
   useEffect(() => {
@@ -526,7 +548,8 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       title="Development Plan"
       subtitle="Your roadmap to leadership excellence."
       icon={Target}
-      backTo="dashboard"
+      backTo={view === 'dashboard' ? 'dashboard' : null}
+      onBack={view !== 'dashboard' ? () => setView('dashboard') : undefined}
       navigate={navigate}
     >
       {/* Developer Mode Reset Button */}
@@ -549,6 +572,10 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
             <strong className="font-bold">Error:</strong> {error.message || String(error)}
           </div>
         </div>
+      )}
+
+      {view === 'dashboard' && (
+        <DevPlanDashboard setView={setView} hasPlan={hasCurrentPlan} />
       )}
 
       {view === 'baseline' && (

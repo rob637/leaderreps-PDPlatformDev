@@ -48,11 +48,17 @@ const ProgramsIndex = () => {
   }, [programs, searchQuery, selectedSkills]);
 
   return (
-    <PageLayout title="Programs" breadcrumbs={[
-      { label: 'Home', path: 'dashboard' },
-      { label: 'Library', path: 'library' },
-      { label: 'Programs', path: null }
-    ]}>
+    <PageLayout 
+      title="Programs" 
+      subtitle="Structured learning paths to master specific leadership capabilities."
+      breadcrumbs={[
+        { label: 'Home', path: 'dashboard' },
+        { label: 'Content', path: 'library' },
+        { label: 'Programs', path: null }
+      ]}
+      backTo="library"
+      navigate={navigate}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         
         {/* Hero Section */}

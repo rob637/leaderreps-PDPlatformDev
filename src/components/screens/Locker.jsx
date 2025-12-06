@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { Card, PageLayout, NoWidgetsEnabled } from '../ui';
+import { DashboardCard } from '../ui/DashboardCard';
 import { Archive, CheckCircle, Calendar, Trophy, BookOpen } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
@@ -14,9 +15,31 @@ const LOCKER_FEATURES = [
   'locker-reps-history'
 ];
 
+const LockerDashboard = ({ setView }) => {
+  const items = [
+    { id: 'locker-wins-history', title: 'Wins History', description: 'Review your daily wins and accomplishments.', icon: Trophy, color: 'text-yellow-600', bgColor: 'bg-yellow-50' },
+    { id: 'locker-scorecard-history', title: 'Scorecard History', description: 'Track your daily commitment scores over time.', icon: CheckCircle, color: 'text-green-600', bgColor: 'bg-green-50' },
+    { id: 'locker-latest-reflection', title: 'Reflections', description: 'Read your past evening reflections.', icon: BookOpen, color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
+    { id: 'locker-reps-history', title: 'Reps History', description: 'See a log of all your completed reps.', icon: Calendar, color: 'text-blue-600', bgColor: 'bg-blue-50' },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {items.map(item => (
+        <DashboardCard 
+          key={item.id}
+          {...item}
+          onClick={() => setView(item.id)}
+        />
+      ))}
+    </div>
+  );
+};
+
 const Locker = () => {
   const { dailyPracticeData, commitmentData, navigate, db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
+  const [activeView, setActiveView] = useState('dashboard');
 
   // Arena Data
   // Assuming winsList is an array of { text, completed, date } objects
@@ -77,19 +100,16 @@ const Locker = () => {
         { label: 'Your Locker', path: null }
       ]}
       accentColor="teal"
+      backTo={activeView === 'dashboard' ? 'dashboard' : null}
+      onBack={activeView !== 'dashboard' ? () => setActiveView('dashboard') : undefined}
     >
       <WidgetRenderer widgetId="locker-controller" scope={scope} />
       <WidgetRenderer widgetId="locker-reminders" scope={scope} />
-      {sortedFeatures.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6">
-          {sortedFeatures.map(featureId => (
-            <WidgetRenderer key={featureId} widgetId={featureId} scope={scope} />
-          ))}
-        </div>
+      
+      {activeView === 'dashboard' ? (
+        <LockerDashboard setView={setActiveView} />
       ) : (
-        (!isFeatureEnabled('locker-reminders') && !isFeatureEnabled('locker-controller')) && (
-          <NoWidgetsEnabled moduleName="Your Locker" />
-        )
+        <WidgetRenderer widgetId={activeView} scope={scope} />
       )}
     </PageLayout>
   );

@@ -7,6 +7,7 @@ import {
   Clock, ChevronLeft, ChevronRight, Play, Bot, UserCheck,
   CalendarDays, ExternalLink
 } from 'lucide-react';
+import { DashboardCard } from '../ui/DashboardCard';
 
 // ============================================
 // TAB NAVIGATION
@@ -394,6 +395,26 @@ const MyCoachingSection = ({ registeredSessions, pastSessions, onCancel }) => (
   </div>
 );
 
+const CoachingDashboard = ({ setActiveTab }) => {
+  const items = [
+    { id: 'live', title: 'Live Coaching', description: 'Join upcoming workshops and open gym sessions.', icon: Calendar, color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
+    { id: 'ondemand', title: 'On-Demand', description: 'Practice with AI roleplay and access resources.', icon: Bot, color: 'text-violet-600', bgColor: 'bg-violet-50' },
+    { id: 'my', title: 'My Coaching', description: 'View your registered sessions and history.', icon: UserCheck, color: 'text-teal-600', bgColor: 'bg-teal-50' },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {items.map(item => (
+        <DashboardCard 
+          key={item.id}
+          {...item}
+          onClick={() => setActiveTab(item.id)}
+        />
+      ))}
+    </div>
+  );
+};
+
 // ============================================
 // MAIN COACHING HUB COMPONENT
 // ============================================
@@ -402,7 +423,7 @@ const CoachingHub = () => {
   const [sessions, setSessions] = useState([]);
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('live');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
 
   // Fetch coaching sessions
@@ -513,51 +534,55 @@ const CoachingHub = () => {
         { label: 'Home', path: 'dashboard' },
         { label: 'Coaching Hub', path: null }
       ]}
+      backTo={activeTab === 'dashboard' ? 'dashboard' : null}
+      onBack={activeTab !== 'dashboard' ? () => setActiveTab('dashboard') : undefined}
     >
       <div className="max-w-6xl mx-auto">
         
-        {/* Tab Navigation */}
-        <div className="flex items-center justify-between border-b border-slate-200 mb-6 overflow-x-auto">
-          <div className="flex">
-            <TabButton 
-              active={activeTab === 'live'} 
-              onClick={() => setActiveTab('live')}
-              icon={Calendar}
-              label="Live Coaching"
-              badge={upcomingSessions.length}
-            />
-            <TabButton 
-              active={activeTab === 'ondemand'} 
-              onClick={() => setActiveTab('ondemand')}
-              icon={Bot}
-              label="On-Demand"
-            />
-            <TabButton 
-              active={activeTab === 'my'} 
-              onClick={() => setActiveTab('my')}
-              icon={UserCheck}
-              label="My Coaching"
-              badge={registeredSessions.length}
-            />
-          </div>
-          
-          {activeTab === 'live' && (
-            <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
-              <button 
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
-              >
-                List
-              </button>
-              <button 
-                onClick={() => setViewMode('calendar')}
-                className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'calendar' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
-              >
-                Calendar
-              </button>
+        {/* Tab Navigation - Hide on Dashboard */}
+        {activeTab !== 'dashboard' && (
+          <div className="flex items-center justify-between border-b border-slate-200 mb-6 overflow-x-auto">
+            <div className="flex">
+              <TabButton 
+                active={activeTab === 'live'} 
+                onClick={() => setActiveTab('live')}
+                icon={Calendar}
+                label="Live Coaching"
+                badge={upcomingSessions.length}
+              />
+              <TabButton 
+                active={activeTab === 'ondemand'} 
+                onClick={() => setActiveTab('ondemand')}
+                icon={Bot}
+                label="On-Demand"
+              />
+              <TabButton 
+                active={activeTab === 'my'} 
+                onClick={() => setActiveTab('my')}
+                icon={UserCheck}
+                label="My Coaching"
+                badge={registeredSessions.length}
+              />
             </div>
-          )}
-        </div>
+            
+            {activeTab === 'live' && (
+              <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
+                >
+                  List
+                </button>
+                <button 
+                  onClick={() => setViewMode('calendar')}
+                  className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'calendar' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
+                >
+                  Calendar
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Tab Content */}
         {loading ? (
@@ -566,6 +591,11 @@ const CoachingHub = () => {
           </div>
         ) : (
           <>
+            {/* Dashboard View */}
+            {activeTab === 'dashboard' && (
+              <CoachingDashboard setActiveTab={setActiveTab} />
+            )}
+
             {/* Live Coaching Tab */}
             {activeTab === 'live' && (
               viewMode === 'calendar' ? (
