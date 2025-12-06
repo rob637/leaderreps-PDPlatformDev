@@ -601,6 +601,35 @@ export const useDashboard = ({
         updatedReflectionHistory = [reflectionEntry, ...reflectionHistoryWithoutOldDate];
       }
 
+      // 4.5 Calculate Streak for the OLD day
+      const groundingDone = groundingRepCompleted ? 1 : 0;
+      const winsDone = scorecard.win.done || 0;
+      const repsDone = scorecard.reps.done || 0;
+      
+      const didActivity = groundingDone > 0 || winsDone > 0 || repsDone > 0;
+      
+      // Check if OLD day was a weekend
+      const oldDateObj = new Date(oldDate + 'T12:00:00');
+      const dayOfWeek = oldDateObj.getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      
+      let newStreakCount = streakCount;
+      
+      if (didActivity) {
+        newStreakCount = streakCount + 1;
+        console.log(`🌙 [MIDNIGHT ROLLOVER] Activity detected! Streak: ${streakCount} -> ${newStreakCount}`);
+      } else if (isWeekend) {
+        console.log(`🌙 [MIDNIGHT ROLLOVER] Weekend grace period. Streak maintained: ${streakCount}`);
+      } else {
+        newStreakCount = 0;
+        console.log(`🌙 [MIDNIGHT ROLLOVER] No activity on weekday. Streak reset: ${streakCount} -> 0`);
+      }
+
+      // Update Streak History
+      const newStreakHistoryEntry = { date: oldDate, streak: newStreakCount, didActivity, isWeekend };
+      const existingStreakHistory = dailyPracticeData?.streakHistory || [];
+      const updatedStreakHistory = [newStreakHistoryEntry, ...existingStreakHistory].slice(0, 30);
+
       // 5. Prepare Firestore update for the NEW day
       const updates = {
         // Reset morning bookend for new day
@@ -622,6 +651,12 @@ export const useDashboard = ({
         winsList: updatedWinsList,
         scorecardHistory: updatedScorecardHistory,
         reflectionHistory: updatedReflectionHistory,
+        
+        // Update Streak
+        streakCount: newStreakCount,
+        lastStreakDate: oldDate,
+        streakHistory: updatedStreakHistory,
+
         // Update the date marker
         date: newDate,
         // Clear reminders that were for the old day
@@ -642,6 +677,7 @@ export const useDashboard = ({
       setHabitsCompleted({});
       setAdditionalCommitments([]);
       setTargetRepStatus('Pending');
+      setStreakCount(newStreakCount); // Update local streak
       
       // Update local history state
       setWinsList(updatedWinsList);
@@ -658,9 +694,10 @@ export const useDashboard = ({
     reflectionGood, 
     reflectionBetter, 
     reflectionBest,
-    dailyPracticeData?.scorecardHistory,
-    dailyPracticeData?.reflectionHistory,
-    scorecard
+    scorecard,
+    groundingRepCompleted,
+    streakCount,
+    dailyPracticeData
   ]);
 
   // Day transition detection for time travel - using inline useEffect instead of external hook

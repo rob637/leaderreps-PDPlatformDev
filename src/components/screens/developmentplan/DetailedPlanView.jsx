@@ -11,6 +11,7 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 import { Button, Card } from './DevPlanComponents';
+import { PageLayout } from '../../ui';
 
 /* =========================================================
    18-MONTH JOURNEY MAP (from OLD Development Plan)
@@ -98,37 +99,35 @@ const DetailedPlanView = ({
 
   if (!currentPlan) {
     return (
-      <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center">
-        <p className="text-lg text-gray-600">No development plan found.</p>
-      </div>
+      <PageLayout
+        title="Your Arena Development Plan"
+        icon={BarChart3}
+        navigate={(path) => path === 'tracker' && onNavigateToTracker()}
+        backTo="tracker"
+        backLabel="Back to Tracker"
+      >
+        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center">
+          <p className="text-lg text-gray-600">No development plan found.</p>
+        </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#F9FAFB' }}>
-      <div className="w-full mx-auto px-4 py-6">
-        
-        {/* Header Area */}
-        <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <Button onClick={onNavigateToTracker} variant="nav-back" size="sm">
-                <ArrowLeft className="w-4 h-4" /> Back to Tracker
-              </Button>
-            </div>
-            <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2" style={{ color: 'var(--corporate-navy)' }}>
-              Your Arena Development Plan
-            </h1>
-            <p className="text-lg text-gray-600">
-              18-month leadership journey | Current: <strong>Cycle {currentCycle} ({journeyPhase} Phase)</strong>
-            </p>
-          </div>
-          
-          {/* Progress Scan Button */}
-          <Button onClick={onStartProgressScan} variant="secondary" size="md">
-            <Target className="w-5 h-5" /> Start Next 90-Day Scan
-          </Button>
-        </div>
+    <PageLayout
+      title="Your Arena Development Plan"
+      subtitle={`18-month leadership journey | Current: Cycle ${currentCycle} (${journeyPhase} Phase)`}
+      icon={BarChart3}
+      navigate={(path) => path === 'tracker' && onNavigateToTracker()}
+      backTo="tracker"
+      backLabel="Back to Tracker"
+      maxWidth="max-w-7xl"
+      headerActions={
+        <Button onClick={onStartProgressScan} variant="secondary" size="md">
+          <Target className="w-5 h-5" /> Start Next 90-Day Scan
+        </Button>
+      }
+    >
 
         {/* FIX #4: 18-Month Journey Map Card (RESTORED from OLD version) */}
         <Card title="Your 18-Month Leadership Journey" icon={Calendar} accent="NAVY">
@@ -344,7 +343,7 @@ const DetailedPlanView = ({
           </Button>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

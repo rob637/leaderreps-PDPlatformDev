@@ -818,13 +818,26 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
                         className="p-2 border rounded text-sm md:col-span-2"
                       />
                     </div>
-                    <div className="flex items-center gap-2 pt-2">
-                      <input 
-                        type="checkbox" 
-                        checked={item.isRequiredContent}
-                        onChange={e => updateItem('content', idx, 'isRequiredContent', e.target.checked)}
-                      />
-                      <span className="text-xs text-slate-500">Req</span>
+                    <div className="flex items-center gap-2 pt-2 justify-between">
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={item.day || 'Any'}
+                          onChange={e => updateItem('content', idx, 'day', e.target.value)}
+                          className="p-1 border rounded text-xs bg-slate-50"
+                        >
+                          {['Any', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={item.isRequiredContent}
+                            onChange={e => updateItem('content', idx, 'isRequiredContent', e.target.checked)}
+                          />
+                          <span className="text-xs text-slate-500">Req</span>
+                        </label>
+                      </div>
                       <button onClick={() => removeItem('content', idx)} className="text-red-400 hover:text-red-600">
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -884,13 +897,15 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
                         onChange={e => updateItem('community', idx, 'communityItemLabel', e.target.value)}
                         className="p-2 border rounded text-sm"
                       />
-                      <input 
-                        type="text" 
-                        placeholder="Day (e.g. Thursday)" 
-                        value={item.recommendedWeekDay}
+                      <select
+                        value={item.recommendedWeekDay || 'Any'}
                         onChange={e => updateItem('community', idx, 'recommendedWeekDay', e.target.value)}
                         className="p-2 border rounded text-sm"
-                      />
+                      >
+                        {['Any', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
                     </div>
                     <button onClick={() => removeItem('community', idx)} className="text-red-400 hover:text-red-600 pt-2">
                       <Trash2 className="w-4 h-4" />
@@ -948,9 +963,20 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
                         className="p-2 border rounded text-sm md:col-span-2"
                       />
                     </div>
-                    <button onClick={() => removeItem('coaching', idx)} className="text-red-400 hover:text-red-600 pt-2">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2 pt-2 justify-between">
+                      <select
+                        value={item.day || 'Any'}
+                        onChange={e => updateItem('coaching', idx, 'day', e.target.value)}
+                        className="p-1 border rounded text-xs bg-orange-50"
+                      >
+                        {['Any', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                      <button onClick={() => removeItem('coaching', idx)} className="text-red-400 hover:text-red-600">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -996,13 +1022,26 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
                         className="p-2 border rounded text-sm md:col-span-2"
                       />
                     </div>
-                    <div className="flex items-center gap-2 pt-2">
-                      <input 
-                        type="checkbox" 
-                        checked={item.isRequired}
-                        onChange={e => updateItem('reps', idx, 'isRequired', e.target.checked)}
-                      />
-                      <span className="text-xs text-slate-500">Req</span>
+                    <div className="flex items-center gap-2 pt-2 justify-between">
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={item.day || 'Any'}
+                          onChange={e => updateItem('reps', idx, 'day', e.target.value)}
+                          className="p-1 border rounded text-xs bg-purple-50"
+                        >
+                          {['Any', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={item.isRequired}
+                            onChange={e => updateItem('reps', idx, 'isRequired', e.target.checked)}
+                          />
+                          <span className="text-xs text-slate-500">Req</span>
+                        </label>
+                      </div>
                       <button onClick={() => removeItem('reps', idx)} className="text-red-400 hover:text-red-600">
                         <Trash2 className="w-4 h-4" />
                       </button>

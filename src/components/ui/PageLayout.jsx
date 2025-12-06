@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { BreadcrumbNav } from './BreadcrumbNav';
 
 /**
  * PageLayout - Standardized layout wrapper for all feature screens
@@ -17,6 +18,7 @@ import { ArrowLeft } from 'lucide-react';
  * @param {string} backLabel - Label for back button (default: 'Back to Dashboard')
  * @param {function} navigate - Navigation function (also accepts 'onNavigate' for compatibility)
  * @param {boolean} showBack - Whether to show back button (default: true)
+ * @param {Array} breadcrumbs - Optional breadcrumb items [{label, path}]
  * @param {string} accentColor - 'teal' | 'orange' | 'navy' for icon color
  * @param {React.ReactNode} headerActions - Optional actions to show in header (buttons, badges, etc.)
  * @param {React.ReactNode} badge - Optional badge text (e.g., "Requires Premium")
@@ -36,6 +38,7 @@ export const PageLayout = ({
   navigate,
   onNavigate, // Alias for navigate (backward compatibility)
   showBack = true,
+  breadcrumbs,
   accentColor = 'teal',
   headerActions,
   badge,
@@ -57,19 +60,22 @@ export const PageLayout = ({
   // Determine layout based on sidebar presence
   const hasSidebar = !!sidebar;
 
+  // Construct breadcrumbs for backward compatibility if not explicitly provided
+  const effectiveBreadcrumbs = breadcrumbs || (showBack ? [
+    { label: backLabel.replace('Back to ', ''), path: backTo },
+    { label: title, path: null }
+  ] : []);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className={`${maxWidth} mx-auto p-4 sm:p-6 lg:p-8`}>
         
-        {/* Back Button - Consistent across all pages */}
-        {showBack && nav && (
-          <button
-            onClick={() => nav(backTo)}
-            className="flex items-center gap-2 mb-6 text-slate-500 hover:text-corporate-navy transition-colors group"
-          >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-medium">{backLabel}</span>
-          </button>
+        {/* Navigation - Replaces old Back Button */}
+        {nav && (
+          <BreadcrumbNav 
+            items={effectiveBreadcrumbs} 
+            navigate={nav} 
+          />
         )}
 
         {/* Header - Standardized layout */}

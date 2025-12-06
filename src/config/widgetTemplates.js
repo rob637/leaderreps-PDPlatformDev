@@ -353,6 +353,96 @@ export const WIDGET_TEMPLATES = {
   );
 })()
     `,
+    'daily-plan': `
+(() => {
+  // Get current week data
+  const currentWeek = typeof devPlanCurrentWeek !== 'undefined' ? devPlanCurrentWeek : null;
+  const navFn = typeof navigate !== 'undefined' ? navigate : (typeof scope !== 'undefined' && scope.navigate ? scope.navigate : () => {});
+  
+  // Get Today's Day Name
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const today = new Date();
+  const todayName = dayNames[today.getDay()];
+  
+  // Filter Items for Today
+  // We include items marked for 'Any' day, specific day, or if the day field is missing (legacy support)
+  const content = (currentWeek?.content || []).filter(i => i.day === todayName || i.day === 'Any' || !i.day);
+  
+  // Community items might use 'day' or 'recommendedWeekDay'
+  const community = (currentWeek?.community || []).filter(i => {
+      const day = i.day || i.recommendedWeekDay;
+      return day === todayName || day === 'Any' || !day;
+  });
+
+  const coaching = (currentWeek?.coaching || []).filter(i => i.day === todayName || i.day === 'Any' || !i.day);
+  
+  // Reps are handled by the daily-leader-reps widget usually, but we can show them here too if they are specific to a day
+  const reps = (currentWeek?.dailyReps || currentWeek?.reps || []).filter(i => i.day === todayName);
+
+  const hasItems = content.length > 0 || community.length > 0 || coaching.length > 0 || reps.length > 0;
+
+  return (
+    <Card title={\`Today's Plan (\${todayName})\`} icon={Calendar} accent="TEAL">
+      <div className="space-y-3">
+        {!hasItems && (
+           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+            <p className="text-sm text-slate-500">No specific items scheduled for today.</p>
+            <p className="text-xs text-slate-400 mt-1">Check the Weekly Focus or catch up on previous days.</p>
+          </div>
+        )}
+
+        {/* Content */}
+        {content.map((item, idx) => (
+           <div key={\`content-\${idx}\`} className="flex gap-3 items-center p-2 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors" onClick={() => navFn('business-readings')}>
+              <div className="p-1.5 bg-blue-100 rounded-full text-blue-600"><BookOpen className="w-4 h-4" /></div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-blue-800 uppercase">{item.contentItemType || 'Content'}</p>
+                <p className="text-sm font-medium text-slate-800">{item.contentItemLabel || item.title}</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-blue-300" />
+           </div>
+        ))}
+
+        {/* Community */}
+        {community.map((item, idx) => (
+           <div key={\`comm-\${idx}\`} className="flex gap-3 items-center p-2 bg-teal-50 rounded-lg border border-teal-100 cursor-pointer hover:bg-teal-100 transition-colors" onClick={() => navFn('community')}>
+              <div className="p-1.5 bg-teal-100 rounded-full text-teal-600"><Users className="w-4 h-4" /></div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-teal-800 uppercase">{item.communityItemType || 'Community'}</p>
+                <p className="text-sm font-medium text-slate-800">{item.communityItemLabel || item.label}</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-teal-300" />
+           </div>
+        ))}
+
+        {/* Coaching */}
+        {coaching.map((item, idx) => (
+           <div key={\`coach-\${idx}\`} className="flex gap-3 items-center p-2 bg-orange-50 rounded-lg border border-orange-100 cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => navFn('coaching-lab')}>
+              <div className="p-1.5 bg-orange-100 rounded-full text-orange-600"><MessageSquare className="w-4 h-4" /></div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-orange-800 uppercase">{item.coachingItemType || 'Coaching'}</p>
+                <p className="text-sm font-medium text-slate-800">{item.coachingItemLabel || item.label}</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-orange-300" />
+           </div>
+        ))}
+        
+        {/* Specific Daily Reps */}
+        {reps.map((rep, idx) => (
+           <div key={\`rep-\${idx}\`} className="flex gap-3 items-center p-2 bg-slate-50 rounded-lg border border-slate-100">
+              <div className="p-1.5 bg-slate-200 rounded-full text-slate-600"><Dumbbell className="w-4 h-4" /></div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-slate-500 uppercase">Daily Rep</p>
+                <p className="text-sm font-medium text-slate-800">{rep.repLabel || rep.label}</p>
+              </div>
+           </div>
+        ))}
+
+      </div>
+    </Card>
+  );
+})()
+    `,
     'daily-leader-reps': `
 (() => {
   // Get current week's daily reps from the Development Plan
