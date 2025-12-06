@@ -70,6 +70,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Unified Content Library (New Architecture)
+    match /content/{document} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Skills Taxonomy (New Architecture)
+    match /skills/{document} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
     // New Content Collections
     match /content_community/{document} {
       allow read: if request.auth != null;
