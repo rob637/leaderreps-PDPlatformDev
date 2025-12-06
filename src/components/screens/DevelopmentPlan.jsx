@@ -598,7 +598,20 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       {/* Dashboard / Widget View */}
       {view === 'dashboard' && (
         <div className="space-y-8">
-          {/* 1. Tracker Widget */}
+          {/* 1. Baseline Widget (Always show if enabled - handles its own completed state) */}
+          {isFeatureEnabled('baseline-assessment') && (
+             <WidgetRenderer widgetId="baseline-assessment" scope={widgetScope}>
+                <BaselineAssessment
+                  onComplete={handleCompleteBaseline}
+                  isLoading={isSaving}
+                  initialData={latestAssessment}
+                  mode={props.mode}
+                  isWidget={true}
+                />
+             </WidgetRenderer>
+          )}
+
+          {/* 2. Tracker Widget */}
           {isFeatureEnabled('dev-plan-tracker') && hasCurrentPlan && (
             <WidgetRenderer widgetId="dev-plan-tracker" scope={widgetScope}>
               <PlanTracker
@@ -613,7 +626,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
             </WidgetRenderer>
           )}
 
-          {/* 2. Timeline Widget */}
+          {/* 3. Timeline Widget */}
           {isFeatureEnabled('dev-plan-timeline') && hasCurrentPlan && (
             <WidgetRenderer widgetId="dev-plan-timeline" scope={widgetScope}>
               <MilestoneTimeline
@@ -624,7 +637,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
             </WidgetRenderer>
           )}
 
-          {/* 3. Details Widget */}
+          {/* 4. Details Widget */}
           {isFeatureEnabled('dev-plan-details') && hasCurrentPlan && (
             <WidgetRenderer widgetId="dev-plan-details" scope={widgetScope}>
               <DetailedPlanView
@@ -635,18 +648,6 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
                 onStartProgressScan={() => setView('scan')}
               />
             </WidgetRenderer>
-          )}
-
-          {/* 4. Baseline Widget (Always show if enabled - handles its own completed state) */}
-          {isFeatureEnabled('baseline-assessment') && (
-             <WidgetRenderer widgetId="baseline-assessment" scope={widgetScope}>
-                <BaselineAssessment
-                  onComplete={handleCompleteBaseline}
-                  isLoading={isSaving}
-                  initialData={latestAssessment}
-                  mode={props.mode}
-                />
-             </WidgetRenderer>
           )}
           
           {/* Fallback */}
