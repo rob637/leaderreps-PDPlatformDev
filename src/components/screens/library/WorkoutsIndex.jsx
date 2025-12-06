@@ -54,10 +54,12 @@ const WorkoutsIndex = () => {
     
     // Content Locking Filter
     result = result.filter(w => {
-        if (w.isHiddenUntilUnlocked) {
-             return unlockedResourceIds.has(String(w.id).toLowerCase());
-        }
-        return true;
+        const isUnlocked = unlockedResourceIds.has(String(w.id).toLowerCase());
+        if (isUnlocked) return true;
+
+        // If not unlocked, hide unless explicitly marked as public (isHiddenUntilUnlocked === false)
+        // This treats undefined as true (hidden) to enforce Vault & Key
+        return w.isHiddenUntilUnlocked === false;
     });
 
     // Search filter

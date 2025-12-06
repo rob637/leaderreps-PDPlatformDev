@@ -73,10 +73,12 @@ const SkillDetail = ({ navParams }) => {
 
           // Filter by unlock status
           const unlockedContent = allContent.filter(c => {
-              if (c.isHiddenUntilUnlocked) {
-                  return unlockedResourceIds.has(String(c.id).toLowerCase());
-              }
-              return true;
+              const isUnlocked = unlockedResourceIds.has(String(c.id).toLowerCase());
+              if (isUnlocked) return true;
+
+              // If not unlocked, hide unless explicitly marked as public (isHiddenUntilUnlocked === false)
+              // This treats undefined as true (hidden) to enforce Vault & Key
+              return c.isHiddenUntilUnlocked === false;
           });
           
           // Group by type

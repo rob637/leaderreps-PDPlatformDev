@@ -66,10 +66,12 @@ const ToolsIndex = () => {
     
     // Content Locking Filter
     result = result.filter(t => {
-        if (t.isHiddenUntilUnlocked) {
-             return unlockedResourceIds.has(String(t.id).toLowerCase());
-        }
-        return true;
+        const isUnlocked = unlockedResourceIds.has(String(t.id).toLowerCase());
+        if (isUnlocked) return true;
+
+        // If not unlocked, hide unless explicitly marked as public (isHiddenUntilUnlocked === false)
+        // This treats undefined as true (hidden) to enforce Vault & Key
+        return t.isHiddenUntilUnlocked === false;
     });
 
     // Search filter

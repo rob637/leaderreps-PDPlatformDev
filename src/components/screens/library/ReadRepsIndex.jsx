@@ -63,11 +63,12 @@ const ReadRepsIndex = () => {
     
     // Content Locking Filter
     result = result.filter(b => {
-        // If explicitly hidden until unlocked, check unlock status
-        if (b.isHiddenUntilUnlocked) {
-             return unlockedResourceIds.has(String(b.id).toLowerCase());
-        }
-        return true;
+        const isUnlocked = unlockedResourceIds.has(String(b.id).toLowerCase());
+        if (isUnlocked) return true;
+        
+        // If not unlocked, hide unless explicitly marked as public (isHiddenUntilUnlocked === false)
+        // This treats undefined as true (hidden) to enforce Vault & Key
+        return b.isHiddenUntilUnlocked === false;
     });
 
     // Search filter

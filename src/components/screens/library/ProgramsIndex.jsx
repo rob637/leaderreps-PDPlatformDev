@@ -53,10 +53,12 @@ const ProgramsIndex = () => {
     
     // Content Locking Filter
     result = result.filter(p => {
-        if (p.isHiddenUntilUnlocked) {
-             return unlockedResourceIds.has(String(p.id).toLowerCase());
-        }
-        return true;
+        const isUnlocked = unlockedResourceIds.has(String(p.id).toLowerCase());
+        if (isUnlocked) return true;
+
+        // If not unlocked, hide unless explicitly marked as public (isHiddenUntilUnlocked === false)
+        // This treats undefined as true (hidden) to enforce Vault & Key
+        return p.isHiddenUntilUnlocked === false;
     });
 
     // Search filter
