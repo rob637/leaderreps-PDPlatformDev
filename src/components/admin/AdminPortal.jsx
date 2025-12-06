@@ -107,8 +107,6 @@ const AdminPortal = () => {
         return <SystemDiagnostics />;
       case 'content':
         return <ContentAdminHome />;
-      case 'migration':
-        return <MigrationTool />;
       case 'features':
         return <FeatureManager />;
       case 'system':

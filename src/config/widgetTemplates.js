@@ -39,7 +39,7 @@ export const createRoadmapWidget = (title, ideas) => `
 export const WIDGET_TEMPLATES = {
     'am-bookend-header': `
 <>
-<div className="flex items-center gap-3 mb-4 mt-8">
+<div className="flex items-center gap-3 mb-4 mt-4">
   <Sun className="w-6 h-6 text-orange-500" />
   <h2 className="text-xl font-bold text-[#002E47]">AM Bookend: Start Strong</h2>
   <div className="h-px bg-slate-200 flex-1 ml-4"></div>
@@ -685,7 +685,7 @@ export const WIDGET_TEMPLATES = {
     `,
     'pm-bookend-header': `
 <>
-<div className="flex items-center gap-3 mb-4 mt-8">
+<div className="flex items-center gap-3 mb-4 mt-4">
   <Moon className="w-6 h-6 text-indigo-500" />
   <h2 className="text-xl font-bold text-[#002E47]">PM Bookend: Finish Strong</h2>
   <div className="h-px bg-slate-200 flex-1 ml-4"></div>
