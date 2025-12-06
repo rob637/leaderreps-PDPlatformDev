@@ -205,26 +205,11 @@ const DataProvider = ({
 
   const callSecureGeminiAPI = useCallback(
     async (payload) => {
-      if (!hasGeminiKey()) {
-        console.error(
-          "Gemini API Key check failed in callSecureGeminiAPI. Ensure it's loaded correctly."
-        );
-        throw new Error('Gemini API Key is missing or not configured.');
-      }
-
-      const YOUR_BACKEND_ENDPOINT_URL =
-        'YOUR_SECURE_CLOUD_FUNCTION_URL_HERE';
-
-      if (
-        YOUR_BACKEND_ENDPOINT_URL === 'YOUR_SECURE_CLOUD_FUNCTION_URL_HERE'
-      ) {
-        console.error(
-          'CRITICAL SETUP ERROR: The backend endpoint URL for callSecureGeminiAPI has not been set in App.jsx.'
-        );
-        throw new Error(
-          'AI Rep Coach backend is not configured. Please contact the administrator.'
-        );
-      }
+      // Use the Cloud Function URL for the Gemini proxy
+      // DEV: leaderreps-pd-platform, TEST: leaderreps-test
+      const GEMINI_PROXY_URL = import.meta.env.VITE_FIREBASE_PROJECT_ID === 'leaderreps-test'
+        ? 'https://geminiproxy-jxhqfhns5a-uc.a.run.app'
+        : 'https://geminiproxy-jxhqfhns5a-uc.a.run.app';
 
       try {
         const requestOptions = {
@@ -235,10 +220,7 @@ const DataProvider = ({
           body: JSON.stringify(payload),
         };
 
-        const response = await fetch(
-          YOUR_BACKEND_ENDPOINT_URL,
-          requestOptions
-        );
+        const response = await fetch(GEMINI_PROXY_URL, requestOptions);
 
         if (!response.ok) {
           let errorBody = 'Could not retrieve error details.';

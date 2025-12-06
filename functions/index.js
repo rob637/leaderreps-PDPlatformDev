@@ -3,19 +3,90 @@
  * 
  * Includes:
  * - scheduledDailyRollover: Runs at 11:59 PM to archive daily data and reset for the new day
+ * - geminiProxy: Secure proxy for Gemini AI API calls
  */
 
 const { setGlobalOptions } = require("firebase-functions");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onRequest } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // Initialize Firebase Admin
 admin.initializeApp();
 const db = admin.firestore();
 
+// Define the Gemini API key as a secret
+const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+
 // Global options for cost control
 setGlobalOptions({ maxInstances: 10, region: "us-central1" });
+
+/**
+ * GEMINI AI PROXY
+ * Secure endpoint for making Gemini API calls from the frontend
+ * Keeps the API key secure on the server side
+ */
+exports.geminiProxy = onRequest(
+  {
+    cors: true,
+    secrets: [GEMINI_API_KEY],
+  },
+  async (req, res) => {
+    // Only allow POST requests
+    if (req.method !== "POST") {
+      res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+
+    try {
+      const { prompt, model = "gemini-1.5-flash", systemInstruction } = req.body;
+
+      if (!prompt) {
+        res.status(400).json({ error: "Prompt is required" });
+        return;
+      }
+
+      // Get the API key from the secret
+      const apiKey = GEMINI_API_KEY.value();
+      
+      if (!apiKey) {
+        logger.error("GEMINI_API_KEY secret is not configured");
+        res.status(500).json({ error: "AI service not configured" });
+        return;
+      }
+
+      // Initialize Gemini
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const genModel = genAI.getGenerativeModel({ 
+        model,
+        systemInstruction: systemInstruction || "You are a helpful assistant for the LeaderReps leadership development platform."
+      });
+
+      // Generate content
+      const result = await genModel.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      logger.info(`Gemini API call successful, model: ${model}`);
+      
+      res.status(200).json({ 
+        success: true, 
+        text,
+        model 
+      });
+
+    } catch (error) {
+      logger.error("Gemini API error:", error);
+      res.status(500).json({ 
+        error: "Failed to generate content", 
+        details: error.message 
+      });
+    }
+  }
+);
 
 /**
  * SCHEDULED DAILY ROLLOVER

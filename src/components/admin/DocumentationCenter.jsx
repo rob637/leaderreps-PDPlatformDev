@@ -16,18 +16,25 @@ import {
   Copy,
   Check,
   AlertCircle,
-  X
+  X,
+  Loader,
+  Wand2
 } from 'lucide-react';
+import { useAppServices } from '../../services/useAppServices';
 
 /**
  * DocumentationCenter - Admin documentation hub
  * Provides access to guides, test plans, and system documentation
  */
 const DocumentationCenter = () => {
+  const { callSecureGeminiAPI } = useAppServices();
   const [searchTerm, setSearchTerm] = useState('');
   const [showRefreshModal, setShowRefreshModal] = useState(false);
   const [refreshPrompt, setRefreshPrompt] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState('');
+  const [selectedDocId, setSelectedDocId] = useState('all');
 
   // Document definitions
   const documents = [
@@ -221,9 +228,11 @@ Please review and improve the following documentation, making it 1% better by:
 
   // Open refresh modal
   const openRefreshModal = (docId = 'all') => {
+    setSelectedDocId(docId);
     setRefreshPrompt(generateRefreshPrompt(docId));
     setShowRefreshModal(true);
     setCopied(false);
+    setAiSuggestions('');
   };
 
   // Copy prompt to clipboard
@@ -234,6 +243,74 @@ Please review and improve the following documentation, making it 1% better by:
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
+    }
+  };
+
+  // Copy AI suggestions to clipboard
+  const copySuggestions = async () => {
+    try {
+      await navigator.clipboard.writeText(aiSuggestions);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  // Generate AI suggestions using Gemini
+  const generateAISuggestions = async () => {
+    setIsGenerating(true);
+    setAiSuggestions('');
+
+    try {
+      // Fetch the current documentation from GitHub
+      const docMap = {
+        'admin-guide': 'ADMIN-GUIDE.md',
+        'user-guide': 'USER-GUIDE.md', 
+        'test-plans': 'TEST-PLANS.md'
+      };
+
+      const docFile = docMap[selectedDocId] || 'ADMIN-GUIDE.md';
+      const rawUrl = `https://raw.githubusercontent.com/rob637/leaderreps-PDPlatformDev/New-Stuff/${docFile}`;
+      
+      const docResponse = await fetch(rawUrl);
+      const currentDoc = await docResponse.text();
+
+      const prompt = `${refreshPrompt}
+
+Here is the current documentation:
+
+---
+${currentDoc.substring(0, 15000)} 
+---
+
+Please provide specific suggestions for improvements. Format your response as:
+
+## Suggested Improvements
+
+### Section: [Section Name]
+- **Current**: [what it says now]
+- **Suggested**: [your improvement]
+- **Reason**: [why this is better]
+
+Focus on the most impactful 3-5 improvements.`;
+
+      const result = await callSecureGeminiAPI({
+        prompt,
+        model: 'gemini-1.5-flash',
+        systemInstruction: 'You are a technical documentation expert. Provide clear, actionable suggestions for improving documentation. Be specific and concise.'
+      });
+
+      if (result?.text) {
+        setAiSuggestions(result.text);
+      } else {
+        setAiSuggestions('Unable to generate suggestions. Please try again or use the manual copy option.');
+      }
+    } catch (error) {
+      console.error('AI generation error:', error);
+      setAiSuggestions(`Error: ${error.message}\n\nPlease use the manual copy option and paste into your preferred AI assistant.`);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -262,7 +339,7 @@ Please review and improve the following documentation, making it 1% better by:
       {/* Refresh Modal */}
       {showRefreshModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-5 border-b border-gray-200">
               <div className="flex items-center gap-3">
@@ -271,7 +348,7 @@ Please review and improve the following documentation, making it 1% better by:
                 </div>
                 <div>
                   <h3 className="font-bold text-corporate-navy">Refresh Documentation with AI</h3>
-                  <p className="text-sm text-slate-500">Copy this prompt to use with your AI assistant</p>
+                  <p className="text-sm text-slate-500">Generate suggestions or copy the prompt for manual use</p>
                 </div>
               </div>
               <button
@@ -284,19 +361,68 @@ Please review and improve the following documentation, making it 1% better by:
 
             {/* Modal Content */}
             <div className="p-5 overflow-y-auto max-h-[60vh]">
-              {/* Instructions */}
+              {/* AI Generation Section */}
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Wand2 className="w-5 h-5 text-purple-600" />
+                    <span className="font-medium text-purple-900">Generate AI Suggestions</span>
+                  </div>
+                  <button
+                    onClick={generateAISuggestions}
+                    disabled={isGenerating || selectedDocId === 'all'}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      isGenerating || selectedDocId === 'all'
+                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        : 'bg-purple-600 text-white hover:bg-purple-700 shadow-md hover:shadow-lg'
+                    }`}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Generate Suggestions
+                      </>
+                    )}
+                  </button>
+                </div>
+                {selectedDocId === 'all' && (
+                  <p className="text-sm text-purple-700">Select a specific document below to generate AI suggestions.</p>
+                )}
+                {aiSuggestions && (
+                  <div className="mt-3 p-3 bg-white rounded-lg border border-purple-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-purple-600 uppercase">AI Suggestions</span>
+                      <button
+                        onClick={copySuggestions}
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Copy
+                      </button>
+                    </div>
+                    <div className="text-sm text-slate-700 whitespace-pre-wrap max-h-48 overflow-y-auto">
+                      {aiSuggestions}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Manual Option */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">How to refresh documentation:</p>
+                    <p className="font-medium mb-1">Manual option - copy prompt for external AI:</p>
                     <ol className="list-decimal ml-4 space-y-1">
                       <li>Copy the prompt below</li>
-                      <li>Open your AI assistant (ChatGPT, Claude, or GitHub Copilot)</li>
-                      <li>Paste the prompt along with the current documentation file</li>
-                      <li>Review the suggested changes</li>
-                      <li>Apply updates to the markdown files in the repository</li>
-                      <li>Deploy using <code className="bg-blue-100 px-1 rounded">./deploy-dev.sh</code></li>
+                      <li>Paste into ChatGPT, Claude, or GitHub Copilot</li>
+                      <li>Include the current documentation file</li>
+                      <li>Review and apply the suggested changes</li>
                     </ol>
                   </div>
                 </div>
@@ -329,7 +455,7 @@ Please review and improve the following documentation, making it 1% better by:
                 <textarea
                   readOnly
                   value={refreshPrompt}
-                  className="w-full h-64 p-4 pr-32 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                  className="w-full h-48 p-4 pr-32 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                 />
               </div>
 
@@ -356,16 +482,23 @@ Please review and improve the following documentation, making it 1% better by:
             {/* Modal Footer */}
             <div className="flex items-center justify-between p-5 border-t border-gray-200 bg-slate-50">
               <div className="flex gap-2">
+                <span className="text-sm text-slate-500 mr-2">Select doc:</span>
                 {['admin-guide', 'user-guide', 'test-plans'].map(docId => (
                   <button
                     key={docId}
                     onClick={() => {
+                      setSelectedDocId(docId);
                       setRefreshPrompt(generateRefreshPrompt(docId));
                       setCopied(false);
+                      setAiSuggestions('');
                     }}
-                    className="px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg hover:bg-slate-50 transition-colors"
+                    className={`px-3 py-1.5 text-sm border rounded-lg transition-colors ${
+                      selectedDocId === docId
+                        ? 'bg-purple-100 border-purple-300 text-purple-700'
+                        : 'bg-white border-gray-200 hover:bg-slate-50'
+                    }`}
                   >
-                    {docId.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    {docId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                   </button>
                 ))}
               </div>
