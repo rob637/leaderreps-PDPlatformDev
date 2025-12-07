@@ -26,7 +26,10 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
 
 
+  // Effect 1: Load all resources when modal opens
   useEffect(() => {
+    if (!isOpen) return;
+
     const loadResources = async () => {
       setLoading(true);
       try {
@@ -59,12 +62,6 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
         }
         
         setResources(allResources);
-        
-        // Try to find selected resource in the newly loaded list
-        if (value) {
-          const found = allResources.find(r => r.id === value);
-          if (found) setSelectedResource(found);
-        }
       } catch (error) {
         console.error("Error loading resources:", error);
       } finally {
@@ -72,36 +69,53 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
       }
     };
 
-    if (isOpen) {
-      loadResources();
-    } else if (value && !selectedResource) {
-      // Load single resource if not open but value exists
-      const loadSingle = async () => {
-        try {
-          // We check both collections if type is content, or specific if known
-          const collections = resourceType === 'content' 
-            ? [CONTENT_COLLECTIONS.VIDEOS, CONTENT_COLLECTIONS.READINGS]
-            : resourceType === 'community' ? [CONTENT_COLLECTIONS.COMMUNITY]
-            : [CONTENT_COLLECTIONS.COACHING];
+    loadResources();
+  }, [isOpen, resourceType, db]);
 
-          for (const col of collections) {
-            const docRef = doc(db, col, value);
-            const snap = await getDoc(docRef);
-            if (snap.exists()) {
-              const type = col === CONTENT_COLLECTIONS.VIDEOS ? 'video' : 
-                           col === CONTENT_COLLECTIONS.READINGS ? 'reading' :
-                           col === CONTENT_COLLECTIONS.COMMUNITY ? 'community' : 'coaching';
-              setSelectedResource({ id: snap.id, ...snap.data(), resourceType: type });
-              return;
-            }
-          }
-        } catch (e) {
-          console.error("Error loading single resource:", e);
-        }
-      };
-      loadSingle();
+  // Effect 2: Sync selectedResource with value
+  useEffect(() => {
+    if (!value) {
+      if (selectedResource) setSelectedResource(null);
+      return;
     }
-  }, [isOpen, db, resourceType, value, selectedResource]);
+
+    // If we already have the correct resource selected, do nothing
+    if (selectedResource && selectedResource.id === value) return;
+
+    // Try to find in currently loaded list
+    const found = resources.find(r => r.id === value);
+    if (found) {
+      setSelectedResource(found);
+      return;
+    }
+
+    // If not found in list, fetch individual
+    const loadSingle = async () => {
+      try {
+        // We check both collections if type is content, or specific if known
+        const collections = resourceType === 'content' 
+          ? [CONTENT_COLLECTIONS.VIDEOS, CONTENT_COLLECTIONS.READINGS]
+          : resourceType === 'community' ? [CONTENT_COLLECTIONS.COMMUNITY]
+          : [CONTENT_COLLECTIONS.COACHING];
+
+        for (const col of collections) {
+          const docRef = doc(db, col, value);
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            const type = col === CONTENT_COLLECTIONS.VIDEOS ? 'video' : 
+                         col === CONTENT_COLLECTIONS.READINGS ? 'reading' :
+                         col === CONTENT_COLLECTIONS.COMMUNITY ? 'community' : 'coaching';
+            setSelectedResource({ id: snap.id, ...snap.data(), resourceType: type });
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("Error loading single resource:", e);
+      }
+    };
+
+    loadSingle();
+  }, [value, resources, selectedResource, db, resourceType]);
 
   const filteredResources = resources.filter(r => 
     r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
