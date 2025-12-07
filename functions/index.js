@@ -3,6 +3,7 @@
  * 
  * Includes:
  * - scheduledDailyRollover: Runs at 11:59 PM to archive daily data and reset for the new day
+ * - manualRollover: HTTP endpoint to manually trigger rollover for a specific user (catch-up)
  * - geminiProxy: Secure proxy for Gemini AI API calls
  */
 
@@ -87,14 +88,209 @@ exports.geminiProxy = onRequest(
 );
 
 /**
+ * MANUAL ROLLOVER (HTTP Trigger)
+ * Allows manually triggering the rollover for a specific user.
+ * Useful for debugging or fixing missed rollovers.
+ * 
+ * Usage: POST /manualRollover?email=rob@sagecg.com
+ */
+exports.manualRollover = onRequest(
+  {
+    cors: true,
+  },
+  async (req, res) => {
+    const email = req.query.email || req.body.email;
+    
+    if (!email) {
+      res.status(400).json({ error: "Email is required" });
+      return;
+    }
+
+    logger.info(`🔧 Starting manual rollover for ${email}`);
+
+    try {
+      // Find user by email
+      const usersSnapshot = await db.collection("users").where("email", "==", email).limit(1).get();
+      
+      if (usersSnapshot.empty) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      const userDoc = usersSnapshot.docs[0];
+      const userId = userDoc.id;
+      
+      // Calculate dates
+      const chicagoFormatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Chicago',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      
+      const now = new Date();
+      const todayStr = chicagoFormatter.format(now); // Target date for manual run is TODAY
+      
+      // Get current data from MODULES collection (Correct Path)
+      const currentRef = db.collection("modules").doc(userId).collection("daily_practice").doc("current");
+      const currentDoc = await currentRef.get();
+
+      if (!currentDoc.exists) {
+        res.status(404).json({ error: "No daily_practice data found for user" });
+        return;
+      }
+
+      const currentData = currentDoc.data();
+      const dataDate = currentData.date;
+
+      if (dataDate === todayStr) {
+        res.json({ message: "User is already on today's date", date: dataDate });
+        return;
+      }
+
+      // === ARCHIVE OLD DATA ===
+      // Archive to USERS collection (Legacy/History Path)
+      const archiveRef = db.collection("users").doc(userId).collection("daily_logs").doc(dataDate);
+      await archiveRef.set({
+        ...currentData,
+        archivedAt: admin.firestore.FieldValue.serverTimestamp(),
+        rolloverSource: "manual-function",
+      }, { merge: true });
+
+      // === CALCULATE CARRY-OVERS ===
+      const currentWins = currentData.morningBookend?.wins || [];
+      const carriedWins = currentWins
+        .filter((w) => !w.completed && w.text && w.text.trim().length > 0)
+        .map((w) => ({ ...w, completed: false, saved: true }));
+
+      const completedWins = currentWins.filter((w) => w.completed && w.text);
+      const newWinsHistoryEntry = completedWins.map((w, i) => ({
+        id: w.id || `win-${dataDate}-${i}`,
+        date: dataDate,
+        text: w.text,
+        completed: true,
+      }));
+      const existingWinsList = currentData.winsList || [];
+
+      const currentReps = currentData.active_commitments || [];
+      const carriedReps = currentReps.filter((r) => r.status !== "Committed");
+
+      const completedReps = currentReps.filter((r) => r.status === "Committed");
+      const newRepsHistoryEntry = {
+        date: dataDate,
+        completedCount: completedReps.length,
+        items: completedReps.map((r) => ({ id: r.id, text: r.text })),
+      };
+      const existingRepsHistory = currentData.repsHistory || [];
+
+      const reflection = currentData.eveningBookend || {};
+      const hasReflection = reflection.good || reflection.better || reflection.best;
+      const newReflectionEntry = hasReflection
+        ? {
+            id: `ref-${dataDate}`,
+            date: dataDate,
+            reflectionGood: reflection.good,
+            reflectionWork: reflection.better,
+            reflectionTomorrow: reflection.best,
+          }
+        : null;
+      const existingReflectionHistory = currentData.reflectionHistory || [];
+
+      const scorecard = currentData.scorecard || {
+        reps: { done: 0, total: 0 },
+        win: { done: 0, total: 0 },
+        grounding: { done: 0, total: 1 },
+      };
+      const newScorecardEntry = {
+        date: dataDate,
+        score: `${(scorecard.reps?.done || 0) + (scorecard.win?.done || 0) + (scorecard.grounding?.done || 0)}/${(scorecard.reps?.total || 0) + (scorecard.win?.total || 0) + (scorecard.grounding?.total || 1)}`,
+        details: scorecard,
+      };
+      const existingScorecardHistory = currentData.scorecardHistory || currentData.commitmentHistory || [];
+
+      // Streak
+      const currentStreakCount = currentData.streakCount || 0;
+      const groundingDone = currentData.groundingRepCompleted ? 1 : 0;
+      const winsDone = scorecard.win?.done || 0;
+      const repsDone = scorecard.reps?.done || completedReps.length;
+      const didActivity = groundingDone > 0 || winsDone > 0 || repsDone > 0;
+      
+      const todayDateObj = new Date(dataDate + 'T12:00:00');
+      const dayOfWeek = todayDateObj.getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      
+      let newStreakCount = currentStreakCount;
+      if (didActivity) {
+        newStreakCount = currentStreakCount + 1;
+      } else if (!isWeekend) {
+        newStreakCount = 0;
+      }
+
+      // === PREPARE NEW STATE ===
+      const newState = {
+        ...currentData,
+        date: todayStr, // Set to TODAY
+        lastUpdated: new Date().toISOString(),
+        streakCount: newStreakCount,
+        lastStreakDate: dataDate,
+        streakHistory: [
+          { date: dataDate, streak: newStreakCount, didActivity, isWeekend },
+          ...(currentData.streakHistory || []).slice(0, 29)
+        ],
+        winsList: [...newWinsHistoryEntry, ...existingWinsList].filter(
+          (v, i, a) => a.findIndex((t) => t.id === v.id) === i
+        ),
+        repsHistory: [newRepsHistoryEntry, ...existingRepsHistory].filter(
+          (v, i, a) => a.findIndex((t) => t.date === v.date) === i
+        ),
+        reflectionHistory: newReflectionEntry
+          ? [newReflectionEntry, ...existingReflectionHistory].filter(
+              (v, i, a) => a.findIndex((t) => t.date === v.date) === i
+            )
+          : existingReflectionHistory,
+        scorecardHistory: [newScorecardEntry, ...existingScorecardHistory].filter(
+          (v, i, a) => a.findIndex((t) => t.date === v.date) === i
+        ),
+        morningBookend: {
+          ...currentData.morningBookend,
+          wins: [...carriedWins, ...Array(3).fill(null)].slice(0, 3).map((w, i) => w || { id: `win-${Date.now()}-${i}`, text: "", completed: false, saved: false }),
+          winCompleted: false,
+          completedAt: null,
+          otherTasks: [],
+        },
+        active_commitments: carriedReps,
+        dailyTargetRepStatus: "Pending",
+        eveningBookend: {
+          good: "",
+          better: "",
+          best: "",
+          habits: {},
+          completedAt: null,
+          otherTasks: [],
+        },
+        scorecard: {
+          reps: { done: 0, total: 0, pct: 0 },
+          win: { done: 0, total: 0, pct: 0 },
+          grounding: { done: 0, total: 1, pct: 0 },
+        },
+        groundingRepCompleted: false,
+      };
+
+      await currentRef.set(newState);
+
+      logger.info(`✅ Manual rollover complete for ${email}`);
+      res.json({ success: true, message: `Rolled over from ${dataDate} to ${todayStr}` });
+
+    } catch (error) {
+      logger.error("Manual rollover failed:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
  * SCHEDULED DAILY ROLLOVER
  * Runs every night at 11:59 PM (America/Chicago timezone)
- * 
- * This function:
- * 1. Gets all users with active daily_practice data
- * 2. Archives the day's data to daily_logs/{date}
- * 3. Carries over uncompleted wins and reps
- * 4. Resets scorecard and reflections for the new day
  */
 exports.scheduledDailyRollover = onSchedule(
   {
@@ -105,7 +301,6 @@ exports.scheduledDailyRollover = onSchedule(
   async () => {
     logger.info("🌙 Starting scheduled daily rollover at 11:59 PM");
 
-    // Calculate dates in Chicago timezone (must match schedule timezone)
     const chicagoFormatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Chicago',
       year: 'numeric',
@@ -114,26 +309,26 @@ exports.scheduledDailyRollover = onSchedule(
     });
     
     const now = new Date();
-    const todayStr = chicagoFormatter.format(now); // YYYY-MM-DD in Chicago time
+    const todayStr = chicagoFormatter.format(now);
     
-    // Calculate tomorrow in Chicago timezone
     const tomorrowDate = new Date(now.getTime() + 86400000);
     const tomorrow = chicagoFormatter.format(tomorrowDate);
     
     logger.info(`📅 Date calculation: today=${todayStr}, tomorrow=${tomorrow} (Chicago time)`);
 
     try {
-      // Get all users
       const usersSnapshot = await db.collection("users").get();
       let processedCount = 0;
       let errorCount = 0;
 
       for (const userDoc of usersSnapshot.docs) {
         const userId = userDoc.id;
+        const userData = userDoc.data();
+        logger.info(`👤 User found: ${userData.email} (${userId})`);
 
         try {
-          // Get the user's current daily_practice data
-          const currentRef = db.collection("users").doc(userId).collection("daily_practice").doc("current");
+          // FIX: Use 'modules' collection for daily_practice
+          const currentRef = db.collection("modules").doc(userId).collection("daily_practice").doc("current");
           const currentDoc = await currentRef.get();
 
           if (!currentDoc.exists) {
@@ -144,13 +339,12 @@ exports.scheduledDailyRollover = onSchedule(
           const currentData = currentDoc.data();
           const dataDate = currentData.date;
 
-          // Skip if already rolled over to tomorrow or no date
           if (!dataDate || dataDate === tomorrow) {
             logger.info(`User ${userId}: Already up to date (${dataDate}), skipping`);
             continue;
           }
 
-          // === ARCHIVE TODAY'S DATA ===
+          // Archive to 'users' collection (Legacy/History Path)
           const archiveRef = db.collection("users").doc(userId).collection("daily_logs").doc(dataDate);
           await archiveRef.set({
             ...currentData,
@@ -159,14 +353,11 @@ exports.scheduledDailyRollover = onSchedule(
           }, { merge: true });
 
           // === CALCULATE CARRY-OVERS ===
-          
-          // Wins: Keep uncompleted
           const currentWins = currentData.morningBookend?.wins || [];
           const carriedWins = currentWins
             .filter((w) => !w.completed && w.text && w.text.trim().length > 0)
             .map((w) => ({ ...w, completed: false, saved: true }));
 
-          // Wins History
           const completedWins = currentWins.filter((w) => w.completed && w.text);
           const newWinsHistoryEntry = completedWins.map((w, i) => ({
             id: w.id || `win-${dataDate}-${i}`,
@@ -176,11 +367,9 @@ exports.scheduledDailyRollover = onSchedule(
           }));
           const existingWinsList = currentData.winsList || [];
 
-          // Reps: Keep uncommitted (Pending)
           const currentReps = currentData.active_commitments || [];
           const carriedReps = currentReps.filter((r) => r.status !== "Committed");
 
-          // Reps History
           const completedReps = currentReps.filter((r) => r.status === "Committed");
           const newRepsHistoryEntry = {
             date: dataDate,
@@ -189,7 +378,6 @@ exports.scheduledDailyRollover = onSchedule(
           };
           const existingRepsHistory = currentData.repsHistory || [];
 
-          // Reflection History
           const reflection = currentData.eveningBookend || {};
           const hasReflection = reflection.good || reflection.better || reflection.best;
           const newReflectionEntry = hasReflection
@@ -203,7 +391,6 @@ exports.scheduledDailyRollover = onSchedule(
             : null;
           const existingReflectionHistory = currentData.reflectionHistory || [];
 
-          // Scorecard History
           const scorecard = currentData.scorecard || {
             reps: { done: 0, total: 0 },
             win: { done: 0, total: 0 },
@@ -216,38 +403,26 @@ exports.scheduledDailyRollover = onSchedule(
           };
           const existingScorecardHistory = currentData.scorecardHistory || currentData.commitmentHistory || [];
 
-          // === STREAK CALCULATION ===
-          // User maintains streak if they completed at least ONE of:
-          // 1. Grounding Rep (groundingRepCompleted)
-          // 2. Win the Day (at least one win completed)
-          // 3. Daily Rep (at least one rep committed)
+          // Streak
           const currentStreakCount = currentData.streakCount || 0;
-          const lastStreakDate = currentData.lastStreakDate;
-          
           const groundingDone = currentData.groundingRepCompleted ? 1 : 0;
           const winsDone = scorecard.win?.done || 0;
           const repsDone = scorecard.reps?.done || completedReps.length;
-          
           const didActivity = groundingDone > 0 || winsDone > 0 || repsDone > 0;
           
-          // Check if today is a weekend (Saturday=6, Sunday=0)
-          const todayDate = new Date(dataDate + 'T12:00:00'); // Parse date at noon to avoid timezone issues
-          const dayOfWeek = todayDate.getDay();
+          const todayDateObj = new Date(dataDate + 'T12:00:00');
+          const dayOfWeek = todayDateObj.getDay();
           const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
           
           let newStreakCount = currentStreakCount;
-          
           if (didActivity) {
-            // User did at least one activity - increment streak
             newStreakCount = currentStreakCount + 1;
-            logger.info(`User ${userId}: Activity detected (grounding=${groundingDone}, wins=${winsDone}, reps=${repsDone}). Streak: ${currentStreakCount} -> ${newStreakCount}`);
+            logger.info(`User ${userId}: Activity detected. Streak: ${currentStreakCount} -> ${newStreakCount}`);
           } else if (isWeekend) {
-            // Weekend with no activity - maintain streak (grace period)
-            logger.info(`User ${userId}: Weekend with no activity. Streak maintained at ${currentStreakCount}`);
+            logger.info(`User ${userId}: Weekend with no activity. Streak maintained.`);
           } else {
-            // Weekday with no activity - reset streak
             newStreakCount = 0;
-            logger.info(`User ${userId}: Weekday with no activity. Streak reset: ${currentStreakCount} -> 0`);
+            logger.info(`User ${userId}: Weekday with no activity. Streak reset.`);
           }
 
           // === PREPARE NEW STATE ===
@@ -255,16 +430,12 @@ exports.scheduledDailyRollover = onSchedule(
             ...currentData,
             date: tomorrow,
             lastUpdated: new Date().toISOString(),
-
-            // Update Streak
             streakCount: newStreakCount,
             lastStreakDate: dataDate,
             streakHistory: [
               { date: dataDate, streak: newStreakCount, didActivity, isWeekend },
-              ...(currentData.streakHistory || []).slice(0, 29) // Keep last 30 days
+              ...(currentData.streakHistory || []).slice(0, 29)
             ],
-
-            // Update Histories (dedup by date/id)
             winsList: [...newWinsHistoryEntry, ...existingWinsList].filter(
               (v, i, a) => a.findIndex((t) => t.id === v.id) === i
             ),
@@ -279,46 +450,31 @@ exports.scheduledDailyRollover = onSchedule(
             scorecardHistory: [newScorecardEntry, ...existingScorecardHistory].filter(
               (v, i, a) => a.findIndex((t) => t.date === v.date) === i
             ),
-
-            // Reset Morning Bookend with carried wins
             morningBookend: {
               ...currentData.morningBookend,
-              wins: [
-                ...carriedWins,
-                ...Array(3).fill(null),
-              ]
-                .slice(0, 3)
-                .map((w, i) => w || { id: `win-${Date.now()}-${i}`, text: "", completed: false, saved: false }),
+              wins: [...carriedWins, ...Array(3).fill(null)].slice(0, 3).map((w, i) => w || { id: `win-${Date.now()}-${i}`, text: "", completed: false, saved: false }),
               winCompleted: false,
               completedAt: null,
               otherTasks: [],
             },
-
-            // Reset Reps
             active_commitments: carriedReps,
             dailyTargetRepStatus: "Pending",
-
-            // Reset Evening Bookend
             eveningBookend: {
               good: "",
               better: "",
               best: "",
               habits: {},
               completedAt: null,
+              otherTasks: [],
             },
-
-            // Reset Scorecard
             scorecard: {
               reps: { done: 0, total: 0, pct: 0 },
               win: { done: 0, total: 0, pct: 0 },
               grounding: { done: 0, total: 1, pct: 0 },
             },
-
-            // Reset grounding rep state
             groundingRepCompleted: false,
           };
 
-          // === UPDATE FIRESTORE ===
           await currentRef.set(newState);
 
           processedCount++;
@@ -334,6 +490,36 @@ exports.scheduledDailyRollover = onSchedule(
     } catch (error) {
       logger.error("🔥 Daily rollover failed:", error);
       throw error;
+    }
+  }
+);
+
+/**
+ * DEBUG USER DATA
+ * Dumps the user's daily_practice/current data for inspection.
+ * Usage: GET /debugUser
+ */
+exports.debugUser = onRequest(
+  {
+    cors: true,
+    invoker: "public",
+  },
+  async (req, res) => {
+    try {
+      const usersSnapshot = await db.collection("users").get();
+      const users = usersSnapshot.docs.map(doc => ({
+        id: doc.id,
+        email: doc.data().email,
+        firstName: doc.data().firstName,
+        lastName: doc.data().lastName
+      }));
+      
+      res.json({
+        count: users.length,
+        users
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
   }
 );

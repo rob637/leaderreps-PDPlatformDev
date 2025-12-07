@@ -83,14 +83,33 @@ const DevelopmentPlanWidget = ({ scope }) => {
     if (resourceId) {
       setLoadingResource(item.id);
       try {
-        // Try fetching from the new unified 'content' collection first
-        const contentRef = doc(db, 'content', resourceId);
+        // Try fetching from the new unified 'content_library' collection first
+        const contentRef = doc(db, 'content_library', resourceId);
         const contentSnap = await getDoc(contentRef);
 
         if (contentSnap.exists()) {
-           setViewingResource({ id: contentSnap.id, ...contentSnap.data(), resourceType: contentSnap.data().type });
+           const data = contentSnap.data();
+           let mappedResource = { 
+               id: contentSnap.id, 
+               ...data, 
+               resourceType: data.type 
+           };
+
+           // Map details to url for viewer compatibility
+           if (data.type === 'REP' && data.details?.videoUrl) {
+               mappedResource.url = data.details.videoUrl;
+               mappedResource.resourceType = 'video';
+           } else if (data.type === 'READ_REP') {
+               if (data.details?.pdfUrl) {
+                   mappedResource.url = data.details.pdfUrl;
+                   mappedResource.resourceType = 'pdf';
+               }
+               // TODO: Handle text-only content in Viewer
+           }
+
+           setViewingResource(mappedResource);
         } else {
-            // Fallback to legacy collections if not found in 'content'
+            // Fallback to legacy collections if not found in 'content_library'
             let collectionName = CONTENT_COLLECTIONS.READINGS;
             if (item.resourceType === 'video') collectionName = CONTENT_COLLECTIONS.VIDEOS;
             else if (item.resourceType === 'community') collectionName = CONTENT_COLLECTIONS.COMMUNITY;

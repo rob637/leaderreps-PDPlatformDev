@@ -73,6 +73,8 @@ const AppContent = ({
 
   const currentYear = new Date().getFullYear();
 
+  const isFullWidthScreen = currentScreen === 'admin-portal';
+
   return (
     <NavigationProvider
       navigate={navigate}
@@ -87,7 +89,7 @@ const AppContent = ({
       <div className="relative min-h-screen flex justify-center font-sans antialiased bg-corporate-navy overflow-hidden">
         
         {/* Centered App Container */}
-        <div className="flex w-full max-w-[1000px] h-screen relative">
+        <div className={`flex w-full ${isFullWidthScreen ? 'max-w-full' : 'max-w-[1000px]'} h-screen relative`}>
           
           {/* New Sidebar */}
           <ArenaSidebar 

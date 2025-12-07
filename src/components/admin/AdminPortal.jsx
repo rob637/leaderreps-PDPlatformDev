@@ -11,12 +11,16 @@ import {
   Settings,
   Calendar,
   BookOpen,
-  TestTube2
+  TestTube2,
+  Library,
+  ArrowLeftRight
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
 import FeatureManager from './FeatureManager';
 import ContentAdminHome from './ContentAdminHome'; // Existing component
+import UnifiedContentManager from './UnifiedContentManager'; // New component
+import MigrationTool from './MigrationTool'; // New component
 import SystemWidgets from './SystemWidgets';
 import DevPlanManager from './DevPlanManager';
 import DocumentationCenter from './DocumentationCenter';
@@ -102,7 +106,8 @@ const AdminPortal = () => {
       title: 'Management',
       items: [
         { id: 'devplan', label: 'Dev Plan', icon: Calendar },
-        { id: 'content', label: 'Content Mgmt', icon: Database }
+        { id: 'library', label: 'Unified Library', icon: Library },
+        { id: 'content', label: 'Legacy Content', icon: Database }
       ]
     },
     {
@@ -111,6 +116,7 @@ const AdminPortal = () => {
         { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
         { id: 'features', label: 'Widget Lab', icon: FlaskConical },
         { id: 'system', label: 'System', icon: Settings },
+        { id: 'migration', label: 'Migration', icon: ArrowLeftRight },
         { id: 'tests', label: 'Test Center', icon: TestTube2 }
       ]
     },
@@ -130,6 +136,8 @@ const AdminPortal = () => {
         return <TestCenter />;
       case 'devplan':
         return <DevPlanManager />;
+      case 'library':
+        return <UnifiedContentManager />;
       case 'diagnostics':
         return <SystemDiagnostics />;
       case 'content':
@@ -140,6 +148,8 @@ const AdminPortal = () => {
         return <DocumentationCenter />;
       case 'system':
         return <SystemWidgets />;
+      case 'migration':
+        return <MigrationTool />;
       default:
         return <AdminDashboard />;
     }
