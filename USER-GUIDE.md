@@ -2,7 +2,7 @@ md
 # 📱 LeaderReps PD Platform - User Guide
 
 > **Complete guide for platform users**  
-> *Last Updated: December 2025*
+> *Last Updated: December 7, 2025*
 
 ---
 
