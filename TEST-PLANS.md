@@ -19,11 +19,12 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 4. [Content System Tests](#4-content-system-tests)
 5. [Authentication Tests](#5-authentication-tests)
 6. [Admin Portal Tests](#6-admin-portal-tests)
-7. [Time-Based Feature Tests](#7-time-based-feature-tests)
-8. [Cross-Browser Tests](#8-cross-browser-tests)
-9. [Mobile/Responsive Tests](#9-mobileresponsive-tests)
-10. [Performance Tests](#10-performance-tests)
-11. [Regression Test Checklist](#11-regression-test-checklist)
+7. [Widget Tests](#7-widget-tests)
+8. [Time-Based Feature Tests](#8-time-based-feature-tests)
+9. [Cross-Browser Tests](#9-cross-browser-tests)
+10. [Mobile/Responsive Tests](#10-mobileresponsive-tests)
+11. [Performance Tests](#11-performance-tests)
+12. [Regression Test Checklist](#12-regression-test-checklist)
 
 ---
 
@@ -43,6 +44,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 |------|-------|---------|
 | Admin | rob@sagecg.com | Full admin access testing |
 | Admin | ryan@leaderreps.com | Secondary admin testing |
+| Admin | admin@leaderreps.com | Tertiary admin testing |
 | Free User | (create test account) | Free tier feature testing |
 | Premium User | (create test account) | Premium feature testing |
 | New User | (create test account) | Onboarding flow testing |
@@ -205,7 +207,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 ### 5.2 Registration
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
+|---------|-----------| 같아요
 | AUTH-010 | New Account | Complete registration form | Account created | |
 | AUTH-011 | Duplicate Email | Register existing email | Error message | |
 | AUTH-012 | Weak Password | Enter password < 8 chars | Validation error | |
@@ -269,11 +271,67 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | ADM-041 | Reset Time | Clear time offset | App shows current date | |
 | ADM-042 | View Diagnostics | Go to Diagnostics tab | System stats display | |
 
+### 6.6 Unified Content Manager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-050 | Access UCM | Go to Unified Content Manager tab | UCM Interface loads | |
+| ADM-051 | Create New Content | Click "Create" | New content form opens | |
+| ADM-052 | Edit Existing Content | Select content and click "Edit" | Content editor opens | |
+| ADM-053 | Delete Content | Select content and click "Delete" | Content is removed after confirmation | |
+
+### 6.7 Migration Tool
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-060 | Access Migration Tool | Go to Migration Tool tab | Tool interface loads | |
+| ADM-061 | Export Data | Click "Export" | Data is exported successfully | |
+| ADM-062 | Import Data | Click "Import" and select file | Data is imported successfully | |
+
+### 6.8 System Diagnostics
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-070 | Access Diagnostics | Go to System Diagnostics tab | Diagnostics information is displayed | |
+| ADM-071 | Check Firebase Status | Review Firebase status | Firebase connection status is shown | |
+
+### 6.9 Feature Manager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-080 | Access Feature Manager | Go to Feature Manager tab | Available features are listed | |
+| ADM-081 | Enable Feature | Toggle feature on | Feature is enabled | |
+| ADM-082 | Disable Feature | Toggle feature off | Feature is disabled | |
+
 ---
 
-## 7. Time-Based Feature Tests
+## 7. Widget Tests
 
-### 7.1 Daily Rollover (11:59 PM)
+### 7.1 Weekly Focus Widget
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| WID-001 | Display Weekly Focus | View dashboard | Weekly focus displays correctly based on Dev Plan week | |
+| WID-002 | Correct Week Number | Verify week number | Week number matches current week in Dev Plan | |
+
+### 7.2 LIS Maker Widget
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| WID-010 | Input Identity Statement | Enter text in the textarea | Text is displayed in the textarea | |
+| WID-011 | Save Identity Statement | Click 'Save' or equivalent action | Identity statement is saved and persists after refresh | |
+| WID-012 | Character Limit | Exceed the character limit (if any) | Character limit is enforced and displayed | |
+
+### 7.3 AM Bookend Header Widget
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| WID-020 | Correct Header Display | Navigate to Planning Hub | Correct header displays. Sun icon, "AM Bookend: Start Strong" Text. | |
+
+---
+
+## 8. Time-Based Feature Tests
+
+### 8.1 Daily Rollover (11:59 PM)
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
@@ -283,7 +341,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | TIME-004 | Scorecard Reset | Check next day | Scorecard at 0% | |
 | TIME-005 | Streak Updated | Check streak count | Correctly incremented/reset | |
 
-### 7.2 Time Travel Testing
+### 8.2 Time Travel Testing
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
@@ -294,9 +352,9 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 
 ---
 
-## 8. Cross-Browser Tests
+## 9. Cross-Browser Tests
 
-### 8.1 Browser Compatibility
+### 9.1 Browser Compatibility
 
 | Test ID | Browser | Version | Key Tests | Pass/Fail |
 |---------|---------|---------|-----------|-----------|
@@ -307,7 +365,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | BROWSER-005 | Mobile Safari | iOS 16+ | Mobile smoke test | |
 | BROWSER-006 | Chrome Android | Latest | Mobile smoke test | |
 
-### 8.2 Browser-Specific Checks
+### 9.2 Browser-Specific Checks
 
 | Test ID | Test Case | Browsers | Expected Result | Pass/Fail |
 |---------|-----------|----------|-----------------|-----------|
@@ -318,9 +376,9 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 
 ---
 
-## 9. Mobile/Responsive Tests
+## 10. Mobile/Responsive Tests
 
-### 9.1 Responsive Breakpoints
+### 10.1 Responsive Breakpoints
 
 | Test ID | Screen Size | Device Example | Key Checks | Pass/Fail |
 |---------|-------------|----------------|------------|-----------|
@@ -330,7 +388,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | RESP-004 | 1024px | iPad Pro | Large tablet | |
 | RESP-005 | 1440px | Desktop | Full desktop | |
 
-### 9.2 Touch Interactions
+### 10.2 Touch Interactions
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
@@ -339,7 +397,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | TOUCH-003 | Long Press | Long press elements | No unexpected behavior | |
 | TOUCH-004 | Pinch Zoom | Pinch zoom page | Appropriate zoom | |
 
-### 9.3 Mobile Navigation
+### 10.3 Mobile Navigation
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
@@ -349,9 +407,9 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 
 ---
 
-## 10. Performance Tests
+## 11. Performance Tests
 
-### 10.1 Load Times
+### 11.1 Load Times
 
 | Test ID | Metric | Target | Actual | Pass/Fail |
 |---------|--------|--------|--------|-----------|
@@ -360,7 +418,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | PERF-003 | Largest Contentful Paint | < 3s | | |
 | PERF-004 | Cumulative Layout Shift | < 0.1 | | |
 
-### 10.2 Data Operations
+### 11.2 Data Operations
 
 | Test ID | Test Case | Target | Actual | Pass/Fail |
 |---------|-----------|--------|--------|-----------|
@@ -369,7 +427,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | PERF-012 | Save Operation | < 500ms | | |
 | PERF-013 | Search Response | < 300ms | | |
 
-### 10.3 Offline/PWA
+### 11.3 Offline/PWA
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
@@ -379,7 +437,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 
 ---
 
-## 11. Regression Test Checklist
+## 12. Regression Test Checklist
 
 ### Pre-Deployment Checklist
 
@@ -415,6 +473,8 @@ Run this checklist before every production deployment:
 - [ ] Week editing saves
 - [ ] Content management works
 - [ ] Widget toggles work
+- [ ] System Diagnostics accessible and displaying data
+- [ ] Feature Manager works
 
 #### Cross-Cutting
 - [ ] Mobile responsive
