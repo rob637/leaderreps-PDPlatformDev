@@ -43,6 +43,9 @@ const DocumentationCenter = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState('');
   const [selectedDocId, setSelectedDocId] = useState('all');
+  const [updatedDocContent, setUpdatedDocContent] = useState('');
+  const [isApplying, setIsApplying] = useState(false);
+  const [kaizenMode, setKaizenMode] = useState('update'); // 'update' or 'suggest'
 
   // Document definitions
   const documents = [
@@ -241,6 +244,7 @@ Please review and improve the following documentation, making it 1% better by:
     setShowRefreshModal(true);
     setCopied(false);
     setAiSuggestions('');
+    setUpdatedDocContent('');
   };
 
   // Copy prompt to clipboard
@@ -265,8 +269,119 @@ Please review and improve the following documentation, making it 1% better by:
     }
   };
 
-  // Generate AI suggestions using Gemini
+  // Copy updated document to clipboard
+  const copyUpdatedDoc = async () => {
+    try {
+      await navigator.clipboard.writeText(updatedDocContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  // Download updated document as file
+  const downloadUpdatedDoc = () => {
+    const docNames = {
+      'admin-guide': 'ADMIN-GUIDE.md',
+      'user-guide': 'USER-GUIDE.md',
+      'test-plans': 'TEST-PLANS.md'
+    };
+    const filename = docNames[selectedDocId] || 'UPDATED-DOC.md';
+    const blob = new Blob([updatedDocContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Generate UPDATED documentation (not just suggestions)
+  const generateUpdatedDoc = async () => {
+    setIsGenerating(true);
+    setAiSuggestions('');
+    setUpdatedDocContent('');
+
+    try {
+      const docMap = {
+        'admin-guide': adminGuideRaw,
+        'user-guide': userGuideRaw, 
+        'test-plans': testPlansRaw
+      };
+      const currentDoc = docMap[selectedDocId] || adminGuideRaw;
+      const packageJson = packageJsonRaw;
+      const widgetTemplates = widgetTemplatesRaw;
+      const adminPortal = adminPortalRaw;
+
+      const prompt = `
+You are the Lead Documentation Engineer for LeaderReps. Your task is to UPDATE the documentation to be accurate and complete.
+
+---
+### ACTUAL CODE CONTEXT (Source of Truth)
+1. **Project Dependencies (package.json)**:
+${packageJson.substring(0, 1500)}
+
+2. **Active Features (widgetTemplates.js)**:
+${widgetTemplates.substring(0, 3000)}
+
+3. **Admin Capabilities (AdminPortal.jsx)**:
+${adminPortal.substring(0, 3000)}
+---
+
+### CURRENT DOCUMENTATION TO UPDATE
+${currentDoc}
+---
+
+### YOUR TASK
+1. Review the current documentation against the code context
+2. Make ALL necessary updates to ensure accuracy
+3. Add any missing features or capabilities you see in the code
+4. Remove or update any outdated information
+5. Improve clarity where possible
+6. Keep the same general structure and formatting style
+
+**CRITICAL**: Output the COMPLETE UPDATED DOCUMENTATION file. Do not summarize or truncate.
+Start your response with the markdown content directly (no preamble like "Here is the updated...").
+The output should be ready to save directly as the .md file.
+`;
+
+      const result = await callSecureGeminiAPI({
+        prompt,
+        model: 'gemini-2.0-flash',
+        systemInstruction: 'You are an expert technical writer. Output ONLY the complete updated markdown documentation. No explanations, no preamble - just the full updated .md file content.'
+      });
+
+      if (result?.text) {
+        // Clean up any potential preamble
+        let content = result.text;
+        // Remove common AI preambles if present
+        if (content.startsWith('```markdown')) {
+          content = content.replace(/^```markdown\n?/, '').replace(/\n?```$/, '');
+        } else if (content.startsWith('```')) {
+          content = content.replace(/^```\n?/, '').replace(/\n?```$/, '');
+        }
+        setUpdatedDocContent(content);
+        setAiSuggestions('✅ Documentation updated! Review the changes below, then download or copy to replace the file.');
+      } else {
+        setAiSuggestions('Unable to generate updated documentation. Please try again.');
+      }
+    } catch (error) {
+      console.error('AI generation error:', error);
+      setAiSuggestions(`Error: ${error.message}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Generate AI suggestions using Gemini (original suggest-only mode)
   const generateAISuggestions = async () => {
+    if (kaizenMode === 'update') {
+      return generateUpdatedDoc();
+    }
+    
     setIsGenerating(true);
     setAiSuggestions('');
 
@@ -388,12 +503,42 @@ Format your response as:
 
             {/* Modal Content */}
             <div className="p-5 overflow-y-auto max-h-[60vh]">
+              {/* Mode Toggle */}
+              <div className="flex items-center gap-4 mb-4 p-3 bg-slate-100 rounded-lg">
+                <span className="text-sm font-medium text-slate-700">Mode:</span>
+                <button
+                  onClick={() => setKaizenMode('update')}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
+                    kaizenMode === 'update'
+                      ? 'bg-purple-600 text-white shadow-md'
+                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                  }`}
+                >
+                  🔄 Update Document
+                </button>
+                <button
+                  onClick={() => setKaizenMode('suggest')}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
+                    kaizenMode === 'suggest'
+                      ? 'bg-purple-600 text-white shadow-md'
+                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                  }`}
+                >
+                  💡 Suggest Only
+                </button>
+                <span className="text-xs text-slate-500 ml-2">
+                  {kaizenMode === 'update' ? 'AI will generate the complete updated file' : 'AI will provide suggestions only'}
+                </span>
+              </div>
+
               {/* AI Generation Section */}
               <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Wand2 className="w-5 h-5 text-purple-600" />
-                    <span className="font-medium text-purple-900">Analyze Code & Improve Docs</span>
+                    <span className="font-medium text-purple-900">
+                      {kaizenMode === 'update' ? 'Auto-Update Documentation' : 'Analyze Code & Improve Docs'}
+                    </span>
                   </div>
                   <button
                     onClick={generateAISuggestions}
@@ -420,10 +565,10 @@ Format your response as:
                 {selectedDocId === 'all' && (
                   <p className="text-sm text-purple-700">Select a specific document below to generate AI suggestions.</p>
                 )}
-                {aiSuggestions && (
+                {aiSuggestions && !updatedDocContent && (
                   <div className="mt-3 p-3 bg-white rounded-lg border border-purple-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-purple-600 uppercase">AI Suggestions</span>
+                      <span className="text-xs font-medium text-purple-600 uppercase">AI Status</span>
                       <button
                         onClick={copySuggestions}
                         className="flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
@@ -437,9 +582,47 @@ Format your response as:
                     </div>
                   </div>
                 )}
+                
+                {/* Updated Document Output */}
+                {updatedDocContent && (
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-green-700 flex items-center gap-2">
+                        <Check className="w-4 h-4" />
+                        Updated documentation ready!
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={copyUpdatedDoc}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+                        >
+                          <Copy className="w-4 h-4" />
+                          Copy
+                        </button>
+                        <button
+                          onClick={downloadUpdatedDoc}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download File
+                        </button>
+                      </div>
+                    </div>
+                    <div className="bg-slate-900 rounded-lg p-4 max-h-64 overflow-y-auto">
+                      <pre className="text-xs text-slate-300 whitespace-pre-wrap font-mono">
+                        {updatedDocContent.substring(0, 3000)}
+                        {updatedDocContent.length > 3000 && '\n\n... (truncated for preview - download for full content)'}
+                      </pre>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      💡 Download the file and replace the existing {selectedDocId === 'admin-guide' ? 'ADMIN-GUIDE.md' : selectedDocId === 'user-guide' ? 'USER-GUIDE.md' : 'TEST-PLANS.md'} in your repository.
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {/* Manual Option */}
+              {/* Manual Option - only show in suggest mode */}
+              {kaizenMode === 'suggest' && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -454,6 +637,7 @@ Format your response as:
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Prompt Area */}
               <div className="relative">
@@ -518,6 +702,7 @@ Format your response as:
                       setRefreshPrompt(generateRefreshPrompt(docId));
                       setCopied(false);
                       setAiSuggestions('');
+                      setUpdatedDocContent('');
                     }}
                     className={`px-3 py-1.5 text-sm border rounded-lg transition-colors ${
                       selectedDocId === docId
