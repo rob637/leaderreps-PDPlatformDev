@@ -1,6 +1,20 @@
 {
   "indexes": [
     {
+      "collectionGroup": "content_library",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "content_readings",
       "queryScope": "COLLECTION",
       "fields": [
