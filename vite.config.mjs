@@ -196,6 +196,9 @@ export default defineConfig({
     // Performance thresholds
     chunkSizeWarningLimit: 1000,
     
+    // Disable source maps for production build to save memory
+    sourcemap: false,
+
     // Minification
     minify: 'terser',
     terserOptions: {
