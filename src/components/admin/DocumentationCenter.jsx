@@ -398,9 +398,12 @@ Please review and improve the following documentation, making it 1% better by:
       const packageJson = packageJsonRaw;
       const widgetTemplates = widgetTemplatesRaw;
       const adminPortal = adminPortalRaw;
+      const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
       const prompt = `
 You are the Lead Documentation Engineer for LeaderReps. Your task is to UPDATE the documentation to be accurate and complete.
+
+**TODAY'S DATE: ${currentDate}** - Use this for any "Last Updated" fields.
 
 ---
 ### ACTUAL CODE CONTEXT (Source of Truth)
@@ -425,6 +428,7 @@ ${currentDoc}
 4. Remove or update any outdated information
 5. Improve clarity where possible
 6. Keep the same general structure and formatting style
+7. Update "Last Updated" date to current month/year: ${currentDate.split(' ').slice(0, 2).join(' ')} ${new Date().getFullYear()}
 
 **CRITICAL**: Output the COMPLETE UPDATED DOCUMENTATION file. Do not summarize or truncate.
 Start your response with the markdown content directly (no preamble like "Here is the updated...").
@@ -481,11 +485,14 @@ The output should be ready to save directly as the .md file.
       const packageJson = packageJsonRaw;
       const widgetTemplates = widgetTemplatesRaw;
       const adminPortal = adminPortalRaw;
+      const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
       // 3. Construct Context-Aware Prompt
       const prompt = `
 You are the Lead Documentation Engineer for LeaderReps. Your goal is to make the documentation "1% better" with every pass.
 Review the CURRENT DOCUMENTATION against the ACTUAL CODE CONTEXT provided below.
+
+**TODAY'S DATE: ${currentDate}** - Reference this for any date-related suggestions.
 
 ---
 ### ACTUAL CODE CONTEXT (Truth)
