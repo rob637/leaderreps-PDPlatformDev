@@ -3,6 +3,7 @@ import PageLayout from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useDevPlan } from '../../../hooks/useDevPlan';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { Loader, FileText, Video, Link as LinkIcon, Download, Search, SlidersHorizontal, Wrench, ExternalLink } from 'lucide-react';
 import { TierBadge, SkillTag } from '../../ui/ContentBadges.jsx';
 import SkillFilter from '../../ui/SkillFilter.jsx';
@@ -18,7 +19,7 @@ const ToolsIndex = () => {
   const [typeFilter, setTypeFilter] = useState('all');
 
   useEffect(() => {
-    const q = query(collection(db, 'content'), where('type', '==', 'TOOL'));
+    const q = query(collection(db, UNIFIED_COLLECTION), where('type', '==', 'TOOL'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setTools(items);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PageLayout } from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { collection, onSnapshot, query, orderBy, where, getDocs } from 'firebase/firestore';
+import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { Loader, Zap, ArrowRight, Layers, Dumbbell, BookOpen, Wrench } from 'lucide-react';
 
 const SkillsIndex = () => {
@@ -21,7 +22,7 @@ const SkillsIndex = () => {
       for (const skill of items) {
         try {
           const contentQ = query(
-            collection(db, 'content'),
+            collection(db, UNIFIED_COLLECTION),
             where('skills', 'array-contains', skill.id),
             where('status', '==', 'PUBLISHED')
           );

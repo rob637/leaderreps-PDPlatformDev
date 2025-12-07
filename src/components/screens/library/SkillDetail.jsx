@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useDevPlan } from '../../../hooks/useDevPlan';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { PageLayout } from '../../ui/PageLayout.jsx';
 import { Loader, PlayCircle, Video, BookOpen, FileText, Zap, ArrowRight } from 'lucide-react';
 import { Card, Button, Badge } from '../../screens/developmentplan/DevPlanComponents.jsx';
@@ -58,7 +59,7 @@ const SkillDetail = ({ navParams }) => {
           
           // 2. Fetch Related Content
           // Query content where 'skills' array-contains skillId
-          const contentRef = collection(db, 'content');
+          const contentRef = collection(db, UNIFIED_COLLECTION);
           const q = query(
             contentRef, 
             where('skills', 'array-contains', skillId),

@@ -21,7 +21,7 @@ const ProgramDetail = ({ navParams }) => {
         setLoading(true);
         
         // 1. Fetch Program Details
-        const programRef = doc(db, 'content', programId);
+        const programRef = doc(db, UNIFIED_COLLECTION, programId);
         const programSnap = await getDoc(programRef);
         
         if (programSnap.exists()) {
@@ -29,7 +29,7 @@ const ProgramDetail = ({ navParams }) => {
           
           // 2. Fetch Child Workouts
           // Query: type=WORKOUT, parentId=programId, orderBy sequenceOrder
-          const workoutsRef = collection(db, 'content');
+          const workoutsRef = collection(db, UNIFIED_COLLECTION);
           const q = query(
             workoutsRef, 
             where('type', '==', 'WORKOUT'),

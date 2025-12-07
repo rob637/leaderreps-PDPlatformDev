@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { PageLayout } from '../../ui/PageLayout.jsx';
 import { Loader, Dumbbell, Clock, BarChart, Play, CheckCircle, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { Button } from '../../screens/developmentplan/DevPlanComponents.jsx';
@@ -21,14 +22,14 @@ const WorkoutDetail = ({ navParams }) => {
         setLoading(true);
         
         // 1. Fetch Workout Details
-        const workoutRef = doc(db, 'content', workoutId);
+        const workoutRef = doc(db, UNIFIED_COLLECTION, workoutId);
         const workoutSnap = await getDoc(workoutRef);
         
         if (workoutSnap.exists()) {
           setWorkout({ id: workoutSnap.id, ...workoutSnap.data() });
           
           // 2. Fetch Child Exercises
-          const exercisesRef = collection(db, 'content');
+          const exercisesRef = collection(db, UNIFIED_COLLECTION);
           const q = query(
             exercisesRef, 
             where('type', '==', 'EXERCISE'),
@@ -42,7 +43,7 @@ const WorkoutDetail = ({ navParams }) => {
             
             // 3. Fetch Child Reps for each Exercise (Nested fetch)
             const repsQ = query(
-              collection(db, 'content'),
+              collection(db, UNIFIED_COLLECTION),
               where('type', '==', 'REP'),
               where('parentId', '==', exercise.id)
             );

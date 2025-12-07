@@ -21,7 +21,7 @@ export default defineConfig({
     },
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['icons/*.png', 'icons/*.svg', 'images/*.png'],
       
       // Inject service worker registration with update detection
@@ -33,7 +33,7 @@ export default defineConfig({
       workbox: {
         // Ensure the new service worker takes control immediately
         clientsClaim: true,
-        skipWaiting: false, // We handle this manually with the prompt
+        skipWaiting: true,
 
         // Comprehensive glob patterns for all assets
         globPatterns: [

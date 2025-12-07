@@ -3,6 +3,7 @@ import PageLayout from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useDevPlan } from '../../../hooks/useDevPlan';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { Loader, Dumbbell, Search, SlidersHorizontal, ArrowRight } from 'lucide-react';
 import { DifficultyBadge, DurationBadge, TierBadge, SkillTag } from '../../ui/ContentBadges.jsx';
 import SkillFilter from '../../ui/SkillFilter.jsx';
@@ -18,7 +19,7 @@ const WorkoutsIndex = () => {
   const [difficultyFilter, setDifficultyFilter] = useState('all');
 
   useEffect(() => {
-    const q = query(collection(db, 'content'), where('type', '==', 'WORKOUT'));
+    const q = query(collection(db, UNIFIED_COLLECTION), where('type', '==', 'WORKOUT'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setWorkouts(items);
