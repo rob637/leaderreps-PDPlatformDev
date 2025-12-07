@@ -30,21 +30,10 @@ setGlobalOptions({ maxInstances: 10, region: "us-central1" });
  */
 exports.geminiProxy = onRequest(
   {
-    cors: false,
+    cors: true,
+    invoker: "public",
   },
   async (req, res) => {
-    // Manual CORS handling
-    res.set('Access-Control-Allow-Origin', '*');
-    
-    if (req.method === 'OPTIONS') {
-      // Send response to OPTIONS requests
-      res.set('Access-Control-Allow-Methods', 'POST');
-      res.set('Access-Control-Allow-Headers', 'Content-Type');
-      res.set('Access-Control-Max-Age', '3600');
-      res.status(204).send('');
-      return;
-    }
-
     // Only allow POST requests
     if (req.method !== "POST") {
       res.status(405).json({ error: "Method not allowed" });
@@ -52,7 +41,7 @@ exports.geminiProxy = onRequest(
     }
 
     try {
-      const { prompt, model = "gemini-1.5-flash", systemInstruction } = req.body;
+      const { prompt, model = "gemini-2.0-flash", systemInstruction } = req.body;
 
       if (!prompt) {
         res.status(400).json({ error: "Prompt is required" });

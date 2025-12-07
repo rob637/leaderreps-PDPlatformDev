@@ -123,7 +123,7 @@ const PreMortemView = ({ setPlanningView }) => {
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userContext }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
-                model: GEMINI_MODEL || 'gemini-1.5-flash', // Use model from context // cite: useAppServices.jsx
+                model: GEMINI_MODEL || 'gemini-2.0-flash', // Use model from context // cite: useAppServices.jsx
             };
             const result = await callSecureGeminiAPI(payload); // cite: useAppServices.jsx
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text
@@ -680,7 +680,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                 systemInstruction: { parts: [{ text: systemInstruction }] },
                 // --- Request JSON Output ---
                 generationConfig: { responseMimeType: "application/json", responseSchema: jsonSchema },
-                model: 'gemini-1.5-flash', // Use flash for speed
+                model: 'gemini-2.0-flash', // Use flash for speed
             };
 
             const result = await callSecureGeminiAPI(payload); // cite: useAppServices.jsx

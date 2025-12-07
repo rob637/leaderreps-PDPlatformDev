@@ -326,7 +326,7 @@ Format your response as:
 
       const result = await callSecureGeminiAPI({
         prompt,
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash',
         systemInstruction: 'You are a technical documentation expert focused on accuracy and continuous improvement (Kaizen). Always ground your suggestions in the provided code context.'
       });
 

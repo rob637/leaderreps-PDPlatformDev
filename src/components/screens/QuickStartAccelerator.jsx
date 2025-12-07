@@ -95,7 +95,7 @@ const LISAuditorView = ({ setQuickStartView }) => {
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
-                model: 'gemini-1.5-flash', // Use flash model for faster critique // cite: QuickStartAccelerator.jsx (Original Logic)
+                model: 'gemini-2.0-flash', // Use flash model for faster critique // cite: QuickStartAccelerator.jsx (Original Logic)
             };
             const result = await callSecureGeminiAPI(payload); // cite: useAppServices.jsx
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;

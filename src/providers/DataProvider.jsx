@@ -259,7 +259,7 @@ const DataProvider = ({
   );
 
   const appServicesValue = useMemo(() => {
-    const geminiModel = resolvedMetadata.GEMINI_MODEL || 'gemini-1.5-flash';
+    const geminiModel = resolvedMetadata.GEMINI_MODEL || 'gemini-2.0-flash';
     const convertedFeatureFlags = Object.fromEntries(
       Object.entries(resolvedMetadata.featureFlags || {}).map(
         ([key, value]) => [
