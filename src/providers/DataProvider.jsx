@@ -208,8 +208,8 @@ const DataProvider = ({
       // Use the Cloud Function URL for the Gemini proxy
       // DEV: leaderreps-pd-platform, TEST: leaderreps-test
       const GEMINI_PROXY_URL = import.meta.env.VITE_FIREBASE_PROJECT_ID === 'leaderreps-test'
-        ? 'https://geminiproxy-jxhqfhns5a-uc.a.run.app'
-        : 'https://geminiproxy-jxhqfhns5a-uc.a.run.app';
+        ? 'https://geminiproxy-qmrhrvrytq-uc.a.run.app'
+        : 'https://geminiproxy-qmrhrvrytq-uc.a.run.app';
 
       try {
         const requestOptions = {
