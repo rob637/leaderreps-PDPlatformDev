@@ -299,7 +299,49 @@ ${widgetTemplates.substring(0, 2000)}...
 
 3. **Admin Capabilities (AdminPortal.jsx)**:
 ${adminPortal.substring(0, 2000)}...
-```  return (
+---
+
+### CURRENT DOCUMENTATION (To Improve)
+${currentDoc.substring(0, 15000)}
+---
+
+### INSTRUCTIONS
+Identify discrepancies between the Code (Truth) and the Documentation.
+Provide 3-5 specific, actionable improvements to make the docs more accurate and helpful.
+Focus on:
+1. **Accuracy**: Does the doc mention features that don't exist, or miss new ones (like Unified Content Library)?
+2. **Completeness**: Are the tech stack details correct based on package.json?
+3. **Clarity**: Can sections be simplified?
+
+Format your response as:
+## 🚀 Kaizen Improvements (1% Better)
+
+### 1. [Title of Improvement]
+- **Observation**: [What you found in the code vs docs]
+- **Suggested Change**: [Specific text to add/change]
+- **Why**: [Benefit]
+
+...
+`;
+
+      const result = await callSecureGeminiAPI({
+        prompt,
+        model: 'gemini-1.5-flash',
+        systemInstruction: 'You are a technical documentation expert focused on accuracy and continuous improvement (Kaizen). Always ground your suggestions in the provided code context.'
+      });
+
+      if (result?.text) {
+        setAiSuggestions(result.text);
+      } else {
+        setAiSuggestions('Unable to generate suggestions. Please try again or use the manual copy option.');
+      }
+    } catch (error) {
+      console.error('AI generation error:', error);
+      setAiSuggestions(`Error: ${error.message}\n\nPlease use the manual copy option and paste into your preferred AI assistant.`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };  return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
