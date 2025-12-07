@@ -5,6 +5,7 @@ import { WIDGET_TEMPLATES } from '../../config/widgetTemplates';
 import WinTheDayWidget from '../widgets/WinTheDayWidget';
 import PMReflectionWidget from '../widgets/PMReflectionWidget';
 import DevelopmentPlanWidget from '../widgets/DevelopmentPlanWidget';
+import ThisWeeksActionsWidget from '../widgets/ThisWeeksActionsWidget';
 import AdminAccessViewer from './AdminAccessViewer';
 
 /**
@@ -34,6 +35,10 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
 
   if (widgetId === 'development-plan') {
     return <DevelopmentPlanWidget scope={scope} />;
+  }
+
+  if (widgetId === 'this-weeks-actions') {
+    return <ThisWeeksActionsWidget scope={scope} />;
   }
 
   if (widgetId === 'admin-access-viewer') {

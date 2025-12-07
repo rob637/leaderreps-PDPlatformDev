@@ -2651,6 +2651,10 @@ render(<RepsHistoryWidget />);
 })()
     `,
 
+    'this-weeks-actions': `
+<ThisWeeksActionsWidget scope={scope} />
+    `,
+
   };
 
 export const FEATURE_METADATA = {
@@ -2679,6 +2683,7 @@ export const FEATURE_METADATA = {
   'dev-plan-header': { core: true, category: 'Development Plan', name: 'DP Header', description: 'Development Plan Header', purpose: 'Development Plan Overview.', extendedDescription: 'Shows the current cycle, total skills, and overall progress of the active Development Plan.' },
   'dev-plan-stats': { core: true, category: 'Development Plan', name: 'DP Stats', description: 'Development Plan Stats', purpose: 'Detailed progress metrics.', extendedDescription: 'Breaks down skills into total, completed, and current week focus.' },
   'dev-plan-actions': { core: true, category: 'Development Plan', name: 'DP Actions', description: 'Development Plan Actions', purpose: 'Plan management.', extendedDescription: 'Quick actions to view breakdowns, scan progress, or edit the plan.' },
+  'this-weeks-actions': { core: true, category: 'Dashboard', name: 'This Week\'s Actions', description: 'This Week\'s Actions', purpose: 'Weekly To-Do List.', extendedDescription: 'Lists all actionable items (Readings, Videos, Exercises) from the current week of the Development Plan with checkboxes for completion.' },
   'dev-plan-focus-areas': { core: true, category: 'Development Plan', name: 'DP Focus Areas', description: 'Development Plan Focus Areas', purpose: 'Strategic priorities.', extendedDescription: 'Lists the specific areas the user is working on, including the "why" and associated resources.' },
   'dev-plan-goal': { core: true, category: 'Development Plan', name: 'DP Goal', description: 'Development Plan Goal', purpose: 'North Star.', extendedDescription: 'Displays the user\'s primary open-ended goal for the current development cycle.' },
   'dev-plan-tracker': { core: true, category: 'Development Plan', name: 'Plan Tracker', description: 'Main Plan Tracker', purpose: 'Track weekly progress.', extendedDescription: 'The main interface for tracking weekly development plan activities.' },

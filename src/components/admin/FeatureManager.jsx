@@ -12,6 +12,7 @@ import { createWidgetSDK } from '../../services/WidgetSDK';
 import { Card } from '../ui';
 import { Button, ProgressBar } from '../screens/developmentplan/DevPlanComponents';
 import { ENHANCEMENT_IDEAS } from '../../data/enhancementIdeas';
+import ThisWeeksActionsWidget from '../widgets/ThisWeeksActionsWidget';
 
 const FeatureManager = () => {
   const { features, toggleFeature, updateFeatureOrder, isFeatureEnabled, saveFeature, deleteFeature } = useFeatures();
@@ -172,6 +173,7 @@ const FeatureManager = () => {
     // Components
     Checkbox,
     Card,
+    ThisWeeksActionsWidget,
     
     // Functions
     navigate,
@@ -309,12 +311,13 @@ const FeatureManager = () => {
         handleReflectionUpdate: () => console.log('Update Reflection'),
         // Components & Icons
         Button, ProgressBar,
-        Zap, Crosshair, Flag, Circle, Video, Users, BookOpen, CheckCircle, MessageSquare
+        Zap, Crosshair, Flag, Circle, Video, Users, BookOpen, CheckCircle, MessageSquare,
+        ThisWeeksActionsWidget
       };
     }
 
     // Default full scope
-    return { ...REAL_SCOPE, options: features[widgetId]?.options || {} };
+    return { ...REAL_SCOPE, options: features[widgetId]?.options || {}, ThisWeeksActionsWidget };
   };
 
   const getInputDescriptionsForWidget = (widgetId) => {
