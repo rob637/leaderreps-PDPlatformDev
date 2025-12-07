@@ -18,7 +18,9 @@ import {
   AlertCircle,
   X,
   Loader,
-  Wand2
+  Wand2,
+  GitBranch,
+  Upload
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 
@@ -46,6 +48,13 @@ const DocumentationCenter = () => {
   const [updatedDocContent, setUpdatedDocContent] = useState('');
   const [isApplying, setIsApplying] = useState(false);
   const [kaizenMode, setKaizenMode] = useState('update'); // 'update' or 'suggest'
+  const [commitStatus, setCommitStatus] = useState(''); // '', 'committing', 'success', 'error'
+  const [commitMessage, setCommitMessage] = useState('');
+
+  // GitHub config
+  const GITHUB_OWNER = 'rob637';
+  const GITHUB_REPO = 'leaderreps-PDPlatformDev';
+  const GITHUB_BRANCH = 'New-Stuff';
 
   // Document definitions
   const documents = [
@@ -297,6 +306,79 @@ Please review and improve the following documentation, making it 1% better by:
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  // Commit updated document directly to GitHub
+  const commitToGitHub = async () => {
+    const docPaths = {
+      'admin-guide': 'ADMIN-GUIDE.md',
+      'user-guide': 'USER-GUIDE.md',
+      'test-plans': 'TEST-PLANS.md'
+    };
+    const filePath = docPaths[selectedDocId];
+    if (!filePath || !updatedDocContent) return;
+
+    setCommitStatus('committing');
+    
+    try {
+      // Get the GitHub token from localStorage (set via admin settings)
+      const token = localStorage.getItem('github_pat');
+      if (!token) {
+        setCommitStatus('error');
+        setCommitMessage('GitHub token not configured. Go to Admin > System > Settings to add your GitHub Personal Access Token.');
+        return;
+      }
+
+      // Step 1: Get the current file's SHA
+      const getFileResponse = await fetch(
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}?ref=${GITHUB_BRANCH}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        }
+      );
+      
+      if (!getFileResponse.ok) {
+        throw new Error('Failed to get current file from GitHub');
+      }
+      
+      const fileData = await getFileResponse.json();
+      const currentSha = fileData.sha;
+
+      // Step 2: Update the file
+      const updateResponse = await fetch(
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: `docs: Kaizen update to ${filePath}`,
+            content: btoa(unescape(encodeURIComponent(updatedDocContent))), // Base64 encode
+            sha: currentSha,
+            branch: GITHUB_BRANCH
+          })
+        }
+      );
+
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
+        throw new Error(errorData.message || 'Failed to commit to GitHub');
+      }
+
+      setCommitStatus('success');
+      setCommitMessage(`✅ Successfully committed to ${GITHUB_BRANCH}! The documentation has been updated.`);
+      
+    } catch (error) {
+      console.error('GitHub commit error:', error);
+      setCommitStatus('error');
+      setCommitMessage(`❌ ${error.message}`);
+    }
   };
 
   // Generate UPDATED documentation (not just suggestions)
@@ -586,12 +668,12 @@ Format your response as:
                 {/* Updated Document Output */}
                 {updatedDocContent && (
                   <div className="mt-4 space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <span className="text-sm font-medium text-green-700 flex items-center gap-2">
                         <Check className="w-4 h-4" />
                         Updated documentation ready!
                       </span>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <button
                           onClick={copyUpdatedDoc}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
@@ -601,13 +683,59 @@ Format your response as:
                         </button>
                         <button
                           onClick={downloadUpdatedDoc}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
                         >
                           <Download className="w-4 h-4" />
-                          Download File
+                          Download
+                        </button>
+                        <button
+                          onClick={commitToGitHub}
+                          disabled={commitStatus === 'committing'}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md disabled:opacity-50"
+                        >
+                          {commitStatus === 'committing' ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              Committing...
+                            </>
+                          ) : (
+                            <>
+                              <GitBranch className="w-4 h-4" />
+                              Commit to GitHub
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
+                    
+                    {/* Commit Status Message */}
+                    {commitMessage && (
+                      <div className={`p-3 rounded-lg text-sm ${
+                        commitStatus === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
+                        commitStatus === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
+                        'bg-blue-50 text-blue-800 border border-blue-200'
+                      }`}>
+                        {commitMessage}
+                        {commitStatus === 'error' && !localStorage.getItem('github_pat') && (
+                          <div className="mt-2">
+                            <p className="text-xs mb-2">To enable direct commits, add your GitHub PAT:</p>
+                            <input
+                              type="password"
+                              placeholder="ghp_xxxxxxxxxxxx"
+                              className="w-full px-2 py-1 text-xs border rounded"
+                              onBlur={(e) => {
+                                if (e.target.value) {
+                                  localStorage.setItem('github_pat', e.target.value);
+                                  setCommitMessage('Token saved! Try committing again.');
+                                  setCommitStatus('');
+                                }
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
                     <div className="bg-slate-900 rounded-lg p-4 max-h-64 overflow-y-auto">
                       <pre className="text-xs text-slate-300 whitespace-pre-wrap font-mono">
                         {updatedDocContent.substring(0, 3000)}
@@ -615,7 +743,7 @@ Format your response as:
                       </pre>
                     </div>
                     <p className="text-xs text-slate-500">
-                      💡 Download the file and replace the existing {selectedDocId === 'admin-guide' ? 'ADMIN-GUIDE.md' : selectedDocId === 'user-guide' ? 'USER-GUIDE.md' : 'TEST-PLANS.md'} in your repository.
+                      💡 Click "Commit to GitHub" to update the file directly, or download to replace manually.
                     </p>
                   </div>
                 )}
