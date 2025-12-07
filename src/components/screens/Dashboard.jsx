@@ -31,6 +31,7 @@ const DASHBOARD_FEATURES = [
   'win-the-day',
   'daily-plan',
   'daily-leader-reps',
+  'this-weeks-actions',
   'notifications',
   'pm-bookend-header',
   'progress-feedback',
@@ -55,7 +56,12 @@ const Dashboard = (props) => {
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
 
   // 2. Development Plan (moved up for scorecard calculation) - with Time Travel support
-  const { currentWeek: devPlanCurrentWeek, userState: devPlanUserState, simulatedNow } = useDevPlan();
+  const { 
+    currentWeek: devPlanCurrentWeek, 
+    userState: devPlanUserState, 
+    simulatedNow,
+    toggleItemComplete 
+  } = useDevPlan();
 
   // DEBUG: Log the current week being returned
   console.log('[Dashboard] devPlanCurrentWeek:', devPlanCurrentWeek?.weekNumber, devPlanCurrentWeek?.id, devPlanCurrentWeek);
@@ -328,6 +334,8 @@ const Dashboard = (props) => {
     currentWeekNumber,
     simulatedNow,
     devPlanCurrentWeek,
+    currentWeek: devPlanCurrentWeek, // Alias for widgets expecting 'currentWeek'
+    toggleItemComplete,
     hasLIS,
     lisRead,
     dailyRepName,
