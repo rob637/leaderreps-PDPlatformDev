@@ -1,3 +1,4 @@
+md
 # 📱 LeaderReps PD Platform - User Guide
 
 > **Complete guide for platform users**  
@@ -112,6 +113,14 @@ Your streak counts consecutive days of activity:
 | Weekday with no activity | Reset to 0 |
 
 **Tip:** Even completing just your Grounding Rep keeps your streak alive!
+
+### Leadership Identity Statement (LIS) Maker
+
+Craft your personal Leadership Identity Statement:
+1. Access the LIS Maker card on the dashboard.
+2. Follow the prompt: "I am a [Core Value] leader who [Action] to create [Impact]."
+3. Use the text area to draft and refine your statement.
+4. Your statement will be saved and used in your daily grounding rep.
 
 ---
 
