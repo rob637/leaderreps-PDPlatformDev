@@ -1,7 +1,8 @@
+md
 # 📚 LeaderReps PD Platform - Administrator Guide
 
 > **Comprehensive documentation for system administrators**  
-> *Last Updated: December 2025*
+> *Last Updated: December 7, 2025*
 
 ---
 
@@ -64,6 +65,7 @@ This is the **most important concept** to understand:
 │                                                              │
 │  content_readings    content_videos    content_community     │
 │  content_coaching    content_tools     content_programs      │
+│  content_workouts    content_events      content_announcements│
 └─────────────────────────────────────────────────────────────┘
                               │
                               │ resourceId links
@@ -187,7 +189,7 @@ User Action → React Component → Service Layer → Firestore
 
 1. Log in with an admin email (configured in `metadata/config.adminemails`)
 2. Navigate to **Admin Command Center** from the sidebar
-3. Default admins: `rob@sagecg.com`, `ryan@leaderreps.com`
+3. Default admins: `rob@sagecg.com`, `ryan@leaderreps.com`, `admin@leaderreps.com`
 
 ### 4.2 Admin Portal Tabs
 
@@ -199,6 +201,10 @@ User Action → React Component → Service Layer → Firestore
 | **Content Mgmt** | Upload/manage content (The Vault) |
 | **Widget Lab** | Enable/disable/configure widgets |
 | **System** | System widgets, time traveler |
+| **Unified Content Manager** | Bulk edit content metadata |
+| **Migration Tool** | Import/Export data |
+| **Documentation** | Access to this Admin Guide |
+| **Test Center** | Tools for testing features and functionality |
 
 ### 4.3 Admin Functions (Separate Screen)
 
@@ -300,11 +306,11 @@ Each week document (`development_plan_v1/week-XX`) contains:
 
 | Collection | Description | Supported Formats |
 |------------|-------------|-------------------|
-| `content_readings` | PDFs, documents, articles | PDF, DOCX, external URLs |
-| `content_videos` | Video content | MP4, YouTube, Vimeo |
+| `content_readings` | PDFs, documents, articles | PDF, DOCX, external URLs, TXT, Markdown |
+| `content_videos` | Video content | MP4, YouTube, Vimeo, M3U8 |
 | `content_programs` | Multi-week programs | Internal structure |
 | `content_workouts` | Interactive exercises | Internal structure |
-| `content_tools` | Templates, checklists | PDF, external URLs |
+| `content_tools` | Templates, checklists | PDF, DOCX, external URLs |
 | `content_community` | Community activities | Internal structure |
 | `content_coaching` | Coaching sessions | Internal structure |
 
@@ -358,6 +364,7 @@ Widgets are **dynamic UI components** that can be:
 | Locker | Wins History, Reps History, Reflection History |
 | Community | Community Feed, My Discussions, Live Events |
 | Coaching | Upcoming Sessions, On-Demand, My Sessions |
+| System | System Messages, Announcements |
 
 ### 7.3 Managing Widgets
 
@@ -373,6 +380,22 @@ Widgets are defined in `src/config/widgetTemplates.js`:
 - Each widget has a unique ID
 - Templates use React-Live for dynamic rendering
 - Scope variables are passed from parent components
+
+**Example Widget Template (Weekly Focus):**
+```javascript
+(() => {
+  // Get the weekly focus from scope
+  const focus = weeklyFocus || "Leadership Identity";
+  const weekNum = currentWeekNumber || 1;
+  const title = `Week ${weekNum} Focus: ${focus}`;
+
+  return (
+    <Card title={title} icon={Target} accent="NAVY">
+      {/* Clean, minimal display - just the title */}
+    </Card>
+  );
+})()
+```
 
 ---
 
@@ -531,20 +554,21 @@ If the function fails, you can trigger a manual rollover using the Firebase Cons
 
 ### 11.1 Environments
 
-| Environment | Project ID | URL |
-|-------------|-----------|-----|
-| DEV | `leaderreps-pd-platform` | https://leaderreps-pd-platform.web.app |
-| TEST | `leaderreps-test` | https://leaderreps-test.web.app |
-| PROD | (future) | (future) |
+| Environment | Project ID | URL | Version |
+|-------------|-----------|-----|---------|
+| DEV | `leaderreps-pd-platform` | https://leaderreps-pd-platform.web.app | Displays in footer |
+| TEST | `leaderreps-test` | https://leaderreps-test.web.app | Displays in footer |
+| PROD | (future) | (future) | Displays in footer |
 
 ### 11.2 Deployment Scripts
 
 ```bash
 # Deploy to DEV
-./deploy-dev.sh "Commit message here"
+npm run deploy
 
-# Deploy to TEST
-./deploy-test.sh "Commit message here"
+# Deploy to TEST (configure firebase use target first)
+firebase use test
+npm run deploy:quick
 ```
 
 ### 11.3 What Gets Deployed
@@ -619,6 +643,14 @@ npm run build       # Try local build first
 3. Check `localStorage` for time offset
 4. Verify `timeService.js` is imported correctly
 
+### 12.7 Data Migration Issues
+
+**Check:**
+1. Verify the `migrate-app-data.js` script is up-to-date.
+2. Ensure the correct Firebase project is selected.
+3. Check for schema differences between environments.
+4. Review the script's output logs for errors.
+
 ---
 
 ## 13. Technical Reference
@@ -657,6 +689,7 @@ functions/
 firebase.json                # Firebase configuration
 firestore.rules             # Security rules
 firestore.indexes.json      # Database indexes
+package.json                # Project dependencies
 ```
 
 ### 13.2 Important Services
@@ -699,19 +732,29 @@ await updateDevelopmentPlanData({ field: value });
 npm run dev              # Start dev server
 npm run build            # Production build
 npm run lint             # Check code quality
+npm run visualize        # Build with bundle analyzer
+npm run test             # Run tests
+npm run test:coverage    # Run tests with coverage report
 
 # Firebase
 firebase use dev         # Switch to DEV project
 firebase use test        # Switch to TEST project
-firebase deploy --only hosting
-firebase deploy --only functions
-firebase deploy --only firestore:rules
+npm run deploy           # Deploy all
+npm run deploy:quick     # Deploy hosting only
 
 # Git
 git status
 git add .
 git commit -m "message"
-git push origin New-Stuff
+git push origin main
+```
+
+### 13.6 Data Migration Commands
+
+```bash
+npm run data:export   # Export Firestore data to JSON
+npm run data:import   # Import Firestore data from JSON
+npm run data:list     # List available data exports
 ```
 
 ---
@@ -737,3 +780,5 @@ git push origin New-Stuff
 ---
 
 *For additional support, contact the development team or refer to the code repository documentation.*
+
+---
