@@ -3,6 +3,7 @@ import PageLayout from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useDevPlan } from '../../../hooks/useDevPlan';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { Loader, Search, SlidersHorizontal } from 'lucide-react';
 import { DifficultyBadge, DurationBadge, TierBadge, SkillTag } from '../../ui/ContentBadges.jsx';
 import SkillFilter from '../../ui/SkillFilter.jsx';
@@ -17,7 +18,7 @@ const ProgramsIndex = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    const q = query(collection(db, 'content'), where('type', '==', 'PROGRAM'));
+    const q = query(collection(db, UNIFIED_COLLECTION), where('type', '==', 'PROGRAM'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setPrograms(items);

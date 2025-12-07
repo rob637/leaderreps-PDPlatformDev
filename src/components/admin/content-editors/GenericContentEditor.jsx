@@ -22,6 +22,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
     description: '',
     status: CONTENT_STATUS.DRAFT,
     difficulty: DIFFICULTY_LEVELS.FOUNDATION,
+    isHiddenUntilUnlocked: false, // Default to visible for new items
     details: {},
     ...item
   });
@@ -37,8 +38,11 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
   }, [item]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
   };
 
   const handleDetailsUpdate = (key, value) => {
@@ -179,6 +183,24 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
                 <option key={l} value={l}>{l}</option>
               ))}
             </select>
+          </div>
+
+          <div className="col-span-2 flex items-center gap-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <input
+              type="checkbox"
+              id="isHiddenUntilUnlocked"
+              name="isHiddenUntilUnlocked"
+              checked={formData.isHiddenUntilUnlocked}
+              onChange={handleChange}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="isHiddenUntilUnlocked" className="text-sm font-medium text-gray-700 cursor-pointer">
+              Hide until unlocked (Vault & Key)
+              <p className="text-xs text-gray-500 font-normal mt-0.5">
+                If checked, this content will only be visible to users who have it assigned in their Development Plan.
+                Uncheck to make it available to everyone in the Library.
+              </p>
+            </label>
           </div>
 
           <div className="col-span-2">

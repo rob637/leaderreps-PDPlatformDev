@@ -3,6 +3,7 @@ import PageLayout from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useDevPlan } from '../../../hooks/useDevPlan';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { Loader, BookOpen, Search, SlidersHorizontal, User, Tag } from 'lucide-react';
 import { DifficultyBadge, DurationBadge, TierBadge, SkillTag } from '../../ui/ContentBadges.jsx';
 import SkillFilter from '../../ui/SkillFilter.jsx';
@@ -18,7 +19,7 @@ const ReadRepsIndex = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
 
   useEffect(() => {
-    const q = query(collection(db, 'content'), where('type', '==', 'READ_REP'));
+    const q = query(collection(db, UNIFIED_COLLECTION), where('type', '==', 'READ_REP'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setBooks(items);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { doc, getDoc } from 'firebase/firestore';
+import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { PageLayout } from '../../ui/PageLayout.jsx';
 import { Loader, BookOpen, Clock, Target, CheckCircle, AlertTriangle, FileText, Layers, Zap } from 'lucide-react';
 import { Button } from '../../screens/developmentplan/DevPlanComponents.jsx';
@@ -24,7 +25,7 @@ const ReadRepDetail = ({ navParams }) => {
       if (!bookId) return;
       try {
         setLoading(true);
-        const docRef = doc(db, 'content', bookId);
+        const docRef = doc(db, UNIFIED_COLLECTION, bookId);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
