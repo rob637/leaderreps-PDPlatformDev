@@ -245,6 +245,11 @@ const DataProvider = ({
           '[callSecureGeminiAPI] Error during fetch to backend:',
           error
         );
+        if (error.message === 'Failed to fetch') {
+          throw new Error(
+            'Failed to communicate with the AI Rep Coach. This is likely a network or security policy issue blocking the connection.'
+          );
+        }
         throw new Error(
           `Failed to communicate with the AI Rep Coach: ${error.message}`
         );

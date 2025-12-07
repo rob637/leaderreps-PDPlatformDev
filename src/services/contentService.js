@@ -121,13 +121,19 @@ export const getContent = async (db, collectionName, options = {}) => {
 export const getAllContentAdmin = async (db, collectionName) => {
   try {
     const contentRef = collection(db, collectionName);
-    const q = query(contentRef, orderBy('dateAdded', 'desc'));
-    const snapshot = await getDocs(q);
+    // Use client-side sorting to avoid missing index issues causing hangs
+    const snapshot = await getDocs(contentRef);
     
-    return snapshot.docs.map(doc => ({
+    const docs = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    return docs.sort((a, b) => {
+      const dateA = a.dateAdded?.seconds || 0;
+      const dateB = b.dateAdded?.seconds || 0;
+      return dateB - dateA;
+    });
   } catch (error) {
     console.error(`Error fetching admin content from ${collectionName}:`, error);
     throw error;

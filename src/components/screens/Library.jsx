@@ -5,14 +5,15 @@ import { BookOpen, ShieldCheck, Film, Sparkles, Target, Trophy, Users, TrendingU
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { PageLayout, PageGrid, NoWidgetsEnabled } from '../ui';
 import { DashboardCard } from '../ui/DashboardCard';
-import { getReadings, getVideos, getCourses } from '../../services/contentService';
+import { collection, query, where, getCountFromServer } from 'firebase/firestore';
+import { UNIFIED_COLLECTION } from '../../services/unifiedContentService';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 
 const Library = () => {
   const { navigate, db } = useAppServices();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
-  const [contentCounts, setContentCounts] = useState({ readings: 0, videos: 0, courses: 0 });
+  const [contentCounts, setContentCounts] = useState({ readings: 0, videos: 0, courses: 0, programs: 0, workouts: 0, tools: 0 });
   const [loading, setLoading] = useState(true);
   
   // Fetch content counts on mount
@@ -20,19 +21,32 @@ const Library = () => {
     const fetchContentCounts = async () => {
       try {
         setLoading(true);
-        const [readingsData, videosData, coursesData] = await Promise.all([
-          getReadings(db, 'free'),
-          getVideos(db, 'free'),
-          getCourses(db, 'free')
+        
+        // Helper to get count for a type
+        const getCount = async (type) => {
+          const q = query(collection(db, UNIFIED_COLLECTION), where('type', '==', type), where('status', '==', 'PUBLISHED'));
+          const snapshot = await getCountFromServer(q);
+          return snapshot.data().count;
+        };
+
+        const [readingsCount, programsCount, workoutsCount, toolsCount] = await Promise.all([
+          getCount('READ_REP'),
+          getCount('PROGRAM'),
+          getCount('WORKOUT'),
+          getCount('TOOL')
         ]);
+
         setContentCounts({
-          readings: readingsData.length,
-          videos: videosData.length,
-          courses: coursesData.length
+          readings: readingsCount,
+          programs: programsCount,
+          workouts: workoutsCount,
+          tools: toolsCount,
+          videos: 0, // Deprecated concept in new model (videos are REPs inside Workouts)
+          courses: 0 // Deprecated concept
         });
       } catch (error) {
         console.error('Error fetching content counts:', error);
-        setContentCounts({ readings: 0, videos: 0, courses: 0 });
+        setContentCounts({ readings: 0, videos: 0, courses: 0, programs: 0, workouts: 0, tools: 0 });
       } finally {
         setLoading(false);
       }
