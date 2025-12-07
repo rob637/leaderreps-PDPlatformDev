@@ -17,6 +17,7 @@ import {
   getFirestore,
   setLogLevel,
 } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 // --- UI/UX & Icons ---
 import { Loader } from 'lucide-react';
@@ -74,8 +75,9 @@ function App() {
       const app = initializeApp(config);
       const auth = getAuth(app);
       const db = getFirestore(app);
+      const storage = getStorage(app);
       setLogLevel('error');
-      setFirebaseServices({ app, auth, db });
+      setFirebaseServices({ app, auth, db, storage });
     }
   }, []);
 

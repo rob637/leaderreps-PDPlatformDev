@@ -263,42 +263,70 @@ Please review and improve the following documentation, making it 1% better by:
     setAiSuggestions('');
 
     try {
-      // Fetch the current documentation from GitHub
+      // 1. Fetch the current documentation
       const docMap = {
         'admin-guide': 'ADMIN-GUIDE.md',
         'user-guide': 'USER-GUIDE.md', 
         'test-plans': 'TEST-PLANS.md'
       };
-
       const docFile = docMap[selectedDocId] || 'ADMIN-GUIDE.md';
-      const rawUrl = `https://raw.githubusercontent.com/rob637/leaderreps-PDPlatformDev/New-Stuff/${docFile}`;
+      const baseUrl = 'https://raw.githubusercontent.com/rob637/leaderreps-PDPlatformDev/New-Stuff';
       
-      const docResponse = await fetch(rawUrl);
+      const docResponse = await fetch(`${baseUrl}/${docFile}`);
       const currentDoc = await docResponse.text();
 
-      const prompt = `${refreshPrompt}
+      // 2. Fetch Key Code Context (to ensure docs match reality)
+      // We fetch package.json for dependencies and widgetTemplates for feature list
+      const [packageJson, widgetTemplates, adminPortal] = await Promise.all([
+        fetch(`${baseUrl}/package.json`).then(r => r.text()),
+        fetch(`${baseUrl}/src/config/widgetTemplates.js`).then(r => r.text()),
+        fetch(`${baseUrl}/src/components/admin/AdminPortal.jsx`).then(r => r.text())
+      ]);
 
-Here is the current documentation:
+      // 3. Construct Context-Aware Prompt
+      const prompt = `
+You are the Lead Documentation Engineer for LeaderReps. Your goal is to make the documentation "1% better" with every pass.
+Review the CURRENT DOCUMENTATION against the ACTUAL CODE CONTEXT provided below.
 
 ---
-${currentDoc.substring(0, 15000)} 
+### ACTUAL CODE CONTEXT (Truth)
+1. **Project Dependencies (package.json)**:
+${packageJson.substring(0, 1000)}...
+
+2. **Active Features (widgetTemplates.js)**:
+${widgetTemplates.substring(0, 2000)}...
+
+3. **Admin Capabilities (AdminPortal.jsx)**:
+${adminPortal.substring(0, 2000)}...
 ---
 
-Please provide specific suggestions for improvements. Format your response as:
+### CURRENT DOCUMENTATION (To Improve)
+${currentDoc.substring(0, 15000)}
+---
 
-## Suggested Improvements
+### INSTRUCTIONS
+Identify discrepancies between the Code (Truth) and the Documentation.
+Provide 3-5 specific, actionable improvements to make the docs more accurate and helpful.
+Focus on:
+1. **Accuracy**: Does the doc mention features that don't exist, or miss new ones (like Unified Content Library)?
+2. **Completeness**: Are the tech stack details correct based on package.json?
+3. **Clarity**: Can sections be simplified?
 
-### Section: [Section Name]
-- **Current**: [what it says now]
-- **Suggested**: [your improvement]
-- **Reason**: [why this is better]
+Format your response as:
+## 🚀 Kaizen Improvements (1% Better)
 
-Focus on the most impactful 3-5 improvements.`;
+### 1. [Title of Improvement]
+- **Observation**: [What you found in the code vs docs]
+- **Suggested Change**: [Specific text to add/change]
+- **Why**: [Benefit]
+
+...
+`;
 
       const result = await callSecureGeminiAPI({
         prompt,
         model: 'gemini-1.5-flash',
-        systemInstruction: 'You are a technical documentation expert. Provide clear, actionable suggestions for improving documentation. Be specific and concise.'
+        systemInstruction: 'You are a technical documentation expert focused on accuracy and continuous improvement (Kaizen). Always ground your suggestions in the provided code context.'
       });
 
       if (result?.text) {
@@ -366,7 +394,7 @@ Focus on the most impactful 3-5 improvements.`;
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Wand2 className="w-5 h-5 text-purple-600" />
-                    <span className="font-medium text-purple-900">Generate AI Suggestions</span>
+                    <span className="font-medium text-purple-900">Analyze Code & Improve Docs</span>
                   </div>
                   <button
                     onClick={generateAISuggestions}
@@ -380,12 +408,12 @@ Focus on the most impactful 3-5 improvements.`;
                     {isGenerating ? (
                       <>
                         <Loader className="w-4 h-4 animate-spin" />
-                        Generating...
+                        Analyzing Code...
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4" />
-                        Generate Suggestions
+                        Run Kaizen Analysis
                       </>
                     )}
                   </button>

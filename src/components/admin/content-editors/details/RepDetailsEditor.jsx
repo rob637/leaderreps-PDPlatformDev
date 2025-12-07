@@ -1,5 +1,6 @@
 import React from 'react';
 import { CONTENT_TYPES } from '../../../../services/unifiedContentService';
+import FileUploader from '../../FileUploader';
 
 const RepDetailsEditor = ({ details, onChange, type }) => {
   const handleChange = (e) => {
@@ -22,14 +23,21 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Video URL
             </label>
-            <input
-              type="text"
-              name="videoUrl"
-              value={details.videoUrl || ''}
-              onChange={handleChange}
-              placeholder="https://vimeo.com/..."
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+            <div className="space-y-2">
+              <input
+                type="text"
+                name="videoUrl"
+                value={details.videoUrl || ''}
+                onChange={handleChange}
+                placeholder="https://vimeo.com/..."
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <FileUploader 
+                folder="content/videos" 
+                accept="video/*" 
+                onUploadComplete={(url) => onChange('videoUrl', url)} 
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -64,13 +72,20 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               PDF URL (Optional)
             </label>
-            <input
-              type="text"
-              name="pdfUrl"
-              value={details.pdfUrl || ''}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+            <div className="space-y-2">
+              <input
+                type="text"
+                name="pdfUrl"
+                value={details.pdfUrl || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <FileUploader 
+                folder="content/documents" 
+                accept=".pdf,.doc,.docx" 
+                onUploadComplete={(url) => onChange('pdfUrl', url)} 
+              />
+            </div>
           </div>
         </>
       )}

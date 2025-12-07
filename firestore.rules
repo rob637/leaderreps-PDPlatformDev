@@ -76,6 +76,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /content_library/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
     // Skills Taxonomy (New Architecture)
     match /skills/{document} {
       allow read: if request.auth != null;

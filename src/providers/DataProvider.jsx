@@ -22,7 +22,7 @@ const DataProvider = ({
   navigate,
   user,
 }) => {
-  const { db, auth } = firebaseServices;
+  const { db, auth, storage } = firebaseServices;
   const [services, setServices] = useState(null);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [serviceData, setServiceData] = useState({
@@ -268,6 +268,7 @@ const DataProvider = ({
       // Core Services
       db,
       auth,
+      storage,
       navigate,
       user,
       userId,
@@ -318,6 +319,7 @@ const DataProvider = ({
   }, [
     db,
     auth,
+    storage,
     navigate,
     user,
     userId,
