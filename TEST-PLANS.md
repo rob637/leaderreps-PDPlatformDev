@@ -207,7 +207,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 ### 5.2 Registration
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------| 같아요
+|---------|-----------|-------|-----------------|-----------|
 | AUTH-010 | New Account | Complete registration form | Account created | |
 | AUTH-011 | Duplicate Email | Register existing email | Error message | |
 | AUTH-012 | Weak Password | Enter password < 8 chars | Validation error | |
@@ -254,11 +254,11 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | ADM-023 | Deactivate Content | Toggle inactive | Content hidden | |
 | ADM-024 | File Upload | Upload PDF | File stored, URL saved | |
 
-### 6.4 Widget Lab
+### 6.4 System Widgets
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-030 | View Widgets | Go to Widget Lab | All widgets listed | |
+| ADM-030 | View Widgets | Go to System Widgets | All widgets listed | |
 | ADM-031 | Disable Widget | Toggle widget off | Widget hidden from app | |
 | ADM-032 | Enable Widget | Toggle widget on | Widget visible in app | |
 | ADM-033 | Reorder Widgets | Drag to reorder | Order persists | |
@@ -302,6 +302,20 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | ADM-080 | Access Feature Manager | Go to Feature Manager tab | Available features are listed | |
 | ADM-081 | Enable Feature | Toggle feature on | Feature is enabled | |
 | ADM-082 | Disable Feature | Toggle feature off | Feature is disabled | |
+
+### 6.10 Documentation Center
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-090 | Access Documentation | Go to Documentation Center tab | Documentation loads | |
+| ADM-091 | Verify Content | Review documentation | Information accurate | |
+
+### 6.11 Test Center
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-100 | Access Test Center | Go to Test Center tab | Testing tools load | |
+| ADM-101 | Run Unit Tests | Execute unit tests | Tests run and results displayed | |
 
 ---
 
@@ -475,6 +489,8 @@ Run this checklist before every production deployment:
 - [ ] Widget toggles work
 - [ ] System Diagnostics accessible and displaying data
 - [ ] Feature Manager works
+- [ ] Unified Content Manager Works
+- [ ] Migration Tool Works
 
 #### Cross-Cutting
 - [ ] Mobile responsive
@@ -541,3 +557,4 @@ When documenting issues found during testing:
 ---
 
 *Keep this document updated as new features are added and tests are executed.*
+---
