@@ -50,6 +50,7 @@ const DocumentationCenter = () => {
   const [kaizenMode, setKaizenMode] = useState('update'); // 'update' or 'suggest'
   const [commitStatus, setCommitStatus] = useState(''); // '', 'committing', 'success', 'error'
   const [commitMessage, setCommitMessage] = useState('');
+  const [hasGitHubToken, setHasGitHubToken] = useState(() => !!localStorage.getItem('github_pat'));
 
   // GitHub config
   const GITHUB_OWNER = 'rob637';
@@ -611,6 +612,54 @@ Format your response as:
                 <span className="text-xs text-slate-500 ml-2">
                   {kaizenMode === 'update' ? 'AI will generate the complete updated file' : 'AI will provide suggestions only'}
                 </span>
+              </div>
+              
+              {/* GitHub Token Configuration */}
+              <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                <span className="text-sm font-medium text-slate-700">⚙️ GitHub:</span>
+                {hasGitHubToken ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-green-600">✓ Token configured</span>
+                    <button
+                      onClick={() => {
+                        localStorage.removeItem('github_pat');
+                        setHasGitHubToken(false);
+                        setCommitMessage('Token removed');
+                        setCommitStatus('');
+                      }}
+                      className="text-xs text-red-500 hover:text-red-700 underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 flex-1">
+                    <input
+                      type="password"
+                      placeholder="Enter GitHub Personal Access Token (ghp_...)"
+                      className="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.target.value) {
+                          localStorage.setItem('github_pat', e.target.value);
+                          setHasGitHubToken(true);
+                          setCommitMessage('Token saved successfully!');
+                          setCommitStatus('success');
+                          e.target.value = '';
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value) {
+                          localStorage.setItem('github_pat', e.target.value);
+                          setHasGitHubToken(true);
+                          setCommitMessage('Token saved successfully!');
+                          setCommitStatus('success');
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                    <span className="text-xs text-slate-500">Press Enter to save</span>
+                  </div>
+                )}
               </div>
 
               {/* AI Generation Section */}
