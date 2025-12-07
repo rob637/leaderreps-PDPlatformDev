@@ -2,7 +2,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import { visualizer } from 'rollup-plugin-visualizer';
 import fs from 'node:fs';
 
 const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
@@ -10,6 +9,7 @@ const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
 export default defineConfig({
   define: {
     '__APP_VERSION__': JSON.stringify(packageJson.version),
+    global: 'globalThis'
   },
   plugins: [
     {
@@ -140,12 +140,6 @@ export default defineConfig({
         type: 'module',
       },
     }),
-    visualizer({
-      open: false, // Don't auto-open to prevent terminal crashes
-      filename: 'build/stats.html',
-      gzipSize: true,
-      brotliSize: true,
-    }),
   ],
   
   resolve: { 
@@ -197,13 +191,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     
     // Minification
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: false, // Keep console logs for development/debugging
-        drop_debugger: false // Keep debugger statements for development
-      }
-    }
+    minify: 'esbuild',
   },
 
   // Dev server configuration
@@ -216,12 +204,6 @@ export default defineConfig({
   },
   preview: { port: 4173 },
   
-  // Environment variables
-  define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
-    global: 'globalThis'
-  },
-
   // Test configuration
   test: {
     globals: true,
