@@ -31,7 +31,7 @@ setGlobalOptions({ maxInstances: 10, region: "us-central1" });
 exports.geminiProxy = onRequest(
   {
     cors: true,
-    invoker: "public",
+    // invoker: "public", // Removed to fix IAM permission error during deploy
   },
   async (req, res) => {
     // Only allow POST requests
@@ -98,6 +98,7 @@ exports.geminiProxy = onRequest(
 exports.manualRollover = onRequest(
   {
     cors: true,
+    // invoker: "public", // Removed to fix IAM permission error during deploy
   },
   async (req, res) => {
     const email = req.query.email || req.body.email;
@@ -503,7 +504,7 @@ exports.scheduledDailyRollover = onSchedule(
 exports.debugUser = onRequest(
   {
     cors: true,
-    invoker: "public",
+    // invoker: "public", // Removed to fix IAM permission error during deploy
   },
   async (req, res) => {
     try {
