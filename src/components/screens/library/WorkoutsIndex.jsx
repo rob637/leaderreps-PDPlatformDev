@@ -230,7 +230,8 @@ const WorkoutsIndex = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
