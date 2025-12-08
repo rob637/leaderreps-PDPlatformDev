@@ -49,19 +49,29 @@ const MediaLibrary = () => {
     loadAssets();
   }, [loadAssets]);
 
-  const handleFileUpload = async (file) => {
-    if (!file) return;
+  const handleFilesUpload = async (files) => {
+    if (!files || files.length === 0) return;
     
     setUploading(true);
     setUploadProgress(0);
     
+    const fileList = Array.from(files);
+    let completed = 0;
+
     try {
-      await uploadMediaAsset(
-        { storage, db }, 
-        file, 
-        'vault', 
-        (progress) => setUploadProgress(progress)
-      );
+      for (const file of fileList) {
+        await uploadMediaAsset(
+          { storage, db }, 
+          file, 
+          'vault', 
+          (progress) => {
+            // Calculate overall progress roughly
+            const overallProgress = ((completed * 100) + progress) / fileList.length;
+            setUploadProgress(overallProgress);
+          }
+        );
+        completed++;
+      }
       await loadAssets();
     } catch (error) {
       alert('Upload failed: ' + error.message);
@@ -97,8 +107,8 @@ const MediaLibrary = () => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileUpload(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFilesUpload(e.dataTransfer.files);
     }
   };
 
@@ -136,8 +146,9 @@ const MediaLibrary = () => {
             Upload Asset
             <input 
               type="file" 
+              multiple
               className="hidden" 
-              onChange={(e) => handleFileUpload(e.target.files[0])}
+              onChange={(e) => handleFilesUpload(e.target.files)}
               disabled={uploading}
             />
           </label>
