@@ -6,7 +6,6 @@ import {
   doc, 
   getDocs, 
   query, 
-  where, 
   orderBy, 
   serverTimestamp 
 } from 'firebase/firestore';
@@ -101,17 +100,20 @@ export const uploadMediaAsset = async ({ storage, db }, file, folder = 'vault', 
 export const getMediaAssets = async (db, typeFilter = null) => {
   try {
     const mediaRef = collection(db, MEDIA_COLLECTION);
-    let q = query(mediaRef, orderBy('createdAt', 'desc'));
-
-    if (typeFilter && typeFilter !== 'ALL') {
-      q = query(q, where('type', '==', typeFilter));
-    }
+    // Use client-side filtering to avoid composite index requirements for now
+    const q = query(mediaRef, orderBy('createdAt', 'desc'));
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const allAssets = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    if (typeFilter && typeFilter !== 'ALL') {
+      return allAssets.filter(asset => asset.type === typeFilter);
+    }
+
+    return allAssets;
   } catch (error) {
     console.error('Error fetching media assets:', error);
     throw error;
