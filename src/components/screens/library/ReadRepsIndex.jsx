@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
-import { useDevPlan } from '../../../hooks/useDevPlan';
+import { useContentAccess } from '../../../hooks/useContentAccess';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
-import { Loader, BookOpen, Search, SlidersHorizontal, User, Tag } from 'lucide-react';
+import { Loader, BookOpen, Search, SlidersHorizontal, User, Tag, Lock } from 'lucide-react';
 import { DifficultyBadge, DurationBadge, TierBadge, SkillTag } from '../../ui/ContentBadges.jsx';
 import SkillFilter from '../../ui/SkillFilter.jsx';
 
 const ReadRepsIndex = () => {
   const { db, navigate } = useAppServices();
-  const { masterPlan, currentWeek } = useDevPlan();
+  const { isContentUnlocked } = useContentAccess();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,27 +28,6 @@ const ReadRepsIndex = () => {
     return () => unsubscribe();
   }, [db]);
 
-  // Calculate Unlocked Resources
-  const unlockedResourceIds = useMemo(() => {
-      if (!masterPlan || masterPlan.length === 0) return new Set();
-      const ids = new Set();
-      const currentWeekNum = currentWeek?.weekNumber || 1;
-
-      masterPlan.forEach(week => {
-          if (week.weekNumber <= currentWeekNum) {
-              if (week.content && Array.isArray(week.content)) {
-                  week.content.forEach(item => {
-                      if (!item) return;
-                      if (item.resourceId) ids.add(String(item.resourceId).toLowerCase());
-                      if (item.contentItemId) ids.add(String(item.contentItemId).toLowerCase());
-                      if (item.id) ids.add(String(item.id).toLowerCase());
-                  });
-              }
-          }
-      });
-      return ids;
-  }, [masterPlan, currentWeek]);
-
   // Get unique categories
   const categories = useMemo(() => {
     const cats = new Set();
@@ -62,16 +41,6 @@ const ReadRepsIndex = () => {
   const filteredBooks = useMemo(() => {
     let result = books;
     
-    // Content Locking Filter
-    result = result.filter(b => {
-        const isUnlocked = unlockedResourceIds.has(String(b.id).toLowerCase());
-        if (isUnlocked) return true;
-        
-        // If not unlocked, hide unless explicitly marked as public (isHiddenUntilUnlocked === false)
-        // This treats undefined as true (hidden) to enforce Vault & Key
-        return b.isHiddenUntilUnlocked === false;
-    });
-
     // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -202,12 +171,27 @@ const ReadRepsIndex = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredBooks.map((book) => (
+            {filteredBooks.map((book) => {
+              const isUnlocked = isContentUnlocked(book);
+              
+              return (
               <div 
                 key={book.id} 
-                onClick={() => navigate('read-rep-detail', { id: book.id, title: book.title })}
-                className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-emerald-300 transition-all cursor-pointer group flex flex-col h-full"
+                onClick={() => isUnlocked ? navigate('read-rep-detail', { id: book.id, title: book.title }) : null}
+                className={`bg-white border rounded-xl overflow-hidden transition-all group flex flex-col h-full relative ${
+                  isUnlocked 
+                    ? 'border-slate-200 hover:shadow-lg hover:border-emerald-300 cursor-pointer' 
+                    : 'border-slate-100 opacity-75 cursor-not-allowed'
+                }`}
               >
+                {!isUnlocked && (
+                  <div className="absolute inset-0 bg-slate-50/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                    <div className="bg-white/90 p-3 rounded-full shadow-sm border border-slate-200">
+                      <Lock className="w-6 h-6 text-slate-400" />
+                    </div>
+                  </div>
+                )}
+
                 {/* Book Cover */}
                 <div className="h-48 bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden">
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -263,7 +247,8 @@ const ReadRepsIndex = () => {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>

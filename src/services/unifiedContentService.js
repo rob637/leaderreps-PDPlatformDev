@@ -43,6 +43,15 @@ export const DIFFICULTY_LEVELS = {
   ADVANCED: 'ADVANCED'
 };
 
+// Role Levels
+export const ROLE_LEVELS = {
+  ALL: 'ALL',
+  INDIVIDUAL_CONTRIBUTOR: 'INDIVIDUAL_CONTRIBUTOR',
+  NEW_MANAGER: 'NEW_MANAGER',
+  EXPERIENCED_MANAGER: 'EXPERIENCED_MANAGER',
+  EXECUTIVE: 'EXECUTIVE'
+};
+
 /**
  * Get content items filtered by type and other options
  * @param {object} db - Firestore instance

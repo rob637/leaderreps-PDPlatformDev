@@ -31,6 +31,7 @@
     "@monaco-editor/react": "^4.7.0",
     "clsx": "^2.1.1",
     "dompurify": "^3.3.0",
+    "dotenv": "^17.2.3",
     "firebase": "^10.14.1",
     "firebase-admin": "^13.6.0",
     "lucide-react": "^0.395.0",

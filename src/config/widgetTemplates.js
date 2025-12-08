@@ -104,17 +104,19 @@ export const WIDGET_TEMPLATES = {
   const weekNum = typeof currentWeekNumber !== 'undefined' ? currentWeekNumber : 1;
   if (weekNum <= 1) {
     return (
-      <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
-        <div className="text-center py-0 px-2">
-          <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-1">
-            <Clock className="w-3 h-3 text-slate-400" />
-          </div>
-          <p className="text-xs font-medium text-slate-600 mb-0">Coming Soon</p>
-          <p className="text-[10px] text-slate-500">
-            Available Week 2.
-          </p>
+      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <Zap className="w-4 h-4 text-orange-500" />
         </div>
-      </Card>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-700">Grounding Rep</p>
+          <p className="text-xs text-slate-500">Unlocks Week 2</p>
+        </div>
+        <div className="flex items-center gap-1 px-2 py-1 bg-slate-200 rounded-full">
+          <Clock className="w-3 h-3 text-slate-500" />
+          <span className="text-[10px] font-medium text-slate-500 uppercase">Soon</span>
+        </div>
+      </div>
     );
   }
   

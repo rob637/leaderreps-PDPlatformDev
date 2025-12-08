@@ -627,18 +627,25 @@ const CommunityScreen = ({ simulatedTier }) => {
         ];
 
         const sortedItems = allItems
-            .filter(item => isFeatureEnabled(item.featureId) || item.featureId === 'community-resources')
+            .filter(item => isFeatureEnabled(item.featureId))
             .sort((a, b) => {
                 const orderA = getFeatureOrder(a.featureId);
                 const orderB = getFeatureOrder(b.featureId);
                 return orderA - orderB;
             });
 
-        return [
-            ...sortedItems,
-            { screen: 'notifications', label: 'Notifications', icon: Bell, notify: true }
-        ];
+        // Only add notifications if there are other community features
+        if (sortedItems.length > 0) {
+            return [
+                ...sortedItems,
+                { screen: 'notifications', label: 'Notifications', icon: Bell, notify: true }
+            ];
+        }
+        return sortedItems;
     }, [isFeatureEnabled, getFeatureOrder]);
+    
+    // Check if any community widgets are enabled
+    const hasCommunityWidgets = navItems.length > 0;
 
     // --- Scope for Widgets ---
     const scope = {
@@ -685,7 +692,7 @@ const CommunityScreen = ({ simulatedTier }) => {
             navigate={navigate}
         >
             {/* Main Layout Grid (Sidebar + Content) */}
-            {navItems.length > 1 ? (
+            {hasCommunityWidgets ? (
                 <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 max-w-[860px] mx-auto">
                     {/* Sidebar Navigation */}
                     <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start"> {/* Make sidebar sticky */}

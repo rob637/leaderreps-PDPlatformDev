@@ -20,6 +20,7 @@ import SystemDiagnostics from './SystemDiagnostics';
 import FeatureManager from './FeatureManager';
 import ContentAdminHome from './ContentAdminHome'; // Existing component
 import UnifiedContentManager from './UnifiedContentManager'; // New component
+import MediaLibrary from './MediaLibrary'; // New component
 import MigrationTool from './MigrationTool'; // New component
 import SystemWidgets from './SystemWidgets';
 import DevPlanManager from './DevPlanManager';
@@ -107,7 +108,8 @@ const AdminPortal = () => {
       items: [
         { id: 'devplan', label: 'Dev Plan', icon: Calendar },
         { id: 'library', label: 'Unified Library', icon: Library },
-        { id: 'content', label: 'Legacy Content', icon: Database }
+        { id: 'media', label: 'Media & Assets', icon: Database },
+        { id: 'content', label: 'Legacy Content', icon: FileText }
       ]
     },
     {
@@ -138,6 +140,8 @@ const AdminPortal = () => {
         return <DevPlanManager />;
       case 'library':
         return <UnifiedContentManager />;
+      case 'media':
+        return <MediaLibrary />;
       case 'diagnostics':
         return <SystemDiagnostics />;
       case 'content':

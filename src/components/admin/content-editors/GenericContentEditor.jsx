@@ -1,12 +1,13 @@
 // src/components/admin/content-editors/GenericContentEditor.jsx
 import React, { useState, useEffect } from 'react';
-import { Save, X, ArrowLeft } from 'lucide-react';
+import { Save, X, ArrowLeft, Plus, Tag } from 'lucide-react';
 import { useAppServices } from '../../../services/useAppServices';
 import { 
   addUnifiedContent, 
   updateUnifiedContent, 
   CONTENT_STATUS,
   DIFFICULTY_LEVELS,
+  ROLE_LEVELS,
   CONTENT_TYPES
 } from '../../../services/unifiedContentService';
 
@@ -14,6 +15,8 @@ import ProgramDetailsEditor from './details/ProgramDetailsEditor';
 import WorkoutDetailsEditor from './details/WorkoutDetailsEditor';
 import ExerciseDetailsEditor from './details/ExerciseDetailsEditor';
 import RepDetailsEditor from './details/RepDetailsEditor';
+import SkillDetailsEditor from './details/SkillDetailsEditor';
+import ContentPicker from './pickers/ContentPicker';
 
 const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
   const { db } = useAppServices();
@@ -22,17 +25,22 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
     description: '',
     status: CONTENT_STATUS.DRAFT,
     difficulty: DIFFICULTY_LEVELS.FOUNDATION,
-    isHiddenUntilUnlocked: false, // Default to visible for new items
+    roleLevel: ROLE_LEVELS.ALL,
+    estimatedTime: '', // in minutes
+    isHiddenUntilUnlocked: false,
+    skills: [], // Array of { id, title }
     details: {},
     ...item
   });
   const [saving, setSaving] = useState(false);
+  const [showSkillPicker, setShowSkillPicker] = useState(false);
 
   useEffect(() => {
     if (item) {
       setFormData({
         ...item,
-        details: item.details || {}
+        details: item.details || {},
+        skills: item.skills || []
       });
     }
   }, [item]);
@@ -53,6 +61,29 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
         [key]: value
       }
     }));
+  };
+
+  const handleAddSkills = (selectedSkills) => {
+    const newSkills = [...(formData.skills || [])];
+    // Handle both single and multi select return
+    const skillsToAdd = Array.isArray(selectedSkills) ? selectedSkills : [selectedSkills];
+    
+    skillsToAdd.forEach(s => {
+      if (!newSkills.find(existing => existing.id === s.id)) {
+        newSkills.push({
+          id: s.id,
+          title: s.title
+        });
+      }
+    });
+    setFormData(prev => ({ ...prev, skills: newSkills }));
+    setShowSkillPicker(false);
+  };
+
+  const removeSkill = (index) => {
+    const newSkills = [...(formData.skills || [])];
+    newSkills.splice(index, 1);
+    setFormData(prev => ({ ...prev, skills: newSkills }));
   };
 
   const handleSubmit = async (e) => {
@@ -89,6 +120,8 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
       case CONTENT_TYPES.REP:
       case CONTENT_TYPES.READ_REP:
         return <RepDetailsEditor details={formData.details} onChange={handleDetailsUpdate} type={type} />;
+      case CONTENT_TYPES.SKILL:
+        return <SkillDetailsEditor details={formData.details} onChange={handleDetailsUpdate} />;
       default:
         return (
           <div className="bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
@@ -185,6 +218,32 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
             </select>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role Level</label>
+            <select
+              name="roleLevel"
+              value={formData.roleLevel || ROLE_LEVELS.ALL}
+              onChange={handleChange}
+              className="w-full p-2 border rounded-lg"
+            >
+              {Object.values(ROLE_LEVELS).map(l => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Est. Time (mins)</label>
+            <input
+              type="number"
+              name="estimatedTime"
+              value={formData.estimatedTime || ''}
+              onChange={handleChange}
+              placeholder="e.g. 15"
+              className="w-full p-2 border rounded-lg"
+            />
+          </div>
+
           <div className="col-span-2 flex items-center gap-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <input
               type="checkbox"
@@ -213,6 +272,48 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
               className="w-full p-2 border rounded-lg"
             />
           </div>
+
+          {/* Skill Tagging - Only show if NOT editing a Skill itself */}
+          {type !== CONTENT_TYPES.SKILL && (
+            <div className="col-span-2">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Related Skills
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowSkillPicker(true)}
+                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                >
+                  <Plus size={16} />
+                  Add Skill
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 min-h-[60px]">
+                {(formData.skills || []).map((skill, index) => (
+                  <span 
+                    key={skill.id}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm bg-white border border-gray-200 text-gray-700 shadow-sm"
+                  >
+                    <Tag size={12} className="text-gray-400" />
+                    {skill.title}
+                    <button
+                      type="button"
+                      onClick={() => removeSkill(index)}
+                      className="ml-1 text-gray-400 hover:text-red-500"
+                    >
+                      <X size={14} />
+                    </button>
+                  </span>
+                ))}
+                {(formData.skills || []).length === 0 && (
+                  <span className="text-sm text-gray-400 italic self-center">
+                    No skills tagged. Add skills to improve discoverability.
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Type Specific Details */}
@@ -220,6 +321,16 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
           {renderDetailsEditor()}
         </div>
       </form>
+
+      {showSkillPicker && (
+        <ContentPicker
+          type={CONTENT_TYPES.SKILL}
+          multiSelect={true}
+          selectedIds={(formData.skills || []).map(s => s.id)}
+          onSelect={handleAddSkills}
+          onClose={() => setShowSkillPicker(false)}
+        />
+      )}
     </div>
   );
 };

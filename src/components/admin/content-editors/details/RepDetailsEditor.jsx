@@ -1,16 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CONTENT_TYPES } from '../../../../services/unifiedContentService';
+import { MEDIA_TYPES } from '../../../../services/mediaService';
 import FileUploader from '../../FileUploader';
+import MediaPicker from '../pickers/MediaPicker';
+import { Database } from 'lucide-react';
 
 const RepDetailsEditor = ({ details, onChange, type }) => {
+  const [showMediaPicker, setShowMediaPicker] = useState(null); // 'VIDEO' | 'DOCUMENT' | null
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // If onChange expects (key, value), we adapt. 
-    // But GenericContentEditor passes handleDetailsChange which expects an event-like object or we can adapt it there.
-    // Let's assume the parent passes a function that takes (key, value) or we adapt here.
-    // Actually, the other editors use onChange('key', value).
-    // Let's stick to that pattern.
     onChange(name, value);
+  };
+
+  const handleMediaSelect = (asset) => {
+    if (showMediaPicker === 'VIDEO') {
+      onChange('videoUrl', asset.url);
+    } else if (showMediaPicker === 'DOCUMENT') {
+      onChange('pdfUrl', asset.url);
+    }
+    setShowMediaPicker(null);
   };
 
   return (
@@ -24,14 +33,26 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
               Video URL
             </label>
             <div className="space-y-2">
-              <input
-                type="text"
-                name="videoUrl"
-                value={details.videoUrl || ''}
-                onChange={handleChange}
-                placeholder="https://vimeo.com/..."
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  name="videoUrl"
+                  value={details.videoUrl || ''}
+                  onChange={handleChange}
+                  placeholder="https://vimeo.com/..."
+                  className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowMediaPicker('VIDEO')}
+                  className="flex items-center gap-2 px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 border border-purple-200"
+                  title="Select from Vault"
+                >
+                  <Database size={18} />
+                  Vault
+                </button>
+              </div>
+              <div className="text-xs text-gray-500 text-center my-1">- OR -</div>
               <FileUploader 
                 folder="content/videos" 
                 accept="video/*" 
@@ -73,13 +94,25 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
               PDF URL (Optional)
             </label>
             <div className="space-y-2">
-              <input
-                type="text"
-                name="pdfUrl"
-                value={details.pdfUrl || ''}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  name="pdfUrl"
+                  value={details.pdfUrl || ''}
+                  onChange={handleChange}
+                  className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowMediaPicker('DOCUMENT')}
+                  className="flex items-center gap-2 px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 border border-purple-200"
+                  title="Select from Vault"
+                >
+                  <Database size={18} />
+                  Vault
+                </button>
+              </div>
+              <div className="text-xs text-gray-500 text-center my-1">- OR -</div>
               <FileUploader 
                 folder="content/documents" 
                 accept=".pdf,.doc,.docx" 
@@ -102,6 +135,14 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
           className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
         />
       </div>
+
+      {showMediaPicker && (
+        <MediaPicker
+          typeFilter={showMediaPicker}
+          onSelect={handleMediaSelect}
+          onClose={() => setShowMediaPicker(null)}
+        />
+      )}
     </div>
   );
 };

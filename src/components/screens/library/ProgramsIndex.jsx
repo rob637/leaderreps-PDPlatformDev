@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
-import { useDevPlan } from '../../../hooks/useDevPlan';
+import { useContentAccess } from '../../../hooks/useContentAccess';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
-import { Loader, Search, SlidersHorizontal } from 'lucide-react';
+import { Loader, Search, SlidersHorizontal, Lock } from 'lucide-react';
 import { DifficultyBadge, DurationBadge, TierBadge, SkillTag } from '../../ui/ContentBadges.jsx';
 import SkillFilter from '../../ui/SkillFilter.jsx';
 
 const ProgramsIndex = () => {
   const { db, navigate } = useAppServices();
-  const { masterPlan, currentWeek } = useDevPlan();
+  const { isContentUnlocked } = useContentAccess();
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,41 +27,10 @@ const ProgramsIndex = () => {
     return () => unsubscribe();
   }, [db]);
 
-  // Calculate Unlocked Resources
-  const unlockedResourceIds = useMemo(() => {
-      if (!masterPlan || masterPlan.length === 0) return new Set();
-      const ids = new Set();
-      const currentWeekNum = currentWeek?.weekNumber || 1;
-
-      masterPlan.forEach(week => {
-          if (week.weekNumber <= currentWeekNum) {
-              if (week.content && Array.isArray(week.content)) {
-                  week.content.forEach(item => {
-                      if (!item) return;
-                      if (item.resourceId) ids.add(String(item.resourceId).toLowerCase());
-                      if (item.contentItemId) ids.add(String(item.contentItemId).toLowerCase());
-                      if (item.id) ids.add(String(item.id).toLowerCase());
-                  });
-              }
-          }
-      });
-      return ids;
-  }, [masterPlan, currentWeek]);
-
   // Filter programs based on search and skills
   const filteredPrograms = useMemo(() => {
     let result = programs;
     
-    // Content Locking Filter
-    result = result.filter(p => {
-        const isUnlocked = unlockedResourceIds.has(String(p.id).toLowerCase());
-        if (isUnlocked) return true;
-
-        // If not unlocked, hide unless explicitly marked as public (isHiddenUntilUnlocked === false)
-        // This treats undefined as true (hidden) to enforce Vault & Key
-        return p.isHiddenUntilUnlocked === false;
-    });
-
     // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -167,12 +136,34 @@ const ProgramsIndex = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPrograms.map((program) => (
+            {filteredPrograms.map((program) => {
+              const isUnlocked = isContentUnlocked(program);
+              
+              return (
               <div 
                 key={program.id} 
-                onClick={() => navigate('program-detail', { id: program.id, title: program.title })}
-                className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-indigo-300 transition-all cursor-pointer group flex flex-col h-full"
+                onClick={() => {
+                  if (isUnlocked) {
+                    navigate('program-detail', { id: program.id, title: program.title });
+                  }
+                }}
+                className={`bg-white border border-slate-200 rounded-xl overflow-hidden transition-all flex flex-col h-full relative ${
+                  isUnlocked 
+                    ? 'hover:shadow-lg hover:border-indigo-300 cursor-pointer group' 
+                    : 'opacity-90 cursor-not-allowed'
+                }`}
               >
+                {/* Lock Overlay */}
+                {!isUnlocked && (
+                  <div className="absolute inset-0 bg-slate-50/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center text-slate-500">
+                    <div className="bg-white p-3 rounded-full shadow-md mb-2 border border-slate-100">
+                      <Lock className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <span className="text-sm font-bold text-slate-700">Locked</span>
+                    <span className="text-xs text-slate-500 mt-1 px-4 text-center">Available in Development Plan</span>
+                  </div>
+                )}
+
                 {/* Program Image/Header */}
                 <div className="h-36 bg-gradient-to-br from-indigo-50 to-purple-100 flex items-center justify-center relative">
                   <span className="text-5xl font-bold text-indigo-200 group-hover:text-indigo-300 transition-colors">
@@ -199,7 +190,7 @@ const ProgramsIndex = () => {
                   {program.skills?.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-4">
                       {program.skills.slice(0, 3).map(skill => (
-                        <SkillTag key={skill} skill={skill.replace('skill_', '')} size="xs" />
+                        <SkillTag key={skill.id || skill} skill={skill.title || skill.replace('skill_', '')} size="xs" />
                       ))}
                       {program.skills.length > 3 && (
                         <span className="text-xs text-slate-400">+{program.skills.length - 3}</span>
@@ -214,7 +205,8 @@ const ProgramsIndex = () => {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>

@@ -72,6 +72,9 @@ const ScreenMap = {
   'tools-index': lazy(() =>
     import('../components/screens/library/ToolsIndex.jsx')
   ),
+  'tool-detail': lazy(() =>
+    import('../components/screens/library/ToolDetail.jsx')
+  ),
   'read-reps-index': lazy(() =>
     import('../components/screens/library/ReadRepsIndex.jsx')
   ),

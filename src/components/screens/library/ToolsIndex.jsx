@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
-import { useDevPlan } from '../../../hooks/useDevPlan';
+import { useContentAccess } from '../../../hooks/useContentAccess';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
-import { Loader, FileText, Video, Link as LinkIcon, Download, Search, SlidersHorizontal, Wrench, ExternalLink } from 'lucide-react';
+import { Loader, FileText, Video, Link as LinkIcon, Download, Search, SlidersHorizontal, Wrench, ExternalLink, Lock } from 'lucide-react';
 import { TierBadge, SkillTag } from '../../ui/ContentBadges.jsx';
 import SkillFilter from '../../ui/SkillFilter.jsx';
 
 const ToolsIndex = () => {
   const { db } = useAppServices();
-  const { masterPlan, currentWeek } = useDevPlan();
+  const { isContentUnlocked } = useContentAccess();
   const [tools, setTools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,41 +40,10 @@ const ToolsIndex = () => {
     return { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' };
   };
 
-  // Calculate Unlocked Resources
-  const unlockedResourceIds = useMemo(() => {
-      if (!masterPlan || masterPlan.length === 0) return new Set();
-      const ids = new Set();
-      const currentWeekNum = currentWeek?.weekNumber || 1;
-
-      masterPlan.forEach(week => {
-          if (week.weekNumber <= currentWeekNum) {
-              if (week.content && Array.isArray(week.content)) {
-                  week.content.forEach(item => {
-                      if (!item) return;
-                      if (item.resourceId) ids.add(String(item.resourceId).toLowerCase());
-                      if (item.contentItemId) ids.add(String(item.contentItemId).toLowerCase());
-                      if (item.id) ids.add(String(item.id).toLowerCase());
-                  });
-              }
-          }
-      });
-      return ids;
-  }, [masterPlan, currentWeek]);
-
   // Filter tools
   const filteredTools = useMemo(() => {
     let result = tools;
     
-    // Content Locking Filter
-    result = result.filter(t => {
-        const isUnlocked = unlockedResourceIds.has(String(t.id).toLowerCase());
-        if (isUnlocked) return true;
-
-        // If not unlocked, hide unless explicitly marked as public (isHiddenUntilUnlocked === false)
-        // This treats undefined as true (hidden) to enforce Vault & Key
-        return t.isHiddenUntilUnlocked === false;
-    });
-
     // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -218,11 +187,23 @@ const ToolsIndex = () => {
             <div className="divide-y divide-slate-100">
               {filteredTools.map((tool) => {
                 const colors = getColor(tool.metadata?.toolType);
+                const isUnlocked = isContentUnlocked(tool);
+                
                 return (
                   <div 
                     key={tool.id} 
-                    className="p-5 hover:bg-slate-50 transition-colors group"
+                    className={`p-5 transition-colors group relative ${
+                      isUnlocked ? 'hover:bg-slate-50' : 'opacity-75'
+                    }`}
                   >
+                    {!isUnlocked && (
+                      <div className="absolute inset-0 bg-slate-50/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                        <div className="bg-white/90 p-2 rounded-full shadow-sm border border-slate-200">
+                          <Lock className="w-5 h-5 text-slate-400" />
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-start gap-4">
                       {/* Type Icon */}
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${colors.bg} ${colors.text}`}>
@@ -259,11 +240,18 @@ const ToolsIndex = () => {
                       
                       {/* Action */}
                       <a 
-                        href={tool.metadata?.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 font-bold rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap flex-shrink-0"
+                        href={isUnlocked ? tool.metadata?.url : undefined} 
+                        target={isUnlocked ? "_blank" : undefined}
+                        rel={isUnlocked ? "noopener noreferrer" : undefined}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isUnlocked) e.preventDefault();
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2 border font-bold rounded-lg transition-colors whitespace-nowrap flex-shrink-0 ${
+                          isUnlocked 
+                            ? 'border-blue-600 text-blue-600 hover:bg-blue-50 cursor-pointer' 
+                            : 'border-slate-300 text-slate-400 cursor-not-allowed'
+                        }`}
                       >
                         <ExternalLink className="w-4 h-4" />
                         Open

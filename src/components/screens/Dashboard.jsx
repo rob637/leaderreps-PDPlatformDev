@@ -415,6 +415,7 @@ const Dashboard = (props) => {
     'win-the-day': () => <WidgetRenderer widgetId="win-the-day" scope={scope} />,
     'daily-plan': () => <WidgetRenderer widgetId="daily-plan" scope={scope} />,
     'daily-leader-reps': () => <WidgetRenderer widgetId="daily-leader-reps" scope={scope} />,
+    'this-weeks-actions': () => <WidgetRenderer widgetId="this-weeks-actions" scope={scope} />,
     'notifications': () => <WidgetRenderer widgetId="notifications" scope={scope} />,
     'pm-bookend-header': () => <WidgetRenderer widgetId="pm-bookend-header" scope={scope} />,
     'progress-feedback': () => <WidgetRenderer widgetId="progress-feedback" scope={scope} />,

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../../services/useAppServices.jsx';
+import { useContentAccess } from '../../../hooks/useContentAccess';
 import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { PageLayout } from '../../ui/PageLayout.jsx';
-import { Loader, PlayCircle, CheckCircle, Clock, BarChart, ArrowRight } from 'lucide-react';
+import { Loader, PlayCircle, CheckCircle, Clock, BarChart, ArrowRight, Lock } from 'lucide-react';
 import { Card, Button, Badge } from '../../screens/developmentplan/DevPlanComponents.jsx';
 
 const ProgramDetail = ({ navParams }) => {
   const { db, navigate } = useAppServices();
+  const { isContentUnlocked } = useContentAccess();
   const [program, setProgram] = useState(null);
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +73,25 @@ const ProgramDetail = ({ navParams }) => {
         <div className="p-6 text-center">
           <p className="text-gray-600">The requested program could not be found.</p>
           <Button onClick={() => navigate('programs-index')} className="mt-4">
+            Back to Programs
+          </Button>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (!isContentUnlocked(program)) {
+    return (
+      <PageLayout title="Content Locked" showBack={true}>
+        <div className="flex flex-col items-center justify-center p-12 text-center">
+          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+            <Lock className="w-8 h-8 text-slate-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">This Program is Locked</h2>
+          <p className="text-slate-500 max-w-md mb-8">
+            You haven't unlocked this content yet. Continue your Development Plan to gain access.
+          </p>
+          <Button onClick={() => navigate('programs-index')}>
             Back to Programs
           </Button>
         </div>

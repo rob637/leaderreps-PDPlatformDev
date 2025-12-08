@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../../services/useAppServices.jsx';
-import { useDevPlan } from '../../../hooks/useDevPlan';
+import { useContentAccess } from '../../../hooks/useContentAccess';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { PageLayout } from '../../ui/PageLayout.jsx';
-import { Loader, PlayCircle, Video, BookOpen, FileText, Zap, ArrowRight } from 'lucide-react';
+import { Loader, PlayCircle, Video, BookOpen, FileText, Zap, ArrowRight, Lock } from 'lucide-react';
 import { Card, Button, Badge } from '../../screens/developmentplan/DevPlanComponents.jsx';
 
 const SkillDetail = ({ navParams }) => {
   const { db, navigate } = useAppServices();
-  const { masterPlan, currentWeek } = useDevPlan();
+  const { isContentUnlocked } = useContentAccess();
   const [skill, setSkill] = useState(null);
   const [relatedContent, setRelatedContent] = useState({
     programs: [],
@@ -19,27 +19,6 @@ const SkillDetail = ({ navParams }) => {
   });
   const [loading, setLoading] = useState(true);
   const skillId = navParams?.id;
-
-  // Calculate Unlocked Resources
-  const unlockedResourceIds = useMemo(() => {
-      if (!masterPlan || masterPlan.length === 0) return new Set();
-      const ids = new Set();
-      const currentWeekNum = currentWeek?.weekNumber || 1;
-
-      masterPlan.forEach(week => {
-          if (week.weekNumber <= currentWeekNum) {
-              if (week.content && Array.isArray(week.content)) {
-                  week.content.forEach(item => {
-                      if (!item) return;
-                      if (item.resourceId) ids.add(String(item.resourceId).toLowerCase());
-                      if (item.contentItemId) ids.add(String(item.contentItemId).toLowerCase());
-                      if (item.id) ids.add(String(item.id).toLowerCase());
-                  });
-              }
-          }
-      });
-      return ids;
-  }, [masterPlan, currentWeek]);
 
   useEffect(() => {
     const fetchSkillData = async () => {
@@ -71,23 +50,13 @@ const SkillDetail = ({ navParams }) => {
             id: doc.id,
             ...doc.data()
           }));
-
-          // Filter by unlock status
-          const unlockedContent = allContent.filter(c => {
-              const isUnlocked = unlockedResourceIds.has(String(c.id).toLowerCase());
-              if (isUnlocked) return true;
-
-              // If not unlocked, hide unless explicitly marked as public (isHiddenUntilUnlocked === false)
-              // This treats undefined as true (hidden) to enforce Vault & Key
-              return c.isHiddenUntilUnlocked === false;
-          });
           
           // Group by type
           setRelatedContent({
-            programs: unlockedContent.filter(c => c.type === 'PROGRAM'),
-            workouts: unlockedContent.filter(c => c.type === 'WORKOUT'),
-            readReps: unlockedContent.filter(c => c.type === 'READ_REP'),
-            tools: unlockedContent.filter(c => c.type === 'TOOL')
+            programs: allContent.filter(c => c.type === 'PROGRAM'),
+            workouts: allContent.filter(c => c.type === 'WORKOUT'),
+            readReps: allContent.filter(c => c.type === 'READ_REP'),
+            tools: allContent.filter(c => c.type === 'TOOL')
           });
         }
       } catch (error) {
@@ -137,12 +106,27 @@ const SkillDetail = ({ navParams }) => {
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {items.map(item => (
+          {items.map(item => {
+            const isUnlocked = isContentUnlocked(item);
+            
+            return (
             <div 
               key={item.id}
-              onClick={() => navigate(route, { id: item.id, title: item.title })}
-              className="bg-white border border-slate-200 rounded-lg p-4 hover:border-corporate-teal hover:shadow-md transition-all cursor-pointer flex items-start gap-3 group"
+              onClick={() => isUnlocked ? navigate(route, { id: item.id, title: item.title }) : null}
+              className={`bg-white border rounded-lg p-4 transition-all group flex items-start gap-3 relative ${
+                isUnlocked 
+                  ? 'border-slate-200 hover:border-corporate-teal hover:shadow-md cursor-pointer' 
+                  : 'border-slate-100 opacity-75 cursor-not-allowed'
+              }`}
             >
+              {!isUnlocked && (
+                <div className="absolute inset-0 bg-slate-50/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-lg">
+                  <div className="bg-white/90 p-2 rounded-full shadow-sm border border-slate-200">
+                    <Lock className="w-4 h-4 text-slate-400" />
+                  </div>
+                </div>
+              )}
+
               <div className="mt-1">
                 <Icon className="w-5 h-5 text-slate-400 group-hover:text-corporate-teal transition-colors" />
               </div>
@@ -166,7 +150,8 @@ const SkillDetail = ({ navParams }) => {
               </div>
               <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-corporate-teal self-center" />
             </div>
-          ))}
+          );
+          })}
         </div>
       </div>
     );
