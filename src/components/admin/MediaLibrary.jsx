@@ -30,7 +30,7 @@ const MediaLibrary = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [filterType, setFilterType] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('GRID'); // GRID | LIST
+  const [viewMode, setViewMode] = useState('LIST'); // GRID | LIST
   const [dragActive, setDragActive] = useState(false);
 
   const loadAssets = useCallback(async () => {
@@ -114,7 +114,7 @@ const MediaLibrary = () => {
 
   const filteredAssets = assets.filter(asset => 
     asset.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ).sort((a, b) => a.title.localeCompare(b.title));
 
   const getIconForType = (type) => {
     switch (type) {
