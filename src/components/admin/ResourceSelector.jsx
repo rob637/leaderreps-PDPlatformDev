@@ -10,7 +10,8 @@ import {
   BookOpen,
   Users,
   MessageSquare,
-  PlusCircle
+  PlusCircle,
+  Layers
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { getAllContentAdmin, CONTENT_COLLECTIONS } from '../../services/contentService';
@@ -125,7 +126,12 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
       try {
         // We check both collections if type is content, or specific if known
         const collections = resourceType === 'content' 
-          ? [CONTENT_COLLECTIONS.VIDEOS, CONTENT_COLLECTIONS.READINGS]
+          ? [
+              CONTENT_COLLECTIONS.VIDEOS, 
+              CONTENT_COLLECTIONS.READINGS,
+              CONTENT_COLLECTIONS.DOCUMENTS,
+              CONTENT_COLLECTIONS.COURSES
+            ]
           : resourceType === 'community' ? [CONTENT_COLLECTIONS.COMMUNITY]
           : [CONTENT_COLLECTIONS.COACHING];
 
@@ -133,9 +139,13 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
           const docRef = doc(db, col, value);
           const snap = await getDoc(docRef);
           if (snap.exists()) {
-            const type = col === CONTENT_COLLECTIONS.VIDEOS ? 'video' : 
-                         col === CONTENT_COLLECTIONS.READINGS ? 'reading' :
-                         col === CONTENT_COLLECTIONS.COMMUNITY ? 'community' : 'coaching';
+            let type = 'video';
+            if (col === CONTENT_COLLECTIONS.READINGS) type = 'reading';
+            else if (col === CONTENT_COLLECTIONS.DOCUMENTS) type = 'document';
+            else if (col === CONTENT_COLLECTIONS.COURSES) type = 'course';
+            else if (col === CONTENT_COLLECTIONS.COMMUNITY) type = 'community';
+            else if (col === CONTENT_COLLECTIONS.COACHING) type = 'coaching';
+
             setSelectedResource({ id: snap.id, ...snap.data(), resourceType: type });
             return;
           }
@@ -162,7 +172,9 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
   const getIcon = (type) => {
     switch (type) {
       case 'video': return Film;
-      case 'reading': return FileText;
+      case 'reading': return BookOpen;
+      case 'document': return FileText;
+      case 'course': return Layers;
       case 'community': return Users;
       case 'coaching': return MessageSquare;
       default: return LinkIcon;
@@ -181,6 +193,10 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
             <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
               selectedResource.resourceType === 'video' ? 'bg-red-100 text-red-600' :
               selectedResource.resourceType === 'reading' ? 'bg-blue-100 text-blue-600' :
+              selectedResource.resourceType === 'document' ? 'bg-orange-100 text-orange-600' :
+              selectedResource.resourceType === 'course' ? 'bg-purple-100 text-purple-600' :
+              selectedResource.resourceType === 'community' ? 'bg-green-100 text-green-600' :
+              selectedResource.resourceType === 'coaching' ? 'bg-indigo-100 text-indigo-600' :
               'bg-slate-100 text-slate-600'
             }`}>
               {React.createElement(getIcon(selectedResource.resourceType), { size: 14 })}
@@ -254,6 +270,10 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                           resource.resourceType === 'video' ? 'bg-red-100 text-red-600' :
                           resource.resourceType === 'reading' ? 'bg-blue-100 text-blue-600' :
+                          resource.resourceType === 'document' ? 'bg-orange-100 text-orange-600' :
+                          resource.resourceType === 'course' ? 'bg-purple-100 text-purple-600' :
+                          resource.resourceType === 'community' ? 'bg-green-100 text-green-600' :
+                          resource.resourceType === 'coaching' ? 'bg-indigo-100 text-indigo-600' :
                           'bg-slate-100 text-slate-600'
                         }`}>
                           <Icon size={16} />
