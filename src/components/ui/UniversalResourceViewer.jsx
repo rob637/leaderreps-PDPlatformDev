@@ -111,30 +111,58 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
         }
         // Fallthrough to link for non-PDF readings
 
-      default: // Link / Document
-        return (
-          <div className="flex flex-col items-center justify-center h-64 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              {type === 'reading' || type === 'document' ? (
-                <FileText className="w-8 h-8 text-blue-600" />
-              ) : type === 'course' ? (
-                <Layers className="w-8 h-8 text-blue-600" />
-              ) : (
-                <LinkIcon className="w-8 h-8 text-blue-600" />
-              )}
+      default: // Link / Document / Course
+        // Check for Google Docs/Sheets/Slides
+        if (url.includes('docs.google.com') || url.includes('drive.google.com')) {
+          // Ensure we use the embed/preview mode if possible
+          let embedUrl = url;
+          if (url.includes('/edit')) {
+            embedUrl = url.replace('/edit', '/preview');
+          } else if (url.includes('/view')) {
+            embedUrl = url.replace('/view', '/preview');
+          }
+          
+          return (
+            <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden">
+              <iframe src={embedUrl} className="w-full h-full" title={title} allow="autoplay" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">{title}</h3>
-            <p className="text-slate-500 mb-6 max-w-md text-center">
-              This resource opens in a new window.
-            </p>
-            <a 
-              href={url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="px-6 py-3 bg-corporate-navy text-white rounded-xl font-bold hover:bg-corporate-navy-light flex items-center gap-2 transition-all hover:scale-105 shadow-lg"
-            >
-              Open Resource <ExternalLink className="w-4 h-4" />
-            </a>
+          );
+        }
+
+        // Check for Office Documents (Word, Excel, PowerPoint) or generic files
+        // Use Google Docs Viewer to embed them
+        if (url.match(/\.(docx|doc|pptx|ppt|xlsx|xls)$/i)) {
+           const encodedUrl = encodeURIComponent(url);
+           const viewerUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
+           return (
+            <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden">
+              <iframe src={viewerUrl} className="w-full h-full" title={title} />
+            </div>
+           );
+        }
+
+        // Fallback: Try to iframe it (some sites allow it), otherwise show the link
+        return (
+          <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden flex flex-col">
+             <iframe 
+                src={url} 
+                className="w-full h-full flex-1" 
+                title={title}
+                onError={(e) => {
+                    // If iframe fails (X-Frame-Options), we can't easily detect it in JS, 
+                    // but we provide the "Open in New Window" button below as a backup.
+                }}
+             />
+             <div className="p-2 bg-slate-50 border-t flex justify-center">
+                <a 
+                  href={url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs text-slate-500 hover:text-blue-600 flex items-center gap-1"
+                >
+                  If content doesn't load, click here to open in new window <ExternalLink className="w-3 h-3" />
+                </a>
+             </div>
           </div>
         );
     }

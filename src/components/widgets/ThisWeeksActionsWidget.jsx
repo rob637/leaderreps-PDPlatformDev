@@ -130,28 +130,9 @@ const ThisWeeksActionsWidget = ({ scope }) => {
             }
         }
 
-        // Determine if we should open in new tab or modal
+        // Always open in the viewer (UniversalResourceViewer handles embedding logic)
         if (resourceData) {
-            const type = (resourceData.resourceType || '').toLowerCase();
-            const url = resourceData.url || '';
-            
-            // Embeddable types
-            const isEmbeddable = 
-                type === 'video' || 
-                type === 'workout' || 
-                type === 'pdf' || 
-                (type === 'reading' && (url.endsWith('.pdf') || resourceData.metadata?.fileType === 'application/pdf'));
-
-            if (isEmbeddable) {
-                setViewingResource(resourceData);
-            } else {
-                // Open directly in new tab
-                if (url) {
-                    window.open(url, '_blank');
-                } else {
-                    alert("This resource does not have a valid URL.");
-                }
-            }
+            setViewingResource(resourceData);
         }
 
       } catch (error) {
