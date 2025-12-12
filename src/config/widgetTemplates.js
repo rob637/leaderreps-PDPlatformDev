@@ -561,7 +561,7 @@ const DailyLeaderRepsWidget = () => {
   );
 };
 
-return <DailyLeaderRepsWidget />;
+render(<DailyLeaderRepsWidget />);
     `,
     'notifications': `
 const NotificationsWidget = () => {
