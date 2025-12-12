@@ -49,6 +49,7 @@ import {
 // Collection names (easily extendable)
 export const CONTENT_COLLECTIONS = {
   READINGS: 'content_readings',
+  DOCUMENTS: 'content_documents',
   VIDEOS: 'content_videos',
   COURSES: 'content_courses',
   COMMUNITY: 'content_community',

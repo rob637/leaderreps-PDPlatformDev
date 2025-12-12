@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { CONTENT_TYPES } from '../../../../services/unifiedContentService';
 import { MEDIA_TYPES } from '../../../../services/mediaService';
-import FileUploader from '../../FileUploader';
 import MediaPicker from '../pickers/MediaPicker';
 import { Database } from 'lucide-react';
 
@@ -49,15 +48,9 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
                   title="Select from Vault"
                 >
                   <Database size={18} />
-                  Vault
+                  Select from Media Vault
                 </button>
               </div>
-              <div className="text-xs text-gray-500 text-center my-1">- OR -</div>
-              <FileUploader 
-                folder="content/videos" 
-                accept="video/*" 
-                onUploadComplete={(url) => onChange('videoUrl', url)} 
-              />
             </div>
           </div>
           <div>
@@ -109,15 +102,9 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
                   title="Select from Vault"
                 >
                   <Database size={18} />
-                  Vault
+                  Select from Media Vault
                 </button>
               </div>
-              <div className="text-xs text-gray-500 text-center my-1">- OR -</div>
-              <FileUploader 
-                folder="content/documents" 
-                accept=".pdf,.doc,.docx" 
-                onUploadComplete={(url) => onChange('pdfUrl', url)} 
-              />
             </div>
           </div>
         </>

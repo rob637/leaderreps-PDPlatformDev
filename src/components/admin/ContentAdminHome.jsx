@@ -427,6 +427,14 @@ const ContentAdminHome = () => {
   const contentTypes = [
     {
       id: CONTENT_COLLECTIONS.READINGS,
+      label: 'Read & Reps (Books)',
+      icon: BookOpen,
+      description: 'Wrap book syntheses with metadata',
+      color: COLORS.TEAL,
+      route: 'admin-wrapper-readrep'
+    },
+    {
+      id: CONTENT_COLLECTIONS.DOCUMENTS,
       label: 'Documents',
       icon: BookOpen,
       description: 'Wrap PDF documents with metadata',

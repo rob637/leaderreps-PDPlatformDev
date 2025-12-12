@@ -34,9 +34,14 @@ import MediaSelector from './MediaSelector';
 // Content type configurations
 const CONTENT_TYPES = {
   [CONTENT_COLLECTIONS.READINGS]: {
-    label: 'Readings',
+    label: 'Read & Reps (Books)',
     icon: BookOpen,
     fields: ['title', 'description', 'url', 'tier', 'category', 'thumbnail', 'author', 'readTime', 'tags']
+  },
+  [CONTENT_COLLECTIONS.DOCUMENTS]: {
+    label: 'Documents',
+    icon: FileText,
+    fields: ['title', 'description', 'url', 'tier', 'category', 'thumbnail', 'tags']
   },
   [CONTENT_COLLECTIONS.VIDEOS]: {
     label: 'Videos',
@@ -300,8 +305,8 @@ const ContentManager = ({ contentType, title, description }) => {
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <FileText className="w-4 h-4" />
-                    Upload File
+                    <Database className="w-4 h-4" />
+                    From Media Vault
                   </button>
                 </div>
 
@@ -310,7 +315,7 @@ const ContentManager = ({ contentType, title, description }) => {
                     <div className="flex flex-col items-center justify-center">
                       <Database className="w-10 h-10 text-slate-400 mb-2" />
                       <p className="text-sm font-medium text-slate-700">
-                        Select file from Media Vault
+                        Select content from Media Vault
                       </p>
                       <button
                         onClick={() => setShowMediaSelector(true)}

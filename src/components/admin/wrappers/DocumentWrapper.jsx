@@ -5,7 +5,7 @@ import { CONTENT_COLLECTIONS } from '../../../services/contentService';
 const DocumentWrapper = () => {
   return (
     <ContentManager 
-      contentType={CONTENT_COLLECTIONS.READINGS} 
+      contentType={CONTENT_COLLECTIONS.DOCUMENTS} 
       title="Document Wrapper"
       description="Wrap PDFs, Word docs, and articles with metadata."
     />
