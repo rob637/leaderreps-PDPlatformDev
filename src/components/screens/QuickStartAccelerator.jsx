@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { getContent, CONTENT_COLLECTIONS } from '../../services/contentService.js';
 import { Button, Card, LoadingSpinner } from '../ui';
 import {
   Zap, ShieldCheck, ArrowLeft, Target, Briefcase, Clock, Users, CornerRightUp, X, Activity, Cpu, Eye,
@@ -184,7 +185,7 @@ const LISAuditorView = ({ setQuickStartView }) => {
 ========================================================= */
 const QuickStartAcceleratorScreen = () => {
     // --- Consume Services ---
-    const { isLoading: isAppLoading, error: appError, navigate } = useAppServices(); // cite: useAppServices.jsx
+    const { isLoading: isAppLoading, error: appError, navigate, db } = useAppServices(); // cite: useAppServices.jsx
     const { navParams } = useNavigation();
 
     // --- Local State ---
@@ -197,8 +198,10 @@ const QuickStartAcceleratorScreen = () => {
     useEffect(() => {
         const autoOpenId = navParams?.state?.autoOpenId || navParams?.autoOpenId;
         if (autoOpenId && !selectedResource && !hasAutoOpened.current) {
+             const idStr = String(autoOpenId).toLowerCase();
+
              // Check for QS Workbook ID
-             if (String(autoOpenId).toLowerCase().includes('workbook') || String(autoOpenId).toLowerCase() === 'qs-workbook') {
+             if (idStr.includes('workbook') || idStr === 'qs-workbook') {
                  console.log('[QuickStart] Auto-opening workbook');
                  setIsAutoOpenSession(true);
                  hasAutoOpened.current = true;
@@ -210,8 +213,35 @@ const QuickStartAcceleratorScreen = () => {
                      description: 'The official QuickStart Accelerator Workbook.'
                  });
              }
+             // Check for PDQ Feedback Loop
+             else if (idStr.includes('pdq') || idStr.includes('feedback loop') || idStr === '0bbmuvlhccbvfynisfkb') {
+                 console.log('[QuickStart] Auto-opening PDQ Feedback Loop');
+                 setIsAutoOpenSession(true);
+                 hasAutoOpened.current = true;
+                 
+                 const fetchDoc = async () => {
+                     try {
+                         const docs = await getContent(db, CONTENT_COLLECTIONS.DOCUMENTS);
+                         // Try to match by ID first, then title
+                         const match = docs.find(d => d.id === autoOpenId || (d.title && d.title.toLowerCase().includes('pdq')));
+                         
+                         if (match) {
+                             console.log('[QuickStart] Found PDQ document:', match);
+                             setSelectedResource({
+                                 ...match,
+                                 type: 'pdf' // Ensure type is pdf for viewer
+                             });
+                         } else {
+                             console.warn('[QuickStart] PDQ document not found in content_documents');
+                         }
+                     } catch (e) {
+                         console.error('[QuickStart] Error fetching PDQ:', e);
+                     }
+                 };
+                 fetchDoc();
+             }
         }
-    }, [navParams, selectedResource]);
+    }, [navParams, selectedResource, db]);
 
     // --- Effect to scroll to top on mount ---
     useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, []);

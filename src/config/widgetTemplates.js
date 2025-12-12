@@ -585,12 +585,16 @@ const NotificationsWidget = () => {
     let route = 'business-readings';
     let category = item.contentItemType || item.type || 'Content';
     
-    if (itemType.includes('video') || itemType.includes('workout')) {
+    // Special routing for QuickStart items (Workbook, PDQ)
+    if (label.toLowerCase().includes('workbook') || label.toLowerCase().includes('pdq') || label.toLowerCase().includes('feedback loop')) {
+      route = 'quick-start-accelerator';
+      category = 'QuickStart Tool';
+    } else if (itemType.includes('video') || itemType.includes('workout')) {
       route = 'leadership-videos';
       category = itemType.includes('workout') ? 'Workout' : 'Video';
-    } else if (itemType.includes('read') || itemType.includes('workbook') || itemType.includes('pdf')) {
+    } else if (itemType.includes('read') || itemType.includes('pdf')) {
       route = 'business-readings';
-      category = itemType.includes('workbook') ? 'Workbook' : 'Reading';
+      category = 'Reading';
     }
     
     const resourceId = item.resourceId || item.contentItemId;

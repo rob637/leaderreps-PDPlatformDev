@@ -499,14 +499,6 @@ export default function BusinessReadingsScreen() {
           }
       });
 
-      // --- HOTFIX: Manually unlock PDQ Feedback Loop for Week 1 ---
-      // The item '0BbmuVLhcCBvFynISfkb' is missing from the Week 1 content list in the database.
-      // We manually unlock it here to ensure visibility until the DB is patched.
-      if (currentWeekNum >= 1) {
-          ids.add('0bbmuvlhccbvfynisfkb'); 
-      }
-      // -----------------------------------------------------------
-
       console.log('[BusinessReadings] Master Plan:', masterPlan);
       console.log('[BusinessReadings] Current Week:', currentWeek);
       console.log('[BusinessReadings] Unlocked IDs:', Array.from(ids));
@@ -536,14 +528,6 @@ export default function BusinessReadingsScreen() {
       const grouped = {};
       cmsReadings.forEach(reading => {
         const readingId = String(reading.id).toLowerCase();
-
-        // DEBUG: Log if we find the missing item
-        if (reading.title && (reading.title.includes('PDQ') || reading.title.includes('Feedback Loop'))) {
-             console.log('[BusinessReadings] Found target item in CMS:', reading);
-             console.log('[BusinessReadings] Normalized ID:', readingId);
-             console.log('[BusinessReadings] Is Unlocked?', unlockedResourceIds.has(readingId));
-             console.log('[BusinessReadings] isHiddenUntilUnlocked?', reading.isHiddenUntilUnlocked);
-        }
 
         // Check if reading should be hidden
         if (reading.isHiddenUntilUnlocked && !unlockedResourceIds.has(readingId)) {
