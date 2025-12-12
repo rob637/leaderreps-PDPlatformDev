@@ -426,14 +426,6 @@ const ContentAdminHome = () => {
 
   const contentTypes = [
     {
-      id: CONTENT_COLLECTIONS.READINGS,
-      label: 'Read & Reps',
-      icon: BookOpen,
-      description: 'Wrap book syntheses with metadata',
-      color: COLORS.TEAL,
-      route: 'admin-wrapper-book'
-    },
-    {
       id: CONTENT_COLLECTIONS.DOCUMENTS,
       label: 'Documents',
       icon: BookOpen,
@@ -456,6 +448,14 @@ const ContentAdminHome = () => {
       description: 'Wrap course modules with metadata',
       color: COLORS.NAVY,
       route: 'admin-wrapper-course'
+    },
+    {
+      id: CONTENT_COLLECTIONS.READINGS,
+      label: 'Read & Reps',
+      icon: BookOpen,
+      description: 'Wrap book syntheses with metadata',
+      color: COLORS.TEAL,
+      route: 'admin-wrapper-book'
     }
   ];
 
