@@ -14,7 +14,6 @@ import { useDevPlan } from '../../hooks/useDevPlan';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
 import { membershipService } from '../../services/membershipService.js';
-import { useNavigation } from '../../providers/NavigationProvider.jsx'; 
 import { useFeatures } from '../../providers/FeatureProvider';
 import { AlertTriangle, BarChart3, Beaker, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap, ArrowLeft, BookOpen, FileText, Link, Video } from 'lucide-react'; 
 import { COLORS, COMPLEXITY_MAP } from './labs/labConstants.js';
