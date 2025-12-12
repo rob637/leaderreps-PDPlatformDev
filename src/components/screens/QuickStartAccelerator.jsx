@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { getContent, CONTENT_COLLECTIONS } from '../../services/contentService.js';
+import { doc, getDoc } from 'firebase/firestore';
 import { Button, Card, LoadingSpinner } from '../ui';
 import {
   Zap, ShieldCheck, ArrowLeft, Target, Briefcase, Clock, Users, CornerRightUp, X, Activity, Cpu, Eye,
@@ -199,56 +199,25 @@ const QuickStartAcceleratorScreen = () => {
         const autoOpenId = navParams?.state?.autoOpenId || navParams?.autoOpenId;
         if (autoOpenId && !selectedResource && !hasAutoOpened.current) {
              hasAutoOpened.current = true; // Prevent multiple attempts
-             const idStr = String(autoOpenId).toLowerCase();
              console.log('[QuickStart] Auto-opening resource with ID:', autoOpenId);
 
-             // Always try to fetch the document by ID
+             // Fetch the document directly by ID from Firestore
              const fetchDocById = async () => {
                  try {
-                     const docs = await getContent(db, CONTENT_COLLECTIONS.DOCUMENTS);
-                     console.log('[QuickStart] All documents:', docs.map(d => ({ id: d.id, title: d.title })));
+                     const docRef = doc(db, 'content_documents', autoOpenId);
+                     const docSnap = await getDoc(docRef);
                      
-                     // Try multiple matching strategies
-                     let match = null;
-                     
-                     // 1. Exact ID match
-                     match = docs.find(d => d.id === autoOpenId);
-                     if (match) console.log('[QuickStart] Matched by exact ID');
-                     
-                     // 2. Case-insensitive ID match
-                     if (!match) {
-                         match = docs.find(d => d.id && d.id.toLowerCase() === idStr);
-                         if (match) console.log('[QuickStart] Matched by case-insensitive ID');
-                     }
-                     
-                     // 3. Match by title keywords based on ID content
-                     if (!match) {
-                         if (idStr.includes('workbook') || idStr === 'qs-workbook') {
-                             match = docs.find(d => d.title && d.title.toLowerCase().includes('workbook'));
-                             if (match) console.log('[QuickStart] Matched workbook by title keyword');
-                         } else if (idStr.includes('pdq') || idStr.includes('feedback')) {
-                             match = docs.find(d => d.title && (d.title.toLowerCase().includes('pdq') || d.title.toLowerCase().includes('feedback loop')));
-                             if (match) console.log('[QuickStart] Matched PDQ by title keyword');
-                         }
-                     }
-                     
-                     // 4. Try to find ANY document with matching ID substring
-                     if (!match) {
-                         match = docs.find(d => d.id && (d.id.includes(autoOpenId) || autoOpenId.includes(d.id)));
-                         if (match) console.log('[QuickStart] Matched by ID substring');
-                     }
-                     
-                     if (match) {
-                         console.log('[QuickStart] Opening document:', match.title, match.url);
+                     if (docSnap.exists()) {
+                         const docData = { id: docSnap.id, ...docSnap.data() };
+                         console.log('[QuickStart] Found document:', docData.title, docData.url);
                          setIsAutoOpenSession(true);
                          setSelectedResource({
-                             ...match,
-                             type: match.type || 'document',
+                             ...docData,
+                             type: docData.type || 'document',
                              resourceType: 'document'
                          });
                      } else {
-                         console.warn('[QuickStart] No document match found for ID:', autoOpenId);
-                         console.warn('[QuickStart] Available IDs:', docs.map(d => d.id));
+                         console.warn('[QuickStart] Document not found for ID:', autoOpenId);
                      }
                  } catch (e) {
                      console.error('[QuickStart] Error fetching document:', e);
