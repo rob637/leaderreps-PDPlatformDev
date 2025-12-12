@@ -109,19 +109,22 @@ const ThisWeeksActionsWidget = ({ scope }) => {
            setViewingResource(mappedResource);
         } else {
             // Fallback to legacy collections if not found in 'content_library'
+            const type = (item.resourceType || item.type || '').toLowerCase();
+
             let collectionName = CONTENT_COLLECTIONS.READINGS;
-            if (item.resourceType === 'video') collectionName = CONTENT_COLLECTIONS.VIDEOS;
-            else if (item.resourceType === 'community') collectionName = CONTENT_COLLECTIONS.COMMUNITY;
-            else if (item.resourceType === 'coaching') collectionName = CONTENT_COLLECTIONS.COACHING;
-            else if (item.resourceType === 'document') collectionName = CONTENT_COLLECTIONS.DOCUMENTS;
-            else if (item.resourceType === 'course') collectionName = CONTENT_COLLECTIONS.COURSES;
+            if (type === 'video' || type === 'workout') collectionName = CONTENT_COLLECTIONS.VIDEOS;
+            else if (type === 'community' || type === 'leader_circle' || type === 'open_gym') collectionName = CONTENT_COLLECTIONS.COMMUNITY;
+            else if (type === 'coaching') collectionName = CONTENT_COLLECTIONS.COACHING;
+            else if (type === 'document' || type === 'tool') collectionName = CONTENT_COLLECTIONS.DOCUMENTS;
+            else if (type === 'course' || type === 'program') collectionName = CONTENT_COLLECTIONS.COURSES;
             
             const docRef = doc(db, collectionName, resourceId);
             const docSnap = await getDoc(docRef);
             
             if (docSnap.exists()) {
-              setViewingResource({ id: docSnap.id, ...docSnap.data(), resourceType: item.resourceType });
+              setViewingResource({ id: docSnap.id, ...docSnap.data(), resourceType: type });
             } else {
+              console.warn(`Resource not found in ${collectionName} (ID: ${resourceId})`);
               alert("Resource not found. It may have been deleted.");
             }
         }
