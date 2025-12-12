@@ -79,9 +79,26 @@ const DevelopmentPlanWidget = ({ scope }) => {
   const handleViewResource = async (e, item) => {
     e.stopPropagation(); // Prevent toggling completion
     
-    if (item.url) {
-      // Legacy: direct URL
-      window.open(item.url, '_blank');
+    const titleLower = (item.title || '').toLowerCase();
+
+    // SPECIAL FIX: QS Workbook (Hardcoded PDF to ensure correct file opens)
+    if (titleLower.includes('qs workbook') || titleLower.includes('quickstart workbook')) {
+         setViewingResource({
+             id: 'qs-workbook',
+             title: 'QuickStart Workbook',
+             type: 'pdf',
+             url: 'https://firebasestorage.googleapis.com/v0/b/leaderreps-pdplatform.appspot.com/o/content_documents%2FQuickStart_Workbook.pdf?alt=media',
+             description: 'The official QuickStart Accelerator Workbook.'
+         });
+         return;
+    }
+
+    // Use provided URL if present (unless it's PDQ, which we want to re-fetch to get the real doc)
+    if (item.url && !titleLower.includes('pdq')) {
+      setViewingResource({
+          ...item,
+          type: item.resourceType || 'link'
+      });
       return;
     }
 
