@@ -140,20 +140,33 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
       onClick={onClose} // Close on backdrop click
     >
       <div 
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden relative"
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
       >
+        {/* Absolute Close Button for reliability */}
+        <button 
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="absolute top-3 right-3 z-[60] p-2 bg-white/90 hover:bg-red-100 text-slate-500 hover:text-red-600 rounded-full transition-colors shadow-sm border border-slate-100"
+          title="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
         {/* Header */}
-        <div className="p-4 border-b flex items-center justify-between bg-slate-50 z-10 relative">
+        <div className="p-4 border-b flex items-center justify-between bg-slate-50 z-10 relative pr-16">
           <div>
-            <h2 className="text-lg font-bold text-corporate-navy pr-8 line-clamp-1">
+            <h2 className="text-lg font-bold text-corporate-navy line-clamp-1">
               {title}
             </h2>
             {description && (
               <p className="text-xs text-slate-500 line-clamp-1">{description}</p>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mr-8">
             {url && (
               <a 
                 href={url} 
@@ -165,12 +178,6 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
                 <ExternalLink className="w-5 h-5" />
               </a>
             )}
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-red-100 hover:text-red-600 rounded-full text-slate-500 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
           </div>
         </div>
 
