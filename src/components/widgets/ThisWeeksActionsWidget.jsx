@@ -40,11 +40,26 @@ const ThisWeeksActionsWidget = ({ scope }) => {
 
   const completedItems = userProgress?.itemsCompleted || [];
 
+  // Normalize content items - DevPlanManager saves with different field names
+  const normalizeItems = (items, category) => {
+    return (items || []).map(item => ({
+      ...item,
+      id: item.id || item.contentItemId || item.communityItemId || item.coachingItemId,
+      type: item.type || item.contentItemType || item.communityItemType || item.coachingItemType || category.toLowerCase(),
+      label: item.label || item.contentItemLabel || item.communityItemLabel || item.coachingItemLabel || item.title,
+      required: item.required !== false && item.isRequiredContent !== false && item.optional !== true,
+      url: item.url,
+      resourceId: item.resourceId || item.contentItemId || item.communityItemId || item.coachingItemId,
+      resourceType: item.resourceType || (item.type || item.contentItemType || item.communityItemType || item.coachingItemType || '').toLowerCase(),
+      category
+    }));
+  };
+
   // Combine all actionable items
   const allActions = [
-    ...content.map(i => ({ ...i, category: 'Content' })),
-    ...community.map(i => ({ ...i, category: 'Community' })),
-    ...coaching.map(i => ({ ...i, category: 'Coaching' }))
+    ...normalizeItems(content, 'Content'),
+    ...normalizeItems(community, 'Community'),
+    ...normalizeItems(coaching, 'Coaching')
   ];
 
   // Helper to get icon based on type
@@ -198,7 +213,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <p className={`text-sm font-medium truncate ${isCompleted ? 'text-teal-900 line-through opacity-75' : 'text-slate-700'}`}>
-                      {item.title || item.name || 'Untitled Action'}
+                      {item.label || item.title || item.name || 'Untitled Action'}
                     </p>
                     {item.required !== false && !item.optional && (
                       <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-wider">

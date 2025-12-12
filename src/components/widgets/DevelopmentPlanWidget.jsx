@@ -42,7 +42,25 @@ const DevelopmentPlanWidget = ({ scope }) => {
     reflectionResponse = ''
   } = userProgress || {};
 
-  const allItems = [...content, ...community, ...coaching];
+  // Normalize content items - DevPlanManager saves with different field names
+  const normalizeItems = (items, defaultType) => {
+    return (items || []).map(item => ({
+      ...item,
+      id: item.id || item.contentItemId || item.communityItemId || item.coachingItemId,
+      type: item.type || item.contentItemType || item.communityItemType || item.coachingItemType || defaultType,
+      label: item.label || item.contentItemLabel || item.communityItemLabel || item.coachingItemLabel || item.title,
+      required: item.required !== false && item.isRequiredContent !== false && item.optional !== true,
+      url: item.url,
+      resourceId: item.resourceId || item.contentItemId || item.communityItemId || item.coachingItemId,
+      resourceType: item.resourceType || (item.type || item.contentItemType || '').toLowerCase()
+    }));
+  };
+
+  const allItems = [
+    ...normalizeItems(content, 'content'),
+    ...normalizeItems(community, 'community'),
+    ...normalizeItems(coaching, 'coaching')
+  ];
   // The spec says: requiredItemsCount – total required items in this week.
   // So let's filter by required.
   
