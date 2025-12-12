@@ -658,7 +658,7 @@ const CoachingHub = () => {
             {!isFeatureEnabled('coaching-upcoming-sessions') && 
              !isFeatureEnabled('coaching-on-demand') && 
              !isFeatureEnabled('coaching-my-sessions') && (
-               <NoWidgetsEnabled moduleName="Coaching Hub" />
+               <NoWidgetsEnabled moduleName="Coaching" />
             )}
           </>
         )}
