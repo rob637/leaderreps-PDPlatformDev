@@ -446,7 +446,9 @@ export const WIDGET_TEMPLATES = {
 })()
     `,
     'daily-leader-reps': `
-(() => {
+const DailyLeaderRepsWidget = () => {
+  const { useState } = React;
+  
   // Get current week's daily reps from the Development Plan
   const currentWeek = typeof devPlanCurrentWeek !== 'undefined' ? devPlanCurrentWeek : null;
   
@@ -465,7 +467,7 @@ export const WIDGET_TEMPLATES = {
   // Track completed state and expanded description
   const commitmentsList = Array.isArray(additionalCommitments) ? additionalCommitments : [];
   const safeIsSaving = typeof isSavingReps !== 'undefined' ? isSavingReps : false;
-  const [expandedRep, setExpandedRep] = React.useState(null);
+  const [expandedRep, setExpandedRep] = useState(null);
   
   // Toggle completion handler
   const handleToggle = (e, repId, currentStatus, label) => {
@@ -557,7 +559,9 @@ export const WIDGET_TEMPLATES = {
 
     </Card>
   );
-})()
+};
+
+return <DailyLeaderRepsWidget />;
     `,
     'notifications': `
 const NotificationsWidget = () => {
