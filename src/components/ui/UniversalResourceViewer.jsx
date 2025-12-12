@@ -144,7 +144,7 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
       >
         {/* Header */}
-        <div className="p-4 border-b flex items-center justify-between bg-slate-50">
+        <div className="p-4 border-b flex items-center justify-between bg-slate-50 z-10 relative">
           <div>
             <h2 className="text-lg font-bold text-corporate-navy pr-8 line-clamp-1">
               {title}
