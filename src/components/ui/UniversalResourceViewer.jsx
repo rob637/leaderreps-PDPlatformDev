@@ -8,10 +8,14 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
 
   // Helper to determine content type if not explicitly provided
   const getContentType = () => {
-    if (resourceType) return resourceType;
-    if (legacyType) return legacyType;
-    if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com') || url.endsWith('.mp4')) return 'video';
-    if (url.endsWith('.pdf')) return 'pdf';
+    if (resourceType) return resourceType.toLowerCase();
+    if (legacyType) return legacyType.toLowerCase();
+    
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be') || lowerUrl.includes('vimeo.com') || lowerUrl.endsWith('.mp4')) return 'video';
+    if (lowerUrl.includes('.pdf')) return 'pdf';
+    if (lowerUrl.match(/\.(docx|doc|pptx|ppt|xlsx|xls)/)) return 'document';
+    
     return 'link';
   };
 
@@ -101,27 +105,17 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
         }
 
       case 'pdf':
-      case 'reading': // Map 'reading' to PDF viewer if it's a file
-        if (url.endsWith('.pdf') || resource.metadata?.fileType === 'application/pdf') {
-          return (
-            <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden">
-              <iframe src={url} className="w-full h-full" title={title} />
-            </div>
-          );
-        }
-        // Fallthrough to link for non-PDF readings
-
-      default: // Link / Document / Course
-        // Check for Google Docs/Sheets/Slides
+      case 'reading': 
+      case 'document':
+      case 'tool':
+        // Check for Google Docs/Sheets/Slides (Native Google Drive Links)
         if (url.includes('docs.google.com') || url.includes('drive.google.com')) {
-          // Ensure we use the embed/preview mode if possible
           let embedUrl = url;
           if (url.includes('/edit')) {
             embedUrl = url.replace('/edit', '/preview');
           } else if (url.includes('/view')) {
             embedUrl = url.replace('/view', '/preview');
           }
-          
           return (
             <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden">
               <iframe src={embedUrl} className="w-full h-full" title={title} allow="autoplay" />
@@ -129,25 +123,36 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
           );
         }
 
-        // Check for Office Documents (Word, Excel, PowerPoint) or generic files
-        // Use Google Docs Viewer to embed them
-        if (url.match(/\.(docx|doc|pptx|ppt|xlsx|xls)$/i)) {
-           const encodedUrl = encodeURIComponent(url);
-           const viewerUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
-           return (
-            <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden">
-              <iframe src={viewerUrl} className="w-full h-full" title={title} />
-            </div>
-           );
-        }
-
-        // Fallback: Try to iframe it (some sites allow it), otherwise show the link
+        // For PDFs, Office Docs, and other files -> Use Google Docs Viewer
+        // This handles Firebase Storage URLs, hosted files, etc.
+        // It is much more reliable than direct iframe for PDFs and required for Office docs.
+        const encodedUrl = encodeURIComponent(url);
+        const viewerUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
+        
         return (
-          <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden flex flex-col">
+          <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative">
              <iframe 
-                src={url} 
-                className="w-full h-full flex-1" 
-                title={title}
+               src={viewerUrl} 
+               className="w-full h-full" 
+               title={title} 
+             />
+             {/* Fallback Link Overlay (in case viewer fails) */}
+             <div className="absolute bottom-4 right-4">
+                <a 
+                  href={url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
+                >
+                  <Download className="w-3 h-3" />
+                  Download / Open Directly
+                </a>
+             </div>
+          </div>
+        );
+
+      default: // Link / Course / Other
+
                 onError={(e) => {
                     // If iframe fails (X-Frame-Options), we can't easily detect it in JS, 
                     // but we provide the "Open in New Window" button below as a backup.
