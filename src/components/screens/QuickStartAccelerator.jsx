@@ -198,48 +198,57 @@ const QuickStartAcceleratorScreen = () => {
     useEffect(() => {
         const autoOpenId = navParams?.state?.autoOpenId || navParams?.autoOpenId;
         if (autoOpenId && !selectedResource && !hasAutoOpened.current) {
+             hasAutoOpened.current = true; // Prevent multiple attempts
              const idStr = String(autoOpenId).toLowerCase();
              console.log('[QuickStart] Auto-opening resource with ID:', autoOpenId);
 
-             // Always try to fetch the document by ID first
+             // Always try to fetch the document by ID
              const fetchDocById = async () => {
                  try {
                      const docs = await getContent(db, CONTENT_COLLECTIONS.DOCUMENTS);
-                     // Try to match by exact ID first
-                     let match = docs.find(d => d.id === autoOpenId);
+                     console.log('[QuickStart] All documents:', docs.map(d => ({ id: d.id, title: d.title })));
                      
-                     // Fallback: match by title keywords
+                     // Try multiple matching strategies
+                     let match = null;
+                     
+                     // 1. Exact ID match
+                     match = docs.find(d => d.id === autoOpenId);
+                     if (match) console.log('[QuickStart] Matched by exact ID');
+                     
+                     // 2. Case-insensitive ID match
+                     if (!match) {
+                         match = docs.find(d => d.id && d.id.toLowerCase() === idStr);
+                         if (match) console.log('[QuickStart] Matched by case-insensitive ID');
+                     }
+                     
+                     // 3. Match by title keywords based on ID content
                      if (!match) {
                          if (idStr.includes('workbook') || idStr === 'qs-workbook') {
                              match = docs.find(d => d.title && d.title.toLowerCase().includes('workbook'));
+                             if (match) console.log('[QuickStart] Matched workbook by title keyword');
                          } else if (idStr.includes('pdq') || idStr.includes('feedback')) {
                              match = docs.find(d => d.title && (d.title.toLowerCase().includes('pdq') || d.title.toLowerCase().includes('feedback loop')));
+                             if (match) console.log('[QuickStart] Matched PDQ by title keyword');
                          }
                      }
                      
+                     // 4. Try to find ANY document with matching ID substring
+                     if (!match) {
+                         match = docs.find(d => d.id && (d.id.includes(autoOpenId) || autoOpenId.includes(d.id)));
+                         if (match) console.log('[QuickStart] Matched by ID substring');
+                     }
+                     
                      if (match) {
-                         console.log('[QuickStart] Found document:', match.title, match.url);
+                         console.log('[QuickStart] Opening document:', match.title, match.url);
                          setIsAutoOpenSession(true);
-                         hasAutoOpened.current = true;
                          setSelectedResource({
                              ...match,
                              type: match.type || 'document',
                              resourceType: 'document'
                          });
                      } else {
-                         console.warn('[QuickStart] Document not found for ID:', autoOpenId);
-                         // Fallback to legacy hardcoded for workbook
-                         if (idStr.includes('workbook') || idStr === 'qs-workbook') {
-                             setIsAutoOpenSession(true);
-                             hasAutoOpened.current = true;
-                             setSelectedResource({
-                                 id: 'qs-workbook',
-                                 title: 'QuickStart Workbook',
-                                 type: 'pdf',
-                                 url: 'https://firebasestorage.googleapis.com/v0/b/leaderreps-pdplatform.appspot.com/o/content_documents%2FQuickStart_Workbook.pdf?alt=media',
-                                 description: 'The official QuickStart Accelerator Workbook.'
-                             });
-                         }
+                         console.warn('[QuickStart] No document match found for ID:', autoOpenId);
+                         console.warn('[QuickStart] Available IDs:', docs.map(d => d.id));
                      }
                  } catch (e) {
                      console.error('[QuickStart] Error fetching document:', e);
