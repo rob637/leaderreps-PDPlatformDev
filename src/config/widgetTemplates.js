@@ -1946,7 +1946,21 @@ const WinsHistoryWidget = () => {
   const groupedWins = {};
   safeWinsList.forEach(win => {
     // Normalize date string to avoid duplicates if formats vary slightly
-    const dateKey = win.date || 'Unknown Date'; 
+    let dateKey = win.date || 'Unknown Date'; 
+    
+    // Try to normalize to YYYY-MM-DD
+    if (dateKey !== 'Unknown Date') {
+        try {
+            const d = new Date(dateKey);
+            if (!isNaN(d.getTime())) {
+                // Use en-CA for YYYY-MM-DD format
+                dateKey = d.toLocaleDateString('en-CA');
+            }
+        } catch (e) {
+            // Keep original if parse fails
+        }
+    }
+
     if (!groupedWins[dateKey]) groupedWins[dateKey] = [];
     groupedWins[dateKey].push(win);
   });
@@ -2288,8 +2302,36 @@ const RepsHistoryWidget = () => {
   const safeHistory = typeof repsHistory !== 'undefined' ? repsHistory : [];
   const [visibleCount, setVisibleCount] = React.useState(3);
   
+  // Normalize and dedupe history
+  const normalizedHistoryMap = {};
+  
+  safeHistory.forEach(entry => {
+      if (!entry.date) return;
+      
+      let dateKey = entry.date;
+      try {
+          const d = new Date(dateKey);
+          if (!isNaN(d.getTime())) {
+              dateKey = d.toLocaleDateString('en-CA');
+          }
+      } catch (e) {}
+      
+      if (!normalizedHistoryMap[dateKey]) {
+          normalizedHistoryMap[dateKey] = { ...entry, date: dateKey };
+      } else {
+          // Merge items if duplicate exists (prefer the one with more items or most recent)
+          const existing = normalizedHistoryMap[dateKey];
+          // If current entry has more items, use it but keep the normalized date
+          if ((entry.items?.length || 0) > (existing.items?.length || 0)) {
+              normalizedHistoryMap[dateKey] = { ...entry, date: dateKey };
+          }
+      }
+  });
+
+  const normalizedHistory = Object.values(normalizedHistoryMap);
+
   // Sort dates descending (newest first)
-  const sortedHistory = [...safeHistory].sort((a, b) => {
+  const sortedHistory = normalizedHistory.sort((a, b) => {
     if (!a.date) return 1;
     if (!b.date) return -1;
     return new Date(b.date) - new Date(a.date);

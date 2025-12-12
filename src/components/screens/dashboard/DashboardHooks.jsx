@@ -156,7 +156,7 @@ export const useDashboard = ({
 
   // Load Grounding Rep Completed status
   useEffect(() => {
-    const todayDate = timeService.getNow().toLocaleDateString('en-CA');
+    const todayDate = timeService.getTodayStr();
     const savedDate = dailyPracticeData?.groundingRepDate;
     // Only mark as completed if it was done today
     if (savedDate === todayDate && dailyPracticeData?.groundingRepCompleted) {
@@ -179,7 +179,7 @@ export const useDashboard = ({
     
     if (updateDailyPracticeData) {
       try {
-        const todayDate = timeService.getNow().toLocaleDateString('en-CA');
+        const todayDate = timeService.getTodayStr();
         await updateDailyPracticeData({
           groundingRepCompleted: true,
           groundingRepDate: todayDate
@@ -221,7 +221,7 @@ export const useDashboard = ({
     lastCommitmentUpdateTime.current = Date.now(); // Mark local update time
 
     // Calculate new history entry immediately
-    const todayDate = timeService.getNow().toLocaleDateString();
+    const todayDate = timeService.getTodayStr();
     const completedReps = updatedCommitments.filter(c => c.status === 'Committed');
     const historyEntry = {
         date: todayDate,
@@ -242,7 +242,7 @@ export const useDashboard = ({
         await updateDailyPracticeData({
           active_commitments: updatedCommitments,
           repsHistory: updatedHistory,
-          date: timeService.getNow().toLocaleDateString('en-CA')
+          date: timeService.getTodayStr()
         });
         console.log('[Daily Reps] Saved commitment toggle:', commitmentId, newStatus);
       } catch (error) {
@@ -881,7 +881,7 @@ export const useDashboard = ({
         const newWin = {
           id: Date.now(),
           text: reflectionGood.trim(),
-          date: timeService.getNow().toLocaleDateString(),
+          date: timeService.getTodayStr(),
           timestamp: timeService.getISOString()
         };
         updatedWinsList.push(newWin);
@@ -889,7 +889,7 @@ export const useDashboard = ({
       }
 
       // NEW: Save Scorecard History
-      const todayDate = timeService.getNow().toLocaleDateString();
+      const todayDate = timeService.getTodayStr();
       // Calculate combined score: total done / total possible
       const totalDone = scorecard.reps.done + scorecard.win.done;
       const totalPossible = scorecard.reps.total + scorecard.win.total;
@@ -946,7 +946,7 @@ export const useDashboard = ({
         // NEW: Set tomorrow's reminders from today's reflection
         tomorrowsReminder: reflectionBest,
         improvementReminder: reflectionBetter,
-        date: timeService.getNow().toLocaleDateString('en-CA') // Ensure date is updated
+        date: timeService.getTodayStr() // Ensure date is updated
       };
 
       // Add reminders to updates if any were created
@@ -1045,7 +1045,7 @@ export const useDashboard = ({
     const newStatus = !task.completed; // This is the new status
     
     let updatedWinsList = [...winsList];
-    const todayDate = timeService.getNow().toLocaleDateString();
+    const todayDate = timeService.getTodayStr();
     const winId = `task-win-${taskId}`; 
 
     if (newStatus) {
@@ -1209,7 +1209,7 @@ export const useDashboard = ({
       setMorningWins(newWins);
 
       // === Sync to winsList for Locker History ===
-      const todayDate = timeService.getNow().toLocaleDateString();
+      const todayDate = timeService.getTodayStr();
       const existingWinsList = [...winsList].filter(w => w.date !== todayDate);
       const todaysWins = newWins
         .filter(w => w.text && w.text.trim().length > 0)
@@ -1230,7 +1230,7 @@ export const useDashboard = ({
             otherTasks: otherTasks
         },
         winsList: updatedWinsList,
-        date: timeService.getNow().toLocaleDateString('en-CA')
+        date: timeService.getTodayStr()
       };
       
       console.log('%c[WIN-THE-DAY DEBUG] FIRESTORE PAYLOAD (single win):', 'background: yellow; color: black; font-weight: bold;');
@@ -1266,7 +1266,7 @@ export const useDashboard = ({
       setMorningWins(newWins);
 
       // === Sync to winsList for Locker History ===
-      const todayDate = timeService.getNow().toLocaleDateString();
+      const todayDate = timeService.getTodayStr();
       const existingWinsList = [...winsList].filter(w => w.date !== todayDate);
       const todaysWins = newWins
         .filter(w => w.text && w.text.trim().length > 0)
@@ -1288,7 +1288,7 @@ export const useDashboard = ({
             otherTasks: otherTasks
         },
         winsList: updatedWinsList,
-        date: timeService.getNow().toLocaleDateString('en-CA')
+        date: timeService.getTodayStr()
       };
       
       console.log('%c[WIN-THE-DAY DEBUG] FIRESTORE PAYLOAD being sent:', 'background: yellow; color: black; font-weight: bold;');
@@ -1314,7 +1314,7 @@ export const useDashboard = ({
     setMorningWins(newWins);
 
     // === Sync to winsList for Locker History ===
-    const todayDate = timeService.getNow().toLocaleDateString();
+    const todayDate = timeService.getTodayStr();
     const existingWinsList = [...winsList].filter(w => w.date !== todayDate);
     const todaysWins = newWins
       .filter(w => w.text && w.text.trim().length > 0)
@@ -1336,7 +1336,7 @@ export const useDashboard = ({
             otherTasks: otherTasks
         },
         winsList: updatedWinsList,
-        date: timeService.getNow().toLocaleDateString('en-CA')
+        date: timeService.getTodayStr()
       });
     } catch (error) {
       console.error('Error toggling win:', error);
@@ -1355,7 +1355,7 @@ export const useDashboard = ({
     
     setIsSavingScorecard(true);
     try {
-      const todayDate = timeService.getNow().toLocaleDateString();
+      const todayDate = timeService.getTodayStr();
       // Calculate combined score: total done / total possible
       const totalDone = scorecard.reps.done + scorecard.win.done;
       const totalPossible = scorecard.reps.total + scorecard.win.total;
@@ -1378,7 +1378,7 @@ export const useDashboard = ({
 
       await updateDailyPracticeData({
         scorecardHistory: updatedHistory,
-        date: timeService.getNow().toLocaleDateString('en-CA') // Ensure date is updated
+        date: timeService.getTodayStr() // Ensure date is updated
       });
       
       alert('✅ Scorecard saved to Locker!');
@@ -1409,7 +1409,7 @@ export const useDashboard = ({
        // Force a re-save of current commitments to be safe
        try {
            // Create history entry
-           const todayDate = timeService.getNow().toLocaleDateString();
+           const todayDate = timeService.getTodayStr();
            const completedReps = additionalCommitments.filter(c => c.status === 'Committed');
            const historyEntry = {
                date: todayDate,
@@ -1427,7 +1427,7 @@ export const useDashboard = ({
            await updateDailyPracticeData({
                active_commitments: additionalCommitments,
                repsHistory: updatedHistory, // Save history
-               date: timeService.getNow().toLocaleDateString('en-CA') // Ensure date is updated
+               date: timeService.getTodayStr() // Ensure date is updated
            });
            // Removed alert, UI should handle success state via isSavingReps
        } catch (e) {
