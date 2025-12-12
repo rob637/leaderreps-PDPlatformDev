@@ -2154,7 +2154,7 @@ const ScorecardHistoryWidget = () => {
                 return (
                   <tr key={index} className="hover:bg-blue-50 transition-colors">
                     <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
-                      {formatDisplayDate(entry.date)}{isToday && <span className="ml-1 text-xs text-blue-500">(Today)</span>}
+                      {formatDisplayDate(entry.normalizedDate)}{isToday && <span className="ml-1 text-xs text-blue-500">(Today)</span>}
                     </td>
                     <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono font-bold text-gray-900 text-center">
                       {entry.score} <span className="text-xs text-gray-400 font-normal ml-1">({pct}%)</span>
@@ -2221,8 +2221,38 @@ const ReflectionHistoryWidget = () => {
   const safeReflections = typeof reflectionHistory !== 'undefined' ? reflectionHistory : [];
   const [visibleCount, setVisibleCount] = React.useState(3);
   
-  // Sort by date descending (latest first) - reflections should already be sorted but ensure
-  const sortedReflections = [...safeReflections].sort((a, b) => {
+  // Normalize and dedupe reflections
+  const normalizedReflectionsMap = {};
+  
+  safeReflections.forEach(entry => {
+      if (!entry.date) return;
+      
+      let dateKey = entry.date;
+      try {
+          const d = new Date(dateKey);
+          if (!isNaN(d.getTime())) {
+              dateKey = d.toLocaleDateString('en-CA');
+          }
+      } catch (e) {}
+      
+      // If duplicate, prefer the one with more content
+      if (!normalizedReflectionsMap[dateKey]) {
+          normalizedReflectionsMap[dateKey] = { ...entry, date: dateKey };
+      } else {
+          const existing = normalizedReflectionsMap[dateKey];
+          const existingContentLength = (existing.reflectionGood || '').length + (existing.reflectionWork || '').length;
+          const newContentLength = (entry.reflectionGood || '').length + (entry.reflectionWork || '').length;
+          
+          if (newContentLength > existingContentLength) {
+              normalizedReflectionsMap[dateKey] = { ...entry, date: dateKey };
+          }
+      }
+  });
+
+  const normalizedReflections = Object.values(normalizedReflectionsMap);
+
+  // Sort by date descending (latest first)
+  const sortedReflections = normalizedReflections.sort((a, b) => {
     if (!a.date) return 1;
     if (!b.date) return -1;
     return new Date(b.date) - new Date(a.date);
