@@ -5,7 +5,6 @@ import React, { useState } from 'react';
 import { BookOpen, Film, GraduationCap, ArrowLeft, Settings, RefreshCw, Trash2, Users, BrainCircuit, List } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS, addContent } from '../../services/contentService';
-import { seedDatabase } from '../../utils/seedData';
 import { collection, doc, getDoc, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 
 const COLORS = {
@@ -34,30 +33,6 @@ const ContentAdminHome = () => {
       'advanced': 'elite'
     };
     return tierMap[String(oldTier).toLowerCase()] || 'free';
-  };
-
-  const handleSeed = async () => {
-    if (!confirm('This will seed the database with initial data for Community, Coaching, and LOVs. Continue?')) {
-      return;
-    }
-
-    setIsMigrating(true);
-    setMigrationStatus('Starting seed...');
-
-    try {
-      const result = await seedDatabase(db);
-      if (result.success) {
-        setMigrationStatus('✅ Database seeded successfully!');
-        setTimeout(() => setMigrationStatus(''), 5000);
-      } else {
-        setMigrationStatus(`❌ Seed failed: ${result.error?.message}`);
-      }
-    } catch (error) {
-      console.error('Seed error:', error);
-      setMigrationStatus(`❌ Error: ${error.message}`);
-    } finally {
-      setIsMigrating(false);
-    }
   };
 
   const handleMigration = async () => {
@@ -487,7 +462,7 @@ const ContentAdminHome = () => {
   ];
 
   return (
-    <div className="p-6 max-w-6xl mx-auto min-h-screen bg-slate-50">
+    <div className="p-6 w-full min-h-screen bg-slate-50">
       {/* Header */}
       <div className="mb-8">
         <button
@@ -511,15 +486,6 @@ const ContentAdminHome = () => {
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <button
-              onClick={handleSeed}
-              disabled={isMigrating}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
-              style={{ backgroundColor: COLORS.ORANGE }}
-            >
-              {isMigrating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              {isMigrating ? 'Seeding...' : 'Seed Database'}
-            </button>
             {migrationStatus && (
               <span className="text-sm font-medium text-teal-600 animate-pulse">
                 {migrationStatus}

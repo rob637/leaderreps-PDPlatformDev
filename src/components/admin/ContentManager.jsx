@@ -36,22 +36,22 @@ const CONTENT_TYPES = {
   [CONTENT_COLLECTIONS.READINGS]: {
     label: 'Read & Reps (Books)',
     icon: BookOpen,
-    fields: ['title', 'description', 'url', 'tier', 'category', 'thumbnail', 'author', 'readTime', 'tags']
+    fields: ['title', 'description', 'url', 'category', 'thumbnail', 'author', 'readTime', 'tags']
   },
   [CONTENT_COLLECTIONS.DOCUMENTS]: {
     label: 'Documents',
     icon: FileText,
-    fields: ['title', 'description', 'url', 'tier', 'category', 'thumbnail', 'tags']
+    fields: ['title', 'description', 'url', 'category', 'thumbnail', 'tags']
   },
   [CONTENT_COLLECTIONS.VIDEOS]: {
     label: 'Videos',
     icon: Film,
-    fields: ['title', 'description', 'url', 'tier', 'category', 'thumbnail', 'duration', 'speaker', 'transcriptUrl', 'tags']
+    fields: ['title', 'description', 'url', 'category', 'thumbnail', 'duration', 'speaker', 'transcriptUrl', 'tags']
   },
   [CONTENT_COLLECTIONS.COURSES]: {
     label: 'Courses',
     icon: GraduationCap,
-    fields: ['title', 'description', 'tier', 'category', 'thumbnail', 'instructor', 'level', 'totalDuration']
+    fields: ['title', 'description', 'category', 'thumbnail', 'instructor', 'level', 'totalDuration']
   }
 };
 
@@ -212,7 +212,7 @@ const ContentManager = ({ contentType, title, description }) => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-slate-50 min-h-screen">
+    <div className="p-6 w-full bg-slate-50 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <button
@@ -357,20 +357,6 @@ const ContentManager = ({ contentType, title, description }) => {
             )}
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
-                  Tier *
-                </label>
-                <select
-                  value={editingItem.tier}
-                  onChange={(e) => setEditingItem({ ...editingItem, tier: e.target.value })}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
-                >
-                  <option value="free">Free</option>
-                  <option value="premium">Premium</option>
-                </select>
-              </div>
-
               <div>
                 <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Category
@@ -672,9 +658,6 @@ const ContentManager = ({ contentType, title, description }) => {
                   {item.description?.length > 100 ? '...' : ''}
                 </p>
                 <div className="flex gap-3 mt-2 text-xs">
-                  <span className="px-2 py-1 rounded bg-corporate-teal/20 text-corporate-teal">
-                    {item.tier}
-                  </span>
                   {item.category && (
                     <span className="px-2 py-1 rounded bg-corporate-navy/10 text-corporate-navy">
                       {item.category}
