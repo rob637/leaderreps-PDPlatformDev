@@ -6,7 +6,7 @@
 ========================================================= */
 /* eslint-disable no-console */
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useNavigation } from '../../providers/NavigationProvider.jsx';
 // FIX: Import the real useAppServices from the standard path.
 import { useAppServices } from '../../services/useAppServices.jsx';
 import contentService, { CONTENT_COLLECTIONS } from '../../services/contentService.js';
@@ -1700,6 +1700,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
     const [preparedSBI, setPreparedSBI] = useState(null);
     const [microLearningTopic, setMicroLearningTopic] = useState(null);
     const { navigate, currentUser, membershipData, db } = useAppServices();
+    const { navParams } = useNavigation();
     const { isFeatureEnabled, getFeatureOrder } = useFeatures();
     
     // --- Auto-Open Logic State ---
@@ -1725,8 +1726,9 @@ export default function CoachingLabScreen({ simulatedTier }) {
 
     // Handle Auto-Open
     useEffect(() => {
-        if (location.state?.autoOpenId && !isLoadingScenarios && allScenarios.length > 0 && !selectedScenario) {
-            const targetId = String(location.state.autoOpenId).toLowerCase();
+        const autoOpenId = navParams?.state?.autoOpenId || navParams?.autoOpenId;
+        if (autoOpenId && !isLoadingScenarios && allScenarios.length > 0 && !selectedScenario) {
+            const targetId = String(autoOpenId).toLowerCase();
             console.log('[CoachingLab] Auto-opening scenario:', targetId);
             
             // Find match by ID or legacy ID
@@ -1740,7 +1742,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
                 setView('scenario-prep');
             }
         }
-    }, [location.state, allScenarios, isLoadingScenarios, selectedScenario]);
+    }, [navParams, allScenarios, isLoadingScenarios, selectedScenario]);
     
     // Check membership access - use simulatedTier if provided, otherwise use actual membership
     const currentTier = simulatedTier || membershipData?.currentTier || currentUser?.membershipTier || 'free';

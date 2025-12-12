@@ -1,7 +1,7 @@
 // src/components/screens/LeadershipVideos.jsx (Refactored for Consistency)
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useNavigation } from '../../providers/NavigationProvider.jsx';
 // --- Icons ---
 import { Film, User, Clock, ArrowRight, Zap, Briefcase, Search, Filter, Play, BookOpen, Users, Target, Lightbulb, TrendingUp, Star } from 'lucide-react';
 // --- Core Services & Context ---
@@ -156,7 +156,7 @@ const VideoCard = ({ title, speaker, duration, url, description, accent, categor
  * Pulls video data from the VIDEO_CATALOG in useAppServices, with a local fallback.
  */
 const LeadershipVideosScreen = () => {
-    const location = useLocation();
+    const { navParams } = useNavigation();
     // --- Consume services ---
     const { navigate, db, user } = useAppServices(); // cite: useAppServices.jsx
     const { masterPlan, currentWeek } = useDevPlan(); // Get plan data for unlocking logic
@@ -282,8 +282,9 @@ const LeadershipVideosScreen = () => {
 
     // --- Auto-Open Logic ---
     useEffect(() => {
-        if (location.state?.autoOpenId && !isLoadingCms && allVideos.length > 0 && !selectedResource) {
-            const targetId = String(location.state.autoOpenId).toLowerCase();
+        const autoOpenId = navParams?.state?.autoOpenId || navParams?.autoOpenId;
+        if (autoOpenId && !isLoadingCms && allVideos.length > 0 && !selectedResource) {
+            const targetId = String(autoOpenId).toLowerCase();
             console.log('[LeadershipVideos] Auto-opening video:', targetId);
             
             const match = allVideos.find(v => String(v.id).toLowerCase() === targetId);
@@ -299,7 +300,7 @@ const LeadershipVideosScreen = () => {
                 setSelectedResource(resource);
             }
         }
-    }, [location.state, allVideos, isLoadingCms, selectedResource]);
+    }, [navParams, allVideos, isLoadingCms, selectedResource]);
     
     // Get all unique tags for filter dropdown
     const allTags = useMemo(() => {
