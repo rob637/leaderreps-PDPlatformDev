@@ -401,7 +401,8 @@ const Dashboard = (props) => {
     } : null,
     greeting,
     dailyQuote,
-    allQuotes: globalMetadata?.SYSTEM_QUOTES || []
+    allQuotes: globalMetadata?.SYSTEM_QUOTES || [],
+    dailyPracticeData // Pass dailyPracticeData to scope for widgets
   };
 
   const renderers = {

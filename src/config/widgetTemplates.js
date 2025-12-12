@@ -521,10 +521,39 @@ export const WIDGET_TEMPLATES = {
 })()
     `,
     'notifications': `
-(() => {
+const NotificationsWidget = () => {
+  const { useState, useEffect, useMemo } = React;
+
   // Get current week data from scope
   const currentWeek = typeof devPlanCurrentWeek !== 'undefined' ? devPlanCurrentWeek : null;
+  const practiceData = typeof dailyPracticeData !== 'undefined' ? dailyPracticeData : null;
   const navFn = typeof navigate !== 'undefined' ? navigate : (typeof scope !== 'undefined' && scope.navigate ? scope.navigate : () => {});
+
+  // State for dismissed items
+  const [dismissedIds, setDismissedIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lr_dismissed_notifications');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const handleDismiss = (e, id) => {
+    e.stopPropagation();
+    const newDismissed = [...dismissedIds, id];
+    setDismissedIds(newDismissed);
+    localStorage.setItem('lr_dismissed_notifications', JSON.stringify(newDismissed));
+  };
+
+  // Helper to check if an item is completed in Daily Practice
+  const isItemCompleted = (resourceId) => {
+    if (!practiceData?.activeCommitments) return false;
+    const idStr = String(resourceId);
+    return practiceData.activeCommitments.some(c => 
+      c.status === 'Completed' && c.id.includes(idStr)
+    );
+  };
   
   // Extract all items from the current week
   const content = currentWeek?.content || [];
@@ -564,37 +593,46 @@ export const WIDGET_TEMPLATES = {
       category = itemType.includes('workbook') ? 'Workbook' : 'Reading';
     }
     
+    const resourceId = item.resourceId || item.contentItemId;
+    if (dismissedIds.includes(resourceId) || isItemCompleted(resourceId)) return;
+
     newUnlocks.push({ 
       type: 'Content', 
       label, 
       category,
       route, 
-      resourceId: item.resourceId || item.contentItemId 
+      resourceId 
     });
   });
 
   // Add community items that don't have a specific day (or show all)
   community.forEach(item => {
+    const resourceId = item.resourceId || item.communityItemId;
+    if (dismissedIds.includes(resourceId)) return;
+
     const label = item.communityItemLabel || item.label || 'Community';
     newUnlocks.push({ 
       type: 'Community', 
       label, 
       category: item.communityItemType || item.type || 'Community',
       route: 'community', 
-      resourceId: item.resourceId || item.communityItemId,
+      resourceId,
       day: item.recommendedWeekDay
     });
   });
 
   // Add coaching items
   coaching.forEach(item => {
+    const resourceId = item.resourceId || item.coachingItemId;
+    if (dismissedIds.includes(resourceId)) return;
+
     const label = item.coachingItemLabel || item.label || 'Coaching';
     newUnlocks.push({ 
       type: 'Coaching', 
       label, 
       category: item.coachingItemType || item.type || 'Coaching',
       route: 'coaching-lab', 
-      resourceId: item.resourceId || item.coachingItemId 
+      resourceId 
     });
   });
 
@@ -643,13 +681,13 @@ export const WIDGET_TEMPLATES = {
         {newUnlocks.filter(u => u.type === 'Content').map((unlock, idx) => (
           <div 
             key={\`content-\${idx}\`} 
-            className="flex gap-3 items-start p-3 bg-blue-50 rounded-xl border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
+            className="group relative flex gap-3 items-start p-3 bg-blue-50 rounded-xl border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
             onClick={() => navFn(unlock.route, { state: { autoOpenId: unlock.resourceId } })}
           >
             <div className="mt-1">
               <div className="w-2 h-2 rounded-full bg-blue-500" />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 pr-6">
               <p className="text-xs font-bold text-blue-800 uppercase mb-1">
                 New Unlock • {unlock.category}
               </p>
@@ -657,6 +695,13 @@ export const WIDGET_TEMPLATES = {
                 {unlock.label}
               </p>
             </div>
+            <button 
+              onClick={(e) => handleDismiss(e, unlock.resourceId)}
+              className="absolute top-2 right-2 p-1 text-slate-400 hover:text-slate-600 hover:bg-blue-200 rounded-full opacity-0 group-hover:opacity-100 transition-all"
+              title="Dismiss notification"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         ))}
 
@@ -664,13 +709,13 @@ export const WIDGET_TEMPLATES = {
         {newUnlocks.filter(u => u.type === 'Coaching').map((unlock, idx) => (
           <div 
             key={\`coaching-\${idx}\`} 
-            className="flex gap-3 items-start p-3 bg-orange-50 rounded-xl border border-orange-100 cursor-pointer hover:bg-orange-100 transition-colors"
+            className="group relative flex gap-3 items-start p-3 bg-orange-50 rounded-xl border border-orange-100 cursor-pointer hover:bg-orange-100 transition-colors"
             onClick={() => navFn(unlock.route, { state: { autoOpenId: unlock.resourceId } })}
           >
             <div className="mt-1">
               <div className="w-2 h-2 rounded-full bg-orange-500" />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 pr-6">
               <p className="text-xs font-bold text-orange-800 uppercase mb-1">
                 Coaching • {unlock.category}
               </p>
@@ -678,12 +723,49 @@ export const WIDGET_TEMPLATES = {
                 {unlock.label}
               </p>
             </div>
+            <button 
+              onClick={(e) => handleDismiss(e, unlock.resourceId)}
+              className="absolute top-2 right-2 p-1 text-slate-400 hover:text-slate-600 hover:bg-orange-200 rounded-full opacity-0 group-hover:opacity-100 transition-all"
+              title="Dismiss notification"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+
+        {/* Community Unlocks */}
+        {newUnlocks.filter(u => u.type === 'Community').map((unlock, idx) => (
+          <div 
+            key={\`community-\${idx}\`} 
+            className="group relative flex gap-3 items-start p-3 bg-teal-50 rounded-xl border border-teal-100 cursor-pointer hover:bg-teal-100 transition-colors"
+            onClick={() => navFn(unlock.route, { state: { autoOpenId: unlock.resourceId } })}
+          >
+            <div className="mt-1">
+              <div className="w-2 h-2 rounded-full bg-teal-500" />
+            </div>
+            <div className="flex-1 min-w-0 pr-6">
+              <p className="text-xs font-bold text-teal-800 uppercase mb-1">
+                Community • {unlock.category}
+              </p>
+              <p className="text-sm font-medium text-slate-800 underline decoration-teal-300 underline-offset-2 break-words">
+                {unlock.label}
+              </p>
+            </div>
+            <button 
+              onClick={(e) => handleDismiss(e, unlock.resourceId)}
+              className="absolute top-2 right-2 p-1 text-slate-400 hover:text-slate-600 hover:bg-teal-200 rounded-full opacity-0 group-hover:opacity-100 transition-all"
+              title="Dismiss notification"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         ))}
       </div>
     </Card>
   );
-})()
+};
+
+render(<NotificationsWidget />);
     `,
     'pm-bookend-header': `
 <>

@@ -4,11 +4,12 @@ import { X, ExternalLink, Download, FileText, Film, Link as LinkIcon } from 'luc
 const UniversalResourceViewer = ({ resource, onClose }) => {
   if (!resource) return null;
 
-  const { url, resourceType, title, description } = resource;
+  const { url, resourceType, type: legacyType, title, description } = resource;
 
   // Helper to determine content type if not explicitly provided
   const getContentType = () => {
     if (resourceType) return resourceType;
+    if (legacyType) return legacyType;
     if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com') || url.endsWith('.mp4')) return 'video';
     if (url.endsWith('.pdf')) return 'pdf';
     return 'link';
@@ -37,31 +38,63 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
               />
             </div>
           );
-        } else if (url.endsWith('.mp4') || resource.metadata?.fileType?.startsWith('video/')) {
+        } else if (url.includes('vimeo.com')) {
+          const vimeoId = url.match(/vimeo\.com\/(\d+)/)?.[1];
+          const embedUrl = vimeoId ? `https://player.vimeo.com/video/${vimeoId}?autoplay=1` : url;
           return (
-            <div className="aspect-video w-full bg-black rounded-lg overflow-hidden flex items-center justify-center">
-              <video 
-                src={url} 
-                controls 
-                autoPlay 
-                className="w-full h-full max-h-[70vh]"
+            <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
+              <iframe
+                src={embedUrl}
+                className="w-full h-full"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                title={title}
+              />
+            </div>
+          );
+        } else if (url.includes('loom.com')) {
+          const loomId = url.match(/loom\.com\/share\/([a-f0-9]+)/)?.[1];
+          const embedUrl = loomId ? `https://www.loom.com/embed/${loomId}?autoplay=1` : url;
+          return (
+            <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
+              <iframe
+                src={embedUrl}
+                className="w-full h-full"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                title={title}
               />
             </div>
           );
         } else {
-          // Fallback for other video links (Vimeo, etc.)
+          // Generic Video Handler (MP4, WebM, or explicit 'video' type)
+          // Try to render as video tag, but provide fallback link
           return (
-            <div className="flex flex-col items-center justify-center h-64 bg-slate-100 rounded-lg">
-              <Film className="w-12 h-12 text-slate-400 mb-4" />
-              <p className="text-slate-600 mb-4">This video cannot be embedded directly.</p>
-              <a 
-                href={url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-corporate-teal text-white rounded-lg font-bold hover:bg-corporate-teal-dark flex items-center gap-2"
-              >
-                Watch on External Site <ExternalLink className="w-4 h-4" />
-              </a>
+            <div className="flex flex-col gap-4 w-full">
+              <div className="aspect-video w-full bg-black rounded-lg overflow-hidden flex items-center justify-center relative">
+                <video 
+                  src={url} 
+                  controls 
+                  autoPlay 
+                  className="w-full h-full max-h-[70vh]"
+                >
+                  <p className="text-white p-4 text-center">
+                    Video format not supported for inline playback.<br/>
+                    Please use the link below.
+                  </p>
+                </video>
+              </div>
+              
+              <div className="flex justify-center">
+                <a 
+                  href={url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-slate-500 hover:text-blue-600 flex items-center gap-1"
+                >
+                  Having trouble? Watch on external site <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
             </div>
           );
         }

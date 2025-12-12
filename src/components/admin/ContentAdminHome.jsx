@@ -498,10 +498,10 @@ const ContentAdminHome = () => {
             <Settings className="w-8 h-8 text-corporate-teal" />
             <div>
               <h1 className="text-3xl font-bold text-corporate-navy">
-                Content Management
+                Content Wrapper
               </h1>
               <p className="text-slate-500">
-                Manage all content for your LeaderReps platform
+                Wrap raw media with metadata for use in the Dev Plan
               </p>
             </div>
           </div>

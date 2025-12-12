@@ -108,8 +108,8 @@ const AdminPortal = () => {
       items: [
         { id: 'devplan', label: 'Dev Plan', icon: Calendar },
         { id: 'library', label: 'Metadata Library', icon: Library },
-        { id: 'media', label: 'Media Vault', icon: Database },
-        { id: 'content', label: 'Legacy Content', icon: FileText }
+        { id: 'content', label: 'Content Wrapper', icon: FileText },
+        { id: 'media', label: 'Media Vault', icon: Database }
       ]
     },
     {
