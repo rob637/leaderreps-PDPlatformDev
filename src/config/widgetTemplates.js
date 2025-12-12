@@ -644,7 +644,7 @@ export const WIDGET_TEMPLATES = {
           <div 
             key={\`content-\${idx}\`} 
             className="flex gap-3 items-start p-3 bg-blue-50 rounded-xl border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
-            onClick={() => navFn(unlock.route)}
+            onClick={() => navFn(unlock.route, { state: { autoOpenId: unlock.resourceId } })}
           >
             <div className="mt-1">
               <div className="w-2 h-2 rounded-full bg-blue-500" />
@@ -665,7 +665,7 @@ export const WIDGET_TEMPLATES = {
           <div 
             key={\`coaching-\${idx}\`} 
             className="flex gap-3 items-start p-3 bg-orange-50 rounded-xl border border-orange-100 cursor-pointer hover:bg-orange-100 transition-colors"
-            onClick={() => navFn(unlock.route)}
+            onClick={() => navFn(unlock.route, { state: { autoOpenId: unlock.resourceId } })}
           >
             <div className="mt-1">
               <div className="w-2 h-2 rounded-full bg-orange-500" />

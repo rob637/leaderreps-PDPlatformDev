@@ -6,6 +6,7 @@
 ========================================================= */
 /* eslint-disable no-console */
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 // FIX: Import the real useAppServices from the standard path.
 import { useAppServices } from '../../services/useAppServices.jsx';
 import contentService, { CONTENT_COLLECTIONS } from '../../services/contentService.js';
@@ -1700,6 +1701,46 @@ export default function CoachingLabScreen({ simulatedTier }) {
     const [microLearningTopic, setMicroLearningTopic] = useState(null);
     const { navigate, currentUser, membershipData, db } = useAppServices();
     const { isFeatureEnabled, getFeatureOrder } = useFeatures();
+    
+    // --- Auto-Open Logic State ---
+    const [allScenarios, setAllScenarios] = useState([]);
+    const [isLoadingScenarios, setIsLoadingScenarios] = useState(true);
+
+    // Fetch scenarios for auto-open resolution
+    useEffect(() => {
+        const fetchScenarios = async () => {
+            if (!db) return;
+            setIsLoadingScenarios(true);
+            try {
+                const data = await contentService.getContent(db, CONTENT_COLLECTIONS.COACHING);
+                setAllScenarios(data);
+            } catch (error) {
+                console.error("Error fetching scenarios for auto-open:", error);
+            } finally {
+                setIsLoadingScenarios(false);
+            }
+        };
+        fetchScenarios();
+    }, [db]);
+
+    // Handle Auto-Open
+    useEffect(() => {
+        if (location.state?.autoOpenId && !isLoadingScenarios && allScenarios.length > 0 && !selectedScenario) {
+            const targetId = String(location.state.autoOpenId).toLowerCase();
+            console.log('[CoachingLab] Auto-opening scenario:', targetId);
+            
+            // Find match by ID or legacy ID
+            const match = allScenarios.find(s => 
+                String(s.id).toLowerCase() === targetId || 
+                String(s.coachingItemId || '').toLowerCase() === targetId
+            );
+
+            if (match) {
+                setSelectedScenario(match);
+                setView('scenario-prep');
+            }
+        }
+    }, [location.state, allScenarios, isLoadingScenarios, selectedScenario]);
     
     // Check membership access - use simulatedTier if provided, otherwise use actual membership
     const currentTier = simulatedTier || membershipData?.currentTier || currentUser?.membershipTier || 'free';

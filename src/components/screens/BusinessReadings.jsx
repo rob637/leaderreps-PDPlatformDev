@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { getReadings } from '../../services/contentService.js';
 import { useDevPlan } from '../../hooks/useDevPlan';
@@ -429,6 +430,8 @@ function BookFlyerStable({
 }
 
 export default function BusinessReadingsScreen() {
+  const location = useLocation();
+
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     logWidthMeasurements('BusinessReadings');
@@ -595,6 +598,25 @@ export default function BusinessReadingsScreen() {
     }
     return result;
   }, [allBooks, filters, deepDataSignature]);
+
+  // --- Auto-Open Logic ---
+  useEffect(() => {
+    if (location.state?.autoOpenId && !isLoadingCms && Object.keys(allBooks).length > 0 && !selectedBook) {
+      const targetId = String(location.state.autoOpenId).toLowerCase();
+      console.log('[BusinessReadings] Auto-opening resource:', targetId);
+      
+      // Search through allBooks (which is grouped by tier)
+      for (const tier in allBooks) {
+        const books = allBooks[tier];
+        const match = books.find(b => String(b.id).toLowerCase() === targetId);
+        if (match) {
+          setSelectedBook(match);
+          setSelectedTier(tier);
+          break;
+        }
+      }
+    }
+  }, [location.state, allBooks, isLoadingCms, selectedBook]);
 
   useEffect(() => {
     if (!selectedBook) {
