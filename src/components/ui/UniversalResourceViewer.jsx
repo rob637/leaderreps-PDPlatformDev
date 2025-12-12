@@ -152,7 +152,13 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
         );
 
       default: // Link / Course / Other
-
+        // Fallback: Try to iframe it (some sites allow it), otherwise show the link
+        return (
+          <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden flex flex-col">
+             <iframe 
+                src={url} 
+                className="w-full h-full flex-1" 
+                title={title}
                 onError={(e) => {
                     // If iframe fails (X-Frame-Options), we can't easily detect it in JS, 
                     // but we provide the "Open in New Window" button below as a backup.
@@ -168,6 +174,8 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
                   If content doesn't load, click here to open in new window <ExternalLink className="w-3 h-3" />
                 </a>
              </div>
+          </div>
+        );
           </div>
         );
     }
