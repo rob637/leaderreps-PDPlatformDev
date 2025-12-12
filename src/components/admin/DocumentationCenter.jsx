@@ -264,12 +264,12 @@ Please review and improve the following documentation, making it 1% better by:
 - State management & services
 - Component structure (Admin, Widgets, Screens)
 - Backend & Cloud Functions
-- Scripts & automation`
-    };
+- Scripts & automation`,
       'all': `Review all three documentation files:
 1. ADMIN-GUIDE.md - Administrator operations
 2. USER-GUIDE.md - End user procedures
-3. TEST-PLANS.md - QA and testing procedures`
+3. TEST-PLANS.md - QA and testing procedures
+4. APP-ARCHITECTURE.md - Technical architecture`
     };
 
     return basePrompt + (docSpecific[docType] || docSpecific['all']);
