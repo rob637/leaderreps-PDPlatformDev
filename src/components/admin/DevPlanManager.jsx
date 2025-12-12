@@ -1025,7 +1025,7 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, onSave, onCanc
                   <Zap className="w-5 h-5" /> Daily Reps
                 </h4>
                 <button 
-                  onClick={() => addItem('reps', { repId: '', repType: 'Challenge', repLabel: '', isRequired: true })}
+                  onClick={() => addItem('reps', { repId: '', repType: 'Challenge', repLabel: '', repDescription: '', isRequired: true })}
                   className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-1"
                 >
                   <Plus className="w-3 h-3" /> Add Item
@@ -1034,32 +1034,32 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, onSave, onCanc
               
               <div className="space-y-3">
                 {formData.reps?.map((item, idx) => (
-                  <div key={idx} className="flex gap-3 items-start bg-white p-3 rounded border border-purple-100">
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
-                      <input 
-                        type="text" 
-                        placeholder="ID" 
-                        value={item.repId}
-                        onChange={e => updateItem('reps', idx, 'repId', e.target.value)}
-                        className="p-2 border rounded text-sm"
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Type (e.g. Challenge)" 
-                        value={item.repType}
-                        onChange={e => updateItem('reps', idx, 'repType', e.target.value)}
-                        className="p-2 border rounded text-sm"
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Label" 
-                        value={item.repLabel}
-                        onChange={e => updateItem('reps', idx, 'repLabel', e.target.value)}
-                        className="p-2 border rounded text-sm md:col-span-2"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2 pt-2 justify-between">
-                      <div className="flex items-center gap-2">
+                  <div key={idx} className="bg-white p-3 rounded border border-purple-100 space-y-3">
+                    <div className="flex gap-3 items-start">
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <input 
+                          type="text" 
+                          placeholder="ID" 
+                          value={item.repId}
+                          onChange={e => updateItem('reps', idx, 'repId', e.target.value)}
+                          className="p-2 border rounded text-sm"
+                        />
+                        <input 
+                          type="text" 
+                          placeholder="Type (e.g. Challenge)" 
+                          value={item.repType}
+                          onChange={e => updateItem('reps', idx, 'repType', e.target.value)}
+                          className="p-2 border rounded text-sm"
+                        />
+                        <input 
+                          type="text" 
+                          placeholder="Label (shown on Dashboard)" 
+                          value={item.repLabel}
+                          onChange={e => updateItem('reps', idx, 'repLabel', e.target.value)}
+                          className="p-2 border rounded text-sm md:col-span-2"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 pt-2">
                         <select
                           value={item.day || 'Any'}
                           onChange={e => updateItem('reps', idx, 'day', e.target.value)}
@@ -1077,11 +1077,19 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, onSave, onCanc
                           />
                           <span className="text-xs text-slate-500">Req</span>
                         </label>
+                        <button onClick={() => removeItem('reps', idx)} className="text-red-400 hover:text-red-600">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button onClick={() => removeItem('reps', idx)} className="text-red-400 hover:text-red-600">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
+                    {/* Description field */}
+                    <textarea
+                      placeholder="Description (optional) - Users can tap the rep on Dashboard to see this"
+                      value={item.repDescription || ''}
+                      onChange={e => updateItem('reps', idx, 'repDescription', e.target.value)}
+                      rows={2}
+                      className="w-full p-2 border rounded text-sm text-slate-600 placeholder:text-slate-400"
+                    />
                   </div>
                 ))}
               </div>

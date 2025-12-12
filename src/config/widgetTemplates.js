@@ -1,5 +1,5 @@
 import { 
-  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell, Target, Zap, Crosshair, Flag, MessageCircle, Heart, Sun, Moon, PenTool, Quote, User, Repeat, Clock, Circle
+  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell, Target, Zap, Crosshair, Flag, MessageCircle, Heart, Sun, Moon, PenTool, Quote, User, Repeat, Clock, Circle, ChevronDown, Info
 } from 'lucide-react';
 
 // Helper for Roadmap Widgets
@@ -453,29 +453,36 @@ export const WIDGET_TEMPLATES = {
   // Daily reps come from the Dev Plan week data (dailyReps or reps array)
   const weekReps = currentWeek?.dailyReps || currentWeek?.reps || [];
   
-  // Map to consistent format with id and label
+  // Map to consistent format with id, label, and description
   const reps = weekReps.length > 0 
     ? weekReps.map((rep, idx) => ({
         id: rep.repId || rep.id || \`rep-\${idx}\`,
-        label: rep.repLabel || rep.label || rep.name || 'Daily Rep'
+        label: rep.repLabel || rep.label || rep.name || 'Daily Rep',
+        description: rep.repDescription || rep.description || ''
       }))
     : []; // No default reps - only show what's in the Dev Plan
   
-  // Track completed state locally
-  // additionalCommitments is an array of objects { id, status, text }
+  // Track completed state and expanded description
   const commitmentsList = Array.isArray(additionalCommitments) ? additionalCommitments : [];
   const safeIsSaving = typeof isSavingReps !== 'undefined' ? isSavingReps : false;
+  const [expandedRep, setExpandedRep] = React.useState(null);
   
-  // Toggle handler - handleToggleAdditionalRep already auto-saves to Firestore
-  const handleToggle = (repId, currentStatus, label) => {
+  // Toggle completion handler
+  const handleToggle = (e, repId, currentStatus, label) => {
+    e.stopPropagation();
     if (handleToggleAdditionalRep) {
       handleToggleAdditionalRep(repId, currentStatus, label);
     }
   };
   
+  // Toggle description expansion
+  const toggleDescription = (repId) => {
+    setExpandedRep(expandedRep === repId ? null : repId);
+  };
+  
   return (
     <Card title="Daily Reps" icon={Dumbbell} accent="NAVY">
-      <div className="space-y-1">
+      <div className="space-y-2">
         {reps.length === 0 && (
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
             <p className="text-sm text-slate-500">No daily reps assigned for this week.</p>
@@ -485,28 +492,60 @@ export const WIDGET_TEMPLATES = {
         {reps.map(rep => {
           const commitment = commitmentsList.find(c => c.id === rep.id);
           const isCompleted = commitment?.status === 'Committed';
+          const isExpanded = expandedRep === rep.id;
+          const hasDescription = rep.description && rep.description.trim().length > 0;
           
           return (
-            <div 
-              key={rep.id} 
-              onClick={() => handleToggle(rep.id, isCompleted ? 'Committed' : 'Pending', rep.label)}
-              className={\`flex items-center justify-between p-2 rounded-xl transition-colors cursor-pointer group \${
-                isCompleted ? 'bg-green-50 border border-green-200' : 'bg-slate-50 hover:bg-blue-50 border border-slate-100'
-              }\`}
-            >
-              <div className="flex items-center gap-2">
-                <div className={\`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors \${
+            <div key={rep.id} className="space-y-0">
+              <div 
+                onClick={() => hasDescription && toggleDescription(rep.id)}
+                className={\`flex items-center justify-between p-3 rounded-xl transition-all \${
+                  hasDescription ? 'cursor-pointer' : ''
+                } \${
                   isCompleted 
-                    ? 'bg-green-500 border-green-500' 
-                    : 'border-slate-300 group-hover:border-blue-400'
-                }\`}>
-                  {isCompleted && <CheckCircle className="w-3 h-3 text-white" />}
+                    ? 'bg-green-50 border border-green-200' 
+                    : 'bg-slate-50 hover:bg-blue-50 border border-slate-100'
+                } \${
+                  isExpanded ? 'rounded-b-none border-b-0' : ''
+                }\`}
+              >
+                <div className="flex items-center gap-3 flex-1">
+                  <div 
+                    onClick={(e) => handleToggle(e, rep.id, isCompleted ? 'Committed' : 'Pending', rep.label)}
+                    className={\`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer hover:scale-110 \${
+                      isCompleted 
+                        ? 'bg-green-500 border-green-500' 
+                        : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50'
+                    }\`}
+                  >
+                    {isCompleted && <CheckCircle className="w-4 h-4 text-white" />}
+                  </div>
+                  <div className="flex-1">
+                    <span className={\`text-sm font-bold \${isCompleted ? 'text-green-700 line-through' : 'text-slate-700'}\`}>
+                      {rep.label}
+                    </span>
+                    {hasDescription && (
+                      <p className="text-xs text-slate-400 mt-0.5">Tap for details</p>
+                    )}
+                  </div>
                 </div>
-                <span className={\`text-sm font-bold \${isCompleted ? 'text-green-700 line-through' : 'text-slate-700'}\`}>
-                  {rep.label}
-                </span>
+                <div className="flex items-center gap-2">
+                  {safeIsSaving && <Loader className="w-3 h-3 animate-spin text-slate-400" />}
+                  {hasDescription && (
+                    <ChevronDown className={\`w-4 h-4 text-slate-400 transition-transform \${isExpanded ? 'rotate-180' : ''}\`} />
+                  )}
+                </div>
               </div>
-              {safeIsSaving && <Loader className="w-3 h-3 animate-spin text-slate-400" />}
+              
+              {/* Expandable Description */}
+              {isExpanded && hasDescription && (
+                <div className="bg-blue-50 border border-blue-100 border-t-0 rounded-b-xl p-4">
+                  <div className="flex gap-2 mb-2">
+                    <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{rep.description}</p>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
