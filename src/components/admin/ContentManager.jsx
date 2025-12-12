@@ -17,7 +17,8 @@ import {
   Loader,
   Upload,
   FileText,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Database
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -28,23 +29,24 @@ import {
   uploadResourceFile,
   CONTENT_COLLECTIONS 
 } from '../../services/contentService';
+import MediaSelector from './MediaSelector';
 
 // Content type configurations
 const CONTENT_TYPES = {
   [CONTENT_COLLECTIONS.READINGS]: {
     label: 'Readings',
     icon: BookOpen,
-    fields: ['title', 'description', 'url', 'tier', 'category', 'thumbnail']
+    fields: ['title', 'description', 'url', 'tier', 'category', 'thumbnail', 'author', 'readTime', 'tags']
   },
   [CONTENT_COLLECTIONS.VIDEOS]: {
     label: 'Videos',
     icon: Film,
-    fields: ['title', 'description', 'url', 'tier', 'category', 'thumbnail', 'duration']
+    fields: ['title', 'description', 'url', 'tier', 'category', 'thumbnail', 'duration', 'speaker', 'transcriptUrl', 'tags']
   },
   [CONTENT_COLLECTIONS.COURSES]: {
     label: 'Courses',
     icon: GraduationCap,
-    fields: ['title', 'description', 'tier', 'category', 'thumbnail']
+    fields: ['title', 'description', 'tier', 'category', 'thumbnail', 'instructor', 'level', 'totalDuration']
   }
 };
 
@@ -55,6 +57,7 @@ const ContentManager = ({ contentType, title, description }) => {
   const [editingItem, setEditingItem] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showMediaSelector, setShowMediaSelector] = useState(false);
   const editFormRef = useRef(null);
   
   const config = CONTENT_TYPES[contentType];
@@ -304,30 +307,18 @@ const ContentManager = ({ contentType, title, description }) => {
 
                 {editingItem.resourceType === 'file' ? (
                   <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center bg-slate-50 hover:bg-slate-100 transition-colors relative">
-                    {isUploading ? (
-                      <div className="flex flex-col items-center justify-center py-4">
-                        <Loader className="w-8 h-8 animate-spin text-corporate-teal mb-2" />
-                        <p className="text-sm text-slate-500">Uploading to The Vault...</p>
-                      </div>
-                    ) : (
-                      <>
-                        <input
-                          type="file"
-                          onChange={handleFileUpload}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          accept={contentType === CONTENT_COLLECTIONS.VIDEOS ? "video/*" : ".pdf,.doc,.docx"}
-                        />
-                        <div className="flex flex-col items-center justify-center pointer-events-none">
-                          <Upload className="w-10 h-10 text-slate-400 mb-2" />
-                          <p className="text-sm font-medium text-slate-700">
-                            Click or drag file to upload
-                          </p>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {contentType === CONTENT_COLLECTIONS.VIDEOS ? 'MP4, MOV, WebM' : 'PDF, Word Docs'}
-                          </p>
-                        </div>
-                      </>
-                    )}
+                    <div className="flex flex-col items-center justify-center">
+                      <Database className="w-10 h-10 text-slate-400 mb-2" />
+                      <p className="text-sm font-medium text-slate-700">
+                        Select file from Media Vault
+                      </p>
+                      <button
+                        onClick={() => setShowMediaSelector(true)}
+                        className="mt-3 px-4 py-2 bg-corporate-teal text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors"
+                      >
+                        Open Vault
+                      </button>
+                    </div>
                     
                     {editingItem.url && editingItem.resourceType === 'file' && (
                       <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3 text-left">
@@ -336,7 +327,7 @@ const ContentManager = ({ contentType, title, description }) => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-green-800 truncate">
-                            {editingItem.metadata?.fileName || 'Uploaded File'}
+                            {editingItem.metadata?.fileName || 'Selected File'}
                           </p>
                           <p className="text-xs text-green-600 truncate">{editingItem.url}</p>
                         </div>
@@ -418,20 +409,37 @@ const ContentManager = ({ contentType, title, description }) => {
             {/* Additional metadata fields for readings */}
             {contentType === CONTENT_COLLECTIONS.READINGS && editingItem.metadata && (
               <>
-                <div>
-                  <label className="block text-sm font-semibold mb-1 text-corporate-navy">
-                    Author
-                  </label>
-                  <input
-                    type="text"
-                    value={editingItem.metadata.author || ''}
-                    onChange={(e) => setEditingItem({ 
-                      ...editingItem, 
-                      metadata: { ...editingItem.metadata, author: e.target.value }
-                    })}
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
-                    placeholder="Book author"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-corporate-navy">
+                      Author
+                    </label>
+                    <input
+                      type="text"
+                      value={editingItem.metadata.author || ''}
+                      onChange={(e) => setEditingItem({ 
+                        ...editingItem, 
+                        metadata: { ...editingItem.metadata, author: e.target.value }
+                      })}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                      placeholder="Book author"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-corporate-navy">
+                      Read Time (min)
+                    </label>
+                    <input
+                      type="text"
+                      value={editingItem.metadata.readTime || ''}
+                      onChange={(e) => setEditingItem({ 
+                        ...editingItem, 
+                        metadata: { ...editingItem.metadata, readTime: e.target.value }
+                      })}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                      placeholder="e.g., 15"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -469,56 +477,139 @@ const ContentManager = ({ contentType, title, description }) => {
                     </select>
                   </div>
                 </div>
+              </>
+            )}
 
+            {/* Additional metadata fields for VIDEOS */}
+            {contentType === CONTENT_COLLECTIONS.VIDEOS && editingItem.metadata && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-corporate-navy">
+                      Speaker / Host
+                    </label>
+                    <input
+                      type="text"
+                      value={editingItem.metadata.speaker || ''}
+                      onChange={(e) => setEditingItem({ 
+                        ...editingItem, 
+                        metadata: { ...editingItem.metadata, speaker: e.target.value }
+                      })}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                      placeholder="e.g. Simon Sinek"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-corporate-navy">
+                      Duration
+                    </label>
+                    <input
+                      type="text"
+                      value={editingItem.metadata.duration || ''}
+                      onChange={(e) => setEditingItem({ 
+                        ...editingItem, 
+                        metadata: { ...editingItem.metadata, duration: e.target.value }
+                      })}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                      placeholder="e.g. 15:30"
+                    />
+                  </div>
+                </div>
+                
                 <div>
                   <label className="block text-sm font-semibold mb-1 text-corporate-navy">
-                    Focus Areas
+                    Transcript URL (Optional)
                   </label>
                   <input
-                    type="text"
-                    value={editingItem.metadata.focus || ''}
+                    type="url"
+                    value={editingItem.metadata.transcriptUrl || ''}
                     onChange={(e) => setEditingItem({ 
                       ...editingItem, 
-                      metadata: { ...editingItem.metadata, focus: e.target.value }
+                      metadata: { ...editingItem.metadata, transcriptUrl: e.target.value }
                     })}
                     className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
-                    placeholder="Key concepts (comma separated)"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1 text-corporate-navy">
-                    Executive Brief HTML
-                  </label>
-                  <textarea
-                    value={editingItem.metadata.executiveBriefHTML || ''}
-                    onChange={(e) => setEditingItem({ 
-                      ...editingItem, 
-                      metadata: { ...editingItem.metadata, executiveBriefHTML: e.target.value }
-                    })}
-                    className="w-full p-2 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
-                    rows="4"
-                    placeholder="<h3>Executive Brief HTML content...</h3>"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1 text-corporate-navy">
-                    Full Flyer HTML
-                  </label>
-                  <textarea
-                    value={editingItem.metadata.fullFlyerHTML || ''}
-                    onChange={(e) => setEditingItem({ 
-                      ...editingItem, 
-                      metadata: { ...editingItem.metadata, fullFlyerHTML: e.target.value }
-                    })}
-                    className="w-full p-2 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
-                    rows="6"
-                    placeholder="<h2>Full Flyer HTML content...</h2>"
+                    placeholder="https://..."
                   />
                 </div>
               </>
             )}
+
+            {/* Additional metadata fields for COURSES */}
+            {contentType === CONTENT_COLLECTIONS.COURSES && editingItem.metadata && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-corporate-navy">
+                      Instructor
+                    </label>
+                    <input
+                      type="text"
+                      value={editingItem.metadata.instructor || ''}
+                      onChange={(e) => setEditingItem({ 
+                        ...editingItem, 
+                        metadata: { ...editingItem.metadata, instructor: e.target.value }
+                      })}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                      placeholder="e.g. Dr. Sarah Chen"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-corporate-navy">
+                      Level
+                    </label>
+                    <select
+                      value={editingItem.metadata.level || ''}
+                      onChange={(e) => setEditingItem({ 
+                        ...editingItem, 
+                        metadata: { ...editingItem.metadata, level: e.target.value }
+                      })}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                    >
+                      <option value="">Select...</option>
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Advanced">Advanced</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold mb-1 text-corporate-navy">
+                    Total Duration
+                  </label>
+                  <input
+                    type="text"
+                    value={editingItem.metadata.totalDuration || ''}
+                    onChange={(e) => setEditingItem({ 
+                      ...editingItem, 
+                      metadata: { ...editingItem.metadata, totalDuration: e.target.value }
+                    })}
+                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                    placeholder="e.g. 4 weeks, 2 hours"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Common Tags Field */}
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
+                Tags (comma separated)
+              </label>
+              <input
+                type="text"
+                value={editingItem.metadata?.tags ? (Array.isArray(editingItem.metadata.tags) ? editingItem.metadata.tags.join(', ') : editingItem.metadata.tags) : ''}
+                onChange={(e) => setEditingItem({ 
+                  ...editingItem, 
+                  metadata: { 
+                    ...editingItem.metadata, 
+                    tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) 
+                  }
+                })}
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                placeholder="leadership, communication, trust"
+              />
+            </div>
 
             <div className="flex items-center gap-2">
               <input
@@ -618,6 +709,28 @@ const ContentManager = ({ contentType, title, description }) => {
           ))
         )}
       </div>
+      {/* Media Selector Modal */}
+      {showMediaSelector && (
+        <MediaSelector
+          mediaType={contentType === CONTENT_COLLECTIONS.VIDEOS ? 'video' : 'document'}
+          value={editingItem?.url}
+          onChange={(url, asset) => {
+            setEditingItem(prev => ({
+              ...prev,
+              url: url,
+              metadata: {
+                ...prev.metadata,
+                isUploadedFile: true,
+                fileName: asset.title || asset.fileName,
+                fileSize: asset.size,
+                fileType: asset.type,
+                storagePath: asset.storagePath
+              }
+            }));
+          }}
+          onClose={() => setShowMediaSelector(false)}
+        />
+      )}
     </div>
   );
 };
