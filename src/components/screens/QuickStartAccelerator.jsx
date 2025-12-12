@@ -199,47 +199,54 @@ const QuickStartAcceleratorScreen = () => {
         const autoOpenId = navParams?.state?.autoOpenId || navParams?.autoOpenId;
         if (autoOpenId && !selectedResource && !hasAutoOpened.current) {
              const idStr = String(autoOpenId).toLowerCase();
+             console.log('[QuickStart] Auto-opening resource with ID:', autoOpenId);
 
-             // Check for QS Workbook ID
-             if (idStr.includes('workbook') || idStr === 'qs-workbook') {
-                 console.log('[QuickStart] Auto-opening workbook');
-                 setIsAutoOpenSession(true);
-                 hasAutoOpened.current = true;
-                 setSelectedResource({
-                     id: 'qs-workbook',
-                     title: 'QuickStart Workbook',
-                     type: 'pdf',
-                     url: 'https://firebasestorage.googleapis.com/v0/b/leaderreps-pdplatform.appspot.com/o/content_documents%2FQuickStart_Workbook.pdf?alt=media', // Placeholder
-                     description: 'The official QuickStart Accelerator Workbook.'
-                 });
-             }
-             // Check for PDQ Feedback Loop
-             else if (idStr.includes('pdq') || idStr.includes('feedback loop') || idStr === '0bbmuvlhccbvfynisfkb') {
-                 console.log('[QuickStart] Auto-opening PDQ Feedback Loop');
-                 setIsAutoOpenSession(true);
-                 hasAutoOpened.current = true;
-                 
-                 const fetchDoc = async () => {
-                     try {
-                         const docs = await getContent(db, CONTENT_COLLECTIONS.DOCUMENTS);
-                         // Try to match by ID first, then title
-                         const match = docs.find(d => d.id === autoOpenId || (d.title && d.title.toLowerCase().includes('pdq')));
-                         
-                         if (match) {
-                             console.log('[QuickStart] Found PDQ document:', match);
-                             setSelectedResource({
-                                 ...match,
-                                 type: 'pdf' // Ensure type is pdf for viewer
-                             });
-                         } else {
-                             console.warn('[QuickStart] PDQ document not found in content_documents');
+             // Always try to fetch the document by ID first
+             const fetchDocById = async () => {
+                 try {
+                     const docs = await getContent(db, CONTENT_COLLECTIONS.DOCUMENTS);
+                     // Try to match by exact ID first
+                     let match = docs.find(d => d.id === autoOpenId);
+                     
+                     // Fallback: match by title keywords
+                     if (!match) {
+                         if (idStr.includes('workbook') || idStr === 'qs-workbook') {
+                             match = docs.find(d => d.title && d.title.toLowerCase().includes('workbook'));
+                         } else if (idStr.includes('pdq') || idStr.includes('feedback')) {
+                             match = docs.find(d => d.title && (d.title.toLowerCase().includes('pdq') || d.title.toLowerCase().includes('feedback loop')));
                          }
-                     } catch (e) {
-                         console.error('[QuickStart] Error fetching PDQ:', e);
                      }
-                 };
-                 fetchDoc();
-             }
+                     
+                     if (match) {
+                         console.log('[QuickStart] Found document:', match.title, match.url);
+                         setIsAutoOpenSession(true);
+                         hasAutoOpened.current = true;
+                         setSelectedResource({
+                             ...match,
+                             type: match.type || 'document',
+                             resourceType: 'document'
+                         });
+                     } else {
+                         console.warn('[QuickStart] Document not found for ID:', autoOpenId);
+                         // Fallback to legacy hardcoded for workbook
+                         if (idStr.includes('workbook') || idStr === 'qs-workbook') {
+                             setIsAutoOpenSession(true);
+                             hasAutoOpened.current = true;
+                             setSelectedResource({
+                                 id: 'qs-workbook',
+                                 title: 'QuickStart Workbook',
+                                 type: 'pdf',
+                                 url: 'https://firebasestorage.googleapis.com/v0/b/leaderreps-pdplatform.appspot.com/o/content_documents%2FQuickStart_Workbook.pdf?alt=media',
+                                 description: 'The official QuickStart Accelerator Workbook.'
+                             });
+                         }
+                     }
+                 } catch (e) {
+                     console.error('[QuickStart] Error fetching document:', e);
+                 }
+             };
+             
+             fetchDocById();
         }
     }, [navParams, selectedResource, db]);
 
