@@ -74,7 +74,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     
     if (item.url) {
       // Legacy: direct URL
-      setViewingResource({ ...item, resourceType: 'link' });
+      window.open(item.url, '_blank');
       return;
     }
 
@@ -86,10 +86,12 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         // Try fetching from the new unified 'content_library' collection first
         const contentRef = doc(db, 'content_library', resourceId);
         const contentSnap = await getDoc(contentRef);
+        
+        let resourceData = null;
 
         if (contentSnap.exists()) {
            const data = contentSnap.data();
-           let mappedResource = { 
+           resourceData = { 
                id: contentSnap.id, 
                ...data, 
                resourceType: data.type 
@@ -97,16 +99,14 @@ const ThisWeeksActionsWidget = ({ scope }) => {
 
            // Map details to url for viewer compatibility
            if (data.type === 'REP' && data.details?.videoUrl) {
-               mappedResource.url = data.details.videoUrl;
-               mappedResource.resourceType = 'video';
+               resourceData.url = data.details.videoUrl;
+               resourceData.resourceType = 'video';
            } else if (data.type === 'READ_REP') {
                if (data.details?.pdfUrl) {
-                   mappedResource.url = data.details.pdfUrl;
-                   mappedResource.resourceType = 'pdf';
+                   resourceData.url = data.details.pdfUrl;
+                   resourceData.resourceType = 'pdf';
                }
            }
-
-           setViewingResource(mappedResource);
         } else {
             // Fallback to legacy collections if not found in 'content_library'
             const type = (item.resourceType || item.type || '').toLowerCase();
@@ -122,12 +122,38 @@ const ThisWeeksActionsWidget = ({ scope }) => {
             const docSnap = await getDoc(docRef);
             
             if (docSnap.exists()) {
-              setViewingResource({ id: docSnap.id, ...docSnap.data(), resourceType: type });
+              resourceData = { id: docSnap.id, ...docSnap.data(), resourceType: type };
             } else {
               console.warn(`Resource not found in ${collectionName} (ID: ${resourceId})`);
               alert("Resource not found. It may have been deleted.");
+              return;
             }
         }
+
+        // Determine if we should open in new tab or modal
+        if (resourceData) {
+            const type = (resourceData.resourceType || '').toLowerCase();
+            const url = resourceData.url || '';
+            
+            // Embeddable types
+            const isEmbeddable = 
+                type === 'video' || 
+                type === 'workout' || 
+                type === 'pdf' || 
+                (type === 'reading' && (url.endsWith('.pdf') || resourceData.metadata?.fileType === 'application/pdf'));
+
+            if (isEmbeddable) {
+                setViewingResource(resourceData);
+            } else {
+                // Open directly in new tab
+                if (url) {
+                    window.open(url, '_blank');
+                } else {
+                    alert("This resource does not have a valid URL.");
+                }
+            }
+        }
+
       } catch (error) {
         console.error("Error fetching resource:", error);
         alert("Failed to load resource.");
