@@ -40,7 +40,13 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
         switch (resourceType) {
           case 'content':
-            collections = [CONTENT_COLLECTIONS.VIDEOS, CONTENT_COLLECTIONS.READINGS, CONTENT_COLLECTIONS.COURSES];
+            // Fetch from Wrappers (Videos, Docs, Courses) AND Unified Library (Read & Reps)
+            collections = [
+              CONTENT_COLLECTIONS.VIDEOS, 
+              CONTENT_COLLECTIONS.DOCUMENTS, 
+              CONTENT_COLLECTIONS.COURSES,
+              CONTENT_COLLECTIONS.READINGS // Keep for legacy support
+            ];
             unifiedTypes = [UNIFIED_TYPES.READ_REP];
             break;
           case 'community':
@@ -60,7 +66,8 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
           const data = await getAllContentAdmin(db, col);
           // Add type info
           const type = col === CONTENT_COLLECTIONS.VIDEOS ? 'video' : 
-                       col === CONTENT_COLLECTIONS.READINGS ? 'reading' :
+                       col === CONTENT_COLLECTIONS.DOCUMENTS ? 'document' :
+                       col === CONTENT_COLLECTIONS.READINGS ? 'reading' : // Legacy
                        col === CONTENT_COLLECTIONS.COURSES ? 'course' :
                        col === CONTENT_COLLECTIONS.COMMUNITY ? 'community' : 'coaching';
           

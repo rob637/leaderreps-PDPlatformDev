@@ -817,6 +817,7 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, onSave, onCanc
                               contentItemLabel: item.contentItemLabel || resource.title,
                               // Auto-fill type if possible (map resource type to content type)
                               contentItemType: resource.resourceType === 'video' ? 'Video' : 
+                                              resource.resourceType === 'document' ? 'Document' :
                                               resource.resourceType === 'reading' ? 'Reading' : 
                                               resource.resourceType === 'course' ? 'Course' :
                                               resource.resourceType === 'read_rep' ? 'Read & Rep' :
