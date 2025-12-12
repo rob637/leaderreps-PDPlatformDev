@@ -15,7 +15,8 @@ import {
   Library,
   ArrowLeftRight,
   BrainCircuit,
-  List
+  List,
+  Dumbbell
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
@@ -31,6 +32,7 @@ import TestCenter from './TestCenter';
 import CommunityManager from './CommunityManager';
 import CoachingManager from './CoachingManager';
 import LOVManager from './LOVManager';
+import DailyRepsLibrary from './DailyRepsLibrary';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -120,6 +122,7 @@ const AdminPortal = () => {
     {
       title: 'Advanced Management',
       items: [
+        { id: 'daily-reps', label: 'Daily Reps', icon: Dumbbell },
         { id: 'community', label: 'Community', icon: Users },
         { id: 'coaching', label: 'Coaching', icon: BrainCircuit },
         { id: 'lov', label: 'System Values', icon: List }
@@ -165,6 +168,8 @@ const AdminPortal = () => {
         return <CoachingManager />;
       case 'lov':
         return <LOVManager />;
+      case 'daily-reps':
+        return <DailyRepsLibrary />;
       case 'features':
         return <FeatureManager />;
       case 'docs':

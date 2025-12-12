@@ -55,6 +55,7 @@ const DevPlanManager = () => {
   const [lovs, setLovs] = useState({});
   const [lovIds, setLovIds] = useState({});
   const [availableSkills, setAvailableSkills] = useState([]); // New: Dynamic Skills
+  const [dailyRepsLibrary, setDailyRepsLibrary] = useState([]); // Daily Reps Library
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'edit'
   const [showReport, setShowReport] = useState(false);
 
@@ -87,6 +88,18 @@ const DevPlanManager = () => {
         setAvailableSkills(skills);
       } catch (err) {
         console.error("Error loading skills:", err);
+      }
+
+      // 1c. Load Daily Reps Library
+      try {
+        const repsSnap = await getDocs(collection(db, CONTENT_COLLECTIONS.DAILY_REPS));
+        const repsData = repsSnap.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(rep => rep.isActive !== false)
+          .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+        setDailyRepsLibrary(repsData);
+      } catch (err) {
+        console.error("Error loading Daily Reps Library:", err);
       }
 
       // 2. Load Weeks
@@ -1018,81 +1031,115 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, onSave, onCanc
               </div>
             </div>
 
-            {/* Special Reps Section */}
+            {/* Daily Reps Section - Library Based */}
             <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
               <div className="flex justify-between items-center mb-4">
                 <h4 className="font-bold text-purple-900 flex items-center gap-2">
                   <Zap className="w-5 h-5" /> Daily Reps
                 </h4>
-                <button 
-                  onClick={() => addItem('reps', { repId: '', repType: 'Challenge', repLabel: '', repDescription: '', isRequired: true })}
-                  className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-1"
-                >
-                  <Plus className="w-3 h-3" /> Add Item
-                </button>
+                <div className="flex items-center gap-2">
+                  {dailyRepsLibrary.length > 0 && (
+                    <span className="text-xs text-purple-600">{dailyRepsLibrary.length} available</span>
+                  )}
+                </div>
               </div>
-              
-              <div className="space-y-3">
-                {formData.reps?.map((item, idx) => (
-                  <div key={idx} className="bg-white p-3 rounded border border-purple-100 space-y-3">
-                    <div className="flex gap-3 items-start">
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
-                        <input 
-                          type="text" 
-                          placeholder="ID" 
-                          value={item.repId}
-                          onChange={e => updateItem('reps', idx, 'repId', e.target.value)}
-                          className="p-2 border rounded text-sm"
-                        />
-                        <input 
-                          type="text" 
-                          placeholder="Type (e.g. Challenge)" 
-                          value={item.repType}
-                          onChange={e => updateItem('reps', idx, 'repType', e.target.value)}
-                          className="p-2 border rounded text-sm"
-                        />
-                        <input 
-                          type="text" 
-                          placeholder="Label (shown on Dashboard)" 
-                          value={item.repLabel}
-                          onChange={e => updateItem('reps', idx, 'repLabel', e.target.value)}
-                          className="p-2 border rounded text-sm md:col-span-2"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 pt-2">
-                        <select
-                          value={item.day || 'Any'}
-                          onChange={e => updateItem('reps', idx, 'day', e.target.value)}
-                          className="p-1 border rounded text-xs bg-purple-50"
-                        >
-                          {['Any', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
-                            <option key={d} value={d}>{d}</option>
-                          ))}
-                        </select>
-                        <label className="flex items-center gap-1 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={item.isRequired}
-                            onChange={e => updateItem('reps', idx, 'isRequired', e.target.checked)}
-                          />
-                          <span className="text-xs text-slate-500">Req</span>
-                        </label>
-                        <button onClick={() => removeItem('reps', idx)} className="text-red-400 hover:text-red-600">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+
+              {dailyRepsLibrary.length === 0 ? (
+                <div className="bg-white p-4 rounded-lg border border-purple-100 text-center">
+                  <p className="text-sm text-slate-500 mb-2">No daily reps defined yet.</p>
+                  <p className="text-xs text-slate-400">
+                    Go to Admin → Daily Reps Library to create reusable daily reps with descriptions.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {/* Available Reps from Library */}
+                  <div className="bg-white p-3 rounded-lg border border-purple-100 max-h-64 overflow-y-auto">
+                    <p className="text-xs text-slate-500 mb-2 font-medium">Select reps for this week:</p>
+                    <div className="space-y-2">
+                      {dailyRepsLibrary.map(rep => {
+                        const isSelected = formData.reps?.some(r => r.repId === rep.id);
+                        return (
+                          <label 
+                            key={rep.id} 
+                            className={`flex items-start gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                              isSelected ? 'bg-purple-100 border border-purple-300' : 'hover:bg-purple-50 border border-transparent'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  // Add rep from library
+                                  addItem('reps', {
+                                    repId: rep.id,
+                                    repType: rep.category || 'Challenge',
+                                    repLabel: rep.title,
+                                    repDescription: rep.description || '',
+                                    day: rep.startDay || 'Any',
+                                    isRequired: true,
+                                    fromLibrary: true
+                                  });
+                                } else {
+                                  // Remove rep
+                                  const idx = formData.reps?.findIndex(r => r.repId === rep.id);
+                                  if (idx >= 0) removeItem('reps', idx);
+                                }
+                              }}
+                              className="mt-1 w-4 h-4 rounded text-purple-600"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm text-slate-800">{rep.title}</span>
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                  rep.category === 'Challenge' ? 'bg-orange-100 text-orange-700' :
+                                  rep.category === 'Practice' ? 'bg-blue-100 text-blue-700' :
+                                  rep.category === 'Reflection' ? 'bg-purple-100 text-purple-700' :
+                                  'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {rep.category || 'Rep'}
+                                </span>
+                                {rep.startDay && rep.startDay !== 'Any' && (
+                                  <span className="text-xs text-slate-400">From {rep.startDay}</span>
+                                )}
+                              </div>
+                              {rep.description && (
+                                <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{rep.description}</p>
+                              )}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Selected Reps Summary */}
+                  {formData.reps?.length > 0 && (
+                    <div className="bg-white p-3 rounded-lg border border-purple-200">
+                      <p className="text-xs font-medium text-purple-800 mb-2">
+                        {formData.reps.length} rep(s) assigned to this week:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.reps.map((rep, idx) => (
+                          <div 
+                            key={idx}
+                            className="flex items-center gap-1 bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs"
+                          >
+                            <span>{rep.repLabel}</span>
+                            <button
+                              onClick={() => removeItem('reps', idx)}
+                              className="hover:text-red-600 ml-1"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    {/* Description field */}
-                    <textarea
-                      placeholder="Description (optional) - Users can tap the rep on Dashboard to see this"
-                      value={item.repDescription || ''}
-                      onChange={e => updateItem('reps', idx, 'repDescription', e.target.value)}
-                      rows={2}
-                      className="w-full p-2 border rounded text-sm text-slate-600 placeholder:text-slate-400"
-                    />
-                  </div>
-                ))}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
