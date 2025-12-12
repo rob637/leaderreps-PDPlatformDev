@@ -12,13 +12,16 @@ import {
   List,
   MoreVertical,
   Download,
-  ExternalLink
+  ExternalLink,
+  Edit,
+  X
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
   getMediaAssets, 
   uploadMediaAsset, 
   deleteMediaAsset, 
+  updateMediaAsset,
   MEDIA_TYPES 
 } from '../../services/mediaService';
 
@@ -32,6 +35,10 @@ const MediaLibrary = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('LIST'); // GRID | LIST
   const [dragActive, setDragActive] = useState(false);
+  
+  // Edit State
+  const [editingAsset, setEditingAsset] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
 
   const loadAssets = useCallback(async () => {
     setLoading(true);
@@ -78,6 +85,29 @@ const MediaLibrary = () => {
     } finally {
       setUploading(false);
       setUploadProgress(0);
+    }
+  };
+
+  const handleEditClick = (asset) => {
+    setEditingAsset(asset);
+    setEditTitle(asset.title);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingAsset || !editTitle.trim()) return;
+
+    try {
+      await updateMediaAsset(db, editingAsset.id, { title: editTitle.trim() });
+      
+      // Update local state
+      setAssets(prev => prev.map(a => 
+        a.id === editingAsset.id ? { ...a, title: editTitle.trim() } : a
+      ));
+      
+      setEditingAsset(null);
+      setEditTitle('');
+    } catch (error) {
+      alert('Update failed: ' + error.message);
     }
   };
 
@@ -258,15 +288,13 @@ const MediaLibrary = () => {
                   
                   {/* Overlay Actions */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <a 
-                      href={asset.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
+                    <button 
+                      onClick={() => handleEditClick(asset)}
                       className="p-2 bg-white/20 text-white rounded-full hover:bg-white/40"
-                      title="Open"
+                      title="Rename"
                     >
-                      <ExternalLink size={18} />
-                    </a>
+                      <Edit size={18} />
+                    </button>
                     <button 
                       onClick={() => handleDelete(asset)}
                       className="p-2 bg-red-500/80 text-white rounded-full hover:bg-red-600"
@@ -332,10 +360,10 @@ const MediaLibrary = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
-                        <a href={asset.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-900">
-                          <ExternalLink size={18} />
-                        </a>
-                        <button onClick={() => handleDelete(asset)} className="text-red-600 hover:text-red-900">
+                        <button onClick={() => handleEditClick(asset)} className="text-blue-600 hover:text-blue-900" title="Rename">
+                          <Edit size={18} />
+                        </button>
+                        <button onClick={() => handleDelete(asset)} className="text-red-600 hover:text-red-900" title="Delete">
                           <Trash2 size={18} />
                         </button>
                       </div>
@@ -347,6 +375,47 @@ const MediaLibrary = () => {
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {editingAsset && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Rename Asset</h3>
+              <button onClick={() => setEditingAsset(null)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Asset Name</label>
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                autoFocus
+              />
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              <button 
+                onClick={() => setEditingAsset(null)}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveEdit}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={!editTitle.trim()}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

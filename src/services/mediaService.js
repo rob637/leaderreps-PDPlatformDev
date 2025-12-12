@@ -3,6 +3,7 @@ import {
   collection, 
   addDoc, 
   deleteDoc, 
+  updateDoc,
   doc, 
   getDocs, 
   query, 
@@ -138,6 +139,23 @@ export const deleteMediaAsset = async ({ storage, db }, asset) => {
     return true;
   } catch (error) {
     console.error('Error deleting media asset:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a media asset
+ */
+export const updateMediaAsset = async (db, assetId, updates) => {
+  try {
+    const assetRef = doc(db, MEDIA_COLLECTION, assetId);
+    await updateDoc(assetRef, {
+      ...updates,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating media asset:', error);
     throw error;
   }
 };
