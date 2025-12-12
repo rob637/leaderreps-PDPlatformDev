@@ -2064,7 +2064,7 @@ const WinsHistoryWidget = () => {
     // If YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
         const [y, m, d] = dateStr.split('-');
-        return `${m}/${d}/${y}`;
+        return m + '/' + d + '/' + y;
     }
     return dateStr;
   };
