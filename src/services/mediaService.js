@@ -8,7 +8,9 @@ import {
   getDocs, 
   query, 
   orderBy, 
-  serverTimestamp 
+  serverTimestamp,
+  where,
+  writeBatch
 } from 'firebase/firestore';
 import { 
   ref, 
@@ -156,6 +158,98 @@ export const updateMediaAsset = async (db, assetId, updates) => {
     return true;
   } catch (error) {
     console.error('Error updating media asset:', error);
+    throw error;
+  }
+};
+
+/**
+ * Replace a media asset file and update references
+ */
+export const replaceMediaAsset = async ({ storage, db }, oldAsset, newFile, onProgress) => {
+  try {
+    // 1. Upload new file
+    const timestamp = Date.now();
+    const safeName = newFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
+    const storagePath = `vault/${timestamp}_${safeName}`;
+    const storageRef = ref(storage, storagePath);
+    
+    const uploadTask = uploadBytesResumable(storageRef, newFile);
+
+    const newUrl = await new Promise((resolve, reject) => {
+      uploadTask.on('state_changed',
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          if (onProgress) onProgress(progress);
+        },
+        (error) => reject(error),
+        async () => {
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(url);
+        }
+      );
+    });
+
+    // 2. Update Media Asset Doc
+    const mediaType = getMediaType(newFile.type);
+    await updateMediaAsset(db, oldAsset.id, {
+      url: newUrl,
+      storagePath: storagePath,
+      type: mediaType,
+      mimeType: newFile.type,
+      size: newFile.size,
+      fileName: safeName
+      // Keep original title unless user changed it separately
+    });
+
+    // 3. Delete old file from storage (optional, but good for cleanup)
+    if (oldAsset.storagePath) {
+      const oldRef = ref(storage, oldAsset.storagePath);
+      await deleteObject(oldRef).catch(err => console.warn('Failed to delete old file:', err));
+    }
+
+    return newUrl;
+  } catch (error) {
+    console.error('Error replacing media asset:', error);
+    throw error;
+  }
+};
+
+/**
+ * Scan content collections and update references to the old URL
+ */
+export const updateAssetReferences = async (db, oldUrl, newUrl) => {
+  const collections = [
+    'content_readings', 
+    'content_documents', 
+    'content_videos', 
+    'content_courses',
+    'content_library',
+    'content_community',
+    'content_coaching'
+  ];
+  const fieldsToCheck = ['url', 'pdfUrl', 'videoUrl', 'thumbnail', 'image', 'coverImage', 'photoURL'];
+  
+  let updateCount = 0;
+  
+  try {
+    for (const colName of collections) {
+      for (const field of fieldsToCheck) {
+        const q = query(collection(db, colName), where(field, '==', oldUrl));
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+          const batch = writeBatch(db);
+          snapshot.docs.forEach(doc => {
+            batch.update(doc.ref, { [field]: newUrl });
+            updateCount++;
+          });
+          await batch.commit();
+        }
+      }
+    }
+    return updateCount;
+  } catch (error) {
+    console.error('Error updating references:', error);
     throw error;
   }
 };

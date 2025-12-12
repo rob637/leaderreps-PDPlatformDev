@@ -1,5 +1,5 @@
 // src/components/admin/MediaLibrary.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Upload, 
   Image as ImageIcon, 
@@ -14,7 +14,8 @@ import {
   Download,
   ExternalLink,
   Edit,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -22,6 +23,8 @@ import {
   uploadMediaAsset, 
   deleteMediaAsset, 
   updateMediaAsset,
+  replaceMediaAsset,
+  updateAssetReferences,
   MEDIA_TYPES 
 } from '../../services/mediaService';
 
@@ -36,9 +39,11 @@ const MediaLibrary = () => {
   const [viewMode, setViewMode] = useState('LIST'); // GRID | LIST
   const [dragActive, setDragActive] = useState(false);
   
-  // Edit State
+  // Edit/Replace State
   const [editingAsset, setEditingAsset] = useState(null);
   const [editTitle, setEditTitle] = useState('');
+  const [replacingAsset, setReplacingAsset] = useState(null);
+  const replaceInputRef = useRef(null);
 
   const loadAssets = useCallback(async () => {
     setLoading(true);
@@ -85,6 +90,47 @@ const MediaLibrary = () => {
     } finally {
       setUploading(false);
       setUploadProgress(0);
+    }
+  };
+
+  const handleReplaceClick = (asset) => {
+    setReplacingAsset(asset);
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !replacingAsset) return;
+
+    if (!window.confirm(`Replace "${replacingAsset.title}" with "${file.name}"?\n\nThis will update the file content and automatically update any links in the Content Library.`)) {
+      setReplacingAsset(null);
+      e.target.value = '';
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const oldUrl = replacingAsset.url;
+      const newUrl = await replaceMediaAsset(
+        { storage, db }, 
+        replacingAsset, 
+        file, 
+        (p) => setUploadProgress(p)
+      );
+
+      const count = await updateAssetReferences(db, oldUrl, newUrl);
+      
+      alert(`Asset replaced successfully!\nUpdated ${count} references in the database.`);
+      await loadAssets();
+    } catch (error) {
+      console.error(error);
+      alert('Replacement failed: ' + error.message);
+    } finally {
+      setUploading(false);
+      setReplacingAsset(null);
+      e.target.value = '';
     }
   };
 
@@ -171,6 +217,13 @@ const MediaLibrary = () => {
           <p className="text-sm text-gray-500">Manage digital assets (Videos, PDFs, Images)</p>
         </div>
         <div className="flex gap-2">
+          <input 
+            type="file" 
+            ref={replaceInputRef}
+            className="hidden" 
+            onChange={handleReplaceFile}
+            disabled={uploading}
+          />
           <label className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
             <Upload size={20} />
             Upload Asset
@@ -289,6 +342,13 @@ const MediaLibrary = () => {
                   {/* Overlay Actions */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button 
+                      onClick={() => handleReplaceClick(asset)}
+                      className="p-2 bg-white/20 text-white rounded-full hover:bg-white/40"
+                      title="Replace File"
+                    >
+                      <RefreshCw size={18} />
+                    </button>
+                    <button 
                       onClick={() => handleEditClick(asset)}
                       className="p-2 bg-white/20 text-white rounded-full hover:bg-white/40"
                       title="Rename"
@@ -360,6 +420,9 @@ const MediaLibrary = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
+                        <button onClick={() => handleReplaceClick(asset)} className="text-green-600 hover:text-green-900" title="Replace File">
+                          <RefreshCw size={18} />
+                        </button>
                         <button onClick={() => handleEditClick(asset)} className="text-blue-600 hover:text-blue-900" title="Rename">
                           <Edit size={18} />
                         </button>

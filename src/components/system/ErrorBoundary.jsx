@@ -26,6 +26,51 @@ export default class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       const errorString = String(this.state.error);
+      
+      // Handle Chunk Load Errors (Version Mismatch)
+      const isChunkError = errorString.includes('Failed to fetch dynamically imported module') || 
+                          errorString.includes('Importing a module script failed');
+
+      if (isChunkError) {
+        return (
+          <div style={{ 
+            padding: 40, 
+            maxWidth: 600, 
+            margin: '100px auto', 
+            fontFamily: 'system-ui', 
+            textAlign: 'center',
+            backgroundColor: 'white',
+            borderRadius: 16,
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🚀</div>
+            <h2 style={{ color: '#111827', fontSize: '2rem', marginBottom: '1rem', fontWeight: 800 }}>New Update Available</h2>
+            <p style={{ fontSize: '1.1rem', color: '#4B5563', marginBottom: '2rem', lineHeight: 1.5 }}>
+              We've just deployed a new version of the platform with improvements and fixes. Please reload to get the latest experience.
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '16px 32px',
+                backgroundColor: '#47A88D',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: 18,
+                boxShadow: '0 4px 6px rgba(71, 168, 141, 0.3)',
+                transition: 'transform 0.1s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              🔄 Update Now
+            </button>
+          </div>
+        );
+      }
+
       const isReactError130 = errorString.includes('error #130') || errorString.includes('Minified React error');
       
       return (
