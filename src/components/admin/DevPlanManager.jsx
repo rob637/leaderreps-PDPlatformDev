@@ -297,6 +297,17 @@ const DevPlanManager = () => {
   );
 };
 
+// Helper for Day Mapping
+const DAY_MAP = {
+  'Monday': 1,
+  'Tuesday': 2,
+  'Wednesday': 3,
+  'Thursday': 4,
+  'Friday': 5,
+  'Saturday': 6,
+  'Sunday': 7
+};
+
 // Sub-component: List View
 const WeekListView = ({ weeks, onEdit, onDelete }) => {
   if (weeks.length === 0) {
@@ -831,6 +842,8 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, onSave, onCanc
                         onChange={e => updateItem('content', idx, 'contentItemType', e.target.value)}
                         className="p-2 border rounded text-sm"
                       >
+                        {/* Ensure Document is an option */}
+                        {!lovs['Content Types']?.includes('Document') && <option value="Document">Document</option>}
                         {lovs['Content Types']?.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                       <input 
@@ -1574,11 +1587,11 @@ const DevPlanReportModal = ({ weeks, onClose }) => {
                     <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
                       {[1, 2, 3, 4, 5, 6, 7].map(dayNum => {
                         const dayItems = [
-                          ...(week.content || []).map(i => ({ ...i, type: 'content', label: i.contentItemLabel })),
-                          ...(week.community || []).map(i => ({ ...i, type: 'community', label: i.communityItemLabel })),
-                          ...(week.coaching || []).map(i => ({ ...i, type: 'coaching', label: i.coachingItemLabel })),
-                          ...(week.reps || week.dailyReps || []).map(i => ({ ...i, type: 'rep', label: i.repLabel }))
-                        ].filter(item => item.recommendedWeekDay === dayNum);
+                          ...(week.content || []).map(i => ({ ...i, type: 'content', label: i.contentItemLabel, dayNum: DAY_MAP[i.day] })),
+                          ...(week.community || []).map(i => ({ ...i, type: 'community', label: i.communityItemLabel, dayNum: DAY_MAP[i.recommendedWeekDay] || DAY_MAP[i.day] })),
+                          ...(week.coaching || []).map(i => ({ ...i, type: 'coaching', label: i.coachingItemLabel, dayNum: DAY_MAP[i.day] })),
+                          ...(week.reps || week.dailyReps || []).map(i => ({ ...i, type: 'rep', label: i.repLabel, dayNum: DAY_MAP[i.day] }))
+                        ].filter(item => item.dayNum === dayNum);
 
                         return (
                           <div key={dayNum} className="bg-slate-50 rounded p-2 min-h-[100px]">
@@ -1613,11 +1626,11 @@ const DevPlanReportModal = ({ weeks, onClose }) => {
                       <div className="text-xs font-bold text-slate-400 uppercase mb-2">Anytime / Unscheduled</div>
                       <div className="flex flex-wrap gap-2">
                         {[
-                          ...(week.content || []).map(i => ({ ...i, type: 'content', label: i.contentItemLabel })),
-                          ...(week.community || []).map(i => ({ ...i, type: 'community', label: i.communityItemLabel })),
-                          ...(week.coaching || []).map(i => ({ ...i, type: 'coaching', label: i.coachingItemLabel })),
-                          ...(week.reps || week.dailyReps || []).map(i => ({ ...i, type: 'rep', label: i.repLabel }))
-                        ].filter(item => !item.recommendedWeekDay).map((item, idx) => (
+                          ...(week.content || []).map(i => ({ ...i, type: 'content', label: i.contentItemLabel, dayNum: DAY_MAP[i.day] })),
+                          ...(week.community || []).map(i => ({ ...i, type: 'community', label: i.communityItemLabel, dayNum: DAY_MAP[i.recommendedWeekDay] || DAY_MAP[i.day] })),
+                          ...(week.coaching || []).map(i => ({ ...i, type: 'coaching', label: i.coachingItemLabel, dayNum: DAY_MAP[i.day] })),
+                          ...(week.reps || week.dailyReps || []).map(i => ({ ...i, type: 'rep', label: i.repLabel, dayNum: DAY_MAP[i.day] }))
+                        ].filter(item => !item.dayNum).map((item, idx) => (
                           <div key={idx} className="text-[10px] px-2 py-1 bg-slate-50 rounded border border-slate-200 flex items-center gap-1.5">
                             {item.type === 'content' && <BookOpen className="w-3 h-3 text-blue-500" />}
                             {item.type === 'community' && <Users className="w-3 h-3 text-purple-500" />}
