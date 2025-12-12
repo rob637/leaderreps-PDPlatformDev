@@ -75,7 +75,8 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
                 <video 
                   src={url} 
                   controls 
-                  autoPlay 
+                  playsInline
+                  crossOrigin="anonymous"
                   className="w-full h-full max-h-[70vh]"
                 >
                   <p className="text-white p-4 text-center">
@@ -134,8 +135,14 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      onClick={onClose} // Close on backdrop click
+    >
+      <div 
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
+      >
         {/* Header */}
         <div className="p-4 border-b flex items-center justify-between bg-slate-50">
           <div>
