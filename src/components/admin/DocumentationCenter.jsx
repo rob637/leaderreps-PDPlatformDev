@@ -23,6 +23,8 @@ import {
   Upload
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 // Import raw content for AI analysis
 import adminGuideRaw from '../../../ADMIN-GUIDE.md?raw';
@@ -52,6 +54,7 @@ const DocumentationCenter = () => {
   const [commitStatus, setCommitStatus] = useState(''); // '', 'committing', 'success', 'error'
   const [commitMessage, setCommitMessage] = useState('');
   const [hasGitHubToken, setHasGitHubToken] = useState(() => !!localStorage.getItem('github_pat'));
+  const [viewingDoc, setViewingDoc] = useState(null);
 
   // GitHub config
   const GITHUB_OWNER = 'rob637';
@@ -192,8 +195,22 @@ const DocumentationCenter = () => {
 
   // Open document in new tab (GitHub rendered view)
   const openInGitHub = (doc) => {
-    const url = `https://github.com/rob637/leaderreps-PDPlatformDev/blob/New-Stuff/${doc.githubPath}`;
+    const url = `https://github.com/rob637/leaderreps-PDPlatformDev/blob/${GITHUB_BRANCH}/${doc.githubPath}`;
     window.open(url, '_blank');
+  };
+
+  // View document internally
+  const handleViewDoc = (doc) => {
+    const docMap = {
+      'admin-guide': adminGuideRaw,
+      'user-guide': userGuideRaw,
+      'test-plans': testPlansRaw,
+      'app-architecture': appArchitectureRaw
+    };
+    const content = docMap[doc.id];
+    if (content) {
+      setViewingDoc({ ...doc, content });
+    }
   };
 
   // Download raw markdown
@@ -1011,11 +1028,18 @@ Format your response as:
               {/* Actions */}
               <div className="flex gap-2 pt-3 border-t border-gray-100">
                 <button
-                  onClick={() => openInGitHub(doc)}
+                  onClick={() => handleViewDoc(doc)}
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-corporate-teal text-white text-sm font-medium rounded-lg hover:bg-corporate-teal/90 transition-colors"
                 >
                   <BookOpen className="w-4 h-4" />
                   View
+                </button>
+                <button
+                  onClick={() => openInGitHub(doc)}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors"
+                  title="View on GitHub"
+                >
+                  <ExternalLink className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => openRefreshModal(doc.id)}
@@ -1115,8 +1139,53 @@ Format your response as:
       {/* Version Info */}
       <div className="text-center text-xs text-slate-400 pt-4">
         Documentation is version-controlled with the application. 
-        Last synced with branch: <span className="font-mono">New-Stuff</span>
+        Last synced with branch: <span className="font-mono">{GITHUB_BRANCH}</span>
       </div>
+
+      {/* Document Viewer Modal */}
+      {viewingDoc && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-slate-50">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 ${viewingDoc.color} rounded-lg`}>
+                  <viewingDoc.icon className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-corporate-navy text-lg">{viewingDoc.title}</h3>
+                  <p className="text-sm text-slate-500">Internal Documentation Viewer</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openInGitHub(viewingDoc)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  GitHub
+                </button>
+                <button
+                  onClick={() => setViewingDoc(null)}
+                  className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-8 bg-white">
+              <div 
+                className="prose prose-slate max-w-none prose-headings:text-corporate-navy prose-a:text-corporate-teal prose-pre:bg-slate-800 prose-pre:text-slate-100"
+                dangerouslySetInnerHTML={{ 
+                  __html: DOMPurify.sanitize(marked.parse(viewingDoc.content)) 
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
