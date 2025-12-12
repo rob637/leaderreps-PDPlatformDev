@@ -2058,6 +2058,17 @@ const WinsHistoryWidget = () => {
   const hasMore = sortedDates.length > visibleCount;
   const canShowLess = visibleCount > 3;
 
+  // Helper to format date for display (MM/DD/YYYY)
+  const formatDisplayDate = (dateStr) => {
+    if (!dateStr) return '';
+    // If YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const [y, m, d] = dateStr.split('-');
+        return `${m}/${d}/${y}`;
+    }
+    return dateStr;
+  };
+
   return (
     <Card title="AM Bookend (Wins History)" icon={Trophy} className="border-t-4 border-corporate-orange">
       <div className="overflow-x-auto border border-gray-300 rounded-sm">
@@ -2080,7 +2091,7 @@ const WinsHistoryWidget = () => {
                 return (
                   <tr key={date} className="hover:bg-blue-50 transition-colors">
                     <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600 font-bold">
-                      {date}
+                      {formatDisplayDate(date)}
                     </td>
                     {slots.map((win, i) => (
                       <td key={i} className="border border-gray-300 px-3 py-2">
@@ -2204,12 +2215,12 @@ const ScorecardHistoryWidget = () => {
   const hasMore = sortedHistory.length > visibleCount;
   const canShowLess = visibleCount > 3;
   
-  // Format date for display (M/D/YYYY)
+  // Format date for display (MM/DD/YYYY)
   const formatDisplayDate = (dateStr) => {
     const normalized = normalizeDate(dateStr);
     if (!normalized) return dateStr;
     const [year, month, day] = normalized.split('-');
-    return \`\${parseInt(month, 10)}/\${parseInt(day, 10)}/\${year}\`;
+    return \`\${month}/\${day}/\${year}\`;
   };
 
   return (
@@ -2344,6 +2355,17 @@ const ReflectionHistoryWidget = () => {
   const hasMore = sortedReflections.length > visibleCount;
   const canShowLess = visibleCount > 3;
 
+  // Helper to format date for display (MM/DD/YYYY)
+  const formatDisplayDate = (dateStr) => {
+    if (!dateStr) return '';
+    // If YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const [y, m, d] = dateStr.split('-');
+        return \`\${m}/\${d}/\${y}\`;
+    }
+    return dateStr;
+  };
+
   return (
     <Card title="Reflection History" icon={BookOpen} className="lg:col-span-2 border-t-4 border-corporate-navy">
       <div className="overflow-x-auto border border-gray-300 rounded-sm">
@@ -2361,7 +2383,7 @@ const ReflectionHistoryWidget = () => {
               visibleReflections.map((log, index) => (
                 <tr key={log.id || index} className="hover:bg-blue-50 transition-colors align-top">
                   <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
-                    {new Date(log.date).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: '2-digit' })}
+                    {formatDisplayDate(log.date)}
                   </td>
                   <td className="border border-gray-300 px-3 py-2 text-gray-800 min-w-[200px]">
                     {log.reflectionGood || '-'}
@@ -2453,6 +2475,17 @@ const RepsHistoryWidget = () => {
   const hasMore = sortedHistory.length > visibleCount;
   const canShowLess = visibleCount > 3;
 
+  // Helper to format date for display (MM/DD/YYYY)
+  const formatDisplayDate = (dateStr) => {
+    if (!dateStr) return '';
+    // If YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const [y, m, d] = dateStr.split('-');
+        return \`\${m}/\${d}/\${y}\`;
+    }
+    return dateStr;
+  };
+
   return (
     <Card title="Daily Reps History" icon={Dumbbell} className="border-t-4 border-corporate-navy">
       <div className="space-y-4">
@@ -2461,7 +2494,7 @@ const RepsHistoryWidget = () => {
             <div key={dateIndex} className="border border-gray-200 rounded-lg overflow-hidden">
               {/* Date Header */}
               <div className="bg-gray-100 px-4 py-2 flex items-center justify-between border-b border-gray-200">
-                <span className="font-mono font-bold text-gray-700">{entry.date}</span>
+                <span className="font-mono font-bold text-gray-700">{formatDisplayDate(entry.date)}</span>
                 <span className="text-sm text-gray-500">
                   <span className="font-bold text-corporate-navy">{entry.completedCount || (entry.items?.length || 0)}</span> reps completed
                 </span>

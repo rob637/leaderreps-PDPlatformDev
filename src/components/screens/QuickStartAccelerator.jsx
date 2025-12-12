@@ -7,6 +7,8 @@ import {
   Zap, ShieldCheck, ArrowLeft, Target, Briefcase, Clock, Users, CornerRightUp, X, Activity, Cpu, Eye,
   CheckCircle, AlertTriangle, Lightbulb, BookOpen, Loader
 } from 'lucide-react';
+import { useNavigation } from '../../providers/NavigationProvider.jsx';
+import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 
 /* =========================================================
    UTILITIES (Local or Shared)
@@ -182,10 +184,34 @@ const LISAuditorView = ({ setQuickStartView }) => {
 ========================================================= */
 const QuickStartAcceleratorScreen = () => {
     // --- Consume Services ---
-    const { isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
+    const { isLoading: isAppLoading, error: appError, navigate } = useAppServices(); // cite: useAppServices.jsx
+    const { navParams } = useNavigation();
 
     // --- Local State ---
     const [view, setQuickStartView] = useState('quick-start-home'); // Controls view: 'home' or 'lis-auditor'
+    const [selectedResource, setSelectedResource] = useState(null);
+    const [isAutoOpenSession, setIsAutoOpenSession] = useState(false);
+    const hasAutoOpened = React.useRef(false);
+
+    // --- Auto-Open Logic ---
+    useEffect(() => {
+        const autoOpenId = navParams?.state?.autoOpenId || navParams?.autoOpenId;
+        if (autoOpenId && !selectedResource && !hasAutoOpened.current) {
+             // Check for QS Workbook ID
+             if (String(autoOpenId).toLowerCase().includes('workbook') || String(autoOpenId).toLowerCase() === 'qs-workbook') {
+                 console.log('[QuickStart] Auto-opening workbook');
+                 setIsAutoOpenSession(true);
+                 hasAutoOpened.current = true;
+                 setSelectedResource({
+                     id: 'qs-workbook',
+                     title: 'QuickStart Workbook',
+                     type: 'pdf',
+                     url: 'https://firebasestorage.googleapis.com/v0/b/leaderreps-pdplatform.appspot.com/o/content_documents%2FQuickStart_Workbook.pdf?alt=media', // Placeholder
+                     description: 'The official QuickStart Accelerator Workbook.'
+                 });
+             }
+        }
+    }, [navParams, selectedResource]);
 
     // --- Effect to scroll to top on mount ---
     useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, []);
@@ -283,6 +309,19 @@ const QuickStartAcceleratorScreen = () => {
     return (
       <div className="min-h-screen bg-slate-50"> {/* Consistent BG */}
         {renderView()}
+        {/* Resource Viewer Modal */}
+        {selectedResource && (
+            <UniversalResourceViewer
+                resource={selectedResource}
+                onClose={() => {
+                    setSelectedResource(null);
+                    if (isAutoOpenSession) {
+                        setIsAutoOpenSession(false);
+                        navigate('dashboard');
+                    }
+                }}
+            />
+        )}
       </div>
     );
 };

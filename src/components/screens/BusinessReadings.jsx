@@ -476,6 +476,7 @@ export default function BusinessReadingsScreen() {
   const [aiQuery, setAiQuery] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isSubmittingAi, setIsSubmittingAi] = useState(false);
+  const [isAutoOpenSession, setIsAutoOpenSession] = useState(false);
 
   // --- Calculate Unlocked Resources ---
   const unlockedResourceIds = useMemo(() => {
@@ -598,6 +599,37 @@ export default function BusinessReadingsScreen() {
     }
     return result;
   }, [allBooks, filters, deepDataSignature]);
+
+    // --- Auto-Open Logic ---
+    const hasAutoOpened = React.useRef(false);
+
+    useEffect(() => {
+        const autoOpenId = navParams?.state?.autoOpenId || navParams?.autoOpenId;
+        if (autoOpenId && !isLoadingCms && allBooks && !selectedResource && !hasAutoOpened.current) {
+            const targetId = String(autoOpenId).toLowerCase();
+            console.log('[BusinessReadings] Auto-opening reading:', targetId);
+            
+            // Flatten allBooks to find the match
+            let match = null;
+            Object.values(allBooks).forEach(categoryBooks => {
+                if (match) return;
+                const found = categoryBooks.find(b => String(b.id).toLowerCase() === targetId);
+                if (found) match = found;
+            });
+
+            if (match) {
+                setIsAutoOpenSession(true);
+                hasAutoOpened.current = true;
+                
+                // Open directly in viewer
+                const resource = {
+                    ...match,
+                    type: 'pdf'
+                };
+                setSelectedResource(resource);
+            }
+        }
+    }, [navParams, allBooks, isLoadingCms, selectedResource]);
 
   // --- Auto-Open Logic ---
   useEffect(() => {
@@ -750,7 +782,13 @@ export default function BusinessReadingsScreen() {
       {selectedResource && (
           <UniversalResourceViewer
               resource={selectedResource}
-              onClose={() => setSelectedResource(null)}
+              onClose={() => {
+                  setSelectedResource(null);
+                  if (isAutoOpenSession) {
+                      setIsAutoOpenSession(false);
+                      navigate('dashboard');
+                  }
+              }}
           />
       )}
     </PageLayout>

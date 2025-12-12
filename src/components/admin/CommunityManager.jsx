@@ -25,7 +25,7 @@ import {
 } from '../../services/contentService';
 
 const CommunityManager = () => {
-  const { db, navigate } = useAppServices();
+  const { db, navigate, user } = useAppServices();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState(null);
@@ -81,7 +81,11 @@ const CommunityManager = () => {
       };
 
       if (isAddingNew) {
-        await addContent(db, CONTENT_COLLECTIONS.COMMUNITY, postData);
+        const dataWithAuthor = {
+          ...postData,
+          authorId: user?.uid
+        };
+        await addContent(db, CONTENT_COLLECTIONS.COMMUNITY, dataWithAuthor);
       } else {
         const { id, ...updates } = postData;
         try {
@@ -118,7 +122,7 @@ const CommunityManager = () => {
       await loadContent();
     } catch (error) {
       console.error('Error deleting post:', error);
-      alert('Error deleting post. Please try again.');
+      alert(`Error deleting post: ${error.message}`);
     }
   };
 
@@ -128,6 +132,7 @@ const CommunityManager = () => {
       await loadContent();
     } catch (error) {
       console.error('Error toggling active status:', error);
+      alert(`Error updating status: ${error.message}`);
     }
   };
 

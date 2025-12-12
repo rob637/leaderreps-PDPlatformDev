@@ -427,11 +427,11 @@ const ContentAdminHome = () => {
   const contentTypes = [
     {
       id: CONTENT_COLLECTIONS.READINGS,
-      label: 'Read & Reps (Books)',
+      label: 'Read & Reps',
       icon: BookOpen,
       description: 'Wrap book syntheses with metadata',
       color: COLORS.TEAL,
-      route: 'admin-wrapper-readrep'
+      route: 'admin-wrapper-book'
     },
     {
       id: CONTENT_COLLECTIONS.DOCUMENTS,
@@ -456,14 +456,6 @@ const ContentAdminHome = () => {
       description: 'Wrap course modules with metadata',
       color: COLORS.NAVY,
       route: 'admin-wrapper-course'
-    },
-    {
-      id: 'read-reps',
-      label: 'Read & Reps',
-      icon: BrainCircuit,
-      description: 'Wrap Read & Reps exercises with metadata',
-      color: COLORS.TEAL,
-      route: 'admin-wrapper-readrep'
     }
   ];
 

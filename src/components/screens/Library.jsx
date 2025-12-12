@@ -98,7 +98,7 @@ const Library = () => {
         title: 'Read & Reps',
         description: 'Curated books and articles with actionable exercises.',
         icon: BookOpen,
-        screen: 'read-reps-index',
+        screen: 'business-readings',
         color: 'text-corporate-navy',
         bgColor: 'bg-corporate-navy/10'
       },

@@ -267,6 +267,7 @@ const LeadershipVideosScreen = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('ALL');
     const [selectedTag, setSelectedTag] = useState('');
+    const [isAutoOpenSession, setIsAutoOpenSession] = useState(false);
 
     // --- Get Enhanced Video Data ---
     const allVideos = useMemo(() => {
@@ -291,6 +292,7 @@ const LeadershipVideosScreen = () => {
             
             const match = allVideos.find(v => String(v.id).toLowerCase() === targetId);
             if (match) {
+                setIsAutoOpenSession(true);
                 // Construct resource object for viewer
                 const resource = {
                     id: match.id,
@@ -534,7 +536,13 @@ const LeadershipVideosScreen = () => {
             {selectedResource && (
                 <UniversalResourceViewer
                     resource={selectedResource}
-                    onClose={() => setSelectedResource(null)}
+                    onClose={() => {
+                        setSelectedResource(null);
+                        if (isAutoOpenSession) {
+                            setIsAutoOpenSession(false);
+                            navigate('dashboard');
+                        }
+                    }}
                 />
             )}
         </PageLayout>

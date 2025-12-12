@@ -117,7 +117,7 @@ const CoachingManager = () => {
       await loadContent();
     } catch (error) {
       console.error('Error deleting scenario:', error);
-      alert('Error deleting scenario. Please try again.');
+      alert(`Error deleting scenario: ${error.message}`);
     }
   };
 
@@ -127,6 +127,7 @@ const CoachingManager = () => {
       await loadContent();
     } catch (error) {
       console.error('Error toggling active status:', error);
+      alert(`Error updating status: ${error.message}`);
     }
   };
 
