@@ -28,6 +28,7 @@ import { useAppServices } from '../../services/useAppServices';
 import adminGuideRaw from '../../../ADMIN-GUIDE.md?raw';
 import userGuideRaw from '../../../USER-GUIDE.md?raw';
 import testPlansRaw from '../../../TEST-PLANS.md?raw';
+import appArchitectureRaw from '../../../APP-ARCHITECTURE.md?raw';
 import packageJsonRaw from '../../../package.json?raw';
 import widgetTemplatesRaw from '../../config/widgetTemplates.js?raw';
 import adminPortalRaw from './AdminPortal.jsx?raw';
@@ -131,6 +132,25 @@ const DocumentationCenter = () => {
       ],
       githubPath: 'TEST-PLANS.md',
       localPath: '/TEST-PLANS.md'
+    },
+    {
+      id: 'app-architecture',
+      title: 'App Architecture & File Map',
+      description: 'Comprehensive map of the codebase, detailing the purpose and location of key files and directories.',
+      icon: GitBranch,
+      color: 'bg-blue-600',
+      category: 'Technical',
+      lastUpdated: 'December 2025',
+      sections: [
+        'Core Application Entry Points',
+        'Configuration & Environment',
+        'State Management & Services',
+        'Component Structure',
+        'Backend & Cloud Functions',
+        'Scripts & Automation'
+      ],
+      githubPath: 'APP-ARCHITECTURE.md',
+      localPath: '/APP-ARCHITECTURE.md'
     }
   ];
 
@@ -238,6 +258,14 @@ Please review and improve the following documentation, making it 1% better by:
 - Admin portal tests
 - Cross-browser testing
 - Regression checklists`,
+      'app-architecture': `Focus on the APP-ARCHITECTURE.md which covers:
+- Core application entry points
+- Configuration & environment files
+- State management & services
+- Component structure (Admin, Widgets, Screens)
+- Backend & Cloud Functions
+- Scripts & automation`
+    };
       'all': `Review all three documentation files:
 1. ADMIN-GUIDE.md - Administrator operations
 2. USER-GUIDE.md - End user procedures
@@ -295,7 +323,8 @@ Please review and improve the following documentation, making it 1% better by:
     const docNames = {
       'admin-guide': 'ADMIN-GUIDE.md',
       'user-guide': 'USER-GUIDE.md',
-      'test-plans': 'TEST-PLANS.md'
+      'test-plans': 'TEST-PLANS.md',
+      'app-architecture': 'APP-ARCHITECTURE.md'
     };
     const filename = docNames[selectedDocId] || 'UPDATED-DOC.md';
     const blob = new Blob([updatedDocContent], { type: 'text/markdown' });
@@ -314,7 +343,8 @@ Please review and improve the following documentation, making it 1% better by:
     const docPaths = {
       'admin-guide': 'ADMIN-GUIDE.md',
       'user-guide': 'USER-GUIDE.md',
-      'test-plans': 'TEST-PLANS.md'
+      'test-plans': 'TEST-PLANS.md',
+      'app-architecture': 'APP-ARCHITECTURE.md'
     };
     const filePath = docPaths[selectedDocId];
     if (!filePath || !updatedDocContent) return;
@@ -392,7 +422,8 @@ Please review and improve the following documentation, making it 1% better by:
       const docMap = {
         'admin-guide': adminGuideRaw,
         'user-guide': userGuideRaw, 
-        'test-plans': testPlansRaw
+        'test-plans': testPlansRaw,
+        'app-architecture': appArchitectureRaw
       };
       const currentDoc = docMap[selectedDocId] || adminGuideRaw;
       const packageJson = packageJsonRaw;
@@ -477,7 +508,8 @@ The output should be ready to save directly as the .md file.
       const docMap = {
         'admin-guide': adminGuideRaw,
         'user-guide': userGuideRaw, 
-        'test-plans': testPlansRaw
+        'test-plans': testPlansRaw,
+        'app-architecture': appArchitectureRaw
       };
       const currentDoc = docMap[selectedDocId] || adminGuideRaw;
 
@@ -878,7 +910,7 @@ Format your response as:
             <div className="flex items-center justify-between p-5 border-t border-gray-200 bg-slate-50">
               <div className="flex gap-2">
                 <span className="text-sm text-slate-500 mr-2">Select doc:</span>
-                {['admin-guide', 'user-guide', 'test-plans'].map(docId => (
+                {['admin-guide', 'user-guide', 'test-plans', 'app-architecture'].map(docId => (
                   <button
                     key={docId}
                     onClick={() => {

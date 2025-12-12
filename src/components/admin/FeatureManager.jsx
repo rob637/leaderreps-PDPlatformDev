@@ -1016,6 +1016,71 @@ const FeatureManager = () => {
                     </div>
                   )}
                   
+                  {/* Documentation Viewer */}
+                  {FEATURE_METADATA[feature.id] && (
+                    <div className="mb-4 space-y-3 border-b border-gray-200 pb-4">
+                      <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                        <BookOpen className="w-3 h-3" /> Documentation
+                      </h5>
+                      
+                      <div className="bg-white p-3 rounded border border-gray-200 space-y-3">
+                        <div>
+                          <span className="text-xs font-bold text-gray-700 block mb-1">Purpose</span>
+                          <span className="text-xs text-gray-600 block">{FEATURE_METADATA[feature.id].purpose}</span>
+                        </div>
+                        
+                        {FEATURE_METADATA[feature.id].extendedDescription && (
+                          <div>
+                            <span className="text-xs font-bold text-gray-700 block mb-1">Description</span>
+                            <span className="text-xs text-gray-600 block">{FEATURE_METADATA[feature.id].extendedDescription}</span>
+                          </div>
+                        )}
+
+                        {FEATURE_METADATA[feature.id].inputs && FEATURE_METADATA[feature.id].inputs.length > 0 && (
+                          <div>
+                            <span className="text-xs font-bold text-gray-700 block mb-1">Inputs (Scope)</span>
+                            <div className="flex flex-wrap gap-1">
+                              {FEATURE_METADATA[feature.id].inputs.map(input => (
+                                <span key={input} className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-mono">
+                                  {input}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {FEATURE_METADATA[feature.id].outputs && FEATURE_METADATA[feature.id].outputs.length > 0 && (
+                          <div>
+                            <span className="text-xs font-bold text-gray-700 block mb-1">Outputs (Actions)</span>
+                            <div className="flex flex-wrap gap-1">
+                              {FEATURE_METADATA[feature.id].outputs.map(output => (
+                                <span key={output} className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 font-mono">
+                                  {output}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {FEATURE_METADATA[feature.id].componentPath && (
+                          <div>
+                            <span className="text-xs font-bold text-gray-700 block mb-1">Component Source</span>
+                            <span className="text-[10px] text-gray-500 font-mono break-all">{FEATURE_METADATA[feature.id].componentPath}</span>
+                          </div>
+                        )}
+
+                        {WIDGET_TEMPLATES[feature.id] && (
+                          <div>
+                            <span className="text-xs font-bold text-gray-700 block mb-1">Template Code</span>
+                            <pre className="text-[10px] bg-slate-50 p-2 rounded border border-slate-200 overflow-x-auto font-mono text-slate-600 max-h-40">
+                              {WIDGET_TEMPLATES[feature.id]}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Existing Custom Options */}
                   <div className="space-y-2 mb-4">
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Custom Options</p>
