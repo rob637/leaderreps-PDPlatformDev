@@ -287,6 +287,7 @@ const DevPlanManager = () => {
             initialData={selectedWeekId === 'new' ? newWeekData : weeks.find(w => w.id === selectedWeekId)}
             lovs={lovs}
             availableSkills={availableSkills}
+            dailyRepsLibrary={dailyRepsLibrary}
             onSave={async (data) => {
               try {
                 const docId = data.weekBlockId || `week-${String(data.weekNumber).padStart(2, '0')}`;
@@ -426,7 +427,7 @@ const WeekListView = ({ weeks, onEdit, onDelete }) => {
 };
 
 // Sub-component: Editor
-const WeekEditor = ({ weekId, initialData, lovs, availableSkills, onSave, onCancel, allWeeks }) => {
+const WeekEditor = ({ weekId, initialData, lovs, availableSkills, dailyRepsLibrary = [], onSave, onCancel, allWeeks }) => {
   // Default empty state
   const defaultData = {
     weekBlockId: '',
