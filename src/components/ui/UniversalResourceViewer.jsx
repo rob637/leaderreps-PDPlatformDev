@@ -176,8 +176,6 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
              </div>
           </div>
         );
-          </div>
-        );
     }
   };
 
