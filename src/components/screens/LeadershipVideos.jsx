@@ -281,9 +281,11 @@ const LeadershipVideosScreen = () => {
     }, [VIDEO_LISTS]);
 
     // --- Auto-Open Logic ---
+    const hasAutoOpened = React.useRef(false);
+
     useEffect(() => {
         const autoOpenId = navParams?.state?.autoOpenId || navParams?.autoOpenId;
-        if (autoOpenId && !isLoadingCms && allVideos.length > 0 && !selectedResource) {
+        if (autoOpenId && !isLoadingCms && allVideos.length > 0 && !selectedResource && !hasAutoOpened.current) {
             const targetId = String(autoOpenId).toLowerCase();
             console.log('[LeadershipVideos] Auto-opening video:', targetId);
             
@@ -298,6 +300,7 @@ const LeadershipVideosScreen = () => {
                     description: match.description
                 };
                 setSelectedResource(resource);
+                hasAutoOpened.current = true;
             }
         }
     }, [navParams, allVideos, isLoadingCms, selectedResource]);
