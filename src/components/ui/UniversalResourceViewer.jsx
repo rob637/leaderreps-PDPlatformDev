@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ExternalLink, Download, FileText, Film, Link as LinkIcon } from 'lucide-react';
+import { X, ExternalLink, Download, FileText, Film, Link as LinkIcon, Layers } from 'lucide-react';
 
 const UniversalResourceViewer = ({ resource, onClose }) => {
   if (!resource) return null;
@@ -115,7 +115,13 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
         return (
           <div className="flex flex-col items-center justify-center h-64 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              {type === 'reading' ? <FileText className="w-8 h-8 text-blue-600" /> : <LinkIcon className="w-8 h-8 text-blue-600" />}
+              {type === 'reading' || type === 'document' ? (
+                <FileText className="w-8 h-8 text-blue-600" />
+              ) : type === 'course' ? (
+                <Layers className="w-8 h-8 text-blue-600" />
+              ) : (
+                <LinkIcon className="w-8 h-8 text-blue-600" />
+              )}
             </div>
             <h3 className="text-xl font-bold text-slate-800 mb-2">{title}</h3>
             <p className="text-slate-500 mb-6 max-w-md text-center">

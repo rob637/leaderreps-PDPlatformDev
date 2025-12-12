@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, CheckCircle, Circle, MessageSquare, Users, Video, Zap, Repeat, Play, FileText, ExternalLink, Loader } from 'lucide-react';
+import { BookOpen, CheckCircle, Circle, MessageSquare, Users, Video, Zap, Repeat, Play, FileText, ExternalLink, Loader, Layers } from 'lucide-react';
 import { Card } from '../ui';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import { doc, getDoc } from 'firebase/firestore';
@@ -61,6 +61,13 @@ const DevelopmentPlanWidget = ({ scope }) => {
       case 'LEADER_CIRCLE': return Users;
       case 'OPEN_GYM': return Users;
       // Legacy support
+      case 'VIDEO': return Video;
+      case 'READING': return BookOpen;
+      case 'DOCUMENT': return FileText;
+      case 'COURSE': return Layers;
+      case 'COMMUNITY': return Users;
+      case 'COACHING': return MessageSquare;
+      
       case 'workout': return Video;
       case 'read_and_rep': return BookOpen;
       case 'leader_circle': return Users;
@@ -114,6 +121,8 @@ const DevelopmentPlanWidget = ({ scope }) => {
             if (item.resourceType === 'video') collectionName = CONTENT_COLLECTIONS.VIDEOS;
             else if (item.resourceType === 'community') collectionName = CONTENT_COLLECTIONS.COMMUNITY;
             else if (item.resourceType === 'coaching') collectionName = CONTENT_COLLECTIONS.COACHING;
+            else if (item.resourceType === 'document') collectionName = CONTENT_COLLECTIONS.DOCUMENTS;
+            else if (item.resourceType === 'course') collectionName = CONTENT_COLLECTIONS.COURSES;
             
             const docRef = doc(db, collectionName, resourceId);
             const docSnap = await getDoc(docRef);
@@ -241,8 +250,10 @@ const DevelopmentPlanWidget = ({ scope }) => {
                       <Loader className="w-5 h-5 animate-spin" />
                     ) : item.resourceType === 'video' ? (
                       <Play className="w-5 h-5" />
-                    ) : item.resourceType === 'reading' || item.resourceType === 'pdf' ? (
+                    ) : item.resourceType === 'reading' || item.resourceType === 'pdf' || item.resourceType === 'document' ? (
                       <FileText className="w-5 h-5" />
+                    ) : item.resourceType === 'course' ? (
+                      <Layers className="w-5 h-5" />
                     ) : (
                       <ExternalLink className="w-5 h-5" />
                     )}

@@ -1,9 +1,17 @@
-import React from 'react';
-import { CheckCircle, Circle, Play, BookOpen, Users, Video, FileText, Zap, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle, Circle, Play, BookOpen, Users, Video, FileText, Zap, AlertCircle, ExternalLink, Loader, Layers, MessageSquare } from 'lucide-react';
 import { Card } from '../ui';
 import { useDevPlan } from '../../hooks/useDevPlan';
+import UniversalResourceViewer from '../ui/UniversalResourceViewer';
+import { doc, getDoc } from 'firebase/firestore';
+import { useAppServices } from '../../services/useAppServices';
+import { CONTENT_COLLECTIONS } from '../../services/contentService';
 
 const ThisWeeksActionsWidget = ({ scope }) => {
+  const { db } = useAppServices();
+  const [viewingResource, setViewingResource] = useState(null);
+  const [loadingResource, setLoadingResource] = useState(false);
+
   // If scope is provided (e.g. from Widget Lab preview), use it.
   // Otherwise, use the real hook.
   const devPlanHook = useDevPlan();
@@ -50,7 +58,79 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       case 'READ_AND_REP': return BookOpen;
       case 'LEADER_CIRCLE': return Users;
       case 'OPEN_GYM': return Users;
+      // Legacy / New Types
+      case 'VIDEO': return Video;
+      case 'READING': return BookOpen;
+      case 'DOCUMENT': return FileText;
+      case 'COURSE': return Layers;
+      case 'COMMUNITY': return Users;
+      case 'COACHING': return MessageSquare;
       default: return Circle;
+    }
+  };
+
+  const handleViewResource = async (e, item) => {
+    e.stopPropagation(); // Prevent toggling completion
+    
+    if (item.url) {
+      // Legacy: direct URL
+      setViewingResource({ ...item, resourceType: 'link' });
+      return;
+    }
+
+    const resourceId = item.resourceId || item.id;
+
+    if (resourceId) {
+      setLoadingResource(item.id);
+      try {
+        // Try fetching from the new unified 'content_library' collection first
+        const contentRef = doc(db, 'content_library', resourceId);
+        const contentSnap = await getDoc(contentRef);
+
+        if (contentSnap.exists()) {
+           const data = contentSnap.data();
+           let mappedResource = { 
+               id: contentSnap.id, 
+               ...data, 
+               resourceType: data.type 
+           };
+
+           // Map details to url for viewer compatibility
+           if (data.type === 'REP' && data.details?.videoUrl) {
+               mappedResource.url = data.details.videoUrl;
+               mappedResource.resourceType = 'video';
+           } else if (data.type === 'READ_REP') {
+               if (data.details?.pdfUrl) {
+                   mappedResource.url = data.details.pdfUrl;
+                   mappedResource.resourceType = 'pdf';
+               }
+           }
+
+           setViewingResource(mappedResource);
+        } else {
+            // Fallback to legacy collections if not found in 'content_library'
+            let collectionName = CONTENT_COLLECTIONS.READINGS;
+            if (item.resourceType === 'video') collectionName = CONTENT_COLLECTIONS.VIDEOS;
+            else if (item.resourceType === 'community') collectionName = CONTENT_COLLECTIONS.COMMUNITY;
+            else if (item.resourceType === 'coaching') collectionName = CONTENT_COLLECTIONS.COACHING;
+            else if (item.resourceType === 'document') collectionName = CONTENT_COLLECTIONS.DOCUMENTS;
+            else if (item.resourceType === 'course') collectionName = CONTENT_COLLECTIONS.COURSES;
+            
+            const docRef = doc(db, collectionName, resourceId);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+              setViewingResource({ id: docSnap.id, ...docSnap.data(), resourceType: item.resourceType });
+            } else {
+              alert("Resource not found. It may have been deleted.");
+            }
+        }
+      } catch (error) {
+        console.error("Error fetching resource:", error);
+        alert("Failed to load resource.");
+      } finally {
+        setLoadingResource(false);
+      }
     }
   };
 
@@ -60,7 +140,14 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   };
 
   return (
-    <Card title="This Week's Actions" icon={CheckCircle} accent="TEAL">
+    <>
+      {viewingResource && (
+        <UniversalResourceViewer 
+          resource={viewingResource} 
+          onClose={() => setViewingResource(null)} 
+        />
+      )}
+      <Card title="This Week's Actions" icon={CheckCircle} accent="TEAL">
       <div className="space-y-1">
         {allActions.length === 0 ? (
           <div className="p-4 text-center text-slate-500 text-sm italic">
@@ -114,12 +201,34 @@ const ThisWeeksActionsWidget = ({ scope }) => {
                     <span>{item.estimatedTime || '15m'}</span>
                   </div>
                 </div>
+
+                {/* View Resource Button */}
+                {(item.resourceId || item.url) && (
+                  <button
+                    onClick={(e) => handleViewResource(e, item)}
+                    className="p-2 text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-full transition-colors"
+                    title="View Resource"
+                  >
+                    {loadingResource === item.id ? (
+                      <Loader className="w-5 h-5 animate-spin" />
+                    ) : item.resourceType === 'video' ? (
+                      <Play className="w-5 h-5" />
+                    ) : item.resourceType === 'reading' || item.resourceType === 'pdf' || item.resourceType === 'document' ? (
+                      <FileText className="w-5 h-5" />
+                    ) : item.resourceType === 'course' ? (
+                      <Layers className="w-5 h-5" />
+                    ) : (
+                      <ExternalLink className="w-5 h-5" />
+                    )}
+                  </button>
+                )}
               </div>
             );
           })
         )}
       </div>
     </Card>
+    </>
   );
 };
 
