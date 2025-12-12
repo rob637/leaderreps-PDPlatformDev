@@ -48,7 +48,7 @@ const CONTENT_TYPES = {
   }
 };
 
-const ContentManager = ({ contentType }) => {
+const ContentManager = ({ contentType, title, description }) => {
   const { db, navigate } = useAppServices();
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +59,8 @@ const ContentManager = ({ contentType }) => {
   
   const config = CONTENT_TYPES[contentType];
   const Icon = config.icon;
+  const displayTitle = title || config.label;
+  const displayDesc = description || '';
 
   // Load content
   useEffect(() => {
@@ -210,15 +212,20 @@ const ContentManager = ({ contentType }) => {
           className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Admin
+          Back to Content Wrapper
         </button>
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Icon className="w-8 h-8 text-corporate-teal" />
-            <h1 className="text-3xl font-bold text-corporate-navy">
-              Manage {config.label}
-            </h1>
+            <div>
+              <h1 className="text-3xl font-bold text-corporate-navy">
+                {displayTitle}
+              </h1>
+              <p className="text-slate-500">
+                {displayDesc}
+              </p>
+            </div>
           </div>
           
           <button

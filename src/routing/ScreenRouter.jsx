@@ -87,6 +87,18 @@ const ScreenMap = {
   'admin-content-manager': lazy(() =>
     import('../components/admin/ContentManager.jsx')
   ),
+  'admin-wrapper-document': lazy(() =>
+    import('../components/admin/wrappers/DocumentWrapper.jsx')
+  ),
+  'admin-wrapper-video': lazy(() =>
+    import('../components/admin/wrappers/VideoWrapper.jsx')
+  ),
+  'admin-wrapper-course': lazy(() =>
+    import('../components/admin/wrappers/CourseWrapper.jsx')
+  ),
+  'admin-wrapper-readrep': lazy(() =>
+    import('../components/admin/wrappers/ReadRepWrapper.jsx')
+  ),
   'admin-portal': lazy(() =>
     import('../components/admin/AdminPortal.jsx')
   ),

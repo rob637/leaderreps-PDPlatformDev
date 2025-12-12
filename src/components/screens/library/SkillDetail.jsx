@@ -28,9 +28,8 @@ const SkillDetail = ({ navParams }) => {
         setLoading(true);
         
         // 1. Fetch Skill Details
-        // Note: Skills might be in 'skills' collection or 'system_lovs' depending on implementation
-        // For now, assuming 'skills' collection as per migration plan
-        const skillRef = doc(db, 'skills', skillId);
+        // FIXED: Now fetching from 'content_library' (Unified Collection) instead of 'skills'
+        const skillRef = doc(db, UNIFIED_COLLECTION, skillId);
         const skillSnap = await getDoc(skillRef);
         
         if (skillSnap.exists()) {
@@ -38,6 +37,7 @@ const SkillDetail = ({ navParams }) => {
           
           // 2. Fetch Related Content
           // Query content where 'skills' array-contains skillId
+          // Note: We need to be careful not to fetch the skill itself if it has its own ID in the skills array
           const contentRef = collection(db, UNIFIED_COLLECTION);
           const q = query(
             contentRef, 

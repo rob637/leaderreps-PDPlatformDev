@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { getAllContentAdmin, CONTENT_COLLECTIONS } from '../../services/contentService';
-import { doc, getDoc } from 'firebase/firestore';
+import { UNIFIED_COLLECTION, CONTENT_TYPES as UNIFIED_TYPES } from '../../services/unifiedContentService';
+import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 
 const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
   const { db } = useAppServices();
@@ -35,9 +36,12 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
       try {
         // Determine which collections to fetch based on type
         let collections = [];
+        let unifiedTypes = [];
+
         switch (resourceType) {
           case 'content':
-            collections = [CONTENT_COLLECTIONS.VIDEOS, CONTENT_COLLECTIONS.READINGS];
+            collections = [CONTENT_COLLECTIONS.VIDEOS, CONTENT_COLLECTIONS.READINGS, CONTENT_COLLECTIONS.COURSES];
+            unifiedTypes = [UNIFIED_TYPES.READ_REP];
             break;
           case 'community':
             collections = [CONTENT_COLLECTIONS.COMMUNITY];
@@ -51,14 +55,34 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
         let allResources = [];
         
+        // 1. Fetch Standard Collections
         for (const col of collections) {
           const data = await getAllContentAdmin(db, col);
           // Add type info
           const type = col === CONTENT_COLLECTIONS.VIDEOS ? 'video' : 
                        col === CONTENT_COLLECTIONS.READINGS ? 'reading' :
+                       col === CONTENT_COLLECTIONS.COURSES ? 'course' :
                        col === CONTENT_COLLECTIONS.COMMUNITY ? 'community' : 'coaching';
           
           allResources = [...allResources, ...data.map(item => ({ ...item, resourceType: type }))];
+        }
+
+        // 2. Fetch Unified Content (if needed)
+        if (unifiedTypes.length > 0) {
+          try {
+            const unifiedRef = collection(db, UNIFIED_COLLECTION);
+            // Fetch all and filter in memory for simplicity, or use 'in' query
+            const q = query(unifiedRef, where('type', 'in', unifiedTypes));
+            const snapshot = await getDocs(q);
+            const unifiedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            allResources = [...allResources, ...unifiedData.map(item => ({ 
+              ...item, 
+              resourceType: item.type === UNIFIED_TYPES.READ_REP ? 'read_rep' : 'unified' 
+            }))];
+          } catch (err) {
+            console.error("Error fetching unified content:", err);
+          }
         }
         
         setResources(allResources);

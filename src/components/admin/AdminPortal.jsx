@@ -13,7 +13,9 @@ import {
   BookOpen,
   TestTube2,
   Library,
-  ArrowLeftRight
+  ArrowLeftRight,
+  BrainCircuit,
+  List
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
@@ -26,6 +28,9 @@ import SystemWidgets from './SystemWidgets';
 import DevPlanManager from './DevPlanManager';
 import DocumentationCenter from './DocumentationCenter';
 import TestCenter from './TestCenter';
+import CommunityManager from './CommunityManager';
+import CoachingManager from './CoachingManager';
+import LOVManager from './LOVManager';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -113,6 +118,14 @@ const AdminPortal = () => {
       ]
     },
     {
+      title: 'Advanced Management',
+      items: [
+        { id: 'community', label: 'Community', icon: Users },
+        { id: 'coaching', label: 'Coaching', icon: BrainCircuit },
+        { id: 'lov', label: 'System Values', icon: List }
+      ]
+    },
+    {
       title: 'Engineering',
       items: [
         { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
@@ -146,6 +159,12 @@ const AdminPortal = () => {
         return <SystemDiagnostics />;
       case 'content':
         return <ContentAdminHome />;
+      case 'community':
+        return <CommunityManager />;
+      case 'coaching':
+        return <CoachingManager />;
+      case 'lov':
+        return <LOVManager />;
       case 'features':
         return <FeatureManager />;
       case 'docs':

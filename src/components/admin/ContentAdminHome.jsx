@@ -427,30 +427,35 @@ const ContentAdminHome = () => {
   const contentTypes = [
     {
       id: CONTENT_COLLECTIONS.READINGS,
-      label: 'Readings',
+      label: 'Documents',
       icon: BookOpen,
-      description: 'Manage articles, blog posts, and reading materials',
+      description: 'Wrap PDF documents with metadata',
       color: COLORS.TEAL,
-      route: 'admin-content-manager',
-      param: { contentType: CONTENT_COLLECTIONS.READINGS }
+      route: 'admin-wrapper-document'
     },
     {
       id: CONTENT_COLLECTIONS.VIDEOS,
       label: 'Videos',
       icon: Film,
-      description: 'Manage video content and tutorials',
+      description: 'Wrap video files with metadata',
       color: COLORS.ORANGE,
-      route: 'admin-content-manager',
-      param: { contentType: CONTENT_COLLECTIONS.VIDEOS }
+      route: 'admin-wrapper-video'
     },
     {
       id: CONTENT_COLLECTIONS.COURSES,
       label: 'Courses',
       icon: GraduationCap,
-      description: 'Manage structured courses and learning paths',
+      description: 'Wrap course modules with metadata',
       color: COLORS.NAVY,
-      route: 'admin-content-manager',
-      param: { contentType: CONTENT_COLLECTIONS.COURSES }
+      route: 'admin-wrapper-course'
+    },
+    {
+      id: 'read-reps',
+      label: 'Read & Reps',
+      icon: BrainCircuit,
+      description: 'Wrap Read & Reps exercises with metadata',
+      color: COLORS.TEAL,
+      route: 'admin-wrapper-readrep'
     }
   ];
 
@@ -525,39 +530,8 @@ const ContentAdminHome = () => {
       </div>
 
       {/* Content Type Cards */}
-      <h2 className="text-xl font-bold mb-4 text-corporate-navy">Standard Content</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {contentTypes.map((type) => {
-          const Icon = type.icon;
-          return (
-            <button
-              key={type.id}
-              onClick={() => navigate(type.route, type.param)}
-              className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all text-left border-2 hover:border-opacity-100"
-              style={{ borderColor: `${type.color}40` }}
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div 
-                  className="w-12 h-12 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: `${type.color}20` }}
-                >
-                  <Icon className="w-6 h-6" style={{ color: type.color }} />
-                </div>
-                <h2 className="text-xl font-bold text-corporate-navy">
-                  {type.label}
-                </h2>
-              </div>
-              <p className="text-sm text-slate-500">
-                {type.description}
-              </p>
-            </button>
-          );
-        })}
-      </div>
-
-      <h2 className="text-xl font-bold mb-4 text-corporate-navy">Advanced Management</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {advancedTypes.map((type) => {
           const Icon = type.icon;
           return (
             <button

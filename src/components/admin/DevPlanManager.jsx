@@ -42,6 +42,8 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { addContent, CONTENT_COLLECTIONS } from '../../services/contentService';
+import { UNIFIED_COLLECTION, CONTENT_TYPES } from '../../services/unifiedContentService';
+import { where } from 'firebase/firestore';
 import ResourceSelector from './ResourceSelector';
 
 const DevPlanManager = () => {
@@ -52,6 +54,7 @@ const DevPlanManager = () => {
   const [newWeekData, setNewWeekData] = useState(null);
   const [lovs, setLovs] = useState({});
   const [lovIds, setLovIds] = useState({});
+  const [availableSkills, setAvailableSkills] = useState([]); // New: Dynamic Skills
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'edit'
   const [showReport, setShowReport] = useState(false);
 
@@ -69,6 +72,22 @@ const DevPlanManager = () => {
       });
       setLovs(lovData);
       setLovIds(ids);
+
+      // 1b. Load Dynamic Skills from Content Library
+      try {
+        const skillsQuery = query(
+          collection(db, UNIFIED_COLLECTION), 
+          where('type', '==', CONTENT_TYPES.SKILL)
+        );
+        const skillsSnap = await getDocs(skillsQuery);
+        const skills = skillsSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })).sort((a, b) => a.title.localeCompare(b.title));
+        setAvailableSkills(skills);
+      } catch (err) {
+        console.error("Error loading skills:", err);
+      }
 
       // 2. Load Weeks
       const weeksRef = collection(db, 'development_plan_v1');
@@ -254,6 +273,7 @@ const DevPlanManager = () => {
             weekId={selectedWeekId} 
             initialData={selectedWeekId === 'new' ? newWeekData : weeks.find(w => w.id === selectedWeekId)}
             lovs={lovs}
+            availableSkills={availableSkills}
             onSave={async (data) => {
               try {
                 const docId = data.weekBlockId || `week-${String(data.weekNumber).padStart(2, '0')}`;
@@ -382,7 +402,7 @@ const WeekListView = ({ weeks, onEdit, onDelete }) => {
 };
 
 // Sub-component: Editor
-const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) => {
+const WeekEditor = ({ weekId, initialData, lovs, availableSkills, onSave, onCancel, allWeeks }) => {
   // Default empty state
   const defaultData = {
     weekBlockId: '',
@@ -798,6 +818,8 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
                               // Auto-fill type if possible (map resource type to content type)
                               contentItemType: resource.resourceType === 'video' ? 'Video' : 
                                               resource.resourceType === 'reading' ? 'Reading' : 
+                                              resource.resourceType === 'course' ? 'Course' :
+                                              resource.resourceType === 'read_rep' ? 'Read & Rep' :
                                               item.contentItemType
                             });
                           }}
@@ -1057,25 +1079,51 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
             {/* Skills */}
             <div>
-              <h4 className="font-bold text-slate-800 mb-3">Skills</h4>
+              <h4 className="font-bold text-slate-800 mb-3">Skills (Linked to Library)</h4>
               <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 h-64 overflow-y-auto">
-                {lovs['Skills']?.map(skill => (
-                  <label key={skill} className="flex items-center gap-2 mb-2 cursor-pointer hover:bg-slate-100 p-1 rounded">
-                    <input 
-                      type="checkbox"
-                      checked={formData.skills?.includes(skill)}
-                      onChange={e => {
-                        if (e.target.checked) {
-                          setFormData(prev => ({ ...prev, skills: [...(prev.skills || []), skill] }));
-                        } else {
-                          setFormData(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill) }));
-                        }
-                      }}
-                      className="rounded text-corporate-teal"
-                    />
-                    <span className="text-sm text-slate-700">{skill}</span>
-                  </label>
-                ))}
+                {availableSkills && availableSkills.length > 0 ? (
+                  availableSkills.map(skill => (
+                    <label key={skill.id} className="flex items-center gap-2 mb-2 cursor-pointer hover:bg-slate-100 p-1 rounded">
+                      <input 
+                        type="checkbox"
+                        checked={formData.skills?.includes(skill.title)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            // Store Title for now to maintain compatibility, but we could store ID too
+                            setFormData(prev => ({ ...prev, skills: [...(prev.skills || []), skill.title] }));
+                          } else {
+                            setFormData(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill.title) }));
+                          }
+                        }}
+                        className="rounded text-corporate-teal"
+                      />
+                      <span className="text-sm text-slate-700">{skill.title}</span>
+                    </label>
+                  ))
+                ) : (
+                  <div className="text-sm text-slate-400 italic">
+                    No skills found in Metadata Library. Add them in the Library tab first.
+                    <br/><br/>
+                    <span className="text-xs font-bold text-slate-500 uppercase">Legacy LOV Skills:</span>
+                    {lovs['Skills']?.map(skill => (
+                      <label key={skill} className="flex items-center gap-2 mb-2 cursor-pointer hover:bg-slate-100 p-1 rounded mt-2">
+                        <input 
+                          type="checkbox"
+                          checked={formData.skills?.includes(skill)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setFormData(prev => ({ ...prev, skills: [...(prev.skills || []), skill] }));
+                            } else {
+                              setFormData(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill) }));
+                            }
+                          }}
+                          className="rounded text-corporate-teal"
+                        />
+                        <span className="text-sm text-slate-700">{skill}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
