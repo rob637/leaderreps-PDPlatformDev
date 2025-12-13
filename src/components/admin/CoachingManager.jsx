@@ -17,7 +17,8 @@ import {
   Database,
   AlertTriangle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Bot
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -28,6 +29,29 @@ import {
   CONTENT_COLLECTIONS 
 } from '../../services/contentService';
 import { seedCoachingData, clearCoachingData } from '../../services/coachingService';
+import SessionManager from './SessionManager';
+
+// Tab Button Component
+const TabButton = ({ active, onClick, icon: Icon, label, badge }) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-colors ${
+      active 
+        ? 'border-corporate-teal text-corporate-teal' 
+        : 'border-transparent text-slate-500 hover:text-slate-700'
+    }`}
+  >
+    <Icon className="w-5 h-5" />
+    {label}
+    {badge !== undefined && (
+      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+        active ? 'bg-corporate-teal text-white' : 'bg-slate-200 text-slate-600'
+      }`}>
+        {badge}
+      </span>
+    )}
+  </button>
+);
 
 const CoachingManager = () => {
   const { db, navigate } = useAppServices();
@@ -35,6 +59,9 @@ const CoachingManager = () => {
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState('sessions'); // 'sessions', 'scenarios', 'data'
   
   // Session data management state
   const [sessionDataExpanded, setSessionDataExpanded] = useState(false);
@@ -232,100 +259,60 @@ const CoachingManager = () => {
           Back to Admin
         </button>
         
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BrainCircuit className="w-8 h-8 text-corporate-teal" />
+        <div className="flex items-center gap-3">
+          <BrainCircuit className="w-8 h-8 text-corporate-teal" />
+          <div>
             <h1 className="text-3xl font-bold text-corporate-navy">
-              Coaching Scenarios
+              Coaching Management
             </h1>
+            <p className="text-slate-500">Manage live sessions, AI scenarios, and coaching data</p>
           </div>
-          
-          <button
-            onClick={handleAdd}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all bg-corporate-teal"
-          >
-            <Plus className="w-5 h-5" />
-            Add Scenario
-          </button>
         </div>
       </div>
 
-      {/* Session Data Management */}
-      <div className="mb-6 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-        <button
-          onClick={() => setSessionDataExpanded(!sessionDataExpanded)}
-          className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <Calendar className="w-6 h-6 text-purple-600" />
-            <div className="text-left">
-              <h2 className="text-lg font-bold text-corporate-navy">Live Session Data</h2>
-              <p className="text-sm text-slate-500">Manage coaching session types and scheduled sessions</p>
-            </div>
-          </div>
-          {sessionDataExpanded ? (
-            <ChevronUp className="w-5 h-5 text-slate-400" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-slate-400" />
-          )}
-        </button>
-        
-        {sessionDataExpanded && (
-          <div className="p-4 pt-0 border-t border-slate-100">
-            <div className="bg-slate-50 rounded-lg p-4 mb-4">
-              <p className="text-sm text-slate-600 mb-2">
-                <strong>Seed Data</strong> creates sample session types (Open Gym, Leader Circle, Live Workout, Workshop) 
-                and 4 weeks of upcoming sessions.
-              </p>
-              <p className="text-sm text-slate-600">
-                <strong>Clear Data</strong> removes all session types, sessions, and registrations.
-              </p>
-            </div>
-            
-            {sessionMessage && (
-              <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
-                sessionMessage.type === 'success' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
-              }`}>
-                {sessionMessage.type === 'error' && <AlertTriangle className="w-5 h-5" />}
-                {sessionMessage.text}
-              </div>
-            )}
-            
-            <div className="flex gap-3">
-              <button
-                onClick={handleSeedSessionData}
-                disabled={seedingData || clearingData}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {seedingData ? (
-                  <Loader className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Database className="w-4 h-4" />
-                )}
-                {seedingData ? 'Seeding...' : 'Seed Sample Data'}
-              </button>
-              
-              <button
-                onClick={handleClearSessionData}
-                disabled={seedingData || clearingData}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {clearingData ? (
-                  <Loader className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4" />
-                )}
-                {clearingData ? 'Clearing...' : 'Clear All Data'}
-              </button>
-            </div>
-          </div>
-        )}
+      {/* Tab Navigation */}
+      <div className="flex border-b border-slate-200 mb-6 overflow-x-auto">
+        <TabButton 
+          active={activeTab === 'sessions'} 
+          onClick={() => setActiveTab('sessions')}
+          icon={Calendar}
+          label="Live Sessions"
+        />
+        <TabButton 
+          active={activeTab === 'scenarios'} 
+          onClick={() => setActiveTab('scenarios')}
+          icon={Bot}
+          label="AI Scenarios"
+          badge={scenarios.length}
+        />
+        <TabButton 
+          active={activeTab === 'data'} 
+          onClick={() => setActiveTab('data')}
+          icon={Database}
+          label="Data Tools"
+        />
       </div>
 
-      {/* Edit Form */}
-      {editingItem && (
+      {/* Tab Content */}
+      {activeTab === 'sessions' && (
+        <SessionManager />
+      )}
+
+      {activeTab === 'scenarios' && (
+        <>
+          {/* Add Scenario Button */}
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={handleAdd}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all bg-corporate-teal"
+            >
+              <Plus className="w-5 h-5" />
+              Add Scenario
+            </button>
+          </div>
+
+          {/* Edit Form */}
+          {editingItem && (
         <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-corporate-teal">
           <h2 className="text-xl font-bold mb-4 text-corporate-navy">
             {isAddingNew ? 'Add New Scenario' : 'Edit Scenario'}
