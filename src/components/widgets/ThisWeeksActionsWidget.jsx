@@ -151,23 +151,37 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   const findRegistrationForItem = (item) => {
     if (!userRegistrations || userRegistrations.length === 0) return null;
     
-    // Try to match by skill focus
+    // 1. Try exact match by coachingItemId (if saved during registration)
+    const exactMatch = userRegistrations.find(reg => 
+      reg.coachingItemId === item.id && 
+      reg.status !== 'cancelled'
+    );
+    if (exactMatch) return exactMatch;
+
+    // 2. Try to match by skill focus
     const skillFocus = item.skillFocus || item.skill || [];
     const skillArray = Array.isArray(skillFocus) ? skillFocus : [skillFocus].filter(Boolean);
     
     if (skillArray.length > 0) {
-      return userRegistrations.find(reg => {
+      const skillMatch = userRegistrations.find(reg => {
         const regSkills = reg.skillFocus || [];
         return regSkills.some(s => skillArray.includes(s)) && 
                reg.status !== 'cancelled';
       });
+      if (skillMatch) return skillMatch;
     }
     
-    // Fallback: match by item ID or session type
-    return userRegistrations.find(reg => 
-      reg.coachingItemId === item.id && 
-      reg.status !== 'cancelled'
-    );
+    // 3. Fallback: Loose match by session type (e.g. open_gym matches OPEN_GYM)
+    // This helps with legacy registrations or when skill/id is missing
+    const itemType = (item.type || item.coachingItemType || '').toLowerCase().replace(/_/g, '');
+    if (itemType) {
+      return userRegistrations.find(reg => {
+        const regType = (reg.sessionType || '').toLowerCase().replace(/_/g, '');
+        return reg.status !== 'cancelled' && (regType.includes(itemType) || itemType.includes(regType));
+      });
+    }
+
+    return null;
   };
   
   // Handler for coaching item completion (when user attends a session)

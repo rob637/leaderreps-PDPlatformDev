@@ -83,7 +83,7 @@ export const useCoachingRegistrations = () => {
   }, [registrations]);
 
   // Register for a session
-  const registerForSession = useCallback(async (session) => {
+  const registerForSession = useCallback(async (session, additionalData = {}) => {
     if (!db || !user?.uid) {
       console.error('[useCoachingRegistrations] Cannot register: no db or user');
       return { success: false, error: 'Not authenticated' };
@@ -116,6 +116,10 @@ export const useCoachingRegistrations = () => {
         sessionDate: session.date || null,
         sessionTime: session.time || null,
         coach: session.coach || null,
+        skillFocus: session.skillFocus || session.skills || [],
+        
+        // Additional metadata (e.g. coachingItemId from dev plan)
+        ...additionalData,
         
         // Registration metadata
         registeredAt: serverTimestamp(),

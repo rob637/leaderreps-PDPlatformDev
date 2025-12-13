@@ -136,7 +136,12 @@ const SessionPickerModal = ({
   const handleRegister = async (session) => {
     setRegistering(session.id);
     try {
-      const result = await registerForSession(session);
+      // Pass coaching item context to registration
+      const result = await registerForSession(session, {
+        coachingItemId: coachingItem?.id,
+        skillFocus: coachingItem?.skillFocus || coachingItem?.skill || session.skillFocus || session.skills || []
+      });
+      
       if (result.success) {
         onRegister?.(session);
       } else {
