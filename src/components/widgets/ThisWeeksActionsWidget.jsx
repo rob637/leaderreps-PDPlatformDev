@@ -344,11 +344,11 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       const category = (item.category || '').toLowerCase();
       switch (category) {
         case 'content':
-          return 'bg-blue-500 border-blue-500 hover:bg-blue-600 hover:border-blue-600';
+          return 'bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200';
         case 'community':
-          return 'bg-corporate-orange border-corporate-orange hover:bg-corporate-orange/90 hover:border-corporate-orange';
+          return 'bg-orange-50 border-orange-100 hover:bg-orange-100 hover:border-orange-200';
         case 'coaching':
-          return 'bg-corporate-teal border-corporate-teal hover:bg-corporate-teal/90 hover:border-corporate-teal';
+          return 'bg-teal-50 border-teal-100 hover:bg-teal-100 hover:border-teal-200';
         default:
           return 'bg-slate-50 border-slate-100 hover:bg-blue-50 hover:border-blue-200';
       }
@@ -360,11 +360,11 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       const category = (item.category || '').toLowerCase();
       switch (category) {
         case 'content':
-          return 'border-white/30 group-hover:border-white';
+          return 'border-blue-300 group-hover:border-blue-500';
         case 'community':
-          return 'border-white/30 group-hover:border-white';
+          return 'border-orange-300 group-hover:border-orange-500';
         case 'coaching':
-          return 'border-white/30 group-hover:border-white';
+          return 'border-teal-300 group-hover:border-teal-500';
         default:
           return 'border-slate-300 group-hover:border-blue-400';
       }
@@ -376,11 +376,11 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       const category = (item.category || '').toLowerCase();
       switch (category) {
         case 'content':
-          return 'text-blue-200';
+          return 'text-blue-600';
         case 'community':
-          return 'text-orange-100';
+          return 'text-orange-600';
         case 'coaching':
-          return 'text-teal-100';
+          return 'text-teal-600';
         default:
           return 'text-slate-500';
       }
@@ -409,8 +409,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             <p className={`text-sm font-bold ${
-              isCompleted ? 'text-green-700 line-through' : 
-              ['content', 'community', 'coaching'].includes((item.category || '').toLowerCase()) ? 'text-white' : 'text-slate-700'
+              isCompleted ? 'text-green-700 line-through' : 'text-slate-700'
             }`}>
               {item.label || item.title || item.name || 'Untitled Action'}
             </p>
