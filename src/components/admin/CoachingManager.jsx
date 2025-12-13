@@ -12,7 +12,12 @@ import {
   Target,
   Users,
   BrainCircuit,
-  Loader
+  Loader,
+  Calendar,
+  Database,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -22,6 +27,7 @@ import {
   deleteContent, 
   CONTENT_COLLECTIONS 
 } from '../../services/contentService';
+import { seedCoachingData, clearCoachingData } from '../../services/coachingService';
 
 const CoachingManager = () => {
   const { db, navigate } = useAppServices();
@@ -29,6 +35,12 @@ const CoachingManager = () => {
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
+  
+  // Session data management state
+  const [sessionDataExpanded, setSessionDataExpanded] = useState(false);
+  const [seedingData, setSeedingData] = useState(false);
+  const [clearingData, setClearingData] = useState(false);
+  const [sessionMessage, setSessionMessage] = useState(null);
 
   useEffect(() => {
     loadContent();
@@ -149,6 +161,57 @@ const CoachingManager = () => {
     setEditingItem({ ...editingItem, learningObjectives: newObjectives });
   };
 
+  // Session Data Management Functions
+  const handleSeedSessionData = async () => {
+    if (!confirm('This will create sample coaching session types and 4 weeks of upcoming sessions. Continue?')) {
+      return;
+    }
+    
+    setSeedingData(true);
+    setSessionMessage(null);
+    
+    try {
+      const result = await seedCoachingData(db);
+      setSessionMessage({
+        type: 'success',
+        text: `Successfully seeded ${result.sessionTypes} session types and ${result.sessions} sessions!`
+      });
+    } catch (error) {
+      console.error('Error seeding coaching data:', error);
+      setSessionMessage({
+        type: 'error',
+        text: `Error seeding data: ${error.message}`
+      });
+    } finally {
+      setSeedingData(false);
+    }
+  };
+
+  const handleClearSessionData = async () => {
+    if (!confirm('⚠️ WARNING: This will delete ALL coaching session types, sessions, and registrations. This cannot be undone. Continue?')) {
+      return;
+    }
+    
+    setClearingData(true);
+    setSessionMessage(null);
+    
+    try {
+      const result = await clearCoachingData(db);
+      setSessionMessage({
+        type: 'success',
+        text: `Cleared ${result.sessionTypes} session types, ${result.sessions} sessions, and ${result.registrations} registrations.`
+      });
+    } catch (error) {
+      console.error('Error clearing coaching data:', error);
+      setSessionMessage({
+        type: 'error',
+        text: `Error clearing data: ${error.message}`
+      });
+    } finally {
+      setClearingData(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -185,6 +248,80 @@ const CoachingManager = () => {
             Add Scenario
           </button>
         </div>
+      </div>
+
+      {/* Session Data Management */}
+      <div className="mb-6 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+        <button
+          onClick={() => setSessionDataExpanded(!sessionDataExpanded)}
+          className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Calendar className="w-6 h-6 text-purple-600" />
+            <div className="text-left">
+              <h2 className="text-lg font-bold text-corporate-navy">Live Session Data</h2>
+              <p className="text-sm text-slate-500">Manage coaching session types and scheduled sessions</p>
+            </div>
+          </div>
+          {sessionDataExpanded ? (
+            <ChevronUp className="w-5 h-5 text-slate-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-slate-400" />
+          )}
+        </button>
+        
+        {sessionDataExpanded && (
+          <div className="p-4 pt-0 border-t border-slate-100">
+            <div className="bg-slate-50 rounded-lg p-4 mb-4">
+              <p className="text-sm text-slate-600 mb-2">
+                <strong>Seed Data</strong> creates sample session types (Open Gym, Leader Circle, Live Workout, Workshop) 
+                and 4 weeks of upcoming sessions.
+              </p>
+              <p className="text-sm text-slate-600">
+                <strong>Clear Data</strong> removes all session types, sessions, and registrations.
+              </p>
+            </div>
+            
+            {sessionMessage && (
+              <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
+                sessionMessage.type === 'success' 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {sessionMessage.type === 'error' && <AlertTriangle className="w-5 h-5" />}
+                {sessionMessage.text}
+              </div>
+            )}
+            
+            <div className="flex gap-3">
+              <button
+                onClick={handleSeedSessionData}
+                disabled={seedingData || clearingData}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {seedingData ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Database className="w-4 h-4" />
+                )}
+                {seedingData ? 'Seeding...' : 'Seed Sample Data'}
+              </button>
+              
+              <button
+                onClick={handleClearSessionData}
+                disabled={seedingData || clearingData}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {clearingData ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                {clearingData ? 'Clearing...' : 'Clear All Data'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Edit Form */}
