@@ -100,12 +100,12 @@ const LockerProgressWidget = () => {
           <p className="text-2xl font-bold text-orange-800">{stats.currentStreak} days</p>
         </div>
         
-        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-3 border border-purple-100">
+        <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-3 border border-teal-100">
           <div className="flex items-center gap-2 mb-1">
-            <Star className="w-4 h-4 text-purple-600" />
-            <span className="text-xs font-medium text-purple-700">Points</span>
+            <Star className="w-4 h-4 text-teal-600" />
+            <span className="text-xs font-medium text-teal-700">Points</span>
           </div>
-          <p className="text-2xl font-bold text-purple-800">{stats.totalPoints}</p>
+          <p className="text-2xl font-bold text-teal-800">{stats.totalPoints}</p>
         </div>
         
         <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-3 border border-blue-100">
@@ -149,7 +149,7 @@ const LockerProgressWidget = () => {
           </div>
           <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all duration-700"
+              className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full transition-all duration-700"
               style={{ width: `${overallProgressPercent}%` }}
             />
           </div>
@@ -387,10 +387,10 @@ const LockerProgressWidget = () => {
             <p className="text-lg font-bold text-green-800">{stats.communityCompleted}</p>
             <p className="text-xs text-green-600">Community</p>
           </div>
-          <div className="text-center p-2 bg-purple-50 rounded-lg">
-            <MessageSquare className="w-5 h-5 text-purple-500 mx-auto mb-1" />
-            <p className="text-lg font-bold text-purple-800">{stats.coachingCompleted}</p>
-            <p className="text-xs text-purple-600">Coaching</p>
+          <div className="text-center p-2 bg-teal-50 rounded-lg">
+            <MessageSquare className="w-5 h-5 text-teal-500 mx-auto mb-1" />
+            <p className="text-lg font-bold text-teal-800">{stats.coachingCompleted}</p>
+            <p className="text-xs text-teal-600">Coaching</p>
           </div>
         </div>
       </div>

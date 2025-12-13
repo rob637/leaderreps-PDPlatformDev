@@ -21,9 +21,9 @@ const SESSION_TYPE_CONFIG = {
   },
   leader_circle: {
     label: 'Leader Circle',
-    color: 'bg-purple-100 text-purple-800 border-purple-200',
-    accent: 'border-l-purple-500',
-    calendarColor: 'bg-purple-100 text-purple-700'
+    color: 'bg-teal-100 text-teal-800 border-teal-200',
+    accent: 'border-l-teal-500',
+    calendarColor: 'bg-teal-100 text-teal-700'
   },
   live_workout: {
     label: 'Live Workout',

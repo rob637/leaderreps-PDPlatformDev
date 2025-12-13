@@ -440,7 +440,7 @@ const Dashboard = (props) => {
   };
 
   return (
-    <div className="p-6 space-y-8 bg-slate-50 min-h-screen relative">
+    <div className="p-4 space-y-4 bg-slate-50 min-h-screen relative">
       <div className="max-w-[860px] mx-auto">
       {/* Layout Toggle - Desktop Only - COMMENTED OUT FOR NOW
       <div className="absolute top-6 right-6 z-10 hidden lg:block">
@@ -448,7 +448,7 @@ const Dashboard = (props) => {
       </div>
       */}
 
-      <header className="mb-8 text-center">
+      <header className="mb-4 text-center">
         <div className="flex items-center justify-center gap-3 mb-2">
           <LayoutDashboard className="w-8 h-8 text-corporate-teal" />
           <h1 className="text-3xl font-bold text-corporate-navy">
@@ -462,7 +462,7 @@ const Dashboard = (props) => {
       </header>
 
       {/* Forced 1-col layout for now */}
-      <div className="grid gap-6 grid-cols-1">
+      <div className="grid gap-4 grid-cols-1">
         {/* DYNAMIC FEATURES */}
         {sortedFeatures.map(featureId => (
           <React.Fragment key={featureId}>

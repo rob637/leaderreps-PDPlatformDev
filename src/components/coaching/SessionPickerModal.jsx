@@ -61,12 +61,39 @@ const SessionPickerModal = ({
   
   // Get matching sessions based on coaching item
   const matchingSessions = useMemo(() => {
+    let sessions = [];
     if (skillArray.length > 0) {
-      return getSessionsForDevPlan(skillArray);
+      sessions = getSessionsForDevPlan(skillArray);
+    } else {
+      // If no skill filter, show all upcoming sessions
+      sessions = upcomingSessions;
     }
-    // If no skill filter, show all upcoming sessions
-    return upcomingSessions;
-  }, [skillArray, getSessionsForDevPlan, upcomingSessions]);
+
+    // STRICT FILTERING: Filter by title/label similarity
+    // If the coaching item has a specific title like "Live QS1", only show sessions with that in the title
+    const targetTitle = coachingItem?.label || coachingItem?.title;
+    if (targetTitle) {
+      const normalizedTarget = targetTitle.toLowerCase();
+      
+      // If the target is generic, don't filter too strictly
+      const isGeneric = normalizedTarget === 'coaching session' || normalizedTarget === 'coaching';
+      
+      if (!isGeneric) {
+        sessions = sessions.filter(s => {
+          const sessionTitle = (s.title || '').toLowerCase();
+          const sessionType = (s.sessionType || '').toLowerCase();
+          
+          // Match if session title includes the target title (e.g. "Live QS1" in "Live QS1 - Tuesday")
+          // OR if the target title includes the session type (e.g. "Open Gym" in "Open Gym Session")
+          return sessionTitle.includes(normalizedTarget) || 
+                 normalizedTarget.includes(sessionTitle) ||
+                 normalizedTarget.includes(sessionType);
+        });
+      }
+    }
+    
+    return sessions;
+  }, [skillArray, getSessionsForDevPlan, upcomingSessions, coachingItem]);
   
   // Group sessions by week
   const sessionsByWeek = useMemo(() => {
@@ -236,7 +263,7 @@ const SessionPickerModal = ({
           <div className="p-4 max-h-96 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader className="w-6 h-6 text-purple-500 animate-spin" />
+                <Loader className="w-6 h-6 text-corporate-teal animate-spin" />
               </div>
             ) : currentWeekSessions.length === 0 ? (
               <div className="text-center py-8">
@@ -265,10 +292,10 @@ const SessionPickerModal = ({
                       className={`
                         p-3 rounded-xl border transition-all
                         ${registered 
-                          ? 'bg-purple-50 border-purple-200' 
+                          ? 'bg-teal-50 border-teal-200' 
                           : isFull 
                             ? 'bg-slate-50 border-slate-200 opacity-60'
-                            : 'bg-white border-slate-200 hover:border-purple-300 hover:shadow-sm'
+                            : 'bg-white border-slate-200 hover:border-teal-300 hover:shadow-sm'
                         }
                       `}
                     >
@@ -276,7 +303,7 @@ const SessionPickerModal = ({
                         {/* Icon */}
                         <div className={`
                           p-2 rounded-lg
-                          ${registered ? 'bg-purple-100 text-purple-600' : 'bg-slate-100 text-slate-500'}
+                          ${registered ? 'bg-teal-100 text-corporate-teal' : 'bg-slate-100 text-slate-500'}
                         `}>
                           <SessionIcon className="w-5 h-5" />
                         </div>
@@ -348,7 +375,7 @@ const SessionPickerModal = ({
                                 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors
                                 ${isFull 
                                   ? 'text-slate-400 bg-slate-100 cursor-not-allowed'
-                                  : 'text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50'
+                                  : 'text-white bg-corporate-teal hover:bg-teal-700 disabled:opacity-50'
                                 }
                               `}
                             >
@@ -372,8 +399,8 @@ const SessionPickerModal = ({
           
           {/* Footer */}
           {currentRegistration && (
-            <div className="p-4 border-t border-slate-200 bg-purple-50">
-              <div className="flex items-center gap-2 text-sm text-purple-700">
+            <div className="p-4 border-t border-slate-200 bg-teal-50">
+              <div className="flex items-center gap-2 text-sm text-corporate-teal">
                 <CheckCircle className="w-4 h-4" />
                 <span>
                   You're registered for <strong>{currentRegistration.sessionTitle}</strong>

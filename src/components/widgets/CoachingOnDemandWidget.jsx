@@ -27,7 +27,7 @@ const PRACTICE_CATEGORIES = {
   coaching: {
     label: 'Coaching',
     icon: BrainCircuit,
-    color: 'bg-purple-100 text-purple-800',
+    color: 'bg-teal-100 text-teal-800',
     description: 'Develop your coaching skills'
   },
   delegation: {
