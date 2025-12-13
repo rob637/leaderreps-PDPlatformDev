@@ -213,7 +213,7 @@ export const useCoachingSessions = (options = {}) => {
   // Computed: Group sessions by date (for calendar view)
   const sessionsByDate = useMemo(() => {
     const grouped = {};
-    sessions.forEach(session => {
+    (sessions || []).forEach(session => {
       if (session.date) {
         const dateKey = session.date.split('T')[0];
         if (!grouped[dateKey]) grouped[dateKey] = [];
@@ -226,7 +226,7 @@ export const useCoachingSessions = (options = {}) => {
   // Computed: Group sessions by type
   const sessionsByType = useMemo(() => {
     const grouped = {};
-    sessions.forEach(session => {
+    (sessions || []).forEach(session => {
       const type = session.sessionType || 'OTHER';
       if (!grouped[type]) grouped[type] = [];
       grouped[type].push(session);
