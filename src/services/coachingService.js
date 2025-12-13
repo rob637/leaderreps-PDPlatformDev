@@ -386,6 +386,11 @@ export const seedCoachingData = async (db) => {
   });
   
   console.log('[coachingService] Seeding complete!');
+  
+  return {
+    sessionTypes: sessionTypes.length,
+    sessions: sessionTypes.filter(t => t.recurrence?.type !== 'none').length * 4 + 1 // recurring sessions + workshop
+  };
 };
 
 /**
