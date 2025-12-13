@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { PageLayout } from '../ui/PageLayout.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDevPlan } from '../../hooks/useDevPlan';
+import { useCoachingSessions, SESSION_TYPES } from '../../hooks/useCoachingSessions';
+import { useCoachingRegistrations, REGISTRATION_STATUS } from '../../hooks/useCoachingRegistrations';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { 
   Loader, Users, Calendar, MessageSquare, Video, 
@@ -118,6 +120,15 @@ const CalendarView = ({ sessions, onViewDetails }) => {
             const daySessions = sessionsByDate[dateKey] || [];
             const hasSession = daySessions.length > 0;
             
+            // Helper to get session type color class
+            const getSessionTypeClass = (sessionType) => {
+              const type = (sessionType || '').toLowerCase();
+              if (type === 'open_gym' || type === 'OPEN_GYM') return 'bg-blue-100 text-blue-700';
+              if (type === 'leader_circle' || type === 'LEADER_CIRCLE') return 'bg-purple-100 text-purple-700';
+              if (type === 'live_workout' || type === 'LIVE_WORKOUT') return 'bg-green-100 text-green-700';
+              return 'bg-teal-100 text-teal-700';
+            };
+            
             return (
               <div 
                 key={day}
@@ -136,11 +147,7 @@ const CalendarView = ({ sessions, onViewDetails }) => {
                   <div 
                     key={session.id}
                     onClick={() => onViewDetails(session)}
-                    className={`text-[10px] px-1 py-0.5 rounded truncate mb-0.5 cursor-pointer ${
-                      session.sessionType === 'OPEN_GYM' ? 'bg-blue-100 text-blue-700' :
-                      session.sessionType === 'LEADER_CIRCLE' ? 'bg-purple-100 text-purple-700' :
-                      'bg-teal-100 text-teal-700'
-                    }`}
+                    className={`text-[10px] px-1 py-0.5 rounded truncate mb-0.5 cursor-pointer ${getSessionTypeClass(session.sessionType)}`}
                   >
                     {session.title?.substring(0, 12)}...
                   </div>
@@ -175,12 +182,26 @@ const CalendarView = ({ sessions, onViewDetails }) => {
 // ============================================
 const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
   const getTypeStyle = (type) => {
-    switch (type) {
-      case 'OPEN_GYM': return { bg: 'bg-blue-50', text: 'text-blue-600', icon: Users };
-      case 'LEADER_CIRCLE': return { bg: 'bg-purple-50', text: 'text-purple-600', icon: MessageSquare };
-      case 'WORKSHOP': return { bg: 'bg-teal-50', text: 'text-teal-600', icon: Video };
-      case '1:1': return { bg: 'bg-orange-50', text: 'text-orange-600', icon: UserCheck };
-      default: return { bg: 'bg-slate-50', text: 'text-slate-600', icon: Calendar };
+    const normalizedType = (type || '').toLowerCase();
+    switch (normalizedType) {
+      case SESSION_TYPES.OPEN_GYM:
+      case 'open_gym': 
+        return { bg: 'bg-blue-50', text: 'text-blue-600', icon: Users };
+      case SESSION_TYPES.LEADER_CIRCLE:
+      case 'leader_circle': 
+        return { bg: 'bg-purple-50', text: 'text-purple-600', icon: MessageSquare };
+      case SESSION_TYPES.WORKSHOP:
+      case 'workshop': 
+        return { bg: 'bg-teal-50', text: 'text-teal-600', icon: Video };
+      case SESSION_TYPES.ONE_ON_ONE:
+      case 'one_on_one':
+      case '1:1': 
+        return { bg: 'bg-orange-50', text: 'text-orange-600', icon: UserCheck };
+      case SESSION_TYPES.LIVE_WORKOUT:
+      case 'live_workout':
+        return { bg: 'bg-green-50', text: 'text-green-600', icon: Play };
+      default: 
+        return { bg: 'bg-slate-50', text: 'text-slate-600', icon: Calendar };
     }
   };
 
@@ -405,13 +426,34 @@ const CoachingHub = () => {
   const { db, navigate, user } = useAppServices();
   const { isFeatureEnabled } = useFeatures();
   const { getUnlockedResources } = useDevPlan();
-  const [sessions, setSessions] = useState([]);
-  const [registrations, setRegistrations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Use the new coaching hooks
+  const { 
+    sessions: newSessions, 
+    thisWeekSessions,
+    upcomingSessions: hookUpcomingSessions,
+    loading: sessionsLoading,
+    sessionTypes 
+  } = useCoachingSessions();
+  
+  const {
+    registrations: newRegistrations,
+    registerForSession,
+    cancelRegistration,
+    isRegistered: checkIsRegistered,
+    getUpcomingRegistrations,
+    getPastRegistrations,
+    loading: registrationsLoading
+  } = useCoachingRegistrations();
+  
+  // Also fetch legacy sessions from content collection for backward compatibility
+  const [legacySessions, setLegacySessions] = useState([]);
+  const [legacyRegistrations, setLegacyRegistrations] = useState([]);
+  const [legacyLoading, setLegacyLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('live'); // Default to live
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
 
-  // Fetch coaching sessions
+  // Fetch legacy coaching sessions from content collection
   useEffect(() => {
     const q = query(
       collection(db, 'content'), 
@@ -423,8 +465,6 @@ const CoachingHub = () => {
       
       // Filter by unlocked resources
       const unlockedIds = getUnlockedResources('coaching');
-      // Also include sessions the user is already registered for, even if locked (edge case)
-      // But for now, strict locking.
       const unlockedItems = items.filter(item => unlockedIds.has(item.id));
 
       // Sort by date client-side to avoid index requirement
@@ -433,17 +473,17 @@ const CoachingHub = () => {
         const dateB = b.date ? new Date(b.date) : new Date(0);
         return dateA - dateB;
       });
-      setSessions(unlockedItems);
-      setLoading(false);
+      setLegacySessions(unlockedItems);
+      setLegacyLoading(false);
     }, (error) => {
-      console.error('Error fetching sessions:', error);
-      setLoading(false);
+      console.error('Error fetching legacy sessions:', error);
+      setLegacyLoading(false);
     });
     
     return () => unsubscribe();
-  }, [db]);
+  }, [db, getUnlockedResources]);
 
-  // Fetch user registrations
+  // Fetch legacy user registrations
   useEffect(() => {
     if (!user?.uid) return;
     
@@ -454,14 +494,49 @@ const CoachingHub = () => {
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setRegistrations(items);
+      setLegacyRegistrations(items);
     }, () => {
-      // Collection might not exist yet, that's ok
-      console.log('No registrations yet');
+      console.log('No legacy registrations yet');
     });
     
     return () => unsubscribe();
   }, [db, user?.uid]);
+
+  // Combine sessions from both sources (new coaching_sessions + legacy content)
+  const sessions = useMemo(() => {
+    // Merge new sessions and legacy sessions, avoiding duplicates
+    const sessionMap = new Map();
+    
+    // Add new sessions first
+    newSessions.forEach(s => sessionMap.set(s.id, s));
+    
+    // Add legacy sessions (won't overwrite if ID exists)
+    legacySessions.forEach(s => {
+      if (!sessionMap.has(s.id)) {
+        sessionMap.set(s.id, s);
+      }
+    });
+    
+    return Array.from(sessionMap.values()).sort((a, b) => {
+      const dateA = a.date ? new Date(a.date) : new Date(0);
+      const dateB = b.date ? new Date(b.date) : new Date(0);
+      return dateA - dateB;
+    });
+  }, [newSessions, legacySessions]);
+
+  // Combine registrations from both sources
+  const registrations = useMemo(() => {
+    const regMap = new Map();
+    newRegistrations.forEach(r => regMap.set(r.sessionId, r));
+    legacyRegistrations.forEach(r => {
+      if (!regMap.has(r.sessionId)) {
+        regMap.set(r.sessionId, r);
+      }
+    });
+    return Array.from(regMap.values());
+  }, [newRegistrations, legacyRegistrations]);
+
+  const loading = sessionsLoading || registrationsLoading || legacyLoading;
 
   const registeredIds = useMemo(() => 
     new Set(registrations.map(r => r.sessionId)), 
@@ -494,27 +569,37 @@ const CoachingHub = () => {
       return;
     }
     
-    try {
-      const regRef = doc(db, 'coaching_registrations', `${user.uid}_${session.id}`);
-      await setDoc(regRef, {
-        userId: user.uid,
-        sessionId: session.id,
-        sessionTitle: session.title,
-        registeredAt: serverTimestamp()
-      });
-    } catch (error) {
-      console.error('Error registering:', error);
+    // Try new hook first
+    const result = await registerForSession(session);
+    if (!result.success) {
+      // Fallback to legacy registration
+      try {
+        const regRef = doc(db, 'coaching_registrations', `${user.uid}_${session.id}`);
+        await setDoc(regRef, {
+          userId: user.uid,
+          sessionId: session.id,
+          sessionTitle: session.title,
+          registeredAt: serverTimestamp()
+        });
+      } catch (error) {
+        console.error('Error registering:', error);
+      }
     }
   };
 
   const handleCancel = async (session) => {
     if (!user?.uid) return;
     
-    try {
-      const regRef = doc(db, 'coaching_registrations', `${user.uid}_${session.id}`);
-      await deleteDoc(regRef);
-    } catch (error) {
-      console.error('Error canceling:', error);
+    // Try new hook first
+    const result = await cancelRegistration(session.id);
+    if (!result.success) {
+      // Fallback to legacy deletion
+      try {
+        const regRef = doc(db, 'coaching_registrations', `${user.uid}_${session.id}`);
+        await deleteDoc(regRef);
+      } catch (error) {
+        console.error('Error canceling:', error);
+      }
     }
   };
 
