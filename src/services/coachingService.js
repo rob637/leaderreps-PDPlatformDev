@@ -10,6 +10,7 @@ import {
   doc, 
   setDoc, 
   updateDoc,
+  deleteDoc,
   query,
   where,
   getDocs,
@@ -387,6 +388,53 @@ export const seedCoachingData = async (db) => {
   console.log('[coachingService] Seeding complete!');
 };
 
+/**
+ * Clear all coaching data (for testing/reset purposes)
+ */
+export const clearCoachingData = async (db) => {
+  if (!db) throw new Error('Database not initialized');
+  
+  console.log('[coachingService] Clearing coaching data...');
+  
+  let deletedCounts = {
+    sessionTypes: 0,
+    sessions: 0,
+    registrations: 0
+  };
+  
+  try {
+    // Clear session types
+    const typesSnap = await getDocs(collection(db, COACHING_COLLECTIONS.SESSION_TYPES));
+    for (const docSnap of typesSnap.docs) {
+      await deleteDoc(doc(db, COACHING_COLLECTIONS.SESSION_TYPES, docSnap.id));
+      deletedCounts.sessionTypes++;
+    }
+    console.log(`[coachingService] Deleted ${deletedCounts.sessionTypes} session types`);
+    
+    // Clear sessions
+    const sessionsSnap = await getDocs(collection(db, COACHING_COLLECTIONS.SESSIONS));
+    for (const docSnap of sessionsSnap.docs) {
+      await deleteDoc(doc(db, COACHING_COLLECTIONS.SESSIONS, docSnap.id));
+      deletedCounts.sessions++;
+    }
+    console.log(`[coachingService] Deleted ${deletedCounts.sessions} sessions`);
+    
+    // Clear registrations
+    const regsSnap = await getDocs(collection(db, COACHING_COLLECTIONS.REGISTRATIONS));
+    for (const docSnap of regsSnap.docs) {
+      await deleteDoc(doc(db, COACHING_COLLECTIONS.REGISTRATIONS, docSnap.id));
+      deletedCounts.registrations++;
+    }
+    console.log(`[coachingService] Deleted ${deletedCounts.registrations} registrations`);
+    
+    console.log('[coachingService] Clear complete!');
+    return deletedCounts;
+  } catch (error) {
+    console.error('[coachingService] Error clearing data:', error);
+    throw error;
+  }
+};
+
 export default {
   COACHING_COLLECTIONS,
   SESSION_TYPES,
@@ -399,5 +447,6 @@ export default {
   completeSession,
   getRegistrationCount,
   updateSpotsLeft,
-  seedCoachingData
+  seedCoachingData,
+  clearCoachingData
 };

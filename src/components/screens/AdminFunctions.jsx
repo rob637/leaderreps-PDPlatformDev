@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useNotifications } from '../../providers/NotificationProvider';
-import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft, Key, Settings, Mail, Plus, X } from 'lucide-react';
+import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft, Key, Settings, Mail, Plus, X, Calendar, Trash2, Database } from 'lucide-react';
 import { Button, Card } from '../ui';
 import WidgetRenderer from '../admin/WidgetRenderer';
+import { seedCoachingData, clearCoachingData } from '../../services/coachingService';
 
 const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
     const [emails, setEmails] = useState(initialEmails || []);
@@ -305,8 +306,101 @@ const AdminFunctions = () => {
                     </Button>
                  </Card>
 
+                 <CoachingDataManager />
+
             </div>
         </div>
+    );
+};
+
+// ============================================
+// COACHING DATA MANAGER
+// ============================================
+const CoachingDataManager = () => {
+    const { db } = useAppServices();
+    const [isSeeding, setIsSeeding] = useState(false);
+    const [isClearing, setIsClearing] = useState(false);
+    const [status, setStatus] = useState('');
+
+    const handleSeed = async () => {
+        if (!confirm('This will create sample coaching sessions for the next 4 weeks. Continue?')) return;
+        
+        setIsSeeding(true);
+        setStatus('');
+        
+        try {
+            await seedCoachingData(db);
+            setStatus('✅ Coaching data seeded successfully!');
+        } catch (error) {
+            console.error('Error seeding:', error);
+            setStatus(`❌ Error: ${error.message}`);
+        } finally {
+            setIsSeeding(false);
+        }
+    };
+
+    const handleClear = async () => {
+        if (!confirm('⚠️ This will DELETE all coaching sessions, types, and registrations. This cannot be undone. Continue?')) return;
+        
+        setIsClearing(true);
+        setStatus('');
+        
+        try {
+            const result = await clearCoachingData(db);
+            setStatus(`✅ Cleared ${result.sessionTypes} types, ${result.sessions} sessions, ${result.registrations} registrations`);
+        } catch (error) {
+            console.error('Error clearing:', error);
+            setStatus(`❌ Error: ${error.message}`);
+        } finally {
+            setIsClearing(false);
+        }
+    };
+
+    return (
+        <Card title="Coaching Data" icon={Calendar} accentColor="bg-purple-600" className="mt-6">
+            <p className="text-sm text-slate-600 mb-4">
+                Manage coaching session data for testing. Seed creates Open Gym, Leader Circle, and Workshop sessions for the next 4 weeks.
+            </p>
+            
+            <div className="flex flex-wrap gap-3">
+                <Button 
+                    onClick={handleSeed} 
+                    disabled={isSeeding || isClearing}
+                    variant="primary"
+                    size="md"
+                >
+                    {isSeeding ? (
+                        <><Loader className="w-4 h-4 mr-2 animate-spin" /> Seeding...</>
+                    ) : (
+                        <><Database className="w-4 h-4 mr-2" /> Seed Coaching Data</>
+                    )}
+                </Button>
+                
+                <Button 
+                    onClick={handleClear} 
+                    disabled={isSeeding || isClearing}
+                    variant="outline"
+                    size="md"
+                    className="text-red-600 border-red-300 hover:bg-red-50"
+                >
+                    {isClearing ? (
+                        <><Loader className="w-4 h-4 mr-2 animate-spin" /> Clearing...</>
+                    ) : (
+                        <><Trash2 className="w-4 h-4 mr-2" /> Clear All Coaching Data</>
+                    )}
+                </Button>
+            </div>
+            
+            {status && (
+                <p className={`mt-4 text-sm font-medium ${status.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                    {status}
+                </p>
+            )}
+            
+            <p className="text-xs text-slate-500 mt-4 italic">
+                Collections: coaching_session_types, coaching_sessions, coaching_registrations
+            </p>
+        </Card>
     );
 };
 
