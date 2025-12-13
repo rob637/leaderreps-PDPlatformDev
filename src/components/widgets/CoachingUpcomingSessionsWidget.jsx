@@ -240,22 +240,6 @@ const CoachingUpcomingSessionsWidget = ({ scope = {} }) => {
       title="Live Sessions" 
       icon={Calendar} 
       accent="ORANGE"
-      action={
-        <div className="flex gap-1">
-          <button 
-            onClick={() => toggleViewMode('list')}
-            className={`px-2 py-1 text-xs rounded ${activeViewMode === 'list' ? 'bg-slate-200 font-bold' : 'hover:bg-slate-100'}`}
-          >
-            List
-          </button>
-          <button 
-            onClick={() => toggleViewMode('calendar')}
-            className={`px-2 py-1 text-xs rounded ${activeViewMode === 'calendar' ? 'bg-slate-200 font-bold' : 'hover:bg-slate-100'}`}
-          >
-            Calendar
-          </button>
-        </div>
-      }
     >
       {activeViewMode === 'calendar' ? (
         <div className="bg-white rounded-lg">

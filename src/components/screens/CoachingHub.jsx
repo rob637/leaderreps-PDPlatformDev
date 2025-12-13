@@ -539,7 +539,9 @@ const CoachingHub = () => {
   const loading = sessionsLoading || registrationsLoading || legacyLoading;
 
   const registeredIds = useMemo(() => 
-    new Set(registrations.map(r => r.sessionId)), 
+    new Set(registrations
+      .filter(r => r.status !== 'cancelled')
+      .map(r => r.sessionId)), 
     [registrations]
   );
 
@@ -663,6 +665,23 @@ const CoachingHub = () => {
               />
             )}
           </div>
+          
+          {activeTab === 'live' && (
+            <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+              <button 
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
+              >
+                List
+              </button>
+              <button 
+                onClick={() => setViewMode('calendar')}
+                className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'calendar' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
+              >
+                Calendar
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Tab Content */}
