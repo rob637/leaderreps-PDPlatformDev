@@ -2066,6 +2066,20 @@ const TimeTravelerWidget = () => {
 };
 render(<TimeTravelerWidget />);
     `,
+    'locker-progress': `
+// This widget is rendered as a React component directly in Locker.jsx
+// The template here is a placeholder for the feature flag system
+const LockerProgressPlaceholder = () => {
+  return (
+    <Card title="My Progress" icon={Trophy} accent="TEAL">
+      <div className="p-4 text-center text-slate-500">
+        <p>Progress widget is loading...</p>
+      </div>
+    </Card>
+  );
+};
+render(<LockerProgressPlaceholder />);
+    `,
     'locker-wins-history': `
 const WinsHistoryWidget = () => {
   const safeWinsList = typeof winsList !== 'undefined' ? winsList : [];
@@ -2964,6 +2978,16 @@ export const FEATURE_METADATA = {
     extendedDescription: 'Displays a spreadsheet-style history of daily scorecard results.',
     inputs: ['scorecardHistory'],
     outputs: [],
+  },
+  'locker-progress': {
+    core: true,
+    category: 'Locker',
+    name: 'My Progress',
+    description: 'Action Progress Tracker',
+    purpose: 'Track completion of weekly actions with gamification.',
+    extendedDescription: 'Comprehensive progress tracking for "This Week\'s Actions" including completion stats, streaks, badges, accomplishments by week, and outstanding items. Features gamification with points and achievements.',
+    inputs: ['actionProgress'],
+    outputs: ['completeItem', 'skipItem'],
   },
   'locker-latest-reflection': {
     core: true,

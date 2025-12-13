@@ -6,8 +6,10 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { useNotifications } from '../../providers/NotificationProvider';
 import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
+import LockerProgressWidget from '../widgets/LockerProgressWidget';
 
 const LOCKER_FEATURES = [
+  'locker-progress',
   'locker-wins-history',
   'locker-scorecard-history',
   'locker-latest-reflection',
@@ -66,6 +68,14 @@ const Locker = () => {
       });
   }, [isFeatureEnabled, getFeatureOrder]);
 
+  // Custom renderer for special widgets
+  const renderFeature = (featureId) => {
+    if (featureId === 'locker-progress') {
+      return <LockerProgressWidget key={featureId} />;
+    }
+    return <WidgetRenderer key={featureId} widgetId={featureId} scope={scope} />;
+  };
+
   return (
     <PageLayout
       title="The Locker"
@@ -83,9 +93,7 @@ const Locker = () => {
       
       {sortedFeatures.length > 0 ? (
         <div className="grid grid-cols-1 gap-6">
-          {sortedFeatures.map(featureId => (
-            <WidgetRenderer key={featureId} widgetId={featureId} scope={scope} />
-          ))}
+          {sortedFeatures.map(featureId => renderFeature(featureId))}
         </div>
       ) : (
         (!isFeatureEnabled('locker-reminders') && !isFeatureEnabled('locker-controller')) && (

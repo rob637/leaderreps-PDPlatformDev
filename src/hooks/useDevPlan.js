@@ -113,12 +113,28 @@ export const useDevPlan = () => {
       return defaultState;
     }
 
+    // Extract weekProgress from both dot-notation keys and nested object
+    // Firestore sometimes stores 'weekProgress.100' as a literal key instead of nested
+    const weekProgress = { ...(developmentPlanData.weekProgress || {}) };
+    
+    // Find all dot-notation weekProgress keys (e.g., 'weekProgress.100', 'weekProgress.week-01')
+    Object.keys(developmentPlanData).forEach(key => {
+      if (key.startsWith('weekProgress.')) {
+        const weekKey = key.replace('weekProgress.', '');
+        weekProgress[weekKey] = developmentPlanData[key];
+        console.log('[useDevPlan] Extracted dot-notation weekProgress:', key, '→', weekKey);
+      }
+    });
+    
+    console.log('[useDevPlan] Merged weekProgress:', weekProgress);
+
     // Check if we have a startDate
     if (developmentPlanData.startDate) {
       console.log('[useDevPlan] Found startDate in developmentPlanData:', developmentPlanData.startDate);
       return {
         ...defaultState,
         ...developmentPlanData,
+        weekProgress, // Use the merged weekProgress
         isSetup: true
       };
     }
@@ -130,13 +146,14 @@ export const useDevPlan = () => {
       return {
         ...defaultState,
         ...developmentPlanData,
+        weekProgress, // Use the merged weekProgress
         isSetup: true
       };
     }
 
     // If old schema, we might need to migrate or just treat as new user
     console.log('[useDevPlan] No startDate or V1 schema found - using defaults');
-    return defaultState;
+    return { ...defaultState, weekProgress };
   }, [developmentPlanData]);
   
   // Auto-initialize startDate if not set
@@ -250,6 +267,10 @@ export const useDevPlan = () => {
   // Mark an item (content/community/coaching) as complete
   const toggleItemComplete = useCallback(async (itemId, isComplete) => {
     if (!currentWeek) return;
+    if (!itemId) {
+      console.error('[useDevPlan] toggleItemComplete called with undefined itemId');
+      return;
+    }
 
     const weekKey = currentWeek.weekBlockId || `week-${String(currentWeek.weekNumber).padStart(2, '0')}`;
     const currentProgress = userState.weekProgress?.[weekKey] || { itemsCompleted: [] };
@@ -262,9 +283,9 @@ export const useDevPlan = () => {
       newItemsCompleted = newItemsCompleted.filter(id => id !== itemId);
     }
 
+    // Only include defined values - Firestore rejects undefined
     const updates = {
       [`weekProgress.${weekKey}`]: {
-        ...currentProgress,
         itemsCompleted: newItemsCompleted,
         lastUpdated: serverTimestamp()
       }
