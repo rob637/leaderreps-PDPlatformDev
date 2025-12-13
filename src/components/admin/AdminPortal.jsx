@@ -33,6 +33,7 @@ import CommunityManager from './CommunityManager';
 import CoachingManager from './CoachingManager';
 import LOVManager from './LOVManager';
 import DailyRepsLibrary from './DailyRepsLibrary';
+import UserManagement from './UserManagement';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -113,6 +114,7 @@ const AdminPortal = () => {
     {
       title: 'Management',
       items: [
+        { id: 'users', label: 'User Management', icon: Users },
         { id: 'devplan', label: 'Dev Plan', icon: Calendar },
         { id: 'library', label: 'Metadata Library', icon: Library },
         { id: 'content', label: 'Content Wrapper', icon: FileText },
@@ -150,6 +152,8 @@ const AdminPortal = () => {
     switch (activeTab) {
       case 'dashboard':
         return <AdminDashboard />;
+      case 'users':
+        return <UserManagement />;
       case 'tests':
         return <TestCenter />;
       case 'devplan':
