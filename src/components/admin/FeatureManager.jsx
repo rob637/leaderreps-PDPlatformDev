@@ -586,6 +586,7 @@ const FeatureManager = () => {
       'community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events'
     ],
     coaching: [
+      'coaching-upcoming-sessions', 'coaching-on-demand', 'coaching-my-sessions',
       'practice-history', 'progress-analytics', 'ai-roleplay', 'scenario-sim', 'feedback-gym', 'roi-report'
     ],
     locker: [
