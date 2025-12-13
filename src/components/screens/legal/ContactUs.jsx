@@ -26,8 +26,8 @@ const ContactUs = () => {
                   </div>
                   <div>
                     <h4 className="font-medium text-slate-900">Email</h4>
-                    <a href="mailto:support@leaderreps.com" className="text-teal-600 hover:underline">
-                      support@leaderreps.com
+                    <a href="mailto:ryan@leaderreps.com" className="text-teal-600 hover:underline">
+                      ryan@leaderreps.com
                     </a>
                     <p className="text-sm text-slate-500 mt-1">
                       We aim to respond to all inquiries within 24 hours.
@@ -43,8 +43,8 @@ const ContactUs = () => {
                     <h4 className="font-medium text-slate-900">Office</h4>
                     <p className="text-slate-600">
                       LeaderReps Inc.<br />
-                      123 Leadership Way<br />
-                      San Francisco, CA 94105
+                      5114 Harlem Road<br />
+                      New Albany, Ohio 43054
                     </p>
                   </div>
                 </div>

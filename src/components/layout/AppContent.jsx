@@ -73,7 +73,8 @@ const AppContent = ({
 
   const currentYear = new Date().getFullYear();
 
-  const isFullWidthScreen = currentScreen === 'admin-portal';
+  const isFullWidthScreen = currentScreen.startsWith('admin-') || 
+                           ['data-maintenance', 'debug-data'].includes(currentScreen);
 
   return (
     <NavigationProvider
