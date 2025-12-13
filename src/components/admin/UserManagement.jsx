@@ -15,6 +15,7 @@ import {
   collection, 
   query, 
   getDocs, 
+  getDoc,
   doc, 
   updateDoc, 
   addDoc, 
@@ -30,6 +31,7 @@ const UserManagement = () => {
   const { db } = useAppServices();
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'invites', 'cohorts'
   const [users, setUsers] = useState([]);
+  const [adminEmails, setAdminEmails] = useState([]);
   const [invites, setInvites] = useState([]);
   const [cohorts, setCohorts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +59,22 @@ const UserManagement = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      // Fetch admin emails first
+      let admins = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
+      try {
+        const metadataRef = doc(db, 'metadata', 'config');
+        const metadataSnap = await getDoc(metadataRef);
+        if (metadataSnap.exists()) {
+          const data = metadataSnap.data();
+          if (data.adminemails && Array.isArray(data.adminemails)) {
+            admins = data.adminemails;
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching admin config:", e);
+      }
+      setAdminEmails(admins);
+
       if (activeTab === 'users') {
         const usersRef = collection(db, 'users');
         const q = query(usersRef, orderBy('email'));
@@ -384,8 +402,12 @@ const UserManagement = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {user.role || 'User'}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          adminEmails.includes(user.email) 
+                            ? 'bg-purple-100 text-purple-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {adminEmails.includes(user.email) ? 'Admin' : (user.role || 'User')}
                         </span>
                       </td>
                       <td className="px-6 py-4">
