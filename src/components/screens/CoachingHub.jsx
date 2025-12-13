@@ -55,11 +55,6 @@ const CalendarView = ({ sessions = [], onViewDetails }) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
-  // DEBUG LOGGING
-  if (!Array.isArray(sessions)) {
-    console.error('[DEBUG CalendarView] sessions is not an array:', sessions);
-  }
-
   // Group sessions by date
   const sessionsByDate = useMemo(() => {
     const map = {};
@@ -506,20 +501,6 @@ const CoachingHub = () => {
     
     return () => unsubscribe();
   }, [db, user?.uid]);
-
-  // DEBUG LOGGING
-  console.log('[DEBUG CoachingHub] State:', { 
-    newSessionsType: typeof newSessions,
-    newSessionsIsArray: Array.isArray(newSessions),
-    newSessionsLen: newSessions?.length,
-    legacySessionsType: typeof legacySessions,
-    legacySessionsIsArray: Array.isArray(legacySessions),
-    legacySessionsLen: legacySessions?.length,
-    newRegistrationsType: typeof newRegistrations,
-    newRegistrationsIsArray: Array.isArray(newRegistrations),
-    legacyRegistrationsType: typeof legacyRegistrations,
-    legacyRegistrationsIsArray: Array.isArray(legacyRegistrations)
-  });
 
   // Combine sessions from both sources (new coaching_sessions + legacy content)
   const sessions = useMemo(() => {

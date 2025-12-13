@@ -55,6 +55,7 @@ const CoachingActionItem = ({
   // Format registration status if user is registered
   const registrationStatus = registration?.status;
   const sessionDate = registration?.sessionDate;
+  const sessionTime = registration?.sessionTime;
   
   const formatSessionDate = (dateStr) => {
     if (!dateStr) return '';
@@ -192,7 +193,10 @@ const CoachingActionItem = ({
           <div className="flex items-center">
             <div className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-purple-600 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
               {registrationStatus === 'registered' ? (
-                <>View Session</>
+                <div className="flex flex-col items-end">
+                  <span className="font-bold">{formatSessionDate(sessionDate)}</span>
+                  {sessionTime && <span className="text-[10px]">{sessionTime}</span>}
+                </div>
               ) : (
                 <>Pick Session</>
               )}
