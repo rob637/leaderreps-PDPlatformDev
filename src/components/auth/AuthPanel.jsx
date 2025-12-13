@@ -1,6 +1,6 @@
 // src/components/auth/AuthPanel.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   setPersistence,
   browserSessionPersistence,
@@ -11,11 +11,23 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  doc, 
+  updateDoc, 
+  setDoc, 
+  serverTimestamp,
+  getDoc
+} from 'firebase/firestore';
 import { Loader } from 'lucide-react';
+import { buildModulePath } from '../../services/pathUtils';
 
 const SECRET_SIGNUP_CODE = '7777';
 
-function AuthPanel({ auth, onSuccess }) {
+function AuthPanel({ auth, db, onSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -23,9 +35,49 @@ function AuthPanel({ auth, onSuccess }) {
   const [mode, setMode] = useState('login');
   const [statusMessage, setStatusMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Invite State
+  const [inviteData, setInviteData] = useState(null);
+  const [checkingInvite, setCheckingInvite] = useState(true);
 
   const isReset = mode === 'reset';
   const isSignup = mode === 'signup';
+
+  useEffect(() => {
+    const checkInvite = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      
+      if (token && db) {
+        try {
+          const q = query(collection(db, 'invitations'), where('token', '==', token));
+          const snapshot = await getDocs(q);
+          
+          if (!snapshot.empty) {
+            const inviteDoc = snapshot.docs[0];
+            const data = inviteDoc.data();
+            
+            if (data.status === 'pending') {
+              setInviteData({ id: inviteDoc.id, ...data });
+              setEmail(data.email);
+              setMode('signup');
+              if (data.name) setName(data.name);
+            } else {
+              setStatusMessage('This invitation has already been used or expired.');
+            }
+          } else {
+            setStatusMessage('Invalid invitation link.');
+          }
+        } catch (error) {
+          console.error("Error checking invite:", error);
+          setStatusMessage('Error validating invitation.');
+        }
+      }
+      setCheckingInvite(false);
+    };
+    
+    checkInvite();
+  }, [db]);
 
   const handleAction = async () => {
     setIsLoading(true);
@@ -41,18 +93,70 @@ function AuthPanel({ auth, onSuccess }) {
         await sendPasswordResetEmail(auth, email);
         setStatusMessage('Password reset email sent. Check your inbox.');
       } else if (mode === 'signup') {
-        if (secretCode !== SECRET_SIGNUP_CODE)
-          throw new Error('Invalid secret sign-up code.');
+        // Validate Signup
+        if (!inviteData) {
+            if (secretCode !== SECRET_SIGNUP_CODE)
+            throw new Error('Invalid secret sign-up code.');
+        }
+        
         if (!name) throw new Error('Name is required for signup.');
 
+        // Create User
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           email,
           password
         );
+        
+        // Update Profile
         await updateProfile(userCredential.user, {
           displayName: name
         });
+
+        // Handle Invite Acceptance & Cohort Assignment
+        if (inviteData && db) {
+            try {
+                // 1. Mark invite as accepted
+                const inviteRef = doc(db, 'invitations', inviteData.id);
+                await updateDoc(inviteRef, {
+                    status: 'accepted',
+                    acceptedAt: serverTimestamp(),
+                    acceptedBy: userCredential.user.uid
+                });
+
+                // 2. Assign Cohort to User Profile
+                if (inviteData.cohortId) {
+                    const userRef = doc(db, 'users', userCredential.user.uid);
+                    // We use setDoc with merge because ensureUserDocs might not have run yet
+                    await setDoc(userRef, {
+                        cohortId: inviteData.cohortId
+                    }, { merge: true });
+
+                    // 3. Initialize Development Plan with Cohort Start Date
+                    const cohortDoc = await getDoc(doc(db, 'cohorts', inviteData.cohortId));
+                    if (cohortDoc.exists()) {
+                        const cohortData = cohortDoc.data();
+                        const devPlanPath = buildModulePath(userCredential.user.uid, 'development_plan', 'current');
+                        
+                        // Create the plan with the start date AND default fields
+                        // This ensures ensureUserDocs doesn't overwrite or skip it
+                        await setDoc(doc(db, devPlanPath), {
+                            currentCycle: 1,
+                            createdAt: serverTimestamp(),
+                            lastAssessmentDate: null,
+                            assessmentHistory: [], 
+                            planHistory: [],
+                            currentPlan: null,
+                            startDate: cohortData.startDate
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Error processing invite acceptance:", err);
+                // Don't block login if this fails, but log it
+            }
+        }
+
         onSuccess();
       }
     } catch (e) {
@@ -79,6 +183,14 @@ function AuthPanel({ auth, onSuccess }) {
     }
   };
 
+  if (checkingInvite) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-corporate-light-gray">
+            <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
+        </div>
+      );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-corporate-light-gray">
       <div
@@ -93,174 +205,159 @@ function AuthPanel({ auth, onSuccess }) {
             ? 'Create Your Account'
             : 'Reset Password'}
         </h2>
+        
+        {inviteData && isSignup && (
+            <div className="mb-6 p-3 bg-teal-50 text-teal-800 rounded-lg text-sm">
+                <p className="font-bold">Invitation Accepted!</p>
+                <p>{inviteData.customMessage || "Welcome to the team."}</p>
+            </div>
+        )}
+
         <p className="text-sm text-gray-600 mb-6">
           {isReset
             ? 'Enter your email to receive a password reset link.'
             : isSignup
-            ? 'Enter your details and the provided code.'
-            : 'Access your LeaderReps development platform.'}
+            ? (inviteData ? 'Complete your registration below.' : 'Enter your details and the provided code.')
+            : 'Enter your email and password to access your account.'}
         </p>
 
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleAction();
-          }}
-        >
+        {statusMessage && (
+          <div className={`mb-4 p-3 rounded text-sm ${
+            statusMessage.includes('sent') || statusMessage.includes('Welcome') 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+          }`}>
+            {statusMessage}
+          </div>
+        )}
+
+        <div className="space-y-4 text-left">
           {isSignup && (
-            <input
-              type="text"
-              placeholder="Your Full Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal"
-              disabled={isLoading}
-              required
-            />
-          )}
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal"
-            disabled={isLoading}
-            autoComplete="email"
-            required
-          />
-          {!isReset && (
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal"
-              disabled={isLoading}
-              autoComplete={isSignup ? 'new-password' : 'current-password'}
-              required={!isReset}
-            />
-          )}
-          {isSignup && (
-            <input
-              type="text"
-              placeholder="Secret Sign-up Code"
-              value={secretCode}
-              onChange={(e) => setSecretCode(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal"
-              disabled={isLoading}
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Full Name
+              </label>
+              <input
+                type="text"
+                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
           )}
 
-          {statusMessage && (
-            <p
-              className={`text-sm p-3 rounded-lg ${
-                statusMessage.includes('sent')
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
-              }`}
-            >
-              {statusMessage}
-            </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email Address
+            </label>
+            <input
+              type="email"
+              className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-corporate-teal disabled:bg-gray-100 disabled:text-gray-500"
+              placeholder="name@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={!!inviteData} 
+            />
+          </div>
+
+          {mode !== 'reset' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          )}
+
+          {isSignup && !inviteData && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Secret Sign-Up Code
+              </label>
+              <input
+                type="text"
+                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+                placeholder="Enter code"
+                value={secretCode}
+                onChange={(e) => setSecretCode(e.target.value)}
+              />
+            </div>
           )}
 
           <button
-            type="submit"
-            className="w-full bg-corporate-teal text-white p-3 rounded-lg font-bold hover:bg-corporate-teal-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-corporate-teal disabled:bg-gray-400 transition-colors duration-300"
+            onClick={handleAction}
             disabled={isLoading}
+            className={`w-full py-3 rounded font-bold text-white transition-colors flex justify-center items-center ${
+              isLoading
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-corporate-teal hover:bg-teal-700'
+            }`}
           >
             {isLoading ? (
-              <Loader className="animate-spin mx-auto" />
-            ) : isReset ? (
-              'Send Reset Link'
+              <Loader className="animate-spin h-5 w-5" />
+            ) : mode === 'login' ? (
+              'Sign In'
             ) : isSignup ? (
               'Create Account'
             ) : (
-              'Sign In'
+              'Send Reset Link'
             )}
           </button>
-        </form>
 
-        {mode === 'login' && (
-          <div className="mt-4">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
-              </div>
-            </div>
-
+          {!isSignup && !isReset && (
             <button
-              type="button"
               onClick={handleGoogleLogin}
               disabled={isLoading}
-              className="mt-4 w-full flex items-center justify-center gap-3 bg-white text-gray-700 border border-gray-300 p-3 rounded-lg font-bold hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition-colors duration-300"
+              className="w-full py-3 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
+                  fill="currentColor"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  fill="#4285F4"
                 />
                 <path
+                  fill="currentColor"
                   d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  fill="#34A853"
                 />
                 <path
+                  fill="currentColor"
                   d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z"
-                  fill="#FBBC05"
                 />
                 <path
+                  fill="currentColor"
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  fill="#EA4335"
                 />
               </svg>
               Sign in with Google
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
-        <div className="mt-6 text-sm">
+        <div className="mt-6 flex justify-between text-sm text-corporate-teal font-medium">
           {mode === 'login' ? (
             <>
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMode('reset');
-                  setStatusMessage('');
-                }}
-                className="font-medium text-corporate-teal hover:text-corporate-teal-dark"
-              >
-                Forgot password?
-              </a>
-              <span className="text-gray-500 mx-2">|</span>
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMode('signup');
-                  setStatusMessage('');
-                }}
-                className="font-medium text-corporate-teal hover:text-corporate-teal-dark"
-              >
-                Sign Up
-              </a>
+              <button onClick={() => setMode('reset')}>Forgot Password?</button>
+              <button onClick={() => setMode('signup')}>Create Account</button>
             </>
           ) : (
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setMode('login');
-                setStatusMessage('');
+            <button
+              onClick={() => {
+                  setMode('login');
+                  setInviteData(null);
+                  setEmail('');
+                  setName('');
               }}
-              className="font-medium text-corporate-teal hover:text-corporate-teal-dark"
+              className="w-full text-center"
             >
               Back to Sign In
-            </a>
+            </button>
           )}
         </div>
       </div>

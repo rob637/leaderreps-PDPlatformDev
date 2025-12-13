@@ -138,6 +138,7 @@ function App() {
                   {isAuthRequired ? (
                     <AuthPanel 
                       auth={firebaseServices.auth} 
+                      db={firebaseServices.db}
                       onSuccess={() => navigate('dashboard')} 
                     />
                   ) : (

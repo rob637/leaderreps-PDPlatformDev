@@ -344,7 +344,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       const category = (item.category || '').toLowerCase();
       switch (category) {
         case 'content':
-          return 'bg-corporate-navy/5 border-corporate-navy/10 hover:bg-corporate-navy/10 hover:border-corporate-navy/30';
+          return 'bg-corporate-navy border-corporate-navy hover:bg-corporate-navy/90 hover:border-corporate-navy';
         case 'community':
           return 'bg-orange-50 border-orange-100 hover:bg-orange-100 hover:border-orange-300';
         default:
@@ -358,7 +358,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       const category = (item.category || '').toLowerCase();
       switch (category) {
         case 'content':
-          return 'border-corporate-navy/30 group-hover:border-corporate-navy';
+          return 'border-white/30 group-hover:border-white';
         case 'community':
           return 'border-orange-300 group-hover:border-orange-500';
         default:
@@ -372,7 +372,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       const category = (item.category || '').toLowerCase();
       switch (category) {
         case 'content':
-          return 'text-corporate-navy';
+          return 'text-blue-200';
         case 'community':
           return 'text-orange-600';
         default:
@@ -402,7 +402,10 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <p className={`text-sm font-bold ${isCompleted ? 'text-green-700 line-through' : 'text-slate-700'}`}>
+            <p className={`text-sm font-bold ${
+              isCompleted ? 'text-green-700 line-through' : 
+              (item.category || '').toLowerCase() === 'content' ? 'text-white' : 'text-slate-700'
+            }`}>
               {item.label || item.title || item.name || 'Untitled Action'}
             </p>
             {item.required !== false && !item.optional && !isCarriedOver && (

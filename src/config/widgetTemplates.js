@@ -2307,7 +2307,7 @@ const ScorecardHistoryWidget = () => {
                 
                 return (
                   <tr key={index} className="hover:bg-blue-50 transition-colors">
-                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
+                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-bold text-gray-700">
                       {formatDisplayDate(entry.normalizedDate)}{isToday && <span className="ml-1 text-xs text-blue-500">(Today)</span>}
                     </td>
                     <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono font-bold text-gray-900 text-center">
