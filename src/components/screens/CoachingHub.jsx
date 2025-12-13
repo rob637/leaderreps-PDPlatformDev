@@ -539,20 +539,20 @@ const CoachingHub = () => {
   const loading = sessionsLoading || registrationsLoading || legacyLoading;
 
   const registeredIds = useMemo(() => 
-    new Set(registrations
+    new Set((registrations || [])
       .filter(r => r.status !== 'cancelled')
       .map(r => r.sessionId)), 
     [registrations]
   );
 
   const registeredSessions = useMemo(() => 
-    sessions.filter(s => registeredIds.has(s.id)),
+    (sessions || []).filter(s => registeredIds.has(s.id)),
     [sessions, registeredIds]
   );
 
   const upcomingSessions = useMemo(() => {
     const now = new Date();
-    return sessions.filter(s => {
+    return (sessions || []).filter(s => {
       if (!s.date) return true; // Show sessions without date
       return new Date(s.date) >= now;
     });
@@ -560,7 +560,7 @@ const CoachingHub = () => {
 
   const pastSessions = useMemo(() => {
     const now = new Date();
-    return sessions
+    return (sessions || [])
       .filter(s => s.date && new Date(s.date) < now && registeredIds.has(s.id))
       .slice(0, 6);
   }, [sessions, registeredIds]);
