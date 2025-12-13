@@ -161,7 +161,21 @@ function AuthPanel({ auth, db, onSuccess }) {
       }
     } catch (e) {
       console.error('Auth action failed:', e);
-      setStatusMessage(e.message || 'An unexpected error occurred.');
+      
+      // World-class Error Handling
+      let message = e.message || 'An unexpected error occurred.';
+      
+      if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
+        message = "Incorrect email or password. If you previously signed in with Google, please try that button instead.";
+      } else if (e.code === 'auth/email-already-in-use') {
+        message = "This email is already registered. Please log in instead.";
+      } else if (e.code === 'auth/weak-password') {
+        message = "Password should be at least 6 characters.";
+      } else if (e.code === 'auth/too-many-requests') {
+        message = "Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password or try again later.";
+      }
+
+      setStatusMessage(message);
     } finally {
       setIsLoading(false);
     }
@@ -177,7 +191,15 @@ function AuthPanel({ auth, db, onSuccess }) {
       onSuccess();
     } catch (e) {
       console.error('Google Auth failed:', e);
-      setStatusMessage(e.message || 'Google Sign-In failed.');
+      
+      let message = 'Google Sign-In failed.';
+      if (e.code === 'auth/popup-closed-by-user') {
+        message = 'Sign-in cancelled.';
+      } else if (e.code === 'auth/popup-blocked') {
+        message = 'Sign-in popup was blocked by your browser.';
+      }
+      
+      setStatusMessage(message);
     } finally {
       setIsLoading(false);
     }

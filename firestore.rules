@@ -156,6 +156,18 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
+
+    // Cohorts
+    match /cohorts/{document} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Invitations
+    match /invitations/{document} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
     
     // Deny all other access
     match /{document=**} {
