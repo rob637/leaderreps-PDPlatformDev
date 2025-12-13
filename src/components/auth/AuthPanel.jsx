@@ -238,6 +238,12 @@ function AuthPanel({ auth, db, onSuccess }) {
         message = 'Sign-in cancelled.';
       } else if (e.code === 'auth/popup-blocked') {
         message = 'Sign-in popup was blocked by your browser.';
+      } else if (e.code === 'auth/account-exists-with-different-credential') {
+        message = 'An account already exists with this email using a different sign-in method. Try email/password instead.';
+      } else if (e.code === 'auth/cancelled-popup-request') {
+        message = 'Sign-in cancelled.';
+      } else if (e.code === 'auth/network-request-failed') {
+        message = 'Network error. Please check your internet connection.';
       }
       
       setStatusMessage(message);

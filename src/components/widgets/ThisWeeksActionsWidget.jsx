@@ -344,9 +344,11 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       const category = (item.category || '').toLowerCase();
       switch (category) {
         case 'content':
-          return 'bg-corporate-navy border-corporate-navy hover:bg-corporate-navy/90 hover:border-corporate-navy';
+          return 'bg-blue-500 border-blue-500 hover:bg-blue-600 hover:border-blue-600';
         case 'community':
-          return 'bg-orange-50 border-orange-100 hover:bg-orange-100 hover:border-orange-300';
+          return 'bg-corporate-orange border-corporate-orange hover:bg-corporate-orange/90 hover:border-corporate-orange';
+        case 'coaching':
+          return 'bg-corporate-teal border-corporate-teal hover:bg-corporate-teal/90 hover:border-corporate-teal';
         default:
           return 'bg-slate-50 border-slate-100 hover:bg-blue-50 hover:border-blue-200';
       }
@@ -360,7 +362,9 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         case 'content':
           return 'border-white/30 group-hover:border-white';
         case 'community':
-          return 'border-orange-300 group-hover:border-orange-500';
+          return 'border-white/30 group-hover:border-white';
+        case 'coaching':
+          return 'border-white/30 group-hover:border-white';
         default:
           return 'border-slate-300 group-hover:border-blue-400';
       }
@@ -374,7 +378,9 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         case 'content':
           return 'text-blue-200';
         case 'community':
-          return 'text-orange-600';
+          return 'text-orange-100';
+        case 'coaching':
+          return 'text-teal-100';
         default:
           return 'text-slate-500';
       }
@@ -404,7 +410,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             <p className={`text-sm font-bold ${
               isCompleted ? 'text-green-700 line-through' : 
-              (item.category || '').toLowerCase() === 'content' ? 'text-white' : 'text-slate-700'
+              ['content', 'community', 'coaching'].includes((item.category || '').toLowerCase()) ? 'text-white' : 'text-slate-700'
             }`}>
               {item.label || item.title || item.name || 'Untitled Action'}
             </p>

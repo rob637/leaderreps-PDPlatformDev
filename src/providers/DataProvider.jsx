@@ -193,13 +193,28 @@ const DataProvider = ({
 
   const logout = useCallback(async () => {
     try {
+      // Clear local storage navigation state
+      localStorage.removeItem('lastScreen');
+      localStorage.removeItem('lastNavParams');
+      
+      // Cleanup services first
       if (services) {
-        services.cleanup();
+        try {
+          services.cleanup();
+        } catch (cleanupErr) {
+          console.warn('Service cleanup warning:', cleanupErr);
+        }
         setServices(null);
       }
-      await auth.signOut();
+      
+      // Sign out from Firebase
+      if (auth) {
+        await auth.signOut();
+      }
     } catch (error) {
       console.error('Logout error:', error);
+      // Force page reload as fallback to clear state
+      window.location.reload();
     }
   }, [auth, services]);
 

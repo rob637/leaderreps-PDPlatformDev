@@ -61,6 +61,11 @@ const AppContent = ({
 
   const handleSignOut = async () => {
     try {
+      // Clear local storage first
+      localStorage.removeItem('lastScreen');
+      localStorage.removeItem('lastNavParams');
+      localStorage.removeItem('arena-developer-mode');
+      
       if (logout) {
         await logout();
       } else if (auth) {
@@ -68,6 +73,8 @@ const AppContent = ({
       }
     } catch (e) {
       console.error('Sign out failed:', e);
+      // Force reload as fallback
+      window.location.reload();
     }
   };
 

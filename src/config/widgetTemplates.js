@@ -2151,7 +2151,7 @@ const WinsHistoryWidget = () => {
                 
                 return (
                   <tr key={date} className="hover:bg-blue-50 transition-colors">
-                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600 font-bold">
+                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-bold text-gray-700">
                       {formatDisplayDate(date)}
                     </td>
                     {slots.map((win, i) => (
@@ -2310,7 +2310,7 @@ const ScorecardHistoryWidget = () => {
                     <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-bold text-gray-700">
                       {formatDisplayDate(entry.normalizedDate)}{isToday && <span className="ml-1 text-xs text-blue-500">(Today)</span>}
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono font-bold text-gray-900 text-center">
+                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-bold text-gray-900 text-center">
                       {entry.score} <span className="text-xs text-gray-400 font-normal ml-1">({pct}%)</span>
                     </td>
                     <td className="border border-gray-300 px-3 py-2 whitespace-nowrap text-center">
@@ -2443,7 +2443,7 @@ const ReflectionHistoryWidget = () => {
             {visibleReflections.length > 0 ? (
               visibleReflections.map((log, index) => (
                 <tr key={log.id || index} className="hover:bg-blue-50 transition-colors align-top">
-                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
+                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-bold text-gray-700">
                     {formatDisplayDate(log.date)}
                   </td>
                   <td className="border border-gray-300 px-3 py-2 text-gray-800 min-w-[200px]">
@@ -2555,7 +2555,7 @@ const RepsHistoryWidget = () => {
             <div key={dateIndex} className="border border-gray-200 rounded-lg overflow-hidden">
               {/* Date Header */}
               <div className="bg-gray-100 px-4 py-2 flex items-center justify-between border-b border-gray-200">
-                <span className="font-mono font-bold text-gray-700">{formatDisplayDate(entry.date)}</span>
+                <span className="font-bold text-gray-700">{formatDisplayDate(entry.date)}</span>
                 <span className="text-sm text-gray-500">
                   <span className="font-bold text-corporate-navy">{entry.completedCount || (entry.items?.length || 0)}</span> reps completed
                 </span>
