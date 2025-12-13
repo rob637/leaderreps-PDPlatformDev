@@ -187,7 +187,48 @@ function AuthPanel({ auth, db, onSuccess }) {
     try {
       await setPersistence(auth, browserSessionPersistence);
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      
+      // Ensure user docs exist for Google users
+      if (result.user && db) {
+        // We import ensureUserDocs dynamically to avoid circular deps if any, 
+        // or just assume it's available via a service. 
+        // But since we don't have it imported, let's do a basic check/create here
+        // similar to what ensureUserDocs does, or just rely on the App to call it.
+        // However, the App might fail if data is missing immediately.
+        
+        // Let's manually ensure the user profile exists at minimum
+        const userRef = doc(db, 'users', result.user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+            await setDoc(userRef, {
+                userId: result.user.uid,
+                email: result.user.email,
+                displayName: result.user.displayName,
+                photoURL: result.user.photoURL,
+                createdAt: serverTimestamp(),
+                role: 'user' // Default role
+            });
+            
+            // Also initialize dev plan to prevent "undefined" errors
+            const devPlanPath = buildModulePath(result.user.uid, 'development_plan', 'current');
+            const devPlanRef = doc(db, devPlanPath);
+            const devPlanSnap = await getDoc(devPlanRef);
+            
+            if (!devPlanSnap.exists()) {
+                 await setDoc(devPlanRef, {
+                    currentCycle: 1,
+                    createdAt: serverTimestamp(),
+                    lastAssessmentDate: null,
+                    assessmentHistory: [], 
+                    planHistory: [],
+                    currentPlan: null
+                });
+            }
+        }
+      }
+
       onSuccess();
     } catch (e) {
       console.error('Google Auth failed:', e);
