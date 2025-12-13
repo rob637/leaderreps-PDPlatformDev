@@ -663,23 +663,6 @@ const CoachingHub = () => {
               />
             )}
           </div>
-          
-          {activeTab === 'live' && (
-            <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
-              <button 
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
-              >
-                List
-              </button>
-              <button 
-                onClick={() => setViewMode('calendar')}
-                className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'calendar' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
-              >
-                Calendar
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Tab Content */}
@@ -691,52 +674,17 @@ const CoachingHub = () => {
           <>
             {/* Live Coaching Tab */}
             {activeTab === 'live' && isFeatureEnabled('coaching-upcoming-sessions') && (
-              <WidgetRenderer widgetId="coaching-upcoming-sessions" scope={scope}>
-                {viewMode === 'calendar' ? (
-                  <CalendarView 
-                    sessions={upcomingSessions}
-                    onViewDetails={(s) => console.log('View details:', s)}
-                  />
-                ) : (
-                  <div className="space-y-4">
-                    {upcomingSessions.length === 0 ? (
-                      <div className="bg-slate-50 rounded-xl border border-dashed border-slate-300 p-12 text-center">
-                        <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-slate-600 mb-2">No Upcoming Sessions</h3>
-                        <p className="text-slate-400">Check back later for new coaching opportunities.</p>
-                      </div>
-                    ) : (
-                      upcomingSessions.map(session => (
-                        <SessionCard 
-                          key={session.id}
-                          session={session}
-                          onRegister={handleRegister}
-                          onCancel={handleCancel}
-                          isRegistered={registeredIds.has(session.id)}
-                        />
-                      ))
-                    )}
-                  </div>
-                )}
-              </WidgetRenderer>
+              <WidgetRenderer widgetId="coaching-upcoming-sessions" scope={scope} />
             )}
 
             {/* On-Demand Tab */}
             {activeTab === 'ondemand' && isFeatureEnabled('coaching-on-demand') && (
-              <WidgetRenderer widgetId="coaching-on-demand" scope={scope}>
-                <OnDemandSection navigate={navigate} />
-              </WidgetRenderer>
+              <WidgetRenderer widgetId="coaching-on-demand" scope={scope} />
             )}
 
             {/* My Coaching Tab */}
             {activeTab === 'my' && isFeatureEnabled('coaching-my-sessions') && (
-              <WidgetRenderer widgetId="coaching-my-sessions" scope={scope}>
-                <MyCoachingSection 
-                  registeredSessions={registeredSessions}
-                  pastSessions={pastSessions}
-                  onCancel={handleCancel}
-                />
-              </WidgetRenderer>
+              <WidgetRenderer widgetId="coaching-my-sessions" scope={scope} />
             )}
             
             {/* Fallback if no tabs are enabled */}
