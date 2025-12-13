@@ -2276,12 +2276,11 @@ const ScorecardHistoryWidget = () => {
   const hasMore = sortedHistory.length > visibleCount;
   const canShowLess = visibleCount > 3;
   
-  // Format date for display (MM/DD/YYYY)
+  // Format date for display (YYYY-MM-DD)
   const formatDisplayDate = (dateStr) => {
     const normalized = normalizeDate(dateStr);
     if (!normalized) return dateStr;
-    const [year, month, day] = normalized.split('-');
-    return \`\${month}/\${day}/\${year}\`;
+    return normalized;
   };
 
   return (
