@@ -210,6 +210,11 @@ export const useCoachingSessions = (options = {}) => {
     return sessions.filter(s => isLiveNow(s.date, s.durationMinutes));
   }, [sessions]);
 
+  // Computed: Upcoming sessions (today + future)
+  const upcomingSessions = useMemo(() => {
+    return sessions.filter(s => isUpcoming(s.date));
+  }, [sessions]);
+
   // Computed: Group sessions by date (for calendar view)
   const sessionsByDate = useMemo(() => {
     const grouped = {};
@@ -296,6 +301,7 @@ export const useCoachingSessions = (options = {}) => {
     thisWeekSessions,
     todaySessions,
     liveNowSessions,
+    upcomingSessions,
     sessionsByDate,
     sessionsByType,
     
