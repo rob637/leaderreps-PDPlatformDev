@@ -7,6 +7,9 @@ import PMReflectionWidget from '../widgets/PMReflectionWidget';
 import DevelopmentPlanWidget from '../widgets/DevelopmentPlanWidget';
 import ThisWeeksActionsWidget from '../widgets/ThisWeeksActionsWidget';
 import AdminAccessViewer from './AdminAccessViewer';
+import CoachingUpcomingSessionsWidget from '../widgets/CoachingUpcomingSessionsWidget';
+import CoachingOnDemandWidget from '../widgets/CoachingOnDemandWidget';
+import CoachingMySessionsWidget from '../widgets/CoachingMySessionsWidget';
 
 /**
  * WidgetRenderer - Renders widgets from templates defined in widgetTemplates.js
@@ -43,6 +46,19 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
 
   if (widgetId === 'admin-access-viewer') {
     return <AdminAccessViewer />;
+  }
+
+  // Coaching widgets
+  if (widgetId === 'coaching-upcoming-sessions') {
+    return <CoachingUpcomingSessionsWidget scope={scope} />;
+  }
+
+  if (widgetId === 'coaching-on-demand') {
+    return <CoachingOnDemandWidget scope={scope} />;
+  }
+
+  if (widgetId === 'coaching-my-sessions') {
+    return <CoachingMySessionsWidget scope={scope} />;
   }
 
   if (widgetId === 'pm-bookend') {

@@ -2905,6 +2905,19 @@ render(<RepsHistoryWidget />);
 <ThisWeeksActionsWidget scope={scope} />
     `,
 
+    // Coaching Hub Widgets
+    'coaching-upcoming-sessions': `
+<CoachingUpcomingSessionsWidget scope={scope} />
+    `,
+    
+    'coaching-on-demand': `
+<CoachingOnDemandWidget scope={scope} />
+    `,
+    
+    'coaching-my-sessions': `
+<CoachingMySessionsWidget scope={scope} />
+    `,
+
   };
 
 export const FEATURE_METADATA = {
@@ -3412,9 +3425,9 @@ export const FEATURE_METADATA = {
     description: 'Upcoming Live Sessions',
     purpose: 'Live coaching session listings.',
     extendedDescription: 'Displays scheduled coaching sessions (Open Gym, Leader Circle, Workshops) that users can register for.',
-    inputs: ['sessions', 'registrations'],
+    inputs: ['sessions', 'upcomingSessions', 'registeredIds', 'handleRegister', 'handleCancel'],
     outputs: ['register', 'cancel'],
-    componentPath: 'src/components/screens/CoachingHub.jsx',
+    componentPath: 'src/components/widgets/CoachingUpcomingSessionsWidget.jsx',
   },
   'coaching-on-demand': {
     core: true,
@@ -3423,9 +3436,9 @@ export const FEATURE_METADATA = {
     description: 'On-Demand Practice',
     purpose: 'Self-paced coaching resources.',
     extendedDescription: 'AI roleplay scenarios and practice exercises available anytime.',
-    inputs: ['scenarios'],
+    inputs: ['scenarios', 'navigate'],
     outputs: ['startPractice'],
-    componentPath: 'src/components/screens/CoachingHub.jsx',
+    componentPath: 'src/components/widgets/CoachingOnDemandWidget.jsx',
   },
   'coaching-my-sessions': {
     core: true,
@@ -3434,8 +3447,8 @@ export const FEATURE_METADATA = {
     description: 'My Coaching Sessions',
     purpose: 'Personal coaching dashboard.',
     extendedDescription: 'Shows sessions the user has registered for and their coaching history.',
-    inputs: ['registrations', 'history'],
-    outputs: ['cancel', 'review'],
-    componentPath: 'src/components/screens/CoachingHub.jsx',
+    inputs: ['registeredSessions', 'pastSessions', 'handleCancel'],
+    outputs: ['cancel', 'navigate'],
+    componentPath: 'src/components/widgets/CoachingMySessionsWidget.jsx',
   },
 };
