@@ -2119,13 +2119,12 @@ const WinsHistoryWidget = () => {
   const hasMore = sortedDates.length > visibleCount;
   const canShowLess = visibleCount > 3;
 
-  // Helper to format date for display (MM/DD/YYYY)
+  // Helper to format date for display (YYYY-MM-DD)
   const formatDisplayDate = (dateStr) => {
     if (!dateStr) return '';
-    // If YYYY-MM-DD
+    // Already YYYY-MM-DD, return as-is
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        const [y, m, d] = dateStr.split('-');
-        return m + '/' + d + '/' + y;
+        return dateStr;
     }
     return dateStr;
   };
@@ -2415,13 +2414,12 @@ const ReflectionHistoryWidget = () => {
   const hasMore = sortedReflections.length > visibleCount;
   const canShowLess = visibleCount > 3;
 
-  // Helper to format date for display (MM/DD/YYYY)
+  // Helper to format date for display (YYYY-MM-DD)
   const formatDisplayDate = (dateStr) => {
     if (!dateStr) return '';
-    // If YYYY-MM-DD
+    // Already YYYY-MM-DD, return as-is
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        const [y, m, d] = dateStr.split('-');
-        return \`\${m}/\${d}/\${y}\`;
+        return dateStr;
     }
     return dateStr;
   };
@@ -2535,13 +2533,12 @@ const RepsHistoryWidget = () => {
   const hasMore = sortedHistory.length > visibleCount;
   const canShowLess = visibleCount > 3;
 
-  // Helper to format date for display (MM/DD/YYYY)
+  // Helper to format date for display (YYYY-MM-DD)
   const formatDisplayDate = (dateStr) => {
     if (!dateStr) return '';
-    // If YYYY-MM-DD
+    // Already YYYY-MM-DD, return as-is
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        const [y, m, d] = dateStr.split('-');
-        return \`\${m}/\${d}/\${y}\`;
+        return dateStr;
     }
     return dateStr;
   };
