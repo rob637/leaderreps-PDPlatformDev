@@ -523,6 +523,61 @@ const CoachingManager = () => {
           ))
         )}
       </div>
+        </>
+      )}
+
+      {/* Data Tools Tab */}
+      {activeTab === 'data' && (
+        <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <h3 className="text-lg font-bold text-corporate-navy mb-4">Session Data Tools</h3>
+          <p className="text-slate-500 mb-4">Seed sample coaching sessions for testing, or clear all session data.</p>
+          
+          {sessionMessage && (
+            <div className={`p-3 rounded-lg mb-4 ${sessionMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+              {sessionMessage.text}
+            </div>
+          )}
+          
+          <div className="flex gap-3">
+            <button
+              onClick={async () => {
+                setSeedingData(true);
+                try {
+                  const result = await seedCoachingData(db);
+                  setSessionMessage({ type: 'success', text: `Seeded ${result?.sessionsCount || 0} sessions and ${result?.typesCount || 0} session types.` });
+                } catch (err) {
+                  setSessionMessage({ type: 'error', text: 'Error seeding data: ' + err.message });
+                }
+                setSeedingData(false);
+              }}
+              disabled={seedingData}
+              className="flex items-center gap-2 px-4 py-2 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+            >
+              {seedingData ? <Loader className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+              Seed Sample Data
+            </button>
+            
+            <button
+              onClick={async () => {
+                if (!confirm('Are you sure you want to clear ALL coaching session data? This cannot be undone.')) return;
+                setClearingData(true);
+                try {
+                  await clearCoachingData(db);
+                  setSessionMessage({ type: 'success', text: 'All coaching data cleared.' });
+                } catch (err) {
+                  setSessionMessage({ type: 'error', text: 'Error clearing data: ' + err.message });
+                }
+                setClearingData(false);
+              }}
+              disabled={clearingData}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+            >
+              {clearingData ? <Loader className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
+              Clear All Data
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
