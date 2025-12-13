@@ -335,18 +335,57 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     const carryCount = progress.carryCount || item.carryCount || 0;
     
     if (isSkipped) return null; // Don't show skipped items
+
+    // Determine color scheme based on category
+    const getCategoryStyles = () => {
+      if (isCompleted) return 'bg-green-50 border-green-200';
+      if (isCarriedOver) return 'bg-amber-50 border-amber-200';
+      
+      const category = (item.category || '').toLowerCase();
+      switch (category) {
+        case 'content':
+          return 'bg-corporate-navy/5 border-corporate-navy/10 hover:bg-corporate-navy/10 hover:border-corporate-navy/30';
+        case 'community':
+          return 'bg-orange-50 border-orange-100 hover:bg-orange-100 hover:border-orange-300';
+        default:
+          return 'bg-slate-50 border-slate-100 hover:bg-blue-50 hover:border-blue-200';
+      }
+    };
+
+    const getCheckboxStyles = () => {
+      if (isCompleted) return 'bg-green-500 border-green-500';
+      
+      const category = (item.category || '').toLowerCase();
+      switch (category) {
+        case 'content':
+          return 'border-corporate-navy/30 group-hover:border-corporate-navy';
+        case 'community':
+          return 'border-orange-300 group-hover:border-orange-500';
+        default:
+          return 'border-slate-300 group-hover:border-blue-400';
+      }
+    };
+
+    const getIconColor = () => {
+      if (isCompleted) return 'text-green-600';
+      
+      const category = (item.category || '').toLowerCase();
+      switch (category) {
+        case 'content':
+          return 'text-corporate-navy';
+        case 'community':
+          return 'text-orange-600';
+        default:
+          return 'text-slate-500';
+      }
+    };
     
     return (
       <div 
         key={item.id || idx}
         className={`
           group flex items-start gap-3 p-3 rounded-xl border transition-all
-          ${isCompleted 
-            ? 'bg-green-50 border-green-200' 
-            : isCarriedOver 
-              ? 'bg-amber-50 border-amber-200' 
-              : 'bg-slate-50 border-slate-100 hover:bg-blue-50 hover:border-blue-200'
-          }
+          ${getCategoryStyles()}
         `}
       >
         {/* Checkbox - matches Win the Day style */}
@@ -354,10 +393,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
           onClick={() => handleToggle(item)}
           className={`
             flex-shrink-0 mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors cursor-pointer
-            ${isCompleted 
-              ? 'bg-green-500 border-green-500' 
-              : 'border-slate-300 group-hover:border-blue-400'
-            }
+            ${getCheckboxStyles()}
           `}
         >
           {isCompleted && <CheckCircle className="w-3 h-3 text-white" />}
@@ -388,7 +424,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
             )}
           </div>
           
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className={`flex items-center gap-2 text-xs ${getIconColor()}`}>
             <Icon className="w-3 h-3" />
             <span className="capitalize">{item.type?.replace(/_/g, ' ').toLowerCase() || 'Action'}</span>
             <span>•</span>

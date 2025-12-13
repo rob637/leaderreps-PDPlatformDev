@@ -128,6 +128,18 @@ const ScreenMap = {
   'features-lab': lazy(() =>
     import('../components/screens/FeaturesLab.jsx')
   ),
+  'privacy-policy': lazy(() =>
+    import('../components/screens/legal/PrivacyPolicy.jsx')
+  ),
+  'terms-of-service': lazy(() =>
+    import('../components/screens/legal/TermsOfService.jsx')
+  ),
+  'cookie-policy': lazy(() =>
+    import('../components/screens/legal/CookiePolicy.jsx')
+  ),
+  'contact-us': lazy(() =>
+    import('../components/screens/legal/ContactUs.jsx')
+  ),
 };
 
 const NotFoundScreen = () => (

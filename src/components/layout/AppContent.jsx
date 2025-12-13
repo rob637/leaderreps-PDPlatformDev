@@ -146,50 +146,33 @@ const AppContent = ({
                 © {currentYear} LeaderReps. All rights reserved.
               </p>
               <div className="mt-2 flex flex-wrap justify-center gap-1 text-xs text-text-muted">
-                <a
-                  href="https://leaderreps.com/privacy-policy#data-collection"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline transition-colors duration-200 text-text-muted"
+                <button
+                  onClick={() => navigate('privacy-policy')}
+                  className="hover:underline transition-colors duration-200 text-text-muted bg-transparent border-none cursor-pointer p-0"
                 >
                   Privacy Policy
-                </a>
+                </button>
                 <span>|</span>
-                <a
-                  href="https://leaderreps.com/terms-of-service#user-obligations"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline transition-colors duration-200 text-text-muted"
+                <button
+                  onClick={() => navigate('terms-of-service')}
+                  className="hover:underline transition-colors duration-200 text-text-muted bg-transparent border-none cursor-pointer p-0"
                 >
                   Terms of Service
-                </a>
+                </button>
                 <span>|</span>
-                <a
-                  href="https://leaderreps.com/cookie-policy#cookie-types"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline transition-colors duration-200 text-text-muted"
+                <button
+                  onClick={() => navigate('cookie-policy')}
+                  className="hover:underline transition-colors duration-200 text-text-muted bg-transparent border-none cursor-pointer p-0"
                 >
                   Cookie Policy
-                </a>
+                </button>
                 <span>|</span>
-                <a
-                  href="https://leaderreps.com/refund-policy#eligibility"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline transition-colors duration-200 text-text-muted"
-                >
-                  Refund Policy
-                </a>
-                <span>|</span>
-                <a
-                  href="https://leaderreps.com/contact#support-form"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline transition-colors duration-200 text-text-muted"
+                <button
+                  onClick={() => navigate('contact-us')}
+                  className="hover:underline transition-colors duration-200 text-text-muted bg-transparent border-none cursor-pointer p-0"
                 >
                   Contact Us
-                </a>
+                </button>
               </div>
             </footer>
             
