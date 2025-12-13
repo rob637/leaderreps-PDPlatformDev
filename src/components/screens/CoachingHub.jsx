@@ -39,7 +39,7 @@ const TabButton = ({ active, onClick, icon: IconComponent, label, badge }) => (
 // ============================================
 // CALENDAR VIEW COMPONENT
 // ============================================
-const CalendarView = ({ sessions, onViewDetails }) => {
+const CalendarView = ({ sessions = [], onViewDetails }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
@@ -58,7 +58,7 @@ const CalendarView = ({ sessions, onViewDetails }) => {
   // Group sessions by date
   const sessionsByDate = useMemo(() => {
     const map = {};
-    sessions.forEach(session => {
+    (sessions || []).forEach(session => {
       if (session.date) {
         const dateKey = session.date.split('T')[0]; // YYYY-MM-DD
         if (!map[dateKey]) map[dateKey] = [];
@@ -507,11 +507,11 @@ const CoachingHub = () => {
     // Merge new sessions and legacy sessions, avoiding duplicates
     const sessionMap = new Map();
     
-    // Add new sessions first
-    newSessions.forEach(s => sessionMap.set(s.id, s));
+    // Add new sessions first (defensive: ensure array)
+    (newSessions || []).forEach(s => sessionMap.set(s.id, s));
     
     // Add legacy sessions (won't overwrite if ID exists)
-    legacySessions.forEach(s => {
+    (legacySessions || []).forEach(s => {
       if (!sessionMap.has(s.id)) {
         sessionMap.set(s.id, s);
       }
@@ -527,8 +527,8 @@ const CoachingHub = () => {
   // Combine registrations from both sources
   const registrations = useMemo(() => {
     const regMap = new Map();
-    newRegistrations.forEach(r => regMap.set(r.sessionId, r));
-    legacyRegistrations.forEach(r => {
+    (newRegistrations || []).forEach(r => regMap.set(r.sessionId, r));
+    (legacyRegistrations || []).forEach(r => {
       if (!regMap.has(r.sessionId)) {
         regMap.set(r.sessionId, r);
       }
