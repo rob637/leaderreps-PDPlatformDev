@@ -7,7 +7,9 @@ import {
 import { Card } from '../ui';
 import { useDevPlan } from '../../hooks/useDevPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
+import { useCoachingRegistrations } from '../../hooks/useCoachingRegistrations';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
+import CoachingActionItem from '../coaching/CoachingActionItem';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
@@ -23,6 +25,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   // Otherwise, use the real hook.
   const devPlanHook = useDevPlan();
   const actionProgress = useActionProgress();
+  const coachingRegistrations = useCoachingRegistrations();
   
   // Determine which data source to use
   const currentWeek = scope?.currentWeek || devPlanHook.currentWeek;
@@ -38,6 +41,13 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     stats,
     loading: progressLoading 
   } = actionProgress;
+  
+  // Coaching registrations
+  const {
+    registrations: userRegistrations,
+    getRegistration,
+    isRegistered
+  } = coachingRegistrations;
 
   // Extract data from currentWeek (with fallbacks for when currentWeek is null)
   const content = currentWeek?.content || [];
@@ -122,6 +132,52 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       case 'COACHING': return MessageSquare;
       default: return Circle;
     }
+  };
+
+  // Helper to check if an item is a coaching item
+  const isCoachingItem = (item) => {
+    const category = (item.category || '').toLowerCase();
+    const type = (item.type || item.coachingItemType || '').toLowerCase();
+    
+    // Check category
+    if (category === 'coaching') return true;
+    
+    // Check type for coaching-related keywords
+    const coachingTypes = ['open_gym', 'opengym', 'leader_circle', 'leadercircle', 'workshop', 'live_workout', 'one_on_one', 'coaching'];
+    return coachingTypes.some(ct => type.includes(ct));
+  };
+  
+  // Helper to find user's registration for a coaching item
+  const findRegistrationForItem = (item) => {
+    if (!userRegistrations || userRegistrations.length === 0) return null;
+    
+    // Try to match by skill focus
+    const skillFocus = item.skillFocus || item.skill || [];
+    const skillArray = Array.isArray(skillFocus) ? skillFocus : [skillFocus].filter(Boolean);
+    
+    if (skillArray.length > 0) {
+      return userRegistrations.find(reg => {
+        const regSkills = reg.skillFocus || [];
+        return regSkills.some(s => skillArray.includes(s)) && 
+               reg.status !== 'cancelled';
+      });
+    }
+    
+    // Fallback: match by item ID or session type
+    return userRegistrations.find(reg => 
+      reg.coachingItemId === item.id && 
+      reg.status !== 'cancelled'
+    );
+  };
+  
+  // Handler for coaching item completion (when user attends a session)
+  const handleCoachingComplete = async (itemId, metadata) => {
+    await completeItem(itemId, {
+      ...metadata,
+      currentWeek: currentWeek?.weekNumber,
+      category: 'coaching'
+    });
+    toggleItemComplete(itemId, true);
   };
 
   const handleViewResource = async (e, item) => {
@@ -464,14 +520,36 @@ const ThisWeeksActionsWidget = ({ scope }) => {
             
             {showCarryOver && (
               <div className="mt-2 space-y-1">
-                {carriedOverItems.map((item, idx) => (
-                  <ActionItem 
-                    key={item.id || `carried-${idx}`} 
-                    item={item} 
-                    idx={idx} 
-                    isCarriedOver={true} 
-                  />
-                ))}
+                {carriedOverItems.map((item, idx) => {
+                  // Check if it's a coaching item
+                  if (isCoachingItem(item)) {
+                    const progress = getItemProgress(item.id);
+                    const isCompleted = progress.status === 'completed' || completedItems.includes(item.id);
+                    const registration = findRegistrationForItem(item);
+                    
+                    return (
+                      <CoachingActionItem
+                        key={item.id || `carried-${idx}`}
+                        item={item}
+                        isCompleted={isCompleted}
+                        isCarriedOver={true}
+                        carryCount={progress.carryCount || item.carryCount || 0}
+                        onComplete={handleCoachingComplete}
+                        registration={registration}
+                        weekNumber={currentWeek?.weekNumber}
+                      />
+                    );
+                  }
+                  
+                  return (
+                    <ActionItem 
+                      key={item.id || `carried-${idx}`} 
+                      item={item} 
+                      idx={idx} 
+                      isCarriedOver={true} 
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
@@ -488,9 +566,29 @@ const ThisWeeksActionsWidget = ({ scope }) => {
               No new actions this week. Complete your carried-over items above!
             </div>
           ) : (
-            allActions.map((item, idx) => (
-              <ActionItem key={item.id || idx} item={item} idx={idx} />
-            ))
+            allActions.map((item, idx) => {
+              // Check if it's a coaching item
+              if (isCoachingItem(item)) {
+                const progress = getItemProgress(item.id);
+                const isCompleted = progress.status === 'completed' || completedItems.includes(item.id);
+                const registration = findRegistrationForItem(item);
+                
+                return (
+                  <CoachingActionItem
+                    key={item.id || idx}
+                    item={item}
+                    isCompleted={isCompleted}
+                    isCarriedOver={false}
+                    carryCount={progress.carryCount || 0}
+                    onComplete={handleCoachingComplete}
+                    registration={registration}
+                    weekNumber={currentWeek?.weekNumber}
+                  />
+                );
+              }
+              
+              return <ActionItem key={item.id || idx} item={item} idx={idx} />;
+            })
           )}
         </div>
 

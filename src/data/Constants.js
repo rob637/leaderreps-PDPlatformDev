@@ -225,7 +225,37 @@ export const COMMITMENT_COLLECTION = 'daily_practice';
 export const COMMITMENT_DOCUMENT = 'scorecard_data';
 export const PLANNING_COLLECTION = 'planning_hub';
 export const PLANNING_DOCUMENT = 'planning_data';
-export const COACHING_COLLECTION = 'coaching_sessions';
+
+// --- COACHING HUB COLLECTIONS ---
+export const COACHING_COLLECTION = 'coaching_sessions'; // Legacy - individual sessions
+export const COACHING_SESSION_TYPES_COLLECTION = 'coaching_session_types'; // Session templates (Open Gym, Leader Circle, etc.)
+export const COACHING_SESSIONS_COLLECTION = 'coaching_sessions'; // Scheduled session instances
+export const COACHING_REGISTRATIONS_COLLECTION = 'coaching_registrations'; // User registrations
+
+// Coaching Session Types (keys are enum-style, values are Firestore strings)
+export const SESSION_TYPES = {
+    OPEN_GYM: 'open_gym',           // Weekly drop-in feedback sessions
+    LEADER_CIRCLE: 'leader_circle', // Peer discussion groups
+    WORKSHOP: 'workshop',           // Structured learning sessions
+    LIVE_WORKOUT: 'live_workout',   // Quick skill practice
+    ONE_ON_ONE: 'one_on_one'        // Personal coaching
+};
+
+// Coaching Session Status
+export const SESSION_STATUS = {
+    SCHEDULED: 'scheduled',
+    LIVE: 'live',
+    COMPLETED: 'completed',
+    CANCELLED: 'cancelled'
+};
+
+// Registration Status
+export const REGISTRATION_STATUS = {
+    REGISTERED: 'registered',
+    ATTENDED: 'attended',
+    NO_SHOW: 'no_show',
+    CANCELLED: 'cancelled'
+};
 
 // --- PLAN GENERATION UTILITIES ---
 export const getTargetDifficulty = (rating) => {
