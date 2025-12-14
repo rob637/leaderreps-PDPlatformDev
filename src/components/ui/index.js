@@ -33,6 +33,23 @@ export {
   ModalFooter, 
   ModalClose 
 } from './Modal';
+export { BottomSheet, BottomSheetActions } from './BottomSheet';
+
+// Mobile Components
+export {
+  MobileCard,
+  MobileCardHeader,
+  MobileCardTitle,
+  MobileCardDescription,
+  MobileCardContent,
+  MobileCardFooter,
+  MobileCardIcon,
+  MobileCardBadge,
+  MobileCardChevron,
+  MobileCardMenu,
+  MobileCardRow,
+  MobileCardStack,
+} from './MobileCard';
 
 // Typography Components
 export { Heading, Text, PageHeader } from './Typography';
@@ -93,6 +110,9 @@ export { List, ListItem, ListItemAction, ListSection } from './ListItem';
 export { default as PWAInstall } from './PWAInstall';
 export { default as ScrollingQuotes } from './ScrollingQuotes';
 export { default as UpdateNotification } from './UpdateNotification';
+export { FloatingActionButton, SpeedDial } from './FloatingActionButton';
+export { SwipeableRow, SwipeActions } from './SwipeableRow';
+export { PullToRefresh } from './PullToRefresh';
 
 // Re-export cn utility for consistency
 export { cn } from '../../lib/utils';
