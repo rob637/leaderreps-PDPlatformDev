@@ -21,6 +21,7 @@ import { useLayout } from '../../providers/LayoutProvider';
 import { LayoutToggle } from '../ui/LayoutToggle';
 import PMReflectionWidget from '../widgets/PMReflectionWidget';
 import { serverTimestamp } from 'firebase/firestore';
+import { FadeIn, Stagger } from '../motion';
 
 const DASHBOARD_FEATURES = [
   'welcome-message',
@@ -449,27 +450,29 @@ const Dashboard = (props) => {
       */}
 
       <header className="mb-4 text-center">
-        <div className="flex items-center justify-center gap-3 mb-2">
-          <LayoutDashboard className="w-8 h-8 text-corporate-teal" />
-          <h1 className="text-3xl font-bold text-corporate-navy">
-            Dashboard
-          </h1>
-          <LayoutDashboard className="w-8 h-8 text-corporate-teal" />
-        </div>
-        <p className="text-slate-600 mt-2">
-          {greeting} Welcome to your daily practice.
-        </p>
+        <FadeIn delay={0.1}>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <LayoutDashboard className="w-8 h-8 text-corporate-teal" />
+            <h1 className="text-3xl font-bold text-corporate-navy">
+              Dashboard
+            </h1>
+            <LayoutDashboard className="w-8 h-8 text-corporate-teal" />
+          </div>
+          <p className="text-slate-600 mt-2">
+            {greeting} Welcome to your daily practice.
+          </p>
+        </FadeIn>
       </header>
 
-      {/* Forced 1-col layout for now */}
-      <div className="grid gap-4 grid-cols-1">
+      {/* Forced 1-col layout for now - with staggered animation */}
+      <Stagger staggerDelay={0.08} className="grid gap-4 grid-cols-1">
         {/* DYNAMIC FEATURES */}
         {sortedFeatures.map(featureId => (
           <React.Fragment key={featureId}>
             {renderers[featureId] ? renderers[featureId]() : null}
           </React.Fragment>
         ))}
-      </div>
+      </Stagger>
 
       {/* Anchor Editor Modal */}
       <UnifiedAnchorEditorModal

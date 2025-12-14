@@ -8,6 +8,7 @@ import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { BreadcrumbNav } from './BreadcrumbNav';
 import { useNavigation } from '../../providers/NavigationProvider';
+import { FadeIn, SlideIn } from '../motion';
 
 /**
  * PageLayout - Standardized layout wrapper for all feature screens
@@ -86,18 +87,19 @@ export const PageLayout = ({
           />
         )}
 
-        {/* Header - Standardized layout */}
-        <header className={`mb-8 ${centerHeader ? 'text-center' : ''}`}>
-          <div className={`flex items-center gap-3 mb-2 ${centerHeader ? 'justify-center' : ''}`}>
-            {Icon && <Icon className={`w-8 h-8 ${iconColorClass}`} />}
-            <h1 className="text-2xl sm:text-3xl font-bold text-corporate-navy">
-              {title}
-            </h1>
-            {Icon && <Icon className={`w-8 h-8 ${iconColorClass}`} />}
-          </div>
-          
-          {sub && (
-            <p className={`text-slate-600 text-base sm:text-lg mt-2 ${centerHeader ? 'max-w-2xl mx-auto' : ''}`}>
+        {/* Header - Animated */}
+        <FadeIn delay={0.1}>
+          <header className={`mb-8 ${centerHeader ? 'text-center' : ''}`}>
+            <div className={`flex items-center gap-3 mb-2 ${centerHeader ? 'justify-center' : ''}`}>
+              {Icon && <Icon className={`w-8 h-8 ${iconColorClass}`} />}
+              <h1 className="text-2xl sm:text-3xl font-bold text-corporate-navy">
+                {title}
+              </h1>
+              {Icon && <Icon className={`w-8 h-8 ${iconColorClass}`} />}
+            </div>
+            
+            {sub && (
+              <p className={`text-slate-600 text-base sm:text-lg mt-2 ${centerHeader ? 'max-w-2xl mx-auto' : ''}`}>
               {sub}
             </p>
           )}
@@ -116,10 +118,12 @@ export const PageLayout = ({
             </div>
           )}
         </header>
+        </FadeIn>
 
-        {/* Page Content - Responsive: single column mobile, two column desktop if sidebar */}
-        {hasSidebar ? (
-          <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8`}>
+        {/* Page Content - Animated with stagger */}
+        <SlideIn direction="up" delay={0.2}>
+          {hasSidebar ? (
+            <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8`}>
             {/* Sidebar - appears first on mobile, positioned based on sidebarLeft */}
             {sidebarLeft && (
               <aside className="lg:col-span-4 xl:col-span-3 order-2 lg:order-1">
@@ -148,6 +152,7 @@ export const PageLayout = ({
             {children}
           </main>
         )}
+        </SlideIn>
       </div>
     </div>
   );

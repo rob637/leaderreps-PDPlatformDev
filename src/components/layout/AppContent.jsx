@@ -10,6 +10,8 @@ import WidgetRenderer from '../admin/WidgetRenderer.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { NavigationProvider } from '../../providers/NavigationProvider.jsx';
 import TimeTravelBanner from '../admin/TimeTravelBanner.jsx';
+import { PageTransition } from '../motion';
+import { SyncIndicator } from '../offline';
 
 const AppContent = ({
   currentScreen,
@@ -140,16 +142,25 @@ const AppContent = ({
                     </div>
                   }
                 >
-                <ScreenRouter
-                  currentScreen={currentScreen}
-                  navParams={navParams}
-                  navigate={navigate}
-                  isDeveloperMode={isDeveloperMode}
-                />
+                  {/* Page Transition Animation */}
+                  <PageTransition pageKey={currentScreen}>
+                    <div id="main-content">
+                      <ScreenRouter
+                        currentScreen={currentScreen}
+                        navParams={navParams}
+                        navigate={navigate}
+                        isDeveloperMode={isDeveloperMode}
+                      />
+                    </div>
+                  </PageTransition>
               </Suspense>
             </div>
 
             <footer className="w-full text-center mt-auto border-t bg-corporate-light-gray border-corporate-subtle-teal p-4">
+              {/* Sync Status Indicator */}
+              <div className="flex justify-center mb-2">
+                <SyncIndicator variant="badge" showWhenSynced={false} />
+              </div>
               <p className="corporate-text-muted">
                 © {currentYear} LeaderReps. All rights reserved.
               </p>

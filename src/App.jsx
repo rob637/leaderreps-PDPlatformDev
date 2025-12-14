@@ -37,6 +37,12 @@ import { NotificationProvider } from './providers/NotificationProvider.jsx';
 import { TimeProvider } from './providers/TimeProvider.jsx';
 import { AccessControlProvider } from './providers/AccessControlProvider.jsx';
 
+// --- Mobile Experience Enhancements ---
+import { OfflineProvider } from './components/offline/useOffline.jsx';
+import { OfflineBanner } from './components/offline';
+import LiveRegion from './components/accessibility/LiveRegion.jsx';
+import SkipLinks from './components/accessibility/SkipLinks.jsx';
+
 /* =========================================================
    MAIN APP COMPONENT
 ========================================================= */
@@ -123,42 +129,58 @@ function App() {
 
   return (
     <>
+      {/* Accessibility: Skip Links for keyboard users */}
+      <SkipLinks 
+        links={[
+          { id: 'main-content', label: 'Skip to main content' },
+          { id: 'main-nav', label: 'Skip to navigation' },
+        ]} 
+      />
+      
+      {/* Accessibility: Live region for screen reader announcements */}
+      <LiveRegion />
+      
       <TimeProvider>
-        <DataProvider
-          firebaseServices={firebaseServices}
-          userId={user?.uid}
-          isAuthReady={isAuthReady}
-          navigate={navigate}
-          user={user}
-        >
-          <FeatureProvider db={firebaseServices?.db}>
-            <LayoutProvider>
-              <AccessControlProvider>
-                <NotificationProvider>
-                  {isAuthRequired ? (
-                    <AuthPanel 
-                      auth={firebaseServices.auth} 
-                      db={firebaseServices.db}
-                      onSuccess={() => navigate('dashboard')} 
-                    />
-                  ) : (
-                    <AppContent
-                      currentScreen={currentScreen}
-                      user={user}
-                      navParams={navParams}
-                      isMobileOpen={isMobileOpen}
-                      setIsMobileOpen={setIsMobileOpen}
-                      isAuthRequired={isAuthRequired}
-                      auth={firebaseServices.auth}
-                      goBack={goBack}
-                      canGoBack={canGoBack}
-                    />
-                  )}
-                </NotificationProvider>
-              </AccessControlProvider>
-            </LayoutProvider>
-          </FeatureProvider>
-        </DataProvider>
+        <OfflineProvider>
+          <DataProvider
+            firebaseServices={firebaseServices}
+            userId={user?.uid}
+            isAuthReady={isAuthReady}
+            navigate={navigate}
+            user={user}
+          >
+            <FeatureProvider db={firebaseServices?.db}>
+              <LayoutProvider>
+                <AccessControlProvider>
+                  <NotificationProvider>
+                    {/* Offline Banner - shows when connection is lost */}
+                    <OfflineBanner position="top" />
+                    
+                    {isAuthRequired ? (
+                      <AuthPanel 
+                        auth={firebaseServices.auth} 
+                        db={firebaseServices.db}
+                        onSuccess={() => navigate('dashboard')} 
+                      />
+                    ) : (
+                      <AppContent
+                        currentScreen={currentScreen}
+                        user={user}
+                        navParams={navParams}
+                        isMobileOpen={isMobileOpen}
+                        setIsMobileOpen={setIsMobileOpen}
+                        isAuthRequired={isAuthRequired}
+                        auth={firebaseServices.auth}
+                        goBack={goBack}
+                        canGoBack={canGoBack}
+                      />
+                    )}
+                  </NotificationProvider>
+                </AccessControlProvider>
+              </LayoutProvider>
+            </FeatureProvider>
+          </DataProvider>
+        </OfflineProvider>
       </TimeProvider>
       
       {/* PWA Update Notification */}

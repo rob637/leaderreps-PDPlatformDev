@@ -1,7 +1,6 @@
 /**
  * Animation Hooks - Custom hooks for motion control
  */
-import { useReducedMotion as useReducedMotionPreference } from '../hooks/usePerformance';
 import { useState, useEffect, useCallback } from 'react';
 
 /**

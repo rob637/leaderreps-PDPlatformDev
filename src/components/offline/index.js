@@ -8,5 +8,5 @@
 export { default as OfflineBanner } from './OfflineBanner';
 export { default as OfflineIndicator } from './OfflineIndicator';
 export { default as SyncIndicator } from './SyncIndicator';
-export { default as useOffline, OfflineProvider } from './useOffline';
+export { default as useOffline, OfflineProvider } from './useOffline.jsx';
 export { default as useOptimistic } from './useOptimistic';
