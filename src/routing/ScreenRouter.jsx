@@ -149,6 +149,45 @@ const NotFoundScreen = () => (
   </div>
 );
 
+// Optimized loading skeleton for screen transitions
+const ScreenLoadingSkeleton = () => (
+  <div className="min-h-screen bg-slate-50 animate-pulse">
+    {/* Header skeleton */}
+    <div className="max-w-[860px] mx-auto p-4 sm:p-6 lg:p-8">
+      {/* Breadcrumb */}
+      <div className="h-4 w-32 bg-slate-200 rounded mb-6" />
+      
+      {/* Title area */}
+      <div className="text-center mb-8">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="w-8 h-8 bg-slate-200 rounded" />
+          <div className="h-8 w-48 bg-slate-200 rounded" />
+          <div className="w-8 h-8 bg-slate-200 rounded" />
+        </div>
+        <div className="h-4 w-64 bg-slate-200 rounded mx-auto mt-2" />
+      </div>
+      
+      {/* Content skeleton */}
+      <div className="space-y-4">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200">
+          <div className="h-6 w-40 bg-slate-200 rounded mb-3" />
+          <div className="space-y-2">
+            <div className="h-4 w-full bg-slate-100 rounded" />
+            <div className="h-4 w-3/4 bg-slate-100 rounded" />
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl p-4 border border-slate-200">
+          <div className="h-6 w-32 bg-slate-200 rounded mb-3" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="h-20 bg-slate-100 rounded-xl" />
+            <div className="h-20 bg-slate-100 rounded-xl" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 const ScreenRouter = ({ currentScreen, navParams, navigate, isDeveloperMode }) => {
   console.log('🗺️ [ScreenRouter] Routing to screen:', { 
     currentScreen, 
@@ -159,7 +198,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate, isDeveloperMode }) =
   const Component = ScreenMap[currentScreen] || NotFoundScreen;
 
   return (
-    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+    <Suspense fallback={<ScreenLoadingSkeleton />}>
       <Component 
         key={currentScreen} 
         {...(navParams && typeof navParams === 'object' ? navParams : null)} 

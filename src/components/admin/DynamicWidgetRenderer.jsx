@@ -1,6 +1,6 @@
 import React from 'react';
 import { LiveProvider, LiveError, LivePreview } from 'react-live';
-import * as LucideIcons from 'lucide-react';
+import IconRegistry from './IconRegistry';
 import { COLORS } from '../screens/dashboard/dashboardConstants';
 import SafeWidgetWrapper from './SafeWidgetWrapper';
 
@@ -8,10 +8,11 @@ const DynamicWidgetRenderer = ({ code, scope = {} }) => {
   // Trim code to avoid leading/trailing whitespace issues
   const cleanCode = code ? code.trim() : '';
 
-  // Default scope includes React, Lucide Icons, and common constants
+  // Default scope includes React, curated icons, and common constants
+  // Note: IconRegistry contains ~150 commonly used icons instead of all 1000+
   const defaultScope = {
     React,
-    ...LucideIcons,
+    ...IconRegistry,
     COLORS,
     ...scope,
     scope // Allow widgets to access the full scope object directly

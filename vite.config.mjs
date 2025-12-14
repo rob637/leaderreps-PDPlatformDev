@@ -165,16 +165,66 @@ export default defineConfig({
     // Bundle size optimization
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendor chunks
-          vendor: ['react', 'react-dom'],
-          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-          ui: ['lucide-react'],
+        manualChunks: (id) => {
+          // Vendor chunks - split heavy dependencies
+          if (id.includes('node_modules')) {
+            // React DOM - must come before general react check
+            if (id.includes('react-dom') || id.includes('scheduler')) {
+              return 'react-dom';
+            }
+            // React core - only the main package
+            if (id.includes('/node_modules/react/')) {
+              return 'react';
+            }
+            // Firebase - large but essential, keep together
+            if (id.includes('firebase')) {
+              return 'firebase';
+            }
+            // Lucide icons - very large, separate chunk
+            if (id.includes('lucide-react')) {
+              return 'icons';
+            }
+            // Framer Motion - animations
+            if (id.includes('framer-motion')) {
+              return 'motion';
+            }
+            // Date/time utilities
+            if (id.includes('date-fns') || id.includes('dayjs')) {
+              return 'dates';
+            }
+            // Other vendor - keep small
+            return 'vendor';
+          }
           
-          // Feature chunks for better caching
-          dashboard: ['./src/components/screens/Dashboard.jsx'],
-          labs: ['./src/components/screens/CoachingLabScreen.jsx'],
-          admin: ['./src/components/screens/AdminDataMaintenance.jsx']
+          // Admin screens - only loaded when needed
+          if (id.includes('/admin/') || id.includes('AdminPortal') || id.includes('AdminFunctions')) {
+            return 'admin';
+          }
+          
+          // Dashboard - critical path, separate chunk
+          if (id.includes('Dashboard') || id.includes('/dashboard/')) {
+            return 'dashboard';
+          }
+          
+          // Development Plan - large, separate chunk
+          if (id.includes('DevelopmentPlan') || id.includes('/devplan/')) {
+            return 'devplan';
+          }
+          
+          // Coaching features
+          if (id.includes('Coaching') || id.includes('/coaching/')) {
+            return 'coaching';
+          }
+          
+          // Widgets - commonly shared
+          if (id.includes('/widgets/')) {
+            return 'widgets';
+          }
+          
+          // UI components - shared across app
+          if (id.includes('/components/ui/')) {
+            return 'ui';
+          }
         },
         
         // Asset file naming
@@ -188,10 +238,11 @@ export default defineConfig({
     },
     
     // Performance thresholds
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500,
     
-    // Minification
+    // Minification with better compression
     minify: 'esbuild',
+    target: 'es2020',
   },
 
   // Dev server configuration
