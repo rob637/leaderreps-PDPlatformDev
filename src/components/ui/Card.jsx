@@ -145,13 +145,14 @@ const Card = React.forwardRef(({
         'rounded-2xl overflow-hidden text-left w-full',
         variants[variant],
         accents[accent],
+        onClick && 'touch-manipulation active:scale-[0.99] transition-transform',
         className
       )}
       {...props}
     >
       {isSmartMode ? (
         <>
-          <div className={cn("p-4", hasContent ? "pb-2" : "")}>
+          <div className={cn("p-4 sm:p-4", hasContent ? "pb-2" : "")}>
             <div className="flex items-center gap-2">
               {Icon && <Icon className={cn("w-5 h-5", iconColors[accent])} />}
               {title && (
@@ -162,7 +163,7 @@ const Card = React.forwardRef(({
             </div>
           </div>
           {hasContent && (
-            <div className="p-4 pt-2">
+            <div className="p-4 sm:p-4 pt-2">
               {children}
             </div>
           )}

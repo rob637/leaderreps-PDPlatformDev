@@ -113,6 +113,7 @@ export { default as UpdateNotification } from './UpdateNotification';
 export { FloatingActionButton, SpeedDial } from './FloatingActionButton';
 export { SwipeableRow, SwipeActions } from './SwipeableRow';
 export { PullToRefresh } from './PullToRefresh';
+export { ResponsiveTable, MobileHistoryCard } from './ResponsiveTable';
 
 // Re-export cn utility for consistency
 export { cn } from '../../lib/utils';

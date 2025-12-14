@@ -394,15 +394,15 @@ const ThisWeeksActionsWidget = ({ scope }) => {
           ${getCategoryStyles()}
         `}
       >
-        {/* Checkbox - matches Win the Day style */}
+        {/* Checkbox - larger touch target */}
         <div
           onClick={() => handleToggle(item)}
           className={`
-            flex-shrink-0 mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors cursor-pointer
+            flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90
             ${getCheckboxStyles()}
           `}
         >
-          {isCompleted && <CheckCircle className="w-3 h-3 text-white" />}
+          {isCompleted && <CheckCircle className="w-4 h-4 text-white" />}
         </div>
 
         {/* Content */}
@@ -447,7 +447,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 -mr-1">
           {/* Skip Button (for carried over items) */}
           {isCarriedOver && !isCompleted && (
             <div className="relative">
@@ -455,13 +455,13 @@ const ThisWeeksActionsWidget = ({ scope }) => {
                 <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
                   <button
                     onClick={() => handleSkip(item)}
-                    className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded"
+                    className="px-3 py-2 min-h-[36px] text-xs text-red-600 hover:bg-red-50 rounded touch-manipulation active:scale-95"
                   >
                     Skip
                   </button>
                   <button
                     onClick={() => setShowSkipConfirm(null)}
-                    className="px-2 py-1 text-xs text-slate-500 hover:bg-slate-50 rounded"
+                    className="px-3 py-2 min-h-[36px] text-xs text-slate-500 hover:bg-slate-50 rounded touch-manipulation active:scale-95"
                   >
                     Cancel
                   </button>
@@ -472,10 +472,10 @@ const ThisWeeksActionsWidget = ({ scope }) => {
                     e.stopPropagation();
                     setShowSkipConfirm(item.id);
                   }}
-                  className="p-2 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-full transition-colors"
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-all touch-manipulation active:scale-95"
                   title="Skip this item"
                 >
-                  <SkipForward className="w-4 h-4" />
+                  <SkipForward className="w-5 h-5" />
                 </button>
               )}
             </div>
@@ -485,7 +485,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
           {(item.resourceId || item.url) && (
             <button
               onClick={(e) => handleViewResource(e, item)}
-              className="p-2 text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-full transition-colors"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-xl transition-all touch-manipulation active:scale-95"
               title="View Resource"
             >
               {loadingResource === item.id ? (

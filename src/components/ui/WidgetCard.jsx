@@ -109,17 +109,18 @@ const WidgetCard = React.forwardRef(({
         'rounded-2xl overflow-hidden text-left w-full',
         variants[actualVariant],
         accents[accent],
+        onClick && 'touch-manipulation active:scale-[0.99] transition-transform',
         className
       )}
       {...props}
     >
       {/* Header */}
       {(title || Icon || action) && (
-        <div className="px-5 pt-3 pb-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="px-4 sm:px-5 pt-3 pb-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
             {Icon && (
               <div className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center",
+                "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
                 `bg-${accent === 'navy' ? 'corporate-navy' : accent === 'teal' ? 'corporate-teal' : accent === 'orange' ? 'corporate-orange' : accent}-100`,
                 "bg-opacity-10"
               )}
@@ -128,14 +129,14 @@ const WidgetCard = React.forwardRef(({
                 <Icon className={cn("w-5 h-5", iconColors[accent])} />
               </div>
             )}
-            <div>
+            <div className="min-w-0">
               {title && (
-                <h3 className="text-base font-bold text-corporate-navy">
+                <h3 className="text-base font-bold text-corporate-navy truncate">
                   {title}
                 </h3>
               )}
               {subtitle && (
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5 truncate">
                   {subtitle}
                 </p>
               )}
@@ -148,7 +149,7 @@ const WidgetCard = React.forwardRef(({
                 e.stopPropagation();
                 action.onClick?.();
               }}
-              className="text-sm font-medium text-corporate-teal hover:text-corporate-navy transition-colors flex items-center gap-1"
+              className="text-sm font-medium text-corporate-teal hover:text-corporate-navy transition-colors flex items-center gap-1 min-h-[44px] px-3 -mr-3 touch-manipulation active:scale-95 flex-shrink-0"
             >
               {action.label}
               <ChevronRight className="w-4 h-4" />
@@ -158,7 +159,7 @@ const WidgetCard = React.forwardRef(({
       )}
       
       {/* Content */}
-      <div className={cn(noPadding ? '' : 'px-5 pb-3')}>
+      <div className={cn(noPadding ? '' : 'px-4 sm:px-5 pb-3')}>
         {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center py-8">

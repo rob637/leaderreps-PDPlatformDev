@@ -20,16 +20,16 @@ import { NoWidgetsEnabled } from '../ui';
 const TabButton = ({ active, onClick, icon: IconComponent, label, badge }) => (
   <button
     onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+    className={`flex items-center gap-2 px-4 py-3 min-h-[44px] font-medium text-sm border-b-2 transition-all duration-150 whitespace-nowrap touch-manipulation active:scale-[0.98] ${
       active 
-        ? 'border-indigo-600 text-indigo-600' 
-        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+        ? 'border-corporate-teal text-corporate-teal' 
+        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 active:bg-slate-50'
     }`}
   >
     <IconComponent className="w-4 h-4" />
     {label}
     {badge > 0 && (
-      <span className="bg-indigo-100 text-indigo-600 text-xs font-bold px-2 py-0.5 rounded-full">
+      <span className="bg-corporate-teal/10 text-corporate-teal text-xs font-bold px-2 py-0.5 rounded-full">
         {badge}
       </span>
     )}

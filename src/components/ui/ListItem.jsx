@@ -100,7 +100,7 @@ const ListItem = React.forwardRef(({
     ghost: '',
   };
 
-  const padding = compact ? 'p-2' : 'p-3';
+  const padding = compact ? 'p-2' : 'p-3 sm:p-3';
 
   return (
     <Component
@@ -108,10 +108,11 @@ const ListItem = React.forwardRef(({
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={cn(
-        'w-full flex items-center gap-3 text-left transition-colors',
+        'w-full flex items-center gap-3 text-left transition-all duration-150',
         padding,
+        'min-h-[52px]', // Ensure minimum touch target height
         variants[variant],
-        onClick && !disabled && 'cursor-pointer hover:bg-slate-50',
+        onClick && !disabled && 'cursor-pointer hover:bg-slate-50 touch-manipulation active:scale-[0.99] active:bg-slate-100',
         selected && 'bg-corporate-teal/5 border-l-2 border-l-corporate-teal',
         disabled && 'opacity-50 cursor-not-allowed',
         className
