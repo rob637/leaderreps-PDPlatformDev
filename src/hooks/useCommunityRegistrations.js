@@ -210,7 +210,7 @@ export const useCommunityRegistrations = () => {
   }, [db, user?.uid]);
 
   // Get upcoming registered sessions (not cancelled, date in future)
-  const getUpcomingRegistrations = useCallback(() => {
+  const upcomingRegistrations = useMemo(() => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     
@@ -226,7 +226,7 @@ export const useCommunityRegistrations = () => {
   }, [registrations]);
 
   // Get past registered sessions (for replays)
-  const getPastRegistrations = useCallback(() => {
+  const pastRegistrations = useMemo(() => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     
@@ -242,21 +242,24 @@ export const useCommunityRegistrations = () => {
   }, [registrations]);
 
   // Get attended sessions (for stats)
-  const getAttendedSessions = useCallback(() => {
+  const attendedSessions = useMemo(() => {
     return registrations.filter(r => r.status === REGISTRATION_STATUS.ATTENDED);
   }, [registrations]);
 
   // Calculate community stats
   const stats = {
     totalRegistrations: registrations.filter(r => r.status !== REGISTRATION_STATUS.CANCELLED).length,
-    upcomingCount: getUpcomingRegistrations().length,
-    attendedCount: getAttendedSessions().length,
+    upcomingCount: upcomingRegistrations.length,
+    attendedCount: attendedSessions.length,
     replaysWatched: registrations.filter(r => r.watchedReplay).length
   };
 
   return {
     // Data
     registrations,
+    upcomingRegistrations,
+    pastRegistrations,
+    attendedSessions,
     loading,
     error,
     stats,
@@ -264,9 +267,6 @@ export const useCommunityRegistrations = () => {
     // Query methods
     isRegistered,
     getRegistration,
-    getUpcomingRegistrations,
-    getPastRegistrations,
-    getAttendedSessions,
     
     // Action methods
     registerForSession,

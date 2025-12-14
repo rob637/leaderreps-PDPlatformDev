@@ -140,6 +140,25 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
     }
 
+    // Community Session Types (Templates)
+    match /community_session_types/{document} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Community Sessions (Scheduled Instances)
+    match /community_sessions/{document} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Community Registrations
+    match /community_registrations/{document} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+    }
+
     // System Alerts & Logs
     match /system_alerts/{document=**} {
       allow read: if isAdmin();
