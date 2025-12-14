@@ -8,21 +8,23 @@ const Badge = ({
   ...props 
 }) => {
   const variants = {
-    default: 'bg-slate-100 text-slate-800',
+    default: 'bg-slate-100 text-slate-700',
     primary: 'bg-corporate-teal/10 text-corporate-teal',
     secondary: 'bg-corporate-orange/10 text-corporate-orange',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    danger: 'bg-red-100 text-red-800',
-    outline: 'bg-transparent border border-slate-200 text-slate-600',
+    navy: 'bg-corporate-navy/10 text-corporate-navy',
+    success: 'bg-emerald-50 text-emerald-700',
+    warning: 'bg-amber-50 text-amber-700',
+    danger: 'bg-red-50 text-red-700',
+    outline: 'bg-transparent border border-slate-200 text-slate-500',
+    premium: 'bg-gradient-to-r from-corporate-teal/10 to-corporate-orange/10 text-corporate-navy',
   };
 
   return (
     <div className={cn(
-      'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+      'inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors',
       variants[variant],
       className
-    )} {...props}>
+    )} style={{ fontFamily: 'var(--font-body)' }} {...props}>
       {children}
     </div>
   );

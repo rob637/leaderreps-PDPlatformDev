@@ -10,7 +10,7 @@ const MobileBottomNav = ({ currentScreen }) => {
   const navItems = [
     {
       id: 'dashboard',
-      label: 'Dashboard',
+      label: 'Home',
       icon: Home,
       screen: 'dashboard'
     },
@@ -48,8 +48,11 @@ const MobileBottomNav = ({ currentScreen }) => {
 
   // Only show on mobile devices
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-corporate-light-gray border-t border-slate-200 md:hidden pb-safe">
-      <div className="flex justify-between items-center px-1 py-1">
+    <div 
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-slate-100 md:hidden"
+      style={{ fontFamily: 'var(--font-body)' }}
+    >
+      <div className="flex justify-around items-center px-2 py-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentScreen === item.screen;
@@ -59,26 +62,32 @@ const MobileBottomNav = ({ currentScreen }) => {
               key={item.id}
               onClick={() => handleNavClick(item)}
               className={`
-                flex flex-col items-center justify-center flex-1 gap-0.5 min-w-0 py-2 px-1
-                min-h-[56px] rounded-xl touch-manipulation
-                transition-all duration-150
-                active:scale-[0.95] active:bg-slate-100
-                ${isActive ? '' : 'hover:bg-slate-50'}
+                flex flex-col items-center justify-center gap-1 py-1.5 px-3
+                min-h-[52px] rounded-xl touch-manipulation
+                transition-all duration-200
+                active:scale-95
+                ${isActive ? '' : 'active:bg-slate-50'}
               `}
             >
               <div className={`
-                px-4 py-1.5 rounded-full transition-all duration-200
-                ${isActive ? 'bg-corporate-teal shadow-md' : 'bg-transparent'}
+                px-3 py-1.5 rounded-full transition-all duration-200
+                ${isActive 
+                  ? 'bg-corporate-teal shadow-md shadow-corporate-teal/25' 
+                  : 'bg-transparent'
+                }
               `}>
                 <Icon 
-                  className={`w-6 h-6 transition-colors duration-200 ${
-                    isActive ? 'text-white' : 'text-slate-500'
+                  className={`w-5 h-5 transition-colors duration-200 ${
+                    isActive ? 'text-white' : 'text-slate-400'
                   }`}
+                  strokeWidth={isActive ? 2.5 : 2}
                 />
               </div>
               <span 
-                className={`text-[11px] font-medium transition-colors duration-200 ${
-                  isActive ? 'text-corporate-navy font-bold' : 'text-slate-500'
+                className={`text-[10px] transition-all duration-200 ${
+                  isActive 
+                    ? 'text-corporate-navy font-semibold' 
+                    : 'text-slate-400 font-medium'
                 }`}
               >
                 {item.label}
@@ -89,7 +98,7 @@ const MobileBottomNav = ({ currentScreen }) => {
       </div>
       
       {/* Safe area padding for devices with home indicator */}
-      <div className="pb-safe-area-inset-bottom" style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }} />
+      <div style={{ paddingBottom: 'max(4px, env(safe-area-inset-bottom))' }} />
     </div>
   );
 };

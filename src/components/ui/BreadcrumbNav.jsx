@@ -12,31 +12,39 @@ import { useNavigation } from '../../providers/NavigationProvider';
  * @param {Function} onBack - Optional custom back handler (overrides default behavior)
  */
 export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
-  const { goBack } = useNavigation();
-
   // If no items, don't render anything
   if (!items || items.length === 0) return null;
 
   const handleBack = () => {
     if (onBack) {
+      // Custom back handler provided
       onBack();
-    } else if (goBack) {
-      goBack();
+    } else if (navigate && items.length >= 2) {
+      // Navigate to parent breadcrumb (second-to-last item)
+      const parentItem = items[items.length - 2];
+      if (parentItem?.path) {
+        navigate(parentItem.path);
+      } else {
+        navigate('dashboard');
+      }
     } else if (navigate) {
-      // Fallback if no history context
+      // Ultimate fallback - go to dashboard
       navigate('dashboard');
     }
   };
 
   return (
-    <div className="flex items-center gap-4 mb-6">
-      {/* Primary Back Action - Simple Arrow (History Back) */}
+    <div className="flex items-center gap-3 mb-6">
+      {/* Primary Back Action - Teal Arrow */}
       <button 
         onClick={handleBack}
-        className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center hover:border-corporate-teal hover:text-corporate-teal transition-colors shadow-sm group flex-shrink-0"
+        className="p-1 hover:bg-teal-50 rounded-lg transition-colors flex-shrink-0"
         title="Go Back"
       >
-        <ArrowLeft className="w-4 h-4 text-slate-500 group-hover:text-corporate-teal transition-colors" />
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00A896" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
       </button>
 
       {/* Breadcrumb Trail - Hierarchy Navigation */}

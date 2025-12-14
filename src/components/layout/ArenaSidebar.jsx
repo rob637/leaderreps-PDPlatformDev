@@ -29,7 +29,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'development-plan', label: 'Dev Plan', icon: Target },
     
-    { type: 'section', label: 'The Arena' },
+    { type: 'section', label: 'Resources' },
     { id: 'library', label: 'Content', icon: BookOpen },
     { id: 'community', label: 'Community', icon: Users },
     { id: 'coaching-hub', label: 'Coaching', icon: MessageSquare },
@@ -54,50 +54,51 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
   return (
     <div 
       className={`
-        relative z-40 h-full bg-corporate-navy text-white transition-all duration-300 ease-in-out flex-col hidden md:flex
-        ${isOpen ? 'w-64' : 'w-16'}
+        relative z-40 h-full bg-gradient-to-b from-corporate-navy to-[#001e2f] text-white transition-all duration-300 ease-in-out flex-col hidden md:flex
+        ${isOpen ? 'w-64' : 'w-20'}
       `}
+      style={{ fontFamily: 'var(--font-body)' }}
     >
       {/* Header / Toggle */}
-      <div className="h-20 flex items-center justify-between px-4 border-b border-white/10">
+      <div className="h-20 flex items-center justify-between px-4 border-b border-white/5">
         {isOpen ? (
           <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
-            <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded bg-white" />
+            <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl bg-white shadow-lg" />
             <div className="flex flex-col">
-              <span className="font-bold text-lg tracking-wide leading-tight">LeaderReps</span>
-              <span className="text-xs text-corporate-teal font-medium uppercase tracking-wider truncate max-w-[140px]">
-                Dashboard
+              <span className="font-semibold text-lg tracking-tight leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>LeaderReps</span>
+              <span className="text-[11px] text-corporate-teal/80 font-medium uppercase tracking-widest">
+                The Arena
               </span>
             </div>
           </div>
         ) : (
-          <div className="w-8 mx-auto">
-             <img src="/icons/icon-192x192.png" alt="Logo" className="w-8 h-8 rounded bg-white" />
+          <div className="w-10 mx-auto">
+             <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl bg-white shadow-lg" />
           </div>
         )}
       </div>
 
       {/* Sidebar Toggle */}
-      <div className="flex justify-center py-2 border-b border-white/10">
+      <div className="flex justify-center py-3 border-b border-white/5">
         <button 
           onClick={toggle}
-          className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors"
+          className="p-2 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all duration-200 hover:scale-105"
         >
-          {isOpen ? <ChevronLeft className="w-6 h-6" /> : <ChevronRight className="w-6 h-6" />}
+          {isOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
         </button>
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 py-4 px-3 overflow-y-auto overflow-x-hidden">
-        <ul className="space-y-2">
+      <nav className="flex-1 py-5 px-3 overflow-y-auto overflow-x-hidden">
+        <ul className="space-y-1">
           {menuItems.map((item, index) => {
             if (item.type === 'section') {
                return (
-                 <li key={`section-${index}`} className="mt-6 mb-2 px-4">
-                   <span className={`text-xs font-bold text-slate-500 uppercase tracking-wider ${isOpen ? 'block' : 'hidden'}`}>
+                 <li key={`section-${index}`} className="mt-8 mb-3 px-3">
+                   <span className={`text-[10px] font-semibold text-slate-500 uppercase tracking-[0.15em] ${isOpen ? 'block' : 'hidden'}`}>
                      {item.label}
                    </span>
-                   {!isOpen && <div className="h-px bg-white/10 mx-1 my-2"></div>}
+                   {!isOpen && <div className="h-px bg-white/5 mx-2 my-3"></div>}
                  </li>
                );
             }
@@ -113,16 +114,18 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
                     if (isOpen) toggle();
                   }}
                   className={`
-                    w-full flex items-center gap-4 px-4 py-3 transition-all duration-200 relative border-none rounded-2xl
+                    w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-200 relative border-none rounded-xl group
                     ${isActive 
-                      ? 'bg-corporate-teal text-white shadow-md font-bold' 
-                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                      ? 'bg-corporate-teal text-white shadow-lg shadow-corporate-teal/30 font-medium' 
+                      : 'bg-teal-500/20 text-teal-200 hover:bg-teal-500/30 hover:text-white'
                     }
                   `}
                   title={!isOpen ? item.label : ''}
                 >
-                  <Icon className={`w-5 h-5 min-w-[1.25rem] ${isActive ? 'text-white' : ''}`} />
-                  <span className={`whitespace-nowrap transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 md:hidden'}`}>
+                  <div className={`p-1.5 rounded-lg transition-colors ${isActive ? 'bg-white/20' : 'bg-teal-400/10 group-hover:bg-teal-400/20'}`}>
+                    <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-white' : 'text-teal-300 group-hover:text-white'}`} />
+                  </div>
+                  <span className={`whitespace-nowrap text-sm transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
                     {item.label}
                   </span>
                 </button>
@@ -132,20 +135,22 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
 
           {/* Admin Link - Only visible to admins */}
           {isAdmin && (
-            <li className="mt-8 pt-4 border-t border-white/10">
+            <li className="mt-8 pt-4 border-t border-white/5">
               <button
                 onClick={() => navigate('admin-portal')}
                 className={`
-                  w-full flex items-center gap-4 px-4 py-3 transition-all duration-200 relative border-none rounded-2xl
+                  w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-200 relative border-none rounded-xl group
                   ${currentScreen === 'admin-portal' 
-                    ? 'bg-red-600 text-white shadow-md font-bold' 
-                    : 'text-red-400 hover:bg-white/5 hover:text-red-300'
+                    ? 'bg-red-500/90 text-white shadow-lg shadow-red-500/20 font-medium' 
+                    : 'text-red-400/80 hover:bg-white/5 hover:text-red-300'
                   }
                 `}
                 title={!isOpen ? 'Admin Portal' : ''}
               >
-                <ShieldCheck className="w-5 h-5 min-w-[1.25rem]" />
-                <span className={`whitespace-nowrap font-bold transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 md:hidden'}`}>
+                <div className={`p-1.5 rounded-lg transition-colors ${currentScreen === 'admin-portal' ? 'bg-white/10' : 'group-hover:bg-white/5'}`}>
+                  <ShieldCheck className="w-[18px] h-[18px]" />
+                </div>
+                <span className={`whitespace-nowrap text-sm transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
                   Admin Portal
                 </span>
               </button>
@@ -155,10 +160,10 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
       </nav>
 
       {/* Footer / Sign Out */}
-      <div className="p-4 border-t border-white/10 space-y-2">
+      <div className="p-4 border-t border-white/5 space-y-3">
         
         {/* PWA Install Button */}
-        <div className="w-full mb-2">
+        <div className="w-full mb-1">
            <PWAInstall collapsed={!isOpen} />
         </div>
 
@@ -167,11 +172,13 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
             <div className="relative">
                 <button
                     onClick={() => setShowAnchors(!showAnchors)}
-                    className={`w-full flex items-center gap-4 px-0 py-2 text-gray-400 hover:text-white transition-colors ${!isOpen ? 'justify-center' : ''}`}
+                    className={`w-full flex items-center gap-3 px-1 py-2 text-slate-400 hover:text-white transition-all duration-200 rounded-lg hover:bg-white/5 ${!isOpen ? 'justify-center' : ''}`}
                     title={!isOpen ? "Leadership Anchors" : ''}
                 >
-                    <Anchor className="w-5 h-5 min-w-[1.25rem]" />
-                    <span className={`whitespace-nowrap transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 md:hidden'}`}>
+                    <div className="p-1.5 rounded-lg">
+                      <Anchor className="w-[18px] h-[18px]" />
+                    </div>
+                    <span className={`whitespace-nowrap text-sm transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
                         Anchors
                     </span>
                 </button>
@@ -180,25 +187,25 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
                 {showAnchors && (
                     <>
                         <div className="fixed inset-0 z-50" onClick={() => setShowAnchors(false)} />
-                        <div className="absolute bottom-full left-0 mb-2 w-72 bg-white rounded-lg shadow-xl p-4 text-slate-800 z-50 border border-slate-200">
-                             <h3 className="font-bold mb-3 text-corporate-navy border-b pb-2">Your Leadership Anchors</h3>
-                             <div className="space-y-3 text-xs">
+                        <div className="absolute bottom-full left-0 mb-2 w-72 bg-white rounded-2xl shadow-2xl p-5 text-slate-800 z-50 border border-slate-100" style={{ fontFamily: 'var(--font-body)' }}>
+                             <h3 className="font-semibold mb-4 text-corporate-navy border-b border-slate-100 pb-3" style={{ fontFamily: 'var(--font-heading)' }}>Your Leadership Anchors</h3>
+                             <div className="space-y-4 text-sm">
                                 {identityStatement && (
                                     <div>
-                                    <p className="font-bold text-corporate-teal uppercase tracking-wider text-[10px]">Identity</p>
-                                    <p className="text-gray-700 mt-1">{identityStatement}</p>
+                                    <p className="font-semibold text-corporate-teal uppercase tracking-wider text-[10px] mb-1">Identity</p>
+                                    <p className="text-slate-600 leading-relaxed">{identityStatement}</p>
                                     </div>
                                 )}
                                 {habitAnchor && (
                                     <div>
-                                    <p className="font-bold text-blue-600 uppercase tracking-wider text-[10px]">Habit</p>
-                                    <p className="text-gray-700 mt-1">{habitAnchor}</p>
+                                    <p className="font-semibold text-blue-500 uppercase tracking-wider text-[10px] mb-1">Habit</p>
+                                    <p className="text-slate-600 leading-relaxed">{habitAnchor}</p>
                                     </div>
                                 )}
                                 {whyStatement && (
                                     <div>
-                                    <p className="font-bold text-orange-600 uppercase tracking-wider text-[10px]">Why</p>
-                                    <p className="text-gray-700 mt-1">{whyStatement}</p>
+                                    <p className="font-semibold text-corporate-orange uppercase tracking-wider text-[10px] mb-1">Why</p>
+                                    <p className="text-slate-600 leading-relaxed">{whyStatement}</p>
                                     </div>
                                 )}
                             </div>
@@ -210,17 +217,19 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
 
         <button
           onClick={onSignOut}
-          className={`w-full flex items-center gap-4 px-0 py-2 text-gray-400 hover:text-white transition-colors ${!isOpen ? 'justify-center' : ''}`}
+          className={`w-full flex items-center gap-3 px-1 py-2 text-slate-400 hover:text-white transition-all duration-200 rounded-lg hover:bg-white/5 ${!isOpen ? 'justify-center' : ''}`}
           title={!isOpen ? "Sign Out" : ''}
         >
-          <LogOut className="w-5 h-5 min-w-[1.25rem]" />
-          <span className={`whitespace-nowrap transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 md:hidden'}`}>
+          <div className="p-1.5 rounded-lg">
+            <LogOut className="w-[18px] h-[18px]" />
+          </div>
+          <span className={`whitespace-nowrap text-sm transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
             Sign Out
           </span>
         </button>
         {isOpen && (
           <div className="mt-4 text-center">
-            <span className="text-[10px] text-gray-500 font-mono">v{__APP_VERSION__}</span>
+            <span className="text-[10px] text-slate-500/60 tracking-wider">v{__APP_VERSION__}</span>
           </div>
         )}
       </div>

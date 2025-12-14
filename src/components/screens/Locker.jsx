@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { Card, PageLayout, NoWidgetsEnabled } from '../ui';
-import { Archive, CheckCircle, Calendar, Trophy, BookOpen } from 'lucide-react';
+import { Archive, CheckCircle, Calendar, Trophy, BookOpen, Dumbbell } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { useNotifications } from '../../providers/NotificationProvider';
@@ -49,6 +49,7 @@ const Locker = () => {
     CheckCircle,
     Calendar,
     BookOpen,
+    Dumbbell,
     isFeatureEnabled,
     useNotifications,
     Settings, Clock, User, Bell, AlertTriangle,

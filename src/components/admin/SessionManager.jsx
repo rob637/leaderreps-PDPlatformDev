@@ -89,9 +89,22 @@ const STATUS_CONFIG = {
   cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700', icon: XCircle }
 };
 
-// Format date for display
+// Format date for display - handles YYYY-MM-DD as local date (not UTC)
 const formatDate = (dateStr) => {
   if (!dateStr) return 'TBD';
+  // Parse YYYY-MM-DD as local date by splitting and creating Date with year, month, day
+  // This avoids timezone issues where "2025-12-15" becomes Dec 14 in US timezones
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }
+  // Fallback for other date formats
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-US', { 
     weekday: 'short', 
@@ -329,13 +342,18 @@ const SessionManager = () => {
   };
 
   const handleDuplicateSession = (session) => {
-    const nextWeek = new Date(session.date);
+    // Parse date as local to avoid timezone shift
+    const parts = session.date.split('-');
+    const nextWeek = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    // Format back to YYYY-MM-DD for the input
+    const nextWeekStr = `${nextWeek.getFullYear()}-${String(nextWeek.getMonth() + 1).padStart(2, '0')}-${String(nextWeek.getDate()).padStart(2, '0')}`;
     
     setEditingSession({
       ...session,
       id: null,
-      date: nextWeek.toISOString().split('T')[0],
+      date: nextWeekStr,
       time: formatTimeForInput(session.time),
       status: SESSION_STATUS.SCHEDULED,
       zoomLink: '',

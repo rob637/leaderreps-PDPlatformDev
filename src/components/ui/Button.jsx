@@ -13,23 +13,25 @@ const Button = React.forwardRef(({
   ...props 
 }, ref) => {
   
+  // Premium button variants with subtle shadows and refined colors
   const variants = {
-    primary: 'bg-corporate-teal text-white hover:bg-corporate-teal-dark shadow-md hover:shadow-lg border border-transparent',
-    secondary: 'bg-corporate-orange text-white hover:bg-orange-700 shadow-md hover:shadow-lg border border-transparent',
-    outline: 'bg-white text-corporate-teal border-2 border-corporate-teal hover:bg-teal-50',
-    ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-corporate-navy',
-    danger: 'bg-red-600 text-white hover:bg-red-700 shadow-md',
-    link: 'text-corporate-teal underline-offset-4 hover:underline p-0 h-auto font-normal',
+    primary: 'bg-corporate-teal text-white hover:bg-corporate-subtle-teal shadow-sm hover:shadow-md border-0',
+    secondary: 'bg-corporate-orange text-white hover:bg-orange-700 shadow-sm hover:shadow-md border-0',
+    outline: 'bg-white text-corporate-teal border-2 border-corporate-teal/30 hover:border-corporate-teal hover:bg-teal-50/50',
+    ghost: 'bg-transparent text-slate-600 hover:bg-slate-100/80 hover:text-corporate-navy',
+    danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
+    link: 'text-corporate-teal underline-offset-4 hover:underline p-0 h-auto font-medium',
     'nav-active': 'bg-corporate-teal text-white shadow-sm',
     'nav-inactive': 'text-gray-300 hover:bg-white/5 hover:text-white bg-transparent',
-    'nav-back': 'bg-white text-slate-700 border border-slate-300 shadow-sm hover:bg-slate-100',
+    'nav-back': 'bg-white text-slate-600 border border-slate-200/60 shadow-sm hover:bg-slate-50 hover:shadow-md',
+    soft: 'bg-slate-100/80 text-slate-700 hover:bg-slate-200/80 border-0',
   };
 
   const sizes = {
-    sm: 'h-11 min-h-[44px] px-4 text-sm',
-    md: 'h-12 min-h-[48px] px-5 py-2 text-sm',
-    lg: 'h-14 min-h-[56px] px-8 text-base',
-    icon: 'h-11 w-11 min-h-[44px] min-w-[44px] p-2 flex items-center justify-center',
+    sm: 'h-10 min-h-[40px] px-4 text-sm',
+    md: 'h-11 min-h-[44px] px-5 py-2 text-sm',
+    lg: 'h-12 min-h-[48px] px-6 text-base',
+    icon: 'h-10 w-10 min-h-[40px] min-w-[40px] p-2 flex items-center justify-center',
   };
 
   return (
@@ -37,14 +39,15 @@ const Button = React.forwardRef(({
       ref={ref}
       type={type}
       className={cn(
-        'inline-flex items-center justify-center whitespace-nowrap rounded-xl font-semibold transition-all duration-150 touch-manipulation',
-        'active:scale-[0.97] active:opacity-90',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-corporate-teal focus-visible:ring-offset-2',
+        'inline-flex items-center justify-center whitespace-nowrap rounded-xl font-medium transition-all duration-200 touch-manipulation',
+        'active:scale-[0.97]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-corporate-teal/50 focus-visible:ring-offset-2',
         'disabled:pointer-events-none disabled:opacity-50',
         variants[variant],
         sizes[size],
         className
       )}
+      style={{ fontFamily: 'var(--font-body)' }}
       disabled={disabled || isLoading}
       {...props}
     >

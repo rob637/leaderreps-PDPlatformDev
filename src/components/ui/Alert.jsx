@@ -13,22 +13,22 @@ const Alert = React.forwardRef(({
   
   const variants = {
     info: {
-      container: 'bg-blue-50 border-blue-200 text-blue-800',
+      container: 'bg-blue-50/80 border-blue-100 text-blue-800',
       icon: Info,
       iconColor: 'text-blue-500',
     },
     success: {
-      container: 'bg-green-50 border-green-200 text-green-800',
+      container: 'bg-emerald-50/80 border-emerald-100 text-emerald-800',
       icon: CheckCircle,
-      iconColor: 'text-green-500',
+      iconColor: 'text-emerald-500',
     },
     warning: {
-      container: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+      container: 'bg-amber-50/80 border-amber-100 text-amber-800',
       icon: AlertTriangle,
-      iconColor: 'text-yellow-500',
+      iconColor: 'text-amber-500',
     },
     error: {
-      container: 'bg-red-50 border-red-200 text-red-800',
+      container: 'bg-red-50/80 border-red-100 text-red-800',
       icon: AlertCircle,
       iconColor: 'text-red-500',
     },
@@ -41,23 +41,24 @@ const Alert = React.forwardRef(({
       ref={ref}
       role="alert"
       className={cn(
-        'relative flex gap-3 rounded-xl border p-4',
+        'relative flex gap-4 rounded-xl border p-4',
         container,
         className
       )}
+      style={{ fontFamily: 'var(--font-body)' }}
       {...props}
     >
       <Icon className={cn('h-5 w-5 flex-shrink-0 mt-0.5', iconColor)} />
       <div className="flex-1">
         {title && (
-          <h5 className="font-semibold mb-1">{title}</h5>
+          <h5 className="font-semibold mb-1" style={{ fontFamily: 'var(--font-heading)' }}>{title}</h5>
         )}
-        <div className="text-sm">{children}</div>
+        <div className="text-sm leading-relaxed">{children}</div>
       </div>
       {onClose && (
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 p-1 rounded-full hover:bg-black/5 transition-colors"
+          className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-black/5 transition-colors text-current opacity-60 hover:opacity-100"
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Dismiss</span>

@@ -10,6 +10,8 @@ import AdminAccessViewer from './AdminAccessViewer';
 import CoachingUpcomingSessionsWidget from '../widgets/CoachingUpcomingSessionsWidget';
 import CoachingOnDemandWidget from '../widgets/CoachingOnDemandWidget';
 import CoachingMySessionsWidget from '../widgets/CoachingMySessionsWidget';
+import CommunityUpcomingSessionsWidget from '../widgets/CommunityUpcomingSessionsWidget';
+import CommunityMyRegistrationsWidget from '../widgets/CommunityMyRegistrationsWidget';
 
 /**
  * WidgetRenderer - Renders widgets from templates defined in widgetTemplates.js
@@ -59,6 +61,15 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
 
   if (widgetId === 'coaching-my-sessions') {
     return <CoachingMySessionsWidget scope={scope} />;
+  }
+
+  // Community widgets
+  if (widgetId === 'community-upcoming-sessions') {
+    return <CommunityUpcomingSessionsWidget scope={scope} />;
+  }
+
+  if (widgetId === 'community-my-registrations') {
+    return <CommunityMyRegistrationsWidget scope={scope} />;
   }
 
   if (widgetId === 'pm-bookend') {

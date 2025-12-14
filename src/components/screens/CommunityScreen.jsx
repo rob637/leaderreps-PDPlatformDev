@@ -1,8 +1,6 @@
-// src/components/screens/CommunityScreen.jsx (Refactored for Consistency, Context)
-
+// src/components/screens/CommunityScreen.jsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// --- Core Services & Context ---
-import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
+import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
 import contentService, { CONTENT_COLLECTIONS } from '../../services/contentService.js';
 import { useDevPlan } from '../../hooks/useDevPlan';
@@ -12,61 +10,42 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { useLayout } from '../../providers/LayoutProvider';
 
-// --- Icons ---
 import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
-    Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video, BookOpen, FileText
+    Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video, BookOpen, FileText,
+    Calendar
 } from 'lucide-react';
 import { Button, Card, LoadingSpinner, PageLayout, NoWidgetsEnabled } from '../ui';
-import { DashboardCard } from '../ui/DashboardCard';
 
-/* =========================================================
-   PALETTE (use CSS variables from src/styles/global.css)
-   --corporate-navy, --corporate-orange, --corporate-teal, --corporate-light-gray
-   --corporate-*-10, --corporate-*-20, --corporate-*-30 for alpha variants
-========================================================= */
+// --- Tab Button Component ---
+const TabButton = ({ active, onClick, icon: IconComponent, label, badge }) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-2 px-4 py-3 min-h-[44px] font-medium text-sm border-b-2 transition-all duration-150 whitespace-nowrap touch-manipulation active:scale-[0.98] ${
+      active 
+        ? 'border-corporate-teal text-corporate-teal' 
+        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 active:bg-slate-50'
+    }`}
+  >
+    <IconComponent className="w-4 h-4" />
+    {label}
+    {badge > 0 && (
+      <span className="bg-corporate-teal/10 text-corporate-teal text-xs font-bold px-2 py-0.5 rounded-full">
+        {badge}
+      </span>
+    )}
+  </button>
+);
 
-/* =========================================================
-   MOCK DATA & FALLBACKS
-========================================================= */
+// --- Sub-Components ---
 
-// --- Mock Feed Data (Local Fallback - Replace with Service/API later) ---
-// Note: Added `ownerName` to align with `user.name` usage
-// const MOCK_FEED_FALLBACK = []; // Removed in favor of Firestore data
-
-// --- Tier Metadata Fallback (If LEADERSHIP_TIERS fails to load) ---
-// Uses CSS variable references for consistency
-const LEADERSHIP_TIERS_META_FALLBACK = { // cite: CommunityScreen.jsx (original)
-    'All': { name: 'All Tiers', hex: 'var(--corporate-teal)', color: 'teal-500' },
-    'T1': { name: 'Lead Self', hex: 'var(--corporate-teal)', color: 'green-500' },
-    'T2': { name: 'Lead Work', hex: 'var(--corporate-navy)', color: 'blue-500' },
-    'T3': { name: 'Lead People', hex: 'var(--corporate-orange)', color: 'amber-500' },
-    'T4': { name: 'Lead Teams', hex: 'var(--corporate-orange)', color: 'orange-500' },
-    'T5': { name: 'Lead Strategy', hex: 'var(--corporate-teal)', color: 'purple-500' },
-    'System': { name: 'System Info', hex: 'var(--corporate-subtle-teal)', color: 'gray-500' },
-};
-
-
-/* =========================================================
-   SUB-COMPONENTS (Refactored for Consistency)
-========================================================= */
-
-/**
- * CommunityHomeView Component
- * Displays the main feed, filters, and the "Start Discussion" button.
- */
 const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFilter, filteredThreads, tierMeta }) => {
-    const { layoutMode } = useLayout();
-    // Determine which tier metadata to use (context or fallback)
     const safeTierMeta = useMemo(() => {
-        // Add 'All' option dynamically if not present in context Tiers
-        const tiers = tierMeta || LEADERSHIP_TIERS_META_FALLBACK; // cite: useAppServices.jsx, LEADERSHIP_TIERS_META_FALLBACK
+        const tiers = tierMeta || {};
         return tiers.All ? tiers : { All: { name: 'All Tiers', hex: 'var(--corporate-teal)', color: 'teal-500' }, ...tiers };
     }, [tierMeta]);
 
-    // --- Mock Handlers (Replace with actual interaction logic) ---
     const handleCommentClick = (threadId) => {
-        // navigate('community-thread', { threadId }); // Example navigation
         alert(`Action: View details/comments for thread ${threadId}`);
     };
     const handleReactClick = (threadId) => {
@@ -75,20 +54,17 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
 
     return (
         <div className="space-y-4 sm:space-y-5 lg:space-y-6">
-            {/* Header: Title & New Thread Button */}
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4 border-slate-200">
                 <h2 className="text-xl sm:text-2xl font-bold text-corporate-navy">Community Feed ({safeTierMeta[currentTierFilter]?.name || 'All'})</h2>
-                <Button onClick={() => setView('new-thread')} size="sm"> {/* Use standard Button */}
+                <Button onClick={() => setView('new-thread')} size="sm">
                     <PlusCircle className="w-4 h-4 mr-2" /> Start Discussion
                 </Button>
             </div>
 
-            {/* Tier Filter Bar */}
-            <Card accent="TEAL" className="!p-3"> {/* Use Card for consistent container */}
+            <Card accent="TEAL" className="!p-3">
                 <div className="flex flex-wrap items-center gap-2">
                     <Filter className="w-5 h-5 flex-shrink-0 text-corporate-navy" />
                     <span className="text-sm font-semibold mr-2 text-corporate-navy">Filter:</span>
-                    {/* Map through available tiers from safeTierMeta */}
                     {Object.keys(safeTierMeta).map(tierId => {
                         const meta = safeTierMeta[tierId];
                         const isActive = currentTierFilter === tierId;
@@ -96,25 +72,21 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                             <button
                                 key={tierId}
                                 onClick={() => setCurrentTierFilter(tierId)}
-                                // Consistent button styling for filters
                                 className={`px-3 py-1 text-[11px] font-bold rounded-full transition-all duration-200 border ${
                                     isActive
-                                        ? 'text-white shadow-md scale-105' // Active style
-                                        : 'text-gray-700 bg-white hover:bg-gray-100 border-gray-300' // Inactive style
+                                        ? 'text-white shadow-md scale-105'
+                                        : 'text-gray-700 bg-white hover:bg-gray-100 border-gray-300'
                                 }`}
                                 style={{ backgroundColor: isActive ? meta.hex : undefined, borderColor: isActive ? meta.hex : undefined }}
-                                aria-pressed={isActive} // Accessibility
                             >
-                                {tierId === 'System' ? 'Admin' : tierId} {/* Shorten label */}
+                                {tierId === 'System' ? 'Admin' : tierId}
                             </button>
                         );
                     })}
                 </div>
             </Card>
 
-            {/* Thread List */}
             <div className="space-y-4">
-                {/* Empty State */}
                 {filteredThreads.length === 0 && (
                     <Card className="text-center border-dashed">
                         <p className="text-gray-500 italic py-6">
@@ -122,19 +94,13 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                         </p>
                     </Card>
                 )}
-                {/* Render Threads */}
                 {filteredThreads.map(thread => {
-                    // Determine if the current user owns this thread
-                    const isMyThread = user?.userId && thread.ownerId === user.userId; // Use userId // cite: useAppServices.jsx
-                    // Get tier metadata for color/styling
+                    const isMyThread = user?.userId && thread.ownerId === user.userId;
                     const threadTierMeta = safeTierMeta[thread.tier] || { hex: 'var(--corporate-subtle-teal)' };
 
                     return (
-                        // Use Card for each thread item
                         <Card key={thread.id} accent={isMyThread ? 'TEAL' : (thread.impact ? 'ORANGE' : 'NAVY')} className="transition-shadow duration-200 hover:shadow-lg">
-                            {/* Thread Header */}
                             <div className="flex justify-between items-start mb-3 border-b pb-2 border-slate-200">
-                                {/* User Info */}
                                 <div className="flex items-center space-x-3">
                                     <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xs text-gray-600 shrink-0">
                                         {thread.rep}
@@ -144,24 +110,17 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                                         <p className="text-xs text-gray-500">{thread.time}</p>
                                     </div>
                                 </div>
-                                {/* Tags/Badges */}
                                 <div className='flex items-center gap-2 ml-2 flex-shrink-0'>
-                                    {/* Pod Member Tag (Example - adjust logic based on real data) */}
                                     {thread.isPodMember && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700`}>Pod</span>}
-                                    {/* Impact Tag */}
                                     {thread.impact && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white bg-corporate-orange flex items-center gap-1`}><Star size={10} fill="currentColor"/> Impact</span>}
-                                    {/* Tier Tag */}
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full`} style={{ background: `${threadTierMeta.hex}1A`, color: threadTierMeta.hex }}>{thread.tier}</span>
                                 </div>
                             </div>
 
-                            {/* Rep/Post Content */}
                             {thread.title && thread.title !== thread.content && <h4 className="font-bold text-sm mb-1 text-corporate-navy">{thread.title}</h4>}
                             <p className="text-sm text-gray-800 mb-4 font-medium whitespace-pre-wrap">{thread.content}</p>
 
-                            {/* Actions Footer */}
                             <div className="flex justify-between items-center text-xs pt-3 border-t border-slate-200">
-                                {/* Reactions & Comments */}
                                 <div className="flex space-x-4">
                                     <button onClick={() => handleReactClick(thread.id)} className="flex items-center text-red-500 hover:text-red-700 transition-colors group">
                                         <Heart className="w-3.5 h-3.5 mr-1 group-hover:fill-current" /> {thread.reactions || 0}
@@ -170,7 +129,6 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                                         <MessageSquare className="w-3.5 h-3.5 mr-1" /> {thread.comments || 0}
                                     </button>
                                 </div>
-                                {/* View Details Link */}
                                 <button onClick={() => handleCommentClick(thread.id)} className="font-semibold text-blue-600 hover:underline">View</button>
                             </div>
                         </Card>
@@ -181,116 +139,18 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
     );
 };
 
-
-/**
- * MyThreadsView Component
- * Displays threads started by the current user.
- */
-const MyThreadsView = ({ user, allThreads }) => { // Pass allThreads from parent
-    // Filter threads based on the current user's ID
-    const myThreads = useMemo(() => {
-        // Safety check for user and userId
-        const userId = user?.userId; // cite: useAppServices.jsx
-        if (!userId) return [];
-        return (allThreads || []).filter(thread => thread.ownerId === userId);
-    }, [user, allThreads]);
-
-    return (
-        // Use Card container
-        <Card title="My Active Discussions" icon={Briefcase} accent="TEAL">
-            {myThreads.length > 0 ? (
-                <div className="space-y-3">
-                    {myThreads.map(thread => (
-                        // Simpler card for list view
-                        <div key={thread.id} className="p-4 rounded-lg border-l-4 shadow-sm transition-shadow hover:shadow-md cursor-pointer" style={{ borderColor: 'var(--corporate-teal)', backgroundColor: 'var(--corporate-light-gray)' }}
-                             onClick={() => alert(`Maps to details for thread ${thread.id}`)} // Placeholder action
-                        >
-                            <h3 className="font-semibold text-md mb-1 text-corporate-navy">{thread.title}</h3>
-                            <p className="text-xs text-gray-600">
-                                Tier: {thread.tier} | {thread.replies} Replies | Last active: {thread.lastActive}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                // Consistent empty state message
-                <p className="text-gray-500 italic text-sm text-center py-6">You haven't started any discussions yet. Post in the Community Feed!</p>
-            )}
-        </Card>
-    );
-};
-
-/**
- * MentorshipView Component (Placeholder)
- * Provides information and actions related to mentorship.
- */
-const MentorshipView = () => {
-    const { navigate } = useAppServices(); // cite: useAppServices.jsx
-
-    return (
-        // Use Card container
-        <Card title="Mentorship Network" icon={Users} accent="ORANGE">
-            <p className="text-gray-600 text-sm mb-4">Connect with experienced leaders (T5 Visionaries) for personalized guidance and support.</p>
-            {/* Placeholder content - Needs real implementation */}
-            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg text-center text-orange-700 font-medium italic mb-4">
-                Mentorship matching feature coming soon...
-            </div>
-            {/* Button linking to another relevant section (e.g., Development Plan) */}
-            <Button
-                onClick={() => navigate('development-plan')} // Example navigation // cite: useAppServices.jsx
-                variant="secondary" size="sm" className="w-full"
-            >
-                <User className="w-4 h-4 mr-2" /> Review Your Development Plan
-            </Button>
-        </Card>
-    );
-};
-
-/**
- * NotificationsView Component (Placeholder)
- * Displays recent notifications for the user.
- */
-const NotificationsView = () => (
-    // Use Card container
-    <Card title="Notifications" icon={Bell} accent="RED">
-        <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar pr-2">
-            {/* Placeholder Notifications */}
-            {[
-                {id: 1, text: "A **T5 Leader** replied to your thread on 'Delegation Challenges'."},
-                {id: 2, text: "Your **Weekly Progress Summary** is ready for review."},
-                {id: 3, text: "Sarah K. liked your post about 'Mindful Check-ins'."},
-                {id: 4, text: "Reminder: **Office Hours** with Coach Support at 2 PM today."},
-                {id: 5, text: "You earned the **'Consistent Contributor'** badge!"},
-            ].map(notif => (
-                <div key={notif.id} className="text-sm text-gray-700 border-b pb-2 last:border-b-0 border-slate-200">
-                     <p dangerouslySetInnerHTML={{ __html: notif.text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>') }} />
-                     <span className="text-xs text-gray-400"> (Mock time)</span>
-                </div>
-            ))}
-             {/* Empty State */}
-             {/* <p className="text-gray-500 italic text-sm text-center py-6">No new notifications.</p> */}
-        </div>
-    </Card>
-);
-
-
-/**
- * NewThreadView Component
- * Form for creating a new discussion thread.
- */
 const NewThreadView = ({ setView }) => {
     const { db, user } = useAppServices();
     const [title, setTitle] = useState('');
     const [context, setContext] = useState('');
     const [question, setQuestion] = useState('');
-    const [tier, setTier] = useState('T2'); // Default tier
+    const [tier, setTier] = useState('T2');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
-    // Submission Handler
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        if (!title || !context || !question || isSubmitting) return; // Basic validation
+        if (!title || !context || !question || isSubmitting) return;
 
         setIsSubmitting(true);
         setIsSuccess(false);
@@ -298,7 +158,7 @@ const NewThreadView = ({ setView }) => {
         try {
             await contentService.addContent(db, CONTENT_COLLECTIONS.COMMUNITY, {
                 title: title,
-                content: `${context}\n\n${question}`, // Combine context and question for now as 'content'
+                content: `${context}\n\n${question}`,
                 tier: tier,
                 author: user?.name || 'Anonymous',
                 authorId: user?.userId || 'anonymous',
@@ -307,12 +167,11 @@ const NewThreadView = ({ setView }) => {
                 question: question,
                 reactions: 0,
                 comments: 0,
-                isPodMember: false, // Default
-                impact: false // Default
+                isPodMember: false,
+                impact: false
             });
             setIsSuccess(true);
-            // Navigate back to home after success message
-            setTimeout(() => setView('home'), 2000);
+            setTimeout(() => setView('feed'), 2000);
         } catch (error) {
             console.error("Error posting thread:", error);
             alert("Failed to post thread. Please try again.");
@@ -323,37 +182,29 @@ const NewThreadView = ({ setView }) => {
     }, [title, context, question, tier, isSubmitting, setView, db, user]);
 
     return (
-        // Use Card container
         <Card title="Start a New Discussion" icon={PlusCircle} accent="TEAL">
-            {/* Back Button */}
-            <button onClick={() => setView('home')} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition-colors">
+            <button onClick={() => setView('feed')} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition-colors">
                 <X className="w-5 h-5" />
             </button>
             <p className="text-sm text-gray-700 mb-4 border-l-4 pl-3 italic border-corporate-teal">
                 Use the structure below for high-quality discussions and faster responses from peers and coaches.
             </p>
 
-            {/* New Thread Form */}
             <form className="space-y-4" onSubmit={handleSubmit}>
-                {/* Title */}
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">1. Thread Title / Topic <span className="text-red-500">*</span></label>
                     <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Applying SBI to high performers" className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal" required />
                 </div>
-                {/* Context */}
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">2. Situation & Context (1-2 sentences) <span className="text-red-500">*</span></label>
                     <textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="e.g., Giving feedback to a senior engineer who is technically strong but dismissive in code reviews." className="w-full p-3 border border-gray-300 rounded-lg h-20 text-sm focus:ring-2 focus:ring-corporate-teal" required />
                 </div>
-                {/* Question */}
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">3. Specific Question / Challenge <span className="text-red-500">*</span></label>
                     <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="e.g., How can I deliver this feedback using SBI without demotivating them, focusing on the impact on team collaboration?" className="w-full p-3 border border-gray-300 rounded-lg h-24 text-sm focus:ring-2 focus:ring-corporate-teal" required />
                 </div>
-                {/* Tier Selection */}
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">4. Primary Leadership Tier Focus</label>
-                    {/* TODO: Populate options from LEADERSHIP_TIERS context */}
                     <select value={tier} onChange={(e) => setTier(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-corporate-teal">
                         <option value="T1">T1: Lead Self</option>
                         <option value="T2">T2: Lead Work</option>
@@ -363,14 +214,12 @@ const NewThreadView = ({ setView }) => {
                     </select>
                 </div>
 
-                {/* Success Message */}
                 {isSuccess && (
                     <div className="flex items-center p-3 text-sm font-semibold text-white rounded-lg bg-corporate-teal animate-pulse">
                         <CheckCircle className='w-4 h-4 mr-2'/> Thread Posted! Redirecting...
                     </div>
                 )}
 
-                {/* Submit Button */}
                 <Button type="submit" disabled={isSubmitting || isSuccess} size="md" className="w-full">
                     {isSubmitting ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <Send className="w-4 h-4 mr-2" />}
                     {isSubmitting ? 'Posting Thread...' : 'Post Discussion'}
@@ -379,7 +228,6 @@ const NewThreadView = ({ setView }) => {
         </Card>
     );
 };
-
 
 const CommunityResourcesView = ({ db }) => {
     const { plan, currentWeek } = useDevPlan();
@@ -392,7 +240,6 @@ const CommunityResourcesView = ({ db }) => {
             if (!db) return;
             setIsLoading(true);
             try {
-                // Fetch from content_community
                 const allItems = await contentService.getContent(db, CONTENT_COLLECTIONS.COMMUNITY);
                 setResources(allItems);
             } catch (error) {
@@ -433,7 +280,6 @@ const CommunityResourcesView = ({ db }) => {
     const visibleResources = useMemo(() => {
         return resources.filter(item => {
             if (item.isHiddenUntilUnlocked && !unlockedResourceIds.has(item.id)) return false;
-            // Show items that have a URL or are explicitly files/resources
             return item.url || item.resourceType === 'file' || item.resourceType === 'video';
         });
     }, [resources, unlockedResourceIds]);
@@ -488,104 +334,39 @@ const CommunityResourcesView = ({ db }) => {
     );
 };
 
-
-/* =========================================================
-   MAIN COMPONENT: CommunityScreen (Router)
-========================================================= */
-
-const CommunityDashboard = ({ navItems, setView }) => {
-  // Filter out notifications from the dashboard grid
-  const dashboardItems = navItems.filter(item => item.screen !== 'notifications');
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-      {dashboardItems.map((item) => (
-        <DashboardCard
-          key={item.screen}
-          title={item.label}
-          description={getCommunityDescription(item.screen)}
-          icon={item.icon}
-          onClick={() => setView(item.screen)}
-          color="text-corporate-teal"
-          bgColor="bg-corporate-teal/10"
-        />
-      ))}
-    </div>
-  );
-};
-
-const getCommunityDescription = (screen) => {
-  switch (screen) {
-    case 'home': return 'Join the conversation, share insights, and connect with peers.';
-    case 'my-threads': return 'Track your discussions and responses.';
-    case 'mentorship': return 'Find a mentor or join a mastermind group.';
-    case 'events': return 'Register for upcoming webinars and live sessions.';
-    case 'resources': return 'Access community guidelines and helpful documents.';
-    default: return 'Access this community feature.';
-  }
-};
+// --- Main Component ---
 
 const CommunityScreen = ({ simulatedTier }) => {
-    // --- Consume Services ---
-    const { db, user, navigate, LEADERSHIP_TIERS, featureFlags, isAdmin, membershipData, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
-    const { isFeatureEnabled, getFeatureOrder } = useFeatures();
+    const { db, user, navigate, LEADERSHIP_TIERS, isLoading: isAppLoading, error: appError } = useAppServices();
+    const { isFeatureEnabled } = useFeatures();
     const { getUnlockedResources } = useDevPlan();
     
-    // Use safeUser structure even if user context is briefly null during auth changes
-    const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]); // cite: useAppServices.jsx (provides user)
+    const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]);
     
-    // Check membership access - use simulatedTier if provided, otherwise use actual membership
-    const currentTier = simulatedTier || membershipData?.currentTier || user?.membershipTier || 'free';
-    const hasCommunityAccess = membershipService.canAccessFeature(currentTier, 'communitySubmit');
+    // Tab State
+    const [activeTab, setActiveTab] = useState('events'); // Default to events
+    const [view, setView] = useState('feed'); // For sub-views within feed tab (feed vs new-thread)
     
-    console.log('🏘️ [CommunityScreen] Tier check:', {
-        simulatedTier,
-        membershipDataTier: membershipData?.currentTier,
-        userMembershipTier: user?.membershipTier,
-        computedCurrentTier: currentTier,
-        hasCommunityAccess
-    });
-
-    // --- Local State ---
-    const [view, setView] = useState('dashboard'); // Controls which sub-view is displayed
-    const [currentTierFilter, setCurrentTierFilter] = useState('All'); // Filter for the home feed
+    // Feed State
+    const [currentTierFilter, setCurrentTierFilter] = useState('All');
     const [allThreads, setAllThreads] = useState([]);
     const [isLoadingThreads, setIsLoadingThreads] = useState(true);
 
-    // Effect to set initial view based on enabled features
-    useEffect(() => {
-        // Only redirect if we are NOT on the dashboard and the current view is disabled
-        if (view !== 'dashboard' && view === 'home' && !isFeatureEnabled('community-feed')) {
-            // If home is disabled, try to find the first enabled feature
-            if (isFeatureEnabled('my-discussions')) setView('my-threads');
-            else if (isFeatureEnabled('mastermind')) setView('mentorship');
-            else if (isFeatureEnabled('live-events')) setView('events');
-            // If nothing is enabled, it will stay on 'home' but render the disabled message
-        }
-    }, [isFeatureEnabled, view]);
-
-    // --- Determine Data Sources ---
-    // Use LEADERSHIP_TIERS from context if available, otherwise use fallback
-    const tierMeta = useMemo(() => LEADERSHIP_TIERS || LEADERSHIP_TIERS_META_FALLBACK, [LEADERSHIP_TIERS]); // cite: useAppServices.jsx, LEADERSHIP_TIERS_META_FALLBACK
-    
     // Fetch Threads
     useEffect(() => {
         const fetchThreads = async () => {
             setIsLoadingThreads(true);
             try {
                 const threads = await contentService.getContent(db, CONTENT_COLLECTIONS.COMMUNITY);
-                
-                // Filter by unlocked resources
                 const unlockedIds = getUnlockedResources('community');
                 const unlockedThreads = threads.filter(t => unlockedIds.has(t.id));
                 
-                // Map to expected format if needed
                 const mappedThreads = unlockedThreads.map(t => ({
                     ...t,
                     ownerName: t.author || t.ownerName,
                     ownerId: t.authorId || t.ownerId,
                     rep: t.rep || (t.author ? t.author.substring(0, 2).toUpperCase() : 'U'), 
-                    content: t.content || t.title, // Fallback to title if content missing
+                    content: t.content || t.title,
                     time: t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : 'Just now'
                 }));
                 setAllThreads(mappedThreads);
@@ -601,154 +382,91 @@ const CommunityScreen = ({ simulatedTier }) => {
         }
     }, [db]);
 
-    // --- Effect to scroll to top when view changes ---
-    useEffect(() => { 
-        window.scrollTo({ top: 0, behavior: 'smooth' }); 
-        logWidthMeasurements('Community');
-    }, [view]);
-
-    // --- Filter Threads for Home View ---
+    // Filter Threads
     const filteredThreads = useMemo(() => {
-        // Filter based on selected tier, or show all non-system if 'All'
         return allThreads.filter(thread =>
-            thread.tier !== 'System' && // Always exclude system messages from main feed
+            thread.tier !== 'System' &&
             (currentTierFilter === 'All' || thread.tier === currentTierFilter)
         );
     }, [currentTierFilter, allThreads]);
 
-    // --- Sidebar Navigation Items ---
-    const navItems = useMemo(() => {
-        const allItems = [
-            { featureId: 'community-feed', screen: 'home', label: 'Community Feed', icon: MessageSquare },
-            { featureId: 'my-discussions', screen: 'my-threads', label: 'My Discussions', icon: Briefcase },
-            { featureId: 'mastermind', screen: 'mentorship', label: 'Mastermind Groups', icon: Users },
-            { featureId: 'live-events', screen: 'events', label: 'Live Events', icon: Video },
-            { featureId: 'community-resources', screen: 'resources', label: 'Resources', icon: BookOpen },
-        ];
+    const tierMeta = useMemo(() => LEADERSHIP_TIERS || {}, [LEADERSHIP_TIERS]);
 
-        const sortedItems = allItems
-            .filter(item => isFeatureEnabled(item.featureId))
-            .sort((a, b) => {
-                const orderA = getFeatureOrder(a.featureId);
-                const orderB = getFeatureOrder(b.featureId);
-                return orderA - orderB;
-            });
-
-        // Only add notifications if there are other community features
-        if (sortedItems.length > 0) {
-            return [
-                ...sortedItems,
-                { screen: 'notifications', label: 'Notifications', icon: Bell, notify: true }
-            ];
-        }
-        return sortedItems;
-    }, [isFeatureEnabled, getFeatureOrder]);
-    
-    // Check if any community widgets are enabled
-    const hasCommunityWidgets = navItems.length > 0;
-
-    // --- Scope for Widgets ---
-    const scope = {
-        // State
-        view, setView,
-        currentTierFilter, setCurrentTierFilter,
-        allThreads, filteredThreads,
-        isLoadingThreads,
-        
-        // Data
-        user: safeUser,
-        tierMeta,
-        navItems,
-        hasCommunityAccess,
-        
-        // Utils
-        navigate,
-        isFeatureEnabled,
-        
-        // Icons
-        Users, MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
-        Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video,
-        
-        // Components
-        CommunityHomeView,
-        MyThreadsView,
-        CommunityResourcesView,
-        NotificationsView,
-        NewThreadView,
-        Card
-    };
-
-    // --- Main Render ---
-    // Loading/Error States
     if (isAppLoading) return <LoadingSpinner message="Loading Community Hub..." />;
-    // Note: appError check might be redundant if handled globally, but included for robustness
-    if (appError) return <ConfigError message={`Failed to load Community Hub: ${appError.message}`} />;
+    if (appError) return <div className="p-4 text-red-500">Error: {appError.message}</div>;
 
     return (
         <PageLayout
-            title="Community"
+            title="Community Hub"
             subtitle="Connect, share insights, and grow with fellow leaders."
             icon={Users}
             navigate={navigate}
         >
-            {/* Main Layout Grid (Sidebar + Content) */}
-            {hasCommunityWidgets ? (
-                <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 max-w-[860px] mx-auto">
-                    {/* Sidebar Navigation */}
-                    <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start"> {/* Make sidebar sticky */}
-                        <WidgetRenderer widgetId="community-sidebar" scope={scope} />
-                    </aside>
+            {/* Tab Navigation */}
+            <div className="flex overflow-x-auto border-b border-slate-200 mb-6 no-scrollbar">
+                <TabButton 
+                    active={activeTab === 'events'} 
+                    onClick={() => setActiveTab('events')} 
+                    icon={Video} 
+                    label="Live Events" 
+                />
+                <TabButton 
+                    active={activeTab === 'my-community'} 
+                    onClick={() => setActiveTab('my-community')} 
+                    icon={Calendar} 
+                    label="My Community" 
+                />
+                <TabButton 
+                    active={activeTab === 'feed'} 
+                    onClick={() => setActiveTab('feed')} 
+                    icon={MessageSquare} 
+                    label="Community Feed" 
+                />
+                <TabButton 
+                    active={activeTab === 'resources'} 
+                    onClick={() => setActiveTab('resources')} 
+                    icon={BookOpen} 
+                    label="Resources" 
+                />
+            </div>
 
-                    {/* Main Content Area */}
-                    <main className="lg:col-span-5 space-y-6">
-                        {/* Render enabled widgets directly */}
-                        {isFeatureEnabled('community-feed') && (
-                            <WidgetRenderer widgetId="community-feed" scope={scope}>
-                                <CommunityHomeView
-                                    setView={setView}
-                                    user={safeUser}
-                                    currentTierFilter={currentTierFilter}
-                                    setCurrentTierFilter={setCurrentTierFilter}
-                                    filteredThreads={filteredThreads}
-                                    tierMeta={tierMeta}
-                                />
-                            </WidgetRenderer>
+            {/* Tab Content */}
+            <div className="space-y-6 max-w-5xl mx-auto">
+                {activeTab === 'events' && (
+                    <div className="space-y-6">
+                        <WidgetRenderer widgetId="community-upcoming-sessions" />
+                    </div>
+                )}
+
+                {activeTab === 'my-community' && (
+                    <div className="space-y-6">
+                        <WidgetRenderer widgetId="community-my-registrations" />
+                    </div>
+                )}
+
+                {activeTab === 'feed' && (
+                    <>
+                        {view === 'feed' && (
+                            <CommunityHomeView
+                                setView={setView}
+                                user={safeUser}
+                                currentTierFilter={currentTierFilter}
+                                setCurrentTierFilter={setCurrentTierFilter}
+                                filteredThreads={filteredThreads}
+                                tierMeta={tierMeta}
+                            />
                         )}
-                        
-                        {isFeatureEnabled('my-discussions') && view === 'my-threads' && (
-                            <MyThreadsView user={safeUser} allThreads={allThreads} />
+                        {view === 'new-thread' && (
+                            <NewThreadView setView={setView} />
                         )}
-                        
-                        {isFeatureEnabled('mastermind') && view === 'mentorship' && (
-                             <Card title="Mastermind Groups" icon={Users}>
-                                <div className="p-8 text-center text-gray-500">
-                                    <h3 className="text-lg font-bold mb-2">Mastermind Groups</h3>
-                                    <p>Join a small group of peers for focused growth and accountability.</p>
-                                    <p className="text-xs mt-4 text-gray-400">(Feature Module Placeholder)</p>
-                                </div>
-                            </Card>
-                        )}
-                        
-                        {isFeatureEnabled('live-events') && view === 'events' && (
-                            <Card title="Live Events" icon={Video}>
-                                <div className="p-8 text-center text-gray-500">
-                                    <h3 className="text-lg font-bold mb-2">Live Events</h3>
-                                    <p>Register for upcoming webinars, workshops, and live Q&A sessions.</p>
-                                    <p className="text-xs mt-4 text-gray-400">(Feature Module Placeholder)</p>
-                                </div>
-                            </Card>
-                        )}
-                        
-                        {view === 'resources' && <CommunityResourcesView db={db} />}
-                        {view === 'notifications' && <NotificationsView />}
-                        {view === 'new-thread' && <NewThreadView setView={setView} />}
-                    </main>
-                </div>
-            ) : (
-                <NoWidgetsEnabled moduleName="Community" />
-            )}
+                    </>
+                )}
+
+                {activeTab === 'resources' && (
+                    <CommunityResourcesView db={db} />
+                )}
+            </div>
         </PageLayout>
-
     );
 };
 

@@ -191,11 +191,11 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
         }`;
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 space-y-8">
+        <div className="min-h-screen bg-[#FAFBFC] p-5 sm:p-8 space-y-8" style={{ fontFamily: 'var(--font-body)' }}>
             <div className="max-w-[860px] mx-auto">
-                <div className="text-center max-w-4xl mx-auto mb-8">
-                    <h1 className="text-3xl font-bold text-corporate-navy mb-2">Manage Your Scorecard Commitments</h1>
-                    <p className="text-slate-600 text-lg">Select the core micro-habits that directly support your current leadership development goals. Aim for 3-5 active commitments.</p>
+                <div className="text-center max-w-4xl mx-auto mb-10">
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy mb-3 tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>Manage Your Scorecard Commitments</h1>
+                    <p className="text-slate-500 text-base sm:text-lg leading-relaxed">Select the core micro-habits that directly support your current leadership development goals. Aim for 3-5 active commitments.</p>
                 </div>
 
                 <Button onClick={() => setView('scorecard')} variant="nav-back" size="sm" className="mb-8" disabled={isSaving}>

@@ -76,8 +76,8 @@ export const PageLayout = ({
   ] : []);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className={`${maxWidth} mx-auto p-4 sm:p-6 lg:p-8`}>
+    <div className="min-h-screen bg-[#FAFBFC]">
+      <div className={`${maxWidth} mx-auto p-5 sm:p-8 lg:p-10`}>
         
         {/* Navigation - Replaces old Back Button */}
         {nav && (
@@ -87,22 +87,22 @@ export const PageLayout = ({
           />
         )}
 
-        {/* Header - Animated */}
+        {/* Header - Premium typography */}
         <FadeIn delay={0.1}>
-          <header className={`mb-8 ${centerHeader ? 'text-center' : ''}`}>
-            <div className={`flex items-center gap-3 mb-2 ${centerHeader ? 'justify-center' : ''}`}>
-              {Icon && <Icon className={`w-8 h-8 ${iconColorClass}`} />}
-              <h1 className="text-2xl sm:text-3xl font-bold text-corporate-navy">
+          <header className={`mb-10 ${centerHeader ? 'text-center' : ''}`}>
+            <div className={`flex items-center gap-4 mb-3 ${centerHeader ? 'justify-center' : ''}`}>
+              {Icon && <Icon className={`w-7 h-7 ${iconColorClass}`} />}
+              <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                 {title}
               </h1>
-              {Icon && <Icon className={`w-8 h-8 ${iconColorClass}`} />}
+              {Icon && <Icon className={`w-7 h-7 ${iconColorClass}`} />}
             </div>
             
             {sub && (
-              <p className={`text-slate-600 text-base sm:text-lg mt-2 ${centerHeader ? 'max-w-2xl mx-auto' : ''}`}>
-              {sub}
-            </p>
-          )}
+              <p className={`text-slate-500 text-base sm:text-lg mt-2 leading-relaxed ${centerHeader ? 'max-w-2xl mx-auto' : ''}`} style={{ fontFamily: 'var(--font-body)' }}>
+                {sub}
+              </p>
+            )}
           
           {badge && (
             <div className={`mt-3 ${centerHeader ? 'flex justify-center' : ''}`}>

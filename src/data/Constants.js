@@ -257,6 +257,28 @@ export const REGISTRATION_STATUS = {
     CANCELLED: 'cancelled'
 };
 
+// --- COMMUNITY HUB COLLECTIONS ---
+export const COMMUNITY_SESSIONS_COLLECTION = 'community_sessions'; // Scheduled community session instances
+export const COMMUNITY_SESSION_TYPES_COLLECTION = 'community_session_types'; // Session templates
+export const COMMUNITY_REGISTRATIONS_COLLECTION = 'community_registrations'; // User registrations
+
+// Community Session Types
+export const COMMUNITY_SESSION_TYPES = {
+    LEADER_CIRCLE: 'leader_circle',       // Peer discussion/accountability groups
+    COMMUNITY_EVENT: 'community_event',   // Live networking events
+    ACCOUNTABILITY_POD: 'accountability_pod', // Small group check-ins
+    MASTERMIND: 'mastermind',             // Expert-led group sessions
+    NETWORKING: 'networking'              // Casual networking sessions
+};
+
+// Community Session Recurrence
+export const COMMUNITY_RECURRENCE = {
+    NONE: 'none',           // One-time session
+    WEEKLY: 'weekly',       // Every week on same day
+    BIWEEKLY: 'biweekly',   // Every 2 weeks
+    MONTHLY: 'monthly'      // Once a month
+};
+
 // --- PLAN GENERATION UTILITIES ---
 export const getTargetDifficulty = (rating) => {
     if (rating <= 4) return 'Intro';

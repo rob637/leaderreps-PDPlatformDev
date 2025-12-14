@@ -245,23 +245,23 @@ const Dashboard = (props) => {
   const Checkbox = ({ checked, onChange, label, subLabel, disabled }) => (
     <div 
       onClick={!disabled ? onChange : undefined}
-      className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+      className={`flex items-start gap-3 p-4 rounded-xl transition-all cursor-pointer ${
         checked 
-          ? 'bg-teal-50 border-teal-500' 
-          : 'bg-white border-gray-200 hover:border-teal-300'
+          ? 'bg-teal-50/80 shadow-sm border border-teal-200' 
+          : 'bg-white shadow-sm hover:shadow-md border border-slate-100'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
-      <div className={`mt-0.5 w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${
-        checked ? 'bg-teal-500 border-teal-500' : 'bg-white border-gray-300'
+      <div className={`mt-0.5 w-5 h-5 rounded-lg flex items-center justify-center transition-colors ${
+        checked ? 'bg-corporate-teal' : 'bg-slate-100 border border-slate-200'
       }`}>
-        {checked && <CheckSquare className="w-4 h-4 text-white" />}
+        {checked && <CheckSquare className="w-3.5 h-3.5 text-white" />}
       </div>
       <div className="flex-1">
-        <p className={`font-semibold ${checked ? 'text-teal-900' : 'text-gray-700'}`}>
+        <p className={`font-medium ${checked ? 'text-teal-900' : 'text-slate-700'}`} style={{ fontFamily: 'var(--font-body)' }}>
           {label}
         </p>
         {subLabel && (
-          <p className="text-xs text-gray-500 mt-0.5">{subLabel}</p>
+          <p className="text-xs text-slate-400 mt-1">{subLabel}</p>
         )}
       </div>
     </div>
@@ -441,7 +441,7 @@ const Dashboard = (props) => {
   };
 
   return (
-    <div className="p-4 space-y-4 bg-slate-50 min-h-screen relative">
+    <div className="p-5 sm:p-6 lg:p-8 space-y-5 bg-[#FAFBFC] min-h-screen relative">
       <div className="max-w-[860px] mx-auto">
       {/* Layout Toggle - Desktop Only - COMMENTED OUT FOR NOW
       <div className="absolute top-6 right-6 z-10 hidden lg:block">
@@ -449,23 +449,23 @@ const Dashboard = (props) => {
       </div>
       */}
 
-      <header className="mb-4 text-center">
+      <header className="mb-8 text-center">
         <FadeIn delay={0.1}>
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <LayoutDashboard className="w-8 h-8 text-corporate-teal" />
-            <h1 className="text-3xl font-bold text-corporate-navy">
+          <div className="flex items-center justify-center gap-4 mb-3">
+            <LayoutDashboard className="w-7 h-7 text-corporate-teal" />
+            <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
               Dashboard
             </h1>
-            <LayoutDashboard className="w-8 h-8 text-corporate-teal" />
+            <LayoutDashboard className="w-7 h-7 text-corporate-teal" />
           </div>
-          <p className="text-slate-600 mt-2">
+          <p className="text-slate-500 mt-2 leading-relaxed" style={{ fontFamily: 'var(--font-body)' }}>
             {greeting} Welcome to your daily practice.
           </p>
         </FadeIn>
       </header>
 
       {/* Forced 1-col layout for now - with staggered animation */}
-      <Stagger staggerDelay={0.08} className="grid gap-4 grid-cols-1">
+      <Stagger staggerDelay={0.08} className="grid gap-5 grid-cols-1">
         {/* DYNAMIC FEATURES */}
         {sortedFeatures.map(featureId => (
           <React.Fragment key={featureId}>

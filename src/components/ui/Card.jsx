@@ -58,44 +58,47 @@ const Card = React.forwardRef(({
   ...props 
 }, ref) => {
   
+  // Premium variants with softer shadows and no hard borders
   const variants = {
-    default: 'bg-white border border-slate-200 shadow-sm',
-    elevated: 'bg-white border-none shadow-xl',
-    flat: 'bg-slate-50 border border-slate-200 shadow-none',
-    interactive: 'bg-white border border-slate-200 shadow-sm hover:shadow-md cursor-pointer transition-shadow',
+    default: 'bg-white shadow-sm hover:shadow-md border-0',
+    elevated: 'bg-white shadow-lg border-0',
+    flat: 'bg-slate-50/80 shadow-none border-0',
+    interactive: 'bg-white shadow-sm hover:shadow-lg cursor-pointer transition-all duration-200 border-0',
+    soft: 'bg-white/90 backdrop-blur-sm shadow-md border-0',
+    glass: 'bg-white/80 backdrop-blur-md shadow-md border border-white/50',
   };
 
-  // Map accents to specific border-top colors using Tailwind classes
+  // Subtle accent indicators - use left border instead of top for elegance
   const accents = {
     none: '',
-    navy: 'border-t-4 border-t-corporate-navy',
-    teal: 'border-t-4 border-t-corporate-teal',
-    orange: 'border-t-4 border-t-corporate-orange',
+    navy: 'border-l-4 border-l-corporate-navy',
+    teal: 'border-l-4 border-l-corporate-teal',
+    orange: 'border-l-4 border-l-corporate-orange',
     
     // Remap standard colors to Corporate Palette
-    red: 'border-t-4 border-t-corporate-orange',
-    green: 'border-t-4 border-t-corporate-teal',
-    blue: 'border-t-4 border-t-corporate-navy',
-    yellow: 'border-t-4 border-t-corporate-orange',
-    purple: 'border-t-4 border-t-corporate-navy',
-    indigo: 'border-t-4 border-t-corporate-navy',
-    pink: 'border-t-4 border-t-corporate-orange',
-    gray: 'border-t-4 border-t-slate-400',
+    red: 'border-l-4 border-l-corporate-orange',
+    green: 'border-l-4 border-l-corporate-teal',
+    blue: 'border-l-4 border-l-corporate-navy',
+    yellow: 'border-l-4 border-l-corporate-orange',
+    purple: 'border-l-4 border-l-corporate-navy',
+    indigo: 'border-l-4 border-l-corporate-navy',
+    pink: 'border-l-4 border-l-corporate-orange',
+    gray: 'border-l-4 border-l-slate-300',
 
     // Support uppercase too
-    NAVY: 'border-t-4 border-t-corporate-navy',
-    TEAL: 'border-t-4 border-t-corporate-teal',
-    ORANGE: 'border-t-4 border-t-corporate-orange',
+    NAVY: 'border-l-4 border-l-corporate-navy',
+    TEAL: 'border-l-4 border-l-corporate-teal',
+    ORANGE: 'border-l-4 border-l-corporate-orange',
     
     // Remap uppercase standard colors
-    RED: 'border-t-4 border-t-corporate-orange',
-    GREEN: 'border-t-4 border-t-corporate-teal',
-    BLUE: 'border-t-4 border-t-corporate-navy',
-    YELLOW: 'border-t-4 border-t-corporate-orange',
-    PURPLE: 'border-t-4 border-t-corporate-navy',
-    INDIGO: 'border-t-4 border-t-corporate-navy',
-    PINK: 'border-t-4 border-t-corporate-orange',
-    GRAY: 'border-t-4 border-t-slate-400',
+    RED: 'border-l-4 border-l-corporate-orange',
+    GREEN: 'border-l-4 border-l-corporate-teal',
+    BLUE: 'border-l-4 border-l-corporate-navy',
+    YELLOW: 'border-l-4 border-l-corporate-orange',
+    PURPLE: 'border-l-4 border-l-corporate-navy',
+    INDIGO: 'border-l-4 border-l-corporate-navy',
+    PINK: 'border-l-4 border-l-corporate-orange',
+    GRAY: 'border-l-4 border-l-slate-300',
   };
 
   const iconColors = {
@@ -142,28 +145,28 @@ const Card = React.forwardRef(({
       ref={ref}
       onClick={onClick}
       className={cn(
-        'rounded-2xl overflow-hidden text-left w-full',
+        'rounded-2xl overflow-hidden text-left w-full transition-all duration-200',
         variants[variant],
         accents[accent],
-        onClick && 'touch-manipulation active:scale-[0.99] transition-transform',
+        onClick && 'touch-manipulation active:scale-[0.98] cursor-pointer',
         className
       )}
       {...props}
     >
       {isSmartMode ? (
         <>
-          <div className={cn("p-4 sm:p-4", hasContent ? "pb-2" : "")}>
-            <div className="flex items-center gap-2">
-              {Icon && <Icon className={cn("w-5 h-5", iconColors[accent])} />}
+          <div className={cn("p-5 sm:p-6", hasContent ? "pb-3" : "")}>
+            <div className="flex items-center gap-3">
+              {Icon && <Icon className={cn("w-5 h-5 flex-shrink-0", iconColors[accent])} />}
               {title && (
-                <h3 className="text-lg font-bold text-corporate-navy tracking-tight">
+                <h3 className="text-lg font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                   {title}
                 </h3>
               )}
             </div>
           </div>
           {hasContent && (
-            <div className="p-4 sm:p-4 pt-2">
+            <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-0">
               {children}
             </div>
           )}

@@ -917,42 +917,42 @@ render(<NotificationsWidget />);
     <div className="space-y-2">
       {/* Grounding Rep - Only show from Week 2 onwards */}
       {weekNum > 1 && (
-      <div className="flex items-center justify-between p-2 bg-yellow-50 rounded-lg border border-yellow-100">
+      <div className={\`flex items-center justify-between p-2 rounded-lg border \${groundingDone > 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-blue-50 border-blue-100'}\`}>
         <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-yellow-600" />
+          <Zap className={\`w-4 h-4 \${groundingDone > 0 ? 'text-emerald-600' : 'text-blue-600'}\`} />
           <span className="font-medium text-slate-700">Grounding Rep</span>
         </div>
         <div className="text-right flex items-center gap-2">
           <span className="font-bold text-lg text-[#002E47]">{groundingDone}</span>
           <span className="text-slate-400 text-sm">/ {groundingTotal}</span>
-          {groundingPct === 100 && <CheckCircle className="w-4 h-4 text-green-500" />}
+          {groundingPct === 100 && <CheckCircle className="w-4 h-4 text-emerald-500" />}
         </div>
       </div>
       )}
 
       {/* Win the Day */}
-      <div className="flex items-center justify-between p-2 bg-teal-50 rounded-lg border border-teal-100">
+      <div className={\`flex items-center justify-between p-2 rounded-lg border \${safeScorecard.win.done > 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-blue-50 border-blue-100'}\`}>
         <div className="flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-teal-600" />
+          <Trophy className={\`w-4 h-4 \${safeScorecard.win.done > 0 ? 'text-emerald-600' : 'text-blue-600'}\`} />
           <span className="font-medium text-slate-700">Win the Day</span>
         </div>
         <div className="text-right flex items-center gap-2">
           <span className="font-bold text-lg text-[#002E47]">{safeScorecard.win.done}</span>
           <span className="text-slate-400 text-sm">/ {safeScorecard.win.total}</span>
-          {safeScorecard.win.pct === 100 && <CheckCircle className="w-4 h-4 text-green-500" />}
+          {safeScorecard.win.pct === 100 && <CheckCircle className="w-4 h-4 text-emerald-500" />}
         </div>
       </div>
 
       {/* Daily Reps */}
-      <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg border border-blue-100">
+      <div className={\`flex items-center justify-between p-2 rounded-lg border \${safeScorecard.reps.done > 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-blue-50 border-blue-100'}\`}>
         <div className="flex items-center gap-2">
-          <Dumbbell className="w-4 h-4 text-blue-600" />
+          <Dumbbell className={\`w-4 h-4 \${safeScorecard.reps.done > 0 ? 'text-emerald-600' : 'text-blue-600'}\`} />
           <span className="font-medium text-slate-700">Daily Reps</span>
         </div>
         <div className="text-right flex items-center gap-2">
           <span className="font-bold text-lg text-[#002E47]">{safeScorecard.reps.done}</span>
           <span className="text-slate-400 text-sm">/ {safeScorecard.reps.total}</span>
-          {safeScorecard.reps.pct === 100 && <CheckCircle className="w-4 h-4 text-green-500" />}
+          {safeScorecard.reps.pct === 100 && <CheckCircle className="w-4 h-4 text-emerald-500" />}
         </div>
       </div>
     </div>
@@ -2130,18 +2130,18 @@ const WinsHistoryWidget = () => {
   };
 
   return (
-    <Card title="AM Bookend (Wins History)" icon={Trophy} className="border-t-4 border-corporate-orange">
-      <div className="overflow-x-auto border border-gray-300 rounded-sm">
-        <table className="min-w-full border-collapse text-sm">
+    <Card title="AM Bookend (Wins History)" icon={Trophy} accent="ORANGE">
+      <div className="overflow-x-auto rounded-xl border border-slate-200/60">
+        <table className="min-w-full text-sm">
           <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap w-32">Date</th>
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Win #1</th>
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Win #2</th>
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Win #3</th>
+            <tr className="bg-gradient-to-r from-slate-50 to-slate-100/50">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-32">Date</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Win #1</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Win #2</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Win #3</th>
             </tr>
           </thead>
-          <tbody className="bg-white">
+          <tbody className="divide-y divide-slate-100">
             {visibleDates.length > 0 ? (
               visibleDates.map((date) => {
                 const wins = groupedWins[date];
@@ -2149,25 +2149,25 @@ const WinsHistoryWidget = () => {
                 const slots = [wins[0], wins[1], wins[2]];
                 
                 return (
-                  <tr key={date} className="hover:bg-blue-50 transition-colors">
-                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-bold text-gray-700">
+                  <tr key={date} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-4 py-3 whitespace-nowrap font-semibold text-slate-700">
                       {formatDisplayDate(date)}
                     </td>
                     {slots.map((win, i) => (
-                      <td key={i} className="border border-gray-300 px-3 py-2">
+                      <td key={i} className="px-4 py-3">
                         {win ? (
                           <div className="flex items-start gap-2">
-                            <div className={\`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 \${
-                              win.completed ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-300'
+                            <div className={\`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 \${
+                              win.completed ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'
                             }\`}>
-                              {win.completed ? <CheckCircle className="w-3 h-3" /> : <div className="w-2 h-2 rounded-full bg-slate-300" />}
+                              {win.completed ? <CheckCircle className="w-3.5 h-3.5" /> : <div className="w-2 h-2 rounded-full bg-slate-300" />}
                             </div>
-                            <span className={\`text-sm \${win.completed ? 'text-gray-900 font-medium' : 'text-gray-500'}\`}>
+                            <span className={\`text-sm \${win.completed ? 'text-slate-800 font-medium' : 'text-slate-500'}\`}>
                               {win.text}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-gray-300 text-xs italic">-</span>
+                          <span className="text-slate-300 text-xs">—</span>
                         )}
                       </td>
                     ))}
@@ -2176,8 +2176,11 @@ const WinsHistoryWidget = () => {
               })
             ) : (
               <tr>
-                <td colSpan="4" className="border border-gray-300 px-3 py-8 text-center text-gray-500 italic">
-                  No wins recorded yet.
+                <td colSpan="4" className="px-4 py-12 text-center text-slate-400">
+                  <div className="flex flex-col items-center gap-2">
+                    <Trophy className="w-8 h-8 text-slate-300" />
+                    <p>No wins recorded yet</p>
+                  </div>
                 </td>
               </tr>
             )}
@@ -2185,21 +2188,21 @@ const WinsHistoryWidget = () => {
         </table>
       </div>
       {sortedDates.length > 3 && (
-        <div className="flex justify-center gap-2 mt-3 pt-3 border-t border-gray-100">
+        <div className="flex justify-center gap-3 mt-4 pt-4 border-t border-slate-100">
           {canShowLess && (
             <button 
               onClick={() => setVisibleCount(3)}
-              className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1"
+              className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all duration-200"
             >
-              ▲ Show Less
+              Show Less
             </button>
           )}
           {hasMore && (
             <button 
               onClick={() => setVisibleCount(prev => prev + 3)}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-corporate-orange hover:bg-orange-700 rounded-lg transition-colors flex items-center gap-1"
+              className="px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-corporate-orange to-orange-500 hover:from-orange-600 hover:to-orange-500 rounded-xl shadow-sm hover:shadow transition-all duration-200"
             >
-              ▼ Show More ({sortedDates.length - visibleCount} remaining)
+              Show More ({sortedDates.length - visibleCount} remaining)
             </button>
           )}
         </div>
@@ -2283,17 +2286,17 @@ const ScorecardHistoryWidget = () => {
   };
 
   return (
-    <Card title="Scorecard History" icon={Calendar} className="border-t-4 border-corporate-teal">
-      <div className="overflow-x-auto border border-gray-300 rounded-sm">
-        <table className="min-w-full border-collapse text-sm">
+    <Card title="Scorecard History" icon={Calendar} accent="TEAL">
+      <div className="overflow-x-auto rounded-xl border border-slate-200/60">
+        <table className="min-w-full text-sm">
           <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Date</th>
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Score</th>
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Status</th>
+            <tr className="bg-gradient-to-r from-slate-50 to-slate-100/50">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Score</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
             </tr>
           </thead>
-          <tbody className="bg-white">
+          <tbody className="divide-y divide-slate-100">
             {visibleHistory.length > 0 ? (
               visibleHistory.map((entry, index) => {
                 // Parse score "X/Y"
@@ -2304,29 +2307,30 @@ const ScorecardHistoryWidget = () => {
                 const isToday = entry.normalizedDate === todayStr;
                 
                 return (
-                  <tr key={index} className="hover:bg-blue-50 transition-colors">
-                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-bold text-gray-700">
-                      {formatDisplayDate(entry.normalizedDate)}{isToday && <span className="ml-1 text-xs text-blue-500">(Today)</span>}
+                  <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-4 py-3 whitespace-nowrap font-semibold text-slate-700">
+                      {formatDisplayDate(entry.normalizedDate)}{isToday && <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-700 rounded-full">TODAY</span>}
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-bold text-gray-900 text-center">
-                      {entry.score} <span className="text-xs text-gray-400 font-normal ml-1">({pct}%)</span>
+                    <td className="px-4 py-3 whitespace-nowrap font-bold text-slate-800">
+                      {entry.score} <span className="text-xs text-slate-400 font-normal ml-1">({pct}%)</span>
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap text-center">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {isToday ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
-                          IN PROGRESS
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                          In Progress
                         </span>
                       ) : isPerfect ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">
-                          <CheckCircle className="w-3 h-3" /> PERFECT
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
+                          <CheckCircle className="w-3.5 h-3.5" /> Perfect
                         </span>
                       ) : pct > 0 ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
-                          COMPLETE
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-600 text-xs font-semibold">
+                          Complete
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold">
-                          NO ACTIVITY
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-xs font-semibold">
+                          No Activity
                         </span>
                       )}
                     </td>
@@ -2335,8 +2339,11 @@ const ScorecardHistoryWidget = () => {
               })
             ) : (
               <tr>
-                <td colSpan="3" className="border border-gray-300 px-3 py-8 text-center text-gray-500 italic">
-                  No scorecard history available.
+                <td colSpan="3" className="px-4 py-12 text-center text-slate-400">
+                  <div className="flex flex-col items-center gap-2">
+                    <Calendar className="w-8 h-8 text-slate-300" />
+                    <p>No scorecard history available</p>
+                  </div>
                 </td>
               </tr>
             )}
@@ -2344,21 +2351,21 @@ const ScorecardHistoryWidget = () => {
         </table>
       </div>
       {sortedHistory.length > 3 && (
-        <div className="flex justify-center gap-2 mt-3 pt-3 border-t border-gray-100">
+        <div className="flex justify-center gap-3 mt-4 pt-4 border-t border-slate-100">
           {canShowLess && (
             <button 
               onClick={() => setVisibleCount(3)}
-              className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1"
+              className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all duration-200"
             >
-              ▲ Show Less
+              Show Less
             </button>
           )}
           {hasMore && (
             <button 
               onClick={() => setVisibleCount(prev => prev + 3)}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-corporate-teal hover:bg-teal-700 rounded-lg transition-colors flex items-center gap-1"
+              className="px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-corporate-teal to-teal-500 hover:from-teal-600 hover:to-teal-500 rounded-xl shadow-sm hover:shadow transition-all duration-200"
             >
-              ▼ Show More ({sortedHistory.length - visibleCount} remaining)
+              Show More ({sortedHistory.length - visibleCount} remaining)
             </button>
           )}
         </div>
@@ -2425,39 +2432,42 @@ const ReflectionHistoryWidget = () => {
   };
 
   return (
-    <Card title="Reflection History" icon={BookOpen} className="lg:col-span-2 border-t-4 border-corporate-navy">
-      <div className="overflow-x-auto border border-gray-300 rounded-sm">
-        <table className="min-w-full border-collapse text-sm">
+    <Card title="Reflection History" icon={BookOpen} accent="NAVY">
+      <div className="overflow-x-auto rounded-xl border border-slate-200/60">
+        <table className="min-w-full text-sm">
           <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Date</th>
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">What Went Well</th>
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">What Needs Work</th>
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Tomorrow's Focus</th>
+            <tr className="bg-gradient-to-r from-slate-50 to-slate-100/50">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">What Went Well</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">What Needs Work</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tomorrow's Focus</th>
             </tr>
           </thead>
-          <tbody className="bg-white">
+          <tbody className="divide-y divide-slate-100">
             {visibleReflections.length > 0 ? (
               visibleReflections.map((log, index) => (
-                <tr key={log.id || index} className="hover:bg-blue-50 transition-colors align-top">
-                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-bold text-gray-700">
+                <tr key={log.id || index} className="hover:bg-slate-50/50 transition-colors align-top">
+                  <td className="px-4 py-3 whitespace-nowrap font-semibold text-slate-700">
                     {formatDisplayDate(log.date)}
                   </td>
-                  <td className="border border-gray-300 px-3 py-2 text-gray-800 min-w-[200px]">
-                    {log.reflectionGood || '-'}
+                  <td className="px-4 py-3 text-slate-700 min-w-[200px]">
+                    {log.reflectionGood || <span className="text-slate-300">—</span>}
                   </td>
-                  <td className="border border-gray-300 px-3 py-2 text-gray-800 min-w-[200px]">
-                    {log.reflectionWork || '-'}
+                  <td className="px-4 py-3 text-slate-700 min-w-[200px]">
+                    {log.reflectionWork || <span className="text-slate-300">—</span>}
                   </td>
-                  <td className="border border-gray-300 px-3 py-2 text-gray-800 min-w-[200px]">
-                    {log.reflectionTomorrow || '-'}
+                  <td className="px-4 py-3 text-slate-700 min-w-[200px]">
+                    {log.reflectionTomorrow || <span className="text-slate-300">—</span>}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="4" className="border border-gray-300 px-3 py-8 text-center text-gray-500 italic">
-                  No reflection history found.
+                <td colSpan="4" className="px-4 py-12 text-center text-slate-400">
+                  <div className="flex flex-col items-center gap-2">
+                    <BookOpen className="w-8 h-8 text-slate-300" />
+                    <p>No reflection history found</p>
+                  </div>
                 </td>
               </tr>
             )}
@@ -2465,21 +2475,21 @@ const ReflectionHistoryWidget = () => {
         </table>
       </div>
       {sortedReflections.length > 3 && (
-        <div className="flex justify-center gap-2 mt-3 pt-3 border-t border-gray-100">
+        <div className="flex justify-center gap-3 mt-4 pt-4 border-t border-slate-100">
           {canShowLess && (
             <button 
               onClick={() => setVisibleCount(3)}
-              className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1"
+              className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all duration-200"
             >
-              ▲ Show Less
+              Show Less
             </button>
           )}
           {hasMore && (
             <button 
               onClick={() => setVisibleCount(prev => prev + 3)}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-corporate-navy hover:bg-navy-700 rounded-lg transition-colors flex items-center gap-1"
+              className="px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-corporate-navy to-slate-700 hover:from-slate-700 hover:to-slate-600 rounded-xl shadow-sm hover:shadow transition-all duration-200"
             >
-              ▼ Show More ({sortedReflections.length - visibleCount} remaining)
+              Show More ({sortedReflections.length - visibleCount} remaining)
             </button>
           )}
         </div>
@@ -2544,32 +2554,32 @@ const RepsHistoryWidget = () => {
   };
 
   return (
-    <Card title="Daily Reps History" icon={Dumbbell} className="border-t-4 border-corporate-navy">
+    <Card title="Daily Reps History" icon={Dumbbell} accent="NAVY">
       <div className="space-y-4">
         {visibleHistory.length > 0 ? (
           visibleHistory.map((entry, dateIndex) => (
-            <div key={dateIndex} className="border border-gray-200 rounded-lg overflow-hidden">
+            <div key={dateIndex} className="rounded-xl border border-slate-200/60 overflow-hidden">
               {/* Date Header */}
-              <div className="bg-gray-100 px-4 py-2 flex items-center justify-between border-b border-gray-200">
-                <span className="font-bold text-gray-700">{formatDisplayDate(entry.date)}</span>
-                <span className="text-sm text-gray-500">
-                  <span className="font-bold text-corporate-navy">{entry.completedCount || (entry.items?.length || 0)}</span> reps completed
+              <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 px-4 py-3 flex items-center justify-between">
+                <span className="font-semibold text-slate-700">{formatDisplayDate(entry.date)}</span>
+                <span className="text-sm text-slate-500">
+                  <span className="font-bold text-corporate-teal">{entry.completedCount || (entry.items?.length || 0)}</span> reps completed
                 </span>
               </div>
               
               {/* Reps List */}
-              <div className="bg-white divide-y divide-gray-100">
+              <div className="bg-white divide-y divide-slate-100">
                 {entry.items && entry.items.length > 0 ? (
                   entry.items.map((rep, repIndex) => (
-                    <div key={repIndex} className="px-4 py-3 flex items-start gap-3 hover:bg-blue-50 transition-colors">
-                      <div className="mt-0.5 w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
+                    <div key={repIndex} className="px-4 py-3 flex items-start gap-3 hover:bg-slate-50/50 transition-colors">
+                      <div className="mt-0.5 w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
                         <CheckCircle className="w-3.5 h-3.5" />
                       </div>
-                      <span className="text-sm text-gray-900">{rep.text || rep.label || 'Completed rep'}</span>
+                      <span className="text-sm text-slate-700">{rep.text || rep.label || 'Completed rep'}</span>
                     </div>
                   ))
                 ) : (
-                  <div className="px-4 py-3 text-sm text-gray-400 italic">
+                  <div className="px-4 py-3 text-sm text-slate-400">
                     No rep details recorded
                   </div>
                 )}
@@ -2577,27 +2587,31 @@ const RepsHistoryWidget = () => {
             </div>
           ))
         ) : (
-          <div className="text-center py-8 text-gray-500 italic border border-gray-200 rounded-lg bg-gray-50">
-            No reps history available yet. Complete your daily reps to start building your history!
+          <div className="text-center py-12 text-slate-400 rounded-xl border border-slate-200/60 bg-slate-50/50">
+            <div className="flex flex-col items-center gap-2">
+              <Dumbbell className="w-8 h-8 text-slate-300" />
+              <p>No reps history available yet</p>
+              <p className="text-xs text-slate-400">Complete your daily reps to start building your history!</p>
+            </div>
           </div>
         )}
       </div>
       {sortedHistory.length > 3 && (
-        <div className="flex justify-center gap-2 mt-3 pt-3 border-t border-gray-100">
+        <div className="flex justify-center gap-3 mt-4 pt-4 border-t border-slate-100">
           {canShowLess && (
             <button 
               onClick={() => setVisibleCount(3)}
-              className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1"
+              className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all duration-200"
             >
-              ▲ Show Less
+              Show Less
             </button>
           )}
           {hasMore && (
             <button 
               onClick={() => setVisibleCount(prev => prev + 3)}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-corporate-navy hover:bg-navy-700 rounded-lg transition-colors flex items-center gap-1"
+              className="px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-corporate-navy to-slate-700 hover:from-slate-700 hover:to-slate-600 rounded-xl shadow-sm hover:shadow transition-all duration-200"
             >
-              ▼ Show More ({sortedHistory.length - visibleCount} remaining)
+              Show More ({sortedHistory.length - visibleCount} remaining)
             </button>
           )}
         </div>
@@ -3446,5 +3460,28 @@ export const FEATURE_METADATA = {
     inputs: ['registeredSessions', 'pastSessions', 'handleCancel'],
     outputs: ['cancel', 'navigate'],
     componentPath: 'src/components/widgets/CoachingMySessionsWidget.jsx',
+  },
+  // Community Hub Features
+  'community-upcoming-sessions': {
+    core: true,
+    category: 'Community',
+    name: 'Community Events',
+    description: 'Upcoming Community Events',
+    purpose: 'Community event listings.',
+    extendedDescription: 'Displays scheduled community events (Leader Circles, Networking) that users can register for.',
+    inputs: ['sessions', 'upcomingSessions', 'registeredIds', 'handleRegister', 'handleCancel'],
+    outputs: ['register', 'cancel'],
+    componentPath: 'src/components/widgets/CommunityUpcomingSessionsWidget.jsx',
+  },
+  'community-my-registrations': {
+    core: true,
+    category: 'Community',
+    name: 'My Community',
+    description: 'My Community Events',
+    purpose: 'Personal community dashboard.',
+    extendedDescription: 'Shows community events the user has registered for.',
+    inputs: ['registeredSessions', 'pastSessions', 'handleCancel'],
+    outputs: ['cancel', 'navigate'],
+    componentPath: 'src/components/widgets/CommunityMyRegistrationsWidget.jsx',
   },
 };

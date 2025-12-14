@@ -50,22 +50,22 @@ export const ProgressBar = ({ progress = 0, color, height = 8, showLabel = false
    (Used in ProgressBreakdown, ProgressScan, QuickPlanEditor)
 ========================================================= */
 export const Badge = ({ children, variant = 'default', size = 'md' }) => {
-  let baseStyle = 'font-semibold rounded-full inline-block';
+  let baseStyle = 'font-medium rounded-full inline-block';
 
   // Size
   if (size === 'sm') baseStyle += ' px-2.5 py-0.5 text-xs';
-  else if (size == 'lg') baseStyle += ' px-3.5 py-1.5 text-sm';
+  else if (size == 'lg') baseStyle += ' px-4 py-1.5 text-sm';
   else baseStyle += ' px-3 py-1 text-sm';
   
   // Variant
-  if (variant === 'primary') baseStyle += ` bg-corporate-navy20 text-corporate-navy`;
-  else if (variant === 'success') baseStyle += ` bg-corporate-teal20 text-corporate-teal`;
-  else if (variant === 'warning') baseStyle += ` bg-corporate-orange20 text-corporate-orange`;
-  else if (variant === 'purple') baseStyle += ` bg-corporate-teal20 text-corporate-teal`;
-  else baseStyle += ` bg-corporate-teal text-corporate-teal`;
+  if (variant === 'primary') baseStyle += ` bg-corporate-navy/10 text-corporate-navy`;
+  else if (variant === 'success') baseStyle += ` bg-corporate-teal/10 text-corporate-teal`;
+  else if (variant === 'warning') baseStyle += ` bg-corporate-orange/10 text-corporate-orange`;
+  else if (variant === 'purple') baseStyle += ` bg-corporate-teal/10 text-corporate-teal`;
+  else baseStyle += ` bg-corporate-teal/10 text-corporate-teal`;
   
   return (
-    <span className={baseStyle}>
+    <span className={baseStyle} style={{ fontFamily: 'var(--font-body)' }}>
       {children}
     </span>
   );
@@ -80,27 +80,27 @@ export const StatCard = ({ label, value, color, trend }) => {
 
   return (
     <div 
-      className="p-4 rounded-xl border-2"
-      style={{ borderColor: 'var(--corporate-teal)', background: 'white' }}
+      className="p-5 rounded-xl border shadow-sm bg-white"
+      style={{ borderColor: 'rgba(71, 168, 141, 0.2)' }}
     >
       <div className="flex items-center gap-3 mb-3">
         <div 
-          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: 'var(--corporate-teal-20)' }}
+          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: 'rgba(71, 168, 141, 0.1)' }}
         >
           <TrendingUp className="w-5 h-5" style={{ color: accentColor }} />
         </div>
         <div>
-          <p className="text-xs font-semibold" style={{ color: 'var(--corporate-teal)' }}>
+          <p className="text-xs font-medium" style={{ color: 'var(--corporate-teal)', fontFamily: 'var(--font-body)' }}>
             {label}
           </p>
         </div>
       </div>
-      <p className="text-xl sm:text-2xl sm:text-3xl font-extrabold" style={{ color: 'var(--corporate-navy)' }}>
+      <p className="text-xl sm:text-2xl font-semibold" style={{ color: 'var(--corporate-navy)', fontFamily: 'var(--font-heading)' }}>
         {value}
       </p>
       {trend && (
-        <p className="text-xs mt-1" style={{ color: 'var(--corporate-teal)' }}>
+        <p className="text-xs mt-1.5" style={{ color: 'var(--corporate-teal)' }}>
           {trend}
         </p>
       )}

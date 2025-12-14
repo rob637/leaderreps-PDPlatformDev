@@ -18,7 +18,6 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   const { db } = useAppServices();
   const [viewingResource, setViewingResource] = useState(null);
   const [loadingResource, setLoadingResource] = useState(false);
-  const [showCarryOver, setShowCarryOver] = useState(true);
   const [showSkipConfirm, setShowSkipConfirm] = useState(null);
 
   // If scope is provided (e.g. from Widget Lab preview), use it.
@@ -29,6 +28,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   
   // Determine which data source to use
   const currentWeek = scope?.currentWeek || devPlanHook.currentWeek;
+  const masterPlan = devPlanHook.masterPlan || [];
   const toggleItemComplete = scope?.toggleItemComplete || devPlanHook.toggleItemComplete;
   
   // Progress tracking
@@ -85,10 +85,68 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   ], [content, community, coaching]);
 
   // Get carried over items for this week (MUST be before any early returns)
+  // This combines:
+  // 1. Items explicitly marked as carried over in progress data
+  // 2. Incomplete items from the previous week that haven't been tracked yet
   const carriedOverItems = useMemo(() => {
     if (!currentWeek?.weekNumber) return [];
-    return getCarriedOverItems(currentWeek.weekNumber);
-  }, [currentWeek?.weekNumber, getCarriedOverItems]);
+    
+    // Get explicitly carried over items
+    const explicitCarryOver = getCarriedOverItems(currentWeek.weekNumber);
+    
+    // Also check for incomplete items from previous week(s)
+    const currentWeekNum = currentWeek.weekNumber;
+    const prevWeekNum = currentWeekNum - 1;
+    
+    if (prevWeekNum < 1 || !masterPlan.length) {
+      return explicitCarryOver;
+    }
+    
+    // Find previous week in masterPlan
+    const prevWeek = masterPlan.find(w => w.weekNumber === prevWeekNum);
+    if (!prevWeek) {
+      return explicitCarryOver;
+    }
+    
+    // Get all items from previous week
+    const prevWeekItems = [
+      ...normalizeItems(prevWeek.content || prevWeek.contentItems || [], 'Content'),
+      ...normalizeItems(prevWeek.community || prevWeek.communityItems || [], 'Community'),
+      ...normalizeItems(prevWeek.coaching || prevWeek.coachingItems || [], 'Coaching')
+    ];
+    
+    // Filter to incomplete items that aren't already in explicitCarryOver
+    const explicitIds = new Set(explicitCarryOver.map(i => i.id));
+    
+    const incompleteFromPrevWeek = prevWeekItems.filter(item => {
+      // Skip if already in explicit carry over
+      if (explicitIds.has(item.id)) return false;
+      
+      // Check progress
+      const progress = getItemProgress(item.id);
+      
+      // Skip if completed or skipped
+      if (progress.status === 'completed' || progress.status === 'skipped' || progress.status === 'archived') {
+        return false;
+      }
+      
+      // Skip if it was completed in the legacy system
+      const prevWeekProgress = devPlanHook.userState?.weekProgress?.[`week-${String(prevWeekNum).padStart(2, '0')}`];
+      if (prevWeekProgress?.itemsCompleted?.includes(item.id)) {
+        return false;
+      }
+      
+      return true;
+    }).map(item => ({
+      ...item,
+      carriedOver: true,
+      originalWeek: prevWeekNum,
+      carryCount: 1
+    }));
+    
+    // Combine both sources
+    return [...explicitCarryOver, ...incompleteFromPrevWeek];
+  }, [currentWeek?.weekNumber, getCarriedOverItems, masterPlan, getItemProgress, devPlanHook.userState?.weekProgress]);
 
   // Calculate progress (MUST be before any early returns)
   const completedCount = useMemo(() => {
@@ -336,54 +394,21 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     
     if (isSkipped) return null; // Don't show skipped items
 
-    // Determine color scheme based on category
+    // Determine color scheme: blue = to do, green = completed
     const getCategoryStyles = () => {
-      if (isCompleted) return 'bg-green-50 border-green-200';
-      if (isCarriedOver) return 'bg-amber-50 border-amber-200';
-      
-      const category = (item.category || '').toLowerCase();
-      switch (category) {
-        case 'content':
-          return 'bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200';
-        case 'community':
-          return 'bg-orange-50 border-orange-100 hover:bg-orange-100 hover:border-orange-200';
-        case 'coaching':
-          return 'bg-teal-50 border-teal-100 hover:bg-teal-100 hover:border-teal-200';
-        default:
-          return 'bg-slate-50 border-slate-100 hover:bg-blue-50 hover:border-blue-200';
-      }
+      if (isCompleted) return 'bg-emerald-50 border-emerald-200';
+      // All incomplete items get blue styling
+      return 'bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200';
     };
 
     const getCheckboxStyles = () => {
-      if (isCompleted) return 'bg-green-500 border-green-500';
-      
-      const category = (item.category || '').toLowerCase();
-      switch (category) {
-        case 'content':
-          return 'border-blue-300 group-hover:border-blue-500';
-        case 'community':
-          return 'border-orange-300 group-hover:border-orange-500';
-        case 'coaching':
-          return 'border-teal-300 group-hover:border-teal-500';
-        default:
-          return 'border-slate-300 group-hover:border-blue-400';
-      }
+      if (isCompleted) return 'bg-emerald-500 border-emerald-500';
+      return 'border-blue-300 group-hover:border-blue-500';
     };
 
     const getIconColor = () => {
-      if (isCompleted) return 'text-green-600';
-      
-      const category = (item.category || '').toLowerCase();
-      switch (category) {
-        case 'content':
-          return 'text-blue-600';
-        case 'community':
-          return 'text-orange-600';
-        case 'coaching':
-          return 'text-teal-600';
-        default:
-          return 'text-slate-500';
-      }
+      if (isCompleted) return 'text-emerald-600';
+      return 'text-blue-600';
     };
     
     return (
@@ -409,19 +434,19 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             <p className={`text-sm font-bold ${
-              isCompleted ? 'text-green-700 line-through' : 'text-slate-700'
+              isCompleted ? 'text-emerald-700 line-through' : 'text-slate-700'
             }`}>
               {item.label || item.title || item.name || 'Untitled Action'}
             </p>
             {item.required !== false && !item.optional && !isCarriedOver && (
-              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
                 Required
               </span>
             )}
             {isCarriedOver && (
-              <span className="text-[10px] font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
+              <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
                 <Clock className="w-2.5 h-2.5" />
-                Carried {carryCount > 1 ? `(${carryCount}x)` : ''}
+                Prior Week {carryCount > 1 ? `(${carryCount}x)` : ''}
               </span>
             )}
             {carryCount >= 2 && (
@@ -440,7 +465,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
             {isCarriedOver && item.originalWeek && (
               <>
                 <span>•</span>
-                <span className="text-orange-600">From Week {item.originalWeek}</span>
+                <span className="text-slate-500">From Week {item.originalWeek}</span>
               </>
             )}
           </div>
@@ -472,7 +497,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
                     e.stopPropagation();
                     setShowSkipConfirm(item.id);
                   }}
-                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-all touch-manipulation active:scale-95"
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all touch-manipulation active:scale-95"
                   title="Skip this item"
                 >
                   <SkipForward className="w-5 h-5" />
@@ -523,7 +548,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
                 Week {currentWeek.weekNumber} Progress
               </span>
               {stats.currentStreak > 0 && (
-                <span className="flex items-center gap-1 text-xs font-medium text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">
+                <span className="flex items-center gap-1 text-xs font-medium text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full">
                   <Flame className="w-3 h-3" />
                   {stats.currentStreak} day streak
                 </span>
@@ -556,64 +581,73 @@ const ThisWeeksActionsWidget = ({ scope }) => {
           )}
         </div>
 
-        {/* Carried Over Section */}
+        {/* Carried Over Items - Always at TOP, always visible */}
         {carriedOverItems.length > 0 && (
           <div className="mb-4">
-            <button 
-              onClick={() => setShowCarryOver(!showCarryOver)}
-              className="w-full flex items-center justify-between p-2 rounded-lg bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors"
-            >
+            <div className="flex items-center gap-2 mb-2 px-1">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-600" />
-                <span className="text-sm font-medium text-amber-800">
-                  Carried Over ({carriedOverItems.length})
+                <Clock className="w-4 h-4 text-slate-500" />
+                <span className="text-sm font-bold text-slate-700 uppercase tracking-wider">
+                  Prior Week - Incomplete
                 </span>
               </div>
-              {showCarryOver ? (
-                <ChevronUp className="w-4 h-4 text-amber-600" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-amber-600" />
-              )}
-            </button>
+              <div className="flex-1 h-px bg-slate-200"></div>
+              <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+                {carriedOverItems.length} item{carriedOverItems.length !== 1 ? 's' : ''}
+              </span>
+            </div>
             
-            {showCarryOver && (
-              <div className="mt-2 space-y-1">
-                {carriedOverItems.map((item, idx) => {
-                  // Check if it's a coaching item
-                  if (isCoachingItem(item)) {
-                    const progress = getItemProgress(item.id);
-                    const isCompleted = progress.status === 'completed' || completedItems.includes(item.id);
-                    const registration = findRegistrationForItem(item);
-                    
-                    return (
-                      <CoachingActionItem
-                        key={item.id || `carried-${idx}`}
-                        item={item}
-                        isCompleted={isCompleted}
-                        isCarriedOver={true}
-                        carryCount={progress.carryCount || item.carryCount || 0}
-                        onComplete={handleCoachingComplete}
-                        registration={registration}
-                        weekNumber={currentWeek?.weekNumber}
-                      />
-                    );
-                  }
+            <div className="space-y-1 p-3 bg-slate-50/80 rounded-xl border border-slate-200/60">
+              {carriedOverItems.map((item, idx) => {
+                // Check if it's a coaching item
+                if (isCoachingItem(item)) {
+                  const progress = getItemProgress(item.id);
+                  const isCompleted = progress.status === 'completed' || completedItems.includes(item.id);
+                  const registration = findRegistrationForItem(item);
                   
                   return (
-                    <ActionItem 
-                      key={item.id || `carried-${idx}`} 
-                      item={item} 
-                      idx={idx} 
-                      isCarriedOver={true} 
+                    <CoachingActionItem
+                      key={item.id || `carried-${idx}`}
+                      item={item}
+                      isCompleted={isCompleted}
+                      isCarriedOver={true}
+                      carryCount={progress.carryCount || item.carryCount || 0}
+                      onComplete={handleCoachingComplete}
+                      registration={registration}
+                      weekNumber={currentWeek?.weekNumber}
                     />
                   );
-                })}
-              </div>
-            )}
+                }
+                
+                return (
+                  <ActionItem 
+                    key={item.id || `carried-${idx}`} 
+                    item={item} 
+                    idx={idx} 
+                    isCarriedOver={true} 
+                  />
+                );
+              })}
+            </div>
           </div>
         )}
 
         {/* Current Week Items */}
+        {allActions.length > 0 && (
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-teal-600" />
+              <span className="text-sm font-bold text-teal-800 uppercase tracking-wider">
+                This Week
+              </span>
+            </div>
+            <div className="flex-1 h-px bg-teal-200"></div>
+            <span className="text-xs font-medium text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full">
+              {allActions.length} item{allActions.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+        )}
+
         <div className="space-y-1">
           {allActions.length === 0 && carriedOverItems.length === 0 ? (
             <div className="p-4 text-center text-slate-500 text-sm italic">

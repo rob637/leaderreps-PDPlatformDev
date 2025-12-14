@@ -8,7 +8,7 @@ const ModalOverlay = React.forwardRef(({ className, onClick, ...props }, ref) =>
     ref={ref}
     onClick={onClick}
     className={cn(
-      'fixed inset-0 z-50 bg-black/50 backdrop-blur-sm',
+      'fixed inset-0 z-50 bg-corporate-navy/40 backdrop-blur-md',
       'animate-in fade-in-0',
       className
     )}
@@ -24,10 +24,11 @@ const ModalContent = React.forwardRef(({ className, children, ...props }, ref) =
     className={cn(
       'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
       'w-full max-w-lg max-h-[90vh] overflow-y-auto',
-      'bg-white rounded-2xl shadow-xl',
+      'bg-white rounded-2xl shadow-2xl border border-slate-100',
       'animate-in fade-in-0 zoom-in-95 slide-in-from-left-1/2 slide-in-from-top-[48%]',
       className
     )}
+    style={{ fontFamily: 'var(--font-body)' }}
     {...props}
   >
     {children}
@@ -40,7 +41,7 @@ const ModalHeader = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      'flex flex-col space-y-1.5 p-6 pb-4 border-b border-slate-200',
+      'flex flex-col space-y-2 p-6 pb-5 border-b border-slate-100',
       className
     )}
     {...props}
@@ -53,9 +54,10 @@ const ModalTitle = React.forwardRef(({ className, ...props }, ref) => (
   <h2
     ref={ref}
     className={cn(
-      'text-xl font-bold leading-none tracking-tight text-corporate-navy',
+      'text-xl font-semibold leading-none tracking-tight text-corporate-navy',
       className
     )}
+    style={{ fontFamily: 'var(--font-heading)' }}
     {...props}
   />
 ));
@@ -76,7 +78,7 @@ const ModalFooter = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      'flex items-center justify-end gap-3 p-6 pt-4 border-t border-slate-200',
+      'flex items-center justify-end gap-3 p-6 pt-5 border-t border-slate-100 bg-slate-50/50',
       className
     )}
     {...props}
@@ -90,10 +92,10 @@ const ModalClose = React.forwardRef(({ className, onClick, ...props }, ref) => (
     ref={ref}
     onClick={onClick}
     className={cn(
-      'absolute right-2 top-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center',
-      'rounded-xl opacity-70 ring-offset-white transition-all duration-150 touch-manipulation',
-      'hover:opacity-100 hover:bg-slate-100',
-      'active:scale-[0.95] active:opacity-90',
+      'absolute right-3 top-3 p-2 min-h-[40px] min-w-[40px] flex items-center justify-center',
+      'rounded-xl text-slate-400 transition-all duration-200 touch-manipulation',
+      'hover:text-slate-600 hover:bg-slate-100',
+      'active:scale-95',
       'focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2',
       className
     )}

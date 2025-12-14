@@ -113,7 +113,7 @@ const AppContent = ({
           />
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300 bg-corporate-light-gray md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2">
+          <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300 bg-[#FAFBFC] md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2">
             
             <main className="flex-1 flex flex-col overflow-hidden relative md:rounded-3xl">
               {/* Global Back Button Header - REMOVED to save whitespace */}
@@ -156,39 +156,39 @@ const AppContent = ({
               </Suspense>
             </div>
 
-            <footer className="w-full text-center mt-auto border-t bg-corporate-light-gray border-corporate-subtle-teal p-4">
+            <footer className="w-full text-center mt-auto border-t bg-white/60 backdrop-blur-sm border-slate-100 p-5">
               {/* Sync Status Indicator */}
-              <div className="flex justify-center mb-2">
+              <div className="flex justify-center mb-3">
                 <SyncIndicator variant="badge" showWhenSynced={false} />
               </div>
-              <p className="corporate-text-muted">
+              <p className="text-slate-400 text-sm" style={{ fontFamily: 'var(--font-body)' }}>
                 © {currentYear} LeaderReps. All rights reserved.
               </p>
-              <div className="mt-2 flex flex-wrap justify-center gap-1 text-xs text-text-muted">
+              <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs text-slate-400">
                 <button
                   onClick={() => navigate('privacy-policy')}
-                  className="hover:underline transition-colors duration-200 text-text-muted bg-transparent border-none cursor-pointer p-0"
+                  className="hover:text-corporate-teal transition-colors duration-200 text-slate-400 bg-transparent border-none cursor-pointer p-0"
                 >
                   Privacy Policy
                 </button>
-                <span>|</span>
+                <span className="text-slate-300">·</span>
                 <button
                   onClick={() => navigate('terms-of-service')}
-                  className="hover:underline transition-colors duration-200 text-text-muted bg-transparent border-none cursor-pointer p-0"
+                  className="hover:text-corporate-teal transition-colors duration-200 text-slate-400 bg-transparent border-none cursor-pointer p-0"
                 >
                   Terms of Service
                 </button>
-                <span>|</span>
+                <span className="text-slate-300">·</span>
                 <button
                   onClick={() => navigate('cookie-policy')}
-                  className="hover:underline transition-colors duration-200 text-text-muted bg-transparent border-none cursor-pointer p-0"
+                  className="hover:text-corporate-teal transition-colors duration-200 text-slate-400 bg-transparent border-none cursor-pointer p-0"
                 >
                   Cookie Policy
                 </button>
-                <span>|</span>
+                <span className="text-slate-300">·</span>
                 <button
                   onClick={() => navigate('contact-us')}
-                  className="hover:underline transition-colors duration-200 text-text-muted bg-transparent border-none cursor-pointer p-0"
+                  className="hover:text-corporate-teal transition-colors duration-200 text-slate-400 bg-transparent border-none cursor-pointer p-0"
                 >
                   Contact Us
                 </button>

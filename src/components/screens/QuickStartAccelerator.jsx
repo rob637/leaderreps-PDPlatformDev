@@ -250,16 +250,18 @@ const QuickStartAcceleratorScreen = () => {
                 // --- Refactored Home View ---
                 return (
                     // Consistent page structure and padding
-                    <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
+                    <div className="p-5 sm:p-6 lg:p-8 lg:p-10 bg-[#FAFBFC]" style={{ fontFamily: 'var(--font-body)' }}>
                         {/* Header */}
-                        <header className="flex items-center gap-4 border-b-2 pb-3 mb-8 border-corporate-orange/30"> {/* Use ORANGE accent */}
-                            <Zap className="w-10 h-10 flex-shrink-0 text-corporate-orange"/>
+                        <header className="flex items-center gap-4 border-b pb-4 mb-10 border-slate-100">
+                            <div className="w-14 h-14 rounded-2xl bg-corporate-orange/10 flex items-center justify-center">
+                              <Zap className="w-7 h-7 flex-shrink-0 text-corporate-orange"/>
+                            </div>
                             <div>
-                                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold text-corporate-navy">QuickStart Program</h1>
-                                <p className="text-md text-gray-600 mt-1">(Core Pillar)</p>
+                                <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>QuickStart Program</h1>
+                                <p className="text-sm text-slate-500 mt-1">Core Pillar</p>
                             </div>
                         </header>
-                        <p className="text-lg text-gray-700 mb-10 max-w-3xl">The foundational 4-session accelerator for the LeaderReps methodology. Review sessions, focus areas, and pre-work requirements.</p>
+                        <p className="text-lg text-slate-600 mb-10 max-w-3xl leading-relaxed">The foundational 4-session accelerator for the LeaderReps methodology. Review sessions, focus areas, and pre-work requirements.</p>
 
                         {/* Link to LIS Auditor Tool (Highlighted Card) */}
                         <Card title="Tool: Leadership Identity Statement (LIS) Auditor" icon={ShieldCheck} accent="TEAL" className="mb-8 cursor-pointer hover:border-teal-400" onClick={() => setQuickStartView('lis-auditor')}>
@@ -270,33 +272,33 @@ const QuickStartAcceleratorScreen = () => {
                         </Card>
 
                         {/* Session Cards */}
-                        <h2 className='text-2xl font-bold mb-4 mt-10 border-b pb-1 text-corporate-navy border-slate-200'>Program Sessions</h2>
-                        <div className="space-y-4 sm:space-y-5 lg:space-y-6">
+                        <h2 className='text-xl font-semibold mb-5 mt-10 border-b pb-2 text-corporate-navy border-slate-100' style={{ fontFamily: 'var(--font-heading)' }}>Program Sessions</h2>
+                        <div className="space-y-5">
                             {sessions.map(session => (
                                 // Use standard Card for each session
                                 <Card key={session.id} title={`Session ${session.id}: ${session.title}`} icon={BookOpen} accent="NAVY">
                                     {/* Why it Matters */}
                                     <details className="mb-4 group">
-                                        <summary className="text-sm font-semibold cursor-pointer list-none flex items-center gap-1 text-corporate-navy">
+                                        <summary className="text-sm font-medium cursor-pointer list-none flex items-center gap-2 text-corporate-navy">
                                             <Lightbulb className="w-4 h-4 text-amber-500"/> Why This Session Matters
-                                            <span className="text-xs text-gray-400 group-open:rotate-90 transition-transform">▶</span>
+                                            <span className="text-xs text-slate-400 group-open:rotate-90 transition-transform">▶</span>
                                         </summary>
-                                        <blockquote className="mt-2 border-l-4 pl-4 py-1 text-sm italic text-gray-600 border-corporate-teal">
+                                        <blockquote className="mt-3 border-l-4 pl-4 py-2 text-sm italic text-slate-600 border-corporate-teal bg-slate-50/50 rounded-r-lg">
                                             {session.keyRationale}
                                         </blockquote>
                                     </details>
 
                                     {/* Grid for Focus & Pre-Work */}
-                                    <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
+                                    <div className="grid md:grid-cols-2 gap-5 pt-4 border-t border-slate-100">
                                         {/* Core Focus */}
                                         <div>
-                                            <h3 className="text-md font-semibold mb-2 flex items-center gap-1.5 text-corporate-teal"><Target className='w-4 h-4'/> Core Focus</h3>
-                                            <p className="text-gray-700 text-sm">{session.focus}</p>
+                                            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-corporate-teal"><Target className='w-4 h-4'/> Core Focus</h3>
+                                            <p className="text-slate-600 text-sm leading-relaxed">{session.focus}</p>
                                         </div>
                                         {/* Pre-Work */}
                                         <div>
-                                            <h3 className="text-md font-semibold mb-2 flex items-center gap-1.5 text-corporate-orange"><Clock className='w-4 h-4'/> Pre-Work Checklist</h3>
-                                            <ul className="list-disc pl-5 text-gray-700 space-y-1 text-sm">
+                                            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-corporate-orange"><Clock className='w-4 h-4'/> Pre-Work Checklist</h3>
+                                            <ul className="list-disc pl-5 text-slate-600 space-y-1.5 text-sm">
                                                 {session.preWork.map((item, index) => (
                                                     <li key={index}>{item}</li>
                                                 ))}
