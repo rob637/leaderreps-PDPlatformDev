@@ -6,7 +6,8 @@ const Checkbox = React.forwardRef(({ className, checked, onCheckedChange, label,
   return (
     <div 
       className={cn(
-        "flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer group",
+        "flex items-start gap-3 p-3 min-h-[48px] rounded-xl border-2 transition-all duration-150 cursor-pointer group touch-manipulation",
+        "active:scale-[0.98] active:opacity-90",
         checked 
           ? "bg-teal-50 border-corporate-teal" 
           : "bg-white border-slate-200 hover:border-corporate-teal/50",
@@ -15,6 +16,7 @@ const Checkbox = React.forwardRef(({ className, checked, onCheckedChange, label,
       )}
       onClick={() => !disabled && onCheckedChange?.(!checked)}
     >
+      {/* Visual checkbox is 20px but tap target is the full row */}
       <div 
         className={cn(
           "mt-0.5 h-5 w-5 shrink-0 rounded-md border-2 flex items-center justify-center transition-colors",

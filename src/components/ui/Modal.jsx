@@ -90,8 +90,11 @@ const ModalClose = React.forwardRef(({ className, onClick, ...props }, ref) => (
     ref={ref}
     onClick={onClick}
     className={cn(
-      'absolute right-4 top-4 rounded-sm opacity-70 ring-offset-white transition-opacity',
-      'hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2',
+      'absolute right-2 top-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center',
+      'rounded-xl opacity-70 ring-offset-white transition-all duration-150 touch-manipulation',
+      'hover:opacity-100 hover:bg-slate-100',
+      'active:scale-[0.95] active:opacity-90',
+      'focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2',
       className
     )}
     {...props}

@@ -110,21 +110,24 @@ const TabsTrigger = React.forwardRef(({
 
   const variants = {
     default: cn(
-      'px-4 py-2 text-sm font-medium rounded-lg transition-all',
+      'px-4 py-3 min-h-[44px] text-sm font-medium rounded-lg transition-all duration-150 touch-manipulation',
+      'active:scale-[0.97] active:opacity-90',
       isActive
         ? 'bg-white text-corporate-navy shadow-sm'
         : 'text-slate-600 hover:text-corporate-navy hover:bg-white/50',
       disabled && 'opacity-50 cursor-not-allowed'
     ),
     underline: cn(
-      'px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
+      'px-4 py-3 min-h-[44px] text-sm font-medium border-b-2 -mb-px transition-all duration-150 touch-manipulation',
+      'active:opacity-80',
       isActive
         ? 'border-corporate-teal text-corporate-navy'
         : 'border-transparent text-slate-500 hover:text-corporate-navy hover:border-slate-300',
       disabled && 'opacity-50 cursor-not-allowed'
     ),
     pills: cn(
-      'px-4 py-2 text-sm font-medium rounded-full transition-all',
+      'px-4 py-3 min-h-[44px] text-sm font-medium rounded-full transition-all duration-150 touch-manipulation',
+      'active:scale-[0.97] active:opacity-90',
       isActive
         ? 'bg-corporate-teal text-white'
         : 'bg-slate-100 text-slate-600 hover:bg-slate-200',

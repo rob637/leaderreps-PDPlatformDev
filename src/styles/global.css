@@ -88,6 +88,32 @@
   --color-purple: #47A88D;  /* NO PURPLE! Use corporate teal */
 }
 
+/* === MOBILE TOUCH OPTIMIZATION === */
+/* Removes 300ms tap delay on all interactive elements */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Touch manipulation removes tap delay while preserving pinch-zoom */
+button, a, input, select, textarea, [role="button"], [tabindex] {
+  touch-action: manipulation;
+}
+
+/* Universal pressed state for interactive elements */
+.touch-interactive {
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+.touch-interactive:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+/* Minimum touch target size enforcement */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
 /* === LEADERREPS CORPORATE COMPONENT SYSTEM === */
 /* Matching leaderreps.com design patterns and interactions */
 

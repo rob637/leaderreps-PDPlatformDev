@@ -14,9 +14,9 @@ const Select = React.forwardRef(({
 }, ref) => {
 
   const sizes = {
-    sm: 'h-8 px-2 text-xs',
-    md: 'h-10 px-3 text-sm',
-    lg: 'h-12 px-4 text-base',
+    sm: 'h-11 min-h-[44px] px-3 text-sm',
+    md: 'h-12 min-h-[48px] px-4 text-base',
+    lg: 'h-14 min-h-[56px] px-5 text-lg',
   };
 
   return (
@@ -27,7 +27,8 @@ const Select = React.forwardRef(({
         onChange={onChange}
         disabled={disabled}
         className={cn(
-          'w-full appearance-none rounded-xl border border-slate-300 bg-white pr-10 font-medium text-corporate-navy transition-all',
+          'w-full appearance-none rounded-xl border border-slate-300 bg-white pr-10 font-medium text-corporate-navy',
+          'transition-all duration-150 touch-manipulation',
           'focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:border-transparent',
           'disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed',
           sizes[size],
