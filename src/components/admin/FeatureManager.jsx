@@ -583,7 +583,8 @@ const FeatureManager = () => {
       'course-library', 'reading-hub', 'leadership-videos', 'strat-templates'
     ],
     community: [
-      'community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events'
+      'community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events',
+      'community-upcoming-sessions', 'community-my-registrations'
     ],
     coaching: [
       'coaching-upcoming-sessions', 'coaching-on-demand', 'coaching-my-sessions',
