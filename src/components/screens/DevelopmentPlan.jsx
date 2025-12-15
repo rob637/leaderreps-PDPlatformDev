@@ -410,11 +410,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       updatedAt: date
     };
 
-    if (localStorage.getItem('arena-developer-mode') === 'true') {
-      alert('🔴 About to save plan to Firestore...');
-    }
     const ok = await writeDevPlan(payload, { merge: true });
-    alert('🔴 writeDevPlan returned: ' + ok);
     
     if (ok) {
       // Set flag to prevent returning to baseline view
