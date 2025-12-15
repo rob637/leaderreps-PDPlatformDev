@@ -1472,9 +1472,9 @@ const LockerController = () => {
   const { developmentPlanData, updateDevelopmentPlanData } = typeof scope !== 'undefined' ? scope : {};
   
   // DEBUG: Log what we're receiving
-  console.log('[LockerController] developmentPlanData:', developmentPlanData);
-  console.log('[LockerController] developmentPlanData?.startDate:', developmentPlanData?.startDate);
-  console.log('[LockerController] updateDevelopmentPlanData available:', !!updateDevelopmentPlanData);
+  // console.log('[LockerController] developmentPlanData:', developmentPlanData);
+  // console.log('[LockerController] developmentPlanData?.startDate:', developmentPlanData?.startDate);
+  // console.log('[LockerController] updateDevelopmentPlanData available:', !!updateDevelopmentPlanData);
 
   React.useEffect(() => {
     const timer = setInterval(() => {
@@ -1546,12 +1546,18 @@ const LockerController = () => {
     if (!newStartDate || !updateDevelopmentPlanData) return;
     try {
       // Parse the date and set to midnight local time
-      const dateObj = new Date(newStartDate + 'T00:00:00');
+      // Fix: Ensure we create a valid date object from the input string (YYYY-MM-DD)
+      // Appending T12:00:00 avoids timezone issues where midnight might shift to previous day
+      const dateObj = new Date(newStartDate + 'T12:00:00');
+      
+      // Then reset to midnight local time for consistency
+      dateObj.setHours(0, 0, 0, 0);
+
       await updateDevelopmentPlanData({ startDate: dateObj });
       setIsSettingDate(false);
       setNewStartDate('');
-      alert('Start date set successfully!');
-      window.location.reload(); // Refresh to show updated data
+      // alert('Start date set successfully!'); // Removed alert for better UX
+      // window.location.reload(); // Removed reload, React state should update
     } catch (error) {
       console.error('Error setting start date:', error);
       alert('Error setting start date: ' + error.message);
@@ -1565,8 +1571,8 @@ const LockerController = () => {
       const today = new Date(simulatedNow);
       today.setHours(0, 0, 0, 0); // Midnight of simulated day
       await updateDevelopmentPlanData({ startDate: today });
-      alert('Start date set to today!');
-      window.location.reload(); // Refresh to show updated data
+      // alert('Start date set to today!'); // Removed alert
+      // window.location.reload(); // Removed reload
     } catch (error) {
       console.error('Error setting start date:', error);
       alert('Error setting start date: ' + error.message);

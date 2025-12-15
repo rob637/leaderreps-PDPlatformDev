@@ -13,6 +13,7 @@
     "rebuild": "npm run clean && npm run build",
     "deploy": "npm run build && firebase deploy --only hosting",
     "deploy:quick": "firebase deploy --only hosting",
+    "sync:test": "./sync-dev-to-test.sh",
     "lint": "eslint .",
     "lint:ui": "bash ./scripts/ui-architecture-check.sh",
     "precommit": "npm run lint:ui && npm run lint",
