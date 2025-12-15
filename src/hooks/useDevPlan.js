@@ -159,13 +159,21 @@ export const useDevPlan = () => {
   // Auto-initialize startDate if not set
   useEffect(() => {
     const autoInit = async () => {
-      if (!developmentPlanData?.startDate && updateDevelopmentPlanData && user) {
+      // Only auto-initialize if we have a user, update function, AND we are sure data is loaded but missing startDate
+      // We check developmentPlanData !== undefined to ensure we've attempted to load it
+      if (user && updateDevelopmentPlanData && developmentPlanData !== undefined && !developmentPlanData?.startDate) {
+        
+        // Prevent infinite loop: Check if we already tried to initialize recently (in-memory flag)
+        if (window._devPlanInitAttempted) return;
+        window._devPlanInitAttempted = true;
+
         console.log('[useDevPlan] Auto-initializing startDate for user');
         try {
           await updateDevelopmentPlanData({ startDate: serverTimestamp(), version: 'v1' });
           console.log('[useDevPlan] startDate auto-initialized successfully');
         } catch (error) {
           console.error('[useDevPlan] Error auto-initializing startDate:', error);
+          window._devPlanInitAttempted = false; // Reset on error so we can retry
         }
       }
     };
