@@ -19,9 +19,9 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest --coverage",
-    "data:export": "node scripts/migrate-app-data.js export",
-    "data:import": "node scripts/migrate-app-data.js import",
-    "data:list": "node scripts/migrate-app-data.js list"
+    "data:export": "node scripts/migrate-app-data.cjs export",
+    "data:import": "node scripts/migrate-app-data.cjs import",
+    "data:list": "node scripts/migrate-app-data.cjs list"
   },
   "engines": {
     "node": ">=20.x"

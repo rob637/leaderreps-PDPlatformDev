@@ -39,6 +39,10 @@ const APP_DATA_COLLECTIONS = [
   'content_videos',
   'content_courses',
   'content_coaching',
+  'community_sessions',      // New: Community Hub Sessions
+  'community_session_types', // New: Community Hub Session Types
+  'content',                 // New: Unified Content Library
+  'skills',                  // New: Skills Taxonomy
   'metadata',
   'config',
   'global'

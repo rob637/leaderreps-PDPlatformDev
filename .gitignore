@@ -115,3 +115,4 @@ scripts/private/
 
 # Firebase Admin SDK Keys
 *-firebase-adminsdk.json
+data-exports/
