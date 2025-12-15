@@ -2,6 +2,9 @@ import React from 'react';
 import { ChevronRight, ArrowLeft, Home } from 'lucide-react';
 import { useNavigation } from '../../providers/NavigationProvider';
 
+// App version from build
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
+
 /**
  * BreadcrumbNav - Standardized navigation component
  * Replaces inconsistent back buttons with a clear hierarchical path.
@@ -34,7 +37,8 @@ export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 mb-6">
+    <div className="flex items-center justify-between gap-3 mb-6">
+      <div className="flex items-center gap-3">
       {/* Primary Back Action - Teal Arrow */}
       <button 
         onClick={handleBack}
@@ -76,6 +80,15 @@ export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
           );
         })}
       </nav>
+      </div>
+      
+      {/* Version Badge - Upper Right */}
+      <span 
+        className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded select-none flex-shrink-0"
+        title={`App version ${APP_VERSION}`}
+      >
+        v{APP_VERSION}
+      </span>
     </div>
   );
 };

@@ -31,9 +31,11 @@ export default defineConfig({
       manifest: false, // Use existing manifest.webmanifest
       
       workbox: {
-        // Ensure the new service worker takes control immediately
+        // clientsClaim: New SW takes control of open clients on activation
         clientsClaim: true,
-        skipWaiting: true,
+        // skipWaiting: false - Let the user decide when to update (Google-style)
+        // The UpdateNotification component will prompt the user
+        skipWaiting: false,
 
         // Comprehensive glob patterns for all assets
         globPatterns: [
