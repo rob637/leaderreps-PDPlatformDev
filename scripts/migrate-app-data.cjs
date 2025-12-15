@@ -39,10 +39,16 @@ const APP_DATA_COLLECTIONS = [
   'content_videos',
   'content_courses',
   'content_coaching',
-  'community_sessions',      // New: Community Hub Sessions
-  'community_session_types', // New: Community Hub Session Types
-  'content',                 // New: Unified Content Library
-  'skills',                  // New: Skills Taxonomy
+  'community_sessions',      // Community Hub Sessions
+  'community_session_types', // Community Hub Session Types
+  'coaching_sessions',       // Coaching Live Sessions
+  'coaching_session_types',  // Coaching Session Types
+  'daily_reps_library',      // Daily Reps Library
+  'media_assets',            // Media Vault
+  'content_documents',       // Document Wrappers
+  'content',                 // Unified Content Library (Legacy/Migration)
+  'content_library',         // Unified Content Library (Canonical)
+  'skills',                  // Skills Taxonomy
   'metadata',
   'config',
   'global'

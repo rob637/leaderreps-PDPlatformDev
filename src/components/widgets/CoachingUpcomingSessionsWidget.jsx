@@ -155,7 +155,8 @@ const CoachingUpcomingSessionsWidget = ({ scope = {} }) => {
     handleCancel,
     navigate,
     viewMode = 'list',
-    setViewMode
+    setViewMode,
+    showAllSessions = false
   } = scope;
   
   // Internal state for calendar if not controlled externally
@@ -319,7 +320,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {} }) => {
         </div>
       ) : (
         <div className="space-y-3">
-          {displaySessions.slice(0, 5).map(session => (
+          {displaySessions.slice(0, showAllSessions ? undefined : 5).map(session => (
             <SessionCard 
               key={session.id}
               session={session}
@@ -329,7 +330,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {} }) => {
             />
           ))}
           
-          {displaySessions.length > 5 && (
+          {!showAllSessions && displaySessions.length > 5 && (
             <button 
               onClick={() => navigate?.('coaching-lab')}
               className="w-full py-2 text-sm text-corporate-teal font-medium hover:bg-teal-50 rounded-lg transition-colors flex items-center justify-center gap-1"

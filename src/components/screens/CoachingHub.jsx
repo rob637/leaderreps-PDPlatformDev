@@ -621,7 +621,8 @@ const CoachingHub = () => {
     SessionCard,
     OnDemandSection,
     MyCoachingSection,
-    registeredIds
+    registeredIds,
+    showAllSessions: true
   };
 
   return (
