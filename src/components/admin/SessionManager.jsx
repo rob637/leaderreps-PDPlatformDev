@@ -304,21 +304,76 @@ const SessionManager = () => {
       return;
     }
 
+    // Validate end date for recurring sessions
+    const hasRecurrence = editingSession.recurrence && editingSession.recurrence !== 'none';
+    if (hasRecurrence && !editingSession.endDate) {
+      alert('Please specify an End Date for recurring sessions.');
+      return;
+    }
+
     try {
-      const sessionId = isCreatingNew 
-        ? `${editingSession.sessionType}-${editingSession.date}-${Date.now()}`
-        : editingSession.id;
+      // Generate list of dates based on recurrence
+      const dates = [];
+      const startParts = editingSession.date.split('-');
+      const startDate = new Date(parseInt(startParts[0]), parseInt(startParts[1]) - 1, parseInt(startParts[2]));
       
-      const sessionData = {
-        ...editingSession,
-        id: sessionId,
-        time: formatTimeForDisplay(editingSession.time),
-        updatedAt: serverTimestamp(),
-        ...(isCreatingNew && { createdAt: serverTimestamp() })
-      };
+      if (hasRecurrence) {
+        const endParts = editingSession.endDate.split('-');
+        const endDate = new Date(parseInt(endParts[0]), parseInt(endParts[1]) - 1, parseInt(endParts[2]));
+        
+        let currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+          dates.push(new Date(currentDate));
+          
+          // Increment based on recurrence type
+          if (editingSession.recurrence === 'weekly') {
+            currentDate.setDate(currentDate.getDate() + 7);
+          } else if (editingSession.recurrence === 'biweekly') {
+            currentDate.setDate(currentDate.getDate() + 14);
+          } else if (editingSession.recurrence === 'monthly') {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+          }
+        }
+      } else {
+        dates.push(startDate);
+      }
+
+      // Generate a series ID if recurring (links all sessions in this series)
+      const seriesId = hasRecurrence ? `series-${Date.now()}` : null;
       
-      const docRef = doc(db, COACHING_SESSIONS_COLLECTION, sessionId);
-      await setDoc(docRef, sessionData, { merge: true });
+      // Create a session for each date
+      let createdCount = 0;
+      for (const date of dates) {
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        
+        const sessionId = isCreatingNew 
+          ? `${editingSession.sessionType}-${dateStr}-${Date.now()}-${createdCount}`
+          : editingSession.id;
+        
+        const sessionData = {
+          ...editingSession,
+          id: sessionId,
+          date: dateStr,
+          time: formatTimeForDisplay(editingSession.time),
+          updatedAt: serverTimestamp(),
+          ...(seriesId && { seriesId }), // Link recurring sessions
+          ...(isCreatingNew && { createdAt: serverTimestamp() })
+        };
+        
+        // Remove endDate from individual session data (it's a form field, not stored per-session)
+        delete sessionData.endDate;
+        
+        const docRef = doc(db, COACHING_SESSIONS_COLLECTION, sessionId);
+        await setDoc(docRef, sessionData, { merge: true });
+        createdCount++;
+        
+        // For edits (not new), only update the single session
+        if (!isCreatingNew) break;
+      }
+      
+      if (isCreatingNew && dates.length > 1) {
+        alert(`Successfully created ${createdCount} recurring sessions!`);
+      }
       
       setEditingSession(null);
       setIsCreatingNew(false);
@@ -848,6 +903,41 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
           />
         </div>
+        
+        {/* Recurrence (only for new sessions) */}
+        {isNew && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Recurrence
+            </label>
+            <select
+              value={session.recurrence || 'none'}
+              onChange={(e) => setSession({ ...session, recurrence: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            >
+              <option value="none">No recurrence (single session)</option>
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Bi-weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+        )}
+        
+        {/* End Date (only shown if recurrence is selected) */}
+        {isNew && session.recurrence && session.recurrence !== 'none' && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              End Date * <span className="text-xs text-slate-500">(for recurring sessions)</span>
+            </label>
+            <input
+              type="date"
+              value={session.endDate || ''}
+              onChange={(e) => setSession({ ...session, endDate: e.target.value })}
+              min={session.date}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            />
+          </div>
+        )}
         
         {/* Time */}
         <div>
