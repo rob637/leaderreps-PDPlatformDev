@@ -18,6 +18,7 @@ import {
   getDoc,
   doc, 
   updateDoc, 
+  setDoc,
   addDoc, 
   deleteDoc,
   serverTimestamp,
@@ -169,9 +170,10 @@ const UserManagement = () => {
       const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
       const devPlanRef = doc(db, devPlanPath);
       
-      await updateDoc(devPlanRef, {
+      // Use setDoc with merge: true to handle cases where the plan doesn't exist yet
+      await setDoc(devPlanRef, {
         startDate: cohort.startDate
-      });
+      }, { merge: true });
 
       // Optimistic Update
       setUsers(users.map(u => 
