@@ -41,6 +41,8 @@ import { useFeatures } from '../../providers/FeatureProvider';
 // Excludes system widgets like 'program-status-debug' which shouldn't be toggled per-day
 const DASHBOARD_WIDGET_IDS = [
   'prep-welcome-banner',
+  'leader-profile',
+  'baseline-assessment',
   'welcome-message',
   'daily-quote',
   'am-bookend-header',
