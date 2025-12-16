@@ -26,9 +26,11 @@ import { FadeIn, Stagger } from '../motion';
 import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import PrepGate from '../ui/PrepGate';
 import ProgramStatusWidget from '../widgets/ProgramStatusWidget';
+import LeaderProfileWidget from '../widgets/LeaderProfileWidget';
 
 const DASHBOARD_FEATURES = [
   'program-status-debug',
+  'leader-profile',
   'prep-welcome-banner',
   'welcome-message',
   'daily-quote',
@@ -503,6 +505,7 @@ const Dashboard = (props) => {
   const renderers = {
     'dashboard-header': () => <WidgetRenderer widgetId="dashboard-header" scope={scope} />,
     'program-status-debug': () => <ProgramStatusWidget />,
+    'leader-profile': () => shouldShow('leader-profile', true) ? <LeaderProfileWidget /> : null,
     'prep-welcome-banner': () => shouldShow('prep-welcome-banner', false) ? <WidgetRenderer widgetId="prep-welcome-banner" scope={scope} /> : null,
     'welcome-message': () => shouldShow('welcome-message', true) ? <WidgetRenderer widgetId="welcome-message" scope={scope} /> : null,
     'daily-quote': () => shouldShow('daily-quote', true) ? <WidgetRenderer widgetId="daily-quote" scope={scope} /> : null,

@@ -3057,6 +3057,17 @@ export const FEATURE_METADATA = {
     inputs: [],
     outputs: [],
   },
+  'leader-profile': {
+    core: true,
+    category: 'Dashboard',
+    name: 'Leader Profile',
+    description: 'Complete Your Leader Profile',
+    purpose: 'Onboarding profile completion widget.',
+    extendedDescription: 'Prompts users to complete their leadership profile during Prep Phase. Collects personal info, professional context, and goals to personalize the QuickStart experience.',
+    inputs: ['userProfile'],
+    outputs: ['saveProfile'],
+    componentPath: 'src/components/widgets/LeaderProfileWidget.jsx',
+  },
   'prep-welcome-banner': {
     core: true,
     category: 'Dashboard',
