@@ -12,7 +12,13 @@ import {
   ArrowRight,
   CheckCircle,
   Filter,
-  MoreVertical
+  MoreVertical,
+  X,
+  Link,
+  FileText,
+  Video,
+  BookOpen,
+  Users
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -50,10 +56,20 @@ const DASHBOARD_WIDGET_IDS = [
   'scorecard'
 ];
 
+// Action Types with icons
+const ACTION_TYPES = {
+  task: { label: 'Task', icon: CheckCircle, color: 'teal' },
+  video: { label: 'Watch Video', icon: Video, color: 'blue' },
+  reading: { label: 'Reading', icon: BookOpen, color: 'amber' },
+  community: { label: 'Community', icon: Users, color: 'purple' },
+  document: { label: 'Document', icon: FileText, color: 'slate' }
+};
+
 // --- Sub-components ---
 
 const DayCard = ({ day, onEdit }) => {
   const isWeekend = day.isWeekend;
+  const linkedResourceCount = (day.actions || []).filter(a => a.resourceId).length;
   
   return (
     <div 
@@ -66,7 +82,7 @@ const DayCard = ({ day, onEdit }) => {
       <div className="flex justify-between items-start mb-2">
         <span className={`
           text-xs font-bold px-2 py-1 rounded-full
-          ${day.dayNumber < 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}
+          ${day.weekNumber < 1 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}
         `}>
           Day {day.dayNumber}
         </span>
@@ -90,9 +106,12 @@ const DayCard = ({ day, onEdit }) => {
           <span className="flex items-center gap-1">
             <span className="font-bold">{day.actions?.length || 0}</span> Actions
           </span>
-          <span className="flex items-center gap-1">
-            <span className="font-bold">{day.content?.length || 0}</span> Content
-          </span>
+          {linkedResourceCount > 0 && (
+            <span className="flex items-center gap-1 text-blue-600">
+              <Link className="w-3 h-3" />
+              <span className="font-bold">{linkedResourceCount}</span> Linked
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -148,17 +167,22 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
     setFormData(prev => ({ ...prev, actions: newActions }));
   };
 
-  // --- Content Management ---
-  const removeContent = (index) => {
-    const newContent = [...(formData.content || [])];
-    newContent.splice(index, 1);
-    setFormData(prev => ({ ...prev, content: newContent }));
-  };
-
   const handlePickerSelect = (item) => {
     if (pickerType === 'daily_rep') {
-      // Add as an action
-      addAction('daily_rep', item.title); // Or link by ID if we prefer
+      // Add as an action (pre-fills from library)
+      const newAction = {
+        id: `action-${Date.now()}`,
+        type: 'daily_rep',
+        label: item.title,
+        resourceId: item.id,
+        resourceTitle: item.title,
+        resourceType: item.type,
+        isCompleted: false
+      };
+      setFormData(prev => ({
+        ...prev,
+        actions: [...(prev.actions || []), newAction]
+      }));
     } else if (pickerType === 'action_link') {
       // Link resource to existing action
       if (targetActionIndex !== null) {
@@ -167,18 +191,6 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
         updateAction(targetActionIndex, 'resourceType', item.type);
         setTargetActionIndex(null);
       }
-    } else if (pickerType === 'content') {
-      // Add as content
-      const newContent = {
-        id: item.id,
-        type: item.type,
-        title: item.title,
-        thumbnail: item.thumbnail || ''
-      };
-      setFormData(prev => ({
-        ...prev,
-        content: [...(prev.content || []), newContent]
-      }));
     }
     setShowContentPicker(false);
   };
@@ -345,40 +357,31 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
           </div>
         </div>
 
-        {/* Content */}
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="text-xs font-bold text-slate-500 uppercase">Unlocked Content</label>
-            <button 
-              onClick={() => { setPickerType('content'); setShowContentPicker(true); }}
-              className="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" /> Add
-            </button>
+        {/* Linked Resources Summary */}
+        {(formData.actions || []).some(a => a.resourceId) && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <label className="text-xs font-bold text-blue-700 uppercase mb-2 block flex items-center gap-1">
+              <Link className="w-3 h-3" />
+              Unlocked Resources ({(formData.actions || []).filter(a => a.resourceId).length})
+            </label>
+            <p className="text-[10px] text-blue-600 mb-2">
+              Resources linked to actions above are automatically unlocked for users on this day.
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {(formData.actions || [])
+                .filter(a => a.resourceId)
+                .map((action, idx) => (
+                  <span key={idx} className="bg-white text-blue-700 text-[10px] px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1">
+                    {action.resourceType === 'video' && <Video className="w-2.5 h-2.5" />}
+                    {action.resourceType === 'document' && <FileText className="w-2.5 h-2.5" />}
+                    {action.resourceType === 'book' && <BookOpen className="w-2.5 h-2.5" />}
+                    {action.resourceType === 'group' && <Users className="w-2.5 h-2.5" />}
+                    {action.resourceTitle || 'Linked'}
+                  </span>
+                ))}
+            </div>
           </div>
-          
-          <div className="space-y-2">
-            {(formData.content || []).map((item, idx) => (
-              <div key={idx} className="flex gap-2 items-center bg-slate-50 p-2 rounded border border-slate-100">
-                <div className="w-8 h-8 bg-slate-200 rounded flex items-center justify-center text-xs font-bold text-slate-500">
-                  {item.type?.[0] || '?'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{item.title}</div>
-                  <div className="text-xs text-slate-500">{item.type}</div>
-                </div>
-                <button onClick={() => removeContent(idx)} className="text-slate-400 hover:text-red-500">
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-             {(formData.content || []).length === 0 && (
-              <div className="text-center p-4 border-2 border-dashed border-slate-200 rounded-lg text-xs text-slate-400">
-                No content unlocks
-              </div>
-            )}
-          </div>
-        </div>
+        )}
 
         {/* Dashboard Config */}
         <div>
@@ -511,8 +514,10 @@ const DailyPlanManager = () => {
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <div className="px-4 font-bold text-corporate-navy min-w-[100px] text-center">
-            {selectedWeek < 0 ? 'Prep Phase' : `Week ${selectedWeek}`}
+          <div className="px-4 font-bold text-corporate-navy min-w-[140px] text-center">
+            {selectedWeek < 0 ? 'Prep Phase' : 
+             selectedWeek <= 8 ? `Dev Plan Wk ${selectedWeek}` : 
+             `Post Week ${selectedWeek - 8}`}
           </div>
           <button 
             onClick={() => setSelectedWeek(prev => Math.min(weekNumbers[weekNumbers.length - 1], prev + 1))}
@@ -522,6 +527,17 @@ const DailyPlanManager = () => {
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+      </div>
+
+      {/* Phase/Week Label Banner */}
+      <div className={`px-6 py-2 text-sm font-medium ${
+        selectedWeek < 0 ? 'bg-amber-50 text-amber-700 border-b border-amber-200' :
+        selectedWeek >= 1 && selectedWeek <= 8 ? 'bg-corporate-teal/10 text-corporate-teal border-b border-corporate-teal/20' :
+        'bg-slate-50 text-slate-600 border-b border-slate-200'
+      }`}>
+        {selectedWeek < 0 && '📋 Prep Phase - Pre-program preparation'}
+        {selectedWeek >= 1 && selectedWeek <= 8 && '🎯 Development Plan - 8-Week Core Program'}
+        {selectedWeek > 8 && '🔄 Next Reps - Ongoing development'}
       </div>
 
       {/* Week Grid */}

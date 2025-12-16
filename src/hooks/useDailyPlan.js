@@ -40,13 +40,13 @@ export const PHASES = {
   },
   START: {
     id: 'start',
-    name: 'Start',
-    displayName: 'Foundations',
+    name: 'Development Plan',  // This IS the Development Plan
+    displayName: 'Development Plan',
     dbDayStart: 15,
     dbDayEnd: 70,
     weekRange: [1, 8],
     trackMissedDays: true, // Cohort-based progression
-    description: '8-week leadership foundations'
+    description: '8-week leadership development program'
   },
   POST_START: {
     id: 'post-start',
@@ -238,8 +238,8 @@ export const useDailyPlan = () => {
   }, [daysFromStart]);
 
   // 5. Get Current Day Data, Missed Days & Unlocked Content
-  const { currentDayData, missedDays, unlockedContentIds } = useMemo(() => {
-    if (dailyPlan.length === 0) return { currentDayData: null, missedDays: [], unlockedContentIds: [] };
+  const { currentDayData, missedDays, unlockedContentIds, unlockedResources } = useMemo(() => {
+    if (dailyPlan.length === 0) return { currentDayData: null, missedDays: [], unlockedContentIds: [], unlockedResources: [] };
 
     // Find data for current day using the DB dayNumber
     const current = dailyPlan.find(d => d.dayNumber === dbDayNumber);
@@ -281,22 +281,50 @@ export const useDailyPlan = () => {
         .sort((a, b) => a.dayNumber - b.dayNumber);
     }
 
-    // Calculate Unlocked Content (all content up to current day)
-    const unlockedIds = new Set();
+    // Calculate Unlocked Content (resources linked to actions up to current day)
+    // NEW MODEL: Resources are unlocked when linked to actions, not via separate content array
+    const unlockedResources = [];
     dailyPlan.forEach(d => {
       if (d.dayNumber <= dbDayNumber) {
+        // New model: resources linked to actions
+        if (d.actions && Array.isArray(d.actions)) {
+          d.actions.forEach(action => {
+            if (action.resourceId) {
+              unlockedResources.push({
+                id: action.resourceId,
+                title: action.resourceTitle || action.label,
+                type: action.resourceType,
+                unlockedOnDay: d.dayNumber,
+                linkedAction: action.label
+              });
+            }
+          });
+        }
+        // Legacy support: still check content array if it exists
         if (d.content && Array.isArray(d.content)) {
           d.content.forEach(item => {
-            if (item.id) unlockedIds.add(item.id);
+            if (item.id && !unlockedResources.find(r => r.id === item.id)) {
+              unlockedResources.push({
+                id: item.id,
+                title: item.title,
+                type: item.type,
+                unlockedOnDay: d.dayNumber,
+                linkedAction: null // Legacy - not linked to specific action
+              });
+            }
           });
         }
       }
     });
+    
+    // Create simple ID list for backward compatibility
+    const unlockedIds = unlockedResources.map(r => r.id);
 
     return { 
       currentDayData: enrichedCurrent, 
       missedDays: missed, 
-      unlockedContentIds: Array.from(unlockedIds) 
+      unlockedContentIds: unlockedIds,
+      unlockedResources // New: enriched resource data
     };
   }, [dailyPlan, dbDayNumber, currentPhase, phaseDayNumber, userState.dailyProgress]);
 
@@ -380,7 +408,8 @@ export const useDailyPlan = () => {
     missedDays,
     
     // Content unlocking
-    unlockedContentIds,
+    unlockedContentIds,     // Simple ID list (backward compatible)
+    unlockedResources,      // Enriched: { id, title, type, unlockedOnDay, linkedAction }
     
     // Actions
     toggleItemComplete,

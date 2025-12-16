@@ -381,9 +381,16 @@ export const useDevPlan = () => {
     currentDayNumber: dailyPlanData.currentDayNumber,
     currentDayData: dailyPlanData.currentDayData,
     unlockedContentIds: dailyPlanData.unlockedContentIds,
+    unlockedResources: dailyPlanData.unlockedResources, // NEW: enriched resource data
     dailyPlan: dailyPlanData.dailyPlan,
     missedDays: dailyPlanData.missedDays,
     toggleDayItemComplete: dailyPlanData.toggleItemComplete,
-    completeDay: dailyPlanData.completeDay
+    completeDay: dailyPlanData.completeDay,
+    
+    // Three Phase System (NEW)
+    currentPhase: dailyPlanData.currentPhase,
+    phaseDayNumber: dailyPlanData.phaseDayNumber,
+    daysFromStart: dailyPlanData.daysFromStart,
+    dbDayNumber: dailyPlanData.dbDayNumber
   };
 };
