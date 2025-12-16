@@ -89,6 +89,8 @@ const Card = React.forwardRef(({
     NAVY: 'border-l-4 border-l-corporate-navy',
     TEAL: 'border-l-4 border-l-corporate-teal',
     ORANGE: 'border-l-4 border-l-corporate-orange',
+    GOLD: 'border-l-4 border-l-corporate-gold',
+    gold: 'border-l-4 border-l-corporate-gold',
     
     // Remap uppercase standard colors
     RED: 'border-l-4 border-l-corporate-orange',
@@ -120,6 +122,8 @@ const Card = React.forwardRef(({
     NAVY: 'text-corporate-navy',
     TEAL: 'text-corporate-teal',
     ORANGE: 'text-corporate-orange',
+    GOLD: 'text-corporate-gold',
+    gold: 'text-corporate-gold',
     
     // Remap uppercase standard colors
     RED: 'text-corporate-orange',

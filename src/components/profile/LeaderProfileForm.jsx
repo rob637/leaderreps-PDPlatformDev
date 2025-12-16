@@ -343,8 +343,14 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
   const currentStepData = STEPS[currentStep];
   const StepIcon = currentStepData.icon;
 
+  // Handle save and exit
+  const handleSaveAndExit = async () => {
+    await saveProfile(formData, false);
+    onClose?.();
+  };
+
   return (
-    <div className={`${isModal ? 'bg-white rounded-2xl shadow-xl overflow-hidden max-w-2xl w-full mx-auto' : ''}`}>
+    <div className={`${isModal ? 'bg-white rounded-2xl shadow-xl overflow-hidden w-full mx-auto' : ''}`}>
       {/* Header */}
       <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-6">
         <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -433,27 +439,41 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
           {currentStep === 0 ? 'Cancel' : 'Back'}
         </button>
 
-        {currentStep < STEPS.length - 1 ? (
-          <Button
-            onClick={handleNext}
-            disabled={saving}
-            className="flex items-center gap-2"
-          >
-            {saving ? <Loader className="w-4 h-4 animate-spin" /> : null}
-            Next
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        ) : (
-          <Button
-            onClick={handleComplete}
-            disabled={saving}
-            variant="primary"
-            className="flex items-center gap-2 bg-corporate-gold hover:bg-corporate-gold/90"
-          >
-            {saving ? <Loader className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-            Complete Profile
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Save & Exit - always available after first step */}
+          {currentStep > 0 && (
+            <button
+              onClick={handleSaveAndExit}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-2 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium"
+            >
+              <Save className="w-4 h-4" />
+              Save & Exit
+            </button>
+          )}
+
+          {currentStep < STEPS.length - 1 ? (
+            <Button
+              onClick={handleNext}
+              disabled={saving}
+              className="flex items-center gap-2"
+            >
+              {saving ? <Loader className="w-4 h-4 animate-spin" /> : null}
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleComplete}
+              disabled={saving}
+              variant="primary"
+              className="flex items-center gap-2 bg-[#C4A052] hover:bg-[#B08D3E]"
+            >
+              {saving ? <Loader className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+              Complete Profile
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

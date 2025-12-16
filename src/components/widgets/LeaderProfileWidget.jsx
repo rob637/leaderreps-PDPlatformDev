@@ -104,9 +104,10 @@ const LeaderProfileWidget = () => {
               <button
                 onClick={() => setShowForm(true)}
                 className="flex items-center justify-center gap-2 px-5 py-2.5 
-                  bg-corporate-gold hover:bg-corporate-gold/90
-                  text-white font-medium rounded-lg shadow-sm hover:shadow 
+                  bg-[#C4A052] hover:bg-[#B08D3E]
+                  text-white font-semibold rounded-lg shadow-sm hover:shadow 
                   transition-all text-sm"
+                style={{ fontFamily: 'var(--font-heading)' }}
               >
                 {completionPercentage > 0 ? 'Continue Profile' : 'Start Profile'}
                 <ChevronRight className="w-4 h-4" />
@@ -119,7 +120,7 @@ const LeaderProfileWidget = () => {
       {/* Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <LeaderProfileForm 
               onComplete={() => setShowForm(false)}
               onClose={() => setShowForm(false)}

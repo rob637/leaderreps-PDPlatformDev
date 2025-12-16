@@ -51,27 +51,64 @@ const BaselineAssessmentWidget = () => {
     const goalCount = latestAssessment?.openEnded?.length || 0;
     
     return (
-      <Card accent="TEAL">
-        <div className="flex items-center gap-4 p-4">
-          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-            <CheckCircle className="w-6 h-6 text-green-500" />
+      <>
+        <Card accent="TEAL">
+          <div className="flex items-center gap-4 p-4">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-green-500" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-corporate-navy" style={{ fontFamily: 'var(--font-heading)' }}>
+                Baseline Assessment Complete
+              </h3>
+              <p className="text-sm text-slate-500" style={{ fontFamily: 'var(--font-body)' }}>
+                Completed {completedDate} • {goalCount} goal{goalCount !== 1 ? 's' : ''} set
+              </p>
+            </div>
+            <button
+              onClick={() => setShowModal(true)}
+              className="text-sm font-medium text-corporate-teal hover:text-corporate-teal/80 hover:underline transition-colors"
+            >
+              View or Update
+            </button>
           </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-corporate-navy" style={{ fontFamily: 'var(--font-heading)' }}>
-              Baseline Assessment Complete
-            </h3>
-            <p className="text-sm text-slate-500" style={{ fontFamily: 'var(--font-body)' }}>
-              Completed {completedDate} • {goalCount} goal{goalCount !== 1 ? 's' : ''} set
-            </p>
+        </Card>
+
+        {/* Modal for viewing/updating */}
+        {showModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Header */}
+              <div className="sticky top-0 bg-white border-b border-slate-200 p-4 flex justify-between items-center z-10">
+                <div>
+                  <h2 className="text-xl font-bold text-corporate-navy">Baseline Assessment</h2>
+                  <p className="text-sm text-slate-500">View or update your assessment and goals</p>
+                </div>
+                <button 
+                  onClick={() => setShowModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Assessment Form */}
+              <div className="p-4">
+                <BaselineAssessment 
+                  onComplete={handleAssessmentComplete}
+                  isLoading={saving}
+                  initialData={latestAssessment}
+                  mode="edit"
+                  isWidget={false}
+                />
+              </div>
+            </div>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="text-sm font-medium text-corporate-teal hover:text-corporate-teal/80 hover:underline transition-colors"
-          >
-            View or Update
-          </button>
-        </div>
-      </Card>
+        )}
+      </>
     );
   }
 
