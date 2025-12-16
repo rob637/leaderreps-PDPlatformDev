@@ -166,16 +166,6 @@ export const useDailyPlan = () => {
     return calculatedDay;
   }, [userState.startDate, simulatedNow]);
 
-    console.log('[useDailyPlan] Day Calculation:', {
-      start: start.toISOString(),
-      now: simulatedNow.toISOString(),
-      diffDays,
-      calculatedDay
-    });
-
-    return calculatedDay;
-  }, [userState.startDate, simulatedNow]);
-
   // 4. Get Current Day Data, Missed Days & Unlocked Content
   const { currentDayData, missedDays, unlockedContentIds } = useMemo(() => {
     if (dailyPlan.length === 0) return { currentDayData: null, missedDays: [], unlockedContentIds: [] };
