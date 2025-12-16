@@ -573,11 +573,15 @@ const FeatureManager = () => {
 
   const initialGroups = {
     dashboard: [
+      'prep-welcome-banner', 'leader-profile', 'baseline-assessment',
       'daily-quote', 'welcome-message', 'lis-maker', 'habit-stack', 'win-the-day', 
-      'exec-summary', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'
+      'exec-summary', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend',
+      'am-bookend-header', 'pm-bookend-header', 'grounding-rep', 'daily-leader-reps',
+      'this-weeks-actions', 'progress-feedback'
     ],
     'development-plan': [
-      'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal', 'baseline-assessment', 'development-plan'
+      'leader-profile', 'baseline-assessment',
+      'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal', 'development-plan'
     ],
     content: [
       'course-library', 'reading-hub', 'leadership-videos', 'strat-templates'
@@ -627,31 +631,10 @@ const FeatureManager = () => {
     const meta = FEATURE_METADATA[id] || {};
     const templateCode = WIDGET_TEMPLATES[id] || '';
 
-    // Determine group
-    let group = 'dashboard';
-    
-    // Force development-plan to be in development-plan group if it's in the initialGroups list
-    // This overrides DB state if it was incorrectly set to dashboard
-    if (initialGroups['development-plan'].includes(id)) {
-        group = 'development-plan';
-    } else if (dbData && dbData.group) {
-      group = dbData.group;
-    } else {
-      // Fallback to initialGroups mapping
-      if (initialGroups['development-plan'].includes(id)) group = 'development-plan';
-      else if (initialGroups.content.includes(id)) group = 'content';
-      else if (initialGroups.community.includes(id)) group = 'community';
-      else if (initialGroups.coaching.includes(id)) group = 'coaching';
-      else if (initialGroups.locker.includes(id)) group = 'locker';
-      else if (initialGroups.system?.includes(id)) group = 'system';
-      else if (initialGroups.dashboard.includes(id)) group = 'dashboard';
-    }
-
     // Construct feature object
     const featureObj = {
       id,
       name: dbData?.name || meta.name || id,
-      group, // Include group for global operations
       // Force metadata description for dashboard-header to ensure it says "Quotes"
       description: (dbData?.description || meta.description) || '',
       enabled: dbData ? dbData.enabled : true, // Default to enabled if not in DB
@@ -662,8 +645,21 @@ const FeatureManager = () => {
       originalIndex: index // Tie-breaker for stable sorting
     };
 
-    if (groups[group]) {
-      groups[group].push(featureObj);
+    // Add to ALL groups this widget belongs to (widgets can appear in multiple groups)
+    let addedToGroup = false;
+    Object.entries(initialGroups).forEach(([groupName, groupIds]) => {
+      if (groupIds.includes(id) && groups[groupName]) {
+        groups[groupName].push({ ...featureObj, group: groupName });
+        addedToGroup = true;
+      }
+    });
+
+    // If not in any initialGroup, use DB group or default to dashboard
+    if (!addedToGroup) {
+      const group = dbData?.group || 'dashboard';
+      if (groups[group]) {
+        groups[group].push({ ...featureObj, group });
+      }
     }
   });
 
