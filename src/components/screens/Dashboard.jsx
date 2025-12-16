@@ -70,15 +70,25 @@ const Dashboard = (props) => {
     zoneVisibility 
   } = useAccessControlContext();
 
-  // 2. Daily Plan (New Architecture)
+  // 2. Daily Plan (New Architecture - Three Phase System)
   const { 
     currentDayData, 
     currentDayNumber,
-    missedDays, // Added missedDays
+    currentPhase,       // NEW: Phase info { id, name, displayName, trackMissedDays }
+    phaseDayNumber,     // NEW: Day within current phase
+    missedDays,
     userState: dailyPlanUserState, 
     simulatedNow,
     toggleItemComplete 
   } = useDailyPlan();
+
+  // DEBUG: Log phase info
+  console.log('[Dashboard] Phase Info:', { 
+    phase: currentPhase?.name, 
+    phaseDayNumber, 
+    currentDayNumber,
+    hasCurrentDayData: !!currentDayData 
+  });
 
   // Adapter for Legacy Dashboard Hooks
   const devPlanCurrentWeek = useMemo(() => {
@@ -365,9 +375,11 @@ const Dashboard = (props) => {
     // State
     weeklyFocus,
     currentWeekNumber,
-    currentDayNumber, // Added for Day-by-Day widgets
-    currentDayData, // Added for Day-by-Day widgets
-    missedDays, // Added for Catch Up widget
+    currentDayNumber, // Legacy day number (negative for prep, positive for start)
+    currentDayData, // Current day config from daily_plan_v1
+    currentPhase, // NEW: Phase object { id, name, displayName, trackMissedDays }
+    phaseDayNumber, // NEW: Day within current phase (1-14 for prep, 1-56 for start)
+    missedDays, // Only populated during START phase (cohort-based)
     simulatedNow,
     devPlanCurrentWeek,
     currentWeek: devPlanCurrentWeek, // Alias for widgets expecting 'currentWeek'
@@ -492,8 +504,8 @@ const Dashboard = (props) => {
     'dashboard-header': () => <WidgetRenderer widgetId="dashboard-header" scope={scope} />,
     'program-status-debug': () => <ProgramStatusWidget />,
     'prep-welcome-banner': () => shouldShow('prep-welcome-banner', false) ? <WidgetRenderer widgetId="prep-welcome-banner" scope={scope} /> : null,
-    'welcome-message': () => <WidgetRenderer widgetId="welcome-message" scope={scope} />,
-    'daily-quote': () => <WidgetRenderer widgetId="daily-quote" scope={scope} />,
+    'welcome-message': () => shouldShow('welcome-message', true) ? <WidgetRenderer widgetId="welcome-message" scope={scope} /> : null,
+    'daily-quote': () => shouldShow('daily-quote', true) ? <WidgetRenderer widgetId="daily-quote" scope={scope} /> : null,
     'am-bookend-header': () => shouldShow('am-bookend-header', true) ? <WidgetRenderer widgetId="am-bookend-header" scope={scope} /> : null,
     'weekly-focus': () => shouldShow('weekly-focus', true) ? <WidgetRenderer widgetId="weekly-focus" scope={scope} /> : null,
     'lis-maker': () => shouldShow('lis-maker', false) ? <WidgetRenderer widgetId="lis-maker" scope={scope} /> : null,
@@ -501,10 +513,10 @@ const Dashboard = (props) => {
     'win-the-day': () => shouldShow('win-the-day', true) ? <WidgetRenderer widgetId="win-the-day" scope={scope} /> : null,
     'daily-plan': () => <WidgetRenderer widgetId="daily-plan" scope={scope} />,
     'daily-leader-reps': () => shouldShow('daily-leader-reps', true) ? <WidgetRenderer widgetId="daily-leader-reps" scope={scope} /> : null,
-    'this-weeks-actions': () => <WidgetRenderer widgetId="this-weeks-actions" scope={scope} />,
+    'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <WidgetRenderer widgetId="this-weeks-actions" scope={scope} /> : null,
     'notifications': () => shouldShow('notifications', false) ? <WidgetRenderer widgetId="notifications" scope={scope} /> : null,
     'pm-bookend-header': () => shouldShow('pm-bookend-header', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
-    'progress-feedback': () => <WidgetRenderer widgetId="progress-feedback" scope={scope} />,
+    'progress-feedback': () => shouldShow('progress-feedback', true) ? <WidgetRenderer widgetId="progress-feedback" scope={scope} /> : null,
     'pm-bookend': () => shouldShow('pm-bookend', true) ? <WidgetRenderer widgetId="pm-bookend" scope={scope} /> : null,
     'scorecard': () => shouldShow('scorecard', true) ? <WidgetRenderer widgetId="scorecard" scope={scope} /> : null,
     

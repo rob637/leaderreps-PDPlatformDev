@@ -6,12 +6,85 @@ import { collection, query, orderBy, getDocs, serverTimestamp } from 'firebase/f
  * Hook to manage the Daily Plan logic.
  * Replaces useDevPlan for the new Day-by-Day architecture.
  * 
- * Key Features:
- * - Calculates 'Current Day' based on Cohort Start Date (or User Start Date)
- * - Supports Negative Days (Prep Phase)
- * - Handles "Catch Up" logic (tracking missed days)
- * - Fetches from 'daily_plan_v1' collection
+ * THREE PHASE SYSTEM:
+ * ==================
+ * 1. PRE-START (Prep Phase) - 14 days before cohort start
+ *    - Users can join anytime, no "behind" status
+ *    - Tasks to complete before program starts
+ *    - DB: dayNumber 1-14, weekNumber -2 and -1
+ *    - Display: "Prep Day 1-14"
+ * 
+ * 2. START (Foundations) - 8 weeks (56 days)
+ *    - Cohort-based progression
+ *    - Missed days are tracked
+ *    - DB: dayNumber 15-70, weekNumber 1-8
+ *    - Display: "Day 1-56" or "Week 1-8"
+ * 
+ * 3. POST-START (After Program) - Ongoing
+ *    - Post-program content and maintenance
+ *    - DB: dayNumber 71+, weekNumber 9+
+ *    - Display: "Post Day 1+"
  */
+
+// Phase Configuration
+export const PHASES = {
+  PRE_START: {
+    id: 'pre-start',
+    name: 'Pre-Start',
+    displayName: 'Prep Phase',
+    dbDayStart: 1,
+    dbDayEnd: 14,
+    weekRange: [-2, -1],
+    trackMissedDays: false, // Users can start anytime
+    description: 'Get ready for the program'
+  },
+  START: {
+    id: 'start',
+    name: 'Start',
+    displayName: 'Foundations',
+    dbDayStart: 15,
+    dbDayEnd: 70,
+    weekRange: [1, 8],
+    trackMissedDays: true, // Cohort-based progression
+    description: '8-week leadership foundations'
+  },
+  POST_START: {
+    id: 'post-start',
+    name: 'Post-Start',
+    displayName: 'Next Reps',
+    dbDayStart: 71,
+    dbDayEnd: Infinity,
+    weekRange: [9, Infinity],
+    trackMissedDays: false, // Ongoing maintenance
+    description: 'Continue your leadership journey'
+  }
+};
+
+// Helper: Get phase from DB dayNumber
+export const getPhaseFromDbDay = (dbDayNumber) => {
+  if (dbDayNumber <= PHASES.PRE_START.dbDayEnd) return PHASES.PRE_START;
+  if (dbDayNumber <= PHASES.START.dbDayEnd) return PHASES.START;
+  return PHASES.POST_START;
+};
+
+// Helper: Get phase-specific day number for display
+export const getPhaseDayNumber = (dbDayNumber) => {
+  const phase = getPhaseFromDbDay(dbDayNumber);
+  return dbDayNumber - phase.dbDayStart + 1;
+};
+
+// Helper: Get DB dayNumber from days relative to cohort start
+// daysFromStart: negative = before start, positive = after start
+export const getDbDayNumber = (daysFromStart) => {
+  if (daysFromStart < 0) {
+    // Pre-Start: -14 to -1 maps to DB 1-14
+    // -14 days → DB day 1, -1 day → DB day 14
+    return Math.max(1, 15 + daysFromStart); // -14 + 15 = 1, -1 + 15 = 14
+  }
+  // Start/Post: 0+ days from start maps to DB 15+
+  // 0 days (start day) → DB day 15, 55 days → DB day 70
+  return 15 + daysFromStart;
+};
 export const useDailyPlan = () => {
   const { db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const [dailyPlan, setDailyPlan] = useState([]);
@@ -115,9 +188,9 @@ export const useDailyPlan = () => {
     autoInit();
   }, [developmentPlanData, updateDevelopmentPlanData, user]);
 
-  // 3. Calculate Current Day Number
-  const currentDayNumber = useMemo(() => {
-    if (!userState.startDate) return 1; // Default to Day 1
+  // 3. Calculate Days From Start (can be negative for Pre-Start)
+  const daysFromStart = useMemo(() => {
+    if (!userState.startDate) return 0; // Default to start day
 
     let start = null;
     const rawDate = userState.startDate;
@@ -130,75 +203,88 @@ export const useDailyPlan = () => {
       start = new Date(rawDate);
     }
     
-    if (!start || isNaN(start.getTime())) return 1;
+    if (!start || isNaN(start.getTime())) return 0;
 
-    // Calculate difference in days
-    // We want Day 1 to be the start date itself.
-    // So if Now == StartDate, diff is 0, but Day is 1.
-    // If Now == StartDate - 1 day, diff is -1 day, Day is -1 (Prep).
-    
+    // Calculate difference in days from cohort start
+    // Negative = before start (Pre-Start phase)
+    // Zero = start day (first day of Foundations)
+    // Positive = after start
     const diffMs = simulatedNow.getTime() - start.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    // Adjust: 
-    // If diffDays = 0 (same day), we want Day 1.
-    // If diffDays = 1 (next day), we want Day 2.
-    // If diffDays = -1 (day before), we want Day -1 (Prep).
-    // Note: There is usually no Day 0 in these systems. It goes -1 to 1.
-    
-    let dayNum = diffDays >= 0 ? diffDays + 1 : diffDays;
-    
-    // Handle the "No Day 0" logic if your system requires it (CSV has -14...-1, then 1...71)
-    // If calculation yields 0, it effectively means "Day before Day 1" which is Day -1.
-    // Wait, diffDays = -1 -> dayNum = -1. Correct.
-    // diffDays = 0 -> dayNum = 1. Correct.
-    // So we just skip 0.
-    
-    const calculatedDay = dayNum;
 
-    console.log('[useDailyPlan] Day Calculation:', {
-      start: start.toISOString(),
+    console.log('[useDailyPlan] Days From Start:', {
+      startDate: start.toISOString(),
       now: simulatedNow.toISOString(),
-      diffDays,
-      calculatedDay
+      daysFromStart: diffDays
     });
 
-    return calculatedDay;
+    return diffDays;
   }, [userState.startDate, simulatedNow]);
 
-  // 4. Get Current Day Data, Missed Days & Unlocked Content
+  // 4. Map to DB Day Number and get Phase Info
+  const { dbDayNumber, currentPhase, phaseDayNumber } = useMemo(() => {
+    const dbDay = getDbDayNumber(daysFromStart);
+    const phase = getPhaseFromDbDay(dbDay);
+    const phaseDay = getPhaseDayNumber(dbDay);
+    
+    console.log('[useDailyPlan] Phase Info:', {
+      daysFromStart,
+      dbDayNumber: dbDay,
+      phase: phase.name,
+      phaseDayNumber: phaseDay
+    });
+    
+    return { dbDayNumber: dbDay, currentPhase: phase, phaseDayNumber: phaseDay };
+  }, [daysFromStart]);
+
+  // 5. Get Current Day Data, Missed Days & Unlocked Content
   const { currentDayData, missedDays, unlockedContentIds } = useMemo(() => {
     if (dailyPlan.length === 0) return { currentDayData: null, missedDays: [], unlockedContentIds: [] };
 
-    // Find data for current day
-    const current = dailyPlan.find(d => d.dayNumber === currentDayNumber);
+    // Find data for current day using the DB dayNumber
+    const current = dailyPlan.find(d => d.dayNumber === dbDayNumber);
     
-    // Enrich with user progress
+    // Enrich with user progress and phase info
     let enrichedCurrent = null;
     if (current) {
       const progressKey = current.id; // e.g., 'day-001'
       const progress = userState.dailyProgress?.[progressKey] || { itemsCompleted: [] };
       enrichedCurrent = {
         ...current,
+        // Phase-specific display info
+        phase: currentPhase,
+        phaseDayNumber: phaseDayNumber,
+        displayDay: currentPhase.id === 'pre-start' 
+          ? `Prep Day ${phaseDayNumber}` 
+          : currentPhase.id === 'start'
+            ? `Day ${phaseDayNumber}`
+            : `Post Day ${phaseDayNumber}`,
+        // User progress
         userProgress: progress,
         isCompleted: progress.status === 'completed'
       };
     }
 
-    // Calculate Missed Days (Catch Up Logic)
-    const missed = dailyPlan
-      .filter(d => d.dayNumber < currentDayNumber) // Past days
-      .filter(d => {
-        const progress = userState.dailyProgress?.[d.id];
-        // Consider missed if status is not completed
-        return !progress || progress.status !== 'completed';
-      })
-      .sort((a, b) => a.dayNumber - b.dayNumber); // Oldest first
+    // Calculate Missed Days (only for START phase - cohort-based)
+    let missed = [];
+    if (currentPhase.trackMissedDays) {
+      missed = dailyPlan
+        .filter(d => {
+          // Only track missed days within the current phase
+          const dayPhase = getPhaseFromDbDay(d.dayNumber);
+          return dayPhase.id === currentPhase.id && d.dayNumber < dbDayNumber;
+        })
+        .filter(d => {
+          const progress = userState.dailyProgress?.[d.id];
+          return !progress || progress.status !== 'completed';
+        })
+        .sort((a, b) => a.dayNumber - b.dayNumber);
+    }
 
-    // Calculate Unlocked Content
+    // Calculate Unlocked Content (all content up to current day)
     const unlockedIds = new Set();
     dailyPlan.forEach(d => {
-      if (d.dayNumber <= currentDayNumber) {
+      if (d.dayNumber <= dbDayNumber) {
         if (d.content && Array.isArray(d.content)) {
           d.content.forEach(item => {
             if (item.id) unlockedIds.add(item.id);
@@ -212,9 +298,24 @@ export const useDailyPlan = () => {
       missedDays: missed, 
       unlockedContentIds: Array.from(unlockedIds) 
     };
-  }, [dailyPlan, currentDayNumber, userState.dailyProgress]);
+  }, [dailyPlan, dbDayNumber, currentPhase, phaseDayNumber, userState.dailyProgress]);
 
-  // 5. Actions
+  // Legacy: currentDayNumber for backward compatibility
+  // This returns the "user-facing" day number (negative for prep, positive for start)
+  const currentDayNumber = useMemo(() => {
+    if (currentPhase.id === 'pre-start') {
+      // Return negative days: -14 to -1
+      return daysFromStart; // Already negative
+    }
+    if (currentPhase.id === 'start') {
+      // Return 1-56 for the 8-week program
+      return daysFromStart + 1; // 0 → 1, 55 → 56
+    }
+    // Post-start: return days since program ended
+    return daysFromStart - 55; // 56 → 1, 57 → 2, etc.
+  }, [currentPhase, daysFromStart]);
+
+  // 6. Actions
 
   // Toggle Item Complete
   const toggleItemComplete = useCallback(async (dayId, itemId, isComplete) => {
@@ -256,15 +357,36 @@ export const useDailyPlan = () => {
   }, [updateDevelopmentPlanData]);
 
   return {
+    // Loading state
     loading: loadingPlan,
+    
+    // Raw data
     dailyPlan,
-    currentDayNumber,
-    currentDayData,
-    missedDays,
-    unlockedContentIds,
     userState,
+    
+    // Phase info (NEW)
+    currentPhase,           // { id, name, displayName, trackMissedDays, ... }
+    phaseDayNumber,         // Day within current phase (1-14 for prep, 1-56 for start, etc.)
+    daysFromStart,          // Raw days from cohort start (can be negative)
+    dbDayNumber,            // Database dayNumber (1-71+)
+    
+    // Legacy (for backward compatibility)
+    currentDayNumber,       // User-facing day number (negative for prep, positive for start)
+    
+    // Current day data (enriched with phase info)
+    currentDayData,
+    
+    // Catch-up (only populated during START phase)
+    missedDays,
+    
+    // Content unlocking
+    unlockedContentIds,
+    
+    // Actions
     toggleItemComplete,
     completeDay,
+    
+    // Time travel support
     simulatedNow
   };
 };
