@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Search, Check } from 'lucide-react';
 import { useAppServices } from '../../../../services/useAppServices';
 import { getUnifiedContent } from '../../../../services/unifiedContentService';
+import { getAllContentAdmin, CONTENT_COLLECTIONS } from '../../../../services/contentService';
 
 const ContentPicker = ({ type, onSelect, onClose, multiSelect = false, selectedIds = [] }) => {
   const { db } = useAppServices();
@@ -13,7 +14,15 @@ const ContentPicker = ({ type, onSelect, onClose, multiSelect = false, selectedI
   useEffect(() => {
     const loadItems = async () => {
       try {
-        const data = await getUnifiedContent(db, type);
+        let data = [];
+        // Check if type is a legacy collection
+        const isCollection = Object.values(CONTENT_COLLECTIONS).includes(type);
+        
+        if (isCollection) {
+             data = await getAllContentAdmin(db, type);
+        } else {
+             data = await getUnifiedContent(db, type);
+        }
         setItems(data);
       } catch (error) {
         console.error('Error loading items for picker:', error);

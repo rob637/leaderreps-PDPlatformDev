@@ -1,35 +1,19 @@
 import { useMemo } from 'react';
-import { useDevPlan } from './useDevPlan';
+import { useDailyPlan } from './useDailyPlan';
 
 /**
  * Hook to determine if content items are unlocked for the current user.
- * Implements the "Vault & Key" logic.
+ * Implements the "Vault & Key" logic using day-based content access.
  */
 export const useContentAccess = () => {
-  const { masterPlan, currentWeek } = useDevPlan();
+  const { unlockedContentIds } = useDailyPlan();
 
-  // Calculate the set of all unlocked resource IDs based on the user's current week
+  // Calculate the set of all unlocked resource IDs based on the user's current day
   const unlockedResourceIds = useMemo(() => {
-    if (!masterPlan || masterPlan.length === 0) return new Set();
-    const ids = new Set();
-    const currentWeekNum = currentWeek?.weekNumber || 1;
-
-    masterPlan.forEach(week => {
-      // Only include content from weeks up to the current week
-      if (week.weekNumber <= currentWeekNum) {
-        if (week.content && Array.isArray(week.content)) {
-          week.content.forEach(item => {
-            if (!item) return;
-            // Add all possible ID references
-            if (item.resourceId) ids.add(String(item.resourceId).toLowerCase());
-            if (item.contentItemId) ids.add(String(item.contentItemId).toLowerCase());
-            if (item.id) ids.add(String(item.id).toLowerCase());
-          });
-        }
-      }
-    });
-    return ids;
-  }, [masterPlan, currentWeek]);
+    if (!unlockedContentIds || unlockedContentIds.length === 0) return new Set();
+    // Normalize to lowercase for comparison
+    return new Set(unlockedContentIds.map(id => String(id).toLowerCase()));
+  }, [unlockedContentIds]);
 
   /**
    * Check if a specific item is accessible.

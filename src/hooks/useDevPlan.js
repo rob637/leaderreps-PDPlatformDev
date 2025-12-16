@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../services/useAppServices';
 import { collection, query, orderBy, getDocs, serverTimestamp } from 'firebase/firestore';
+import { useDailyPlan } from './useDailyPlan';
 
 /**
  * Hook to manage the Development Plan logic.
  * Combines the Master Plan (admin-defined weeks) with User Progress (firestore).
  * Now supports Time Travel for testing schedule-based progression.
+ * 
+ * UPDATED: Also exposes day-based data from useDailyPlan for Day-by-Day architecture.
  */
 export const useDevPlan = () => {
   const { db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
@@ -14,6 +17,9 @@ export const useDevPlan = () => {
   const [timeOffset, setTimeOffset] = useState(() => {
     return parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
   });
+
+  // Integrate with Day-by-Day architecture
+  const dailyPlanData = useDailyPlan();
 
   // 0. Initialize Time Travel Offset and listen for changes
   useEffect(() => {
@@ -368,6 +374,16 @@ export const useDevPlan = () => {
     completeWeek,
     getUnlockedResources, // Expose the helper
     simulatedNow, // Expose for UI if needed
-    user // Expose user for access control
+    user, // Expose user for access control
+    
+    // Day-by-Day Architecture Integration
+    // These fields allow components to gradually migrate from week-based to day-based
+    currentDayNumber: dailyPlanData.currentDayNumber,
+    currentDayData: dailyPlanData.currentDayData,
+    unlockedContentIds: dailyPlanData.unlockedContentIds,
+    dailyPlan: dailyPlanData.dailyPlan,
+    missedDays: dailyPlanData.missedDays,
+    toggleDayItemComplete: dailyPlanData.toggleItemComplete,
+    completeDay: dailyPlanData.completeDay
   };
 };

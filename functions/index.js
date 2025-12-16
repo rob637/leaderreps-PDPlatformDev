@@ -525,3 +525,150 @@ exports.debugUser = onRequest(
     }
   }
 );
+
+/**
+ * SCHEDULED DAILY NOTIFICATIONS
+ * Sends personalized notifications to users based on their current day in the daily plan.
+ * Runs every morning at 8:00 AM Central Time.
+ */
+exports.scheduledDailyNotifications = onSchedule(
+  {
+    schedule: "0 8 * * *", // 8:00 AM every day
+    timeZone: "America/Chicago",
+  },
+  async () => {
+    logger.info("🔔 Starting daily notifications job...");
+
+    try {
+      // 1. Fetch all users with a startDate
+      const usersSnapshot = await db.collection("users").get();
+      const users = usersSnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(u => u.startDate); // Only users with a start date
+
+      // 2. Fetch daily plan
+      const planSnapshot = await db.collection("daily_plan_v1").get();
+      const dailyPlan = {};
+      planSnapshot.docs.forEach(doc => {
+        dailyPlan[doc.data().dayNumber] = { id: doc.id, ...doc.data() };
+      });
+
+      let sentCount = 0;
+      const now = new Date();
+
+      for (const user of users) {
+        try {
+          // Calculate user's current day
+          let startDate = user.startDate;
+          if (startDate?.toDate) startDate = startDate.toDate();
+          else if (startDate?.seconds) startDate = new Date(startDate.seconds * 1000);
+          else startDate = new Date(startDate);
+
+          const diffMs = now.getTime() - startDate.getTime();
+          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+          const currentDay = diffDays >= 0 ? diffDays + 1 : diffDays;
+
+          // Get the day's data
+          const dayData = dailyPlan[currentDay];
+          if (!dayData) continue;
+
+          // Check if notifications should be shown for this day
+          if (!dayData.dashboard?.showNotifications) continue;
+
+          // Build notification content
+          const notificationText = dayData.dashboard?.notificationText || dayData.focus || `Day ${currentDay}`;
+
+          // Check if user has FCM token
+          const fcmToken = user.fcmToken;
+          if (!fcmToken) {
+            logger.info(`User ${user.email} has no FCM token, skipping.`);
+            continue;
+          }
+
+          // Send push notification
+          const message = {
+            notification: {
+              title: `🎯 Day ${currentDay}: ${dayData.title || 'Today\'s Focus'}`,
+              body: notificationText.substring(0, 100),
+            },
+            data: {
+              dayNumber: String(currentDay),
+              screen: 'dashboard',
+            },
+            token: fcmToken,
+          };
+
+          await admin.messaging().send(message);
+          sentCount++;
+          logger.info(`📬 Notification sent to ${user.email} for Day ${currentDay}`);
+        } catch (userError) {
+          logger.warn(`Failed to send notification to user ${user.id}:`, userError.message);
+        }
+      }
+
+      logger.info(`🔔 Daily notifications complete: ${sentCount} sent`);
+      return { success: true, sent: sentCount };
+    } catch (error) {
+      logger.error("🔥 Daily notifications failed:", error);
+      throw error;
+    }
+  }
+);
+
+/**
+ * SEND TEST NOTIFICATION
+ * Manual endpoint to test push notifications for a specific user.
+ * Usage: POST /sendTestNotification?email=rob@sagecg.com
+ */
+exports.sendTestNotification = onRequest(
+  {
+    cors: true,
+  },
+  async (req, res) => {
+    const email = req.query.email || req.body.email;
+    
+    if (!email) {
+      res.status(400).json({ error: "Email is required" });
+      return;
+    }
+
+    try {
+      // Find user
+      const usersSnapshot = await db.collection("users").where("email", "==", email).limit(1).get();
+      
+      if (usersSnapshot.empty) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      const user = usersSnapshot.docs[0].data();
+      const fcmToken = user.fcmToken;
+
+      if (!fcmToken) {
+        res.status(400).json({ error: "User has no FCM token registered" });
+        return;
+      }
+
+      // Send test notification
+      const message = {
+        notification: {
+          title: "🧪 Test Notification",
+          body: "This is a test notification from LeaderReps!",
+        },
+        data: {
+          screen: 'dashboard',
+          test: 'true',
+        },
+        token: fcmToken,
+      };
+
+      const response = await admin.messaging().send(message);
+      logger.info(`Test notification sent to ${email}:`, response);
+
+      res.json({ success: true, messageId: response });
+    } catch (error) {
+      logger.error("Test notification error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);

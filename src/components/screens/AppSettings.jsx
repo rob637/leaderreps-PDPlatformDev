@@ -1,13 +1,66 @@
 // src/components/screens/AppSettings.jsx
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { User, Lock, Code, Cpu, Settings, Shield, ArrowLeft, LogOut, Key, Mail } from 'lucide-react';
+import { User, Lock, Code, Cpu, Settings, Shield, ArrowLeft, LogOut, Key, Mail, Bell, BellOff, CheckCircle } from 'lucide-react';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { Button, Card } from '../ui';
+import { notificationService } from '../../services/notificationService';
 
 const AppSettingsScreen = () => {
-  const { user, API_KEY, auth, navigate, isAdmin } = useAppServices();
+  const { user, API_KEY, auth, navigate, isAdmin, db } = useAppServices();
+  const [notificationStatus, setNotificationStatus] = useState('checking');
+  const [isEnablingNotifications, setIsEnablingNotifications] = useState(false);
+
+  useEffect(() => {
+    checkNotificationStatus();
+  }, [user?.uid]);
+
+  const checkNotificationStatus = async () => {
+    if (!notificationService.isFCMSupported()) {
+      setNotificationStatus('unsupported');
+      return;
+    }
+
+    const permission = notificationService.getPermission();
+    if (permission === 'denied') {
+      setNotificationStatus('blocked');
+      return;
+    }
+
+    if (user?.uid && db) {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists() && userDoc.data().fcmTokens?.length > 0) {
+          setNotificationStatus('enabled');
+          return;
+        }
+      } catch (e) {
+        console.error('Error checking notification status:', e);
+      }
+    }
+
+    setNotificationStatus(permission === 'granted' ? 'available' : 'disabled');
+  };
+
+  const handleEnableNotifications = async () => {
+    if (!user?.uid || !db) return;
+    
+    setIsEnablingNotifications(true);
+    try {
+      const token = await notificationService.registerForPushNotifications(db, user.uid);
+      if (token) {
+        setNotificationStatus('enabled');
+      } else {
+        const permission = notificationService.getPermission();
+        setNotificationStatus(permission === 'denied' ? 'blocked' : 'disabled');
+      }
+    } catch (error) {
+      console.error('Error enabling notifications:', error);
+    }
+    setIsEnablingNotifications(false);
+  };
 
   const handleResetPassword = async () => {
     if (!user?.email || !auth) {
@@ -81,6 +134,69 @@ const AppSettingsScreen = () => {
                         <LogOut className="w-4 h-4" />
                         Sign Out From All Devices
                     </Button>
+                </div>
+            </Card>
+
+            {/* Push Notifications Card */}
+            <Card title="Push Notifications" icon={Bell} accentColor="bg-blue-600">
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-slate-50/80 rounded-xl border border-slate-100">
+                        <div>
+                            <p className="text-sm font-medium text-corporate-navy">Daily Reminders</p>
+                            <p className="text-xs text-slate-400 mt-0.5">Get notified about your daily plan</p>
+                        </div>
+                        {notificationStatus === 'enabled' ? (
+                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-full flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" /> Enabled
+                            </span>
+                        ) : notificationStatus === 'blocked' ? (
+                            <span className="px-2.5 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-full flex items-center gap-1">
+                                <BellOff className="w-3 h-3" /> Blocked
+                            </span>
+                        ) : notificationStatus === 'unsupported' ? (
+                            <span className="px-2.5 py-1 bg-slate-50 text-slate-500 text-xs font-medium rounded-full">Not Supported</span>
+                        ) : (
+                            <span className="px-2.5 py-1 bg-amber-50 text-amber-600 text-xs font-medium rounded-full">Disabled</span>
+                        )}
+                    </div>
+                    
+                    {notificationStatus === 'blocked' && (
+                        <p className="text-xs text-amber-600 bg-amber-50 p-3 rounded-lg">
+                            Notifications are blocked in your browser. To enable them, click the lock icon in your browser's address bar and allow notifications.
+                        </p>
+                    )}
+                    
+                    {notificationStatus === 'unsupported' && (
+                        <p className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
+                            Push notifications are not supported in this browser. Try using Chrome, Firefox, or Edge.
+                        </p>
+                    )}
+
+                    {(notificationStatus === 'disabled' || notificationStatus === 'available') && (
+                        <Button 
+                            onClick={handleEnableNotifications} 
+                            variant="primary" 
+                            size="sm" 
+                            className="w-full justify-center"
+                            disabled={isEnablingNotifications}
+                        >
+                            {isEnablingNotifications ? (
+                                <>Processing...</>
+                            ) : (
+                                <>
+                                    <Bell className="w-4 h-4" />
+                                    Enable Push Notifications
+                                </>
+                            )}
+                        </Button>
+                    )}
+                    
+                    {notificationStatus === 'enabled' && (
+                        <p className="text-xs text-emerald-600 bg-emerald-50 p-3 rounded-lg flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                            You'll receive daily reminders based on your program schedule.
+                        </p>
+                    )}
                 </div>
             </Card>
 

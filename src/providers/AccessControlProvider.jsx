@@ -1,10 +1,22 @@
 import React, { createContext, useContext } from 'react';
-import { useAccessControl } from '../hooks/useAccessControl';
+import { useDayBasedAccessControl } from '../hooks/useDayBasedAccessControl';
 
 const AccessControlContext = createContext(null);
 
+/**
+ * AccessControlProvider - Day-by-Day Architecture
+ * Provides day-based access control for all zones:
+ * - Content Library
+ * - Community
+ * - Coaching
+ * - Dashboard Widgets
+ * - Locker
+ * 
+ * Also implements the Prep Gate to ensure users complete
+ * Leader Profile and Baseline Assessment before Day 1.
+ */
 export const AccessControlProvider = ({ children }) => {
-  const accessControl = useAccessControl();
+  const accessControl = useDayBasedAccessControl();
 
   return (
     <AccessControlContext.Provider value={accessControl}>

@@ -115,5 +115,9 @@ export { SwipeableRow, SwipeActions } from './SwipeableRow';
 export { PullToRefresh } from './PullToRefresh';
 export { ResponsiveTable, MobileHistoryCard } from './ResponsiveTable';
 
+// Access Control Components
+export { default as AccessGate } from './AccessGate';
+export { default as PrepGate } from './PrepGate';
+
 // Re-export cn utility for consistency
 export { cn } from '../../lib/utils';

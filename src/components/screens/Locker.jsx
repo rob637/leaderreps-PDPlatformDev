@@ -7,6 +7,7 @@ import WidgetRenderer from '../admin/WidgetRenderer';
 import { useNotifications } from '../../providers/NotificationProvider';
 import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
 import LockerProgressWidget from '../widgets/LockerProgressWidget';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 const LOCKER_FEATURES = [
   'locker-progress',
@@ -19,6 +20,19 @@ const LOCKER_FEATURES = [
 const Locker = () => {
   const { dailyPracticeData, commitmentData, navigate, db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
+  const { currentDayData } = useDailyPlan();
+
+  // Day-based locker visibility from daily plan
+  const lockerVisibility = useMemo(() => {
+    return currentDayData?.locker || {
+      showProfile: true,
+      showReminders: true,
+      showAMWins: true,
+      showDailyReps: true,
+      showScorecard: true,
+      showReflection: true
+    };
+  }, [currentDayData]);
 
   // Arena Data
   // Assuming winsList is an array of { text, completed, date } objects
@@ -55,19 +69,38 @@ const Locker = () => {
     Settings, Clock, User, Bell, AlertTriangle,
     user,
     developmentPlanData,
-    updateDevelopmentPlanData
+    updateDevelopmentPlanData,
+    lockerVisibility // Pass day-based visibility to widgets
   };
 
+  // Filter features based on day-based visibility
   const sortedFeatures = useMemo(() => {
     return LOCKER_FEATURES
-      .filter(id => isFeatureEnabled(id))
+      .filter(id => {
+        // First check feature flag
+        if (!isFeatureEnabled(id)) return false;
+        
+        // Then check day-based visibility
+        switch (id) {
+          case 'locker-wins-history':
+            return lockerVisibility.showAMWins;
+          case 'locker-scorecard-history':
+            return lockerVisibility.showScorecard;
+          case 'locker-latest-reflection':
+            return lockerVisibility.showReflection;
+          case 'locker-reps-history':
+            return lockerVisibility.showDailyReps;
+          default:
+            return true;
+        }
+      })
       .sort((a, b) => {
         const orderA = getFeatureOrder(a);
         const orderB = getFeatureOrder(b);
         if (orderA === orderB) return LOCKER_FEATURES.indexOf(a) - LOCKER_FEATURES.indexOf(b);
         return orderA - orderB;
       });
-  }, [isFeatureEnabled, getFeatureOrder]);
+  }, [isFeatureEnabled, getFeatureOrder, lockerVisibility]);
 
   // Custom renderer for special widgets
   const renderFeature = (featureId) => {

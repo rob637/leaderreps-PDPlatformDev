@@ -1,5 +1,5 @@
 import { 
-  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell, Target, Zap, Crosshair, Flag, MessageCircle, Heart, Sun, Moon, PenTool, Quote, User, Repeat, Clock, Circle, ChevronDown, Info
+  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell, Target, Zap, Crosshair, Flag, MessageCircle, Heart, Sun, Moon, PenTool, Quote, User, Repeat, Clock, Circle, ChevronDown, Info, Coffee
 } from 'lucide-react';
 
 // Helper for Roadmap Widgets
@@ -39,6 +39,32 @@ export const createRoadmapWidget = (title, ideas) => `
 export const WIDGET_TEMPLATES = {
     'am-bookend-header': `
 <>
+{/* Catch Up Alert */}
+{(() => {
+   if (typeof missedDays !== 'undefined' && missedDays && missedDays.length > 0) {
+       return (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between mb-4">
+             <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 rounded-full text-amber-600">
+                   <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                   <h4 className="font-bold text-amber-900">You have {missedDays.length} missed days</h4>
+                   <p className="text-xs text-amber-700">Catch up to stay on track with your cohort.</p>
+                </div>
+             </div>
+             <button 
+                onClick={() => setIsCatchUpModalOpen(true)}
+                className="px-3 py-1.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-lg hover:bg-amber-200 transition-colors"
+             >
+                View Missed
+             </button>
+          </div>
+       );
+   }
+   return null;
+})()}
+
 <div className="flex items-center gap-3 mb-4 mt-4">
   <Sun className="w-6 h-6 text-orange-500" />
   <h2 className="text-xl font-bold text-[#002E47]">AM Bookend: Start Strong</h2>
@@ -49,6 +75,41 @@ export const WIDGET_TEMPLATES = {
     `,
     'weekly-focus': `
 (() => {
+  // Check for Daily Plan data (New Architecture)
+  if (typeof currentDayData !== 'undefined' && currentDayData) {
+     const dayNum = currentDayData.dayNumber;
+     const isPrep = dayNum < 1;
+     const isWeekend = currentDayData.isWeekend;
+     
+     // Dynamic Title & Accent
+     let cardTitle = \`Day \${dayNum}: \${currentDayData.title || 'Untitled'}\`;
+     let accent = "NAVY";
+     let icon = Target;
+     
+     if (isPrep) {
+        cardTitle = \`Prep Phase: \${currentDayData.title || 'Get Ready'}\`;
+        accent = "ORANGE"; // Distinct color for Prep
+        icon = Zap;
+     } else if (isWeekend) {
+        cardTitle = \`Rest & Reflect: \${currentDayData.title || 'Weekend'}\`;
+        accent = "TEAL"; // Softer color for Weekend
+        icon = Coffee; // Need to ensure Coffee is imported or use Sun
+     }
+
+     const focus = currentDayData.focus || (isWeekend ? "Recharge and Reflect" : "Win The Day");
+     
+     return (
+        <Card title={cardTitle} icon={icon} accent={accent}>
+           <div className={\`p-4 rounded-xl border \${isPrep ? 'bg-orange-50 border-orange-100' : 'bg-slate-50 border-slate-100'}\`}>
+              <h4 className={\`text-xs font-bold uppercase mb-1 \${isPrep ? 'text-orange-600' : 'text-slate-500'}\`}>
+                 {isWeekend ? "Weekend Focus" : "Today's Focus"}
+              </h4>
+              <p className="text-lg font-medium text-corporate-navy">{focus}</p>
+           </div>
+        </Card>
+     );
+  }
+
   // Get the weekly focus from scope (calculated by Dashboard using useDevPlan with time travel)
   const focus = weeklyFocus || "Leadership Identity";
   const weekNum = currentWeekNumber || 1;
@@ -357,6 +418,46 @@ export const WIDGET_TEMPLATES = {
     `,
     'daily-plan': `
 (() => {
+  // New Daily Plan Logic
+  if (typeof currentDayData !== 'undefined' && currentDayData) {
+      const content = currentDayData.content || [];
+      const actions = currentDayData.actions || [];
+      const hasItems = content.length > 0 || actions.length > 0;
+      const navFn = typeof navigate !== 'undefined' ? navigate : (typeof scope !== 'undefined' && scope.navigate ? scope.navigate : () => {});
+      
+      return (
+        <Card title="Today's Plan" icon={Calendar} accent="TEAL">
+           <div className="space-y-3">
+              {!hasItems && (
+                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                    <p className="text-sm text-slate-500">No specific items scheduled for today.</p>
+                 </div>
+              )}
+              
+              {/* Actions */}
+              {actions.map((action, idx) => (
+                 <div key={\`action-\${idx}\`} className="flex gap-3 items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm">
+                    <div className={\`w-2 h-2 rounded-full \${action.type === 'daily_rep' ? 'bg-corporate-teal' : 'bg-orange-400'}\`}></div>
+                    <span className="text-sm font-medium text-slate-700">{action.label}</span>
+                 </div>
+              ))}
+
+              {/* Content */}
+              {content.map((item, idx) => (
+                 <div key={\`content-\${idx}\`} className="flex gap-3 items-center p-2 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors" onClick={() => navFn('business-readings')}>
+                    <div className="p-1.5 bg-blue-100 rounded-full text-blue-600"><BookOpen className="w-4 h-4" /></div>
+                    <div className="flex-1">
+                       <div className="text-sm font-bold text-blue-900">{item.title}</div>
+                       <div className="text-xs text-blue-600">{item.type}</div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-blue-400" />
+                 </div>
+              ))}
+           </div>
+        </Card>
+      );
+  }
+
   // Get current week data
   const currentWeek = typeof devPlanCurrentWeek !== 'undefined' ? devPlanCurrentWeek : null;
   const navFn = typeof navigate !== 'undefined' ? navigate : (typeof scope !== 'undefined' && scope.navigate ? scope.navigate : () => {});
@@ -569,6 +670,7 @@ const NotificationsWidget = () => {
 
   // Get current week data from scope
   const currentWeek = typeof devPlanCurrentWeek !== 'undefined' ? devPlanCurrentWeek : null;
+  const currentDayData = typeof scope !== 'undefined' && scope.currentDayData ? scope.currentDayData : null;
   const practiceData = typeof dailyPracticeData !== 'undefined' ? dailyPracticeData : null;
   const navFn = typeof navigate !== 'undefined' ? navigate : (typeof scope !== 'undefined' && scope.navigate ? scope.navigate : () => {});
 

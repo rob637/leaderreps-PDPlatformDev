@@ -33,6 +33,8 @@ import CommunityManager from './CommunityManager';
 import CoachingManager from './CoachingManager';
 import LOVManager from './LOVManager';
 import DailyRepsLibrary from './DailyRepsLibrary';
+import DailyPlanManager from './DailyPlanManager';
+import CohortManager from './CohortManager';
 import UserManagement from './UserManagement';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, getDoc } from 'firebase/firestore';
@@ -115,7 +117,9 @@ const AdminPortal = () => {
       title: 'Management',
       items: [
         { id: 'users', label: 'User Management', icon: Users },
-        { id: 'devplan', label: 'Dev Plan', icon: Calendar },
+        { id: 'cohorts', label: 'Cohorts', icon: Users },
+        { id: 'daily-plan', label: 'Daily Plan (New)', icon: Calendar },
+        { id: 'devplan', label: 'Legacy Plan', icon: Calendar },
         { id: 'library', label: 'Metadata Library', icon: Library },
         { id: 'content', label: 'Content Wrapper', icon: FileText },
         { id: 'media', label: 'Media Vault', icon: Database }
@@ -154,8 +158,12 @@ const AdminPortal = () => {
         return <AdminDashboard />;
       case 'users':
         return <UserManagement />;
+      case 'cohorts':
+        return <CohortManager />;
       case 'tests':
         return <TestCenter />;
+      case 'daily-plan':
+        return <DailyPlanManager />;
       case 'devplan':
         return <DevPlanManager />;
       case 'library':

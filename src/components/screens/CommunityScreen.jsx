@@ -3,17 +3,19 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
 import contentService, { CONTENT_COLLECTIONS } from '../../services/contentService.js';
-import { useDevPlan } from '../../hooks/useDevPlan';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { useLayout } from '../../providers/LayoutProvider';
+import PrepGate from '../ui/PrepGate';
 
 import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
     Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video, BookOpen, FileText,
-    Calendar
+    Calendar, Lock
 } from 'lucide-react';
 import { Button, Card, LoadingSpinner, PageLayout, NoWidgetsEnabled } from '../ui';
 
@@ -230,7 +232,7 @@ const NewThreadView = ({ setView }) => {
 };
 
 const CommunityResourcesView = ({ db }) => {
-    const { plan, currentWeek } = useDevPlan();
+    const { currentDayNumber, unlockedContentIds } = useDailyPlan();
     const [resources, setResources] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedResource, setSelectedResource] = useState(null);
@@ -251,31 +253,18 @@ const CommunityResourcesView = ({ db }) => {
         fetchResources();
     }, [db]);
 
+    // Day-based unlocking using unlockedContentIds from daily plan
     const unlockedResourceIds = useMemo(() => {
-        if (!plan) return new Set();
-        const ids = new Set();
-        for (let i = 1; i <= currentWeek; i++) {
-            const weekKey = `week${i}`;
-            if (plan[weekKey]?.items) {
-                plan[weekKey].items.forEach(item => {
-                    if (item.resourceId) ids.add(item.resourceId);
-                });
-            }
-        }
-        return ids;
-    }, [plan, currentWeek]);
+        if (!unlockedContentIds) return new Set();
+        return new Set(unlockedContentIds.map(id => String(id).toLowerCase()));
+    }, [unlockedContentIds]);
 
+    // Resources unlocked today (within last 24 hours conceptually, or current day's content)
     const newResourceIds = useMemo(() => {
-        if (!plan) return new Set();
-        const ids = new Set();
-        const weekKey = `week${currentWeek}`;
-        if (plan[weekKey]?.items) {
-            plan[weekKey].items.forEach(item => {
-                if (item.resourceId) ids.add(item.resourceId);
-            });
-        }
-        return ids;
-    }, [plan, currentWeek]);
+        // For now, consider items from the current day as "new"
+        // This could be enhanced to track when each item was unlocked
+        return new Set();
+    }, []);
 
     const visibleResources = useMemo(() => {
         return resources.filter(item => {
@@ -339,7 +328,8 @@ const CommunityResourcesView = ({ db }) => {
 const CommunityScreen = ({ simulatedTier }) => {
     const { db, user, navigate, LEADERSHIP_TIERS, isLoading: isAppLoading, error: appError } = useAppServices();
     const { isFeatureEnabled } = useFeatures();
-    const { getUnlockedResources } = useDevPlan();
+    const { unlockedContentIds, currentDayNumber } = useDailyPlan();
+    const { zoneVisibility, isPrepComplete } = useAccessControlContext();
     
     const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]);
     
@@ -352,14 +342,21 @@ const CommunityScreen = ({ simulatedTier }) => {
     const [allThreads, setAllThreads] = useState([]);
     const [isLoadingThreads, setIsLoadingThreads] = useState(true);
 
-    // Fetch Threads
+    // Fetch Threads - now using day-based unlocking
     useEffect(() => {
         const fetchThreads = async () => {
             setIsLoadingThreads(true);
             try {
                 const threads = await contentService.getContent(db, CONTENT_COLLECTIONS.COMMUNITY);
-                const unlockedIds = getUnlockedResources('community');
-                const unlockedThreads = threads.filter(t => unlockedIds.has(t.id));
+                const unlockedSet = new Set((unlockedContentIds || []).map(id => String(id).toLowerCase()));
+                
+                // Filter to only show unlocked threads
+                const unlockedThreads = threads.filter(t => {
+                    // If thread has no ID restriction, show it
+                    if (!t.isHiddenUntilUnlocked) return true;
+                    // Otherwise check if unlocked
+                    return unlockedSet.has(String(t.id).toLowerCase());
+                });
                 
                 const mappedThreads = unlockedThreads.map(t => ({
                     ...t,
@@ -380,7 +377,7 @@ const CommunityScreen = ({ simulatedTier }) => {
         if (db) {
             fetchThreads();
         }
-    }, [db]);
+    }, [db, unlockedContentIds]);
 
     // Filter Threads
     const filteredThreads = useMemo(() => {
@@ -394,6 +391,34 @@ const CommunityScreen = ({ simulatedTier }) => {
 
     if (isAppLoading) return <LoadingSpinner message="Loading Community Hub..." />;
     if (appError) return <div className="p-4 text-red-500">Error: {appError.message}</div>;
+
+    // Zone Gate: Community unlocks at Day 15 (Week 1 of main program)
+    if (!zoneVisibility.isCommunityZoneOpen) {
+        return (
+            <PageLayout
+                title="Community Hub"
+                subtitle="Connect, share insights, and grow with fellow leaders."
+                icon={Users}
+                navigate={navigate}
+            >
+                <div className="max-w-2xl mx-auto">
+                    <div className="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl p-8 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-slate-200 flex items-center justify-center mx-auto mb-4">
+                            <Lock className="w-8 h-8 text-slate-400" />
+                        </div>
+                        <h2 className="text-xl font-bold text-corporate-navy mb-2">Community Coming Soon</h2>
+                        <p className="text-slate-600 mb-4">
+                            The Community Hub unlocks on Day 15 of your program. 
+                            Focus on your prep work and early development activities first!
+                        </p>
+                        <p className="text-sm text-slate-500">
+                            Current Day: {currentDayNumber} | Unlocks: Day 15
+                        </p>
+                    </div>
+                </div>
+            </PageLayout>
+        );
+    }
 
     return (
         <PageLayout

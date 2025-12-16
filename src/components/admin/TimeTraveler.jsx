@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTime } from '../../providers/TimeProvider';
-import { Clock, Calendar, RotateCcw, FastForward, Moon, Sun } from 'lucide-react';
+import { Clock, Calendar, RotateCcw, FastForward, Moon, Sun, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 
 const TimeTraveler = () => {
   const { now, isTimeTravelActive, travelTo, resetTime } = useTime();
@@ -33,6 +33,14 @@ const TimeTraveler = () => {
     travelTo(nextWeek);
   };
 
+  // Day-by-Day Navigation
+  const jumpDays = (days) => {
+    const newDate = new Date(now);
+    newDate.setDate(newDate.getDate() + days);
+    newDate.setHours(9, 0, 0, 0);
+    travelTo(newDate);
+  };
+
   return (
     <div className={`fixed bottom-4 right-4 z-50 p-4 rounded-xl shadow-2xl border-2 transition-all duration-300 ${isTimeTravelActive ? 'bg-indigo-900 border-indigo-400 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
       <div className="flex items-center gap-2 mb-3 border-b border-white/20 pb-2">
@@ -51,6 +59,42 @@ const TimeTraveler = () => {
           </div>
           <div className="font-mono text-sm opacity-90">
             {now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </div>
+        </div>
+
+        {/* Day-by-Day Navigation */}
+        <div className={`p-2 rounded-lg ${isTimeTravelActive ? 'bg-indigo-800/50' : 'bg-slate-50'}`}>
+          <div className="text-[10px] uppercase font-bold opacity-70 mb-1 text-center">Day-by-Day Navigation</div>
+          <div className="flex items-center justify-center gap-1">
+            <button 
+              onClick={() => jumpDays(-7)}
+              className={`p-1.5 rounded text-xs font-bold transition-colors ${isTimeTravelActive ? 'hover:bg-indigo-700' : 'hover:bg-slate-200'}`}
+              title="-7 Days"
+            >
+              <ChevronLeft className="w-3 h-3" /><ChevronLeft className="w-3 h-3 -ml-2" />
+            </button>
+            <button 
+              onClick={() => jumpDays(-1)}
+              className={`p-1.5 rounded text-xs font-bold transition-colors ${isTimeTravelActive ? 'hover:bg-indigo-700' : 'hover:bg-slate-200'}`}
+              title="-1 Day"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="px-2 text-xs font-mono font-bold">DAY</span>
+            <button 
+              onClick={() => jumpDays(1)}
+              className={`p-1.5 rounded text-xs font-bold transition-colors ${isTimeTravelActive ? 'hover:bg-indigo-700' : 'hover:bg-slate-200'}`}
+              title="+1 Day"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => jumpDays(7)}
+              className={`p-1.5 rounded text-xs font-bold transition-colors ${isTimeTravelActive ? 'hover:bg-indigo-700' : 'hover:bg-slate-200'}`}
+              title="+7 Days"
+            >
+              <ChevronRight className="w-3 h-3" /><ChevronRight className="w-3 h-3 -ml-2" />
+            </button>
           </div>
         </div>
 

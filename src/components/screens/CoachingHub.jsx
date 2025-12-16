@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PageLayout } from '../ui/PageLayout.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { useDevPlan } from '../../hooks/useDevPlan';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import { useCoachingSessions, SESSION_TYPES } from '../../hooks/useCoachingSessions';
 import { useCoachingRegistrations, REGISTRATION_STATUS } from '../../hooks/useCoachingRegistrations';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { 
   Loader, Users, Calendar, MessageSquare, Video, 
   Clock, ChevronLeft, ChevronRight, Play, Bot, UserCheck,
-  CalendarDays, ExternalLink
+  CalendarDays, ExternalLink, Lock
 } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
@@ -425,7 +426,8 @@ const MyCoachingSection = ({ registeredSessions, pastSessions, onCancel }) => (
 const CoachingHub = () => {
   const { db, navigate, user } = useAppServices();
   const { isFeatureEnabled } = useFeatures();
-  const { getUnlockedResources } = useDevPlan();
+  const { currentDayNumber, unlockedContentIds } = useDailyPlan();
+  const { zoneVisibility, isPrepComplete } = useAccessControlContext();
   
   // Use the new coaching hooks
   const { 
@@ -453,6 +455,11 @@ const CoachingHub = () => {
   const [activeTab, setActiveTab] = useState('live'); // Default to live
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
 
+  // Day-based content unlocking
+  const unlockedSet = useMemo(() => {
+    return new Set((unlockedContentIds || []).map(id => String(id).toLowerCase()));
+  }, [unlockedContentIds]);
+
   // Fetch legacy coaching sessions from content collection
   useEffect(() => {
     const q = query(
@@ -463,9 +470,11 @@ const CoachingHub = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
-      // Filter by unlocked resources
-      const unlockedIds = getUnlockedResources('coaching');
-      const unlockedItems = items.filter(item => unlockedIds.has(item.id));
+      // Filter by day-based unlocked resources
+      const unlockedItems = items.filter(item => {
+        if (!item.isHiddenUntilUnlocked) return true;
+        return unlockedSet.has(String(item.id).toLowerCase());
+      });
 
       // Sort by date client-side to avoid index requirement
       unlockedItems.sort((a, b) => {
@@ -481,7 +490,7 @@ const CoachingHub = () => {
     });
     
     return () => unsubscribe();
-  }, [db, getUnlockedResources]);
+  }, [db, unlockedSet]);
 
   // Fetch legacy user registrations
   useEffect(() => {
@@ -624,6 +633,40 @@ const CoachingHub = () => {
     registeredIds,
     showAllSessions: true
   };
+
+  // Zone Gate: Coaching unlocks at Day 22
+  if (!zoneVisibility.isCoachingZoneOpen) {
+    return (
+      <PageLayout 
+        title="Coaching" 
+        subtitle="Live sessions, on-demand practice, and personalized coaching"
+        breadcrumbs={[
+          { label: 'Home', path: 'dashboard' },
+          { label: 'Coaching', path: null }
+        ]}
+      >
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl p-8 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-200 flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-slate-400" />
+            </div>
+            <h2 className="text-xl font-bold text-corporate-navy mb-2">Coaching Coming Soon</h2>
+            <p className="text-slate-600 mb-4">
+              The Coaching Hub unlocks on Day 22 of your program.
+              {zoneVisibility.isCoaching1on1Window && (
+                <span className="block mt-2 text-corporate-teal font-medium">
+                  1:1 Coaching scheduling is available Days 23-35.
+                </span>
+              )}
+            </p>
+            <p className="text-sm text-slate-500">
+              Current Day: {currentDayNumber} | Unlocks: Day 22
+            </p>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout 

@@ -61,7 +61,11 @@ export const ROLE_LEVELS = {
 export const getUnifiedContent = async (db, type, options = {}) => {
   try {
     const contentRef = collection(db, UNIFIED_COLLECTION);
-    let q = query(contentRef, where('type', '==', type));
+    let q = contentRef;
+    
+    if (type && type !== 'ALL') {
+      q = query(q, where('type', '==', type));
+    }
 
     // Optional Filters
     if (options.status) {

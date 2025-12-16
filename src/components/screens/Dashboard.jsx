@@ -8,11 +8,12 @@ import {
   CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
   MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
   Edit3, Loader, LayoutDashboard, Target, Layers, Sun, Moon, Clipboard, Zap, TrendingUp,
-  Dumbbell, CheckCircle, PenTool, Quote, User
+  Dumbbell, CheckCircle, PenTool, Quote, User, AlertTriangle, Coffee
 } from 'lucide-react';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
-import { useDevPlan } from '../../hooks/useDevPlan';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
+import { MissedDaysModal } from './dashboard/MissedDaysModal';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { createWidgetSDK } from '../../services/WidgetSDK';
@@ -22,6 +23,8 @@ import { LayoutToggle } from '../ui/LayoutToggle';
 import PMReflectionWidget from '../widgets/PMReflectionWidget';
 import { serverTimestamp } from 'firebase/firestore';
 import { FadeIn, Stagger } from '../motion';
+import { useAccessControlContext } from '../../providers/AccessControlProvider';
+import PrepGate from '../ui/PrepGate';
 
 const DASHBOARD_FEATURES = [
   'welcome-message',
@@ -55,18 +58,44 @@ const Dashboard = (props) => {
 
   const { layoutMode } = useLayout();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
-
-  // 2. Development Plan (moved up for scorecard calculation) - with Time Travel support
+  
+  // Day-based Access Control (includes Prep Gate)
   const { 
-    currentWeek: devPlanCurrentWeek, 
-    userState: devPlanUserState, 
+    prepStatus, 
+    isPrepComplete, 
+    effectiveDayNumber,
+    zoneVisibility 
+  } = useAccessControlContext();
+
+  // 2. Daily Plan (New Architecture)
+  const { 
+    currentDayData, 
+    currentDayNumber,
+    missedDays, // Added missedDays
+    userState: dailyPlanUserState, 
     simulatedNow,
     toggleItemComplete 
-  } = useDevPlan();
+  } = useDailyPlan();
 
-  // DEBUG: Log the current week being returned
-  console.log('[Dashboard] devPlanCurrentWeek:', devPlanCurrentWeek?.weekNumber, devPlanCurrentWeek?.id, devPlanCurrentWeek);
-  console.log('[Dashboard] devPlanUserState:', devPlanUserState);
+  // Adapter for Legacy Dashboard Hooks
+  const devPlanCurrentWeek = useMemo(() => {
+    if (!currentDayData) return null;
+    return {
+      ...currentDayData,
+      // Map 'actions' to 'dailyReps' for legacy widgets
+      dailyReps: (currentDayData.actions || []).map(a => ({
+        id: a.id,
+        text: a.label,
+        isCompleted: a.isCompleted
+      })),
+      // Ensure weekNumber exists (fallback to math if not in doc)
+      weekNumber: currentDayData.weekNumber || Math.ceil(currentDayData.dayNumber / 7)
+    };
+  }, [currentDayData]);
+
+  // DEBUG: Log the current day being returned
+  console.log('[Dashboard] currentDayData:', currentDayData);
+  console.log('[Dashboard] currentDayNumber:', currentDayNumber);
 
   // --- HOOKS ---
   const {
@@ -143,6 +172,7 @@ const Dashboard = (props) => {
 
   // --- LOCAL STATE ---
   const [isAnchorModalOpen, setIsAnchorModalOpen] = useState(false);
+  const [isCatchUpModalOpen, setIsCatchUpModalOpen] = useState(false);
 // ...existing code...
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
@@ -202,9 +232,7 @@ const Dashboard = (props) => {
   }, [devPlanCurrentWeek, globalMetadata, developmentPlanData]);
   
   // Also expose the current week number for the weekly-focus widget
-  const currentWeekNumber = devPlanUserState?.currentWeekIndex != null 
-    ? devPlanUserState.currentWeekIndex + 1 
-    : null;
+  const currentWeekNumber = currentDayData?.weekNumber || Math.ceil(currentDayNumber / 7);
 
   // 3. Daily Reps Logic
   const hasLIS = !!identityStatement;
@@ -289,7 +317,7 @@ const Dashboard = (props) => {
     // Icons
     CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
     MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
-    Edit3, Loader, Sun, Moon, Zap, TrendingUp, Dumbbell, CheckCircle, PenTool, Quote, User,
+    Edit3, Loader, Sun, Moon, Zap, TrendingUp, Dumbbell, CheckCircle, PenTool, Quote, User, AlertTriangle, Coffee,
     
     // Components
     Card,
@@ -301,6 +329,7 @@ const Dashboard = (props) => {
     handleHabitCheck,
     setIsAnchorModalOpen,
     setIsCalendarModalOpen,
+    setIsCatchUpModalOpen,
     isEditingLIS,
     setIsEditingLIS,
     handleToggleAdditionalRep,
@@ -333,6 +362,9 @@ const Dashboard = (props) => {
     // State
     weeklyFocus,
     currentWeekNumber,
+    currentDayNumber, // Added for Day-by-Day widgets
+    currentDayData, // Added for Day-by-Day widgets
+    missedDays, // Added for Catch Up widget
     simulatedNow,
     devPlanCurrentWeek,
     currentWeek: devPlanCurrentWeek, // Alias for widgets expecting 'currentWeek'
@@ -406,22 +438,28 @@ const Dashboard = (props) => {
     dailyPracticeData // Pass dailyPracticeData to scope for widgets
   };
 
+  // Helper to check visibility based on Daily Plan config
+  const shouldShow = (key, defaultVal = true) => {
+    if (!currentDayData?.dashboard) return defaultVal;
+    return currentDayData.dashboard[key] !== undefined ? currentDayData.dashboard[key] : defaultVal;
+  };
+
   const renderers = {
     'dashboard-header': () => <WidgetRenderer widgetId="dashboard-header" scope={scope} />,
     'welcome-message': () => <WidgetRenderer widgetId="welcome-message" scope={scope} />,
     'daily-quote': () => <WidgetRenderer widgetId="daily-quote" scope={scope} />,
     'am-bookend-header': () => <WidgetRenderer widgetId="am-bookend-header" scope={scope} />,
-    'weekly-focus': () => <WidgetRenderer widgetId="weekly-focus" scope={scope} />,
-    'lis-maker': () => <WidgetRenderer widgetId="lis-maker" scope={scope} />,
-    'grounding-rep': () => <WidgetRenderer widgetId="grounding-rep" scope={scope} />,
-    'win-the-day': () => <WidgetRenderer widgetId="win-the-day" scope={scope} />,
+    'weekly-focus': () => shouldShow('showWeeklyFocus', true) ? <WidgetRenderer widgetId="weekly-focus" scope={scope} /> : null,
+    'lis-maker': () => shouldShow('showLISBuilder', false) ? <WidgetRenderer widgetId="lis-maker" scope={scope} /> : null,
+    'grounding-rep': () => shouldShow('showGroundingRep', false) ? <WidgetRenderer widgetId="grounding-rep" scope={scope} /> : null,
+    'win-the-day': () => shouldShow('showWinTheDay', true) ? <WidgetRenderer widgetId="win-the-day" scope={scope} /> : null,
     'daily-plan': () => <WidgetRenderer widgetId="daily-plan" scope={scope} />,
-    'daily-leader-reps': () => <WidgetRenderer widgetId="daily-leader-reps" scope={scope} />,
+    'daily-leader-reps': () => shouldShow('showDailyReps', true) ? <WidgetRenderer widgetId="daily-leader-reps" scope={scope} /> : null,
     'this-weeks-actions': () => <WidgetRenderer widgetId="this-weeks-actions" scope={scope} />,
-    'notifications': () => <WidgetRenderer widgetId="notifications" scope={scope} />,
-    'pm-bookend-header': () => <WidgetRenderer widgetId="pm-bookend-header" scope={scope} />,
+    'notifications': () => shouldShow('showNotifications', false) ? <WidgetRenderer widgetId="notifications" scope={scope} /> : null,
+    'pm-bookend-header': () => shouldShow('showPMReflection', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
     'progress-feedback': () => <WidgetRenderer widgetId="progress-feedback" scope={scope} />,
-    'pm-bookend': () => <WidgetRenderer widgetId="pm-bookend" scope={scope} />,
+    'pm-bookend': () => shouldShow('showPMReflection', true) ? <WidgetRenderer widgetId="pm-bookend" scope={scope} /> : null,
     'scorecard': () => <WidgetRenderer widgetId="scorecard" scope={scope} />,
     
     // Legacy / Optional
@@ -443,6 +481,11 @@ const Dashboard = (props) => {
   return (
     <div className="p-5 sm:p-6 lg:p-8 space-y-5 bg-[#FAFBFC] min-h-screen relative">
       <div className="max-w-[860px] mx-auto">
+      {/* Prep Gate - Block Day 1+ until prep complete */}
+      {currentDayNumber >= 1 && !isPrepComplete ? (
+        <PrepGate />
+      ) : (
+        <>
       {/* Layout Toggle - Desktop Only - COMMENTED OUT FOR NOW
       <div className="absolute top-6 right-6 z-10 hidden lg:block">
         <LayoutToggle />
@@ -488,6 +531,15 @@ const Dashboard = (props) => {
         isOpen={isCalendarModalOpen}
         onClose={() => setIsCalendarModalOpen(false)}
       />
+
+      <MissedDaysModal 
+        isOpen={isCatchUpModalOpen}
+        onClose={() => setIsCatchUpModalOpen(false)}
+        missedDays={missedDays}
+        onToggleAction={toggleItemComplete}
+      />
+        </>
+      )}
       </div>
     </div>
   );
