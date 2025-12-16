@@ -43,11 +43,9 @@ const DAILY_PLAN_WIDGET_CATEGORIES = ['Dashboard', 'Planning', 'Habits', 'Action
 
 // Get all widget IDs from FEATURE_METADATA that belong to allowed categories
 const getDashboardWidgetIds = () => {
-  const ids = Object.entries(FEATURE_METADATA)
+  return Object.entries(FEATURE_METADATA)
     .filter(([, meta]) => DAILY_PLAN_WIDGET_CATEGORIES.includes(meta.category))
     .map(([id]) => id);
-  console.log('[DailyPlanManager] getDashboardWidgetIds:', ids);
-  return ids;
 };
 
 // Action Types with icons
@@ -383,17 +381,8 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
           <p className="text-xs text-slate-400 mb-3">Toggle which Dashboard widgets are visible on this specific day.</p>
           <div className="space-y-2">
             {/* Only show widgets that appear on the Dashboard screen and are globally enabled */}
-            {(() => {
-              const allIds = getDashboardWidgetIds();
-              const filtered = allIds.filter(key => {
-                const enabled = isFeatureEnabled(key);
-                const hasMeta = !!FEATURE_METADATA[key];
-                console.log(`[DailyPlanManager] Widget ${key}: enabled=${enabled}, hasMeta=${hasMeta}`);
-                return enabled && hasMeta;
-              });
-              console.log('[DailyPlanManager] Filtered widget IDs:', filtered);
-              return filtered;
-            })()
+            {getDashboardWidgetIds()
+              .filter(key => isFeatureEnabled(key) && FEATURE_METADATA[key])
               .sort((a, b) => getFeatureOrder(a) - getFeatureOrder(b))
               .map(key => {
                 const meta = FEATURE_METADATA[key];

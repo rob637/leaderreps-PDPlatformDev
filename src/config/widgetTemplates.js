@@ -3414,16 +3414,6 @@ export const FEATURE_METADATA = {
     inputs: ['devPlanDetails'],
     outputs: [],
   },
-  'baseline-assessment': {
-    core: true,
-    category: 'Development Plan',
-    name: 'Baseline Assessment',
-    description: 'Baseline Assessment Widget',
-    purpose: 'Assessment status and link.',
-    extendedDescription: 'Shows whether the user has completed their baseline assessment. If not completed, provides a link to take it. If completed, shows goals and links to view results.',
-    inputs: ['assessmentHistory'],
-    outputs: ['navigate'],
-  },
   'development-plan': {
     core: true,
     category: 'Development Plan',
