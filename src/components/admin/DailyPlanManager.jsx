@@ -365,25 +365,24 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
           <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Dashboard Widgets</label>
           <div className="space-y-2">
             {Object.entries(FEATURE_METADATA)
-              .filter(([key, meta]) => meta.category === 'Dashboard' && isFeatureEnabled(key))
+              .filter(([key, meta]) => 
+                ['Dashboard', 'Planning', 'Reflection', 'Tracking', 'Inspiration', 'General', 'System'].includes(meta.category) && 
+                isFeatureEnabled(key)
+              )
               .sort(([keyA], [keyB]) => getFeatureOrder(keyA) - getFeatureOrder(keyB))
               .map(([key, meta]) => (
                 <label key={key} className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
-                  <span className="text-sm">{meta.name}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{meta.name}</span>
+                    <span className="text-[10px] text-slate-400">{meta.category}</span>
+                  </div>
                   <input 
                     type="checkbox" 
-                    checked={formData.dashboard?.[key] !== false} // Default to true if undefined, unless explicitly false? Or default false?
-                    // Actually, for daily plan overrides, we usually want them ON by default if they are core, but maybe OFF if optional?
-                    // Let's assume if it's in the dashboard object, use that value. If not, default to TRUE (visible).
-                    // Wait, if I uncheck it, it sets it to false.
+                    checked={formData.dashboard?.[key] !== false} 
                     onChange={() => handleDashboardToggle(key)}
                   />
                 </label>
               ))}
-              
-              {/* Fallback for any legacy keys that might be in formData but not in metadata? 
-                  Or just rely on the new system. The user wants "All enabled dashboard widgets".
-              */}
           </div>
         </div>
 
