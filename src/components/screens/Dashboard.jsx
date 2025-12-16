@@ -443,6 +443,20 @@ const Dashboard = (props) => {
 
   // Helper to check visibility based on Daily Plan config
   const shouldShow = (key, defaultVal = true) => {
+    // Force hide daily practice widgets during Prep Phase (Day < 1)
+    if (currentDayNumber < 1) {
+      const PREP_HIDDEN_WIDGETS = [
+        'showAMBookend', 
+        'showWinTheDay', 
+        'showDailyReps', 
+        'showScorecard', 
+        'showPMReflection',
+        'showGroundingRep',
+        'showLISBuilder'
+      ];
+      if (PREP_HIDDEN_WIDGETS.includes(key)) return false;
+    }
+
     if (!currentDayData?.dashboard) return defaultVal;
     return currentDayData.dashboard[key] !== undefined ? currentDayData.dashboard[key] : defaultVal;
   };
