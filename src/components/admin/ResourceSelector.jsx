@@ -26,7 +26,8 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedResource, setSelectedResource] = useState(null);
 
-
+  // Normalize value - can be either a string ID or an object with id property
+  const valueId = typeof value === 'string' ? value : value?.id || null;
 
   // Effect 1: Load all resources when modal opens
   useEffect(() => {
@@ -106,16 +107,16 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
   // Effect 2: Sync selectedResource with value
   useEffect(() => {
-    if (!value) {
+    if (!valueId) {
       if (selectedResource) setSelectedResource(null);
       return;
     }
 
     // If we already have the correct resource selected, do nothing
-    if (selectedResource && selectedResource.id === value) return;
+    if (selectedResource && selectedResource.id === valueId) return;
 
     // Try to find in currently loaded list
-    const found = resources.find(r => r.id === value);
+    const found = resources.find(r => r.id === valueId);
     if (found) {
       setSelectedResource(found);
       return;
@@ -136,7 +137,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
           : [CONTENT_COLLECTIONS.COACHING];
 
         for (const col of collections) {
-          const docRef = doc(db, col, value);
+          const docRef = doc(db, col, valueId);
           const snap = await getDoc(docRef);
           if (snap.exists()) {
             let type = 'video';
@@ -156,7 +157,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
     };
 
     loadSingle();
-  }, [value, resources, selectedResource, db, resourceType]);
+  }, [valueId, resources, selectedResource, db, resourceType]);
 
   const filteredResources = resources.filter(r => 
     r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -167,6 +168,12 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
     setSelectedResource(resource);
     onChange(resource.id, resource);
     setIsOpen(false);
+  };
+
+  const handleClear = (e) => {
+    e.stopPropagation();
+    setSelectedResource(null);
+    onChange(null, null);
   };
 
   const getIcon = (type) => {
@@ -186,11 +193,11 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
       {/* Selected Value Display */}
       <div 
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 p-2 border rounded-lg bg-white hover:bg-slate-50 cursor-pointer transition-colors min-h-[42px]"
+        className="flex items-center gap-2 p-2 border rounded-lg bg-white hover:bg-slate-50 cursor-pointer transition-colors min-h-[38px]"
       >
         {selectedResource ? (
           <>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
               selectedResource.resourceType === 'video' ? 'bg-red-100 text-red-600' :
               selectedResource.resourceType === 'reading' ? 'bg-blue-100 text-blue-600' :
               selectedResource.resourceType === 'document' ? 'bg-orange-100 text-orange-600' :
@@ -199,18 +206,22 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               selectedResource.resourceType === 'coaching' ? 'bg-indigo-100 text-indigo-600' :
               'bg-slate-100 text-slate-600'
             }`}>
-              {React.createElement(getIcon(selectedResource.resourceType), { size: 14 })}
+              {React.createElement(getIcon(selectedResource.resourceType), { size: 12 })}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{selectedResource.title}</p>
+              <p className="text-xs font-medium truncate">{selectedResource.title}</p>
             </div>
-            <div className="text-xs text-slate-400 px-2 py-0.5 bg-slate-100 rounded">
-              {selectedResource.resourceType}
-            </div>
+            <button 
+              onClick={handleClear}
+              className="p-0.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"
+              title="Clear selection"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </>
         ) : (
-          <span className="text-sm text-slate-400 flex items-center gap-2">
-            <Search className="w-4 h-4" />
+          <span className="text-xs text-slate-400 flex items-center gap-1">
+            <Search className="w-3.5 h-3.5" />
             Select Resource...
           </span>
         )}
@@ -257,7 +268,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
                 <div className="space-y-1">
                   {filteredResources.map(resource => {
                     const Icon = getIcon(resource.resourceType);
-                    const isSelected = value === resource.id;
+                    const isSelected = valueId === resource.id;
                     
                     return (
                       <div

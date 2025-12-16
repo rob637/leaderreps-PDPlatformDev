@@ -18,7 +18,11 @@ import {
   FileText,
   Video,
   BookOpen,
-  Users
+  Users,
+  ChevronUp,
+  ChevronDown,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -138,7 +142,8 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
       id: `action-${Date.now()}`,
       type,
       label,
-      isCompleted: false
+      isCompleted: false,
+      enabled: true
     };
     setFormData(prev => ({
       ...prev,
@@ -155,6 +160,22 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
   const removeAction = (index) => {
     const newActions = [...(formData.actions || [])];
     newActions.splice(index, 1);
+    setFormData(prev => ({ ...prev, actions: newActions }));
+  };
+
+  const moveAction = (index, direction) => {
+    const newActions = [...(formData.actions || [])];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= newActions.length) return;
+    
+    // Swap
+    [newActions[index], newActions[newIndex]] = [newActions[newIndex], newActions[index]];
+    setFormData(prev => ({ ...prev, actions: newActions }));
+  };
+
+  const toggleActionEnabled = (index) => {
+    const newActions = [...(formData.actions || [])];
+    newActions[index] = { ...newActions[index], enabled: !newActions[index].enabled };
     setFormData(prev => ({ ...prev, actions: newActions }));
   };
 
@@ -289,30 +310,62 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
           
           <div className="space-y-2">
             {(formData.actions || []).map((action, idx) => (
-              <div key={idx} className="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-100">
-                <div className="flex gap-2 items-start">
-                  <div className="mt-1">
-                    {action.type === 'daily_rep' ? <div className="w-2 h-2 rounded-full bg-corporate-teal" /> : <div className="w-2 h-2 rounded-full bg-orange-400" />}
+              <div key={action.id || idx} className={`flex flex-col gap-2 p-2 rounded border ${action.enabled !== false ? 'bg-slate-50 border-slate-100' : 'bg-slate-100 border-slate-200 opacity-60'}`}>
+                <div className="flex gap-2 items-center">
+                  {/* Move Up/Down */}
+                  <div className="flex flex-col gap-0.5">
+                    <button 
+                      onClick={() => moveAction(idx, 'up')} 
+                      disabled={idx === 0}
+                      className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                      title="Move up"
+                    >
+                      <ChevronUp className="w-3 h-3" />
+                    </button>
+                    <button 
+                      onClick={() => moveAction(idx, 'down')} 
+                      disabled={idx === (formData.actions || []).length - 1}
+                      className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                      title="Move down"
+                    >
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
                   </div>
+                  
+                  {/* Enable/Disable Toggle */}
+                  <button 
+                    onClick={() => toggleActionEnabled(idx)}
+                    className={`p-1 rounded ${action.enabled !== false ? 'text-green-500 hover:bg-green-50' : 'text-slate-400 hover:bg-slate-200'}`}
+                    title={action.enabled !== false ? 'Enabled - click to disable' : 'Disabled - click to enable'}
+                  >
+                    {action.enabled !== false ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                  </button>
+                  
+                  {/* Type indicator */}
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: action.type === 'daily_rep' ? '#0d9488' : '#fb923c' }} />
+                  
+                  {/* Label input */}
                   <input 
                     type="text"
-                    value={action.label}
+                    value={action.label || ''}
                     onChange={e => updateAction(idx, 'label', e.target.value)}
-                    className="flex-1 bg-transparent text-sm border-none p-0 focus:ring-0"
+                    className="flex-1 bg-transparent text-sm border-none p-0 focus:ring-0 min-w-0"
                     placeholder="Action description..."
                   />
-                  <button onClick={() => removeAction(idx)} className="text-slate-400 hover:text-red-500">
-                    <Trash2 className="w-3 h-3" />
+                  
+                  {/* Delete button */}
+                  <button onClick={() => removeAction(idx)} className="text-slate-400 hover:text-red-500 p-1">
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 
                 {/* Link Resource - Using ResourceSelector */}
-                <div className="flex items-center gap-2 pl-4">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Link:</span>
-                  <div className="flex-1">
+                <div className="flex items-center gap-2 pl-8">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold flex-shrink-0">Link:</span>
+                  <div className="flex-1 min-w-0">
                     <ResourceSelector 
-                      value={action.resourceId ? { id: action.resourceId, title: action.resourceTitle, type: action.resourceType } : null}
-                      onChange={(resource) => {
+                      value={action.resourceId || null}
+                      onChange={(id, resource) => {
                         if (resource) {
                           updateAction(idx, 'resourceId', resource.id);
                           updateAction(idx, 'resourceTitle', resource.title);
