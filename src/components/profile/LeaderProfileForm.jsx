@@ -300,9 +300,9 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
             {renderTextarea('primaryGoal', 'What do you hope to achieve through QuickStart?',
               'e.g., Become more confident in difficult conversations, build a stronger team culture...'
             )}
-            <div className="bg-gradient-to-r from-corporate-teal/10 to-corporate-gold/10 p-4 rounded-xl border border-corporate-teal/20">
+            <div className="bg-gradient-to-r from-corporate-teal/10 to-corporate-orange/10 p-4 rounded-xl border border-corporate-teal/20">
               <div className="flex items-start gap-3">
-                <Sparkles className="w-5 h-5 text-corporate-gold mt-0.5" />
+                <Sparkles className="w-5 h-5 text-corporate-orange mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-corporate-navy">You're almost there!</h4>
                   <p className="text-sm text-slate-600 mt-1">
@@ -367,7 +367,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
           </div>
           <div className="h-2 bg-white/20 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-corporate-gold transition-all duration-500"
+              className="h-full bg-corporate-teal transition-all duration-500"
               style={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
             />
           </div>
@@ -467,7 +467,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
               onClick={handleComplete}
               disabled={saving}
               variant="primary"
-              className="flex items-center gap-2 bg-[#C4A052] hover:bg-[#B08D3E]"
+              className="flex items-center gap-2 bg-corporate-teal hover:bg-corporate-teal/90"
             >
               {saving ? <Loader className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
               Complete Profile
