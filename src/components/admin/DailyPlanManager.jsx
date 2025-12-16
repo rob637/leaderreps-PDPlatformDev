@@ -82,9 +82,58 @@ const DayCard = ({ day, onEdit }) => {
 
 const DayEditor = ({ day, onSave, onCancel, allDays }) => {
   const { db } = useAppServices();
-  const { isFeatureEnabled, getFeatureOrder } = useFeatures(); // Use Feature Provider
+  const { isFeatureEnabled, getFeatureOrder, features } = useFeatures(); // Use Feature Provider
   const [formData, setFormData] = useState({ ...day });
   const [showContentPicker, setShowContentPicker] = useState(false);
+
+  // Mirror FeatureManager grouping logic
+  const initialGroups = {
+    dashboard: [
+      'daily-quote', 'welcome-message', 'lis-maker', 'habit-stack', 'win-the-day', 
+      'exec-summary', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'
+    ],
+    'development-plan': [
+      'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal', 'baseline-assessment', 'development-plan'
+    ],
+    content: [
+      'course-library', 'reading-hub', 'leadership-videos', 'strat-templates'
+    ],
+    community: [
+      'community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events',
+      'community-upcoming-sessions', 'community-my-registrations'
+    ],
+    coaching: [
+      'coaching-upcoming-sessions', 'coaching-on-demand', 'coaching-my-sessions',
+      'practice-history', 'progress-analytics', 'ai-roleplay', 'scenario-sim', 'feedback-gym', 'roi-report'
+    ],
+    locker: [
+      'locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection',
+      'locker-controller', 'locker-reminders', 'locker-reps-history'
+    ],
+    system: [
+      'system-reminders-controller', 'time-traveler', 'admin-access-viewer'
+    ]
+  };
+
+  const getWidgetGroup = (id) => {
+    const dbData = features[id];
+    
+    // Force development-plan to be in development-plan group
+    if (initialGroups['development-plan'].includes(id)) return 'development-plan';
+    
+    // Use DB group if available
+    if (dbData && dbData.group) return dbData.group;
+    
+    // Fallback to initialGroups mapping
+    if (initialGroups.content.includes(id)) return 'content';
+    if (initialGroups.community.includes(id)) return 'community';
+    if (initialGroups.coaching.includes(id)) return 'coaching';
+    if (initialGroups.locker.includes(id)) return 'locker';
+    if (initialGroups.system?.includes(id)) return 'system';
+    
+    // Default to dashboard
+    return 'dashboard';
+  };
   const [pickerType, setPickerType] = useState(null); // 'daily_rep', 'content', or 'action_link'
   const [targetActionIndex, setTargetActionIndex] = useState(null);
 
@@ -366,8 +415,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
           <div className="space-y-2">
             {Object.entries(FEATURE_METADATA)
               .filter(([key, meta]) => 
-                ['Dashboard', 'Planning', 'Reflection', 'Tracking', 'Inspiration', 'General', 'System'].includes(meta.category) && 
-                isFeatureEnabled(key)
+                isFeatureEnabled(key) && getWidgetGroup(key) === 'dashboard'
               )
               .sort(([keyA], [keyB]) => getFeatureOrder(keyA) - getFeatureOrder(keyB))
               .map(([key, meta]) => (
