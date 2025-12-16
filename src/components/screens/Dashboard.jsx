@@ -457,20 +457,20 @@ const Dashboard = (props) => {
       'scorecard': 'showScorecard'
     };
 
-    // Force hide daily practice widgets during Prep Phase (Day < 1)
-    if (currentDayNumber < 1) {
-      const PREP_HIDDEN_WIDGETS = [
-        'am-bookend-header', 
-        'win-the-day', 
-        'daily-leader-reps', 
-        'scorecard', 
-        'pm-bookend-header',
-        'pm-bookend',
-        'grounding-rep',
-        'lis-maker'
-      ];
-      if (PREP_HIDDEN_WIDGETS.includes(widgetId)) return false;
-    }
+    // Force hide daily practice widgets during Prep Phase (Day < 1) - REMOVED for Lock & Key System
+    // if (currentDayNumber < 1) {
+    //   const PREP_HIDDEN_WIDGETS = [
+    //     'am-bookend-header', 
+    //     'win-the-day', 
+    //     'daily-leader-reps', 
+    //     'scorecard', 
+    //     'pm-bookend-header',
+    //     'pm-bookend',
+    //     'grounding-rep',
+    //     'lis-maker'
+    //   ];
+    //   if (PREP_HIDDEN_WIDGETS.includes(widgetId)) return false;
+    // }
 
     if (!currentDayData?.dashboard) return defaultVal;
 
@@ -491,7 +491,7 @@ const Dashboard = (props) => {
   const renderers = {
     'dashboard-header': () => <WidgetRenderer widgetId="dashboard-header" scope={scope} />,
     'program-status-debug': () => <ProgramStatusWidget />,
-    'prep-welcome-banner': () => (currentDayNumber < 1 && shouldShow('prep-welcome-banner', true)) ? <WidgetRenderer widgetId="prep-welcome-banner" scope={scope} /> : null,
+    'prep-welcome-banner': () => shouldShow('prep-welcome-banner', false) ? <WidgetRenderer widgetId="prep-welcome-banner" scope={scope} /> : null,
     'welcome-message': () => <WidgetRenderer widgetId="welcome-message" scope={scope} />,
     'daily-quote': () => <WidgetRenderer widgetId="daily-quote" scope={scope} />,
     'am-bookend-header': () => shouldShow('am-bookend-header', true) ? <WidgetRenderer widgetId="am-bookend-header" scope={scope} /> : null,

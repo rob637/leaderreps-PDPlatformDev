@@ -86,54 +86,6 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
   const [formData, setFormData] = useState({ ...day });
   const [showContentPicker, setShowContentPicker] = useState(false);
 
-  // Mirror FeatureManager grouping logic
-  const initialGroups = {
-    dashboard: [
-      'daily-quote', 'welcome-message', 'lis-maker', 'habit-stack', 'win-the-day', 
-      'exec-summary', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'
-    ],
-    'development-plan': [
-      'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal', 'baseline-assessment', 'development-plan'
-    ],
-    content: [
-      'course-library', 'reading-hub', 'leadership-videos', 'strat-templates'
-    ],
-    community: [
-      'community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events',
-      'community-upcoming-sessions', 'community-my-registrations'
-    ],
-    coaching: [
-      'coaching-upcoming-sessions', 'coaching-on-demand', 'coaching-my-sessions',
-      'practice-history', 'progress-analytics', 'ai-roleplay', 'scenario-sim', 'feedback-gym', 'roi-report'
-    ],
-    locker: [
-      'locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection',
-      'locker-controller', 'locker-reminders', 'locker-reps-history'
-    ],
-    system: [
-      'system-reminders-controller', 'time-traveler', 'admin-access-viewer'
-    ]
-  };
-
-  const getWidgetGroup = (id) => {
-    const dbData = features[id];
-    
-    // Force development-plan to be in development-plan group
-    if (initialGroups['development-plan'].includes(id)) return 'development-plan';
-    
-    // Use DB group if available
-    if (dbData && dbData.group) return dbData.group;
-    
-    // Fallback to initialGroups mapping
-    if (initialGroups.content.includes(id)) return 'content';
-    if (initialGroups.community.includes(id)) return 'community';
-    if (initialGroups.coaching.includes(id)) return 'coaching';
-    if (initialGroups.locker.includes(id)) return 'locker';
-    if (initialGroups.system?.includes(id)) return 'system';
-    
-    // Default to dashboard
-    return 'dashboard';
-  };
   const [pickerType, setPickerType] = useState(null); // 'daily_rep', 'content', or 'action_link'
   const [targetActionIndex, setTargetActionIndex] = useState(null);
 
@@ -412,25 +364,35 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
         {/* Dashboard Config */}
         <div>
           <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Dashboard Widgets</label>
-          <div className="space-y-2">
-            {Object.entries(FEATURE_METADATA)
-              .filter(([key, meta]) => 
-                isFeatureEnabled(key) && getWidgetGroup(key) === 'dashboard'
-              )
-              .sort(([keyA], [keyB]) => getFeatureOrder(keyA) - getFeatureOrder(keyB))
-              .map(([key, meta]) => (
-                <label key={key} className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{meta.name}</span>
-                    <span className="text-[10px] text-slate-400">{meta.category}</span>
-                  </div>
-                  <input 
-                    type="checkbox" 
-                    checked={formData.dashboard?.[key] !== false} 
-                    onChange={() => handleDashboardToggle(key)}
-                  />
-                </label>
-              ))}
+          <div className="space-y-4">
+            {/* Group by Category */}
+            {Object.entries(
+              Object.entries(FEATURE_METADATA)
+                .filter(([key]) => isFeatureEnabled(key))
+                .reduce((acc, [key, meta]) => {
+                  const category = meta.category || 'Other';
+                  if (!acc[category]) acc[category] = [];
+                  acc[category].push({ key, meta });
+                  return acc;
+                }, {})
+            ).map(([category, items]) => (
+              <div key={category} className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-400 uppercase border-b border-slate-100 pb-1 mb-2">{category}</h4>
+                {items.sort((a, b) => getFeatureOrder(a.key) - getFeatureOrder(b.key)).map(({ key, meta }) => (
+                  <label key={key} className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer bg-white">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{meta.name}</span>
+                      <span className="text-[10px] text-slate-400">{key}</span>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={formData.dashboard?.[key] !== false} 
+                      onChange={() => handleDashboardToggle(key)}
+                    />
+                  </label>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
 
