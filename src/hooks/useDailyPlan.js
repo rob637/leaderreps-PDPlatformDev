@@ -272,6 +272,7 @@ export const useDailyPlan = () => {
   const { db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const [dailyPlan, setDailyPlan] = useState([]);
   const [loadingPlan, setLoadingPlan] = useState(true);
+  const [cohortData, setCohortData] = useState(null);
   const [timeOffset, setTimeOffset] = useState(() => {
     return parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
   });
@@ -319,6 +320,45 @@ export const useDailyPlan = () => {
 
     fetchDailyPlan();
   }, [db, user]);
+
+  // 1b. Fetch Cohort Data (if user has cohortId)
+  useEffect(() => {
+    const fetchCohort = async () => {
+      if (!db || !user) return;
+      
+      // Get cohortId from user data or development plan
+      const cohortId = user?.cohortId || developmentPlanData?.cohortId;
+      if (!cohortId) {
+        console.log('[useDailyPlan] No cohortId found for user');
+        return;
+      }
+      
+      try {
+        const { doc: fsDoc, getDoc: fsGetDoc } = await import('firebase/firestore');
+        const cohortRef = fsDoc(db, 'cohorts', cohortId);
+        const cohortSnap = await fsGetDoc(cohortRef);
+        
+        if (cohortSnap.exists()) {
+          const data = cohortSnap.data();
+          setCohortData({
+            id: cohortSnap.id,
+            name: data.name,
+            description: data.description,
+            startDate: data.startDate,
+            facilitator: data.facilitator,
+            settings: data.settings
+          });
+          console.log('[useDailyPlan] Loaded cohort:', data.name);
+        } else {
+          console.warn('[useDailyPlan] Cohort not found:', cohortId);
+        }
+      } catch (error) {
+        console.error('[useDailyPlan] Error fetching cohort:', error);
+      }
+    };
+    
+    fetchCohort();
+  }, [db, user, developmentPlanData?.cohortId]);
 
   // 2. Derive User State & Current Day
   const userState = useMemo(() => {
@@ -549,6 +589,10 @@ export const useDailyPlan = () => {
         onboarding: onboardingModule,
         isAccelerated: daysUntilStart <= 4,
         isQuickStart: daysUntilStart <= 2,
+        // Cohort info (if available)
+        cohort: cohortData,
+        cohortName: cohortData?.name,
+        facilitator: cohortData?.facilitator,
         // Summary of prep completion
         totalActions: cumulativeActions.length,
         actionsIntroducedToday: cumulativeActions.filter(a => a.introducedOnDay === dbDayNumber).length
@@ -725,6 +769,9 @@ export const useDailyPlan = () => {
     dailyPlan,
     userState,
     
+    // Cohort info (NEW)
+    cohortData,             // Full cohort object { id, name, description, startDate, facilitator, settings }
+    
     // Phase info (NEW)
     currentPhase,           // { id, name, displayName, trackMissedDays, cumulativeActions, ... }
     phaseDayNumber,         // Day within current phase (1-14 for prep, 1-56 for start, etc.)
@@ -732,7 +779,7 @@ export const useDailyPlan = () => {
     dbDayNumber,            // Database dayNumber (1-71+)
     
     // Prep Phase specific (NEW)
-    prepPhaseInfo,          // { daysUntilStart, welcome, quote, onboarding, journeyDay, ... } - only in prep phase
+    prepPhaseInfo,          // { daysUntilStart, welcome, quote, onboarding, journeyDay, cohort, ... } - only in prep phase
     journeyDay,             // User's personal journey day (days since first prep phase visit)
     
     // Legacy (for backward compatibility)

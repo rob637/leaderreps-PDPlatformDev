@@ -2,9 +2,10 @@ import React from 'react';
 import { 
   Shield, Target, ArrowRight, Rocket, Calendar, Quote, Sparkles, 
   CheckCircle2, BookOpen, Video, Sunrise, Moon, LayoutDashboard,
-  ChevronRight, Zap, GraduationCap
+  ChevronRight, Zap, GraduationCap, Users
 } from 'lucide-react';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useAppServices } from '../../services/useAppServices';
 
 /**
  * PrepWelcomeBanner - Progressive Onboarding for Prep Phase
@@ -17,8 +18,10 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
  * - Day 5+: Recap & app overview
  * 
  * Late joiners get accelerated/quick-start versions.
+ * Now includes cohort name and facilitator info!
  */
 const PrepWelcomeBanner = () => {
+  const { user } = useAppServices();
   const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay } = useDailyPlan();
   
   // Only show in Prep Phase
@@ -33,12 +36,35 @@ const PrepWelcomeBanner = () => {
     isAccelerated = false,
     isQuickStart = false,
     totalActions = 0,
-    progressPercent = 0
+    progressPercent = 0,
+    cohort = null,
+    cohortName = null,
+    facilitator = null
   } = info;
+
+  // Get user's first name for personalization
+  const firstName = user?.displayName?.split(' ')[0] || 'Leader';
   
   // Excitement level determines visual styling
   const isHighExcitement = welcome.excitement === 'high' || welcome.excitement === 'launch';
   const isLaunch = welcome.excitement === 'launch';
+
+  // Build personalized headline
+  const getPersonalizedHeadline = () => {
+    // First day gets special welcome with name
+    if (journeyDay === 1) {
+      if (cohortName) {
+        return `Welcome to ${cohortName}, ${firstName}!`;
+      }
+      return `Welcome to the Arena, ${firstName}!`;
+    }
+    // Use onboarding headline if available
+    if (onboarding?.headline) {
+      return onboarding.headline;
+    }
+    // Default welcome headline
+    return welcome.headline;
+  };
 
   // Get icon for onboarding module
   const getModuleIcon = (moduleId) => {
@@ -82,12 +108,18 @@ const PrepWelcomeBanner = () => {
           
           {/* Left Content */}
           <div className="flex-1 space-y-4">
-            {/* Phase Badge with Journey Day */}
+            {/* Phase Badge with Cohort Name */}
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-2 text-corporate-teal font-bold tracking-wider text-xs uppercase">
                 {isLaunch ? <Rocket className="w-4 h-4 animate-bounce" /> : <Shield className="w-4 h-4" />}
                 <span>Prep Day {phaseDayNumber} of 14</span>
               </div>
+              {cohortName && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  {cohortName}
+                </span>
+              )}
               {isAccelerated && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-400 font-bold">
                   {isQuickStart ? 'QUICK START' : 'ACCELERATED'}
@@ -100,14 +132,27 @@ const PrepWelcomeBanner = () => {
               )}
             </div>
             
-            {/* Dynamic Headline from Onboarding Module or Welcome */}
+            {/* Dynamic Headline - Personalized with user name and cohort */}
             <h2 className={`text-2xl sm:text-3xl font-bold text-white font-heading leading-tight ${isLaunch ? 'animate-pulse' : ''}`}>
-              {onboarding?.headline || welcome.headline}
+              {getPersonalizedHeadline()}
             </h2>
             
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
               {onboarding?.description || welcome.subtext}
             </p>
+
+            {/* Facilitator Introduction - Show on Day 1 if available */}
+            {journeyDay === 1 && facilitator && (
+              <div className="flex items-center gap-3 bg-white/5 rounded-lg px-4 py-3 border border-white/10">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-corporate-teal to-corporate-navy flex items-center justify-center text-white font-bold text-sm">
+                  {facilitator.name?.charAt(0) || '?'}
+                </div>
+                <div>
+                  <p className="text-white font-medium text-sm">{facilitator.name}</p>
+                  <p className="text-slate-400 text-xs">Your Facilitator</p>
+                </div>
+              </div>
+            )}
 
             {/* Today's Focus - What's New */}
             {onboarding && (

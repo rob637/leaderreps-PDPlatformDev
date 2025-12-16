@@ -15,12 +15,31 @@ import { checkAndPerformRollover } from '../utils/dailyRollover.js';
 import { timeService } from './timeService.js';
 
 /**
+ * Check if a value is a Firebase field value sentinel (serverTimestamp, increment, etc.)
+ * These need to be passed through to Firestore untouched.
+ */
+const isFirebaseFieldValue = (value) => {
+  if (!value || typeof value !== 'object') return false;
+  // Firebase field values have _methodName property
+  return value._methodName === 'serverTimestamp' || 
+         value._methodName === 'increment' ||
+         value._methodName === 'arrayUnion' ||
+         value._methodName === 'arrayRemove' ||
+         value._methodName === 'deleteField';
+};
+
+/**
  * Convert Date objects to Firestore Timestamps recursively
+ * Preserves Firebase field value sentinels (serverTimestamp, etc.)
  */
 const convertDatesToTimestamps = (obj) => {
   if (!obj) return obj;
   if (obj instanceof Date) {
     return Timestamp.fromDate(obj);
+  }
+  // Preserve Firebase field value sentinels (serverTimestamp, increment, etc.)
+  if (isFirebaseFieldValue(obj)) {
+    return obj;
   }
   if (Array.isArray(obj)) {
     return obj.map(item => convertDatesToTimestamps(item));

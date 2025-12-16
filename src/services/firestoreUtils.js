@@ -31,6 +31,10 @@ const mockGetDoc = async (docPath) => {
 
 const cleanUndefinedValues = (obj) => {
   if (typeof obj !== 'object' || obj === null) return obj;
+  
+  // Preserve Firebase field value sentinels (serverTimestamp, increment, etc.)
+  if (isFirebaseFieldValue(obj)) return obj;
+  
   if (Array.isArray(obj)) return obj.map(cleanUndefinedValues);
   
   const newObj = {};
