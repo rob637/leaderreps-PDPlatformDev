@@ -25,8 +25,10 @@ import { serverTimestamp } from 'firebase/firestore';
 import { FadeIn, Stagger } from '../motion';
 import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import PrepGate from '../ui/PrepGate';
+import ProgramStatusWidget from '../widgets/ProgramStatusWidget';
 
 const DASHBOARD_FEATURES = [
+  'program-status-debug',
   'prep-welcome-banner',
   'welcome-message',
   'daily-quote',
@@ -447,6 +449,7 @@ const Dashboard = (props) => {
 
   const renderers = {
     'dashboard-header': () => <WidgetRenderer widgetId="dashboard-header" scope={scope} />,
+    'program-status-debug': () => <ProgramStatusWidget />,
     'prep-welcome-banner': () => currentDayNumber < 1 ? <WidgetRenderer widgetId="prep-welcome-banner" scope={scope} /> : null,
     'welcome-message': () => <WidgetRenderer widgetId="welcome-message" scope={scope} />,
     'daily-quote': () => <WidgetRenderer widgetId="daily-quote" scope={scope} />,

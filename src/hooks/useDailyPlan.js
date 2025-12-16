@@ -146,18 +146,25 @@ export const useDailyPlan = () => {
     // If diffDays = -1 (day before), we want Day -1 (Prep).
     // Note: There is usually no Day 0 in these systems. It goes -1 to 1.
     
-    let dayNum = diffDays + 1;
+    let dayNum = diffDays >= 0 ? diffDays + 1 : diffDays;
     
     // Handle the "No Day 0" logic if your system requires it (CSV has -14...-1, then 1...71)
     // If calculation yields 0, it effectively means "Day before Day 1" which is Day -1.
-    if (dayNum === 0) dayNum = -1;
-    if (dayNum < 0 && diffDays >= -1) dayNum = -1; // Ensure we don't get stuck on 0
+    // Wait, diffDays = -1 -> dayNum = -1. Correct.
+    // diffDays = 0 -> dayNum = 1. Correct.
+    // So we just skip 0.
     
-    // Actually, simpler logic:
-    // If diffDays >= 0, Day = diffDays + 1
-    // If diffDays < 0, Day = diffDays
-    
-    const calculatedDay = diffDays >= 0 ? diffDays + 1 : diffDays;
+    const calculatedDay = dayNum;
+
+    console.log('[useDailyPlan] Day Calculation:', {
+      start: start.toISOString(),
+      now: simulatedNow.toISOString(),
+      diffDays,
+      calculatedDay
+    });
+
+    return calculatedDay;
+  }, [userState.startDate, simulatedNow]);
 
     console.log('[useDailyPlan] Day Calculation:', {
       start: start.toISOString(),

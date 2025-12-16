@@ -20,29 +20,25 @@ const MobileBottomNav = ({ currentScreen }) => {
       id: 'library',
       label: 'Content',
       icon: BookOpen,
-      screen: 'library',
-      visible: zoneVisibility?.isContentZoneOpen
+      screen: 'library'
     },
     {
       id: 'community',
       label: 'Community',
       icon: MessageSquare,
-      screen: 'community',
-      visible: zoneVisibility?.isCommunityZoneOpen
+      screen: 'community'
     },
     {
       id: 'coaching',
       label: 'Coaching',
       icon: Users,
-      screen: 'coaching-lab',
-      visible: zoneVisibility?.isCoachingZoneOpen
+      screen: 'coaching-lab'
     },
     {
       id: 'locker',
       label: 'Locker',
       icon: Archive,
-      screen: 'locker',
-      visible: zoneVisibility?.isLockerZoneOpen
+      screen: 'locker'
     }
   ];
 
@@ -60,7 +56,6 @@ const MobileBottomNav = ({ currentScreen }) => {
     >
       <div className="flex justify-around items-center px-2 py-2">
         {navItems.map((item) => {
-          if (item.visible === false) return null;
           const Icon = item.icon;
           const isActive = currentScreen === item.screen;
           
