@@ -31,6 +31,12 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   const masterPlan = devPlanHook.masterPlan || [];
   const toggleItemComplete = scope?.toggleItemComplete || devPlanHook.toggleItemComplete;
   
+  // Day-by-Day Architecture Integration
+  // Get daily actions from current day's data
+  const currentDayData = devPlanHook.currentDayData;
+  const dailyActions = currentDayData?.actions || [];
+  const currentPhase = devPlanHook.currentPhase;
+  
   // Progress tracking
   const { 
     completeItem, 
@@ -77,12 +83,56 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     });
   };
 
+  // Normalize daily plan actions (from DailyPlanManager / daily_plan_v1)
+  const normalizeDailyActions = (actions, dayId) => {
+    return (actions || []).map((action, idx) => {
+      const label = action.label || 'Daily Action';
+      const fallbackId = `daily-${dayId}-${label.toLowerCase().replace(/\s+/g, '-').substring(0, 20)}-${idx}`;
+      
+      // Map action type to category
+      let category = 'Content';
+      const actionType = (action.type || '').toLowerCase();
+      if (actionType === 'community' || actionType === 'leader_circle' || actionType === 'open_gym') {
+        category = 'Community';
+      } else if (actionType === 'coaching' || actionType === 'call') {
+        category = 'Coaching';
+      }
+      
+      return {
+        ...action,
+        id: action.id || fallbackId,
+        type: action.resourceType || action.type || 'content',
+        label: label,
+        required: action.required !== false,
+        resourceId: action.resourceId,
+        resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
+        category,
+        // Mark as coming from daily plan for UI distinction
+        fromDailyPlan: true,
+        dayId: dayId
+      };
+    });
+  };
+
   // Combine all actionable items
-  const allActions = useMemo(() => [
-    ...normalizeItems(content, 'Content'),
-    ...normalizeItems(community, 'Community'),
-    ...normalizeItems(coaching, 'Coaching')
-  ], [content, community, coaching]);
+  const allActions = useMemo(() => {
+    const normalized = [
+      // Daily actions first (today's priorities)
+      ...normalizeDailyActions(dailyActions, currentDayData?.id),
+      // Then weekly content
+      ...normalizeItems(content, 'Content'),
+      ...normalizeItems(community, 'Community'),
+      ...normalizeItems(coaching, 'Coaching')
+    ];
+    
+    // Debug log to verify daily actions are being included
+    if (dailyActions.length > 0) {
+      console.log('[ThisWeeksActions] Daily actions from currentDayData:', dailyActions);
+      console.log('[ThisWeeksActions] Normalized daily actions:', normalized.filter(a => a.fromDailyPlan));
+    }
+    
+    return normalized;
+  }, [dailyActions, currentDayData?.id, content, community, coaching]);
 
   // Get carried over items for this week (MUST be before any early returns)
   // This combines:
@@ -159,10 +209,17 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   const totalCount = allActions.length + carriedOverItems.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  // If no current week data, show empty state (AFTER all hooks)
-  if (!currentWeek) {
+  // Dynamic title based on phase
+  // Pre-Start phase = "Today's Actions" (day-focused)
+  // Start phase = "This Week's Actions" (week-focused)
+  const widgetTitle = currentPhase?.id === 'pre-start' 
+    ? "Today's Actions" 
+    : "This Week's Actions";
+
+  // If no current week data AND no daily actions, show empty state (AFTER all hooks)
+  if (!currentWeek && dailyActions.length === 0) {
     return (
-      <Card title="This Week's Actions" icon={CheckCircle} accent="TEAL">
+      <Card title={widgetTitle} icon={CheckCircle} accent="TEAL">
         <div className="p-4 text-center text-slate-500 text-sm">
           No active plan found.
         </div>
@@ -539,7 +596,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
           onClose={() => setViewingResource(null)} 
         />
       )}
-      <Card title="This Week's Actions" icon={CheckCircle} accent="TEAL">
+      <Card title={widgetTitle} icon={CheckCircle} accent="TEAL">
 
         {/* Carried Over Items - Always at TOP, always visible */}
         {carriedOverItems.length > 0 && (

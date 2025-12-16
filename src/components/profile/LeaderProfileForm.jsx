@@ -62,7 +62,7 @@ const STEPS = [
 ];
 
 const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
-  const { profile, loading, saving, saveProfile } = useLeaderProfile();
+  const { profile, loading, saving, saveProfile, isComplete: profileAlreadyComplete } = useLeaderProfile();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
@@ -440,8 +440,8 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
         </button>
 
         <div className="flex items-center gap-3">
-          {/* Save & Exit - always available after first step */}
-          {currentStep > 0 && (
+          {/* Save & Exit - available on middle steps only (not first, not last) */}
+          {currentStep > 0 && currentStep < STEPS.length - 1 && (
             <button
               onClick={handleSaveAndExit}
               disabled={saving}
@@ -470,7 +470,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
               className="flex items-center gap-2 bg-corporate-teal hover:bg-corporate-teal/90"
             >
               {saving ? <Loader className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-              Complete Profile
+              {profileAlreadyComplete ? 'Update Profile' : 'Complete Profile'}
             </Button>
           )}
         </div>
