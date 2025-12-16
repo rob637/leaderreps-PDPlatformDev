@@ -3068,6 +3068,17 @@ export const FEATURE_METADATA = {
     outputs: ['saveProfile'],
     componentPath: 'src/components/widgets/LeaderProfileWidget.jsx',
   },
+  'baseline-assessment': {
+    core: true,
+    category: 'Dashboard',
+    name: 'Baseline Assessment',
+    description: 'Complete Your Baseline Assessment',
+    purpose: 'Leadership skills self-assessment and goal setting.',
+    extendedDescription: 'Prompts users to assess their current leadership skills and set 1-3 development goals. Creates the foundation for their personalized Development Plan.',
+    inputs: ['developmentPlanData'],
+    outputs: ['assessmentHistory'],
+    componentPath: 'src/components/widgets/BaselineAssessmentWidget.jsx',
+  },
   'prep-welcome-banner': {
     core: true,
     category: 'Dashboard',

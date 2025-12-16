@@ -1,5 +1,5 @@
 /**
- * Configure Prep Phase Day 1 with Leader Profile action
+ * Configure Prep Phase Day 1 with Leader Profile and Baseline Assessment actions
  * Run: node configure-prep-day1.cjs
  */
 const admin = require('firebase-admin');
@@ -17,8 +17,8 @@ async function configurePrepDay1() {
     // Basic Info
     dayNumber: 1,
     weekNumber: -2,  // Prep Week 1 (2 weeks before start)
-    title: 'Complete Your Leader Profile',
-    focus: 'Set up your account and personalize your experience',
+    title: 'Set Up Your Leadership Journey',
+    focus: 'Complete your profile and baseline assessment to personalize your experience',
     isWeekend: false,
     
     // Actions for Day 1
@@ -29,6 +29,16 @@ async function configurePrepDay1() {
         label: 'Complete Your Leader Profile',
         description: 'Share your background, role, and goals so we can personalize your QuickStart journey.',
         resourceId: null, // No external resource - handled by in-app form
+        isCompleted: false,
+        priority: 'high',
+        estimatedMinutes: 3
+      },
+      {
+        id: 'action-baseline-assessment',
+        type: 'task',
+        label: 'Complete Your Baseline Assessment',
+        description: 'Assess your current leadership skills and set 1-3 development goals. This creates your personalized plan.',
+        resourceId: null, // No external resource - handled by in-app assessment
         isCompleted: false,
         priority: 'high',
         estimatedMinutes: 5
@@ -42,27 +52,18 @@ async function configurePrepDay1() {
         isCompleted: false,
         priority: 'medium',
         estimatedMinutes: 3
-      },
-      {
-        id: 'action-set-notifications',
-        type: 'task',
-        label: 'Enable Notifications (Optional)',
-        description: 'Turn on daily reminders to help build your leadership habits.',
-        resourceId: null,
-        isCompleted: false,
-        priority: 'low',
-        estimatedMinutes: 2
       }
     ],
     
     // Dashboard Widget Visibility (Lock & Key)
     dashboard: {
       'program-status-debug': true,
-      'leader-profile': true,        // SHOW - This is the main task
-      'prep-welcome-banner': true,   // SHOW - Welcome message
-      'welcome-message': true,       // SHOW - Greeting
-      'daily-quote': true,           // SHOW - Inspirational
-      'weekly-focus': true,          // SHOW - Today's focus
+      'leader-profile': true,         // SHOW - Profile completion
+      'baseline-assessment': true,    // SHOW - Assessment completion
+      'prep-welcome-banner': true,    // SHOW - Welcome message
+      'welcome-message': true,        // SHOW - Greeting
+      'daily-quote': true,            // SHOW - Inspirational
+      'weekly-focus': true,           // SHOW - Today's focus
       
       // Hide during Prep Phase
       'am-bookend-header': false,
@@ -92,6 +93,9 @@ async function configurePrepDay1() {
   console.log('- Document exists:', doc.exists);
   console.log('- Title:', doc.data().title);
   console.log('- Actions:', doc.data().actions?.length || 0);
+  doc.data().actions?.forEach((a, i) => {
+    console.log(`  ${i+1}. ${a.label}`);
+  });
   console.log('- Dashboard widgets configured:', Object.keys(doc.data().dashboard || {}).length);
 }
 
