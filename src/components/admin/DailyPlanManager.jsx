@@ -152,9 +152,20 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
   };
 
   const updateAction = (index, field, value) => {
-    const newActions = [...(formData.actions || [])];
-    newActions[index] = { ...newActions[index], [field]: value };
-    setFormData(prev => ({ ...prev, actions: newActions }));
+    setFormData(prev => {
+      const newActions = [...(prev.actions || [])];
+      newActions[index] = { ...newActions[index], [field]: value };
+      return { ...prev, actions: newActions };
+    });
+  };
+
+  // Update multiple fields on an action at once (prevents race conditions)
+  const updateActionMultiple = (index, updates) => {
+    setFormData(prev => {
+      const newActions = [...(prev.actions || [])];
+      newActions[index] = { ...newActions[index], ...updates };
+      return { ...prev, actions: newActions };
+    });
   };
 
   const removeAction = (index) => {
@@ -367,13 +378,18 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
                       value={action.resourceId || null}
                       onChange={(id, resource) => {
                         if (resource) {
-                          updateAction(idx, 'resourceId', resource.id);
-                          updateAction(idx, 'resourceTitle', resource.title);
-                          updateAction(idx, 'resourceType', resource.resourceType || resource.type);
+                          // Use updateActionMultiple to prevent race conditions
+                          updateActionMultiple(idx, {
+                            resourceId: resource.id,
+                            resourceTitle: resource.title,
+                            resourceType: resource.resourceType || resource.type
+                          });
                         } else {
-                          updateAction(idx, 'resourceId', null);
-                          updateAction(idx, 'resourceTitle', null);
-                          updateAction(idx, 'resourceType', null);
+                          updateActionMultiple(idx, {
+                            resourceId: null,
+                            resourceTitle: null,
+                            resourceType: null
+                          });
                         }
                       }}
                       resourceType="content"
