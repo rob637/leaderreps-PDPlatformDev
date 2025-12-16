@@ -36,6 +36,7 @@ export const PHASES = {
     dbDayEnd: 14,
     weekRange: [-2, -1],
     trackMissedDays: false, // Users can start anytime
+    cumulativeActions: true, // Actions accumulate - Day 1 actions persist through Day 14
     description: 'Get ready for the program'
   },
   START: {
@@ -46,6 +47,7 @@ export const PHASES = {
     dbDayEnd: 70,
     weekRange: [1, 8],
     trackMissedDays: true, // Cohort-based progression
+    cumulativeActions: false, // Each day/week has specific content
     description: '8-week leadership development program'
   },
   POST_START: {
@@ -56,8 +58,189 @@ export const PHASES = {
     dbDayEnd: Infinity,
     weekRange: [9, Infinity],
     trackMissedDays: false, // Ongoing maintenance
+    cumulativeActions: false,
     description: 'Continue your leadership journey'
   }
+};
+
+// Leadership quotes for Prep Phase countdown
+export const PREP_PHASE_QUOTES = [
+  { quote: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+  { quote: "Leadership is not about being in charge. It's about taking care of those in your charge.", author: "Simon Sinek" },
+  { quote: "Before you are a leader, success is all about growing yourself. When you become a leader, success is all about growing others.", author: "Jack Welch" },
+  { quote: "The greatest leader is not necessarily one who does the greatest things, but one who gets people to do the greatest things.", author: "Ronald Reagan" },
+  { quote: "A leader is one who knows the way, goes the way, and shows the way.", author: "John C. Maxwell" },
+  { quote: "Leadership and learning are indispensable to each other.", author: "John F. Kennedy" },
+  { quote: "The task of leadership is not to put greatness into people, but to elicit it, for the greatness is there already.", author: "John Buchan" },
+  { quote: "True leadership lies in guiding others to success.", author: "Bill Owens" },
+  { quote: "Leadership is the capacity to translate vision into reality.", author: "Warren Bennis" },
+  { quote: "The function of leadership is to produce more leaders, not more followers.", author: "Ralph Nader" },
+  { quote: "People ask the difference between a leader and a boss. The leader leads, and the boss drives.", author: "Theodore Roosevelt" },
+  { quote: "Effective leadership is putting first things first.", author: "Stephen Covey" },
+  { quote: "The quality of a leader is reflected in the standards they set for themselves.", author: "Ray Kroc" },
+  { quote: "Leaders think and talk about solutions. Followers think and talk about problems.", author: "Brian Tracy" }
+];
+
+/**
+ * PROGRESSIVE ONBOARDING MODULES
+ * ==============================
+ * Content introduced progressively based on user's JOURNEY DAY (not calendar day).
+ * A user who joins on Prep Day 12 will see Day 1 content first, then Day 2 on their next visit.
+ * 
+ * Journey Day = days since user's first Prep Phase visit
+ * 
+ * For late joiners (< 5 days until start), we use ACCELERATED mode:
+ * - Combine multiple days of content into fewer sessions
+ */
+export const ONBOARDING_MODULES = {
+  1: {
+    id: 'welcome',
+    title: 'Welcome to Your Leadership Journey',
+    headline: 'Your Journey Begins Now, Leader!',
+    description: 'Today we set the foundation. Complete your Leader Profile and Baseline Assessment to help us personalize your experience.',
+    widgets: ['leaderProfile', 'baselineAssessment', 'todaysActions'],
+    features: ['leader_profile', 'baseline_assessment'],
+    callToAction: 'Come back tomorrow to discover your daily leadership rhythm!',
+    tip: 'Take your time with the assessments - honest answers lead to better growth.'
+  },
+  2: {
+    id: 'bookends',
+    title: 'The AM & PM Bookends',
+    headline: 'Build Your Daily Leadership Rhythm',
+    description: 'Great leaders start and end each day with intention. The AM Bookend sets your focus, the PM Bookend captures your reflections.',
+    widgets: ['amBookend', 'pmBookend'],
+    features: ['am_bookend', 'pm_bookend'],
+    callToAction: 'Try both bookends today! Tomorrow we introduce powerful reading habits.',
+    tip: 'Just 5 minutes in the morning and evening can transform your leadership mindset.'
+  },
+  3: {
+    id: 'reading',
+    title: 'Leadership Through Reading',
+    headline: 'Fuel Your Mind with Great Ideas',
+    description: 'The best leaders are avid readers. We\'ll introduce you to curated book summaries and excerpts designed for busy leaders.',
+    widgets: ['readingContent'],
+    features: ['reading_library'],
+    callToAction: 'Explore your first reading today. Tomorrow brings video content!',
+    tip: 'Even 10 minutes of focused reading daily compounds into powerful knowledge.'
+  },
+  4: {
+    id: 'video',
+    title: 'Video Learning Library',
+    headline: 'Watch, Learn, Lead',
+    description: 'Short, impactful videos from leadership experts. Watch during your commute or lunch break.',
+    widgets: ['videoContent'],
+    features: ['video_library'],
+    callToAction: 'Watch your first leadership video today. Tomorrow we do a full recap!',
+    tip: 'Bookmark videos you want to revisit - they\'re always available in your library.'
+  },
+  5: {
+    id: 'recap',
+    title: 'You\'re Ready!',
+    headline: 'Your Toolkit is Complete',
+    description: 'You\'ve explored all the core features. Here\'s a quick guide to where everything lives in the app.',
+    widgets: ['appOverview'],
+    features: ['full_access'],
+    callToAction: 'Keep practicing daily! The real journey begins when your cohort starts.',
+    appOverview: {
+      dashboard: 'Your home base - see today\'s priorities and progress',
+      devPlan: 'Track your 8-week development journey (coming soon!)',
+      library: 'Access all videos, readings, and tools anytime',
+      coaching: 'Live sessions and coaching resources',
+      community: 'Connect with fellow leaders'
+    },
+    tip: 'Consistency beats intensity. Small daily actions create lasting change.'
+  }
+};
+
+// Accelerated onboarding for late joiners
+export const ACCELERATED_MODULES = {
+  // 3-4 days until start: 2 sessions
+  accelerated_2: [
+    { ...ONBOARDING_MODULES[1], ...ONBOARDING_MODULES[2], id: 'welcome-bookends', title: 'Welcome & Daily Rhythm' },
+    { ...ONBOARDING_MODULES[3], ...ONBOARDING_MODULES[4], ...ONBOARDING_MODULES[5], id: 'content-recap', title: 'Your Content & Tools' }
+  ],
+  // 1-2 days until start: 1 session (everything)
+  accelerated_1: [
+    { 
+      id: 'quick-start', 
+      title: 'Quick Start Guide',
+      headline: 'Welcome, Leader! Let\'s Get You Ready Fast',
+      description: 'Your training starts very soon! Here\'s everything you need to know to hit the ground running.',
+      widgets: ['leaderProfile', 'baselineAssessment', 'amBookend', 'pmBookend', 'appOverview'],
+      features: ['leader_profile', 'baseline_assessment', 'am_bookend', 'pm_bookend', 'full_access'],
+      callToAction: 'Complete your profile and assessment before Day 1!',
+      tip: 'Focus on the Leader Profile and Baseline Assessment first - they\'re essential for personalization.',
+      isQuickStart: true
+    }
+  ]
+};
+
+// Get onboarding module based on journey day and days until start
+export const getOnboardingModule = (journeyDay, daysUntilStart) => {
+  // Quick start for very late joiners (0-2 days until start)
+  if (daysUntilStart <= 2) {
+    return ACCELERATED_MODULES.accelerated_1[0];
+  }
+  
+  // Accelerated for late joiners (3-4 days until start)
+  if (daysUntilStart <= 4) {
+    const sessionIndex = Math.min(journeyDay - 1, 1);
+    return ACCELERATED_MODULES.accelerated_2[sessionIndex] || ACCELERATED_MODULES.accelerated_2[1];
+  }
+  
+  // Normal progression - cap at day 5
+  const effectiveDay = Math.min(journeyDay, 5);
+  return ONBOARDING_MODULES[effectiveDay] || ONBOARDING_MODULES[5];
+};
+
+// Get welcome message based on days until start
+export const getPrepPhaseWelcome = (daysUntilStart) => {
+  if (daysUntilStart <= 0) {
+    return {
+      headline: "Your Journey Begins Today!",
+      subtext: "Welcome to Day 1 of your leadership transformation.",
+      excitement: 'launch'
+    };
+  }
+  if (daysUntilStart === 1) {
+    return {
+      headline: "Tomorrow is the Big Day!",
+      subtext: "Your leadership journey starts in just 24 hours. Get ready!",
+      excitement: 'high'
+    };
+  }
+  if (daysUntilStart <= 3) {
+    return {
+      headline: `${daysUntilStart} Days Until Launch!`,
+      subtext: "The countdown is on. Final preparations are underway.",
+      excitement: 'high'
+    };
+  }
+  if (daysUntilStart <= 7) {
+    return {
+      headline: `${daysUntilStart} Days Until Your Journey Begins`,
+      subtext: "One week away from transforming your leadership. Keep preparing!",
+      excitement: 'medium'
+    };
+  }
+  if (daysUntilStart <= 10) {
+    return {
+      headline: `${daysUntilStart} Days to Go, Leader`,
+      subtext: "You're building a strong foundation. Stay focused.",
+      excitement: 'medium'
+    };
+  }
+  return {
+    headline: "Your Journey Begins Now, Leader",
+    subtext: `${daysUntilStart} days until your cohort starts. Let's get you ready!`,
+    excitement: 'start'
+  };
+};
+
+// Get a quote for the day (deterministic based on day number)
+export const getDailyQuote = (dayNumber) => {
+  const index = (dayNumber - 1) % PREP_PHASE_QUOTES.length;
+  return PREP_PHASE_QUOTES[index];
 };
 
 // Helper: Get phase from DB dayNumber
@@ -142,7 +325,9 @@ export const useDailyPlan = () => {
     const defaultState = {
       dailyProgress: {},
       startDate: null,
-      cohortId: null
+      cohortId: null,
+      prepPhaseFirstVisit: null, // Track first Prep Phase login for progressive onboarding
+      onboardingCompleted: {}    // Track which onboarding modules have been seen
     };
 
     const baseData = developmentPlanData || {};
@@ -164,7 +349,9 @@ export const useDailyPlan = () => {
       // Prioritize user doc fields for cohort sync (CohortManager updates user doc)
       startDate: user?.startDate || baseData.startDate,
       cohortId: user?.cohortId || baseData.cohortId,
-      dailyProgress
+      dailyProgress,
+      prepPhaseFirstVisit: baseData.prepPhaseFirstVisit || null,
+      onboardingCompleted: baseData.onboardingCompleted || {}
     };
   }, [developmentPlanData, user]);
 
@@ -187,6 +374,73 @@ export const useDailyPlan = () => {
     };
     autoInit();
   }, [developmentPlanData, updateDevelopmentPlanData, user]);
+
+  // Auto-initialize prepPhaseFirstVisit when user first enters Prep Phase
+  useEffect(() => {
+    const initPrepPhaseVisit = async () => {
+      // Only track for Prep Phase users who haven't been tracked yet
+      if (!user || !updateDevelopmentPlanData || developmentPlanData === undefined) return;
+      if (developmentPlanData?.prepPhaseFirstVisit) return; // Already tracked
+      
+      // Check if we're in Prep Phase (daysFromStart < 0 means before cohort start)
+      const rawDate = developmentPlanData?.startDate || user?.startDate;
+      if (!rawDate) return;
+      
+      let start = null;
+      if (rawDate.toDate && typeof rawDate.toDate === 'function') {
+        start = rawDate.toDate();
+      } else if (rawDate.seconds) {
+        start = new Date(rawDate.seconds * 1000);
+      } else {
+        start = new Date(rawDate);
+      }
+      
+      if (!start || isNaN(start.getTime())) return;
+      
+      const now = new Date(Date.now() + timeOffset);
+      const diffMs = now.getTime() - start.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      // If we're in Prep Phase (before start day), record first visit
+      if (diffDays < 0) {
+        if (window._prepPhaseInitAttempted) return;
+        window._prepPhaseInitAttempted = true;
+        
+        console.log('[useDailyPlan] Recording first Prep Phase visit');
+        try {
+          await updateDevelopmentPlanData({ prepPhaseFirstVisit: serverTimestamp() });
+        } catch (error) {
+          console.error('[useDailyPlan] Error recording prepPhaseFirstVisit:', error);
+          window._prepPhaseInitAttempted = false;
+        }
+      }
+    };
+    initPrepPhaseVisit();
+  }, [developmentPlanData, updateDevelopmentPlanData, user, timeOffset]);
+
+  // Calculate user's Journey Day (days since first Prep Phase visit)
+  const journeyDay = useMemo(() => {
+    if (!userState.prepPhaseFirstVisit) return 1; // Default to Day 1 if not tracked yet
+    
+    let firstVisit = null;
+    const rawDate = userState.prepPhaseFirstVisit;
+    
+    if (rawDate.toDate && typeof rawDate.toDate === 'function') {
+      firstVisit = rawDate.toDate();
+    } else if (rawDate.seconds) {
+      firstVisit = new Date(rawDate.seconds * 1000);
+    } else {
+      firstVisit = new Date(rawDate);
+    }
+    
+    if (!firstVisit || isNaN(firstVisit.getTime())) return 1;
+    
+    const diffMs = simulatedNow.getTime() - firstVisit.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    // Journey day is 1-indexed (first day = 1, second day = 2, etc.)
+    return Math.max(1, diffDays + 1);
+  }, [userState.prepPhaseFirstVisit, simulatedNow]);
 
   // 3. Calculate Days From Start (can be negative for Pre-Start)
   const daysFromStart = useMemo(() => {
@@ -238,11 +492,75 @@ export const useDailyPlan = () => {
   }, [daysFromStart]);
 
   // 5. Get Current Day Data, Missed Days & Unlocked Content
-  const { currentDayData, missedDays, unlockedContentIds, unlockedResources } = useMemo(() => {
-    if (dailyPlan.length === 0) return { currentDayData: null, missedDays: [], unlockedContentIds: [], unlockedResources: [] };
+  const { currentDayData, missedDays, unlockedContentIds, unlockedResources, prepPhaseInfo } = useMemo(() => {
+    if (dailyPlan.length === 0) return { currentDayData: null, missedDays: [], unlockedContentIds: [], unlockedResources: [], prepPhaseInfo: null };
 
     // Find data for current day using the DB dayNumber
     const current = dailyPlan.find(d => d.dayNumber === dbDayNumber);
+    
+    // PREP PHASE CUMULATIVE ACTIONS:
+    // In Prep Phase, actions accumulate from Day 1 through current day
+    // Day 1 actions persist through Day 14
+    // Day 5 additions appear on Days 5-14
+    let cumulativeActions = [];
+    let prepInfo = null;
+    
+    if (currentPhase.cumulativeActions) {
+      // Accumulate all actions from Day 1 to current day
+      const prepDays = dailyPlan
+        .filter(d => d.dayNumber >= PHASES.PRE_START.dbDayStart && d.dayNumber <= dbDayNumber)
+        .sort((a, b) => a.dayNumber - b.dayNumber);
+      
+      prepDays.forEach(day => {
+        if (day.actions && Array.isArray(day.actions)) {
+          day.actions
+            .filter(action => action.enabled !== false) // Only include enabled actions
+            .forEach(action => {
+              // Add metadata about when this action was introduced
+              cumulativeActions.push({
+                ...action,
+                introducedOnDay: day.dayNumber,
+                introducedOnDayId: day.id,
+                // Use day.dayNumber for display: "Prep Day X"
+                introducedLabel: `Prep Day ${day.dayNumber}`
+              });
+            });
+        }
+      });
+      
+      // Calculate days until cohort start (Day 15)
+      const daysUntilStart = PHASES.START.dbDayStart - dbDayNumber;
+      const welcomeMessage = getPrepPhaseWelcome(daysUntilStart);
+      const dailyQuote = getDailyQuote(dbDayNumber);
+      
+      // Get the appropriate onboarding module based on user's journey day
+      // journeyDay is passed from outer scope (calculated from prepPhaseFirstVisit)
+      const onboardingModule = getOnboardingModule(journeyDay, daysUntilStart);
+      
+      prepInfo = {
+        daysUntilStart,
+        totalPrepDays: PHASES.PRE_START.dbDayEnd - PHASES.PRE_START.dbDayStart + 1,
+        currentPrepDay: phaseDayNumber,
+        progressPercent: Math.round((phaseDayNumber / 14) * 100),
+        welcome: welcomeMessage,
+        quote: dailyQuote,
+        // Progressive onboarding
+        journeyDay,
+        onboarding: onboardingModule,
+        isAccelerated: daysUntilStart <= 4,
+        isQuickStart: daysUntilStart <= 2,
+        // Summary of prep completion
+        totalActions: cumulativeActions.length,
+        actionsIntroducedToday: cumulativeActions.filter(a => a.introducedOnDay === dbDayNumber).length
+      };
+      
+      console.log('[useDailyPlan] Prep Phase cumulative actions:', {
+        currentDay: dbDayNumber,
+        totalCumulativeActions: cumulativeActions.length,
+        daysUntilStart,
+        prepInfo
+      });
+    }
     
     // Enrich with user progress and phase info
     let enrichedCurrent = null;
@@ -261,7 +579,21 @@ export const useDailyPlan = () => {
             : `Post Day ${phaseDayNumber}`,
         // User progress
         userProgress: progress,
-        isCompleted: progress.status === 'completed'
+        isCompleted: progress.status === 'completed',
+        // For Prep Phase: replace day-specific actions with cumulative actions
+        actions: currentPhase.cumulativeActions ? cumulativeActions : current.actions
+      };
+    } else if (currentPhase.cumulativeActions && cumulativeActions.length > 0) {
+      // Create a synthetic day data for prep phase even if specific day doc doesn't exist
+      enrichedCurrent = {
+        id: `day-${String(dbDayNumber).padStart(3, '0')}`,
+        dayNumber: dbDayNumber,
+        phase: currentPhase,
+        phaseDayNumber: phaseDayNumber,
+        displayDay: `Prep Day ${phaseDayNumber}`,
+        actions: cumulativeActions,
+        userProgress: { itemsCompleted: [] },
+        isCompleted: false
       };
     }
 
@@ -324,9 +656,10 @@ export const useDailyPlan = () => {
       currentDayData: enrichedCurrent, 
       missedDays: missed, 
       unlockedContentIds: unlockedIds,
-      unlockedResources // New: enriched resource data
+      unlockedResources, // New: enriched resource data
+      prepPhaseInfo: prepInfo // New: Prep Phase welcome/countdown data
     };
-  }, [dailyPlan, dbDayNumber, currentPhase, phaseDayNumber, userState.dailyProgress]);
+  }, [dailyPlan, dbDayNumber, currentPhase, phaseDayNumber, userState.dailyProgress, journeyDay]);
 
   // Legacy: currentDayNumber for backward compatibility
   // This returns the "user-facing" day number (negative for prep, positive for start)
@@ -393,16 +726,20 @@ export const useDailyPlan = () => {
     userState,
     
     // Phase info (NEW)
-    currentPhase,           // { id, name, displayName, trackMissedDays, ... }
+    currentPhase,           // { id, name, displayName, trackMissedDays, cumulativeActions, ... }
     phaseDayNumber,         // Day within current phase (1-14 for prep, 1-56 for start, etc.)
     daysFromStart,          // Raw days from cohort start (can be negative)
     dbDayNumber,            // Database dayNumber (1-71+)
+    
+    // Prep Phase specific (NEW)
+    prepPhaseInfo,          // { daysUntilStart, welcome, quote, onboarding, journeyDay, ... } - only in prep phase
+    journeyDay,             // User's personal journey day (days since first prep phase visit)
     
     // Legacy (for backward compatibility)
     currentDayNumber,       // User-facing day number (negative for prep, positive for start)
     
     // Current day data (enriched with phase info)
-    currentDayData,
+    currentDayData,         // In Prep Phase, .actions contains CUMULATIVE actions from Day 1
     
     // Catch-up (only populated during START phase)
     missedDays,
