@@ -7,6 +7,10 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { Button, Card } from '../ui';
 
+// --- Prep Phase Widgets ---
+import LeaderProfileWidget from '../widgets/LeaderProfileWidget';
+import BaselineAssessmentWidget from '../widgets/BaselineAssessmentWidget';
+
 // --- Tooltip Component ---
 const Tooltip = ({ content, children }) => {
     const [isVisible, setIsVisible] = useState(false);
@@ -1095,6 +1099,14 @@ if (isLoading || pdpData === undefined) {
     }, [initialScreen, pdpData, generatedPlanData]);
 
 
+    // Prep Phase Widgets - Show on all views except loading
+    const PrepPhaseWidgets = () => (
+        <div className="space-y-4 mb-6 max-w-4xl mx-auto">
+            <LeaderProfileWidget />
+            <BaselineAssessmentWidget />
+        </div>
+    );
+
     if (currentView === 'loading') { 
         return (
             <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 min-h-screen flex items-center justify-center">
@@ -1107,33 +1119,51 @@ if (isLoading || pdpData === undefined) {
     }
     if (currentView === 'error') { return React.createElement('div', null, 'Error...'); }
     if (currentView === 'review') { return (
-        <PlanReviewScreen
-            generatedPlan={generatedPlanData}
-            navigate={navigate}
-            clearReviewData={clearReviewData}
-            finalizeWithData={(data) => {
-                setOverridePdpData(data);
-                clearReviewData();
-                navigate('/prof-dev-plan');
-            }}
-        />
+        <>
+            <div className="p-4 sm:p-6 lg:p-8 pb-0">
+                <PrepPhaseWidgets />
+            </div>
+            <PlanReviewScreen
+                generatedPlan={generatedPlanData}
+                navigate={navigate}
+                clearReviewData={clearReviewData}
+                finalizeWithData={(data) => {
+                    setOverridePdpData(data);
+                    clearReviewData();
+                    navigate('/prof-dev-plan');
+                }}
+            />
+        </>
     ); }
     if (currentView === 'generator') { 
-        return <PlanGeneratorView 
-            userId={userId} 
-            saveNewPlan={saveNewPlan} 
-            isLoading={false} 
-            error={null} 
-            navigate={navigate} 
-            setGeneratedPlanData={setGeneratedPlanData} 
-            generatePlanDataWrapper={generatePlanDataWrapper} // Pass the content-aware generator
-        />; 
+        return (
+            <>
+                <div className="p-4 sm:p-6 lg:p-8 pb-0">
+                    <PrepPhaseWidgets />
+                </div>
+                <PlanGeneratorView 
+                    userId={userId} 
+                    saveNewPlan={saveNewPlan} 
+                    isLoading={false} 
+                    error={null} 
+                    navigate={navigate} 
+                    setGeneratedPlanData={setGeneratedPlanData} 
+                    generatePlanDataWrapper={generatePlanDataWrapper}
+                />
+            </>
+        ); 
     }
 
     // currentView === 'tracker'
-    // Pass the correct update function which is aware of the current view/logic
     const trackerProps = { data: (overridePdpData || pdpData), updatePdpData, saveNewPlan, userId, navigate };
-    return <TrackerDashboardView {...trackerProps} />;
+    return (
+        <>
+            <div className="p-4 sm:p-6 lg:p-8 pb-0">
+                <PrepPhaseWidgets />
+            </div>
+            <TrackerDashboardView {...trackerProps} />
+        </>
+    );
 };
 
 export default ProfDevPlanScreen;
