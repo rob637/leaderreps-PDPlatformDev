@@ -540,46 +540,6 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         />
       )}
       <Card title="This Week's Actions" icon={CheckCircle} accent="TEAL">
-        {/* Progress Header */}
-        <div className="mb-4 p-3 bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl border border-teal-100">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-teal-800">
-                Week {currentWeek.weekNumber} Progress
-              </span>
-              {stats.currentStreak > 0 && (
-                <span className="flex items-center gap-1 text-xs font-medium text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full">
-                  <Flame className="w-3 h-3" />
-                  {stats.currentStreak} day streak
-                </span>
-              )}
-            </div>
-            <div className="text-sm font-bold text-teal-700">
-              {completedCount}/{totalCount}
-            </div>
-          </div>
-          
-          {/* Progress Bar */}
-          <div className="h-2 bg-teal-100 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          
-          {/* Points Display */}
-          {stats.totalPoints > 0 && (
-            <div className="mt-2 flex items-center gap-2 text-xs text-teal-700">
-              <Award className="w-3.5 h-3.5" />
-              <span>{stats.totalPoints} points earned</span>
-              {stats.badges.length > 0 && (
-                <span className="ml-auto">
-                  {stats.badges.length} badge{stats.badges.length !== 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
 
         {/* Carried Over Items - Always at TOP, always visible */}
         {carriedOverItems.length > 0 && (
