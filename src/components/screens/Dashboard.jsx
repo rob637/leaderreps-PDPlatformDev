@@ -442,44 +442,71 @@ const Dashboard = (props) => {
   };
 
   // Helper to check visibility based on Daily Plan config
-  const shouldShow = (key, defaultVal = true) => {
+  const shouldShow = (widgetId, defaultVal = true) => {
+    // Legacy Mapping for backward compatibility
+    const LEGACY_WIDGET_MAP = {
+      'am-bookend-header': 'showAMBookend',
+      'weekly-focus': 'showWeeklyFocus',
+      'lis-maker': 'showLISBuilder',
+      'grounding-rep': 'showGroundingRep',
+      'win-the-day': 'showWinTheDay',
+      'daily-leader-reps': 'showDailyReps',
+      'notifications': 'showNotifications',
+      'pm-bookend-header': 'showPMReflection',
+      'pm-bookend': 'showPMReflection',
+      'scorecard': 'showScorecard'
+    };
+
     // Force hide daily practice widgets during Prep Phase (Day < 1)
     if (currentDayNumber < 1) {
       const PREP_HIDDEN_WIDGETS = [
-        'showAMBookend', 
-        'showWinTheDay', 
-        'showDailyReps', 
-        'showScorecard', 
-        'showPMReflection',
-        'showGroundingRep',
-        'showLISBuilder'
+        'am-bookend-header', 
+        'win-the-day', 
+        'daily-leader-reps', 
+        'scorecard', 
+        'pm-bookend-header',
+        'pm-bookend',
+        'grounding-rep',
+        'lis-maker'
       ];
-      if (PREP_HIDDEN_WIDGETS.includes(key)) return false;
+      if (PREP_HIDDEN_WIDGETS.includes(widgetId)) return false;
     }
 
     if (!currentDayData?.dashboard) return defaultVal;
-    return currentDayData.dashboard[key] !== undefined ? currentDayData.dashboard[key] : defaultVal;
+
+    // 1. Check for direct Widget ID match (New System)
+    if (currentDayData.dashboard[widgetId] !== undefined) {
+        return currentDayData.dashboard[widgetId];
+    }
+
+    // 2. Check for Legacy Key match
+    const legacyKey = LEGACY_WIDGET_MAP[widgetId];
+    if (legacyKey && currentDayData.dashboard[legacyKey] !== undefined) {
+        return currentDayData.dashboard[legacyKey];
+    }
+
+    return defaultVal;
   };
 
   const renderers = {
     'dashboard-header': () => <WidgetRenderer widgetId="dashboard-header" scope={scope} />,
     'program-status-debug': () => <ProgramStatusWidget />,
-    'prep-welcome-banner': () => currentDayNumber < 1 ? <WidgetRenderer widgetId="prep-welcome-banner" scope={scope} /> : null,
+    'prep-welcome-banner': () => (currentDayNumber < 1 && shouldShow('prep-welcome-banner', true)) ? <WidgetRenderer widgetId="prep-welcome-banner" scope={scope} /> : null,
     'welcome-message': () => <WidgetRenderer widgetId="welcome-message" scope={scope} />,
     'daily-quote': () => <WidgetRenderer widgetId="daily-quote" scope={scope} />,
-    'am-bookend-header': () => shouldShow('showAMBookend', true) ? <WidgetRenderer widgetId="am-bookend-header" scope={scope} /> : null,
-    'weekly-focus': () => shouldShow('showWeeklyFocus', true) ? <WidgetRenderer widgetId="weekly-focus" scope={scope} /> : null,
-    'lis-maker': () => shouldShow('showLISBuilder', false) ? <WidgetRenderer widgetId="lis-maker" scope={scope} /> : null,
-    'grounding-rep': () => shouldShow('showGroundingRep', false) ? <WidgetRenderer widgetId="grounding-rep" scope={scope} /> : null,
-    'win-the-day': () => shouldShow('showWinTheDay', true) ? <WidgetRenderer widgetId="win-the-day" scope={scope} /> : null,
+    'am-bookend-header': () => shouldShow('am-bookend-header', true) ? <WidgetRenderer widgetId="am-bookend-header" scope={scope} /> : null,
+    'weekly-focus': () => shouldShow('weekly-focus', true) ? <WidgetRenderer widgetId="weekly-focus" scope={scope} /> : null,
+    'lis-maker': () => shouldShow('lis-maker', false) ? <WidgetRenderer widgetId="lis-maker" scope={scope} /> : null,
+    'grounding-rep': () => shouldShow('grounding-rep', false) ? <WidgetRenderer widgetId="grounding-rep" scope={scope} /> : null,
+    'win-the-day': () => shouldShow('win-the-day', true) ? <WidgetRenderer widgetId="win-the-day" scope={scope} /> : null,
     'daily-plan': () => <WidgetRenderer widgetId="daily-plan" scope={scope} />,
-    'daily-leader-reps': () => shouldShow('showDailyReps', true) ? <WidgetRenderer widgetId="daily-leader-reps" scope={scope} /> : null,
+    'daily-leader-reps': () => shouldShow('daily-leader-reps', true) ? <WidgetRenderer widgetId="daily-leader-reps" scope={scope} /> : null,
     'this-weeks-actions': () => <WidgetRenderer widgetId="this-weeks-actions" scope={scope} />,
-    'notifications': () => shouldShow('showNotifications', false) ? <WidgetRenderer widgetId="notifications" scope={scope} /> : null,
-    'pm-bookend-header': () => shouldShow('showPMReflection', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
+    'notifications': () => shouldShow('notifications', false) ? <WidgetRenderer widgetId="notifications" scope={scope} /> : null,
+    'pm-bookend-header': () => shouldShow('pm-bookend-header', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
     'progress-feedback': () => <WidgetRenderer widgetId="progress-feedback" scope={scope} />,
-    'pm-bookend': () => shouldShow('showPMReflection', true) ? <WidgetRenderer widgetId="pm-bookend" scope={scope} /> : null,
-    'scorecard': () => shouldShow('showScorecard', true) ? <WidgetRenderer widgetId="scorecard" scope={scope} /> : null,
+    'pm-bookend': () => shouldShow('pm-bookend', true) ? <WidgetRenderer widgetId="pm-bookend" scope={scope} /> : null,
+    'scorecard': () => shouldShow('scorecard', true) ? <WidgetRenderer widgetId="scorecard" scope={scope} /> : null,
     
     // Legacy / Optional
     'gamification': () => <WidgetRenderer widgetId="gamification" scope={scope} />,

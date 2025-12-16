@@ -28,6 +28,8 @@ import {
 import { Card } from '../ui';
 import ContentPicker from './content-editors/pickers/ContentPicker';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
+import { FEATURE_METADATA } from '../../config/widgetTemplates';
+import { useFeatures } from '../../providers/FeatureProvider';
 
 // --- Sub-components ---
 
@@ -80,6 +82,7 @@ const DayCard = ({ day, onEdit }) => {
 
 const DayEditor = ({ day, onSave, onCancel, allDays }) => {
   const { db } = useAppServices();
+  const { isFeatureEnabled, getFeatureOrder } = useFeatures(); // Use Feature Provider
   const [formData, setFormData] = useState({ ...day });
   const [showContentPicker, setShowContentPicker] = useState(false);
   const [pickerType, setPickerType] = useState(null); // 'daily_rep', 'content', or 'action_link'
@@ -361,78 +364,26 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
         <div>
           <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Dashboard Widgets</label>
           <div className="space-y-2">
-            <label className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
-              <span className="text-sm">AM Bookend (Start Strong)</span>
-              <input 
-                type="checkbox" 
-                checked={formData.dashboard?.showAMBookend !== false} 
-                onChange={() => handleDashboardToggle('showAMBookend')}
-              />
-            </label>
-            <label className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
-              <span className="text-sm">Weekly Focus</span>
-              <input 
-                type="checkbox" 
-                checked={formData.dashboard?.showWeeklyFocus !== false} 
-                onChange={() => handleDashboardToggle('showWeeklyFocus')}
-              />
-            </label>
-            <label className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
-              <span className="text-sm">LIS Builder</span>
-              <input 
-                type="checkbox" 
-                checked={formData.dashboard?.showLISBuilder} 
-                onChange={() => handleDashboardToggle('showLISBuilder')}
-              />
-            </label>
-            <label className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
-              <span className="text-sm">Grounding Rep</span>
-              <input 
-                type="checkbox" 
-                checked={formData.dashboard?.showGroundingRep} 
-                onChange={() => handleDashboardToggle('showGroundingRep')}
-              />
-            </label>
-            <label className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
-              <span className="text-sm">Win The Day</span>
-              <input 
-                type="checkbox" 
-                checked={formData.dashboard?.showWinTheDay} 
-                onChange={() => handleDashboardToggle('showWinTheDay')}
-              />
-            </label>
-            <label className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
-              <span className="text-sm">Daily Reps</span>
-              <input 
-                type="checkbox" 
-                checked={formData.dashboard?.showDailyReps} 
-                onChange={() => handleDashboardToggle('showDailyReps')}
-              />
-            </label>
-            <label className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
-              <span className="text-sm">Notifications</span>
-              <input 
-                type="checkbox" 
-                checked={formData.dashboard?.showNotifications} 
-                onChange={() => handleDashboardToggle('showNotifications')}
-              />
-            </label>
-            <label className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
-              <span className="text-sm">PM Reflection</span>
-              <input 
-                type="checkbox" 
-                checked={formData.dashboard?.showPMReflection} 
-                onChange={() => handleDashboardToggle('showPMReflection')}
-              />
-            </label>
-            <label className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
-              <span className="text-sm">Scorecard</span>
-              <input 
-                type="checkbox" 
-                checked={formData.dashboard?.showScorecard} 
-                onChange={() => handleDashboardToggle('showScorecard')}
-              />
-            </label>
+            {Object.entries(FEATURE_METADATA)
+              .filter(([key, meta]) => meta.category === 'Dashboard' && isFeatureEnabled(key))
+              .sort(([keyA], [keyB]) => getFeatureOrder(keyA) - getFeatureOrder(keyB))
+              .map(([key, meta]) => (
+                <label key={key} className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
+                  <span className="text-sm">{meta.name}</span>
+                  <input 
+                    type="checkbox" 
+                    checked={formData.dashboard?.[key] !== false} // Default to true if undefined, unless explicitly false? Or default false?
+                    // Actually, for daily plan overrides, we usually want them ON by default if they are core, but maybe OFF if optional?
+                    // Let's assume if it's in the dashboard object, use that value. If not, default to TRUE (visible).
+                    // Wait, if I uncheck it, it sets it to false.
+                    onChange={() => handleDashboardToggle(key)}
+                  />
+                </label>
+              ))}
+              
+              {/* Fallback for any legacy keys that might be in formData but not in metadata? 
+                  Or just rely on the new system. The user wants "All enabled dashboard widgets".
+              */}
           </div>
         </div>
 
