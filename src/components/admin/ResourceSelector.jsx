@@ -198,7 +198,10 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
     <div className="relative">
       {/* Selected Value Display */}
       <div 
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          console.log('[ResourceSelector] Click - opening modal');
+          setIsOpen(true);
+        }}
         className="flex items-center gap-2 p-2 border rounded-lg bg-white hover:bg-slate-50 cursor-pointer transition-colors min-h-[38px]"
       >
         {selectedResource ? (
@@ -235,7 +238,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
       {/* Modal */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
             {/* Header */}
             <div className="p-4 border-b flex items-center justify-between">
