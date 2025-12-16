@@ -3047,6 +3047,26 @@ render(<RepsHistoryWidget />);
   };
 
 export const FEATURE_METADATA = {
+  'program-status-debug': {
+    core: true,
+    category: 'System',
+    name: 'Program Status Debug',
+    description: 'Debug Day/Week',
+    purpose: 'Debug tool for Day/Week calculation.',
+    extendedDescription: 'Allows admins to view and reset the calculated Day and Week numbers.',
+    inputs: [],
+    outputs: [],
+  },
+  'prep-welcome-banner': {
+    core: true,
+    category: 'Dashboard',
+    name: 'Prep Welcome Banner',
+    description: 'Welcome Banner (Prep)',
+    purpose: 'Welcome banner for Prep Phase.',
+    extendedDescription: 'Displays the "Welcome to The Arena" banner. Only visible during Prep Phase (Day < 1).',
+    inputs: [],
+    outputs: [],
+  },
   'locker-controller': {
     core: true,
     category: 'Locker',
