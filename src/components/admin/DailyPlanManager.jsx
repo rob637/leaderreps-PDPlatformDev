@@ -37,26 +37,16 @@ import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import { FEATURE_METADATA } from '../../config/widgetTemplates';
 import { useFeatures } from '../../providers/FeatureProvider';
 
-// Widget IDs that appear on the Dashboard screen (must match Dashboard.jsx DASHBOARD_FEATURES)
+// Categories of widgets that can be toggled per-day in the Daily Plan
 // Excludes system widgets like 'program-status-debug' which shouldn't be toggled per-day
-const DASHBOARD_WIDGET_IDS = [
-  'prep-welcome-banner',
-  'leader-profile',
-  'baseline-assessment',
-  'welcome-message',
-  'daily-quote',
-  'am-bookend-header',
-  'weekly-focus',
-  'grounding-rep',
-  'win-the-day',
-  'daily-leader-reps',
-  'this-weeks-actions',
-  'notifications',
-  'pm-bookend-header',
-  'progress-feedback',
-  'pm-bookend',
-  'scorecard'
-];
+const DAILY_PLAN_WIDGET_CATEGORIES = ['Dashboard', 'Planning', 'Habits', 'Actions', 'Reflection'];
+
+// Get all widget IDs from FEATURE_METADATA that belong to allowed categories
+const getDashboardWidgetIds = () => {
+  return Object.entries(FEATURE_METADATA)
+    .filter(([, meta]) => DAILY_PLAN_WIDGET_CATEGORIES.includes(meta.category))
+    .map(([id]) => id);
+};
 
 // Action Types with icons
 const ACTION_TYPES = {
@@ -391,7 +381,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
           <p className="text-xs text-slate-400 mb-3">Toggle which Dashboard widgets are visible on this specific day.</p>
           <div className="space-y-2">
             {/* Only show widgets that appear on the Dashboard screen and are globally enabled */}
-            {DASHBOARD_WIDGET_IDS
+            {getDashboardWidgetIds()
               .filter(key => isFeatureEnabled(key) && FEATURE_METADATA[key])
               .sort((a, b) => getFeatureOrder(a) - getFeatureOrder(b))
               .map(key => {
