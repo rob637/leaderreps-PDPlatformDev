@@ -109,7 +109,7 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
       case 'document':
       case 'tool':
         // Check for Google Docs/Sheets/Slides (Native Google Drive Links)
-        if (url.includes('docs.google.com') || url.includes('drive.google.com')) {
+        if (url && (url.includes('docs.google.com') || url.includes('drive.google.com'))) {
           let embedUrl = url;
           if (url.includes('/edit')) {
             embedUrl = url.replace('/edit', '/preview');
@@ -123,10 +123,37 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
           );
         }
 
-        // For PDFs, Office Docs, and other files -> Use Google Docs Viewer
-        // This handles Firebase Storage URLs, hosted files, etc.
-        // It is much more reliable than direct iframe for PDFs and required for Office docs.
-        const encodedUrl = encodeURIComponent(url);
+        // For PDFs from Firebase Storage or other sources - try native browser PDF viewer first
+        // Modern browsers can render PDFs directly in iframes
+        const isPDF = url && (url.toLowerCase().includes('.pdf') || url.includes('alt=media'));
+        
+        if (isPDF) {
+          return (
+            <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative">
+               <iframe 
+                 src={url} 
+                 className="w-full h-full" 
+                 title={title}
+               />
+               {/* Fallback Link Overlay */}
+               <div className="absolute bottom-4 right-4">
+                  <a 
+                    href={url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
+                  >
+                    <Download className="w-3 h-3" />
+                    Download / Open Directly
+                  </a>
+               </div>
+            </div>
+          );
+        }
+
+        // For Office Docs (docx, pptx, xlsx) -> Use Google Docs Viewer
+        // Google Docs Viewer is required for Office docs but unreliable for some PDFs
+        const encodedUrl = url ? encodeURIComponent(url) : '';
         const viewerUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
         
         return (
