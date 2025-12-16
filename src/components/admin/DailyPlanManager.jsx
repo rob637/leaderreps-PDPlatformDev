@@ -431,8 +431,46 @@ const DailyPlanManager = () => {
   const { db } = useAppServices();
   const [days, setDays] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedWeek, setSelectedWeek] = useState(1);
+  const [selectedWeek, setSelectedWeek] = useState(-2); // Start with Prep Phase
+  const [selectedPhase, setSelectedPhase] = useState('prep'); // 'prep', 'dev', 'post'
   const [editingDay, setEditingDay] = useState(null);
+
+  // Phase configuration
+  const PHASES = {
+    prep: { 
+      id: 'prep', 
+      name: 'Prep Phase', 
+      emoji: '📋',
+      description: 'Pre-program preparation (Days 1-14)',
+      weekRange: [-2, 0], // Weeks -2 to 0
+      bgColor: 'bg-amber-50',
+      textColor: 'text-amber-700',
+      borderColor: 'border-amber-300',
+      activeColor: 'bg-amber-500'
+    },
+    dev: { 
+      id: 'dev', 
+      name: 'Dev Plan', 
+      emoji: '🎯',
+      description: '8-Week Core Program (Days 15-70)',
+      weekRange: [1, 8], // Weeks 1-8
+      bgColor: 'bg-teal-50',
+      textColor: 'text-corporate-teal',
+      borderColor: 'border-corporate-teal',
+      activeColor: 'bg-corporate-teal'
+    },
+    post: { 
+      id: 'post', 
+      name: 'Post Phase', 
+      emoji: '🔄',
+      description: 'Ongoing development (Day 71+)',
+      weekRange: [9, 99], // Weeks 9+
+      bgColor: 'bg-slate-50',
+      textColor: 'text-slate-600',
+      borderColor: 'border-slate-300',
+      activeColor: 'bg-slate-500'
+    }
+  };
 
   // Load Data
   useEffect(() => {
@@ -464,7 +502,29 @@ const DailyPlanManager = () => {
   }, [days]);
 
   const weekNumbers = Object.keys(weeks).map(Number).sort((a, b) => a - b);
+  
+  // Filter weeks by selected phase
+  const currentPhase = PHASES[selectedPhase];
+  const phaseWeekNumbers = weekNumbers.filter(w => 
+    w >= currentPhase.weekRange[0] && w <= currentPhase.weekRange[1]
+  );
+  
   const currentWeekDays = weeks[selectedWeek] || [];
+
+  // Handle phase change - jump to first week of that phase
+  const handlePhaseChange = (phaseId) => {
+    setSelectedPhase(phaseId);
+    const phase = PHASES[phaseId];
+    const firstWeekInPhase = weekNumbers.find(w => 
+      w >= phase.weekRange[0] && w <= phase.weekRange[1]
+    );
+    if (firstWeekInPhase !== undefined) {
+      setSelectedWeek(firstWeekInPhase);
+    } else {
+      // Default to the start of the range if no data exists yet
+      setSelectedWeek(phase.weekRange[0]);
+    }
+  };
 
   const handleSaveDay = async (updatedDay) => {
     try {
@@ -493,54 +553,109 @@ const DailyPlanManager = () => {
 
   return (
     <div className="h-full flex flex-col bg-slate-50 relative">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-corporate-navy flex items-center gap-2">
-            <Calendar className="w-6 h-6" />
-            Daily Plan Manager
-          </h2>
-          <p className="text-slate-500 text-sm">
-            Manage the day-by-day journey. {days.length} days defined.
-          </p>
+      {/* Header with Phase Selector */}
+      <div className="bg-white border-b border-slate-200 px-6 py-4">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-corporate-navy flex items-center gap-2">
+              <Calendar className="w-6 h-6" />
+              Daily Plan Manager
+            </h2>
+            <p className="text-slate-500 text-sm">
+              Manage the day-by-day journey. {days.length} days defined.
+            </p>
+          </div>
         </div>
         
-        {/* Week Selector */}
-        <div className="flex items-center gap-4 bg-slate-100 p-1 rounded-lg">
-          <button 
-            onClick={() => setSelectedWeek(prev => Math.max(weekNumbers[0], prev - 1))}
-            disabled={selectedWeek === weekNumbers[0]}
-            className="p-2 hover:bg-white rounded-md disabled:opacity-30"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <div className="px-4 font-bold text-corporate-navy min-w-[140px] text-center">
-            {selectedWeek < 0 ? 'Prep Phase' : 
-             selectedWeek <= 8 ? `Dev Plan Wk ${selectedWeek}` : 
-             `Post Week ${selectedWeek - 8}`}
+        {/* Phase Tabs - Primary Navigation */}
+        <div className="flex gap-2 mb-4">
+          {Object.values(PHASES).map(phase => (
+            <button
+              key={phase.id}
+              onClick={() => handlePhaseChange(phase.id)}
+              className={`
+                flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all
+                ${selectedPhase === phase.id 
+                  ? `${phase.activeColor} text-white shadow-md` 
+                  : `${phase.bgColor} ${phase.textColor} hover:opacity-80 border ${phase.borderColor}`
+                }
+              `}
+            >
+              <span>{phase.emoji}</span>
+              <span>{phase.name}</span>
+              <span className={`
+                text-xs px-1.5 py-0.5 rounded-full
+                ${selectedPhase === phase.id ? 'bg-white/20' : 'bg-black/5'}
+              `}>
+                {weekNumbers.filter(w => w >= phase.weekRange[0] && w <= phase.weekRange[1]).length} wks
+              </span>
+            </button>
+          ))}
+        </div>
+        
+        {/* Week Selector - Within Selected Phase */}
+        <div className="flex items-center gap-4">
+          <span className="text-xs font-bold text-slate-400 uppercase">Week:</span>
+          <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+            <button 
+              onClick={() => {
+                const currentIdx = phaseWeekNumbers.indexOf(selectedWeek);
+                if (currentIdx > 0) setSelectedWeek(phaseWeekNumbers[currentIdx - 1]);
+              }}
+              disabled={phaseWeekNumbers.indexOf(selectedWeek) === 0 || phaseWeekNumbers.length === 0}
+              className="p-1.5 hover:bg-white rounded-md disabled:opacity-30"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            
+            {/* Week Pills */}
+            <div className="flex gap-1 px-2">
+              {phaseWeekNumbers.length > 0 ? (
+                phaseWeekNumbers.map(weekNum => (
+                  <button
+                    key={weekNum}
+                    onClick={() => setSelectedWeek(weekNum)}
+                    className={`
+                      px-3 py-1 rounded-md text-xs font-bold transition-all
+                      ${selectedWeek === weekNum 
+                        ? `${currentPhase.activeColor} text-white` 
+                        : 'hover:bg-white text-slate-600'
+                      }
+                    `}
+                  >
+                    {selectedPhase === 'prep' 
+                      ? `W${weekNum}` 
+                      : selectedPhase === 'dev' 
+                        ? `Wk ${weekNum}` 
+                        : `W${weekNum - 8}`
+                    }
+                  </button>
+                ))
+              ) : (
+                <span className="text-xs text-slate-400 px-2">No weeks defined</span>
+              )}
+            </div>
+            
+            <button 
+              onClick={() => {
+                const currentIdx = phaseWeekNumbers.indexOf(selectedWeek);
+                if (currentIdx < phaseWeekNumbers.length - 1) setSelectedWeek(phaseWeekNumbers[currentIdx + 1]);
+              }}
+              disabled={phaseWeekNumbers.indexOf(selectedWeek) === phaseWeekNumbers.length - 1 || phaseWeekNumbers.length === 0}
+              className="p-1.5 hover:bg-white rounded-md disabled:opacity-30"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
-          <button 
-            onClick={() => setSelectedWeek(prev => Math.min(weekNumbers[weekNumbers.length - 1], prev + 1))}
-            disabled={selectedWeek === weekNumbers[weekNumbers.length - 1]}
-            className="p-2 hover:bg-white rounded-md disabled:opacity-30"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
-      {/* Phase/Week Label Banner */}
-      <div className={`px-6 py-2 text-sm font-medium ${
-        selectedWeek < 0 ? 'bg-amber-50 text-amber-700 border-b border-amber-200' :
-        selectedWeek >= 1 && selectedWeek <= 8 ? 'bg-corporate-teal/10 text-corporate-teal border-b border-corporate-teal/20' :
-        'bg-slate-50 text-slate-600 border-b border-slate-200'
-      }`}>
-        {selectedWeek < 0 && '📋 Prep Phase - Pre-program preparation'}
-        {selectedWeek >= 1 && selectedWeek <= 8 && '🎯 Development Plan - 8-Week Core Program'}
-        {selectedWeek > 8 && '🔄 Next Reps - Ongoing development'}
+      {/* Phase Description Banner */}
+      <div className={`px-6 py-2 text-sm font-medium ${currentPhase.bgColor} ${currentPhase.textColor} border-b ${currentPhase.borderColor}`}>
+        {currentPhase.emoji} {currentPhase.description}
       </div>
 
-      {/* Week Grid */}
+      {/* Day Cards Grid */}
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {currentWeekDays.map(day => (
@@ -552,7 +667,8 @@ const DailyPlanManager = () => {
           ))}
           {currentWeekDays.length === 0 && (
             <div className="col-span-full text-center py-20 text-slate-400">
-              No days found for this week.
+              <p className="text-lg font-medium mb-2">No days found for Week {selectedWeek}</p>
+              <p className="text-sm">Days for this phase haven't been configured yet.</p>
             </div>
           )}
         </div>
