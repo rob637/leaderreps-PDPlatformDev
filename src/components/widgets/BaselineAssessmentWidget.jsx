@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ClipboardCheck, CheckCircle, ChevronRight, Clock, Target, 
-  Sparkles, BarChart2, Loader
+  BarChart2
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useAppServices } from '../../services/useAppServices';
@@ -57,16 +57,18 @@ const BaselineAssessmentWidget = () => {
             <CheckCircle className="w-6 h-6 text-green-500" />
           </div>
           <div className="flex-1">
-            <h3 className="font-bold text-corporate-navy">Baseline Assessment Complete</h3>
-            <p className="text-sm text-slate-500">
+            <h3 className="font-semibold text-corporate-navy" style={{ fontFamily: 'var(--font-heading)' }}>
+              Baseline Assessment Complete
+            </h3>
+            <p className="text-sm text-slate-500" style={{ fontFamily: 'var(--font-body)' }}>
               Completed {completedDate} • {goalCount} goal{goalCount !== 1 ? 's' : ''} set
             </p>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="text-sm text-corporate-teal hover:underline"
+            className="text-sm font-medium text-corporate-teal hover:text-corporate-teal/80 hover:underline transition-colors"
           >
-            View Results
+            View or Update
           </button>
         </div>
       </Card>
@@ -76,60 +78,51 @@ const BaselineAssessmentWidget = () => {
   // Assessment incomplete - show CTA
   return (
     <>
-      <Card accent="NAVY" className="overflow-hidden">
-        <div className="relative">
-          {/* Decorative background */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-corporate-navy/20 to-transparent rounded-bl-full" />
-          
-          <div className="p-5 relative">
-            <div className="flex items-start gap-4">
-              {/* Icon */}
-              <div className="w-14 h-14 bg-gradient-to-br from-corporate-navy to-corporate-navy/80 rounded-2xl flex items-center justify-center shadow-lg">
-                <ClipboardCheck className="w-7 h-7 text-white" />
-              </div>
+      <Card accent="NAVY">
+        <div className="p-4">
+          <div className="flex items-start gap-4">
+            {/* Icon */}
+            <div className="w-12 h-12 bg-corporate-navy/10 rounded-xl flex items-center justify-center flex-shrink-0">
+              <ClipboardCheck className="w-6 h-6 text-corporate-navy" />
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-corporate-navy mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
+                Complete Your Baseline Assessment
+              </h3>
               
-              {/* Content */}
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-bold text-lg text-corporate-navy">Complete Your Baseline Assessment</h3>
-                  <span className="px-2 py-0.5 bg-corporate-navy/10 text-corporate-navy text-xs font-bold rounded-full">
-                    Day 1 Task
-                  </span>
-                </div>
-                
-                <p className="text-sm text-slate-600 mb-4">
-                  Assess your current leadership skills and set goals. This creates your personalized development plan.
-                </p>
+              <p className="text-sm text-slate-600 mb-3" style={{ fontFamily: 'var(--font-body)' }}>
+                Assess your current leadership skills and set goals. This creates your personalized development plan.
+              </p>
 
-                {/* Benefits */}
-                <div className="flex flex-wrap gap-3 mb-4">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
-                    <Target className="w-3 h-3 text-corporate-teal" />
-                    Set 1-3 goals
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
-                    <BarChart2 className="w-3 h-3 text-blue-500" />
-                    Track progress
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
-                    <Clock className="w-3 h-3 text-amber-500" />
-                    ~5 min
-                  </div>
+              {/* Benefits */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
+                  <Target className="w-3 h-3 text-corporate-teal" />
+                  Set 1-3 goals
                 </div>
-
-                {/* CTA Button */}
-                <button
-                  onClick={() => setShowModal(true)}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 
-                    bg-gradient-to-r from-corporate-navy to-corporate-navy/90 
-                    hover:from-corporate-navy/90 hover:to-corporate-navy/80
-                    text-white font-semibold rounded-xl shadow-md hover:shadow-lg 
-                    transition-all transform hover:-translate-y-0.5"
-                >
-                  Start Assessment
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
+                  <BarChart2 className="w-3 h-3 text-blue-500" />
+                  Track progress
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
+                  <Clock className="w-3 h-3 text-amber-500" />
+                  ~5 min
+                </div>
               </div>
+
+              {/* CTA Button */}
+              <button
+                onClick={() => setShowModal(true)}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 
+                  bg-corporate-navy hover:bg-corporate-navy/90
+                  text-white font-medium rounded-lg shadow-sm hover:shadow 
+                  transition-all text-sm"
+              >
+                Start Assessment
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
