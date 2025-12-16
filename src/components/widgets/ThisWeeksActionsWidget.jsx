@@ -115,10 +115,21 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   };
 
   // Combine all actionable items
+  // During Pre-Start phase: ONLY show daily actions (day-by-day architecture)
+  // During Start/Post phase: Show both daily actions AND weekly content
   const allActions = useMemo(() => {
+    const dailyNormalized = normalizeDailyActions(dailyActions, currentDayData?.id);
+    
+    // Pre-Start phase = Day-by-Day only (no legacy week content)
+    if (currentPhase?.id === 'pre-start') {
+      console.log('[ThisWeeksActions] Pre-Start phase - showing daily actions only:', dailyNormalized.length);
+      return dailyNormalized;
+    }
+    
+    // Start/Post phase = Combine daily + weekly
     const normalized = [
       // Daily actions first (today's priorities)
-      ...normalizeDailyActions(dailyActions, currentDayData?.id),
+      ...dailyNormalized,
       // Then weekly content
       ...normalizeItems(content, 'Content'),
       ...normalizeItems(community, 'Community'),
@@ -132,7 +143,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     }
     
     return normalized;
-  }, [dailyActions, currentDayData?.id, content, community, coaching]);
+  }, [dailyActions, currentDayData?.id, content, community, coaching, currentPhase?.id]);
 
   // Get carried over items for this week (MUST be before any early returns)
   // This combines:

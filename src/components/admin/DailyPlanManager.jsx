@@ -33,6 +33,7 @@ import {
 } from 'firebase/firestore';
 import { Card } from '../ui';
 import ContentPicker from './content-editors/pickers/ContentPicker';
+import ResourceSelector from './ResourceSelector';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import { FEATURE_METADATA } from '../../config/widgetTemplates';
 import { useFeatures } from '../../providers/FeatureProvider';
@@ -115,9 +116,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
   const { isFeatureEnabled, getFeatureOrder } = useFeatures(); // Use Feature Provider
   const [formData, setFormData] = useState({ ...day });
   const [showContentPicker, setShowContentPicker] = useState(false);
-
-  const [pickerType, setPickerType] = useState(null); // 'daily_rep', 'content', or 'action_link'
-  const [targetActionIndex, setTargetActionIndex] = useState(null);
+  const [pickerType, setPickerType] = useState(null); // 'daily_rep' only (action_link uses ResourceSelector)
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -160,6 +159,8 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
   };
 
   const handlePickerSelect = (item) => {
+    // Only used for Daily Reps Library picker now
+    // Resource linking is handled by ResourceSelector inline
     if (pickerType === 'daily_rep') {
       // Add as an action (pre-fills from library)
       const newAction = {
@@ -175,14 +176,6 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
         ...prev,
         actions: [...(prev.actions || []), newAction]
       }));
-    } else if (pickerType === 'action_link') {
-      // Link resource to existing action
-      if (targetActionIndex !== null) {
-        updateAction(targetActionIndex, 'resourceId', item.id);
-        updateAction(targetActionIndex, 'resourceTitle', item.title);
-        updateAction(targetActionIndex, 'resourceType', item.type);
-        setTargetActionIndex(null);
-      }
     }
     setShowContentPicker(false);
   };
@@ -313,31 +306,26 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
                   </button>
                 </div>
                 
-                {/* Link Resource */}
+                {/* Link Resource - Using ResourceSelector */}
                 <div className="flex items-center gap-2 pl-4">
                   <span className="text-[10px] text-slate-400 uppercase font-bold">Link:</span>
-                  {action.resourceId ? (
-                    <div className="flex items-center gap-1 bg-white border border-slate-200 rounded px-2 py-0.5 text-xs">
-                      <span className="truncate max-w-[150px]">{action.resourceTitle || action.resourceId}</span>
-                      <button 
-                        onClick={() => updateAction(idx, 'resourceId', null)}
-                        className="text-slate-400 hover:text-red-500"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => {
-                        setTargetActionIndex(idx);
-                        setPickerType('action_link'); 
-                        setShowContentPicker(true); 
+                  <div className="flex-1">
+                    <ResourceSelector 
+                      value={action.resourceId ? { id: action.resourceId, title: action.resourceTitle, type: action.resourceType } : null}
+                      onChange={(resource) => {
+                        if (resource) {
+                          updateAction(idx, 'resourceId', resource.id);
+                          updateAction(idx, 'resourceTitle', resource.title);
+                          updateAction(idx, 'resourceType', resource.resourceType || resource.type);
+                        } else {
+                          updateAction(idx, 'resourceId', null);
+                          updateAction(idx, 'resourceTitle', null);
+                          updateAction(idx, 'resourceType', null);
+                        }
                       }}
-                      className="text-[10px] text-blue-600 hover:underline flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" /> Attach Content
-                    </button>
-                  )}
+                      resourceType="content"
+                    />
+                  </div>
                 </div>
               </div>
             ))}
@@ -405,10 +393,10 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
 
       </div>
 
-      {/* Pickers */}
-      {showContentPicker && (
+      {/* Picker - Only for Daily Reps Library */}
+      {showContentPicker && pickerType === 'daily_rep' && (
         <ContentPicker 
-          type={pickerType === 'daily_rep' ? CONTENT_COLLECTIONS.DAILY_REPS : 'ALL'} // 'ALL' needs support in picker or specific type
+          type={CONTENT_COLLECTIONS.DAILY_REPS}
           onSelect={handlePickerSelect}
           onClose={() => setShowContentPicker(false)}
         />
