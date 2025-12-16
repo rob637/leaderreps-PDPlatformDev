@@ -12,6 +12,7 @@ import CoachingOnDemandWidget from '../widgets/CoachingOnDemandWidget';
 import CoachingMySessionsWidget from '../widgets/CoachingMySessionsWidget';
 import CommunityUpcomingSessionsWidget from '../widgets/CommunityUpcomingSessionsWidget';
 import CommunityMyRegistrationsWidget from '../widgets/CommunityMyRegistrationsWidget';
+import PrepWelcomeBanner from '../widgets/PrepWelcomeBanner';
 
 /**
  * WidgetRenderer - Renders widgets from templates defined in widgetTemplates.js
@@ -44,6 +45,10 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
 
   if (widgetId === 'this-weeks-actions') {
     return <ThisWeeksActionsWidget scope={scope} />;
+  }
+
+  if (widgetId === 'prep-welcome-banner') {
+    return <PrepWelcomeBanner />;
   }
 
   if (widgetId === 'admin-access-viewer') {

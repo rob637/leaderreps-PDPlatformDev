@@ -20,9 +20,11 @@ import {
 } from 'lucide-react';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user, membershipData }) => {
   const { identityStatement, habitAnchor, whyStatement } = useAppServices();
+  const { zoneVisibility } = useDayBasedAccessControl();
   const [showAnchors, setShowAnchors] = useState(false);
 
     const menuItems = [
@@ -30,12 +32,12 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     { id: 'development-plan', label: 'Dev Plan', icon: Target },
     
     { type: 'section', label: 'Resources' },
-    { id: 'library', label: 'Content', icon: BookOpen },
-    { id: 'community', label: 'Community', icon: Users },
-    { id: 'coaching-hub', label: 'Coaching', icon: MessageSquare },
+    { id: 'library', label: 'Content', icon: BookOpen, visible: zoneVisibility?.isContentZoneOpen },
+    { id: 'community', label: 'Community', icon: Users, visible: zoneVisibility?.isCommunityZoneOpen },
+    { id: 'coaching-hub', label: 'Coaching', icon: MessageSquare, visible: zoneVisibility?.isCoachingZoneOpen },
     
     { type: 'section', label: 'Personal' },
-    { id: 'locker', label: 'Your Locker', icon: Archive },
+    { id: 'locker', label: 'Your Locker', icon: Archive, visible: zoneVisibility?.isLockerZoneOpen },
   ];
 
   // Determine display name (First Name Only)
@@ -92,6 +94,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
       <nav className="flex-1 py-5 px-3 overflow-y-auto overflow-x-hidden">
         <ul className="space-y-1">
           {menuItems.map((item, index) => {
+            if (item.visible === false) return null;
             if (item.type === 'section') {
                return (
                  <li key={`section-${index}`} className="mt-8 mb-3 px-3">

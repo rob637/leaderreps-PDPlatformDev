@@ -2,9 +2,11 @@
 import React from 'react';
 import { Home, BookOpen, MessageSquare, Users, Archive } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
 
 const MobileBottomNav = ({ currentScreen }) => {
   const { navigate } = useAppServices();
+  const { zoneVisibility } = useDayBasedAccessControl();
   
   // 5 buttons: Dashboard, Content, Communication, Coaching, Locker
   const navItems = [
@@ -18,25 +20,29 @@ const MobileBottomNav = ({ currentScreen }) => {
       id: 'library',
       label: 'Content',
       icon: BookOpen,
-      screen: 'library'
+      screen: 'library',
+      visible: zoneVisibility?.isContentZoneOpen
     },
     {
       id: 'community',
       label: 'Community',
       icon: MessageSquare,
-      screen: 'community'
+      screen: 'community',
+      visible: zoneVisibility?.isCommunityZoneOpen
     },
     {
       id: 'coaching',
       label: 'Coaching',
       icon: Users,
-      screen: 'coaching-lab'
+      screen: 'coaching-lab',
+      visible: zoneVisibility?.isCoachingZoneOpen
     },
     {
       id: 'locker',
       label: 'Locker',
       icon: Archive,
-      screen: 'locker'
+      screen: 'locker',
+      visible: zoneVisibility?.isLockerZoneOpen
     }
   ];
 
@@ -54,6 +60,7 @@ const MobileBottomNav = ({ currentScreen }) => {
     >
       <div className="flex justify-around items-center px-2 py-2">
         {navItems.map((item) => {
+          if (item.visible === false) return null;
           const Icon = item.icon;
           const isActive = currentScreen === item.screen;
           

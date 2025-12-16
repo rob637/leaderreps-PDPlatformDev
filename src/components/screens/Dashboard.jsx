@@ -27,6 +27,7 @@ import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import PrepGate from '../ui/PrepGate';
 
 const DASHBOARD_FEATURES = [
+  'prep-welcome-banner',
   'welcome-message',
   'daily-quote',
   'am-bookend-header',
@@ -446,9 +447,10 @@ const Dashboard = (props) => {
 
   const renderers = {
     'dashboard-header': () => <WidgetRenderer widgetId="dashboard-header" scope={scope} />,
+    'prep-welcome-banner': () => currentDayNumber < 1 ? <WidgetRenderer widgetId="prep-welcome-banner" scope={scope} /> : null,
     'welcome-message': () => <WidgetRenderer widgetId="welcome-message" scope={scope} />,
     'daily-quote': () => <WidgetRenderer widgetId="daily-quote" scope={scope} />,
-    'am-bookend-header': () => <WidgetRenderer widgetId="am-bookend-header" scope={scope} />,
+    'am-bookend-header': () => shouldShow('showAMBookend', true) ? <WidgetRenderer widgetId="am-bookend-header" scope={scope} /> : null,
     'weekly-focus': () => shouldShow('showWeeklyFocus', true) ? <WidgetRenderer widgetId="weekly-focus" scope={scope} /> : null,
     'lis-maker': () => shouldShow('showLISBuilder', false) ? <WidgetRenderer widgetId="lis-maker" scope={scope} /> : null,
     'grounding-rep': () => shouldShow('showGroundingRep', false) ? <WidgetRenderer widgetId="grounding-rep" scope={scope} /> : null,
@@ -460,7 +462,7 @@ const Dashboard = (props) => {
     'pm-bookend-header': () => shouldShow('showPMReflection', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
     'progress-feedback': () => <WidgetRenderer widgetId="progress-feedback" scope={scope} />,
     'pm-bookend': () => shouldShow('showPMReflection', true) ? <WidgetRenderer widgetId="pm-bookend" scope={scope} /> : null,
-    'scorecard': () => <WidgetRenderer widgetId="scorecard" scope={scope} />,
+    'scorecard': () => shouldShow('showScorecard', true) ? <WidgetRenderer widgetId="scorecard" scope={scope} /> : null,
     
     // Legacy / Optional
     'gamification': () => <WidgetRenderer widgetId="gamification" scope={scope} />,

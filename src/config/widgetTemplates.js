@@ -438,7 +438,15 @@ export const WIDGET_TEMPLATES = {
               {actions.map((action, idx) => (
                  <div key={\`action-\${idx}\`} className="flex gap-3 items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm">
                     <div className={\`w-2 h-2 rounded-full \${action.type === 'daily_rep' ? 'bg-corporate-teal' : 'bg-orange-400'}\`}></div>
-                    <span className="text-sm font-medium text-slate-700">{action.label}</span>
+                    <div className="flex-1">
+                        <div className="text-sm font-medium text-slate-700">{action.label}</div>
+                        {action.resourceId && (
+                            <div className="mt-1 text-xs text-blue-600 flex items-center gap-1 cursor-pointer hover:underline" onClick={() => navFn('business-readings')}>
+                                <BookOpen className="w-3 h-3" />
+                                <span>{action.resourceTitle || 'View Resource'}</span>
+                            </div>
+                        )}
+                    </div>
                  </div>
               ))}
 

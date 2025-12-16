@@ -82,7 +82,8 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
   const { db } = useAppServices();
   const [formData, setFormData] = useState({ ...day });
   const [showContentPicker, setShowContentPicker] = useState(false);
-  const [pickerType, setPickerType] = useState(null); // 'daily_rep' or 'content'
+  const [pickerType, setPickerType] = useState(null); // 'daily_rep', 'content', or 'action_link'
+  const [targetActionIndex, setTargetActionIndex] = useState(null);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -135,6 +136,14 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
     if (pickerType === 'daily_rep') {
       // Add as an action
       addAction('daily_rep', item.title); // Or link by ID if we prefer
+    } else if (pickerType === 'action_link') {
+      // Link resource to existing action
+      if (targetActionIndex !== null) {
+        updateAction(targetActionIndex, 'resourceId', item.id);
+        updateAction(targetActionIndex, 'resourceTitle', item.title);
+        updateAction(targetActionIndex, 'resourceType', item.type);
+        setTargetActionIndex(null);
+      }
     } else if (pickerType === 'content') {
       // Add as content
       const newContent = {
@@ -260,20 +269,49 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
           
           <div className="space-y-2">
             {(formData.actions || []).map((action, idx) => (
-              <div key={idx} className="flex gap-2 items-start bg-slate-50 p-2 rounded border border-slate-100">
-                <div className="mt-1">
-                  {action.type === 'daily_rep' ? <div className="w-2 h-2 rounded-full bg-corporate-teal" /> : <div className="w-2 h-2 rounded-full bg-orange-400" />}
+              <div key={idx} className="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-100">
+                <div className="flex gap-2 items-start">
+                  <div className="mt-1">
+                    {action.type === 'daily_rep' ? <div className="w-2 h-2 rounded-full bg-corporate-teal" /> : <div className="w-2 h-2 rounded-full bg-orange-400" />}
+                  </div>
+                  <input 
+                    type="text"
+                    value={action.label}
+                    onChange={e => updateAction(idx, 'label', e.target.value)}
+                    className="flex-1 bg-transparent text-sm border-none p-0 focus:ring-0"
+                    placeholder="Action description..."
+                  />
+                  <button onClick={() => removeAction(idx)} className="text-slate-400 hover:text-red-500">
+                    <Trash2 className="w-3 h-3" />
+                  </button>
                 </div>
-                <input 
-                  type="text"
-                  value={action.label}
-                  onChange={e => updateAction(idx, 'label', e.target.value)}
-                  className="flex-1 bg-transparent text-sm border-none p-0 focus:ring-0"
-                  placeholder="Action description..."
-                />
-                <button onClick={() => removeAction(idx)} className="text-slate-400 hover:text-red-500">
-                  <Trash2 className="w-3 h-3" />
-                </button>
+                
+                {/* Link Resource */}
+                <div className="flex items-center gap-2 pl-4">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">Link:</span>
+                  {action.resourceId ? (
+                    <div className="flex items-center gap-1 bg-white border border-slate-200 rounded px-2 py-0.5 text-xs">
+                      <span className="truncate max-w-[150px]">{action.resourceTitle || action.resourceId}</span>
+                      <button 
+                        onClick={() => updateAction(idx, 'resourceId', null)}
+                        className="text-slate-400 hover:text-red-500"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => {
+                        setTargetActionIndex(idx);
+                        setPickerType('action_link'); 
+                        setShowContentPicker(true); 
+                      }}
+                      className="text-[10px] text-blue-600 hover:underline flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" /> Attach Content
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
             {(formData.actions || []).length === 0 && (
@@ -323,6 +361,14 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
         <div>
           <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Dashboard Widgets</label>
           <div className="space-y-2">
+            <label className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
+              <span className="text-sm">AM Bookend (Start Strong)</span>
+              <input 
+                type="checkbox" 
+                checked={formData.dashboard?.showAMBookend !== false} 
+                onChange={() => handleDashboardToggle('showAMBookend')}
+              />
+            </label>
             <label className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
               <span className="text-sm">Weekly Focus</span>
               <input 
@@ -377,6 +423,14 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
                 type="checkbox" 
                 checked={formData.dashboard?.showPMReflection} 
                 onChange={() => handleDashboardToggle('showPMReflection')}
+              />
+            </label>
+            <label className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer">
+              <span className="text-sm">Scorecard</span>
+              <input 
+                type="checkbox" 
+                checked={formData.dashboard?.showScorecard} 
+                onChange={() => handleDashboardToggle('showScorecard')}
               />
             </label>
           </div>
