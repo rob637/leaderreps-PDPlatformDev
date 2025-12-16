@@ -349,7 +349,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
                     type="text"
                     value={action.label || ''}
                     onChange={e => updateAction(idx, 'label', e.target.value)}
-                    className="flex-1 bg-transparent text-sm border-none p-0 focus:ring-0 min-w-0"
+                    className="flex-1 bg-white text-sm border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-corporate-teal focus:border-corporate-teal min-w-0"
                     placeholder="Action description..."
                   />
                   

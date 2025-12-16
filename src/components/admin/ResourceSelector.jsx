@@ -32,9 +32,14 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
   // Effect 1: Load all resources when modal opens
   useEffect(() => {
     if (!isOpen) return;
+    if (!db) {
+      console.warn('[ResourceSelector] db not available yet');
+      return;
+    }
 
     const loadResources = async () => {
       setLoading(true);
+      console.log('[ResourceSelector] Loading resources for type:', resourceType);
       try {
         // Determine which collections to fetch based on type
         let collections = [];
@@ -94,9 +99,10 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
           }
         }
         
+        console.log('[ResourceSelector] Loaded', allResources.length, 'resources');
         setResources(allResources);
       } catch (error) {
-        console.error("Error loading resources:", error);
+        console.error("[ResourceSelector] Error loading resources:", error);
       } finally {
         setLoading(false);
       }
