@@ -31,6 +31,25 @@ import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import { FEATURE_METADATA } from '../../config/widgetTemplates';
 import { useFeatures } from '../../providers/FeatureProvider';
 
+// Widget IDs that appear on the Dashboard screen (must match Dashboard.jsx DASHBOARD_FEATURES)
+// Excludes system widgets like 'program-status-debug' which shouldn't be toggled per-day
+const DASHBOARD_WIDGET_IDS = [
+  'prep-welcome-banner',
+  'welcome-message',
+  'daily-quote',
+  'am-bookend-header',
+  'weekly-focus',
+  'grounding-rep',
+  'win-the-day',
+  'daily-leader-reps',
+  'this-weeks-actions',
+  'notifications',
+  'pm-bookend-header',
+  'progress-feedback',
+  'pm-bookend',
+  'scorecard'
+];
+
 // --- Sub-components ---
 
 const DayCard = ({ day, onEdit }) => {
@@ -82,7 +101,7 @@ const DayCard = ({ day, onEdit }) => {
 
 const DayEditor = ({ day, onSave, onCancel, allDays }) => {
   const { db } = useAppServices();
-  const { isFeatureEnabled, getFeatureOrder, features } = useFeatures(); // Use Feature Provider
+  const { isFeatureEnabled, getFeatureOrder } = useFeatures(); // Use Feature Provider
   const [formData, setFormData] = useState({ ...day });
   const [showContentPicker, setShowContentPicker] = useState(false);
 
@@ -364,25 +383,19 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
         {/* Dashboard Config */}
         <div>
           <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Dashboard Widgets</label>
-          <div className="space-y-4">
-            {/* Group by Category */}
-            {Object.entries(
-              Object.entries(FEATURE_METADATA)
-                .filter(([key]) => isFeatureEnabled(key))
-                .reduce((acc, [key, meta]) => {
-                  const category = meta.category || 'Other';
-                  if (!acc[category]) acc[category] = [];
-                  acc[category].push({ key, meta });
-                  return acc;
-                }, {})
-            ).map(([category, items]) => (
-              <div key={category} className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-400 uppercase border-b border-slate-100 pb-1 mb-2">{category}</h4>
-                {items.sort((a, b) => getFeatureOrder(a.key) - getFeatureOrder(b.key)).map(({ key, meta }) => (
+          <p className="text-xs text-slate-400 mb-3">Toggle which Dashboard widgets are visible on this specific day.</p>
+          <div className="space-y-2">
+            {/* Only show widgets that appear on the Dashboard screen and are globally enabled */}
+            {DASHBOARD_WIDGET_IDS
+              .filter(key => isFeatureEnabled(key) && FEATURE_METADATA[key])
+              .sort((a, b) => getFeatureOrder(a) - getFeatureOrder(b))
+              .map(key => {
+                const meta = FEATURE_METADATA[key];
+                return (
                   <label key={key} className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer bg-white">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">{meta.name}</span>
-                      <span className="text-[10px] text-slate-400">{key}</span>
+                      <span className="text-[10px] text-slate-400">{meta.category}</span>
                     </div>
                     <input 
                       type="checkbox" 
@@ -390,9 +403,8 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
                       onChange={() => handleDashboardToggle(key)}
                     />
                   </label>
-                ))}
-              </div>
-            ))}
+                );
+              })}
           </div>
         </div>
 
