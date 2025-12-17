@@ -63,7 +63,9 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               CONTENT_COLLECTIONS.COURSES
             ];
             // Fetch Read & Reps from Unified Collection
-            unifiedTypes = [UNIFIED_TYPES.READ_REP];
+            // Use explicit string 'READ_REP' as fallback if constant is missing
+            unifiedTypes = [UNIFIED_TYPES?.READ_REP || 'READ_REP'];
+            console.log('[ResourceSelector] Fetching Unified Types:', unifiedTypes);
             break;
           case 'community':
             collections = [COMMUNITY_SESSION_TYPES_COLLECTION];
@@ -89,6 +91,34 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
                        col === COACHING_SESSION_TYPES_COLLECTION ? 'coaching' : 'unknown';
           
           allResources = [...allResources, ...data.map(item => ({ ...item, resourceType: type }))];
+        }
+
+        // 2. Fetch Unified Content (if needed)
+        if (unifiedTypes.length > 0) {
+          try {
+            console.log('[ResourceSelector] Querying Unified Collection:', UNIFIED_COLLECTION, 'for types:', unifiedTypes);
+            const unifiedRef = collection(db, UNIFIED_COLLECTION);
+            const q = query(unifiedRef, where('type', 'in', unifiedTypes));
+            const snapshot = await getDocs(q);
+            console.log('[ResourceSelector] Unified Snapshot size:', snapshot.size);
+            
+            const unifiedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            allResources = [...allResources, ...unifiedData.map(item => {
+              let type = 'unified';
+              const itemType = item.type || '';
+              if (itemType === (UNIFIED_TYPES?.READ_REP || 'READ_REP')) type = 'read_rep';
+              else if (itemType === (UNIFIED_TYPES?.VIDEO || 'VIDEO') || itemType === (UNIFIED_TYPES?.REP || 'REP')) type = 'video';
+              
+              return { 
+                ...item, 
+                resourceType: type,
+                url: item.url || item.videoUrl || item.link || ''
+              };
+            })];
+          } catch (err) {
+            console.error("Error fetching unified content:", err);
+          }
         }
         
         console.log('[ResourceSelector] Loaded', allResources.length, 'resources');
