@@ -395,14 +395,26 @@ export const useDailyPlan = () => {
     };
   }, [developmentPlanData, user]);
 
-  // Auto-initialize startDate if missing
+  // Auto-initialize startDate if missing (only for users WITHOUT a cohort)
   useEffect(() => {
     const autoInit = async () => {
+      // Skip if user has a cohort - cohort provides the start date
+      if (cohortData?.startDate) {
+        console.log('[useDailyPlan] User has cohort startDate, skipping auto-init');
+        return;
+      }
+      
+      // Skip if user doc has startDate from cohort assignment
+      if (user?.startDate) {
+        console.log('[useDailyPlan] User has startDate from cohort assignment, skipping auto-init');
+        return;
+      }
+
       if (user && updateDevelopmentPlanData && developmentPlanData !== undefined && !developmentPlanData?.startDate) {
         if (window._dailyPlanInitAttempted) return;
         window._dailyPlanInitAttempted = true;
 
-        console.log('[useDailyPlan] Auto-initializing startDate for user');
+        console.log('[useDailyPlan] Auto-initializing startDate for user (no cohort)');
         try {
           // Default to today if no start date
           await updateDevelopmentPlanData({ startDate: serverTimestamp(), version: 'v2-daily' });
@@ -413,7 +425,7 @@ export const useDailyPlan = () => {
       }
     };
     autoInit();
-  }, [developmentPlanData, updateDevelopmentPlanData, user]);
+  }, [developmentPlanData, updateDevelopmentPlanData, user, cohortData]);
 
   // Auto-initialize prepPhaseFirstVisit when user first enters Prep Phase
   useEffect(() => {

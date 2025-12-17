@@ -162,9 +162,22 @@ export const useDevPlan = () => {
     return { ...defaultState, weekProgress };
   }, [developmentPlanData]);
   
-  // Auto-initialize startDate if not set
+  // Auto-initialize startDate if not set (only for users WITHOUT a cohort)
   useEffect(() => {
     const autoInit = async () => {
+      // Skip if user has a cohort - cohort provides the start date
+      // Check both user doc and dailyPlanData for cohort info
+      if (dailyPlanData?.cohortData?.startDate) {
+        console.log('[useDevPlan] User has cohort startDate, skipping auto-init');
+        return;
+      }
+      
+      // Skip if user doc has startDate from cohort assignment
+      if (user?.startDate) {
+        console.log('[useDevPlan] User has startDate from cohort assignment, skipping auto-init');
+        return;
+      }
+
       // Only auto-initialize if we have a user, update function, AND we are sure data is loaded but missing startDate
       // We check developmentPlanData !== undefined to ensure we've attempted to load it
       if (user && updateDevelopmentPlanData && developmentPlanData !== undefined && !developmentPlanData?.startDate) {
@@ -173,7 +186,7 @@ export const useDevPlan = () => {
         if (window._devPlanInitAttempted) return;
         window._devPlanInitAttempted = true;
 
-        console.log('[useDevPlan] Auto-initializing startDate for user');
+        console.log('[useDevPlan] Auto-initializing startDate for user (no cohort)');
         try {
           await updateDevelopmentPlanData({ startDate: serverTimestamp(), version: 'v1' });
           console.log('[useDevPlan] startDate auto-initialized successfully');
@@ -184,7 +197,7 @@ export const useDevPlan = () => {
       }
     };
     autoInit();
-  }, [developmentPlanData, updateDevelopmentPlanData, user]);
+  }, [developmentPlanData, updateDevelopmentPlanData, user, dailyPlanData?.cohortData]);
 
   // 3. Compute Current Week View (Time-Based Calculation)
   const currentWeekIndex = useMemo(() => {
