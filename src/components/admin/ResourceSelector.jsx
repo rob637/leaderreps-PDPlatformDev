@@ -47,12 +47,14 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
         switch (resourceType) {
           case 'content':
-            // Fetch from Wrappers (Videos, Docs, Courses, Readings)
+            // Fetch from Wrappers (Videos, Docs, Courses, Readings) AND Community/Coaching
             collections = [
               CONTENT_COLLECTIONS.VIDEOS, 
               CONTENT_COLLECTIONS.DOCUMENTS,
               CONTENT_COLLECTIONS.COURSES,
-              CONTENT_COLLECTIONS.READINGS
+              CONTENT_COLLECTIONS.READINGS,
+              CONTENT_COLLECTIONS.COMMUNITY,
+              CONTENT_COLLECTIONS.COACHING
             ];
             // Unified Collection disabled as we are pulling from Wrappers
             unifiedTypes = [];
