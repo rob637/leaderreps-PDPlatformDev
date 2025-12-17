@@ -199,13 +199,33 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
   };
 
   const moveAction = (index, direction) => {
-    const newActions = [...(formData.actions || [])];
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= newActions.length) return;
+    const actions = formData.actions || [];
+    const currentAction = actions[index];
+    const isDailyRep = currentAction.type === 'daily_rep';
     
-    // Swap
-    [newActions[index], newActions[newIndex]] = [newActions[newIndex], newActions[index]];
-    setFormData(prev => ({ ...prev, actions: newActions }));
+    let targetIndex = -1;
+    
+    if (direction === 'up') {
+      for (let i = index - 1; i >= 0; i--) {
+        if ((actions[i].type === 'daily_rep') === isDailyRep) {
+          targetIndex = i;
+          break;
+        }
+      }
+    } else {
+      for (let i = index + 1; i < actions.length; i++) {
+        if ((actions[i].type === 'daily_rep') === isDailyRep) {
+          targetIndex = i;
+          break;
+        }
+      }
+    }
+    
+    if (targetIndex !== -1) {
+      const newActions = [...actions];
+      [newActions[index], newActions[targetIndex]] = [newActions[targetIndex], newActions[index]];
+      setFormData(prev => ({ ...prev, actions: newActions }));
+    }
   };
 
   const toggleActionEnabled = (index) => {
@@ -317,41 +337,40 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
         </div>
 
         {/* Actions / Daily Reps */}
-        <div>
+        {/* Daily Reps Section */}
+        <div className="mb-6">
           <div className="flex justify-between items-center mb-2">
-            <label className="text-xs font-bold text-slate-500 uppercase">Actions & Reps</label>
+            <label className="text-xs font-bold text-teal-600 uppercase flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-teal-600"></div>
+              Daily Reps
+            </label>
             <div className="flex gap-1">
               <button 
-                onClick={() => handlePropagate('actions')}
-                className="text-[10px] text-blue-600 hover:underline px-1"
-                title="Copy these actions to Mon-Fri of this week"
-              >
-                Propagate
-              </button>
-              <button 
                 onClick={() => { setPickerType('daily_rep'); setShowContentPicker(true); }}
-                className="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded flex items-center gap-1"
+                className="text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 px-2 py-1 rounded flex items-center gap-1 border border-teal-100"
               >
                 <Plus className="w-3 h-3" /> Lib
               </button>
               <button 
                 onClick={() => addAction('daily_rep')}
-                className="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded flex items-center gap-1"
+                className="text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 px-2 py-1 rounded flex items-center gap-1 border border-teal-100"
               >
-                <Plus className="w-3 h-3" /> Custom
+                <Plus className="w-3 h-3" /> Add Rep
               </button>
             </div>
           </div>
           
           <div className="space-y-2">
-            {(formData.actions || []).map((action, idx) => (
+            {(formData.actions || []).map((action, idx) => ({ action, idx }))
+              .filter(({ action }) => action.type === 'daily_rep')
+              .map(({ action, idx }, listIdx, listArr) => (
               <div key={action.id || idx} className={`flex flex-col gap-2 p-2 rounded border ${action.enabled !== false ? 'bg-slate-50 border-slate-100' : 'bg-slate-100 border-slate-200 opacity-60'}`}>
                 <div className="flex gap-2 items-center">
                   {/* Move Up/Down */}
                   <div className="flex flex-col gap-0.5">
                     <button 
                       onClick={() => moveAction(idx, 'up')} 
-                      disabled={idx === 0}
+                      disabled={listIdx === 0}
                       className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
                       title="Move up"
                     >
@@ -359,7 +378,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
                     </button>
                     <button 
                       onClick={() => moveAction(idx, 'down')} 
-                      disabled={idx === (formData.actions || []).length - 1}
+                      disabled={listIdx === listArr.length - 1}
                       className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
                       title="Move down"
                     >
@@ -377,7 +396,140 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
                   </button>
                   
                   {/* Type indicator */}
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: action.type === 'daily_rep' ? '#0d9488' : '#fb923c' }} />
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: '#0d9488' }} />
+                  
+                  {/* Label input */}
+                  <input 
+                    type="text"
+                    value={action.label || ''}
+                    onChange={e => updateAction(idx, 'label', e.target.value)}
+                    className="flex-1 bg-white text-sm border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-corporate-teal focus:border-corporate-teal min-w-0"
+                    placeholder="Rep description..."
+                  />
+                  
+                  {/* Delete button */}
+                  <button onClick={() => removeAction(idx)} className="text-slate-400 hover:text-red-500 p-1">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                
+                {/* Optional Toggle */}
+                <div className="flex items-center gap-2 pl-8 mb-1">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input 
+                      type="checkbox"
+                      checked={action.optional === true}
+                      onChange={e => updateAction(idx, 'optional', e.target.checked)}
+                      className="w-3 h-3 rounded border-slate-300 text-corporate-teal focus:ring-corporate-teal"
+                    />
+                    <span className="text-[10px] text-slate-500 font-medium">Optional (not required)</span>
+                  </label>
+                </div>
+
+                {/* Link Resource - Using ResourceSelector */}
+                <div className="flex items-center gap-2 pl-8">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold flex-shrink-0">Link:</span>
+                  <div className="flex-1 min-w-0">
+                    <ResourceSelector 
+                      value={action.resourceId || null}
+                      onChange={(id, resource) => {
+                        if (resource) {
+                          updateActionMultiple(idx, {
+                            resourceId: resource.id,
+                            resourceTitle: resource.title,
+                            resourceType: resource.resourceType || resource.type,
+                            url: resource.url || resource.videoUrl || resource.link || ''
+                          });
+                        } else {
+                          updateActionMultiple(idx, {
+                            resourceId: null,
+                            resourceTitle: null,
+                            resourceType: null,
+                            url: null
+                          });
+                        }
+                      }}
+                      resourceType="content"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            {(formData.actions || []).filter(a => a.type === 'daily_rep').length === 0 && (
+              <div className="text-center p-4 border-2 border-dashed border-slate-200 rounded-lg text-xs text-slate-400">
+                No daily reps defined
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Actions Section */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-xs font-bold text-orange-500 uppercase flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+              Actions
+            </label>
+            <div className="flex gap-1">
+              <button 
+                onClick={() => handlePropagate('actions')}
+                className="text-[10px] text-blue-600 hover:underline px-1 mr-2"
+                title="Copy these actions to Mon-Fri of this week"
+              >
+                Propagate
+              </button>
+              <button 
+                onClick={() => { setPickerType('content'); setShowContentPicker(true); }}
+                className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1 border border-orange-100"
+              >
+                <Plus className="w-3 h-3" /> Lib
+              </button>
+              <button 
+                onClick={() => addAction('content')}
+                className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1 border border-orange-100"
+              >
+                <Plus className="w-3 h-3" /> Add Action
+              </button>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            {(formData.actions || []).map((action, idx) => ({ action, idx }))
+              .filter(({ action }) => action.type !== 'daily_rep')
+              .map(({ action, idx }, listIdx, listArr) => (
+              <div key={action.id || idx} className={`flex flex-col gap-2 p-2 rounded border ${action.enabled !== false ? 'bg-slate-50 border-slate-100' : 'bg-slate-100 border-slate-200 opacity-60'}`}>
+                <div className="flex gap-2 items-center">
+                  {/* Move Up/Down */}
+                  <div className="flex flex-col gap-0.5">
+                    <button 
+                      onClick={() => moveAction(idx, 'up')} 
+                      disabled={listIdx === 0}
+                      className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                      title="Move up"
+                    >
+                      <ChevronUp className="w-3 h-3" />
+                    </button>
+                    <button 
+                      onClick={() => moveAction(idx, 'down')} 
+                      disabled={listIdx === listArr.length - 1}
+                      className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                      title="Move down"
+                    >
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                  </div>
+                  
+                  {/* Enable/Disable Toggle */}
+                  <button 
+                    onClick={() => toggleActionEnabled(idx)}
+                    className={`p-1 rounded ${action.enabled !== false ? 'text-green-500 hover:bg-green-50' : 'text-slate-400 hover:bg-slate-200'}`}
+                    title={action.enabled !== false ? 'Enabled - click to disable' : 'Disabled - click to enable'}
+                  >
+                    {action.enabled !== false ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                  </button>
+                  
+                  {/* Type indicator */}
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: '#fb923c' }} />
                   
                   {/* Label input */}
                   <input 
@@ -438,7 +590,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
                 </div>
               </div>
             ))}
-            {(formData.actions || []).length === 0 && (
+            {(formData.actions || []).filter(a => a.type !== 'daily_rep').length === 0 && (
               <div className="text-center p-4 border-2 border-dashed border-slate-200 rounded-lg text-xs text-slate-400">
                 No actions defined
               </div>

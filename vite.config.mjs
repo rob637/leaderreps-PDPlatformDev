@@ -21,7 +21,7 @@ export default defineConfig({
     },
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['icons/*.png', 'icons/*.svg', 'images/*.png'],
       
       // Inject service worker registration with update detection
