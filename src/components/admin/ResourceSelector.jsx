@@ -56,13 +56,14 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
         switch (activeCategory) {
           case 'content':
-            // Fetch from Wrappers (Videos, Docs, Courses, Readings)
+            // Fetch from Wrappers (Videos, Docs, Courses) and Unified (Read & Reps)
             collections = [
               CONTENT_COLLECTIONS.VIDEOS, 
               CONTENT_COLLECTIONS.DOCUMENTS,
-              CONTENT_COLLECTIONS.COURSES,
-              CONTENT_COLLECTIONS.READINGS
+              CONTENT_COLLECTIONS.COURSES
             ];
+            // Fetch Read & Reps from Unified Collection
+            unifiedTypes = [UNIFIED_TYPES.READ_REP];
             break;
           case 'community':
             collections = [COMMUNITY_SESSION_TYPES_COLLECTION];
