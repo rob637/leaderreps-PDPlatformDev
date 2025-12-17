@@ -22,7 +22,7 @@ import { useAppServices } from '../../services/useAppServices';
  */
 const PrepWelcomeBanner = () => {
   const { user } = useAppServices();
-  const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay, currentDayData } = useDailyPlan();
+  const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay, currentDayData, userState } = useDailyPlan();
   
   // Debug logging
   console.log('[PrepWelcomeBanner] Rendering with:', {
@@ -65,10 +65,16 @@ const PrepWelcomeBanner = () => {
   
   // Check for incomplete required actions
   const actions = currentDayData?.actions || [];
-  const completedItems = currentDayData?.userProgress?.itemsCompleted || [];
   
   const incompleteRequiredActions = actions.filter(action => {
     const isRequired = action.required !== false && !action.optional;
+    
+    // Determine which day's progress to check
+    // In Prep Phase, actions are cumulative, so we need to check the day they were introduced
+    const dayId = action.introducedOnDayId || currentDayData?.id;
+    const dayProgress = userState?.dailyProgress?.[dayId];
+    const completedItems = dayProgress?.itemsCompleted || [];
+    
     const isCompleted = completedItems.includes(action.id);
     return isRequired && !isCompleted;
   });
@@ -78,9 +84,8 @@ const PrepWelcomeBanner = () => {
     clampedJourneyDay,
     phaseDayNumber,
     actionsCount: actions.length,
-    completedCount: completedItems.length,
     incompleteRequiredCount: incompleteRequiredActions.length,
-    incompleteItems: incompleteRequiredActions.map(a => a.label),
+    incompleteItems: incompleteRequiredActions.map(a => ({ label: a.label, dayId: a.introducedOnDayId })),
     currentDayDataExists: !!currentDayData
   });
 
