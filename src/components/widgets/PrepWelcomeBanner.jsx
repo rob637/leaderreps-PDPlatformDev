@@ -22,19 +22,25 @@ import { useAppServices } from '../../services/useAppServices';
  */
 const PrepWelcomeBanner = () => {
   const { user } = useAppServices();
-  const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay, currentDayData, userState } = useDailyPlan();
+  const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay, currentDayData, userState, loading } = useDailyPlan();
   
   // Debug logging
   console.log('[PrepWelcomeBanner] Rendering with:', {
     currentPhase: currentPhase?.id,
     journeyDay,
     phaseDayNumber,
-    hasOnboarding: !!prepPhaseInfo?.onboarding
+    hasOnboarding: !!prepPhaseInfo?.onboarding,
+    loading
   });
   
   // Only show in Prep Phase
   if (currentPhase?.id !== 'pre-start') {
     console.log('[PrepWelcomeBanner] NOT showing - phase is:', currentPhase?.id);
+    return null;
+  }
+
+  if (loading) {
+    console.log('[PrepWelcomeBanner] Loading...');
     return null;
   }
   
@@ -79,14 +85,18 @@ const PrepWelcomeBanner = () => {
     return isRequired && !isCompleted;
   });
 
-  console.log('[PrepWelcomeBanner] Debug:', {
-    journeyDay,
-    clampedJourneyDay,
-    phaseDayNumber,
-    actionsCount: actions.length,
-    incompleteRequiredCount: incompleteRequiredActions.length,
+  console.warn('[PrepWelcomeBanner] DIAGNOSTIC:', {
+    phase: currentPhase?.id,
+    day: journeyDay,
+    actionsTotal: actions.length,
+    incompleteTotal: incompleteRequiredActions.length,
     incompleteItems: incompleteRequiredActions.map(a => ({ label: a.label, dayId: a.introducedOnDayId })),
-    currentDayDataExists: !!currentDayData
+    firstAction: actions[0] ? { 
+      id: actions[0].id, 
+      req: actions[0].required, 
+      opt: actions[0].optional,
+      introDay: actions[0].introducedOnDayId 
+    } : 'none'
   });
 
   const hasIncompleteRequiredActions = incompleteRequiredActions.length > 0;
