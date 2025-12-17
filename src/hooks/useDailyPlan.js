@@ -497,8 +497,10 @@ export const useDailyPlan = () => {
 
           console.log('[useDailyPlan] Tracking new Prep Phase visit:', todayStr);
           try {
-            // Use arrayUnion to prevent race conditions/stale data overwrites
-            await updateDevelopmentPlanData({ prepVisitLog: arrayUnion(todayStr) });
+            // Use full array replacement to support optimistic UI updates
+            // (arrayUnion would be ignored by local state manager, causing stale UI)
+            const newLog = [...visitLog, todayStr];
+            await updateDevelopmentPlanData({ prepVisitLog: newLog });
           } catch (error) {
             console.error('[useDailyPlan] Error tracking prep visit:', error);
             window._prepVisitTracked = null;

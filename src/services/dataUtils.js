@@ -133,7 +133,12 @@ export function applyPatchDeleteAware(prev, patch) {
 
   for (const [k, v] of Object.entries(patch)) {
     if (isFirestoreSentinel(v)) {
-      delete base[k];
+      if (v._methodName === 'deleteField') {
+        delete base[k];
+      }
+      // For other sentinels (serverTimestamp, arrayUnion, etc.), 
+      // we preserve the existing local value rather than deleting it.
+      // This prevents UI flashing/data loss during optimistic updates.
       continue;
     }
     if (v && typeof v === 'object' && !Array.isArray(v)) {

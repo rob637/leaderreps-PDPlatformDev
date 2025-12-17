@@ -370,6 +370,12 @@ export const createAppServices = (db, userId) => {
     const path = buildModulePath(userId, 'development_plan', 'current');
     console.log('[DEV_PLAN UPDATE] Firestore path:', path);
     
+    // Optimistic Update: Update local store immediately
+    if (stores.developmentPlanData) {
+      stores.developmentPlanData = applyPatchDeleteAware(stores.developmentPlanData, updates);
+      notifyChange();
+    }
+
     const result = await setDocEx(db, path, convertedUpdates, merge);
     console.log('[DEV_PLAN UPDATE] setDocEx result:', result);
     return result;
