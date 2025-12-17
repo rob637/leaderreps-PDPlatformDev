@@ -114,7 +114,8 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         id: action.id || fallbackId,
         type: action.resourceType || action.type || 'content',
         label: label,
-        required: action.required !== false,
+        required: action.required !== false && !action.optional,
+        optional: action.optional === true,
         resourceId: action.resourceId,
         resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
         category,
@@ -418,8 +419,14 @@ const ThisWeeksActionsWidget = ({ scope }) => {
                // For Read & Reps, we want to show the synopsis in the viewer
                // The UniversalResourceViewer will handle 'read_rep' type
                resourceData.resourceType = 'read_rep';
-               if (data.details?.pdfUrl) {
-                   resourceData.url = data.details.pdfUrl;
+               
+               // Map details to top-level properties for viewer
+               if (data.details) {
+                   resourceData.synopsis = data.details.synopsis;
+                   resourceData.author = data.details.author;
+                   if (data.details.pdfUrl) {
+                       resourceData.url = data.details.pdfUrl;
+                   }
                }
            }
         } else {
