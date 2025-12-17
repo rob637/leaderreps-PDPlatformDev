@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../services/useAppServices';
 import { collection, query, orderBy, getDocs, serverTimestamp } from 'firebase/firestore';
 import { timeChange$ } from '../services/timeService';
+import { useActionProgress } from './useActionProgress';
 
 /**
  * Hook to manage the Daily Plan logic.
@@ -271,6 +272,7 @@ export const getDbDayNumber = (daysFromStart) => {
 };
 export const useDailyPlan = () => {
   const { db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
+  const { getItemProgress } = useActionProgress();
   const [dailyPlan, setDailyPlan] = useState([]);
   const [loadingPlan, setLoadingPlan] = useState(true);
   const [cohortData, setCohortData] = useState(null);
@@ -829,8 +831,34 @@ export const useDailyPlan = () => {
           return dayPhase.id === currentPhase.id && d.dayNumber < dbDayNumber;
         })
         .filter(d => {
+          // 1. Check legacy dailyProgress (fast check)
           const progress = userState.dailyProgress?.[d.id];
-          return !progress || progress.status !== 'completed';
+          if (progress && progress.status === 'completed') return false;
+
+          // 2. Check granular actions via useActionProgress
+          // This ensures that if the user completed actions but dailyProgress wasn't updated,
+          // we still count it as done.
+          const actions = d.actions || [];
+          
+          // Filter for REQUIRED actions
+          // Note: Matches logic in PrepWelcomeBanner and ThisWeeksActionsWidget
+          const requiredActions = actions.filter(a => a.required !== false && !a.optional);
+          
+          // If no required actions, we can't determine "missed" status from actions alone,
+          // so we fall back to the legacy check (which returned true/missed above).
+          // However, if there are NO actions at all, maybe it shouldn't be missed?
+          // For now, assume if it has content but no required actions, it's not "missed".
+          if (requiredActions.length === 0) return false;
+
+          // Check if ALL required actions are completed
+          const allRequiredCompleted = requiredActions.every(a => {
+             const p = getItemProgress(a.id);
+             // Also check legacy itemsCompleted array as fallback
+             const legacyCompleted = progress?.itemsCompleted?.includes(a.id);
+             return p.status === 'completed' || legacyCompleted;
+          });
+
+          return !allRequiredCompleted;
         })
         .map(d => ({
           ...d,
