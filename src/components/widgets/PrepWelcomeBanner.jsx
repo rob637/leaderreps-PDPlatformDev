@@ -73,6 +73,17 @@ const PrepWelcomeBanner = () => {
     return isRequired && !isCompleted;
   });
 
+  console.log('[PrepWelcomeBanner] Debug:', {
+    journeyDay,
+    clampedJourneyDay,
+    phaseDayNumber,
+    actionsCount: actions.length,
+    completedCount: completedItems.length,
+    incompleteRequiredCount: incompleteRequiredActions.length,
+    incompleteItems: incompleteRequiredActions.map(a => a.label),
+    currentDayDataExists: !!currentDayData
+  });
+
   const hasIncompleteRequiredActions = incompleteRequiredActions.length > 0;
   
   // 2. Determine if prep is complete (more than 5 days of content AND no required actions pending)
