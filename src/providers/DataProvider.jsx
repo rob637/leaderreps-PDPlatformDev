@@ -290,7 +290,8 @@ const DataProvider = ({
       auth,
       storage,
       navigate,
-      user,
+      // Merge Auth user with Firestore user profile to provide cohortId and other profile data
+      user: serviceData.userProfile ? { ...user, ...serviceData.userProfile } : user,
       userId,
       isAdmin,
       isAuthReady,

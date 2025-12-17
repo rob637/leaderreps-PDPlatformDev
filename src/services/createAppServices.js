@@ -65,6 +65,7 @@ const getMsUntilMidnight = () => {
 
 export const createAppServices = (db, userId) => {
   const stores = {
+    userProfile: null, // Added userProfile
     developmentPlanData: null,
     dailyPracticeData: null,
     strategicContentData: null,
@@ -78,6 +79,7 @@ export const createAppServices = (db, userId) => {
   const notifyChange = () => {
     if (stores.onChange) {
       stores.onChange({
+        userProfile: stores.userProfile, // Added userProfile
         developmentPlanData: stores.developmentPlanData,
         dailyPracticeData: stores.dailyPracticeData,
         strategicContentData: stores.strategicContentData,
@@ -88,6 +90,23 @@ export const createAppServices = (db, userId) => {
   };
 
   if (db && userId) {
+    // User Profile Listener
+    // We need to import buildUserProfilePath or construct it manually. 
+    // Since buildModulePath is imported, let's check if buildUserProfilePath is available.
+    // It is imported at the top.
+    // import { buildModulePath } from './pathUtils'; -> Wait, I need to check imports.
+    
+    const userProfilePath = `users/${userId}`; 
+    const unsubUser = onSnapshotEx(db, userProfilePath, (snap) => {
+      if (snap.exists()) {
+        stores.userProfile = stripSentinels(sanitizeTimestamps(snap.data()));
+      } else {
+        stores.userProfile = null;
+      }
+      notifyChange();
+    });
+    stores.listeners.push(unsubUser);
+
     const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
     const unsubDev = onSnapshotEx(db, devPlanPath, (snap) => {
       console.log('%c[DEV_PLAN SNAPSHOT] Received!', 'background: #8b5cf6; color: white; font-weight: bold; padding: 4px 8px;');
