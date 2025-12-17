@@ -243,6 +243,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
         id: `action-${Date.now()}`,
         type: 'daily_rep',
         label: item.title,
+        description: item.description, // Copy description from library
         resourceId: item.id,
         resourceTitle: item.title,
         resourceType: item.type,
@@ -347,12 +348,6 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
             <div className="flex gap-1">
               <button 
                 onClick={() => { setPickerType('daily_rep'); setShowContentPicker(true); }}
-                className="text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 px-2 py-1 rounded flex items-center gap-1 border border-teal-100"
-              >
-                <Plus className="w-3 h-3" /> Lib
-              </button>
-              <button 
-                onClick={() => addAction('daily_rep')}
                 className="text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 px-2 py-1 rounded flex items-center gap-1 border border-teal-100"
               >
                 <Plus className="w-3 h-3" /> Add Rep

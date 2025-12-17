@@ -35,7 +35,7 @@ const PREP_PHASE_DAYS = [
       {
         id: 'action-prep-001-video',
         label: 'Watch QS S1 Prep Video',
-        type: 'daily_rep',
+        type: 'content',
         resourceId: 'xi2YwVB6yhOSscH9Fuv9', // Session 1 Pre Work Video
         resourceType: 'video',
         resourceTitle: 'Session 1 Pre Work Video',
@@ -45,7 +45,7 @@ const PREP_PHASE_DAYS = [
       {
         id: 'action-prep-001-workbook',
         label: 'Download QS Workbook',
-        type: 'daily_rep',
+        type: 'content',
         resourceId: 'gjpKESqxHiqteFneAczq', // QuickStart Workbook PDF
         resourceType: 'document',
         resourceTitle: 'QuickStart Workbook',
@@ -112,7 +112,7 @@ const PREP_PHASE_DAYS = [
       {
         id: 'action-prep-005-review',
         label: 'Review Your Assessment Results',
-        type: 'daily_rep',
+        type: 'task',
         required: false,
         enabled: true
       }
@@ -144,7 +144,7 @@ const PREP_PHASE_DAYS = [
       {
         id: 'action-prep-008-mindset',
         label: 'Watch Leadership Mindset Video',
-        type: 'daily_rep',
+        type: 'content',
         required: false,
         enabled: true
       }
@@ -168,7 +168,7 @@ const PREP_PHASE_DAYS = [
       {
         id: 'action-prep-010-goals',
         label: 'Refine Your Learning Goals',
-        type: 'daily_rep',
+        type: 'task',
         required: false,
         enabled: true
       }

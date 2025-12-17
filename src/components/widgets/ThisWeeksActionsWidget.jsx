@@ -140,7 +140,14 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       const onboardingLabels = ['leader profile', 'baseline assessment'];
       const filteredDailyActions = dailyNormalized.filter(action => {
         const labelLower = (action.label || '').toLowerCase();
-        return !onboardingLabels.some(keyword => labelLower.includes(keyword));
+        
+        // Filter out onboarding items
+        if (onboardingLabels.some(keyword => labelLower.includes(keyword))) return false;
+        
+        // Filter out Daily Reps (they go to Daily Reps widget)
+        if (action.type === 'daily_rep') return false;
+        
+        return true;
       });
       
       // Only show onboarding tasks on Day 1 of journey

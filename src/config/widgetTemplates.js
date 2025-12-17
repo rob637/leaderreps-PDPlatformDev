@@ -561,8 +561,16 @@ const DailyLeaderRepsWidget = () => {
   // Get current week's daily reps from the Development Plan
   const currentWeek = typeof devPlanCurrentWeek !== 'undefined' ? devPlanCurrentWeek : null;
   
-  // Daily reps come from the Dev Plan week data (dailyReps or reps array)
-  const weekReps = currentWeek?.dailyReps || currentWeek?.reps || [];
+  // NEW: Get daily reps from Day-by-Day architecture
+  // Check if currentDayData is available in scope
+  const dayReps = (typeof currentDayData !== 'undefined' && currentDayData?.actions) 
+    ? currentDayData.actions.filter(a => a.type === 'daily_rep')
+    : [];
+
+  // Daily reps come from the Dev Plan week data (dailyReps or reps array) OR Day-by-Day actions
+  const weekReps = dayReps.length > 0 
+    ? dayReps 
+    : (currentWeek?.dailyReps || currentWeek?.reps || []);
   
   // Map to consistent format with id, label, and description
   const reps = weekReps.length > 0 
