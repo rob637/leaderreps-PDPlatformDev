@@ -415,9 +415,11 @@ const ThisWeeksActionsWidget = ({ scope }) => {
                resourceData.url = data.details.videoUrl;
                resourceData.resourceType = 'video';
            } else if (data.type === 'READ_REP') {
+               // For Read & Reps, we want to show the synopsis in the viewer
+               // The UniversalResourceViewer will handle 'read_rep' type
+               resourceData.resourceType = 'read_rep';
                if (data.details?.pdfUrl) {
                    resourceData.url = data.details.pdfUrl;
-                   resourceData.resourceType = 'pdf';
                }
            }
         } else {
@@ -581,6 +583,11 @@ const ThisWeeksActionsWidget = ({ scope }) => {
                 Required
               </span>
             )}
+            {!item.isOnboardingTask && item.optional && !isCarriedOver && (
+              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Optional
+              </span>
+            )}
             {isCarriedOver && (
               <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
                 <Clock className="w-2.5 h-2.5" />
@@ -661,7 +668,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
                 <Loader className="w-5 h-5 animate-spin" />
               ) : item.resourceType === 'video' ? (
                 <Play className="w-5 h-5" />
-              ) : item.resourceType === 'reading' || item.resourceType === 'pdf' || item.resourceType === 'document' ? (
+              ) : item.resourceType === 'reading' || item.resourceType === 'pdf' || item.resourceType === 'document' || item.resourceType === 'read_rep' ? (
                 <FileText className="w-5 h-5" />
               ) : item.resourceType === 'course' ? (
                 <Layers className="w-5 h-5" />

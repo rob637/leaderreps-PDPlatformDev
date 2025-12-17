@@ -104,6 +104,60 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
           );
         }
 
+      case 'read_rep':
+        // Special handler for Read & Reps (Unified Content)
+        // Shows Synopsis + PDF Link
+        return (
+          <div className="flex flex-col h-[70vh] w-full">
+            {/* Synopsis Section */}
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 mb-4 flex-shrink-0 overflow-y-auto max-h-[40vh]">
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="w-5 h-5 text-corporate-teal" />
+                <h3 className="font-bold text-slate-700">Synopsis</h3>
+              </div>
+              {resource.synopsis ? (
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {resource.synopsis}
+                </p>
+              ) : (
+                <p className="text-sm text-slate-400 italic">No synopsis available.</p>
+              )}
+              
+              {resource.author && (
+                <div className="mt-4 pt-4 border-t border-slate-200">
+                  <p className="text-xs text-slate-500 font-medium">Author: {resource.author}</p>
+                </div>
+              )}
+            </div>
+
+            {/* PDF Viewer (if URL exists) */}
+            {url ? (
+              <div className="flex-1 bg-slate-100 rounded-lg overflow-hidden relative min-h-[300px]">
+                 <iframe 
+                   src={url} 
+                   className="w-full h-full" 
+                   title={title}
+                 />
+                 <div className="absolute bottom-4 right-4">
+                    <a 
+                      href={url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
+                    >
+                      <Download className="w-3 h-3" />
+                      Open Full PDF
+                    </a>
+                 </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <p className="text-sm text-slate-400">No PDF attached to this resource.</p>
+              </div>
+            )}
+          </div>
+        );
+
       case 'pdf':
       case 'reading': 
       case 'document':
