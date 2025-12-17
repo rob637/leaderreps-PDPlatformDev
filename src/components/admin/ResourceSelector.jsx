@@ -116,7 +116,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               return { 
                 ...item, 
                 resourceType: type,
-                url: item.url || item.videoUrl || item.link || ''
+                url: item.url || item.videoUrl || item.link || item.details?.externalUrl || item.metadata?.externalUrl || ''
               };
             })];
           } catch (err) {

@@ -86,7 +86,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         type: item.type || item.contentItemType || item.communityItemType || item.coachingItemType || category.toLowerCase(),
         label: label || item.name || 'Untitled Action',
         required: item.required !== false && item.isRequiredContent !== false && item.optional !== true,
-        url: item.url || item.videoUrl || item.link,
+        url: item.url || item.videoUrl || item.link || item.details?.externalUrl || item.metadata?.externalUrl,
         resourceId: item.resourceId || item.contentItemId || item.communityItemId || item.coachingItemId,
         resourceType: item.resourceType || (item.type || item.contentItemType || item.communityItemType || item.coachingItemType || '').toLowerCase(),
         category
@@ -118,7 +118,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         optional: action.optional === true,
         resourceId: action.resourceId,
         resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
-        url: action.url || action.videoUrl || action.link,
+        url: action.url || action.videoUrl || action.link || action.details?.externalUrl || action.metadata?.externalUrl,
         category,
         // Mark as coming from daily plan for UI distinction
         fromDailyPlan: true,
@@ -422,6 +422,9 @@ const ThisWeeksActionsWidget = ({ scope }) => {
            // Map details to url for viewer compatibility
            if (data.type === 'REP' && data.details?.videoUrl) {
                resourceData.url = data.details.videoUrl;
+               resourceData.resourceType = 'video';
+           } else if (data.type === 'VIDEO') {
+               resourceData.url = data.url || data.videoUrl || data.details?.externalUrl || data.metadata?.externalUrl;
                resourceData.resourceType = 'video';
            } else if (data.type === 'READ_REP') {
                // For Read & Reps, we want to show the synopsis in the viewer

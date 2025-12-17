@@ -129,6 +129,9 @@ const DevelopmentPlanWidget = ({ scope }) => {
            if (data.type === 'REP' && data.details?.videoUrl) {
                resourceData.url = data.details.videoUrl;
                resourceData.resourceType = 'video';
+           } else if (data.type === 'VIDEO') {
+               resourceData.url = data.url || data.videoUrl || data.details?.externalUrl || data.metadata?.externalUrl;
+               resourceData.resourceType = 'video';
            } else if (data.type === 'READ_REP') {
                if (data.details?.pdfUrl) {
                    resourceData.url = data.details.pdfUrl;
