@@ -169,7 +169,7 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
       case 'pdf':
       case 'reading': 
       case 'document':
-      case 'tool':
+      case 'tool': {
         // Check for Google Docs/Sheets/Slides (Native Google Drive Links)
         if (url && (url.includes('docs.google.com') || url.includes('drive.google.com'))) {
           let embedUrl = url;
@@ -239,6 +239,7 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
              </div>
           </div>
         );
+      }
 
       default: // Link / Course / Other
         // Fallback: Try to iframe it (some sites allow it), otherwise show the link

@@ -136,13 +136,13 @@ export const OfflineProvider = ({ children }) => {
  */
 const useOffline = () => {
   const context = useContext(OfflineContext);
+  const isOnlineFallback = useOnlineStatus();
   
   // If used outside provider, return basic online status
   if (!context) {
-    const isOnline = useOnlineStatus();
     return {
-      isOnline,
-      isOffline: !isOnline,
+      isOnline: isOnlineFallback,
+      isOffline: !isOnlineFallback,
       pendingActions: [],
       pendingCount: 0,
       hasPendingActions: false,

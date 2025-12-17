@@ -1,5 +1,7 @@
 // Firebase Cloud Messaging Service Worker
 // This file must be at the root of the domain for FCM to work
+/* eslint-env serviceworker */
+/* global firebase, importScripts, clients */
 
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');

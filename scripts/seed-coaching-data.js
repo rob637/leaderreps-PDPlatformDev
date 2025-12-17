@@ -14,6 +14,8 @@
  *   await clearCoachingData(); await seedCoachingData()
  */
 
+/* global firebase */
+
 // Copy this entire block into the browser console
 
 (function() {
