@@ -16,6 +16,7 @@ import {
 import { useAppServices } from '../../services/useAppServices';
 import { getAllContentAdmin, CONTENT_COLLECTIONS } from '../../services/contentService';
 import { UNIFIED_COLLECTION, CONTENT_TYPES as UNIFIED_TYPES } from '../../services/unifiedContentService';
+import { COMMUNITY_SESSION_TYPES_COLLECTION, COACHING_SESSION_TYPES_COLLECTION } from '../../data/Constants';
 import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 
 const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
@@ -47,23 +48,23 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
         switch (resourceType) {
           case 'content':
-            // Fetch from Wrappers (Videos, Docs, Courses, Readings) AND Community/Coaching
+            // Fetch from Wrappers (Videos, Docs, Courses, Readings) AND Community/Coaching Session Types
             collections = [
               CONTENT_COLLECTIONS.VIDEOS, 
               CONTENT_COLLECTIONS.DOCUMENTS,
               CONTENT_COLLECTIONS.COURSES,
               CONTENT_COLLECTIONS.READINGS,
-              CONTENT_COLLECTIONS.COMMUNITY,
-              CONTENT_COLLECTIONS.COACHING
+              COMMUNITY_SESSION_TYPES_COLLECTION,
+              COACHING_SESSION_TYPES_COLLECTION
             ];
             // Unified Collection disabled as we are pulling from Wrappers
             unifiedTypes = [];
             break;
           case 'community':
-            collections = [CONTENT_COLLECTIONS.COMMUNITY];
+            collections = [COMMUNITY_SESSION_TYPES_COLLECTION];
             break;
           case 'coaching':
-            collections = [CONTENT_COLLECTIONS.COACHING];
+            collections = [COACHING_SESSION_TYPES_COLLECTION];
             break;
           default:
             collections = [CONTENT_COLLECTIONS.READINGS];
@@ -79,7 +80,8 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
                        col === CONTENT_COLLECTIONS.DOCUMENTS ? 'document' :
                        col === CONTENT_COLLECTIONS.READINGS ? 'reading' : // Legacy
                        col === CONTENT_COLLECTIONS.COURSES ? 'course' :
-                       col === CONTENT_COLLECTIONS.COMMUNITY ? 'community' : 'coaching';
+                       col === COMMUNITY_SESSION_TYPES_COLLECTION ? 'community' : 
+                       col === COACHING_SESSION_TYPES_COLLECTION ? 'coaching' : 'unknown';
           
           allResources = [...allResources, ...data.map(item => ({ ...item, resourceType: type }))];
         }
@@ -147,10 +149,12 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               CONTENT_COLLECTIONS.VIDEOS, 
               CONTENT_COLLECTIONS.READINGS,
               CONTENT_COLLECTIONS.DOCUMENTS,
-              CONTENT_COLLECTIONS.COURSES
+              CONTENT_COLLECTIONS.COURSES,
+              COMMUNITY_SESSION_TYPES_COLLECTION,
+              COACHING_SESSION_TYPES_COLLECTION
             ]
-          : resourceType === 'community' ? [CONTENT_COLLECTIONS.COMMUNITY]
-          : [CONTENT_COLLECTIONS.COACHING];
+          : resourceType === 'community' ? [COMMUNITY_SESSION_TYPES_COLLECTION]
+          : [COACHING_SESSION_TYPES_COLLECTION];
 
         for (const col of collections) {
           const docRef = doc(db, col, valueId);
@@ -160,8 +164,8 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
             if (col === CONTENT_COLLECTIONS.READINGS) type = 'reading';
             else if (col === CONTENT_COLLECTIONS.DOCUMENTS) type = 'document';
             else if (col === CONTENT_COLLECTIONS.COURSES) type = 'course';
-            else if (col === CONTENT_COLLECTIONS.COMMUNITY) type = 'community';
-            else if (col === CONTENT_COLLECTIONS.COACHING) type = 'coaching';
+            else if (col === COMMUNITY_SESSION_TYPES_COLLECTION) type = 'community';
+            else if (col === COACHING_SESSION_TYPES_COLLECTION) type = 'coaching';
 
             setSelectedResource({ id: snap.id, ...snap.data(), resourceType: type });
             return;

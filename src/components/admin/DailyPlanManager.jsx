@@ -74,7 +74,7 @@ const ACTION_TYPES = {
 
 // --- Sub-components ---
 
-const DayCard = ({ day, onEdit }) => {
+const DayCard = ({ day, onEdit, displayDayNumber }) => {
   const isWeekend = day.isWeekend;
   const linkedResourceCount = (day.actions || []).filter(a => a.resourceId).length;
   const weeklyResourceCount = day.weeklyResources ? (
@@ -98,7 +98,7 @@ const DayCard = ({ day, onEdit }) => {
           text-xs font-bold px-2 py-1 rounded-full
           ${day.weekNumber < 1 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}
         `}>
-          Day {day.dayNumber}
+          Day {displayDayNumber || day.dayNumber}
         </span>
         <div className="flex items-center gap-1">
           {weeklyResourceCount > 0 && (
@@ -139,7 +139,7 @@ const DayCard = ({ day, onEdit }) => {
   );
 };
 
-const DayEditor = ({ day, onSave, onCancel, allDays }) => {
+const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
   const { db } = useAppServices();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures(); // Use Feature Provider
   const [formData, setFormData] = useState({ ...day });
@@ -287,7 +287,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
       {/* Header */}
       <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
         <div>
-          <h3 className="font-bold text-corporate-navy">Edit Day {formData.dayNumber}</h3>
+          <h3 className="font-bold text-corporate-navy">Edit Day {displayDayNumber || formData.dayNumber}</h3>
           <p className="text-xs text-slate-500">Week {formData.weekNumber}</p>
         </div>
         <div className="flex gap-2">
@@ -738,29 +738,32 @@ const DailyPlanManager = () => {
       bgColor: 'bg-amber-50',
       textColor: 'text-amber-700',
       borderColor: 'border-amber-300',
-      activeColor: 'bg-amber-500'
+      activeColor: 'bg-amber-500',
+      dayOffset: 0
     },
     dev: { 
       id: 'dev', 
       name: 'Dev Plan', 
       emoji: '🎯',
-      description: '8-Week Core Program (Days 15-70)',
+      description: '8-Week Core Program (Days 1-56)',
       weekRange: [1, 8], // Weeks 1-8
       bgColor: 'bg-teal-50',
       textColor: 'text-corporate-teal',
       borderColor: 'border-corporate-teal',
-      activeColor: 'bg-corporate-teal'
+      activeColor: 'bg-corporate-teal',
+      dayOffset: 14
     },
     post: { 
       id: 'post', 
       name: 'Post Phase', 
       emoji: '🔄',
-      description: 'Ongoing development (Day 71+)',
+      description: 'Ongoing development (Days 1-7)',
       weekRange: [9, 99], // Weeks 9+
       bgColor: 'bg-slate-50',
       textColor: 'text-slate-600',
       borderColor: 'border-slate-300',
-      activeColor: 'bg-slate-500'
+      activeColor: 'bg-slate-500',
+      dayOffset: 70
     }
   };
 
@@ -976,13 +979,19 @@ const DailyPlanManager = () => {
       {/* Day Cards Grid */}
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {currentWeekDays.map(day => (
-            <DayCard 
-              key={day.id} 
-              day={day} 
-              onEdit={setEditingDay} 
-            />
-          ))}
+          {currentWeekDays.map(day => {
+            // Calculate display day number based on phase offset
+            const displayDay = day.dayNumber - (currentPhase.dayOffset || 0);
+            
+            return (
+              <DayCard 
+                key={day.id} 
+                day={day} 
+                displayDayNumber={displayDay}
+                onEdit={setEditingDay} 
+              />
+            );
+          })}
           {currentWeekDays.length === 0 && (
             <div className="col-span-full text-center py-20 text-slate-400">
               <p className="text-lg font-medium mb-2">No days found for Week {selectedWeek}</p>
@@ -1001,6 +1010,7 @@ const DailyPlanManager = () => {
             onSave={handleSaveDay} 
             onCancel={() => setEditingDay(null)}
             allDays={days}
+            displayDayNumber={editingDay.dayNumber - (currentPhase.dayOffset || 0)}
           />
         </div>
       )}
