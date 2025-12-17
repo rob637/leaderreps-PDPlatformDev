@@ -76,6 +76,7 @@ const Dashboard = (props) => {
 
   // 2. Daily Plan (New Architecture - Three Phase System)
   const { 
+    loading: dailyPlanLoading,
     currentDayData, 
     currentDayNumber,
     currentPhase,       // NEW: Phase info { id, name, displayName, trackMissedDays }
@@ -91,8 +92,20 @@ const Dashboard = (props) => {
     phase: currentPhase?.name, 
     phaseDayNumber, 
     currentDayNumber,
-    hasCurrentDayData: !!currentDayData 
+    hasCurrentDayData: !!currentDayData,
+    loading: dailyPlanLoading
   });
+
+  if (dailyPlanLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="flex flex-col items-center gap-4">
+          <Loader className="w-8 h-8 animate-spin text-indigo-600" />
+          <p className="text-slate-500 text-sm font-medium">Loading your daily plan...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Adapter for Legacy Dashboard Hooks
   const devPlanCurrentWeek = useMemo(() => {

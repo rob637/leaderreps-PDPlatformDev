@@ -880,7 +880,8 @@ export const useDailyPlan = () => {
 
   return {
     // Loading state
-    loading: loadingPlan,
+    // Wait for both the plan template AND the user data to load
+    loading: loadingPlan || developmentPlanData === null,
     
     // Raw data
     dailyPlan,
