@@ -129,9 +129,11 @@ export const timeService = {
     
     // Force reload to ensure all components/services pick up the new time
     // This is the safest way to ensure consistent state across the app
+    console.log('[TimeService] Scheduling reload in 500ms...');
     setTimeout(() => {
+      console.log('[TimeService] Reloading now...');
       window.location.reload();
-    }, 100);
+    }, 500);
   },
 
   /**
