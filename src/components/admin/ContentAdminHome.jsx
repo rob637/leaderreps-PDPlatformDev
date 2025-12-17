@@ -430,7 +430,7 @@ const ContentAdminHome = () => {
       icon: BookOpen,
       description: 'Wrap book syntheses with metadata',
       color: COLORS.TEAL,
-      route: 'admin-wrapper-book'
+      route: 'admin-wrapper-readrep'
     }
   ];
 

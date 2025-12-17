@@ -1,13 +1,15 @@
 import React from 'react';
-import UnifiedContentManager from '../UnifiedContentManager';
+import SingleTypeContentManager from '../SingleTypeContentManager';
 import { CONTENT_TYPES } from '../../../services/unifiedContentService';
+import { BookOpen } from 'lucide-react';
 
 const ReadRepWrapper = () => {
   return (
-    <UnifiedContentManager 
-      initialTab={CONTENT_TYPES.READ_REP}
+    <SingleTypeContentManager 
+      type={CONTENT_TYPES.READ_REP}
       title="Read & Rep Wrapper"
       description="Wrap reading materials with actionable reps."
+      icon={BookOpen}
     />
   );
 };
