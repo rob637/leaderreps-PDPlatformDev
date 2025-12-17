@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../services/useAppServices';
-import { collection, query, orderBy, getDocs, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, serverTimestamp, arrayUnion } from 'firebase/firestore';
 import { timeChange$ } from '../services/timeService';
 import { useActionProgress } from './useActionProgress';
 
@@ -497,9 +497,8 @@ export const useDailyPlan = () => {
 
           console.log('[useDailyPlan] Tracking new Prep Phase visit:', todayStr);
           try {
-            // Append today to the log
-            const newLog = [...visitLog, todayStr];
-            await updateDevelopmentPlanData({ prepVisitLog: newLog });
+            // Use arrayUnion to prevent race conditions/stale data overwrites
+            await updateDevelopmentPlanData({ prepVisitLog: arrayUnion(todayStr) });
           } catch (error) {
             console.error('[useDailyPlan] Error tracking prep visit:', error);
             window._prepVisitTracked = null;
