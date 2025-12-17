@@ -505,10 +505,13 @@ export const useDailyPlan = () => {
 
   // 3. Calculate Days From Start (can be negative for Pre-Start)
   const daysFromStart = useMemo(() => {
-    if (!userState.startDate) return 0; // Default to start day
+    // Prioritize Cohort Start Date if available
+    const effectiveStartDate = cohortData?.startDate || userState.startDate;
+    
+    if (!effectiveStartDate) return 0; // Default to start day
 
     let start = null;
-    const rawDate = userState.startDate;
+    const rawDate = effectiveStartDate;
     
     if (rawDate.toDate && typeof rawDate.toDate === 'function') {
       start = rawDate.toDate();
@@ -528,13 +531,14 @@ export const useDailyPlan = () => {
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
     console.log('[useDailyPlan] Days From Start:', {
+      source: cohortData?.startDate ? 'cohort' : 'user',
       startDate: start.toISOString(),
       now: simulatedNow.toISOString(),
       daysFromStart: diffDays
     });
 
     return diffDays;
-  }, [userState.startDate, simulatedNow]);
+  }, [userState.startDate, cohortData?.startDate, simulatedNow]);
 
   // 4. Map to DB Day Number and get Phase Info
   const { dbDayNumber, currentPhase, phaseDayNumber } = useMemo(() => {
