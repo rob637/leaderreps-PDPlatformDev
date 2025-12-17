@@ -517,7 +517,7 @@ const Dashboard = (props) => {
     'lis-maker': () => shouldShow('lis-maker', false) ? <WidgetRenderer widgetId="lis-maker" scope={scope} /> : null,
     'grounding-rep': () => shouldShow('grounding-rep', false) ? <WidgetRenderer widgetId="grounding-rep" scope={scope} /> : null,
     'win-the-day': () => shouldShow('win-the-day', true) ? <WidgetRenderer widgetId="win-the-day" scope={scope} /> : null,
-    'daily-plan': () => <WidgetRenderer widgetId="daily-plan" scope={scope} />,
+    'daily-plan': () => currentDayNumber >= 1 ? <WidgetRenderer widgetId="daily-plan" scope={scope} /> : null,
     'daily-leader-reps': () => shouldShow('daily-leader-reps', true) ? <WidgetRenderer widgetId="daily-leader-reps" scope={scope} /> : null,
     'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <WidgetRenderer widgetId="this-weeks-actions" scope={scope} /> : null,
     'notifications': () => shouldShow('notifications', false) ? <WidgetRenderer widgetId="notifications" scope={scope} /> : null,
