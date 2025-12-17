@@ -31,7 +31,8 @@ const PrepWelcomeBanner = () => {
     currentPhase: currentPhase?.id,
     journeyDay,
     phaseDayNumber,
-    hasOnboarding: !!prepPhaseInfo?.onboarding
+    hasOnboarding: !!prepPhaseInfo?.onboarding,
+    prepVisitLog: userState?.prepVisitLog || 'no visitLog'
   });
   
   // Only show in Prep Phase

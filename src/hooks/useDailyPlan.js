@@ -489,6 +489,13 @@ export const useDailyPlan = () => {
         const todayStr = now.toISOString().split('T')[0];
         const visitLog = developmentPlanData?.prepVisitLog || [];
         
+        console.log('[useDailyPlan] Prep visit check:', {
+          todayStr,
+          visitLog,
+          alreadyLogged: visitLog.includes(todayStr),
+          guardedDate: window._prepVisitTracked
+        });
+        
         // If today is NOT logged yet, add it
         if (!visitLog.includes(todayStr)) {
           // Prevent double-firing in strict mode / rapid re-renders
