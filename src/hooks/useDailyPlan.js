@@ -653,11 +653,63 @@ export const useDailyPlan = () => {
       });
     }
     
+    // START PHASE WEEK-CUMULATIVE ACTIONS:
+    // In Start Phase, actions accumulate from the first day of the week through current day
+    // So if Day 15 has actions, they persist through Days 15-21 (Week 1)
+    let weekCumulativeActions = [];
+    if (currentPhase.id === 'start' && current) {
+      // Get the week number from current day
+      const currentWeekNum = current.weekNumber;
+      
+      if (currentWeekNum) {
+        // Find all days in the same week, up to and including current day
+        const weekDays = dailyPlan
+          .filter(d => d.weekNumber === currentWeekNum && d.dayNumber <= dbDayNumber)
+          .sort((a, b) => a.dayNumber - b.dayNumber);
+        
+        weekDays.forEach(day => {
+          if (day.actions && Array.isArray(day.actions)) {
+            day.actions
+              .filter(action => action.enabled !== false)
+              .forEach(action => {
+                // Avoid duplicates (same action ID)
+                if (!weekCumulativeActions.find(a => a.id === action.id)) {
+                  weekCumulativeActions.push({
+                    ...action,
+                    introducedOnDay: day.dayNumber,
+                    introducedOnDayId: day.id,
+                    introducedLabel: `Day ${day.dayNumber - PHASES.START.dbDayStart + 1}`
+                  });
+                }
+              });
+          }
+        });
+        
+        console.log('[useDailyPlan] Start Phase week-cumulative actions:', {
+          currentDay: dbDayNumber,
+          weekNumber: currentWeekNum,
+          totalWeekActions: weekCumulativeActions.length
+        });
+      }
+    }
+
     // Enrich with user progress and phase info
     let enrichedCurrent = null;
     if (current) {
       const progressKey = current.id; // e.g., 'day-001'
       const progress = userState.dailyProgress?.[progressKey] || { itemsCompleted: [] };
+      
+      // Determine which actions to use:
+      // - Prep Phase: cumulative from Day 1 through current day
+      // - Start Phase: cumulative from first day of week through current day
+      // - Post Phase: just current day's actions
+      let actionsToUse = [...(current.actions || [])];
+      if (currentPhase.cumulativeActions) {
+        actionsToUse = cumulativeActions;
+      } else if (currentPhase.id === 'start' && weekCumulativeActions.length > 0) {
+        actionsToUse = weekCumulativeActions;
+      }
+      
       enrichedCurrent = {
         ...current,
         // Phase-specific display info
@@ -671,8 +723,8 @@ export const useDailyPlan = () => {
         // User progress
         userProgress: progress,
         isCompleted: progress.status === 'completed',
-        // For Prep Phase: replace day-specific actions with cumulative actions
-        actions: currentPhase.cumulativeActions ? cumulativeActions : [...(current.actions || [])]
+        // Use appropriate actions based on phase
+        actions: actionsToUse
       };
     } else if (currentPhase.cumulativeActions && cumulativeActions.length > 0) {
       // Create a synthetic day data for prep phase even if specific day doc doesn't exist
@@ -698,9 +750,12 @@ export const useDailyPlan = () => {
         // It's a session day!
         const sessionNum = sessionIndex + 1;
         
-        // Format time
+        // Format time and day
         let timeStr = "Time TBD";
+        let dayStr = "";
         let startDateObj = null;
+        let sessionDateObj = null;
+        
         if (cohortData.startDate.toDate && typeof cohortData.startDate.toDate === 'function') {
           startDateObj = cohortData.startDate.toDate();
         } else if (cohortData.startDate.seconds) {
@@ -711,61 +766,28 @@ export const useDailyPlan = () => {
         
         if (startDateObj && !isNaN(startDateObj.getTime())) {
            timeStr = startDateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+           // Calculate the actual session date (startDate + sessionIndex * 7 days)
+           sessionDateObj = new Date(startDateObj);
+           sessionDateObj.setDate(sessionDateObj.getDate() + (sessionIndex * 7));
+           dayStr = sessionDateObj.toLocaleDateString('en-US', { weekday: 'long' });
         }
 
         const qsAction = {
           id: `qs-session-${sessionNum}`,
           type: 'community', // Use community icon
           label: `QuickStart Session ${sessionNum}`,
-          description: `Live 2-hour session at ${timeStr}`,
+          description: dayStr ? `Live 2-hour session on ${dayStr} at ${timeStr}` : `Live 2-hour session at ${timeStr}`,
           resourceId: null, 
           enabled: true,
-          isSystemInjected: true
-        };
-        
-        // Check completion status
-        const isCompleted = enrichedCurrent.userProgress?.itemsCompleted?.includes(qsAction.id);
-        qsAction.isCompleted = isCompleted;
-        
-        // Add to actions at the top
-        if (!enrichedCurrent.actions) enrichedCurrent.actions = [];
-        enrichedCurrent.actions.unshift(qsAction);
-      }
-    }
-
-    // Inject QS Sessions (Cohort-based) - Only for START phase
-    if (enrichedCurrent && cohortData?.startDate && currentPhase.id === 'start') {
-      // Calculate which session this might be (0, 7, 14, 21 days from start)
-      // We use daysFromStart which is already calculated
-      const sessionIndex = [0, 7, 14, 21].indexOf(daysFromStart);
-      
-      if (sessionIndex !== -1) {
-        // It's a session day!
-        const sessionNum = sessionIndex + 1;
-        
-        // Format time
-        let timeStr = "Time TBD";
-        let startDateObj = null;
-        if (cohortData.startDate.toDate && typeof cohortData.startDate.toDate === 'function') {
-          startDateObj = cohortData.startDate.toDate();
-        } else if (cohortData.startDate.seconds) {
-          startDateObj = new Date(cohortData.startDate.seconds * 1000);
-        } else {
-          startDateObj = new Date(cohortData.startDate);
-        }
-        
-        if (startDateObj && !isNaN(startDateObj.getTime())) {
-           timeStr = startDateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-        }
-
-        const qsAction = {
-          id: `qs-session-${sessionNum}`,
-          type: 'community', // Use community icon
-          label: `QuickStart Session ${sessionNum}`,
-          description: `Live 2-hour session at ${timeStr}`,
-          resourceId: null, 
-          enabled: true,
-          isSystemInjected: true
+          isSystemInjected: true,
+          // Calendar data for "Add to Calendar" button
+          calendarEvent: sessionDateObj ? {
+            title: `QuickStart Session ${sessionNum} - LeaderReps`,
+            startDate: sessionDateObj,
+            duration: 120, // 2 hours in minutes
+            description: `QuickStart Session ${sessionNum} for LeaderReps Professional Development`,
+            location: cohortData.meetingLink || 'Virtual - Link TBD'
+          } : null
         };
         
         // Check completion status

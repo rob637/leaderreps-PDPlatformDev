@@ -3,7 +3,7 @@ import {
   CheckCircle, Circle, Play, BookOpen, Users, Video, FileText, Zap, 
   AlertCircle, ExternalLink, Loader, Layers, MessageSquare, 
   SkipForward, ChevronDown, ChevronUp, Clock, Flame, Award, AlertTriangle,
-  User, ClipboardCheck
+  User, ClipboardCheck, Calendar
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useDevPlan } from '../../hooks/useDevPlan';
@@ -15,6 +15,30 @@ import CoachingActionItem from '../coaching/CoachingActionItem';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
+
+// Helper function to generate Google Calendar URL
+const generateCalendarUrl = (calendarEvent) => {
+  if (!calendarEvent) return null;
+  
+  const { title, startDate, duration, description, location } = calendarEvent;
+  const start = new Date(startDate);
+  const end = new Date(start.getTime() + (duration * 60 * 1000)); // duration in minutes
+  
+  // Format dates for Google Calendar (YYYYMMDDTHHMMSSZ)
+  const formatDate = (date) => {
+    return date.toISOString().replace(/-|:|\.\d{3}/g, '').slice(0, -1);
+  };
+  
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${formatDate(start)}/${formatDate(end)}`,
+    details: description || '',
+    location: location || '',
+  });
+  
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+};
 
 const ThisWeeksActionsWidget = ({ scope }) => {
   const { db } = useAppServices();
@@ -40,6 +64,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   // Determine which data source to use
   const currentWeek = scope?.currentWeek || devPlanHook.currentWeek;
   const masterPlan = devPlanHook.masterPlan || [];
+  const dailyPlan = devPlanHook.dailyPlan || [];
   const toggleItemComplete = scope?.toggleItemComplete || devPlanHook.toggleItemComplete;
   
   // Day-by-Day Architecture Integration
@@ -112,7 +137,9 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       return {
         ...action,
         id: action.id || fallbackId,
-        type: action.resourceType || action.type || 'content',
+        // Keep original type for filtering (e.g., 'daily_rep'), use resourceType for display
+        type: action.type || action.resourceType || 'content',
+        displayType: action.resourceType || action.type || 'content',
         label: label,
         required: action.required !== false && !action.optional,
         optional: action.optional === true,
@@ -195,9 +222,16 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     }
     
     // Start/Post phase = Combine daily + weekly
+    // Filter out daily_rep items - they are shown in the Daily Reps widget
+    const filteredDailyActions = dailyNormalized.filter(action => {
+      // Filter out Daily Reps (they go to Daily Reps widget)
+      if (action.type === 'daily_rep') return false;
+      return true;
+    });
+    
     const normalized = [
       // Daily actions first (today's priorities)
-      ...dailyNormalized,
+      ...filteredDailyActions,
       // Then weekly content
       ...normalizeItems(content, 'Content'),
       ...normalizeItems(community, 'Community'),
@@ -227,22 +261,43 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     const currentWeekNum = currentWeek.weekNumber;
     const prevWeekNum = currentWeekNum - 1;
     
-    if (prevWeekNum < 1 || !masterPlan.length) {
+    if (prevWeekNum < 1) {
       return explicitCarryOver;
     }
     
-    // Find previous week in masterPlan
-    const prevWeek = masterPlan.find(w => w.weekNumber === prevWeekNum);
-    if (!prevWeek) {
-      return explicitCarryOver;
-    }
+    let prevWeekItems = [];
+
+    // STRATEGY 1: Check Daily Plan (New Architecture)
+    if (dailyPlan && dailyPlan.length > 0) {
+      const prevWeekDays = dailyPlan.filter(d => d.weekNumber === prevWeekNum);
+      
+      prevWeekDays.forEach(day => {
+        if (day.actions) {
+          const normalized = normalizeDailyActions(day.actions, day.id);
+          // Filter out Daily Reps and ensure Required
+          // Note: 'weekly_action' type usually implies required in the new plan
+          const validActions = normalized.filter(a => 
+            a.type !== 'daily_rep' && 
+            a.required
+          );
+          prevWeekItems.push(...validActions);
+        }
+      });
+    } 
     
-    // Get all items from previous week
-    const prevWeekItems = [
-      ...normalizeItems(prevWeek.content || prevWeek.contentItems || [], 'Content'),
-      ...normalizeItems(prevWeek.community || prevWeek.communityItems || [], 'Community'),
-      ...normalizeItems(prevWeek.coaching || prevWeek.coachingItems || [], 'Coaching')
-    ];
+    // STRATEGY 2: Fallback to Master Plan (Legacy Architecture)
+    // Only if we didn't find anything in Daily Plan OR if we want to support hybrid
+    if (prevWeekItems.length === 0 && masterPlan.length > 0) {
+      // Find previous week in masterPlan
+      const prevWeek = masterPlan.find(w => w.weekNumber === prevWeekNum);
+      if (prevWeek) {
+        prevWeekItems = [
+          ...normalizeItems(prevWeek.content || prevWeek.contentItems || [], 'Content'),
+          ...normalizeItems(prevWeek.community || prevWeek.communityItems || [], 'Community'),
+          ...normalizeItems(prevWeek.coaching || prevWeek.coachingItems || [], 'Coaching')
+        ];
+      }
+    }
     
     // Filter to incomplete items that aren't already in explicitCarryOver
     const explicitIds = new Set(explicitCarryOver.map(i => i.id));
@@ -275,7 +330,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     
     // Combine both sources
     return [...explicitCarryOver, ...incompleteFromPrevWeek];
-  }, [currentWeek?.weekNumber, getCarriedOverItems, masterPlan, getItemProgress, devPlanHook.userState?.weekProgress]);
+  }, [currentWeek?.weekNumber, getCarriedOverItems, masterPlan, dailyPlan, getItemProgress, devPlanHook.userState?.weekProgress]);
 
   // Calculate progress (MUST be before any early returns)
   const completedCount = useMemo(() => {
@@ -391,11 +446,18 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   const handleViewResource = async (e, item) => {
     e.stopPropagation(); // Prevent toggling completion
     
-    // Use provided URL if present (unless it's PDQ, which we want to re-fetch to get the real doc)
-    if (item.url && !item.title?.toLowerCase().includes('pdq')) {
+    // For items with a URL, check if it should open in-app or if we need to fetch more data
+    // PDQ items need re-fetch to ensure we have the right document URL
+    const itemLabel = (item.label || item.title || '').toLowerCase();
+    const isPDQ = itemLabel.includes('pdq');
+    
+    // For items with a URL that aren't PDQ special cases, open directly in the viewer
+    // This ensures documents open in-app via UniversalResourceViewer
+    if (item.url && !isPDQ) {
       setViewingResource({
           ...item,
-          type: item.resourceType || 'link'
+          type: item.resourceType || item.type || 'document',
+          url: item.url
       });
       return;
     }
@@ -682,6 +744,20 @@ const ThisWeeksActionsWidget = ({ scope }) => {
                 </button>
               )}
             </div>
+          )}
+
+          {/* Add to Calendar Button */}
+          {item.calendarEvent && (
+            <a
+              href={generateCalendarUrl(item.calendarEvent)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all touch-manipulation active:scale-95"
+              title="Add to Calendar"
+            >
+              <Calendar className="w-5 h-5" />
+            </a>
           )}
 
           {/* View Resource Button */}

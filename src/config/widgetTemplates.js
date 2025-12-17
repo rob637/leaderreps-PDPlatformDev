@@ -96,13 +96,16 @@ export const WIDGET_TEMPLATES = {
         icon = Coffee;
      }
 
-     // Card title is "Today's Focus" (or Weekend/Prep variant)
-     const cardTitle = isWeekend ? "Weekend Focus" : (isPrep ? "Prep Focus" : "Today's Focus");
+     // Single-line format: "Today's Focus: [focus text]"
+     const prefix = isWeekend ? "Weekend Focus" : (isPrep ? "Prep Focus" : "Today's Focus");
      
      return (
-        <Card title={cardTitle} icon={icon} accent={accent}>
-           <p className="text-lg font-medium text-corporate-navy">{focus}</p>
-        </Card>
+        <div className="flex items-center gap-3 bg-white rounded-xl p-4 border-l-4 border-l-corporate-navy border border-slate-200 shadow-sm">
+           <div className="p-2 bg-corporate-navy/10 rounded-lg">
+              {React.createElement(icon, { className: "w-5 h-5 text-corporate-navy" })}
+           </div>
+           <p className="text-lg text-corporate-navy"><span className="font-bold">{prefix}:</span> {focus}</p>
+        </div>
      );
   }
 
@@ -110,9 +113,12 @@ export const WIDGET_TEMPLATES = {
   const focus = weeklyFocus || "Leadership Identity";
   
   return (
-    <Card title="Today's Focus" icon={Target} accent="NAVY">
-      <p className="text-lg font-medium text-corporate-navy">{focus}</p>
-    </Card>
+    <div className="flex items-center gap-3 bg-white rounded-xl p-4 border-l-4 border-l-corporate-navy border border-slate-200 shadow-sm">
+       <div className="p-2 bg-corporate-navy/10 rounded-lg">
+          <Target className="w-5 h-5 text-corporate-navy" />
+       </div>
+       <p className="text-lg text-corporate-navy"><span className="font-bold">Today's Focus:</span> {focus}</p>
+    </div>
   );
 })()
     `,
