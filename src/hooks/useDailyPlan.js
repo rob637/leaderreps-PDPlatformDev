@@ -645,8 +645,8 @@ export const useDailyPlan = () => {
       prepInfo = {
         daysUntilStart,
         totalPrepDays: PHASES.PRE_START.dbDayEnd - PHASES.PRE_START.dbDayStart + 1,
-        currentPrepDay: phaseDayNumber,
-        progressPercent: Math.round((phaseDayNumber / 14) * 100),
+        currentPrepDay: journeyDay, // Use journeyDay (visit count) instead of calendar day
+        progressPercent: Math.round((journeyDay / 14) * 100),
         welcome: welcomeMessage,
         quote: dailyQuote,
         // Progressive onboarding
@@ -734,7 +734,7 @@ export const useDailyPlan = () => {
         phase: currentPhase,
         phaseDayNumber: phaseDayNumber,
         displayDay: currentPhase.id === 'pre-start' 
-          ? `Prep Day ${phaseDayNumber}` 
+          ? `Prep Day ${journeyDay}` // Use journeyDay (visit count) for display
           : currentPhase.id === 'start'
             ? `Day ${phaseDayNumber}`
             : `Post Day ${phaseDayNumber}`,
@@ -751,7 +751,7 @@ export const useDailyPlan = () => {
         dayNumber: dbDayNumber,
         phase: currentPhase,
         phaseDayNumber: phaseDayNumber,
-        displayDay: `Prep Day ${phaseDayNumber}`,
+        displayDay: `Prep Day ${journeyDay}`, // Use journeyDay (visit count) for display
         actions: cumulativeActions,
         userProgress: { itemsCompleted: [] },
         isCompleted: false
