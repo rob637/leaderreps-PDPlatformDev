@@ -73,8 +73,11 @@ const PrepWelcomeBanner = () => {
     // undefined or any other value means not required
     const isRequired = action.required === true;
     
-    // Skip optional actions
-    if (action.optional === true) return false;
+    // If not required, skip it immediately
+    if (!isRequired) return false;
+    
+    // Note: We ignore action.optional here because if required=true, it MUST be done.
+    // This handles data inconsistencies where an item might be marked both required and optional.
     
     // Check completion status using the unified action progress system
     // This handles both legacy week-based and new day-based completions
@@ -89,7 +92,7 @@ const PrepWelcomeBanner = () => {
       if (completedItems.includes(action.id)) return false; // It is completed in legacy system
     }
     
-    return isRequired && !isCompleted;
+    return !isCompleted;
   });
 
   const hasIncompleteRequiredActions = incompleteRequiredActions.length > 0;
