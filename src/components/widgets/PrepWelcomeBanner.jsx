@@ -69,15 +69,12 @@ const PrepWelcomeBanner = () => {
   const actions = currentDayData?.actions || [];
   
   const incompleteRequiredActions = actions.filter(action => {
-    // An action is required ONLY if explicitly marked as required: true
-    // undefined or any other value means not required
-    const isRequired = action.required === true;
+    // An action is required if it's not explicitly optional AND not explicitly marked as not required.
+    // This matches the logic in ThisWeeksActionsWidget to ensure the count matches the "Required" badges shown.
+    const isRequired = action.required !== false && !action.optional;
     
     // If not required, skip it immediately
     if (!isRequired) return false;
-    
-    // Note: We ignore action.optional here because if required=true, it MUST be done.
-    // This handles data inconsistencies where an item might be marked both required and optional.
     
     // Check completion status using the unified action progress system
     // This handles both legacy week-based and new day-based completions
