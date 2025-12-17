@@ -92,12 +92,15 @@ const PrepWelcomeBanner = () => {
       isPrepComplete,
       hasIncomplete: hasIncompleteRequiredActions,
       incompleteCount: incompleteRequiredActions.length,
+      totalActions: actions.length,
       incompleteActions: incompleteRequiredActions.map(a => ({
         label: a.label,
         id: a.id,
         introDay: a.introducedOnDayId,
-        checkedDay: a.introducedOnDayId || currentDayData?.id
-      }))
+        required: a.required,
+        optional: a.optional
+      })),
+      userStateKeys: Object.keys(userState?.dailyProgress || {})
     });
   }
   
@@ -107,15 +110,29 @@ const PrepWelcomeBanner = () => {
   // 4. Get the correct onboarding module for this effective day
   let effectiveOnboarding = ONBOARDING_MODULES[effectiveJourneyDay];
 
-  // Override Day 5 content if incomplete
+  // Override content if incomplete (applies to Day 5 AND any day past 5 with incomplete actions)
   // This prevents showing "Your Toolkit is Complete" when they still have tasks
-  if (effectiveJourneyDay === 5 && hasIncompleteRequiredActions && effectiveOnboarding) {
-    effectiveOnboarding = {
-      ...effectiveOnboarding,
-      title: 'Almost Ready!',
-      headline: `Day 5: Finish Your Toolkit`,
-      description: `You have ${incompleteRequiredActions.length} required action${incompleteRequiredActions.length === 1 ? '' : 's'} remaining. Complete them to be fully ready for Day 1.`
-    };
+  if (hasIncompleteRequiredActions && clampedJourneyDay >= 5) {
+    const count = incompleteRequiredActions.length;
+    if (clampedJourneyDay > 5) {
+      // Past Day 5: Show "Finish Strong" messaging
+      effectiveOnboarding = {
+        id: 'finish-strong',
+        title: 'Finish Strong!',
+        headline: `Finish Strong, ${firstName}!`,
+        description: `You have ${count} required action${count === 1 ? '' : 's'} left. Complete ${count === 1 ? 'it' : 'them'} to unlock your full readiness status.`,
+        widgets: ['appOverview'],
+        tip: 'Complete your remaining prep tasks to be fully ready for Day 1.'
+      };
+    } else {
+      // Day 5 exactly: Show "Almost Ready" messaging
+      effectiveOnboarding = {
+        ...effectiveOnboarding,
+        title: 'Almost Ready!',
+        headline: `Day 5: Finish Your Toolkit`,
+        description: `You have ${count} required action${count === 1 ? '' : 's'} remaining. Complete ${count === 1 ? 'it' : 'them'} to be fully ready for Day 1.`
+      };
+    }
   }
 
   const onboarding = effectiveOnboarding || originalOnboarding;
@@ -197,12 +214,20 @@ const PrepWelcomeBanner = () => {
       'recap': LayoutDashboard,
       'welcome-bookends': Zap,
       'content-recap': LayoutDashboard,
-      'quick-start': Rocket
+      'quick-start': Rocket,
+      'finish-strong': Target
     };
     return icons[moduleId] || Target;
   };
 
   const ModuleIcon = onboarding ? getModuleIcon(onboarding.id) : Target;
+
+  // Determine badge text - show actual day for Days 6+
+  const getBadgeText = () => {
+    if (isPrepComplete) return 'Prep Complete';
+    if (clampedJourneyDay > 5 && hasIncompleteRequiredActions) return 'Finish Strong';
+    return `Prep Day ${effectiveJourneyDay}`;
+  };
 
   return (
     <div className={`relative overflow-hidden rounded-2xl shadow-xl mb-6 ${
@@ -233,7 +258,7 @@ const PrepWelcomeBanner = () => {
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-2 text-corporate-teal font-bold tracking-wider text-xs uppercase">
                 {isLaunch ? <Rocket className="w-4 h-4 animate-bounce" /> : <Shield className="w-4 h-4" />}
-                <span>{isPrepComplete ? 'Prep Complete' : `Prep Day ${effectiveJourneyDay}`}</span>
+                <span>{getBadgeText()}</span>
               </div>
               {cohortName && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 flex items-center gap-1">
