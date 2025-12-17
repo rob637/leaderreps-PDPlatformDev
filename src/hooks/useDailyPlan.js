@@ -648,7 +648,7 @@ export const useDailyPlan = () => {
         userProgress: progress,
         isCompleted: progress.status === 'completed',
         // For Prep Phase: replace day-specific actions with cumulative actions
-        actions: currentPhase.cumulativeActions ? cumulativeActions : current.actions
+        actions: currentPhase.cumulativeActions ? cumulativeActions : [...(current.actions || [])]
       };
     } else if (currentPhase.cumulativeActions && cumulativeActions.length > 0) {
       // Create a synthetic day data for prep phase even if specific day doc doesn't exist
@@ -662,6 +662,96 @@ export const useDailyPlan = () => {
         userProgress: { itemsCompleted: [] },
         isCompleted: false
       };
+    }
+
+    // Inject QS Sessions (Cohort-based) - Only for START phase
+    if (enrichedCurrent && cohortData?.startDate && currentPhase.id === 'start') {
+      // Calculate which session this might be (0, 7, 14, 21 days from start)
+      // We use daysFromStart which is already calculated
+      const sessionIndex = [0, 7, 14, 21].indexOf(daysFromStart);
+      
+      if (sessionIndex !== -1) {
+        // It's a session day!
+        const sessionNum = sessionIndex + 1;
+        
+        // Format time
+        let timeStr = "Time TBD";
+        let startDateObj = null;
+        if (cohortData.startDate.toDate && typeof cohortData.startDate.toDate === 'function') {
+          startDateObj = cohortData.startDate.toDate();
+        } else if (cohortData.startDate.seconds) {
+          startDateObj = new Date(cohortData.startDate.seconds * 1000);
+        } else {
+          startDateObj = new Date(cohortData.startDate);
+        }
+        
+        if (startDateObj && !isNaN(startDateObj.getTime())) {
+           timeStr = startDateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        }
+
+        const qsAction = {
+          id: `qs-session-${sessionNum}`,
+          type: 'community', // Use community icon
+          label: `QuickStart Session ${sessionNum}`,
+          description: `Live 2-hour session at ${timeStr}`,
+          resourceId: null, 
+          enabled: true,
+          isSystemInjected: true
+        };
+        
+        // Check completion status
+        const isCompleted = enrichedCurrent.userProgress?.itemsCompleted?.includes(qsAction.id);
+        qsAction.isCompleted = isCompleted;
+        
+        // Add to actions at the top
+        if (!enrichedCurrent.actions) enrichedCurrent.actions = [];
+        enrichedCurrent.actions.unshift(qsAction);
+      }
+    }
+
+    // Inject QS Sessions (Cohort-based) - Only for START phase
+    if (enrichedCurrent && cohortData?.startDate && currentPhase.id === 'start') {
+      // Calculate which session this might be (0, 7, 14, 21 days from start)
+      // We use daysFromStart which is already calculated
+      const sessionIndex = [0, 7, 14, 21].indexOf(daysFromStart);
+      
+      if (sessionIndex !== -1) {
+        // It's a session day!
+        const sessionNum = sessionIndex + 1;
+        
+        // Format time
+        let timeStr = "Time TBD";
+        let startDateObj = null;
+        if (cohortData.startDate.toDate && typeof cohortData.startDate.toDate === 'function') {
+          startDateObj = cohortData.startDate.toDate();
+        } else if (cohortData.startDate.seconds) {
+          startDateObj = new Date(cohortData.startDate.seconds * 1000);
+        } else {
+          startDateObj = new Date(cohortData.startDate);
+        }
+        
+        if (startDateObj && !isNaN(startDateObj.getTime())) {
+           timeStr = startDateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        }
+
+        const qsAction = {
+          id: `qs-session-${sessionNum}`,
+          type: 'community', // Use community icon
+          label: `QuickStart Session ${sessionNum}`,
+          description: `Live 2-hour session at ${timeStr}`,
+          resourceId: null, 
+          enabled: true,
+          isSystemInjected: true
+        };
+        
+        // Check completion status
+        const isCompleted = enrichedCurrent.userProgress?.itemsCompleted?.includes(qsAction.id);
+        qsAction.isCompleted = isCompleted;
+        
+        // Add to actions at the top
+        if (!enrichedCurrent.actions) enrichedCurrent.actions = [];
+        enrichedCurrent.actions.unshift(qsAction);
+      }
     }
 
     // Calculate Missed Days (only for START phase - cohort-based)

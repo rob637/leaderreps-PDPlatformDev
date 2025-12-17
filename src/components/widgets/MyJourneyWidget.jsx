@@ -77,7 +77,9 @@ const MyJourneyWidget = () => {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
     });
   };
 

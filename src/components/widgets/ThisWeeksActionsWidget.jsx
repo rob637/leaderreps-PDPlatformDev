@@ -624,8 +624,17 @@ const ThisWeeksActionsWidget = ({ scope }) => {
             ) : (
               <>
                 <span className="capitalize">{item.type?.replace(/_/g, ' ').toLowerCase() || 'Action'}</span>
-                <span>•</span>
-                <span>{item.estimatedTime || '15m'}</span>
+                {item.description ? (
+                  <>
+                    <span>•</span>
+                    <span className="text-slate-600">{item.description}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>•</span>
+                    <span>{item.estimatedTime || '15m'}</span>
+                  </>
+                )}
                 {isCarriedOver && item.originalWeek && (
                   <>
                     <span>•</span>
