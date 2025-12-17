@@ -67,7 +67,12 @@ const PrepWelcomeBanner = () => {
   const actions = currentDayData?.actions || [];
   
   const incompleteRequiredActions = actions.filter(action => {
-    const isRequired = action.required !== false && !action.optional;
+    // An action is required ONLY if explicitly marked as required: true
+    // undefined or any other value means not required
+    const isRequired = action.required === true;
+    
+    // Skip optional actions
+    if (action.optional === true) return false;
     
     // Determine which day's progress to check
     // In Prep Phase, actions are cumulative, so we need to check the day they were introduced
