@@ -242,11 +242,11 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
       const newAction = {
         id: `action-${Date.now()}`,
         type: 'daily_rep',
-        label: item.title,
-        description: item.description, // Copy description from library
-        resourceId: item.id,
-        resourceTitle: item.title,
-        resourceType: item.type,
+        label: item.title || '',
+        description: item.description || '', // Copy description from library, default to empty string
+        resourceId: item.id || null,
+        resourceTitle: item.title || '',
+        resourceType: item.type || 'content',
         isCompleted: false
       };
       setFormData(prev => ({
@@ -818,20 +818,46 @@ const DailyPlanManager = () => {
     }
   };
 
+  // Helper to remove undefined values (Firestore doesn't support them)
+  const removeUndefined = (obj) => {
+    if (obj === undefined) return null;
+    if (obj === null) return null;
+    if (typeof obj !== 'object') return obj;
+    
+    // Check for Firestore Timestamp (has toMillis method) or Date
+    if ((obj.toMillis && typeof obj.toMillis === 'function') || obj instanceof Date) return obj;
+    
+    if (Array.isArray(obj)) {
+      return obj.map(removeUndefined);
+    }
+    
+    const newObj = {};
+    Object.keys(obj).forEach(key => {
+      const value = obj[key];
+      if (value !== undefined) {
+        newObj[key] = removeUndefined(value);
+      } else {
+        newObj[key] = null;
+      }
+    });
+    return newObj;
+  };
+
   const handleSaveDay = async (updatedDay) => {
     try {
-      const ref = doc(db, 'daily_plan_v1', updatedDay.id);
+      const cleanDay = removeUndefined(updatedDay);
+      const ref = doc(db, 'daily_plan_v1', cleanDay.id);
       await setDoc(ref, {
-        ...updatedDay,
+        ...cleanDay,
         updatedAt: serverTimestamp()
       });
       
       // Update local state
-      setDays(prev => prev.map(d => d.id === updatedDay.id ? updatedDay : d));
+      setDays(prev => prev.map(d => d.id === cleanDay.id ? cleanDay : d));
       setEditingDay(null);
     } catch (error) {
       console.error("Error saving day:", error);
-      alert("Failed to save day.");
+      alert("Failed to save day. Check console for details.");
     }
   };
 

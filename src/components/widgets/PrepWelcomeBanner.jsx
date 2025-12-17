@@ -4,7 +4,7 @@ import {
   CheckCircle2, BookOpen, Video, Sunrise, Moon, LayoutDashboard,
   ChevronRight, Zap, GraduationCap, Users, PlayCircle
 } from 'lucide-react';
-import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useDailyPlan, ONBOARDING_MODULES } from '../../hooks/useDailyPlan';
 import { useAppServices } from '../../services/useAppServices';
 
 /**
@@ -43,7 +43,7 @@ const PrepWelcomeBanner = () => {
     daysUntilStart = 14, 
     welcome = { headline: "Your Journey Begins Now, Leader", subtext: "Preparing for your leadership transformation.", excitement: 'start' },
     quote = { quote: "Leadership is not about being in charge. It's about taking care of those in your charge.", author: "Simon Sinek" },
-    onboarding = null,
+    onboarding: originalOnboarding = null,
     isAccelerated = false,
     isQuickStart = false,
     totalActions = 0,
@@ -59,9 +59,19 @@ const PrepWelcomeBanner = () => {
   const isHighExcitement = welcome.excitement === 'high' || welcome.excitement === 'launch';
   const isLaunch = welcome.excitement === 'launch';
   
-  // Effective journey day for display (capped at 5 for prep content)
-  const effectiveJourneyDay = Math.min(journeyDay || 1, 5);
-  const isPrepComplete = (journeyDay || 1) > 5;
+  // Calculate effective journey day
+  // 1. Clamp to phaseDayNumber so early birds don't get ahead of the official schedule
+  const clampedJourneyDay = Math.min(journeyDay || 1, phaseDayNumber || 14);
+  
+  // 2. Determine if prep is complete (more than 5 days of content)
+  const isPrepComplete = clampedJourneyDay > 5;
+  
+  // 3. Effective day for content lookup (capped at 5)
+  const effectiveJourneyDay = Math.min(clampedJourneyDay, 5);
+
+  // 4. Get the correct onboarding module for this effective day
+  const effectiveOnboarding = ONBOARDING_MODULES[effectiveJourneyDay];
+  const onboarding = effectiveOnboarding || originalOnboarding;
 
   // Build personalized headline
   const getPersonalizedHeadline = () => {
@@ -70,7 +80,7 @@ const PrepWelcomeBanner = () => {
       return `You're Ready, ${firstName}!`;
     }
     // First day gets special welcome with name
-    if (journeyDay === 1) {
+    if (clampedJourneyDay === 1) {
       if (cohortName) {
         return `Welcome to ${cohortName}, ${firstName}!`;
       }
@@ -96,7 +106,7 @@ const PrepWelcomeBanner = () => {
       }
       return `You've completed your prep! ${daysUntilStart} days until QuickStart. Keep practicing your AM & PM Bookends.`;
     }
-    if (journeyDay === 1) {
+    if (clampedJourneyDay === 1) {
       // Day 1: Use the onboarding description as subtext
       return onboarding?.description || welcome.subtext;
     }
