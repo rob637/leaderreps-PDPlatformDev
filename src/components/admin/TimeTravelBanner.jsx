@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTime } from '../../providers/TimeProvider';
-import { Clock, AlertTriangle, RotateCcw } from 'lucide-react';
+import { Clock, AlertTriangle, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { timeService } from '../../services/timeService';
 
 /**
@@ -8,7 +8,7 @@ import { timeService } from '../../services/timeService';
  * Only visible to admins during testing
  */
 const TimeTravelBanner = ({ isAdmin, onMidnightRollover }) => {
-  const { now, isTimeTravelActive, resetTime } = useTime();
+  const { now, isTimeTravelActive, resetTime, travelTo } = useTime();
   const [displayTime, setDisplayTime] = useState(now);
   const [lastDate, setLastDate] = useState(timeService.getTodayStr());
 
@@ -38,6 +38,18 @@ const TimeTravelBanner = ({ isAdmin, onMidnightRollover }) => {
 
     return () => clearInterval(interval);
   }, [isTimeTravelActive, lastDate, onMidnightRollover]);
+
+  const handlePrevDay = () => {
+    const currentNow = timeService.getNow();
+    const prevDay = new Date(currentNow.getTime() - 24 * 60 * 60 * 1000);
+    travelTo(prevDay);
+  };
+
+  const handleNextDay = () => {
+    const currentNow = timeService.getNow();
+    const nextDay = new Date(currentNow.getTime() + 24 * 60 * 60 * 1000);
+    travelTo(nextDay);
+  };
 
   // Don't show if not admin or time travel not active
   if (!isAdmin || !isTimeTravelActive) {
@@ -73,13 +85,35 @@ const TimeTravelBanner = ({ isAdmin, onMidnightRollover }) => {
           </div>
         </div>
 
-        <button
-          onClick={resetTime}
-          className="flex items-center gap-2 px-3 py-1 bg-red-500/20 hover:bg-red-500/40 border border-red-400/50 rounded-lg text-sm font-medium transition-colors"
-        >
-          <RotateCcw className="w-4 h-4" />
-          Reset to Real Time
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePrevDay}
+            className="flex items-center gap-1 px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-400/50 rounded-lg text-sm font-medium transition-colors"
+            title="Go back 1 day"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            -1 Day
+          </button>
+          
+          <button
+            onClick={handleNextDay}
+            className="flex items-center gap-1 px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-400/50 rounded-lg text-sm font-medium transition-colors"
+            title="Go forward 1 day"
+          >
+            +1 Day
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
+          <div className="h-4 w-px bg-white/30 mx-1" />
+
+          <button
+            onClick={resetTime}
+            className="flex items-center gap-2 px-3 py-1 bg-red-500/20 hover:bg-red-500/40 border border-red-400/50 rounded-lg text-sm font-medium transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset to Real Time
+          </button>
+        </div>
       </div>
     </div>
   );
