@@ -47,14 +47,15 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
         switch (resourceType) {
           case 'content':
-            // Fetch from Wrappers (Videos, Docs, Courses) AND Unified Library (Read & Reps)
+            // Fetch from Wrappers (Videos, Docs, Courses) AND Unified Library (Read & Reps, Videos, Reps)
             collections = [
               CONTENT_COLLECTIONS.VIDEOS, 
               CONTENT_COLLECTIONS.DOCUMENTS, 
               CONTENT_COLLECTIONS.COURSES,
               CONTENT_COLLECTIONS.READINGS // Keep for legacy support
             ];
-            unifiedTypes = [UNIFIED_TYPES.READ_REP];
+            // Include VIDEO and REP types from Unified Collection
+            unifiedTypes = [UNIFIED_TYPES.READ_REP, UNIFIED_TYPES.VIDEO, UNIFIED_TYPES.REP];
             break;
           case 'community':
             collections = [CONTENT_COLLECTIONS.COMMUNITY];
@@ -90,10 +91,16 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
             const snapshot = await getDocs(q);
             const unifiedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             
-            allResources = [...allResources, ...unifiedData.map(item => ({ 
-              ...item, 
-              resourceType: item.type === UNIFIED_TYPES.READ_REP ? 'read_rep' : 'unified' 
-            }))];
+            allResources = [...allResources, ...unifiedData.map(item => {
+              let type = 'unified';
+              if (item.type === UNIFIED_TYPES.READ_REP) type = 'read_rep';
+              else if (item.type === UNIFIED_TYPES.VIDEO || item.type === UNIFIED_TYPES.REP) type = 'video';
+              
+              return { 
+                ...item, 
+                resourceType: type
+              };
+            })];
           } catch (err) {
             console.error("Error fetching unified content:", err);
           }
