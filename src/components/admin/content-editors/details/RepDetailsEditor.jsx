@@ -83,6 +83,20 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
 
       {type === CONTENT_TYPES.READ_REP && (
         <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Author
+            </label>
+            <input
+              type="text"
+              name="author"
+              value={details.author || ''}
+              onChange={handleChange}
+              placeholder="e.g. James Clear"
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+
           {/* AI Prompt Helper */}
           <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-4">
             <div className="flex items-start justify-between mb-2">

@@ -157,6 +157,21 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
             return;
           }
         }
+
+        // Check Unified Collection (for Read & Reps)
+        if (resourceType === 'content') {
+          const unifiedRef = doc(db, UNIFIED_COLLECTION, valueId);
+          const unifiedSnap = await getDoc(unifiedRef);
+          if (unifiedSnap.exists()) {
+            const data = unifiedSnap.data();
+            setSelectedResource({ 
+              id: unifiedSnap.id, 
+              ...data, 
+              resourceType: data.type === UNIFIED_TYPES.READ_REP ? 'read_rep' : 'unified' 
+            });
+            return;
+          }
+        }
       } catch (e) {
         console.error("Error loading single resource:", e);
       }
