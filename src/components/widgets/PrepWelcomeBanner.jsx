@@ -22,7 +22,7 @@ import { useAppServices } from '../../services/useAppServices';
  */
 const PrepWelcomeBanner = () => {
   const { user } = useAppServices();
-  const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay } = useDailyPlan();
+  const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay, currentDayData } = useDailyPlan();
   
   // Debug logging
   console.log('[PrepWelcomeBanner] Rendering with:', {
@@ -63,8 +63,20 @@ const PrepWelcomeBanner = () => {
   // 1. Clamp to phaseDayNumber so early birds don't get ahead of the official schedule
   const clampedJourneyDay = Math.min(journeyDay || 1, phaseDayNumber || 14);
   
-  // 2. Determine if prep is complete (more than 5 days of content)
-  const isPrepComplete = clampedJourneyDay > 5;
+  // Check for incomplete required actions
+  const actions = currentDayData?.actions || [];
+  const completedItems = currentDayData?.userProgress?.itemsCompleted || [];
+  
+  const incompleteRequiredActions = actions.filter(action => {
+    const isRequired = action.required !== false && !action.optional;
+    const isCompleted = completedItems.includes(action.id);
+    return isRequired && !isCompleted;
+  });
+
+  const hasIncompleteRequiredActions = incompleteRequiredActions.length > 0;
+  
+  // 2. Determine if prep is complete (more than 5 days of content AND no required actions pending)
+  const isPrepComplete = clampedJourneyDay > 5 && !hasIncompleteRequiredActions;
   
   // 3. Effective day for content lookup (capped at 5)
   const effectiveJourneyDay = Math.min(clampedJourneyDay, 5);
@@ -79,6 +91,12 @@ const PrepWelcomeBanner = () => {
     if (isPrepComplete) {
       return `You're Ready, ${firstName}!`;
     }
+
+    // If past day 5 but not complete
+    if (clampedJourneyDay > 5 && !isPrepComplete) {
+        return `Finish Strong, ${firstName}!`;
+    }
+
     // First day gets special welcome with name
     if (clampedJourneyDay === 1) {
       if (cohortName) {
@@ -106,6 +124,13 @@ const PrepWelcomeBanner = () => {
       }
       return `You've completed your prep! ${daysUntilStart} days until QuickStart. Keep practicing your AM & PM Bookends.`;
     }
+
+    // If past day 5 but not complete
+    if (clampedJourneyDay > 5 && !isPrepComplete) {
+        const count = incompleteRequiredActions.length;
+        return `You have ${count} required action${count === 1 ? '' : 's'} left. Complete them to unlock your full readiness status.`;
+    }
+
     if (clampedJourneyDay === 1) {
       // Day 1: Use the onboarding description as subtext
       return onboarding?.description || welcome.subtext;
