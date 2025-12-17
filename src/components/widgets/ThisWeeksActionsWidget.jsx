@@ -26,7 +26,8 @@ const generateCalendarUrl = (calendarEvent) => {
   
   // Format dates for Google Calendar (YYYYMMDDTHHMMSSZ)
   const formatDate = (date) => {
-    return date.toISOString().replace(/-|:|\.\d{3}/g, '').slice(0, -1);
+    // Keep the Z to indicate UTC time
+    return date.toISOString().replace(/-|:|\.\d{3}/g, '');
   };
   
   const params = new URLSearchParams({

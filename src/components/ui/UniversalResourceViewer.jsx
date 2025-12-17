@@ -192,8 +192,40 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
           );
         }
 
-        // For PDFs from Firebase Storage or other sources - try native browser PDF viewer first
+        // 1. Check for Office Docs (docx, pptx, xlsx) -> MUST Use Google Docs Viewer
+        // We check this BEFORE the generic 'alt=media' check to prevent downloading
+        const isOfficeDoc = url && url.toLowerCase().match(/\.(docx|doc|pptx|ppt|xlsx|xls)/);
+        
+        if (isOfficeDoc) {
+            const encodedUrl = url ? encodeURIComponent(url) : '';
+            const viewerUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
+            
+            return (
+              <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative">
+                 <iframe 
+                   src={viewerUrl} 
+                   className="w-full h-full" 
+                   title={title} 
+                 />
+                 {/* Fallback Link Overlay */}
+                 <div className="absolute bottom-4 right-4">
+                    <a 
+                      href={url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
+                    >
+                      <Download className="w-3 h-3" />
+                      Download / Open Directly
+                    </a>
+                 </div>
+              </div>
+            );
+        }
+
+        // 2. For PDFs from Firebase Storage or other sources - try native browser PDF viewer
         // Modern browsers can render PDFs directly in iframes
+        // Note: 'alt=media' is common for Firebase Storage, but we've already handled Office docs above
         const isPDF = url && (url.toLowerCase().includes('.pdf') || url.includes('alt=media'));
         
         if (isPDF) {
@@ -213,15 +245,14 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
                     className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
                   >
                     <Download className="w-3 h-3" />
-                    Download / Open Directly
+                    {url.toLowerCase().includes('.pdf') ? 'Open Full PDF' : 'Download / Open Directly'}
                   </a>
                </div>
             </div>
           );
         }
 
-        // For Office Docs (docx, pptx, xlsx) -> Use Google Docs Viewer
-        // Google Docs Viewer is required for Office docs but unreliable for some PDFs
+        // Fallback to Google Viewer for anything else (unknown types)
         const encodedUrl = url ? encodeURIComponent(url) : '';
         const viewerUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
         
