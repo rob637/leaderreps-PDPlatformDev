@@ -62,12 +62,21 @@ const TimeTravelBanner = ({ isAdmin, onMidnightRollover }) => {
     <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-indigo-900 via-purple-900 to-indigo-900 text-white py-2 px-4 shadow-lg">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 animate-pulse">
-            <AlertTriangle className="w-5 h-5 text-yellow-300" />
-            <span className="font-bold text-yellow-300 uppercase text-sm tracking-wider">
-              ⏰ Time Traveler Active
-            </span>
-          </div>
+          {isTimeTravelActive ? (
+            <div className="flex items-center gap-2 animate-pulse">
+              <AlertTriangle className="w-5 h-5 text-yellow-300" />
+              <span className="font-bold text-yellow-300 uppercase text-sm tracking-wider">
+                ⏰ Time Traveler Active
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 opacity-70">
+              <Clock className="w-5 h-5 text-indigo-300" />
+              <span className="font-bold text-indigo-200 uppercase text-sm tracking-wider">
+                Time Traveler Ready
+              </span>
+            </div>
+          )}
           
           <div className="h-4 w-px bg-white/30" />
           
@@ -108,13 +117,15 @@ const TimeTravelBanner = ({ isAdmin, onMidnightRollover }) => {
 
           <div className="h-4 w-px bg-white/30 mx-1" />
 
-          <button
-            onClick={resetTime}
-            className="flex items-center gap-2 px-3 py-1 bg-red-500/20 hover:bg-red-500/40 border border-red-400/50 rounded-lg text-sm font-medium transition-colors"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Reset to Real Time
-          </button>
+          {isTimeTravelActive && (
+            <button
+              onClick={resetTime}
+              className="flex items-center gap-2 px-3 py-1 bg-red-500/20 hover:bg-red-500/40 border border-red-400/50 rounded-lg text-sm font-medium transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Reset to Real Time
+            </button>
+          )}
         </div>
       </div>
     </div>
