@@ -29,6 +29,7 @@ export const ensureUserDocs = async (db, uidOrUser) => {
             displayName: user?.displayName || null,
             photoURL: user?.photoURL || null,
             createdAt: timeService.getISOString(),
+            arenaEntryDate: serverTimestamp(), // When user first entered the arena
             _createdAt: serverTimestamp()
         });
     } else {

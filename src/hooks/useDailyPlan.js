@@ -96,7 +96,7 @@ export const ONBOARDING_MODULES = {
   1: {
     id: 'welcome',
     title: 'Welcome to Your Leadership Journey',
-    headline: 'Your Journey Begins Now, Leader!',
+    headline: null, // Day 1 uses personalized welcome headline from banner
     description: 'Today we set the foundation. Complete your Leader Profile and Baseline Assessment to help us personalize your experience.',
     widgets: ['leaderProfile', 'baselineAssessment', 'todaysActions'],
     features: ['leader_profile', 'baseline_assessment'],
@@ -105,19 +105,19 @@ export const ONBOARDING_MODULES = {
   },
   2: {
     id: 'bookends',
-    title: 'The AM & PM Bookends',
-    headline: 'Build Your Daily Leadership Rhythm',
-    description: 'Great leaders start and end each day with intention. The AM Bookend sets your focus, the PM Bookend captures your reflections.',
+    title: 'Your Daily Leadership Ritual',
+    headline: 'Welcome Back! Let\'s Build Your Daily Rhythm',
+    description: 'Great leaders start and end each day with intention. The AM Bookend sets your morning focus, the PM Bookend captures evening reflections. These 5-minute rituals will transform your leadership.',
     widgets: ['amBookend', 'pmBookend'],
     features: ['am_bookend', 'pm_bookend'],
     callToAction: 'Try both bookends today! Tomorrow we introduce powerful reading habits.',
-    tip: 'Just 5 minutes in the morning and evening can transform your leadership mindset.'
+    tip: 'Tip: Your AM Bookend reminder is set for 11:30 AM and PM Bookend for 7:00 PM. Adjust these in your Locker!'
   },
   3: {
     id: 'reading',
     title: 'Leadership Through Reading',
-    headline: 'Fuel Your Mind with Great Ideas',
-    description: 'The best leaders are avid readers. We\'ll introduce you to curated book summaries and excerpts designed for busy leaders.',
+    headline: 'Day 3: Fuel Your Mind with Great Ideas',
+    description: 'The best leaders are avid readers. We\'ve curated book summaries and excerpts designed for busy leaders like you.',
     widgets: ['readingContent'],
     features: ['reading_library'],
     callToAction: 'Explore your first reading today. Tomorrow brings video content!',
@@ -126,8 +126,8 @@ export const ONBOARDING_MODULES = {
   4: {
     id: 'video',
     title: 'Video Learning Library',
-    headline: 'Watch, Learn, Lead',
-    description: 'Short, impactful videos from leadership experts. Watch during your commute or lunch break.',
+    headline: 'Day 4: Watch, Learn, Lead',
+    description: 'Short, impactful videos from leadership experts. Perfect for your commute or lunch break.',
     widgets: ['videoContent'],
     features: ['video_library'],
     callToAction: 'Watch your first leadership video today. Tomorrow we do a full recap!',
@@ -136,8 +136,8 @@ export const ONBOARDING_MODULES = {
   5: {
     id: 'recap',
     title: 'You\'re Ready!',
-    headline: 'Your Toolkit is Complete',
-    description: 'You\'ve explored all the core features. Here\'s a quick guide to where everything lives in the app.',
+    headline: 'Day 5: Your Toolkit is Complete',
+    description: 'You\'ve explored all the core features. Keep practicing daily until your cohort starts!',
     widgets: ['appOverview'],
     features: ['full_access'],
     callToAction: 'Keep practicing daily! The real journey begins when your cohort starts.',
@@ -459,8 +459,12 @@ export const useDailyPlan = () => {
   }, [developmentPlanData, updateDevelopmentPlanData, user, timeOffset]);
 
   // Calculate user's Journey Day (days since first Prep Phase visit)
+  // Uses CALENDAR days, not 24-hour periods (so Dec 16 evening to Dec 17 morning = Day 2)
   const journeyDay = useMemo(() => {
-    if (!userState.prepPhaseFirstVisit) return 1; // Default to Day 1 if not tracked yet
+    if (!userState.prepPhaseFirstVisit) {
+      console.log('[useDailyPlan] journeyDay: No prepPhaseFirstVisit, defaulting to 1');
+      return 1; // Default to Day 1 if not tracked yet
+    }
     
     let firstVisit = null;
     const rawDate = userState.prepPhaseFirstVisit;
@@ -473,13 +477,30 @@ export const useDailyPlan = () => {
       firstVisit = new Date(rawDate);
     }
     
-    if (!firstVisit || isNaN(firstVisit.getTime())) return 1;
+    if (!firstVisit || isNaN(firstVisit.getTime())) {
+      console.log('[useDailyPlan] journeyDay: Invalid firstVisit date, defaulting to 1');
+      return 1;
+    }
     
-    const diffMs = simulatedNow.getTime() - firstVisit.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    // Calculate based on CALENDAR days, not 24-hour periods
+    // This ensures Dec 16 at 8pm to Dec 17 at 9am counts as Day 2 (different calendar day)
+    const firstVisitDate = new Date(firstVisit.getFullYear(), firstVisit.getMonth(), firstVisit.getDate());
+    const nowDate = new Date(simulatedNow.getFullYear(), simulatedNow.getMonth(), simulatedNow.getDate());
+    
+    const diffMs = nowDate.getTime() - firstVisitDate.getTime();
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24)); // Round to handle DST edge cases
     
     // Journey day is 1-indexed (first day = 1, second day = 2, etc.)
-    return Math.max(1, diffDays + 1);
+    const calculatedJourneyDay = Math.max(1, diffDays + 1);
+    console.log('[useDailyPlan] journeyDay calculation:', {
+      prepPhaseFirstVisit: firstVisit.toISOString(),
+      firstVisitDateOnly: firstVisitDate.toISOString().split('T')[0],
+      simulatedNow: simulatedNow.toISOString(),
+      nowDateOnly: nowDate.toISOString().split('T')[0],
+      diffDays,
+      calculatedJourneyDay
+    });
+    return calculatedJourneyDay;
   }, [userState.prepPhaseFirstVisit, simulatedNow]);
 
   // 3. Calculate Days From Start (can be negative for Pre-Start)
@@ -575,7 +596,9 @@ export const useDailyPlan = () => {
       
       // Get the appropriate onboarding module based on user's journey day
       // journeyDay is passed from outer scope (calculated from prepPhaseFirstVisit)
+      console.log('[useDailyPlan] Calling getOnboardingModule with:', { journeyDay, daysUntilStart });
       const onboardingModule = getOnboardingModule(journeyDay, daysUntilStart);
+      console.log('[useDailyPlan] Received onboardingModule:', onboardingModule);
       
       prepInfo = {
         daysUntilStart,
@@ -703,7 +726,7 @@ export const useDailyPlan = () => {
       unlockedResources, // New: enriched resource data
       prepPhaseInfo: prepInfo // New: Prep Phase welcome/countdown data
     };
-  }, [dailyPlan, dbDayNumber, currentPhase, phaseDayNumber, userState.dailyProgress, journeyDay]);
+  }, [dailyPlan, dbDayNumber, currentPhase, phaseDayNumber, userState.dailyProgress, journeyDay, cohortData]);
 
   // Legacy: currentDayNumber for backward compatibility
   // This returns the "user-facing" day number (negative for prep, positive for start)

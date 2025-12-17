@@ -81,6 +81,9 @@ const ScreenMap = {
   'read-rep-detail': lazy(() =>
     import('../components/screens/library/ReadRepDetail.jsx')
   ),
+  'videos-index': lazy(() =>
+    import('../components/screens/library/VideosIndex.jsx')
+  ),
   'admin-content-home': lazy(() =>
     import('../components/admin/ContentAdminHome.jsx')
   ),

@@ -31,9 +31,9 @@ import BaselineAssessmentWidget from '../widgets/BaselineAssessmentWidget';
 
 const DASHBOARD_FEATURES = [
   'program-status-debug',
+  'prep-welcome-banner',  // Moved to top - welcome banner should be first in Prep Phase
   'leader-profile',
   'baseline-assessment',
-  'prep-welcome-banner',
   'welcome-message',
   'daily-quote',
   'am-bookend-header',
@@ -468,7 +468,7 @@ const Dashboard = (props) => {
       'win-the-day': 'showWinTheDay',
       'daily-leader-reps': 'showDailyReps',
       'notifications': 'showNotifications',
-      'pm-bookend-header': 'showPMReflection',
+      'pm-bookend-header': 'showPMBookendHeader',  // Separate from PM Reflection
       'pm-bookend': 'showPMReflection',
       'scorecard': 'showScorecard'
     };
@@ -509,7 +509,7 @@ const Dashboard = (props) => {
     'program-status-debug': () => <ProgramStatusWidget />,
     'leader-profile': () => shouldShow('leader-profile', true) ? <LeaderProfileWidget /> : null,
     'baseline-assessment': () => shouldShow('baseline-assessment', true) ? <BaselineAssessmentWidget /> : null,
-    'prep-welcome-banner': () => shouldShow('prep-welcome-banner', false) ? <WidgetRenderer widgetId="prep-welcome-banner" scope={scope} /> : null,
+    'prep-welcome-banner': () => shouldShow('prep-welcome-banner', true) ? <WidgetRenderer widgetId="prep-welcome-banner" scope={scope} /> : null,
     'welcome-message': () => shouldShow('welcome-message', true) ? <WidgetRenderer widgetId="welcome-message" scope={scope} /> : null,
     'daily-quote': () => shouldShow('daily-quote', true) ? <WidgetRenderer widgetId="daily-quote" scope={scope} /> : null,
     'am-bookend-header': () => shouldShow('am-bookend-header', true) ? <WidgetRenderer widgetId="am-bookend-header" scope={scope} /> : null,

@@ -20,7 +20,8 @@ import {
   updateDoc, 
   setDoc, 
   serverTimestamp,
-  getDoc
+  getDoc,
+  increment
 } from 'firebase/firestore';
 import { Loader } from 'lucide-react';
 import { buildModulePath } from '../../services/pathUtils';
@@ -129,7 +130,8 @@ function AuthPanel({ auth, db, onSuccess }) {
                     const userRef = doc(db, 'users', userCredential.user.uid);
                     // We use setDoc with merge because ensureUserDocs might not have run yet
                     await setDoc(userRef, {
-                        cohortId: inviteData.cohortId
+                        cohortId: inviteData.cohortId,
+                        arenaEntryDate: serverTimestamp() // Track when user first entered via invite
                     }, { merge: true });
 
                     // 3. Initialize Development Plan with Cohort Start Date
@@ -149,6 +151,16 @@ function AuthPanel({ auth, db, onSuccess }) {
                             currentPlan: null,
                             startDate: cohortData.startDate
                         });
+                    }
+
+                    // 4. Increment cohort member count
+                    try {
+                        const cohortRef = doc(db, 'cohorts', inviteData.cohortId);
+                        await updateDoc(cohortRef, {
+                            memberCount: increment(1)
+                        });
+                    } catch (countErr) {
+                        console.warn("Failed to increment cohort member count:", countErr);
                     }
                 }
             } catch (err) {
@@ -208,6 +220,7 @@ function AuthPanel({ auth, db, onSuccess }) {
                 displayName: result.user.displayName,
                 photoURL: result.user.photoURL,
                 createdAt: serverTimestamp(),
+                arenaEntryDate: serverTimestamp(), // When user first entered the arena
                 role: 'user' // Default role
             });
             

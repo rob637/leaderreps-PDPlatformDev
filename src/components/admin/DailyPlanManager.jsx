@@ -44,7 +44,17 @@ import { useFeatures } from '../../providers/FeatureProvider';
 
 // Categories of widgets that can be toggled per-day in the Daily Plan
 // Excludes system widgets like 'program-status-debug' which shouldn't be toggled per-day
-const DAILY_PLAN_WIDGET_CATEGORIES = ['Dashboard', 'Planning', 'Habits', 'Actions', 'Reflection'];
+// Also excludes Locker-specific widgets and non-core features (Learning, Community, etc.)
+const DAILY_PLAN_WIDGET_CATEGORIES = [
+  'Dashboard',      // Main dashboard widgets (prep-welcome-banner, this-weeks-actions, etc.)
+  'Planning',       // Planning widgets (am-bookend-header, weekly-focus, grounding-rep, win-the-day, daily-reps)
+  'Habits',         // Habit tracking widgets (habit-stack)
+  'Actions',        // Action-related widgets
+  'Reflection',     // Reflection widgets (pm-bookend-header, pm-bookend)
+  'Tracking',       // Progress tracking (scorecard/Daily Progress, progress-feedback)
+  'Inspiration',    // Inspirational content (daily-quote)
+  'General',        // General widgets (notifications, welcome-message)
+];
 
 // Get all widget IDs from FEATURE_METADATA that belong to allowed categories
 const getDashboardWidgetIds = () => {
@@ -67,6 +77,13 @@ const ACTION_TYPES = {
 const DayCard = ({ day, onEdit }) => {
   const isWeekend = day.isWeekend;
   const linkedResourceCount = (day.actions || []).filter(a => a.resourceId).length;
+  const weeklyResourceCount = day.weeklyResources ? (
+    (day.weeklyResources.weeklyContent?.length || 0) +
+    (day.weeklyResources.weeklyCommunity?.length || 0) +
+    (day.weeklyResources.weeklyCoaching?.length || 0) +
+    (day.weeklyResources.weeklyWorkouts?.length || 0) +
+    (day.weeklyResources.weeklyTools?.length || 0)
+  ) : 0;
   
   return (
     <div 
@@ -83,7 +100,14 @@ const DayCard = ({ day, onEdit }) => {
         `}>
           Day {day.dayNumber}
         </span>
-        {day.isWeekend && <span className="text-xs text-slate-400 font-medium">Weekend</span>}
+        <div className="flex items-center gap-1">
+          {weeklyResourceCount > 0 && (
+            <span className="text-[10px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-full font-medium">
+              {weeklyResourceCount} wk
+            </span>
+          )}
+          {day.isWeekend && <span className="text-xs text-slate-400 font-medium">Weekend</span>}
+        </div>
       </div>
       
       <h4 className="font-bold text-corporate-navy mb-1 line-clamp-2 h-10">
@@ -429,6 +453,62 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
                   </span>
                 ))}
             </div>
+          </div>
+        )}
+
+        {/* Weekly Resources (from Legacy Plan) */}
+        {formData.weeklyResources && (
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+            <label className="text-xs font-bold text-purple-700 uppercase mb-2 block flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              Week {formData.weekNumber} Resources (from Legacy Plan)
+            </label>
+            
+            {formData.weeklyResources.weekTitle && (
+              <div className="mb-2">
+                <span className="text-xs font-bold text-purple-800">{formData.weeklyResources.weekTitle}</span>
+                {formData.weeklyResources.weekFocus && (
+                  <p className="text-[10px] text-purple-600">{formData.weeklyResources.weekFocus}</p>
+                )}
+              </div>
+            )}
+            
+            <div className="space-y-1 text-[10px]">
+              {formData.weeklyResources.weeklyContent?.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <Video className="w-3 h-3 text-purple-500" />
+                  <span className="text-purple-700">{formData.weeklyResources.weeklyContent.length} Content Items</span>
+                </div>
+              )}
+              {formData.weeklyResources.weeklyCommunity?.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <Users className="w-3 h-3 text-purple-500" />
+                  <span className="text-purple-700">{formData.weeklyResources.weeklyCommunity.length} Community Activities</span>
+                </div>
+              )}
+              {formData.weeklyResources.weeklyCoaching?.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3 text-purple-500" />
+                  <span className="text-purple-700">{formData.weeklyResources.weeklyCoaching.length} Coaching Elements</span>
+                </div>
+              )}
+              {formData.weeklyResources.weeklyWorkouts?.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3 text-purple-500" />
+                  <span className="text-purple-700">{formData.weeklyResources.weeklyWorkouts.length} Workouts</span>
+                </div>
+              )}
+              {formData.weeklyResources.weeklyTools?.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <FileText className="w-3 h-3 text-purple-500" />
+                  <span className="text-purple-700">{formData.weeklyResources.weeklyTools.length} Tools</span>
+                </div>
+              )}
+            </div>
+            
+            <p className="text-[9px] text-purple-500 mt-2 italic">
+              These resources are inherited from the Legacy Plan. Edit in Legacy Plan Manager to update.
+            </p>
           </div>
         )}
 

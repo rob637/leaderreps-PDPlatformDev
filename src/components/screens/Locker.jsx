@@ -7,6 +7,7 @@ import WidgetRenderer from '../admin/WidgetRenderer';
 import { useNotifications } from '../../providers/NotificationProvider';
 import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
 import LockerProgressWidget from '../widgets/LockerProgressWidget';
+import MyJourneyWidget from '../widgets/MyJourneyWidget';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 const LOCKER_FEATURES = [
@@ -122,6 +123,9 @@ const Locker = () => {
       ]}
       accentColor="teal"
     >
+      {/* My Journey Widget - always show at top */}
+      <MyJourneyWidget />
+      
       <WidgetRenderer widgetId="locker-controller" scope={scope} />
       <WidgetRenderer widgetId="locker-reminders" scope={scope} />
       

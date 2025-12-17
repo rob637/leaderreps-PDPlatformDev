@@ -2,12 +2,14 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   CheckCircle, Circle, Play, BookOpen, Users, Video, FileText, Zap, 
   AlertCircle, ExternalLink, Loader, Layers, MessageSquare, 
-  SkipForward, ChevronDown, ChevronUp, Clock, Flame, Award, AlertTriangle
+  SkipForward, ChevronDown, ChevronUp, Clock, Flame, Award, AlertTriangle,
+  User, ClipboardCheck
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useDevPlan } from '../../hooks/useDevPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
 import { useCoachingRegistrations } from '../../hooks/useCoachingRegistrations';
+import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import CoachingActionItem from '../coaching/CoachingActionItem';
 import { doc, getDoc } from 'firebase/firestore';
@@ -25,6 +27,15 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   const devPlanHook = useDevPlan();
   const actionProgress = useActionProgress();
   const coachingRegistrations = useCoachingRegistrations();
+  
+  // Leader Profile completion tracking (for auto-check in Pre-Start)
+  const { isComplete: leaderProfileComplete } = useLeaderProfile();
+  
+  // Baseline Assessment completion tracking (from useDevPlan userState)
+  const baselineAssessmentComplete = useMemo(() => {
+    const assessmentHistory = devPlanHook.userState?.assessmentHistory;
+    return assessmentHistory && assessmentHistory.length > 0;
+  }, [devPlanHook.userState?.assessmentHistory]);
   
   // Determine which data source to use
   const currentWeek = scope?.currentWeek || devPlanHook.currentWeek;
@@ -122,8 +133,56 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     
     // Pre-Start phase = Day-by-Day only (no legacy week content)
     if (currentPhase?.id === 'pre-start') {
-      console.log('[ThisWeeksActions] Pre-Start phase - showing daily actions only:', dailyNormalized.length);
-      return dailyNormalized;
+      // Filter out Leader Profile and Baseline Assessment from daily actions
+      // These are handled by the auto-tracking onboarding tasks and shouldn't duplicate
+      const onboardingLabels = ['leader profile', 'baseline assessment'];
+      const filteredDailyActions = dailyNormalized.filter(action => {
+        const labelLower = (action.label || '').toLowerCase();
+        return !onboardingLabels.some(keyword => labelLower.includes(keyword));
+      });
+      
+      // Only show onboarding tasks on Day 1 of journey
+      // After Day 1, users should have completed these or can access via other means
+      const journeyDay = currentDayData?.journeyDay || 1;
+      
+      if (journeyDay === 1) {
+        // Day 1: Add Leader Profile and Baseline Assessment as onboarding tasks
+        // These auto-complete based on actual completion state
+        const onboardingTasks = [
+          {
+            id: 'onboarding-leader-profile',
+            type: 'onboarding',
+            label: 'Complete Your Leader Profile',
+            required: true,
+            category: 'Onboarding',
+            fromDailyPlan: false,
+            isOnboardingTask: true,
+            autoComplete: leaderProfileComplete,
+            icon: 'User',
+            description: 'Tell us about yourself to personalize your journey'
+          },
+          {
+            id: 'onboarding-baseline-assessment',
+            type: 'onboarding',
+            label: 'Take Baseline Assessment',
+            required: true,
+            category: 'Onboarding',
+            fromDailyPlan: false,
+            isOnboardingTask: true,
+            autoComplete: baselineAssessmentComplete,
+            icon: 'ClipboardCheck',
+            description: 'Assess your current leadership skills'
+          }
+        ];
+        
+        const combined = [...onboardingTasks, ...filteredDailyActions];
+        console.log('[ThisWeeksActions] Pre-Start Day 1 - showing onboarding + daily actions:', combined.length);
+        return combined;
+      }
+      
+      // Days 2+: Only show daily actions (filtered, no onboarding duplicates)
+      console.log('[ThisWeeksActions] Pre-Start Day', journeyDay, '- showing daily actions only:', filteredDailyActions.length);
+      return filteredDailyActions;
     }
     
     // Start/Post phase = Combine daily + weekly
@@ -143,7 +202,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     }
     
     return normalized;
-  }, [dailyActions, currentDayData?.id, content, community, coaching, currentPhase?.id]);
+  }, [dailyActions, currentDayData?.id, content, community, coaching, currentPhase?.id, leaderProfileComplete, baselineAssessmentComplete]);
 
   // Get carried over items for this week (MUST be before any early returns)
   // This combines:
@@ -221,10 +280,10 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   // Dynamic title based on phase
-  // Pre-Start phase = "Today's Actions" (day-focused)
+  // Pre-Start phase = "Actions" (day-focused)
   // Start phase = "This Week's Actions" (week-focused)
   const widgetTitle = currentPhase?.id === 'pre-start' 
-    ? "Today's Actions" 
+    ? "Actions" 
     : "This Week's Actions";
 
   // If no current week data AND no daily actions, show empty state (AFTER all hooks)
@@ -455,9 +514,14 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   // Action Item Renderer
   const ActionItem = ({ item, idx, isCarriedOver = false }) => {
     const progress = getItemProgress(item.id);
-    const isCompleted = progress.status === 'completed' || completedItems.includes(item.id);
+    // For onboarding tasks, use autoComplete; otherwise use progress system
+    const isCompleted = item.isOnboardingTask 
+      ? item.autoComplete 
+      : (progress.status === 'completed' || completedItems.includes(item.id));
     const isSkipped = progress.status === 'skipped';
-    const Icon = getIcon(item.type);
+    const Icon = item.isOnboardingTask 
+      ? (item.icon === 'User' ? User : ClipboardCheck)
+      : getIcon(item.type);
     const carryCount = progress.carryCount || item.carryCount || 0;
     
     if (isSkipped) return null; // Don't show skipped items
@@ -487,13 +551,14 @@ const ThisWeeksActionsWidget = ({ scope }) => {
           ${getCategoryStyles()}
         `}
       >
-        {/* Checkbox - larger touch target */}
+        {/* Checkbox - larger touch target (no click handler for onboarding tasks) */}
         <div
-          onClick={() => handleToggle(item)}
+          onClick={item.isOnboardingTask ? undefined : () => handleToggle(item)}
           className={`
-            flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90
+            flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${item.isOnboardingTask ? '' : 'cursor-pointer touch-manipulation active:scale-90'}
             ${getCheckboxStyles()}
           `}
+          title={item.isOnboardingTask ? (isCompleted ? 'Completed!' : 'Complete to check off') : undefined}
         >
           {isCompleted && <CheckCircle className="w-4 h-4 text-white" />}
         </div>
@@ -506,7 +571,12 @@ const ThisWeeksActionsWidget = ({ scope }) => {
             }`}>
               {item.label || item.title || item.name || 'Untitled Action'}
             </p>
-            {item.required !== false && !item.optional && !isCarriedOver && (
+            {item.isOnboardingTask && !isCompleted && (
+              <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Auto-tracks
+              </span>
+            )}
+            {!item.isOnboardingTask && item.required !== false && !item.optional && !isCarriedOver && (
               <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
                 Required
               </span>
@@ -527,13 +597,19 @@ const ThisWeeksActionsWidget = ({ scope }) => {
           
           <div className={`flex items-center gap-2 text-xs ${getIconColor()}`}>
             <Icon className="w-3 h-3" />
-            <span className="capitalize">{item.type?.replace(/_/g, ' ').toLowerCase() || 'Action'}</span>
-            <span>•</span>
-            <span>{item.estimatedTime || '15m'}</span>
-            {isCarriedOver && item.originalWeek && (
+            {item.isOnboardingTask ? (
+              <span className="text-slate-600">{item.description}</span>
+            ) : (
               <>
+                <span className="capitalize">{item.type?.replace(/_/g, ' ').toLowerCase() || 'Action'}</span>
                 <span>•</span>
-                <span className="text-slate-500">From Week {item.originalWeek}</span>
+                <span>{item.estimatedTime || '15m'}</span>
+                {isCarriedOver && item.originalWeek && (
+                  <>
+                    <span>•</span>
+                    <span className="text-slate-500">From Week {item.originalWeek}</span>
+                  </>
+                )}
               </>
             )}
           </div>

@@ -136,7 +136,9 @@ export const useDayBasedAccessControl = () => {
       showWinTheDay: dashboard.showWinTheDay ?? true,
       showDailyReps: dashboard.showDailyReps ?? true,
       showNotifications: dashboard.showNotifications ?? false,
+      showPMBookendHeader: dashboard.showPMBookendHeader ?? false,  // PM Bookend Header (separate from Reflection)
       showPMReflection: dashboard.showPMReflection ?? false,
+      showScorecard: dashboard.showScorecard ?? false,  // Scorecard (separate widget)
       
       // Zone Access (derived from CSV structure)
       // Community is available after Day 15 (Week 1)

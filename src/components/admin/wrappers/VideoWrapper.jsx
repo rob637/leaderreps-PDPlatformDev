@@ -1,13 +1,13 @@
 import React from 'react';
-import ContentManager from '../ContentManager';
-import { CONTENT_COLLECTIONS } from '../../../services/contentService';
+import UnifiedContentManager from '../UnifiedContentManager';
+import { CONTENT_TYPES } from '../../../services/unifiedContentService';
 
 const VideoWrapper = () => {
   return (
-    <ContentManager 
-      contentType={CONTENT_COLLECTIONS.VIDEOS} 
+    <UnifiedContentManager 
+      initialTab={CONTENT_TYPES.VIDEO}
       title="Video Wrapper"
-      description="Wrap YouTube, Vimeo, or MP4 links with metadata."
+      description="Wrap YouTube, Vimeo, or uploaded videos with metadata."
     />
   );
 };

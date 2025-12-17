@@ -52,10 +52,16 @@ const UserManagement = () => {
   // Cohort Form State
   const [cohortForm, setCohortForm] = useState({
     name: '',
-    startDate: ''
+    startDate: '',
+    description: '',
+    facilitatorId: '',
+    maxCapacity: 25,
+    allowLateJoins: true,
+    lateJoinCutoff: 3
   });
   const [isCohortModalOpen, setIsCohortModalOpen] = useState(false);
   const [savingCohort, setSavingCohort] = useState(false);
+  const [facilitators, setFacilitators] = useState([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -75,6 +81,18 @@ const UserManagement = () => {
         console.error("Error fetching admin config:", e);
       }
       setAdminEmails(admins);
+
+      // Fetch users who can be facilitators (admins + any users with role 'facilitator' or 'admin')
+      try {
+        const usersRef = collection(db, 'users');
+        const allUsersSnap = await getDocs(usersRef);
+        const potentialFacilitators = allUsersSnap.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(u => admins.includes(u.email) || u.role === 'admin' || u.role === 'facilitator');
+        setFacilitators(potentialFacilitators);
+      } catch (e) {
+        console.error("Error fetching facilitators:", e);
+      }
 
       if (activeTab === 'users') {
         const usersRef = collection(db, 'users');
@@ -240,14 +258,38 @@ const UserManagement = () => {
       // Set to noon to avoid timezone edge cases
       startDate.setHours(12, 0, 0, 0);
 
+      // Build facilitator object from selected facilitator
+      const selectedFacilitator = facilitators.find(f => f.id === cohortForm.facilitatorId);
+      const facilitatorData = selectedFacilitator ? {
+        id: selectedFacilitator.id,
+        name: selectedFacilitator.displayName || selectedFacilitator.email,
+        email: selectedFacilitator.email
+      } : null;
+
       await addDoc(collection(db, 'cohorts'), {
         name: cohortForm.name,
+        description: cohortForm.description || '',
         startDate: Timestamp.fromDate(startDate),
+        facilitator: facilitatorData,
+        settings: {
+          maxCapacity: parseInt(cohortForm.maxCapacity) || 25,
+          allowLateJoins: cohortForm.allowLateJoins,
+          lateJoinCutoff: parseInt(cohortForm.lateJoinCutoff) || 3
+        },
+        memberCount: 0,
         createdAt: serverTimestamp()
       });
 
       setIsCohortModalOpen(false);
-      setCohortForm({ name: '', startDate: '' });
+      setCohortForm({
+        name: '',
+        startDate: '',
+        description: '',
+        facilitatorId: '',
+        maxCapacity: 25,
+        allowLateJoins: true,
+        lateJoinCutoff: 3
+      });
       fetchData();
     } catch (error) {
       console.error("Error creating cohort:", error);
@@ -677,21 +719,33 @@ const UserManagement = () => {
               </button>
             </div>
             
-            <form onSubmit={handleCreateCohort} className="p-6 space-y-4">
+            <form onSubmit={handleCreateCohort} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Basic Info */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Cohort Name</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Cohort Name *</label>
                 <input
                   type="text"
                   required
                   value={cohortForm.name}
                   onChange={e => setCohortForm({...cohortForm, name: e.target.value})}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
-                  placeholder="e.g., Spring 2025"
+                  placeholder="e.g., Spring 2025 Leaders"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <textarea
+                  value={cohortForm.description}
+                  onChange={e => setCohortForm({...cohortForm, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  placeholder="Brief description of this cohort..."
+                  rows={2}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Start Date *</label>
                 <input
                   type="date"
                   required
@@ -700,8 +754,78 @@ const UserManagement = () => {
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                 />
                 <p className="text-xs text-slate-500 mt-1">
-                  All users in this cohort will have their Development Plan start on this date.
+                  Development Plan starts on this date for all cohort members.
                 </p>
+              </div>
+
+              {/* Facilitator */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Facilitator</label>
+                <select
+                  value={cohortForm.facilitatorId}
+                  onChange={e => setCohortForm({...cohortForm, facilitatorId: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 bg-white"
+                >
+                  <option value="">Select a facilitator...</option>
+                  {facilitators.map(f => (
+                    <option key={f.id} value={f.id}>
+                      {f.displayName || f.email} {f.displayName ? `(${f.email})` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-500 mt-1">
+                  The facilitator will be shown to cohort members as their point of contact.
+                </p>
+              </div>
+
+              {/* Cohort Settings */}
+              <div className="pt-2 border-t border-slate-200">
+                <h4 className="text-sm font-medium text-slate-700 mb-3">Cohort Settings</h4>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Max Capacity</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={cohortForm.maxCapacity}
+                      onChange={e => setCohortForm({...cohortForm, maxCapacity: e.target.value})}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Late Join Cutoff (days)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="14"
+                      value={cohortForm.lateJoinCutoff}
+                      onChange={e => setCohortForm({...cohortForm, lateJoinCutoff: e.target.value})}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                      disabled={!cohortForm.allowLateJoins}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={cohortForm.allowLateJoins}
+                      onChange={e => setCohortForm({...cohortForm, allowLateJoins: e.target.checked})}
+                      className="w-4 h-4 text-corporate-teal border-slate-300 rounded focus:ring-corporate-teal"
+                    />
+                    <span className="text-sm text-slate-700">Allow late joins</span>
+                  </label>
+                  <p className="text-xs text-slate-500 mt-1 ml-6">
+                    {cohortForm.allowLateJoins 
+                      ? `Users can join up to ${cohortForm.lateJoinCutoff} days after start date`
+                      : 'No new members after start date'
+                    }
+                  </p>
+                </div>
               </div>
               
               <div className="pt-4 flex gap-3">

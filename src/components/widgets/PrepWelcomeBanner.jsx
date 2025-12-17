@@ -24,8 +24,19 @@ const PrepWelcomeBanner = () => {
   const { user } = useAppServices();
   const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay } = useDailyPlan();
   
+  // Debug logging
+  console.log('[PrepWelcomeBanner] Rendering with:', {
+    currentPhase: currentPhase?.id,
+    journeyDay,
+    phaseDayNumber,
+    hasOnboarding: !!prepPhaseInfo?.onboarding
+  });
+  
   // Only show in Prep Phase
-  if (currentPhase?.id !== 'pre-start') return null;
+  if (currentPhase?.id !== 'pre-start') {
+    console.log('[PrepWelcomeBanner] NOT showing - phase is:', currentPhase?.id);
+    return null;
+  }
   
   const info = prepPhaseInfo || {};
   const { 
@@ -37,7 +48,6 @@ const PrepWelcomeBanner = () => {
     isQuickStart = false,
     totalActions = 0,
     progressPercent = 0,
-    cohort = null,
     cohortName = null,
     facilitator = null
   } = info;
@@ -48,9 +58,17 @@ const PrepWelcomeBanner = () => {
   // Excitement level determines visual styling
   const isHighExcitement = welcome.excitement === 'high' || welcome.excitement === 'launch';
   const isLaunch = welcome.excitement === 'launch';
+  
+  // Effective journey day for display (capped at 5 for prep content)
+  const effectiveJourneyDay = Math.min(journeyDay || 1, 5);
+  const isPrepComplete = (journeyDay || 1) > 5;
 
   // Build personalized headline
   const getPersonalizedHeadline = () => {
+    // After 5 days of prep, show "You're Ready!" message
+    if (isPrepComplete) {
+      return `You're Ready, ${firstName}!`;
+    }
     // First day gets special welcome with name
     if (journeyDay === 1) {
       if (cohortName) {
@@ -58,12 +76,32 @@ const PrepWelcomeBanner = () => {
       }
       return `Welcome to the Arena, ${firstName}!`;
     }
-    // Use onboarding headline if available
+    // Days 2-5 use the onboarding headline if available
     if (onboarding?.headline) {
       return onboarding.headline;
     }
-    // Default welcome headline
+    // Fallback to welcome headline
     return welcome.headline;
+  };
+
+  // Get the subtext - different for Day 1 vs other days
+  const getSubtext = () => {
+    // After 5 days of prep, show countdown to QuickStart
+    if (isPrepComplete) {
+      if (daysUntilStart <= 0) {
+        return "Your QuickStart begins today! Let's launch your leadership journey.";
+      }
+      if (daysUntilStart === 1) {
+        return "QuickStart begins tomorrow! Keep practicing your daily rituals.";
+      }
+      return `You've completed your prep! ${daysUntilStart} days until QuickStart. Keep practicing your AM & PM Bookends.`;
+    }
+    if (journeyDay === 1) {
+      // Day 1: Use the onboarding description as subtext
+      return onboarding?.description || welcome.subtext;
+    }
+    // Days 2-5: Use onboarding description
+    return onboarding?.description || welcome.subtext;
   };
 
   // Get icon for onboarding module
@@ -108,11 +146,11 @@ const PrepWelcomeBanner = () => {
           
           {/* Left Content */}
           <div className="flex-1 space-y-4">
-            {/* Phase Badge with Cohort Name */}
+            {/* Phase Badge with Cohort Name - Show journey day (1-5) or "Prep Complete" */}
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-2 text-corporate-teal font-bold tracking-wider text-xs uppercase">
                 {isLaunch ? <Rocket className="w-4 h-4 animate-bounce" /> : <Shield className="w-4 h-4" />}
-                <span>Prep Day {phaseDayNumber} of 14</span>
+                <span>{isPrepComplete ? 'Prep Complete' : `Prep Day ${effectiveJourneyDay}`}</span>
               </div>
               {cohortName && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 flex items-center gap-1">
@@ -120,14 +158,14 @@ const PrepWelcomeBanner = () => {
                   {cohortName}
                 </span>
               )}
-              {isAccelerated && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-400 font-bold">
-                  {isQuickStart ? 'QUICK START' : 'ACCELERATED'}
+              {isPrepComplete && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-400 font-bold">
+                  ✓ READY
                 </span>
               )}
-              {journeyDay && journeyDay > 1 && !isAccelerated && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/70">
-                  Journey Day {journeyDay}
+              {isAccelerated && !isPrepComplete && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-400 font-bold">
+                  {isQuickStart ? 'QUICK START' : 'ACCELERATED'}
                 </span>
               )}
             </div>
@@ -138,7 +176,7 @@ const PrepWelcomeBanner = () => {
             </h2>
             
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
-              {onboarding?.description || welcome.subtext}
+              {getSubtext()}
             </p>
 
             {/* Facilitator Introduction - Show on Day 1 if available */}
@@ -154,8 +192,8 @@ const PrepWelcomeBanner = () => {
               </div>
             )}
 
-            {/* Today's Focus - What's New */}
-            {onboarding && (
+            {/* Today's Focus - What's New (Skip the box on Day 1 since headline IS the welcome) */}
+            {onboarding && journeyDay > 1 && (
               <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                 <div className="flex items-start gap-3">
                   <div className={`p-2 rounded-lg ${
@@ -208,37 +246,40 @@ const PrepWelcomeBanner = () => {
                 </div>
               </div>
             )}
+            
+            {/* Day 1: Show widgets inline without nested box */}
+            {onboarding && journeyDay === 1 && (
+              <div className="flex flex-wrap gap-2">
+                {onboarding.widgets?.slice(0, 4).map((widget, idx) => {
+                  const widgetLabels = {
+                    'leaderProfile': 'Leader Profile',
+                    'baselineAssessment': 'Baseline Assessment',
+                    'todaysActions': 'Today\'s Actions',
+                    'amBookend': 'AM Bookend',
+                    'pmBookend': 'PM Bookend'
+                  };
+                  return (
+                    <span 
+                      key={idx}
+                      className="text-xs px-2 py-1 rounded-md bg-white/10 text-white/80 flex items-center gap-1"
+                    >
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                      {widgetLabels[widget] || widget}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            
+            {/* Day 1 Tip */}
+            {onboarding?.tip && journeyDay === 1 && (
+              <div className="flex items-start gap-2 text-xs text-slate-400">
+                <Sparkles className="w-3 h-3 text-yellow-400 mt-0.5 flex-shrink-0" />
+                <span>{onboarding.tip}</span>
+              </div>
+            )}
 
-            {/* Progress Indicators */}
-            <div className="flex flex-wrap gap-3 pt-2">
-              {daysUntilStart > 0 ? (
-                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
-                  isHighExcitement 
-                    ? 'bg-yellow-400/20 border-yellow-400/30' 
-                    : 'bg-white/10 border-white/10'
-                }`}>
-                  <Calendar className={`w-4 h-4 ${isHighExcitement ? 'text-yellow-400' : 'text-corporate-teal'}`} />
-                  <span className="text-xs font-bold text-white">
-                    {daysUntilStart} {daysUntilStart === 1 ? 'day' : 'days'} until start
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 bg-emerald-400/20 px-3 py-1.5 rounded-lg border border-emerald-400/30">
-                  <Rocket className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-bold text-white">Starting Today!</span>
-                </div>
-              )}
-              
-              <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
-                <Target className="w-4 h-4 text-corporate-teal" />
-                <span className="text-xs font-medium text-white">{totalActions} prep tasks</span>
-              </div>
-              
-              <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
-                <CheckCircle2 className="w-4 h-4 text-corporate-teal" />
-                <span className="text-xs font-medium text-white">{progressPercent}% through prep</span>
-              </div>
-            </div>
+
 
             {/* Call to Action */}
             {onboarding?.callToAction && (
@@ -285,7 +326,7 @@ const PrepWelcomeBanner = () => {
                 </div>
               )}
             </div>
-            <span className="text-xs text-slate-400 font-medium">until Day 1</span>
+            <span className="text-xs text-slate-400 font-medium">until QuickStart</span>
             
             {/* Journey Progress Dots (show 5 modules) */}
             {!isQuickStart && (
@@ -294,17 +335,17 @@ const PrepWelcomeBanner = () => {
                   <div 
                     key={day}
                     className={`w-2 h-2 rounded-full transition-all ${
-                      (journeyDay || 1) >= day 
+                      effectiveJourneyDay >= day 
                         ? 'bg-corporate-teal' 
                         : 'bg-white/20'
                     }`}
-                    title={`Onboarding Day ${day}`}
+                    title={`Prep Day ${day}`}
                   />
                 ))}
               </div>
             )}
             <span className="text-[10px] text-slate-500">
-              {isQuickStart ? 'Quick Start Mode' : `Onboarding ${Math.min(journeyDay || 1, 5)} of 5`}
+              {isQuickStart ? 'Quick Start Mode' : isPrepComplete ? 'Prep Complete!' : `Prep ${effectiveJourneyDay} of 5`}
             </span>
           </div>
 

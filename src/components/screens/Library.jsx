@@ -29,11 +29,12 @@ const Library = () => {
           return snapshot.data().count;
         };
 
-        const [readingsCount, programsCount, workoutsCount, toolsCount] = await Promise.all([
+        const [readingsCount, programsCount, workoutsCount, toolsCount, videosCount] = await Promise.all([
           getCount('READ_REP'),
           getCount('PROGRAM'),
           getCount('WORKOUT'),
-          getCount('TOOL')
+          getCount('TOOL'),
+          getCount('VIDEO')
         ]);
 
         setContentCounts({
@@ -41,7 +42,7 @@ const Library = () => {
           programs: programsCount,
           workouts: workoutsCount,
           tools: toolsCount,
-          videos: 0, // Deprecated concept in new model (videos are REPs inside Workouts)
+          videos: videosCount,
           courses: 0 // Deprecated concept
         });
       } catch (error) {
@@ -98,9 +99,18 @@ const Library = () => {
         title: 'Read & Reps',
         description: 'Curated books and articles with actionable exercises.',
         icon: BookOpen,
-        screen: 'business-readings',
+        screen: 'read-reps-index',
         color: 'text-corporate-navy',
         bgColor: 'bg-corporate-navy/10'
+      },
+      {
+        id: 'videos',
+        title: 'Videos',
+        description: 'Leadership videos and talks to inspire and educate.',
+        icon: Film,
+        screen: 'videos-index',
+        color: 'text-corporate-orange',
+        bgColor: 'bg-corporate-orange/10'
       },
       {
         id: 'tools',

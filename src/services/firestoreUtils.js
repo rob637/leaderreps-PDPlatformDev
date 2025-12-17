@@ -29,6 +29,14 @@ const mockGetDoc = async (docPath) => {
   return createMockSnapshot(docPath, d || {}, !!d);
 };
 
+// Helper to detect Firebase field value sentinels (serverTimestamp, increment, etc.)
+const isFirebaseFieldValue = (value) => {
+  if (!value || typeof value !== 'object') return false;
+  // Firebase field values have _methodName property
+  return value._methodName !== undefined || 
+         (value.constructor && value.constructor.name === 'FieldValue');
+};
+
 const cleanUndefinedValues = (obj) => {
   if (typeof obj !== 'object' || obj === null) return obj;
   
