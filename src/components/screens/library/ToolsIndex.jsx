@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useContentAccess } from '../../../hooks/useContentAccess';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
+import { CONTENT_COLLECTIONS } from '../../../services/contentService';
 import { Loader, FileText, Video, Link as LinkIcon, Download, Search, SlidersHorizontal, Wrench, ExternalLink, Lock } from 'lucide-react';
 import { TierBadge, SkillTag } from '../../ui/ContentBadges.jsx';
 import SkillFilter from '../../ui/SkillFilter.jsx';
@@ -19,13 +20,35 @@ const ToolsIndex = () => {
   const [typeFilter, setTypeFilter] = useState('all');
 
   useEffect(() => {
-    const q = query(collection(db, UNIFIED_COLLECTION), where('type', '==', 'TOOL'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setTools(items);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    const loadTools = async () => {
+      try {
+        // 1. Fetch Unified Tools
+        const unifiedQuery = query(collection(db, UNIFIED_COLLECTION), where('type', '==', 'TOOL'));
+        const unifiedSnapshot = await getDocs(unifiedQuery);
+        const unifiedItems = unifiedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'unified' }));
+
+        // 2. Fetch Legacy Documents (Wrapper) - Treat as Tools
+        const legacyQuery = query(collection(db, CONTENT_COLLECTIONS.DOCUMENTS));
+        const legacySnapshot = await getDocs(legacyQuery);
+        const legacyItems = legacySnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(), 
+          type: 'TOOL', // Normalize type
+          metadata: { ...doc.data().metadata, toolType: 'DOCUMENT' }, // Ensure toolType exists
+          source: 'legacy' 
+        }));
+
+        // 3. Merge
+        const allItems = [...unifiedItems, ...legacyItems];
+        setTools(allItems);
+      } catch (error) {
+        console.error("Error loading tools:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTools();
   }, [db]);
 
   const getIcon = (toolType) => {
@@ -65,8 +88,16 @@ const ToolsIndex = () => {
       result = result.filter(t => t.metadata?.toolType === typeFilter);
     }
     
+    // Access Control Filter: Only show unlocked content (Progressive Disclosure)
+    result = result.filter(t => {
+      if (t.isHiddenUntilUnlocked) {
+        return isContentUnlocked(t);
+      }
+      return true;
+    });
+
     return result;
-  }, [tools, searchQuery, selectedSkills, typeFilter]);
+  }, [tools, searchQuery, selectedSkills, typeFilter, isContentUnlocked]);
 
   // Group by type for display
   const toolTypes = useMemo(() => {

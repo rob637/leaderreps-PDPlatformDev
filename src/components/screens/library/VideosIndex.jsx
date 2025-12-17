@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useContentAccess } from '../../../hooks/useContentAccess';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
+import { CONTENT_COLLECTIONS } from '../../../services/contentService';
 import { Loader, Film, Search, SlidersHorizontal, User, Tag, Lock, Play, Clock, ExternalLink } from 'lucide-react';
 import { DifficultyBadge, DurationBadge, TierBadge, SkillTag } from '../../ui/ContentBadges.jsx';
 import SkillFilter from '../../ui/SkillFilter.jsx';
@@ -21,13 +22,36 @@ const VideosIndex = () => {
   const [selectedVideo, setSelectedVideo] = useState(null);
 
   useEffect(() => {
-    const q = query(collection(db, UNIFIED_COLLECTION), where('type', '==', 'VIDEO'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setVideos(items);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    const loadVideos = async () => {
+      try {
+        // 1. Fetch Unified Videos
+        const unifiedQuery = query(collection(db, UNIFIED_COLLECTION), where('type', '==', 'VIDEO'));
+        const unifiedSnapshot = await getDocs(unifiedQuery);
+        const unifiedItems = unifiedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'unified' }));
+
+        // 2. Fetch Legacy Videos (Wrapper)
+        const legacyQuery = query(collection(db, CONTENT_COLLECTIONS.VIDEOS));
+        const legacySnapshot = await getDocs(legacyQuery);
+        const legacyItems = legacySnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(), 
+          type: 'VIDEO', // Normalize type
+          source: 'legacy' 
+        }));
+
+        // 3. Merge and Deduplicate
+        const allItems = [...unifiedItems, ...legacyItems];
+        // Simple dedupe by ID if needed, but collections are distinct so just concat is fine usually
+        
+        setVideos(allItems);
+      } catch (error) {
+        console.error("Error loading videos:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadVideos();
   }, [db]);
 
   // Get unique categories
@@ -66,8 +90,20 @@ const VideosIndex = () => {
       result = result.filter(v => v.metadata?.category === categoryFilter);
     }
     
+    // Access Control Filter: Only show unlocked content (Progressive Disclosure)
+    // If an item is marked "Hidden Until Unlocked", hide it if not unlocked.
+    // If it's public (default), show it.
+    result = result.filter(v => {
+      // If explicitly hidden until unlocked, check access
+      if (v.isHiddenUntilUnlocked) {
+        return isContentUnlocked(v);
+      }
+      // Otherwise show it (it might still be locked visually if we want, but user asked for "available when accessed")
+      return true;
+    });
+
     return result;
-  }, [videos, searchQuery, selectedSkills, categoryFilter]);
+  }, [videos, searchQuery, selectedSkills, categoryFilter, isContentUnlocked]);
 
   // Extract YouTube thumbnail from URL
   const getYouTubeThumbnail = (url) => {
