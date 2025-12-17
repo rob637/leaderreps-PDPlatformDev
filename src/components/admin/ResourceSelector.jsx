@@ -22,6 +22,7 @@ import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firesto
 const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
   const { db } = useAppServices();
   const [isOpen, setIsOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(resourceType);
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,7 +31,14 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
   // Normalize value - can be either a string ID or an object with id property
   const valueId = typeof value === 'string' ? value : value?.id || null;
 
-  // Effect 1: Load all resources when modal opens
+  // Update active category if prop changes, but only if modal is closed (to avoid jumping while user is interacting)
+  useEffect(() => {
+    if (!isOpen) {
+      setActiveCategory(resourceType);
+    }
+  }, [resourceType, isOpen]);
+
+  // Effect 1: Load all resources when modal opens or category changes
   useEffect(() => {
     if (!isOpen) return;
     if (!db) {
@@ -40,25 +48,21 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
     const loadResources = async () => {
       setLoading(true);
-      console.log('[ResourceSelector] Loading resources for type:', resourceType);
+      console.log('[ResourceSelector] Loading resources for category:', activeCategory);
       try {
-        // Determine which collections to fetch based on type
+        // Determine which collections to fetch based on active category
         let collections = [];
         let unifiedTypes = [];
 
-        switch (resourceType) {
+        switch (activeCategory) {
           case 'content':
-            // Fetch from Wrappers (Videos, Docs, Courses, Readings) AND Community/Coaching Session Types
+            // Fetch from Wrappers (Videos, Docs, Courses, Readings)
             collections = [
               CONTENT_COLLECTIONS.VIDEOS, 
               CONTENT_COLLECTIONS.DOCUMENTS,
               CONTENT_COLLECTIONS.COURSES,
-              CONTENT_COLLECTIONS.READINGS,
-              COMMUNITY_SESSION_TYPES_COLLECTION,
-              COACHING_SESSION_TYPES_COLLECTION
+              CONTENT_COLLECTIONS.READINGS
             ];
-            // Unified Collection disabled as we are pulling from Wrappers
-            unifiedTypes = [];
             break;
           case 'community':
             collections = [COMMUNITY_SESSION_TYPES_COLLECTION];
@@ -85,31 +89,6 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
           
           allResources = [...allResources, ...data.map(item => ({ ...item, resourceType: type }))];
         }
-
-        // 2. Fetch Unified Content (if needed)
-        if (unifiedTypes.length > 0) {
-          try {
-            const unifiedRef = collection(db, UNIFIED_COLLECTION);
-            // Fetch all and filter in memory for simplicity, or use 'in' query
-            const q = query(unifiedRef, where('type', 'in', unifiedTypes));
-            const snapshot = await getDocs(q);
-            const unifiedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            allResources = [...allResources, ...unifiedData.map(item => {
-              let type = 'unified';
-              if (item.type === UNIFIED_TYPES.READ_REP) type = 'read_rep';
-              else if (item.type === UNIFIED_TYPES.VIDEO || item.type === UNIFIED_TYPES.REP) type = 'video';
-              
-              return { 
-                ...item, 
-                resourceType: type,
-                url: item.url || item.videoUrl || item.link || ''
-              };
-            })];
-          } catch (err) {
-            console.error("Error fetching unified content:", err);
-          }
-        }
         
         console.log('[ResourceSelector] Loaded', allResources.length, 'resources');
         setResources(allResources);
@@ -121,7 +100,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
     };
 
     loadResources();
-  }, [isOpen, resourceType, db]);
+  }, [isOpen, activeCategory, db]);
 
   // Effect 2: Sync selectedResource with value
   useEffect(() => {
@@ -143,20 +122,17 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
     // If not found in list, fetch individual
     const loadSingle = async () => {
       try {
-        // We check both collections if type is content, or specific if known
-        const collections = resourceType === 'content' 
-          ? [
-              CONTENT_COLLECTIONS.VIDEOS, 
-              CONTENT_COLLECTIONS.READINGS,
-              CONTENT_COLLECTIONS.DOCUMENTS,
-              CONTENT_COLLECTIONS.COURSES,
-              COMMUNITY_SESSION_TYPES_COLLECTION,
-              COACHING_SESSION_TYPES_COLLECTION
-            ]
-          : resourceType === 'community' ? [COMMUNITY_SESSION_TYPES_COLLECTION]
-          : [COACHING_SESSION_TYPES_COLLECTION];
+        // Check ALL possible collections to ensure we find it regardless of current category
+        const allCollections = [
+          CONTENT_COLLECTIONS.VIDEOS, 
+          CONTENT_COLLECTIONS.READINGS,
+          CONTENT_COLLECTIONS.DOCUMENTS,
+          CONTENT_COLLECTIONS.COURSES,
+          COMMUNITY_SESSION_TYPES_COLLECTION,
+          COACHING_SESSION_TYPES_COLLECTION
+        ];
 
-        for (const col of collections) {
+        for (const col of allCollections) {
           const docRef = doc(db, col, valueId);
           const snap = await getDoc(docRef);
           if (snap.exists()) {
@@ -173,18 +149,16 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
         }
 
         // Check Unified Collection (for Read & Reps)
-        if (resourceType === 'content') {
-          const unifiedRef = doc(db, UNIFIED_COLLECTION, valueId);
-          const unifiedSnap = await getDoc(unifiedRef);
-          if (unifiedSnap.exists()) {
-            const data = unifiedSnap.data();
-            setSelectedResource({ 
-              id: unifiedSnap.id, 
-              ...data, 
-              resourceType: data.type === UNIFIED_TYPES.READ_REP ? 'read_rep' : 'unified' 
-            });
-            return;
-          }
+        const unifiedRef = doc(db, UNIFIED_COLLECTION, valueId);
+        const unifiedSnap = await getDoc(unifiedRef);
+        if (unifiedSnap.exists()) {
+          const data = unifiedSnap.data();
+          setSelectedResource({ 
+            id: unifiedSnap.id, 
+            ...data, 
+            resourceType: data.type === UNIFIED_TYPES.READ_REP ? 'read_rep' : 'unified' 
+          });
+          return;
         }
       } catch (e) {
         console.error("Error loading single resource:", e);
@@ -192,7 +166,17 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
     };
 
     loadSingle();
-  }, [valueId, resources, selectedResource, db, resourceType]);
+  }, [valueId, resources, selectedResource, db]);
+
+  // Effect 3: Set active category based on selected resource when modal opens
+  useEffect(() => {
+    if (isOpen && selectedResource) {
+      const type = selectedResource.resourceType;
+      if (type === 'community') setActiveCategory('community');
+      else if (type === 'coaching') setActiveCategory('coaching');
+      else setActiveCategory('content');
+    }
+  }, [isOpen, selectedResource]);
 
   const filteredResources = resources.filter(r => 
     r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -275,6 +259,23 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-slate-100 rounded-full">
                 <X className="w-5 h-5 text-slate-500" />
               </button>
+            </div>
+
+            {/* Category Tabs */}
+            <div className="flex border-b bg-white">
+              {['content', 'community', 'coaching'].map(cat => (
+                <button 
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeCategory === cat 
+                      ? 'border-corporate-teal text-corporate-teal bg-teal-50/50' 
+                      : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </button>
+              ))}
             </div>
 
             {/* Search */}
