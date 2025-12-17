@@ -52,7 +52,9 @@ const TimeTravelBanner = ({ isAdmin, onMidnightRollover }) => {
   };
 
   // Don't show if not admin or time travel not active
-  if (!isAdmin || !isTimeTravelActive) {
+  // Note: We want to show the banner if time travel is active OR if the user is an admin
+  // This allows admins to initiate time travel even if it's not currently active
+  if (!isAdmin && !isTimeTravelActive) {
     return null;
   }
 
