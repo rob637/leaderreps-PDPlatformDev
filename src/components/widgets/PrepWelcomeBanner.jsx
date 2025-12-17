@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Shield, Target, ArrowRight, Rocket, Calendar, Quote, Sparkles, 
   CheckCircle2, BookOpen, Video, Sunrise, Moon, LayoutDashboard,
-  ChevronRight, Zap, GraduationCap, Users
+  ChevronRight, Zap, GraduationCap, Users, PlayCircle
 } from 'lucide-react';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useAppServices } from '../../services/useAppServices';
@@ -222,6 +222,21 @@ const PrepWelcomeBanner = () => {
                             'videoContent': 'Video Library',
                             'appOverview': 'App Guide'
                           };
+                          
+                          // Special handling for video content
+                          if (widget === 'videoContent') {
+                            return (
+                              <span 
+                                key={idx}
+                                className="text-xs px-2 py-1 rounded-md bg-white/10 text-white/80 flex items-center gap-1"
+                              >
+                                <PlayCircle className="w-3 h-3 text-emerald-400" />
+                                {widgetLabels[widget] || widget}
+                                <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded text-white/90 ml-1 font-medium tracking-wide">OPTIONAL</span>
+                              </span>
+                            );
+                          }
+
                           return (
                             <span 
                               key={idx}
