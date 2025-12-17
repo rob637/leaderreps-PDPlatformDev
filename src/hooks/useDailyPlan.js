@@ -450,9 +450,14 @@ export const useDailyPlan = () => {
     const trackPrepVisit = async () => {
       if (!user || !updateDevelopmentPlanData || developmentPlanData === undefined) return;
       
-      // Check if we're in Prep Phase (daysFromStart < 0 means before cohort start)
-      const rawDate = developmentPlanData?.startDate || user?.startDate;
-      if (!rawDate) return;
+      // IMPORTANT: Use cohort startDate if available, otherwise fall back to dev plan startDate
+      // The cohort startDate determines when the actual program begins (e.g., Dec 31)
+      // The dev plan startDate might be when the user first logged in (e.g., Dec 17)
+      const rawDate = cohortData?.startDate || developmentPlanData?.startDate || user?.startDate;
+      if (!rawDate) {
+        console.log('[useDailyPlan] trackPrepVisit: No startDate found');
+        return;
+      }
       
       let start = null;
       if (rawDate.toDate && typeof rawDate.toDate === 'function') {
@@ -468,6 +473,14 @@ export const useDailyPlan = () => {
       const now = new Date(Date.now() + timeOffset);
       const diffMs = now.getTime() - start.getTime();
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      console.log('[useDailyPlan] trackPrepVisit:', {
+        startDateSource: cohortData?.startDate ? 'cohort' : 'devPlan',
+        startDate: start.toISOString(),
+        now: now.toISOString(),
+        diffDays,
+        isInPrepPhase: diffDays < 0
+      });
       
       // If we're in Prep Phase (before start day)
       if (diffDays < 0) {
@@ -516,7 +529,7 @@ export const useDailyPlan = () => {
       }
     };
     trackPrepVisit();
-  }, [developmentPlanData, updateDevelopmentPlanData, user, timeOffset]);
+  }, [developmentPlanData, updateDevelopmentPlanData, user, timeOffset, cohortData]);
 
   // Calculate user's Journey Day (count of distinct days visited in Prep Phase)
   // This ensures users see Day 1, then Day 2, then Day 3 content sequentially
