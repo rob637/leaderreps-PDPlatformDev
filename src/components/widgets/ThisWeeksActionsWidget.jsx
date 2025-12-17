@@ -86,7 +86,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         type: item.type || item.contentItemType || item.communityItemType || item.coachingItemType || category.toLowerCase(),
         label: label || item.name || 'Untitled Action',
         required: item.required !== false && item.isRequiredContent !== false && item.optional !== true,
-        url: item.url,
+        url: item.url || item.videoUrl || item.link,
         resourceId: item.resourceId || item.contentItemId || item.communityItemId || item.coachingItemId,
         resourceType: item.resourceType || (item.type || item.contentItemType || item.communityItemType || item.coachingItemType || '').toLowerCase(),
         category
@@ -118,6 +118,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         optional: action.optional === true,
         resourceId: action.resourceId,
         resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
+        url: action.url || action.videoUrl || action.link,
         category,
         // Mark as coming from daily plan for UI distinction
         fromDailyPlan: true,

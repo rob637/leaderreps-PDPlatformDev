@@ -11,7 +11,7 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
     if (resourceType) return resourceType.toLowerCase();
     if (legacyType) return legacyType.toLowerCase();
     
-    const lowerUrl = url.toLowerCase();
+    const lowerUrl = (url || '').toLowerCase();
     if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be') || lowerUrl.includes('vimeo.com') || lowerUrl.endsWith('.mp4')) return 'video';
     if (lowerUrl.includes('.pdf')) return 'pdf';
     if (lowerUrl.match(/\.(docx|doc|pptx|ppt|xlsx|xls)/)) return 'document';
@@ -30,6 +30,14 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
   const renderContent = () => {
     switch (type) {
       case 'video':
+        if (!url) {
+          return (
+            <div className="aspect-video w-full bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center">
+              <p className="text-slate-500">No video URL available.</p>
+            </div>
+          );
+        }
+
         if (url.includes('youtube.com') || url.includes('youtu.be')) {
           return (
             <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">

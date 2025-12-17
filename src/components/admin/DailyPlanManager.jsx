@@ -394,6 +394,19 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
                   </button>
                 </div>
                 
+                {/* Optional Toggle */}
+                <div className="flex items-center gap-2 pl-8 mb-1">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input 
+                      type="checkbox"
+                      checked={action.optional === true}
+                      onChange={e => updateAction(idx, 'optional', e.target.checked)}
+                      className="w-3 h-3 rounded border-slate-300 text-corporate-teal focus:ring-corporate-teal"
+                    />
+                    <span className="text-[10px] text-slate-500 font-medium">Optional (not required)</span>
+                  </label>
+                </div>
+
                 {/* Link Resource - Using ResourceSelector */}
                 <div className="flex items-center gap-2 pl-8">
                   <span className="text-[10px] text-slate-400 uppercase font-bold flex-shrink-0">Link:</span>

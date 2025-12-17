@@ -98,7 +98,8 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               
               return { 
                 ...item, 
-                resourceType: type
+                resourceType: type,
+                url: item.url || item.videoUrl || item.link || ''
               };
             })];
           } catch (err) {
