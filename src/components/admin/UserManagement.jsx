@@ -261,10 +261,22 @@ const UserManagement = () => {
   };
 
   const handleEditCohort = (cohort) => {
+    // Format date for datetime-local input (YYYY-MM-DDThh:mm)
+    let dateStr = '';
+    if (cohort.startDate) {
+      const date = cohort.startDate.toDate ? cohort.startDate.toDate() : new Date(cohort.startDate);
+      if (!isNaN(date.getTime())) {
+        // Adjust to local ISO string for input
+        const offset = date.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(date - offset)).toISOString().slice(0, 16);
+        dateStr = localISOTime;
+      }
+    }
+
     setCohortForm({
       id: cohort.id,
       name: cohort.name,
-      startDate: cohort.startDate?.toDate ? cohort.startDate.toDate().toISOString().split('T')[0] : '',
+      startDate: dateStr,
       description: cohort.description || '',
       facilitatorId: cohort.facilitator?.id || '',
       maxCapacity: cohort.settings?.maxCapacity || 25,
@@ -280,9 +292,8 @@ const UserManagement = () => {
 
     try {
       const startDate = new Date(cohortForm.startDate);
-      // Set to noon to avoid timezone edge cases
-      startDate.setHours(12, 0, 0, 0);
-
+      // Note: We preserve the time selected by the user for session scheduling
+      
       // Build facilitator object from selected facilitator
       const selectedFacilitator = facilitators.find(f => f.id === cohortForm.facilitatorId);
       const facilitatorData = selectedFacilitator ? {
@@ -798,16 +809,16 @@ const UserManagement = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Start Date *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Start Date & Time *</label>
                 <input
-                  type="date"
+                  type="datetime-local"
                   required
                   value={cohortForm.startDate}
                   onChange={e => setCohortForm({...cohortForm, startDate: e.target.value})}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                 />
                 <p className="text-xs text-slate-500 mt-1">
-                  Development Plan starts on this date for all cohort members.
+                  Development Plan starts on this date. The time will be used for session scheduling.
                 </p>
               </div>
 
