@@ -140,13 +140,25 @@ export const timeService = {
    * Reset to real time
    */
   reset: () => {
+    console.log('[TimeService] Resetting to real time...');
     timeState.offset = 0;
     timeState.isTimeTravelActive = false;
-    localStorage.removeItem('time_travel_offset');
-    localStorage.removeItem('pending_midnight_crossings');
+    
+    try {
+      localStorage.removeItem('time_travel_offset');
+      localStorage.removeItem('pending_midnight_crossings');
+      console.log('[TimeService] Storage cleared.');
+    } catch (e) {
+      console.error('[TimeService] Error clearing storage:', e);
+    }
+
     timeChange$.next(0);
-    console.log('[TimeService] Reset to real time');
-    window.location.reload();
+    
+    // Delay reload to ensure storage persistence and UI feedback
+    setTimeout(() => {
+      console.log('[TimeService] Reloading for reset...');
+      window.location.reload();
+    }, 200);
   },
 
   /**
