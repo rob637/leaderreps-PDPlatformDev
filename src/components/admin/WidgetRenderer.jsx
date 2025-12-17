@@ -13,6 +13,7 @@ import CoachingMySessionsWidget from '../widgets/CoachingMySessionsWidget';
 import CommunityUpcomingSessionsWidget from '../widgets/CommunityUpcomingSessionsWidget';
 import CommunityMyRegistrationsWidget from '../widgets/CommunityMyRegistrationsWidget';
 import PrepWelcomeBanner from '../widgets/PrepWelcomeBanner';
+import DailyPlanWidget from '../widgets/DailyPlanWidget';
 
 /**
  * WidgetRenderer - Renders widgets from templates defined in widgetTemplates.js
@@ -49,6 +50,10 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
 
   if (widgetId === 'prep-welcome-banner') {
     return <PrepWelcomeBanner />;
+  }
+
+  if (widgetId === 'daily-plan') {
+    return <DailyPlanWidget scope={scope} />;
   }
 
   if (widgetId === 'admin-access-viewer') {
