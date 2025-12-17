@@ -95,7 +95,7 @@ export const PREP_PHASE_QUOTES = [
 export const ONBOARDING_MODULES = {
   1: {
     id: 'welcome',
-    title: 'Welcome to Your Leadership Journey',
+    title: 'Your First Steps',
     headline: null, // Day 1 uses personalized welcome headline from banner
     description: 'Today we set the foundation. Complete your Leader Profile and Baseline Assessment to help us personalize your experience.',
     widgets: ['leaderProfile', 'baselineAssessment', 'todaysActions'],
