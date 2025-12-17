@@ -185,13 +185,28 @@ const ReadRepDetail = ({ navParams }) => {
           <div className="p-8">
             {activeTab === 'brief' && (
               <div className="prose max-w-none text-slate-700">
+                {/* Synopsis Section */}
+                {book.details?.synopsis && (
+                  <div className="mb-8 bg-blue-50 p-6 rounded-xl border border-blue-100">
+                    <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
+                      <BookOpen className="w-5 h-5" />
+                      Synopsis & Key Takeaways
+                    </h3>
+                    <div className="whitespace-pre-wrap text-blue-800 text-sm leading-relaxed">
+                      {book.details.synopsis}
+                    </div>
+                  </div>
+                )}
+
                 {book.metadata?.executiveBriefHTML ? (
                   <div dangerouslySetInnerHTML={{ __html: book.metadata.executiveBriefHTML }} />
                 ) : (
-                  <div className="text-center py-12 text-slate-400">
-                    <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p>No executive brief available.</p>
-                  </div>
+                  !book.details?.synopsis && (
+                    <div className="text-center py-12 text-slate-400">
+                      <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                      <p>No executive brief available.</p>
+                    </div>
+                  )
                 )}
               </div>
             )}

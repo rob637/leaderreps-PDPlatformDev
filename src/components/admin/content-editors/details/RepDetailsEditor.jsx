@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { CONTENT_TYPES } from '../../../../services/unifiedContentService';
 import { MEDIA_TYPES } from '../../../../services/mediaService';
 import MediaPicker from '../pickers/MediaPicker';
-import { Database } from 'lucide-react';
+import { Database, Bot, Copy, Check } from 'lucide-react';
 
 const RepDetailsEditor = ({ details, onChange, type }) => {
   const [showMediaPicker, setShowMediaPicker] = useState(null); // 'VIDEO' | 'DOCUMENT' | null
+  const [copied, setCopied] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,6 +20,18 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
       onChange('pdfUrl', asset.url);
     }
     setShowMediaPicker(null);
+  };
+
+  const AI_PROMPT = `Please provide a synopsis for the book '[Book Title]' by [Author]. Include:
+1. A brief summary of the book.
+2. Key points or takeaways.
+3. How it is relevant to leadership.
+4. Actionable insights for leaders.`;
+
+  const copyPrompt = () => {
+    navigator.clipboard.writeText(AI_PROMPT);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -70,15 +83,52 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
 
       {type === CONTENT_TYPES.READ_REP && (
         <>
+          {/* AI Prompt Helper */}
+          <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-4">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center gap-2 text-indigo-800 font-semibold">
+                <Bot size={18} />
+                <span>AI Synopsis Generator</span>
+              </div>
+              <button
+                onClick={copyPrompt}
+                className="flex items-center gap-1 text-xs font-medium bg-white text-indigo-600 px-2 py-1 rounded border border-indigo-200 hover:bg-indigo-50 transition-colors"
+              >
+                {copied ? <Check size={12} /> : <Copy size={12} />}
+                {copied ? 'Copied!' : 'Copy Prompt'}
+              </button>
+            </div>
+            <p className="text-xs text-indigo-600 mb-2">
+              Use this prompt with ChatGPT/Claude to generate a consistent synopsis:
+            </p>
+            <div className="bg-white p-2 rounded border border-indigo-100 text-xs text-gray-600 font-mono whitespace-pre-wrap">
+              {AI_PROMPT}
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Content / Text
+              Synopsis
+            </label>
+            <textarea
+              name="synopsis"
+              value={details.synopsis || ''}
+              onChange={handleChange}
+              rows={6}
+              placeholder="Paste the AI-generated synopsis here..."
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Content / Text (Full Text or Additional Notes)
             </label>
             <textarea
               name="content"
               value={details.content || ''}
               onChange={handleChange}
-              rows={6}
+              rows={4}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
