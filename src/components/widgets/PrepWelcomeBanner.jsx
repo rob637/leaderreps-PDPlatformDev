@@ -105,7 +105,19 @@ const PrepWelcomeBanner = () => {
   const effectiveJourneyDay = Math.min(clampedJourneyDay, 5);
 
   // 4. Get the correct onboarding module for this effective day
-  const effectiveOnboarding = ONBOARDING_MODULES[effectiveJourneyDay];
+  let effectiveOnboarding = ONBOARDING_MODULES[effectiveJourneyDay];
+
+  // Override Day 5 content if incomplete
+  // This prevents showing "Your Toolkit is Complete" when they still have tasks
+  if (effectiveJourneyDay === 5 && hasIncompleteRequiredActions && effectiveOnboarding) {
+    effectiveOnboarding = {
+      ...effectiveOnboarding,
+      title: 'Almost Ready!',
+      headline: `Day 5: Finish Your Toolkit`,
+      description: `You have ${incompleteRequiredActions.length} required action${incompleteRequiredActions.length === 1 ? '' : 's'} remaining. Complete them to be fully ready for Day 1.`
+    };
+  }
+
   const onboarding = effectiveOnboarding || originalOnboarding;
 
   // Build personalized headline
@@ -161,6 +173,19 @@ const PrepWelcomeBanner = () => {
     // Days 2-5: Use onboarding description
     return onboarding?.description || welcome.subtext;
   };
+
+  // DIAGNOSTIC LOGGING
+  if (currentPhase?.id === 'pre-start') {
+    console.log('[PrepWelcomeBanner] STATUS CHECK:', {
+      journeyDay,
+      clampedJourneyDay,
+      isPrepComplete,
+      hasIncomplete: hasIncompleteRequiredActions,
+      incompleteCount: incompleteRequiredActions.length,
+      headline: getPersonalizedHeadline(),
+      subtext: getSubtext()
+    });
+  }
 
   // Get icon for onboarding module
   const getModuleIcon = (moduleId) => {
