@@ -190,7 +190,7 @@ const PrepWelcomeBanner = () => {
             </p>
 
             {/* Facilitator Introduction - Show on Day 1 if available */}
-            {journeyDay === 1 && facilitator && (
+            {effectiveJourneyDay === 1 && facilitator && (
               <div className="flex items-center gap-3 bg-white/5 rounded-lg px-4 py-3 border border-white/10">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-corporate-teal to-corporate-navy flex items-center justify-center text-white font-bold text-sm">
                   {facilitator.name?.charAt(0) || '?'}
@@ -203,7 +203,7 @@ const PrepWelcomeBanner = () => {
             )}
 
             {/* Today's Focus - What's New (Skip the box on Day 1 since headline IS the welcome) */}
-            {onboarding && journeyDay > 1 && (
+            {onboarding && effectiveJourneyDay > 1 && (
               <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                 <div className="flex items-start gap-3">
                   <div className={`p-2 rounded-lg ${
@@ -273,7 +273,7 @@ const PrepWelcomeBanner = () => {
             )}
             
             {/* Day 1: Show widgets inline without nested box */}
-            {onboarding && journeyDay === 1 && (
+            {onboarding && effectiveJourneyDay === 1 && (
               <div className="flex flex-wrap gap-2">
                 {onboarding.widgets?.slice(0, 4).map((widget, idx) => {
                   const widgetLabels = {
@@ -297,7 +297,7 @@ const PrepWelcomeBanner = () => {
             )}
             
             {/* Day 1 Tip */}
-            {onboarding?.tip && journeyDay === 1 && (
+            {onboarding?.tip && effectiveJourneyDay === 1 && (
               <div className="flex items-start gap-2 text-xs text-slate-400">
                 <Sparkles className="w-3 h-3 text-yellow-400 mt-0.5 flex-shrink-0" />
                 <span>{onboarding.tip}</span>
