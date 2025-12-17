@@ -419,13 +419,16 @@ const DayEditor = ({ day, onSave, onCancel, allDays }) => {
                           updateActionMultiple(idx, {
                             resourceId: resource.id,
                             resourceTitle: resource.title,
-                            resourceType: resource.resourceType || resource.type
+                            resourceType: resource.resourceType || resource.type,
+                            // Explicitly save the URL to ensure it's available in the widget
+                            url: resource.url || resource.videoUrl || resource.link || ''
                           });
                         } else {
                           updateActionMultiple(idx, {
                             resourceId: null,
                             resourceTitle: null,
-                            resourceType: null
+                            resourceType: null,
+                            url: null
                           });
                         }
                       }}

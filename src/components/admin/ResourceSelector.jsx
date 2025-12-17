@@ -50,9 +50,9 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
             // Fetch from Wrappers (Videos, Docs, Courses) AND Unified Library (Read & Reps, Videos, Reps)
             collections = [
               CONTENT_COLLECTIONS.VIDEOS, 
-              CONTENT_COLLECTIONS.DOCUMENTS, 
-              CONTENT_COLLECTIONS.COURSES,
-              CONTENT_COLLECTIONS.READINGS // Keep for legacy support
+              // CONTENT_COLLECTIONS.DOCUMENTS, // Temporarily disabled to reduce clutter
+              // CONTENT_COLLECTIONS.COURSES,   // Temporarily disabled to reduce clutter
+              // CONTENT_COLLECTIONS.READINGS   // Temporarily disabled to reduce clutter
             ];
             // Include VIDEO and REP types from Unified Collection
             unifiedTypes = [UNIFIED_TYPES.READ_REP, UNIFIED_TYPES.VIDEO, UNIFIED_TYPES.REP];
