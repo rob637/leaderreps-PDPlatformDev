@@ -55,22 +55,6 @@ export default defineConfig({
         
         // Runtime caching strategies
         runtimeCaching: [
-          // Firestore API - Network First (fresh data, fallback to cache)
-          {
-            urlPattern: ({ url }) => 
-              url.origin === 'https://firestore.googleapis.com' ||
-              url.origin.includes('googleapis.com'),
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'firestore-api-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
-              },
-              networkTimeoutSeconds: 10,
-            },
-          },
-          
           // Firebase Auth - Network Only (always fresh auth state)
           {
             urlPattern: ({ url }) => 
