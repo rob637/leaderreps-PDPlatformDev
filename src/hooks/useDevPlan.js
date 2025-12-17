@@ -165,10 +165,17 @@ export const useDevPlan = () => {
   // Auto-initialize startDate if not set (only for users WITHOUT a cohort)
   useEffect(() => {
     const autoInit = async () => {
-      // Skip if user has a cohort - cohort provides the start date
-      // Check both user doc and dailyPlanData for cohort info
+      // Skip if user has a cohortId - cohort provides the start date
+      // Check user.cohortId FIRST - this is set immediately when user is assigned to cohort
+      // Don't wait for cohortData to load
+      if (user?.cohortId) {
+        console.log('[useDevPlan] User has cohortId, skipping auto-init (cohort provides start date)');
+        return;
+      }
+      
+      // Also skip if cohort data already loaded
       if (dailyPlanData?.cohortData?.startDate) {
-        console.log('[useDevPlan] User has cohort startDate, skipping auto-init');
+        console.log('[useDevPlan] User has cohort startDate loaded, skipping auto-init');
         return;
       }
       
