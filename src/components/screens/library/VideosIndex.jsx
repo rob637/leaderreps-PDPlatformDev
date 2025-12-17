@@ -7,6 +7,7 @@ import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { Loader, Film, Search, SlidersHorizontal, User, Tag, Lock, Play, Clock, ExternalLink } from 'lucide-react';
 import { DifficultyBadge, DurationBadge, TierBadge, SkillTag } from '../../ui/ContentBadges.jsx';
 import SkillFilter from '../../ui/SkillFilter.jsx';
+import UniversalResourceViewer from '../../ui/UniversalResourceViewer.jsx';
 
 const VideosIndex = () => {
   const { db, navigate } = useAppServices();
@@ -17,6 +18,7 @@ const VideosIndex = () => {
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
   useEffect(() => {
     const q = query(collection(db, UNIFIED_COLLECTION), where('type', '==', 'VIDEO'));
@@ -77,13 +79,15 @@ const VideosIndex = () => {
     return null;
   };
 
-  // Handle video click - open in new tab or navigate to detail
+  // Handle video click - open in modal
   const handleVideoClick = (video) => {
-    if (video.metadata?.externalUrl) {
-      window.open(video.metadata.externalUrl, '_blank', 'noopener,noreferrer');
-    } else {
-      navigate('video-detail', { id: video.id, title: video.title });
-    }
+    // Normalize video object for viewer
+    const normalizedVideo = {
+      ...video,
+      url: video.url || video.videoUrl || video.link || video.metadata?.externalUrl,
+      resourceType: 'video'
+    };
+    setSelectedVideo(normalizedVideo);
   };
 
   return (
@@ -92,6 +96,12 @@ const VideosIndex = () => {
       { label: 'Library', path: 'library' },
       { label: 'Videos', path: null }
     ]}>
+      {selectedVideo && (
+        <UniversalResourceViewer 
+          resource={selectedVideo} 
+          onClose={() => setSelectedVideo(null)} 
+        />
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         
         {/* Hero Section */}
