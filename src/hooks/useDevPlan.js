@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../services/useAppServices';
 import { collection, query, orderBy, getDocs, serverTimestamp } from 'firebase/firestore';
 import { useDailyPlan } from './useDailyPlan';
+import { timeChange$ } from '../services/timeService';
 
 /**
  * Hook to manage the Development Plan logic.
@@ -23,9 +24,10 @@ export const useDevPlan = () => {
 
   // 0. Initialize Time Travel Offset and listen for changes
   useEffect(() => {
-    // Initial read
-    const offset = parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
-    setTimeOffset(offset);
+    // Subscribe to time service changes (handles in-app updates)
+    const subscription = timeChange$.subscribe(newOffset => {
+      setTimeOffset(newOffset);
+    });
     
     // Listen for storage changes (from other tabs or same-tab manual updates)
     const handleStorageChange = (e) => {
@@ -36,7 +38,10 @@ export const useDevPlan = () => {
     };
     
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const simulatedNow = useMemo(() => new Date(Date.now() + timeOffset), [timeOffset]);

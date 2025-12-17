@@ -5,6 +5,7 @@ import {
   ChevronRight, Zap, GraduationCap, Users, PlayCircle
 } from 'lucide-react';
 import { useDailyPlan, ONBOARDING_MODULES } from '../../hooks/useDailyPlan';
+import { useActionProgress } from '../../hooks/useActionProgress';
 import { useAppServices } from '../../services/useAppServices';
 
 /**
@@ -23,6 +24,7 @@ import { useAppServices } from '../../services/useAppServices';
 const PrepWelcomeBanner = () => {
   const { user } = useAppServices();
   const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay, currentDayData, userState } = useDailyPlan();
+  const { getItemProgress } = useActionProgress();
   
   // Debug logging
   console.log('[PrepWelcomeBanner] Rendering with:', {
@@ -74,13 +76,19 @@ const PrepWelcomeBanner = () => {
     // Skip optional actions
     if (action.optional === true) return false;
     
-    // Determine which day's progress to check
-    // In Prep Phase, actions are cumulative, so we need to check the day they were introduced
-    const dayId = action.introducedOnDayId || currentDayData?.id;
-    const dayProgress = userState?.dailyProgress?.[dayId];
-    const completedItems = dayProgress?.itemsCompleted || [];
+    // Check completion status using the unified action progress system
+    // This handles both legacy week-based and new day-based completions
+    const progress = getItemProgress(action.id);
+    const isCompleted = progress.status === 'completed';
     
-    const isCompleted = completedItems.includes(action.id);
+    // Fallback: Check dailyProgress from userState (legacy/redundant check)
+    if (!isCompleted) {
+      const dayId = action.introducedOnDayId || currentDayData?.id;
+      const dayProgress = userState?.dailyProgress?.[dayId];
+      const completedItems = dayProgress?.itemsCompleted || [];
+      if (completedItems.includes(action.id)) return false; // It is completed in legacy system
+    }
+    
     return isRequired && !isCompleted;
   });
 

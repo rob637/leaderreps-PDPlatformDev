@@ -1819,7 +1819,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
         const orderA = getFeatureOrder(a.featureId);
         const orderB = getFeatureOrder(b.featureId);
         return orderA - orderB;
-    }), [isFeatureEnabled, getFeatureOrder, navigate, hasCoachingAccess]);
+    }), [isFeatureEnabled, getFeatureOrder, navigate]);
 
     const renderView = () => {
         const viewProps = { setCoachingLabView: setView, setSelectedScenario, setMicroLearningTopic };

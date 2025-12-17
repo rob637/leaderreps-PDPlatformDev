@@ -270,7 +270,7 @@ const DataProvider = ({
         );
       }
     },
-    [hasGeminiKey]
+    []
   );
 
   const appServicesValue = useMemo(() => {
@@ -348,6 +348,7 @@ const DataProvider = ({
     isAuthReady,
     isLoadingServices,
     hasPendingDailyPractice,
+    serviceData.userProfile,
     logout,
     resolvedMetadata,
     devPlanHook,

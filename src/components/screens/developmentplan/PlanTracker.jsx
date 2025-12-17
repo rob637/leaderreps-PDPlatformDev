@@ -64,7 +64,7 @@ const PlanTracker = ({
       const progress = userState.weekProgress?.[weekKey] || {};
       setLocalReflection(progress.reflection || '');
     }
-  }, [displayWeek?.id, userState]);
+  }, [displayWeek, userState]);
 
   // Transform data for the widget
   const currentWeek = useMemo(() => {
@@ -116,16 +116,16 @@ const PlanTracker = ({
     };
   }, [displayWeek, userState, localReflection]);
 
-  const handleItemToggle = (itemId) => {
+  const handleItemToggle = useCallback((itemId) => {
     if (!isEditable) return; // Prevent editing past/future weeks
     const isComplete = !userProgress.completedItems.includes(itemId);
     toggleItemComplete(itemId, isComplete);
-  };
+  }, [isEditable, userProgress.completedItems, toggleItemComplete]);
 
-  const handleReflectionUpdate = (text) => {
+  const handleReflectionUpdate = useCallback((text) => {
     if (!isEditable) return; // Prevent editing past/future weeks
     setLocalReflection(text);
-  };
+  }, [isEditable]);
 
   // Effect to save reflection when it changes (debounced)
   useEffect(() => {
@@ -138,7 +138,7 @@ const PlanTracker = ({
       }
     }, 1500);
     return () => clearTimeout(timer);
-  }, [localReflection, displayWeek, isEditable]);
+  }, [localReflection, displayWeek, isEditable, userState.weekProgress, updateDevelopmentPlanData]);
 
 
   const sortedFeatures = useMemo(() => {
@@ -188,7 +188,7 @@ const PlanTracker = ({
     userProgress,
     handleItemToggle,
     handleReflectionUpdate
-  }), [legacyPlan, summary, cycle, onScan, onTimeline, onDetail, currentWeek, userProgress, localReflection]);
+  }), [legacyPlan, summary, cycle, onScan, onTimeline, onDetail, currentWeek, userProgress, handleItemToggle, handleReflectionUpdate]);
 
   if (loading) {
     return (

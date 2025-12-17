@@ -104,11 +104,14 @@ const Dashboard = (props) => {
     return {
       ...currentDayData,
       // Map 'actions' to 'dailyReps' for legacy widgets
-      dailyReps: (currentDayData.actions || []).map(a => ({
-        id: a.id,
-        text: a.label,
-        isCompleted: a.isCompleted
-      })),
+      // FIXED: Only map items that are actually daily reps (type === 'daily_rep')
+      dailyReps: (currentDayData.actions || [])
+        .filter(a => a.type === 'daily_rep')
+        .map(a => ({
+          id: a.id,
+          text: a.label,
+          isCompleted: a.isCompleted
+        })),
       // Ensure weekNumber exists (fallback to math if not in doc)
       weekNumber: currentDayData.weekNumber || Math.ceil(currentDayData.dayNumber / 7)
     };

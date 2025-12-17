@@ -8,13 +8,20 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
 
   // Helper to determine content type if not explicitly provided
   const getContentType = () => {
+    const lowerUrl = (url || '').toLowerCase();
+    
+    // Priority 1: Force 'document' for Office files (must use viewer to avoid download)
+    if (lowerUrl.match(/\.(docx|doc|pptx|ppt|xlsx|xls)/)) return 'document';
+    
+    // Priority 2: Force 'pdf' for PDF files
+    if (lowerUrl.includes('.pdf')) return 'pdf';
+
+    // Priority 3: Use explicit type if available
     if (resourceType) return resourceType.toLowerCase();
     if (legacyType) return legacyType.toLowerCase();
     
-    const lowerUrl = (url || '').toLowerCase();
+    // Priority 4: Infer video
     if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be') || lowerUrl.includes('vimeo.com') || lowerUrl.endsWith('.mp4')) return 'video';
-    if (lowerUrl.includes('.pdf')) return 'pdf';
-    if (lowerUrl.match(/\.(docx|doc|pptx|ppt|xlsx|xls)/)) return 'document';
     
     return 'link';
   };

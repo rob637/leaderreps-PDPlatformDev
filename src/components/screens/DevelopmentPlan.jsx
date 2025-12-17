@@ -529,7 +529,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     MilestoneTimeline,
     DetailedPlanView,
     BaselineAssessment
-  }), [adaptedDevelopmentPlanData, navigate, globalMetadata]);
+  }), [adaptedDevelopmentPlanData, navigate, globalMetadata, handleEditPlan, handleCompleteBaseline, handleCompleteScan]);
 
   // ===== GUARDS =====
   if (!isAuthReady) return <LoadingBlock title="Authenticating…" description="Connecting securely..." />;

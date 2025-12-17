@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   CheckCircle, Circle, Play, BookOpen, Users, Video, FileText, Zap, 
-  AlertCircle, ExternalLink, Loader, Layers, MessageSquare, 
-  SkipForward, ChevronDown, ChevronUp, Clock, Flame, Award, AlertTriangle,
+  ExternalLink, Loader, Layers, MessageSquare, 
+  SkipForward, Clock, AlertTriangle,
   User, ClipboardCheck, Calendar
 } from 'lucide-react';
 import { Card } from '../ui';
@@ -79,24 +79,20 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     uncompleteItem, 
     skipItem, 
     getItemProgress,
-    getCarriedOverItems,
-    stats,
-    loading: progressLoading 
+    getCarriedOverItems
   } = actionProgress;
   
   // Coaching registrations
   const {
-    registrations: userRegistrations,
-    getRegistration,
-    isRegistered
+    registrations: userRegistrations
   } = coachingRegistrations;
 
   // Extract data from currentWeek (with fallbacks for when currentWeek is null)
-  const content = currentWeek?.content || [];
-  const community = currentWeek?.community || [];
-  const coaching = currentWeek?.coaching || [];
+  const content = useMemo(() => currentWeek?.content || [], [currentWeek]);
+  const community = useMemo(() => currentWeek?.community || [], [currentWeek]);
+  const coaching = useMemo(() => currentWeek?.coaching || [], [currentWeek]);
   const userProgress = currentWeek?.userProgress;
-  const completedItems = userProgress?.itemsCompleted || [];
+  const completedItems = useMemo(() => userProgress?.itemsCompleted || [], [userProgress]);
 
   // Normalize content items - DevPlanManager saves with different field names
   const normalizeItems = (items, category) => {
@@ -245,7 +241,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     }
     
     return normalized;
-  }, [dailyActions, currentDayData?.id, content, community, coaching, currentPhase?.id, leaderProfileComplete, baselineAssessmentComplete]);
+  }, [dailyActions, currentDayData?.id, currentDayData?.journeyDay, content, community, coaching, currentPhase?.id, leaderProfileComplete, baselineAssessmentComplete]);
 
   // Get carried over items for this week (MUST be before any early returns)
   // This combines:
@@ -562,6 +558,12 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     // Toggle in legacy system for compatibility
     console.log('[ThisWeeksActions] Calling toggleItemComplete with:', itemId, !isCurrentlyComplete);
     toggleItemComplete(itemId, !isCurrentlyComplete);
+    
+    // Also update Daily Plan progress if applicable (for PrepWelcomeBanner sync)
+    if (item.fromDailyPlan && item.dayId && devPlanHook.toggleDayItemComplete) {
+      console.log('[ThisWeeksActions] Syncing to Daily Plan:', item.dayId, itemId);
+      devPlanHook.toggleDayItemComplete(item.dayId, itemId, !isCurrentlyComplete);
+    }
     
     // Also track in new progress system
     if (isCurrentlyComplete) {

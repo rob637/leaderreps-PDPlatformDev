@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../services/useAppServices';
 import { collection, query, orderBy, getDocs, serverTimestamp } from 'firebase/firestore';
+import { timeChange$ } from '../services/timeService';
 
 /**
  * Hook to manage the Daily Plan logic.
@@ -279,9 +280,12 @@ export const useDailyPlan = () => {
 
   // 0. Initialize Time Travel Offset and listen for changes
   useEffect(() => {
-    const offset = parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
-    setTimeOffset(offset);
+    // Subscribe to time service changes (handles in-app updates)
+    const subscription = timeChange$.subscribe(newOffset => {
+      setTimeOffset(newOffset);
+    });
     
+    // Also listen for storage changes (handles cross-tab updates)
     const handleStorageChange = (e) => {
       if (e.key === 'time_travel_offset' || e.key === null) {
         const newOffset = parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
@@ -290,7 +294,10 @@ export const useDailyPlan = () => {
     };
     
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const simulatedNow = useMemo(() => new Date(Date.now() + timeOffset), [timeOffset]);
@@ -742,17 +749,17 @@ export const useDailyPlan = () => {
 
     // Inject QS Sessions (Cohort-based) - Only for START phase
     if (enrichedCurrent && cohortData?.startDate && currentPhase.id === 'start') {
-      // Calculate which session this might be (0, 7, 14, 21 days from start)
-      // We use daysFromStart which is already calculated
-      const sessionIndex = [0, 7, 14, 21].indexOf(daysFromStart);
+      // Calculate which session this might be (Weeks 1-4)
+      // Show session for the entire week it belongs to
+      const sessionIndex = Math.floor(daysFromStart / 7);
       
-      if (sessionIndex !== -1) {
-        // It's a session day!
+      // Only show for first 4 weeks (Sessions 1-4)
+      if (sessionIndex >= 0 && sessionIndex < 4) {
         const sessionNum = sessionIndex + 1;
         
         // Format time and day
         let timeStr = "Time TBD";
-        let dayStr = "";
+        let dateStr = "";
         let startDateObj = null;
         let sessionDateObj = null;
         
@@ -769,14 +776,20 @@ export const useDailyPlan = () => {
            // Calculate the actual session date (startDate + sessionIndex * 7 days)
            sessionDateObj = new Date(startDateObj);
            sessionDateObj.setDate(sessionDateObj.getDate() + (sessionIndex * 7));
-           dayStr = sessionDateObj.toLocaleDateString('en-US', { weekday: 'long' });
+           
+           // Format: "Wednesday, Oct 12"
+           dateStr = sessionDateObj.toLocaleDateString('en-US', { 
+             weekday: 'long',
+             month: 'short',
+             day: 'numeric'
+           });
         }
 
         const qsAction = {
           id: `qs-session-${sessionNum}`,
           type: 'community', // Use community icon
           label: `QuickStart Session ${sessionNum}`,
-          description: dayStr ? `Live 2-hour session on ${dayStr} at ${timeStr}` : `Live 2-hour session at ${timeStr}`,
+          description: dateStr ? `Live 2-hour session on ${dateStr} at ${timeStr}` : `Live 2-hour session at ${timeStr}`,
           resourceId: null, 
           enabled: true,
           isSystemInjected: true,
@@ -790,13 +803,19 @@ export const useDailyPlan = () => {
           } : null
         };
         
-        // Check completion status
-        const isCompleted = enrichedCurrent.userProgress?.itemsCompleted?.includes(qsAction.id);
-        qsAction.isCompleted = isCompleted;
+        // Check completion status globally (since it appears across multiple days)
+        const isCompletedGlobally = Object.values(userState.dailyProgress || {}).some(dayProgress => 
+          dayProgress.itemsCompleted?.includes(qsAction.id)
+        );
+        qsAction.isCompleted = isCompletedGlobally;
         
         // Add to actions at the top
         if (!enrichedCurrent.actions) enrichedCurrent.actions = [];
-        enrichedCurrent.actions.unshift(qsAction);
+        
+        // Avoid duplicates if already injected
+        if (!enrichedCurrent.actions.find(a => a.id === qsAction.id)) {
+          enrichedCurrent.actions.unshift(qsAction);
+        }
       }
     }
 
@@ -813,6 +832,10 @@ export const useDailyPlan = () => {
           const progress = userState.dailyProgress?.[d.id];
           return !progress || progress.status !== 'completed';
         })
+        .map(d => ({
+          ...d,
+          userProgress: userState.dailyProgress?.[d.id] || { itemsCompleted: [] }
+        }))
         .sort((a, b) => a.dayNumber - b.dayNumber);
     }
 
@@ -877,7 +900,7 @@ export const useDailyPlan = () => {
     }
     // Post-start: return days since program ended
     return daysFromStart - 55; // 56 → 1, 57 → 2, etc.
-  }, [currentPhase, daysFromStart]);
+  }, [currentPhase.id, daysFromStart]);
 
   // 6. Actions
 

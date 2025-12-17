@@ -558,8 +558,6 @@ export default function BusinessReadingsScreen() {
     }
   }, [cmsReadings, unlockedResourceIds]);
 
-  const deepDataSignature = useMemo(() => getDeepDataSignature(allBooks), [allBooks]);
-
   const filteredBooks = useMemo(() => {
     if (!allBooks || typeof allBooks !== 'object') return {};
     const searchTerm = (filters.search || '').toLowerCase();
@@ -582,7 +580,7 @@ export default function BusinessReadingsScreen() {
         }
     }
     return result;
-  }, [allBooks, filters, deepDataSignature]);
+  }, [allBooks, filters]);
 
     // --- Auto-Open Logic ---
     const hasAutoOpened = React.useRef(false);
