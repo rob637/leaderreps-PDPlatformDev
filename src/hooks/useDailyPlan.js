@@ -445,11 +445,10 @@ export const useDailyPlan = () => {
   }, [developmentPlanData, updateDevelopmentPlanData, user, cohortData]);
 
   // Auto-initialize prepPhaseFirstVisit when user first enters Prep Phase
+  // AND track daily visits for sequential onboarding
   useEffect(() => {
-    const initPrepPhaseVisit = async () => {
-      // Only track for Prep Phase users who haven't been tracked yet
+    const trackPrepVisit = async () => {
       if (!user || !updateDevelopmentPlanData || developmentPlanData === undefined) return;
-      if (developmentPlanData?.prepPhaseFirstVisit) return; // Already tracked
       
       // Check if we're in Prep Phase (daysFromStart < 0 means before cohort start)
       const rawDate = developmentPlanData?.startDate || user?.startDate;
@@ -470,67 +469,76 @@ export const useDailyPlan = () => {
       const diffMs = now.getTime() - start.getTime();
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
       
-      // If we're in Prep Phase (before start day), record first visit
+      // If we're in Prep Phase (before start day)
       if (diffDays < 0) {
-        if (window._prepPhaseInitAttempted) return;
-        window._prepPhaseInitAttempted = true;
+        // 1. Record first visit if needed (Legacy support)
+        if (!developmentPlanData?.prepPhaseFirstVisit) {
+          if (!window._prepPhaseInitAttempted) {
+            window._prepPhaseInitAttempted = true;
+            console.log('[useDailyPlan] Recording first Prep Phase visit');
+            try {
+              await updateDevelopmentPlanData({ prepPhaseFirstVisit: serverTimestamp() });
+            } catch (error) {
+              console.error('[useDailyPlan] Error recording prepPhaseFirstVisit:', error);
+              window._prepPhaseInitAttempted = false;
+            }
+          }
+        }
+
+        // 2. Track Daily Visit for Sequential Onboarding
+        const todayStr = now.toISOString().split('T')[0];
+        const visitLog = developmentPlanData?.prepVisitLog || [];
         
-        console.log('[useDailyPlan] Recording first Prep Phase visit');
-        try {
-          await updateDevelopmentPlanData({ prepPhaseFirstVisit: serverTimestamp() });
-        } catch (error) {
-          console.error('[useDailyPlan] Error recording prepPhaseFirstVisit:', error);
-          window._prepPhaseInitAttempted = false;
+        // If today is NOT logged yet, add it
+        if (!visitLog.includes(todayStr)) {
+          // Prevent double-firing in strict mode / rapid re-renders
+          if (window._prepVisitTracked === todayStr) return;
+          window._prepVisitTracked = todayStr;
+
+          console.log('[useDailyPlan] Tracking new Prep Phase visit:', todayStr);
+          try {
+            // Append today to the log
+            const newLog = [...visitLog, todayStr];
+            await updateDevelopmentPlanData({ prepVisitLog: newLog });
+          } catch (error) {
+            console.error('[useDailyPlan] Error tracking prep visit:', error);
+            window._prepVisitTracked = null;
+          }
         }
       }
     };
-    initPrepPhaseVisit();
+    trackPrepVisit();
   }, [developmentPlanData, updateDevelopmentPlanData, user, timeOffset]);
 
-  // Calculate user's Journey Day (days since first Prep Phase visit)
-  // Uses CALENDAR days, not 24-hour periods (so Dec 16 evening to Dec 17 morning = Day 2)
+  // Calculate user's Journey Day (count of distinct days visited in Prep Phase)
+  // This ensures users see Day 1, then Day 2, then Day 3 content sequentially
+  // regardless of how many calendar days pass between logins.
   const journeyDay = useMemo(() => {
-    if (!userState.prepPhaseFirstVisit) {
-      console.log('[useDailyPlan] journeyDay: No prepPhaseFirstVisit, defaulting to 1');
-      return 1; // Default to Day 1 if not tracked yet
+    // Get the visit log from user state
+    const visitLog = userState.prepVisitLog || [];
+    const todayStr = simulatedNow.toISOString().split('T')[0];
+    
+    // Calculate count of visited days
+    let count = visitLog.length;
+    
+    // If today is not in the log yet (but we are here), add 1 to the count
+    // This ensures the UI reflects the current visit immediately
+    if (!visitLog.includes(todayStr)) {
+      count += 1;
     }
     
-    let firstVisit = null;
-    const rawDate = userState.prepPhaseFirstVisit;
+    // Default to 1 if no visits tracked yet
+    const calculatedJourneyDay = Math.max(1, count);
     
-    if (rawDate.toDate && typeof rawDate.toDate === 'function') {
-      firstVisit = rawDate.toDate();
-    } else if (rawDate.seconds) {
-      firstVisit = new Date(rawDate.seconds * 1000);
-    } else {
-      firstVisit = new Date(rawDate);
-    }
-    
-    if (!firstVisit || isNaN(firstVisit.getTime())) {
-      console.log('[useDailyPlan] journeyDay: Invalid firstVisit date, defaulting to 1');
-      return 1;
-    }
-    
-    // Calculate based on CALENDAR days, not 24-hour periods
-    // This ensures Dec 16 at 8pm to Dec 17 at 9am counts as Day 2 (different calendar day)
-    const firstVisitDate = new Date(firstVisit.getFullYear(), firstVisit.getMonth(), firstVisit.getDate());
-    const nowDate = new Date(simulatedNow.getFullYear(), simulatedNow.getMonth(), simulatedNow.getDate());
-    
-    const diffMs = nowDate.getTime() - firstVisitDate.getTime();
-    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24)); // Round to handle DST edge cases
-    
-    // Journey day is 1-indexed (first day = 1, second day = 2, etc.)
-    const calculatedJourneyDay = Math.max(1, diffDays + 1);
-    console.log('[useDailyPlan] journeyDay calculation:', {
-      prepPhaseFirstVisit: firstVisit.toISOString(),
-      firstVisitDateOnly: firstVisitDate.toISOString().split('T')[0],
-      simulatedNow: simulatedNow.toISOString(),
-      nowDateOnly: nowDate.toISOString().split('T')[0],
-      diffDays,
+    console.log('[useDailyPlan] journeyDay calculation (Sequential):', {
+      visitLogLength: visitLog.length,
+      todayStr,
+      isTodayLogged: visitLog.includes(todayStr),
       calculatedJourneyDay
     });
+    
     return calculatedJourneyDay;
-  }, [userState.prepPhaseFirstVisit, simulatedNow]);
+  }, [userState.prepVisitLog, simulatedNow]);
 
   // 3. Calculate Days From Start (can be negative for Pre-Start)
   const daysFromStart = useMemo(() => {
