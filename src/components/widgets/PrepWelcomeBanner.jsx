@@ -83,6 +83,23 @@ const PrepWelcomeBanner = () => {
   
   // 2. Determine if prep is complete (more than 5 days of content AND no required actions pending)
   const isPrepComplete = clampedJourneyDay > 5 && !hasIncompleteRequiredActions;
+
+  // DIAGNOSTIC LOGGING
+  if (currentPhase?.id === 'pre-start') {
+    console.warn('[PrepWelcomeBanner] STATUS CHECK:', {
+      journeyDay,
+      clampedJourneyDay,
+      isPrepComplete,
+      hasIncomplete: hasIncompleteRequiredActions,
+      incompleteCount: incompleteRequiredActions.length,
+      incompleteActions: incompleteRequiredActions.map(a => ({
+        label: a.label,
+        id: a.id,
+        introDay: a.introducedOnDayId,
+        checkedDay: a.introducedOnDayId || currentDayData?.id
+      }))
+    });
+  }
   
   // 3. Effective day for content lookup (capped at 5)
   const effectiveJourneyDay = Math.min(clampedJourneyDay, 5);
