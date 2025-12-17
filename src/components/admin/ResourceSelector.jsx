@@ -62,9 +62,12 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               CONTENT_COLLECTIONS.DOCUMENTS,
               CONTENT_COLLECTIONS.COURSES
             ];
-            // Fetch Read & Reps from Unified Collection
-            // Use explicit string 'READ_REP' as fallback if constant is missing
-            unifiedTypes = [UNIFIED_TYPES?.READ_REP || 'READ_REP'];
+            // Fetch Read & Reps AND Videos from Unified Collection
+            // Use explicit strings as fallback
+            unifiedTypes = [
+              UNIFIED_TYPES?.READ_REP || 'READ_REP',
+              UNIFIED_TYPES?.VIDEO || 'VIDEO'
+            ];
             console.log('[ResourceSelector] Fetching Unified Types:', unifiedTypes);
             break;
           case 'community':
