@@ -249,6 +249,31 @@ const UserManagement = () => {
     }
   };
 
+  const handleDeleteCohort = async (cohortId) => {
+    if (!window.confirm("Are you sure you want to delete this cohort? This action cannot be undone.")) return;
+    try {
+      await deleteDoc(doc(db, 'cohorts', cohortId));
+      setCohorts(cohorts.filter(c => c.id !== cohortId));
+    } catch (error) {
+      console.error("Error deleting cohort:", error);
+      alert("Failed to delete cohort");
+    }
+  };
+
+  const handleEditCohort = (cohort) => {
+    setCohortForm({
+      id: cohort.id,
+      name: cohort.name,
+      startDate: cohort.startDate?.toDate ? cohort.startDate.toDate().toISOString().split('T')[0] : '',
+      description: cohort.description || '',
+      facilitatorId: cohort.facilitator?.id || '',
+      maxCapacity: cohort.settings?.maxCapacity || 25,
+      allowLateJoins: cohort.settings?.allowLateJoins ?? true,
+      lateJoinCutoff: cohort.settings?.lateJoinCutoff || 3
+    });
+    setIsCohortModalOpen(true);
+  };
+
   const handleCreateCohort = async (e) => {
     e.preventDefault();
     setSavingCohort(true);
@@ -266,7 +291,7 @@ const UserManagement = () => {
         email: selectedFacilitator.email
       } : null;
 
-      await addDoc(collection(db, 'cohorts'), {
+      const cohortData = {
         name: cohortForm.name,
         description: cohortForm.description || '',
         startDate: Timestamp.fromDate(startDate),
@@ -275,10 +300,23 @@ const UserManagement = () => {
           maxCapacity: parseInt(cohortForm.maxCapacity) || 25,
           allowLateJoins: cohortForm.allowLateJoins,
           lateJoinCutoff: parseInt(cohortForm.lateJoinCutoff) || 3
-        },
-        memberCount: 0,
-        createdAt: serverTimestamp()
-      });
+        }
+      };
+
+      if (cohortForm.id) {
+        // Update existing cohort
+        await updateDoc(doc(db, 'cohorts', cohortForm.id), {
+          ...cohortData,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        // Create new cohort
+        await addDoc(collection(db, 'cohorts'), {
+          ...cohortData,
+          memberCount: 0,
+          createdAt: serverTimestamp()
+        });
+      }
 
       setIsCohortModalOpen(false);
       setCohortForm({
@@ -292,8 +330,8 @@ const UserManagement = () => {
       });
       fetchData();
     } catch (error) {
-      console.error("Error creating cohort:", error);
-      alert("Failed to create cohort");
+      console.error("Error saving cohort:", error);
+      alert("Failed to save cohort");
     } finally {
       setSavingCohort(false);
     }
@@ -516,7 +554,22 @@ const UserManagement = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {/* Add edit/delete actions if needed */}
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEditCohort(cohort)}
+                            className="p-1 text-slate-400 hover:text-corporate-teal transition-colors"
+                            title="Edit Cohort"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCohort(cohort.id)}
+                            className="p-1 text-slate-400 hover:text-red-600 transition-colors"
+                            title="Delete Cohort"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -710,7 +763,7 @@ const UserManagement = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-lg text-slate-800">Create New Cohort</h3>
+              <h3 className="font-bold text-lg text-slate-800">{cohortForm.id ? 'Edit Cohort' : 'Create New Cohort'}</h3>
               <button 
                 onClick={() => setIsCohortModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600"

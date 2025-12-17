@@ -27,31 +27,90 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
   const { zoneVisibility } = useDayBasedAccessControl();
   const [showAnchors, setShowAnchors] = useState(false);
 
-    const menuItems = [
+  // Developer Mode State
+  const [isDeveloperMode, setIsDeveloperMode] = useState(() => {
+    return localStorage.getItem('arena-developer-mode') === 'true';
+  });
+
+  // Listen for developer mode changes
+  React.useEffect(() => {
+    const handleStorageChange = () => {
+      setIsDeveloperMode(localStorage.getItem('arena-developer-mode') === 'true');
+    };
+    window.addEventListener('storage', handleStorageChange);
+    // Also listen for custom event if we dispatch one
+    window.addEventListener('developer-mode-changed', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('developer-mode-changed', handleStorageChange);
+    };
+  }, []);
+
+  // Admin Check
+  const ADMIN_EMAILS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
+  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
+
+  // Feature Flags (Mock for now, should come from context/service)
+  const MOCK_FEATURE_FLAGS = { 
+    // V1 CORE FEATURES (ENABLED)
+    enableDevPlan: true,
+    enableDailyPractice: true,
+    enableMembershipModule: true,
+    
+    // FUTURE SCOPE FEATURES (DISABLED)
+    enableReadings: false,
+    enableCourses: false,
+    enableLabs: false,
+    enablePlanningHub: false,
+    enableVideos: false,
+    enableCommunity: false,
+    enableRoiReport: false,
+  };
+
+  const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'development-plan', label: 'Dev Plan', icon: Target },
+    { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
     
     { type: 'section', label: 'Resources' },
-    { id: 'library', label: 'Content', icon: BookOpen },
-    { id: 'community', label: 'Community', icon: Users },
-    { id: 'coaching-hub', label: 'Coaching', icon: MessageSquare },
+    { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' }, // Using enableReadings as proxy for Content
+    { id: 'community', label: 'Community', icon: Users, flag: 'enableCommunity', devModeOnly: true },
+    { id: 'coaching-hub', label: 'Coaching', icon: MessageSquare, flag: 'enableLabs', devModeOnly: true },
     
     { type: 'section', label: 'Personal' },
     { id: 'locker', label: 'Your Locker', icon: Archive },
   ];
 
-  // Determine display name (First Name Only)
-  const getFirstName = () => {
-    if (membershipData?.firstName) return membershipData.firstName;
-    if (user?.displayName) return user.displayName.split(' ')[0];
-    return 'Leader';
-  };
-  
-  const firstName = getFirstName();
+  // Filter Menu Items
+  const filteredMenuItems = menuItems.filter(item => {
+    if (item.type === 'section') return true; // Always show sections (we'll clean up empty ones later)
 
-  // Admin Check
-  const ADMIN_EMAILS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
-  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
+    // 1. ADMIN/DEVELOPER MODE: Show everything, bypass all checks
+    if (isAdmin || isDeveloperMode) {
+      return true;
+    }
+    
+    // --- USER MODE (isDeveloperMode is FALSE) ---
+
+    // 2. EXCLUDE: Filter out items explicitly marked for Dev Mode
+    if (item.devModeOnly) {
+      return false; 
+    }
+
+    // 3. FEATURE FLAG CHECK: Filter out items where the flag is off
+    if (item.flag && MOCK_FEATURE_FLAGS[item.flag] !== true) {
+      return false;
+    }
+
+    // Item passed all User Mode checks
+    return true;
+  }).filter((item, index, array) => {
+    // Clean up empty sections
+    if (item.type === 'section') {
+      const nextItem = array[index + 1];
+      return nextItem && nextItem.type !== 'section';
+    }
+    return true;
+  });
 
   return (
     <div 
@@ -93,7 +152,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
       {/* Navigation Items */}
       <nav className="flex-1 py-5 px-3 overflow-y-auto overflow-x-hidden">
         <ul className="space-y-1">
-          {menuItems.map((item, index) => {
+          {filteredMenuItems.map((item, index) => {
             if (item.type === 'section') {
                return (
                  <li key={`section-${index}`} className="mt-8 mb-3 px-3">
