@@ -81,45 +81,37 @@ export const WIDGET_TEMPLATES = {
      const isPrep = dayNum < 1;
      const isWeekend = currentDayData.isWeekend;
      
-     // Dynamic Title & Accent
-     let cardTitle = \`Day \${dayNum}: \${currentDayData.title || 'Untitled'}\`;
+     // Get the focus text
+     const focus = currentDayData.focus || (isWeekend ? "Recharge and Reflect" : "Win The Day");
+     
+     // Dynamic accent based on context
      let accent = "NAVY";
      let icon = Target;
      
      if (isPrep) {
-        cardTitle = \`Prep Phase: \${currentDayData.title || 'Get Ready'}\`;
-        accent = "ORANGE"; // Distinct color for Prep
+        accent = "ORANGE";
         icon = Zap;
      } else if (isWeekend) {
-        cardTitle = \`Rest & Reflect: \${currentDayData.title || 'Weekend'}\`;
-        accent = "TEAL"; // Softer color for Weekend
-        icon = Coffee; // Need to ensure Coffee is imported or use Sun
+        accent = "TEAL";
+        icon = Coffee;
      }
 
-     const focus = currentDayData.focus || (isWeekend ? "Recharge and Reflect" : "Win The Day");
+     // Card title is "Today's Focus" (or Weekend/Prep variant)
+     const cardTitle = isWeekend ? "Weekend Focus" : (isPrep ? "Prep Focus" : "Today's Focus");
      
      return (
         <Card title={cardTitle} icon={icon} accent={accent}>
-           <div className={\`p-4 rounded-xl border \${isPrep ? 'bg-orange-50 border-orange-100' : 'bg-slate-50 border-slate-100'}\`}>
-              <h4 className={\`text-xs font-bold uppercase mb-1 \${isPrep ? 'text-orange-600' : 'text-slate-500'}\`}>
-                 {isWeekend ? "Weekend Focus" : "Today's Focus"}
-              </h4>
-              <p className="text-lg font-medium text-corporate-navy">{focus}</p>
-           </div>
+           <p className="text-lg font-medium text-corporate-navy">{focus}</p>
         </Card>
      );
   }
 
   // Get the weekly focus from scope (calculated by Dashboard using useDevPlan with time travel)
   const focus = weeklyFocus || "Leadership Identity";
-  const weekNum = currentWeekNumber || 1;
   
-  // Simple title format: Week X Focus: [Focus Area]
-  const title = \`Week \${weekNum} Focus: \${focus}\`;
-
   return (
-    <Card title={title} icon={Target} accent="NAVY">
-      {/* Clean, minimal display - just the title */}
+    <Card title="Today's Focus" icon={Target} accent="NAVY">
+      <p className="text-lg font-medium text-corporate-navy">{focus}</p>
     </Card>
   );
 })()
