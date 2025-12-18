@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { CONTENT_TYPES } from '../../../../services/unifiedContentService';
 import { MEDIA_TYPES } from '../../../../services/mediaService';
 import MediaPicker from '../pickers/MediaPicker';
-import { Database, Bot, Copy, Check, Sparkles, Loader } from 'lucide-react';
+import { Database, Bot, Copy, Check, Sparkles, Loader, Image as ImageIcon } from 'lucide-react';
 import { useAppServices } from '../../../../services/useAppServices';
 
 const RepDetailsEditor = ({ details, onChange, type }) => {
   const { callSecureGeminiAPI, GEMINI_MODEL } = useAppServices();
-  const [showMediaPicker, setShowMediaPicker] = useState(null); // 'VIDEO' | 'DOCUMENT' | null
+  const [showMediaPicker, setShowMediaPicker] = useState(null); // 'VIDEO' | 'DOCUMENT' | 'IMAGE' | null
   const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
 
@@ -21,6 +21,8 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
       onChange('videoUrl', asset.url);
     } else if (showMediaPicker === 'DOCUMENT') {
       onChange('pdfUrl', asset.url);
+    } else if (showMediaPicker === 'IMAGE') {
+      onChange('coverUrl', asset.url);
     }
     setShowMediaPicker(null);
   };
@@ -102,6 +104,29 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
         console.error('Unexpected API response:', result);
         alert('Failed to generate synopsis. Unexpected response format.');
       }
+
+      // Try to fetch book cover from Google Books API
+      try {
+        const query = `intitle:${encodeURIComponent(details.title)}${details.author ? `+inauthor:${encodeURIComponent(details.author)}` : ''}`;
+        const bookRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=1`);
+        const bookData = await bookRes.json();
+        
+        if (bookData.items && bookData.items.length > 0) {
+          const volumeInfo = bookData.items[0].volumeInfo;
+          if (volumeInfo.imageLinks) {
+            const cover = volumeInfo.imageLinks.thumbnail || volumeInfo.imageLinks.smallThumbnail;
+            if (cover) {
+              // Google Books URLs are often http, replace with https to avoid mixed content
+              const secureCover = cover.replace(/^http:\/\//i, 'https://');
+              onChange('coverUrl', secureCover);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching book cover:", err);
+        // Don't fail the whole process if cover fetch fails
+      }
+
     } catch (error) {
       console.error('Error generating synopsis:', error);
       alert('Error generating synopsis: ' + error.message);
@@ -159,6 +184,37 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
 
       {type === CONTENT_TYPES.READ_REP && (
         <>
+          {/* Cover Image URL */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Cover Image URL
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                name="coverUrl"
+                value={details.coverUrl || ''}
+                onChange={handleChange}
+                placeholder="https://..."
+                className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowMediaPicker('IMAGE')}
+                className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 border border-blue-200"
+                title="Select from Vault"
+              >
+                <ImageIcon size={18} />
+                Select
+              </button>
+            </div>
+            {details.coverUrl && (
+              <div className="mt-2">
+                <img src={details.coverUrl} alt="Cover Preview" className="h-32 object-contain rounded border border-gray-200" />
+              </div>
+            )}
+          </div>
+
           {/* Author field moved to GenericContentEditor for better visibility */}
 
           {/* AI Prompt Helper */}

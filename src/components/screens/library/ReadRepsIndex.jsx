@@ -223,10 +223,18 @@ const ReadRepsIndex = () => {
                 )}
 
                 {/* Book Cover */}
-                <div className="h-48 bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <BookOpen className="w-16 h-16 text-slate-300 group-hover:text-emerald-400 transition-colors" />
-                  </div>
+                <div className="h-48 bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden group-hover:shadow-inner transition-all">
+                  {(book.details?.coverUrl || book.metadata?.coverUrl || book.coverUrl) ? (
+                    <img 
+                      src={book.details?.coverUrl || book.metadata?.coverUrl || book.coverUrl} 
+                      alt={book.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <BookOpen className="w-16 h-16 text-slate-300 group-hover:text-emerald-400 transition-colors" />
+                    </div>
+                  )}
                   
                   {/* Category Badge */}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
