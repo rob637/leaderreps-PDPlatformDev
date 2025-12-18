@@ -7,9 +7,9 @@ const ScreenMap = {
     import('../components/screens/RoadmapTracker.jsx')
   ),
   dashboard: lazy(() => import('../components/screens/Dashboard.jsx')),
-  // 'development-plan': lazy(() =>
-  //   import('../components/screens/DevelopmentPlan.jsx')
-  // ),
+  'development-plan': lazy(() =>
+    import('../components/screens/DevelopmentPlan.jsx')
+  ),
   'coaching-lab': lazy(() => import('../components/screens/CoachingHub.jsx')),
   'coaching-hub': lazy(() => import('../components/screens/CoachingHub.jsx')),
   'locker': lazy(() => import('../components/screens/Locker.jsx')),

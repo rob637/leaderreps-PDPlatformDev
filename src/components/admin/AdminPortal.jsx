@@ -26,7 +26,7 @@ import UnifiedContentManager from './UnifiedContentManager'; // New component
 import MediaLibrary from './MediaLibrary'; // New component
 // import MigrationTool from './MigrationTool'; // New component
 import SystemWidgets from './SystemWidgets';
-// import DevPlanManager from './DevPlanManager';
+import DevPlanManager from './DevPlanManager';
 import DocumentationCenter from './DocumentationCenter';
 import TestCenter from './TestCenter';
 import CommunityManager from './CommunityManager';
@@ -120,7 +120,7 @@ const AdminPortal = () => {
         { id: 'users', label: 'User Management', icon: Users },
         // { id: 'cohorts', label: 'Cohorts', icon: Users },
         { id: 'daily-plan', label: 'Daily Plan (New)', icon: Calendar },
-        // { id: 'devplan', label: 'Legacy Plan', icon: Calendar },
+        { id: 'devplan', label: 'Legacy Plan', icon: Calendar },
         { id: 'library', label: 'Metadata Library', icon: Library },
         { id: 'content', label: 'Content Wrapper', icon: FileText },
         { id: 'media', label: 'Media Vault', icon: Database }
@@ -171,8 +171,8 @@ const AdminPortal = () => {
         return <TestCenter />;
       case 'daily-plan':
         return <DailyPlanManager />;
-      // case 'devplan':
-      //   return <DevPlanManager />;
+      case 'devplan':
+        return <DevPlanManager />;
       case 'library':
         return <UnifiedContentManager />;
       case 'media':
