@@ -48,6 +48,11 @@ const PrepWelcomeBanner = () => {
       };
     });
   };
+
+  // Check for incomplete required actions (Moved before early return to satisfy Rules of Hooks)
+  const actions = useMemo(() => {
+    return normalizeDailyActions(currentDayData?.actions, currentDayData?.id);
+  }, [currentDayData]);
   
   // Debug logging
   console.log('[PrepWelcomeBanner] Rendering with:', {
@@ -88,11 +93,6 @@ const PrepWelcomeBanner = () => {
   // Calculate effective journey day
   // 1. Clamp to phaseDayNumber so early birds don't get ahead of the official schedule
   const clampedJourneyDay = Math.min(journeyDay || 1, phaseDayNumber || 14);
-  
-  // Check for incomplete required actions
-  const actions = useMemo(() => {
-    return normalizeDailyActions(currentDayData?.actions, currentDayData?.id);
-  }, [currentDayData]);
   
   const incompleteRequiredActions = actions.filter(action => {
     // An action is required if it's not explicitly optional AND not explicitly marked as not required.
