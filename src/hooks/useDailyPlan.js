@@ -600,7 +600,26 @@ export const useDailyPlan = () => {
 
   // 4. Map to DB Day Number and get Phase Info
   const { dbDayNumber, currentPhase, phaseDayNumber } = useMemo(() => {
-    const dbDay = getDbDayNumber(daysFromStart);
+    // Default to calendar-based calculation
+    let dbDay = getDbDayNumber(daysFromStart);
+    
+    // OVERRIDE FOR PREP PHASE (12/18/25):
+    // Prep Phase is now LOGIN-DRIVEN (Visit Count), not Calendar-Driven.
+    // If we are in the calendar window for Prep Phase (daysFromStart < 0),
+    // we use the journeyDay (visit count) to determine which content to show.
+    if (daysFromStart < 0) {
+      // Use journeyDay, but cap at 14 (end of Prep Phase content)
+      // This ensures that on the 15th visit (or more), they still see the last Prep Day content
+      // until the actual Start Date arrives.
+      dbDay = Math.min(journeyDay, 14);
+      
+      console.log('[useDailyPlan] Using Visit-Based Prep Day:', {
+        calendarDaysFromStart: daysFromStart,
+        visitCount: journeyDay,
+        assignedDbDay: dbDay
+      });
+    }
+
     const phase = getPhaseFromDbDay(dbDay);
     const phaseDay = getPhaseDayNumber(dbDay);
     
@@ -608,11 +627,12 @@ export const useDailyPlan = () => {
       daysFromStart,
       dbDayNumber: dbDay,
       phase: phase.name,
-      phaseDayNumber: phaseDay
+      phaseDayNumber: phaseDay,
+      isVisitBased: daysFromStart < 0
     });
     
     return { dbDayNumber: dbDay, currentPhase: phase, phaseDayNumber: phaseDay };
-  }, [daysFromStart]);
+  }, [daysFromStart, journeyDay]);
 
   // 5. Get Current Day Data, Missed Days & Unlocked Content
   const { currentDayData, missedDays, unlockedContentIds, unlockedResources, prepPhaseInfo } = useMemo(() => {
@@ -652,7 +672,11 @@ export const useDailyPlan = () => {
       });
       
       // Calculate days until cohort start (Day 15)
-      const daysUntilStart = PHASES.START.dbDayStart - dbDayNumber;
+      // Use calendar-based daysFromStart (which is negative in Prep Phase)
+      // If daysFromStart is -5, daysUntilStart is 5.
+      // Fallback to dbDayNumber calculation if daysFromStart is not available or weird
+      const daysUntilStart = daysFromStart < 0 ? Math.abs(daysFromStart) : (PHASES.START.dbDayStart - dbDayNumber);
+      
       const welcomeMessage = getPrepPhaseWelcome(daysUntilStart);
       const dailyQuote = getDailyQuote(dbDayNumber);
       
@@ -957,7 +981,7 @@ export const useDailyPlan = () => {
       unlockedResources, // New: enriched resource data
       prepPhaseInfo: prepInfo // New: Prep Phase welcome/countdown data
     };
-  }, [dailyPlan, dbDayNumber, currentPhase, phaseDayNumber, userState.dailyProgress, journeyDay, cohortData]);
+  }, [dailyPlan, dbDayNumber, currentPhase, phaseDayNumber, userState.dailyProgress, journeyDay, cohortData, daysFromStart]);
 
   // Legacy: currentDayNumber for backward compatibility
   // This returns the "user-facing" day number (negative for prep, positive for start)
