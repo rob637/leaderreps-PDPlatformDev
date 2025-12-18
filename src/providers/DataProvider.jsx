@@ -157,7 +157,7 @@ const DataProvider = ({
   );
 
   const isAdmin = useMemo(() => {
-    const PRIMARY_ADMIN_EMAILS = ['rob@sagecg.com', 'admin@leaderreps.com'];
+    const PRIMARY_ADMIN_EMAILS = ['rob@sagecg.com', 'admin@leaderreps.com', 'ryan@leaderreps.com'];
     const adminEmails = resolvedMetadata.adminemails || [];
     const userEmail = user?.email?.toLowerCase();
     const isPrimaryAdmin = !!userEmail && PRIMARY_ADMIN_EMAILS.includes(userEmail);
