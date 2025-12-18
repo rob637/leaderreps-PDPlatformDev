@@ -107,24 +107,25 @@ export const createAppServices = (db, userId) => {
     });
     stores.listeners.push(unsubUser);
 
-    const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
-    const unsubDev = onSnapshotEx(db, devPlanPath, (snap) => {
-      console.log('%c[DEV_PLAN SNAPSHOT] Received!', 'background: #8b5cf6; color: white; font-weight: bold; padding: 4px 8px;');
-      console.log('[DEV_PLAN SNAPSHOT] snap.exists():', snap.exists());
-      console.log('[DEV_PLAN SNAPSHOT] path:', devPlanPath);
+    // LEGACY PLAN - Commented out 12/18/25
+    // const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
+    // const unsubDev = onSnapshotEx(db, devPlanPath, (snap) => {
+    //   console.log('%c[DEV_PLAN SNAPSHOT] Received!', 'background: #8b5cf6; color: white; font-weight: bold; padding: 4px 8px;');
+    //   console.log('[DEV_PLAN SNAPSHOT] snap.exists():', snap.exists());
+    //   console.log('[DEV_PLAN SNAPSHOT] path:', devPlanPath);
       
-      const rawData = snap.exists() ? snap.data() : MOCK_DEVELOPMENT_PLAN_DATA;
-      console.log('[DEV_PLAN SNAPSHOT] rawData:', rawData);
-      console.log('[DEV_PLAN SNAPSHOT] rawData.startDate:', rawData?.startDate);
-      console.log('[DEV_PLAN SNAPSHOT] typeof rawData.startDate:', typeof rawData?.startDate);
+    //   const rawData = snap.exists() ? snap.data() : MOCK_DEVELOPMENT_PLAN_DATA;
+    //   console.log('[DEV_PLAN SNAPSHOT] rawData:', rawData);
+    //   console.log('[DEV_PLAN SNAPSHOT] rawData.startDate:', rawData?.startDate);
+    //   console.log('[DEV_PLAN SNAPSHOT] typeof rawData.startDate:', typeof rawData?.startDate);
       
-      stores.developmentPlanData = stripSentinels(sanitizeTimestamps(rawData));
-      console.log('[DEV_PLAN SNAPSHOT] After sanitize:', stores.developmentPlanData);
-      console.log('[DEV_PLAN SNAPSHOT] startDate after sanitize:', stores.developmentPlanData?.startDate);
+    //   stores.developmentPlanData = stripSentinels(sanitizeTimestamps(rawData));
+    //   console.log('[DEV_PLAN SNAPSHOT] After sanitize:', stores.developmentPlanData);
+    //   console.log('[DEV_PLAN SNAPSHOT] startDate after sanitize:', stores.developmentPlanData?.startDate);
       
-      notifyChange();
-    });
-    stores.listeners.push(unsubDev);
+    //   notifyChange();
+    // });
+    // stores.listeners.push(unsubDev);
 
     const dailyPath = buildModulePath(userId, 'daily_practice', 'current');
     const unsubDaily = onSnapshotEx(db, dailyPath, (snap) => {
@@ -350,6 +351,9 @@ export const createAppServices = (db, userId) => {
   }
 
   const updateDevelopmentPlanData = async (updates, { merge = true } = {}) => {
+    console.warn('[DEV_PLAN UPDATE] Legacy Plan update called - ignoring.', updates);
+    return true; // Pretend success
+    /*
     console.log('%c[DEV_PLAN UPDATE] updateDevelopmentPlanData CALLED', 'background: #8b5cf6; color: white; font-weight: bold; padding: 4px 8px;');
     console.log('[DEV_PLAN UPDATE] db exists:', !!db);
     console.log('[DEV_PLAN UPDATE] userId:', userId);
@@ -379,6 +383,7 @@ export const createAppServices = (db, userId) => {
     const result = await setDocEx(db, path, convertedUpdates, merge);
     console.log('[DEV_PLAN UPDATE] setDocEx result:', result);
     return result;
+    */
   };
 
   const updateDailyPracticeData = async (updates) => {

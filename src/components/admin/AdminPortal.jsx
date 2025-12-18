@@ -24,7 +24,7 @@ import FeatureManager from './FeatureManager';
 import ContentAdminHome from './ContentAdminHome'; // Existing component
 import UnifiedContentManager from './UnifiedContentManager'; // New component
 import MediaLibrary from './MediaLibrary'; // New component
-import MigrationTool from './MigrationTool'; // New component
+// import MigrationTool from './MigrationTool'; // New component
 import SystemWidgets from './SystemWidgets';
 import DevPlanManager from './DevPlanManager';
 import DocumentationCenter from './DocumentationCenter';
@@ -118,7 +118,7 @@ const AdminPortal = () => {
       title: 'Management',
       items: [
         { id: 'users', label: 'User Management', icon: Users },
-        { id: 'cohorts', label: 'Cohorts', icon: Users },
+        // { id: 'cohorts', label: 'Cohorts', icon: Users },
         { id: 'daily-plan', label: 'Daily Plan (New)', icon: Calendar },
         { id: 'devplan', label: 'Legacy Plan', icon: Calendar },
         { id: 'library', label: 'Metadata Library', icon: Library },
@@ -147,7 +147,7 @@ const AdminPortal = () => {
         { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
         { id: 'features', label: 'Widget Lab', icon: FlaskConical },
         { id: 'system', label: 'System', icon: Settings },
-        { id: 'migration', label: 'Migration', icon: ArrowLeftRight },
+        // { id: 'migration', label: 'Migration', icon: ArrowLeftRight },
         { id: 'tests', label: 'Test Center', icon: TestTube2 }
       ]
     },
@@ -195,8 +195,8 @@ const AdminPortal = () => {
         return <DocumentationCenter />;
       case 'system':
         return <SystemWidgets />;
-      case 'migration':
-        return <MigrationTool />;
+      // case 'migration':
+      //   return <MigrationTool />;
       case 'leader-profiles':
         return <LeaderProfileReports />;
       default:
