@@ -1,10 +1,19 @@
 // src/components/admin/content-editors/details/VideoDetailsEditor.jsx
-import React from 'react';
-import { ExternalLink, User, Film, Tag, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { ExternalLink, User, Film, Tag, Clock, Upload, Link as LinkIcon } from 'lucide-react';
+import FileUploader from '../../FileUploader';
 
 const VideoDetailsEditor = ({ details = {}, onChange }) => {
+  const [sourceType, setSourceType] = useState(
+    details.externalUrl?.includes('firebasestorage') ? 'UPLOAD' : 'LINK'
+  );
+
   const handleChange = (key, value) => {
     onChange(key, value);
+  };
+
+  const handleUploadComplete = (url, filename) => {
+    handleChange('externalUrl', url);
   };
 
   return (
@@ -14,22 +23,78 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
         Video Details
       </h3>
       
-      {/* External URL (YouTube, Vimeo, etc.) */}
+      {/* Source Type Selector */}
+      <div className="flex gap-4 border-b border-orange-200 pb-2">
+        <button
+          type="button"
+          onClick={() => setSourceType('LINK')}
+          className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+            sourceType === 'LINK' 
+              ? 'bg-orange-100 text-orange-800' 
+              : 'text-gray-600 hover:bg-orange-50'
+          }`}
+        >
+          <LinkIcon size={14} />
+          External Link
+        </button>
+        <button
+          type="button"
+          onClick={() => setSourceType('UPLOAD')}
+          className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+            sourceType === 'UPLOAD' 
+              ? 'bg-orange-100 text-orange-800' 
+              : 'text-gray-600 hover:bg-orange-50'
+          }`}
+        >
+          <Upload size={14} />
+          Upload Video
+        </button>
+      </div>
+      
+      {/* Video Source Input */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-          <ExternalLink size={14} />
-          Video URL (YouTube, Vimeo, or direct link)
+          {sourceType === 'LINK' ? <ExternalLink size={14} /> : <Upload size={14} />}
+          {sourceType === 'LINK' ? 'Video URL' : 'Upload Video File'}
         </label>
-        <input
-          type="url"
-          value={details.externalUrl || ''}
-          onChange={(e) => handleChange('externalUrl', e.target.value)}
-          placeholder="https://youtube.com/watch?v=..."
-          className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          Paste the full URL. YouTube thumbnails will be auto-extracted.
-        </p>
+
+        {sourceType === 'LINK' ? (
+          <>
+            <input
+              type="url"
+              value={details.externalUrl || ''}
+              onChange={(e) => handleChange('externalUrl', e.target.value)}
+              placeholder="https://youtube.com/watch?v=..."
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Paste the full URL. YouTube thumbnails will be auto-extracted.
+            </p>
+          </>
+        ) : (
+          <div className="space-y-2">
+            {details.externalUrl && (
+              <div className="flex items-center gap-2 p-2 bg-white border rounded-md">
+                <span className="text-xs text-gray-500 truncate flex-1">{details.externalUrl}</span>
+                <button
+                  type="button"
+                  onClick={() => handleChange('externalUrl', '')}
+                  className="text-xs text-red-500 hover:text-red-700"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+            <FileUploader 
+              folder="videos" 
+              accept="video/*" 
+              onUploadComplete={handleUploadComplete} 
+            />
+            <p className="text-xs text-gray-500">
+              Supported formats: MP4, WebM, MOV. Max size depends on your plan.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Speaker */}
