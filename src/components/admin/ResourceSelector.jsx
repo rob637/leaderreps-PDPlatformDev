@@ -58,15 +58,13 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
           case 'content':
             // Fetch from Wrappers (Videos, Docs, Courses) and Unified (Read & Reps)
             collections = [
-              CONTENT_COLLECTIONS.VIDEOS, 
-              CONTENT_COLLECTIONS.DOCUMENTS,
               CONTENT_COLLECTIONS.COURSES
             ];
-            // Fetch Read & Reps AND Videos from Unified Collection
-            // Use explicit strings as fallback
+            // Fetch Read & Reps, Videos, and Documents from Unified Collection
             unifiedTypes = [
               UNIFIED_TYPES?.READ_REP || 'READ_REP',
-              UNIFIED_TYPES?.VIDEO || 'VIDEO'
+              UNIFIED_TYPES?.VIDEO || 'VIDEO',
+              UNIFIED_TYPES?.DOCUMENT || 'DOCUMENT'
             ];
             console.log('[ResourceSelector] Fetching Unified Types:', unifiedTypes);
             break;
@@ -112,6 +110,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               const itemType = item.type || '';
               if (itemType === (UNIFIED_TYPES?.READ_REP || 'READ_REP')) type = 'read_rep';
               else if (itemType === (UNIFIED_TYPES?.VIDEO || 'VIDEO') || itemType === (UNIFIED_TYPES?.REP || 'REP')) type = 'video';
+              else if (itemType === (UNIFIED_TYPES?.DOCUMENT || 'DOCUMENT')) type = 'document';
               
               return { 
                 ...item, 
