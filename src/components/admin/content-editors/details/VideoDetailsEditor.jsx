@@ -1,19 +1,22 @@
 // src/components/admin/content-editors/details/VideoDetailsEditor.jsx
 import React, { useState } from 'react';
-import { ExternalLink, User, Film, Tag, Clock, Upload, Link as LinkIcon } from 'lucide-react';
-import FileUploader from '../../FileUploader';
+import { ExternalLink, User, Film, Tag, Clock, Upload, Link as LinkIcon, Database } from 'lucide-react';
+import MediaSelector from '../../MediaSelector';
 
 const VideoDetailsEditor = ({ details = {}, onChange }) => {
   const [sourceType, setSourceType] = useState(
-    details.externalUrl?.includes('firebasestorage') ? 'UPLOAD' : 'LINK'
+    details.externalUrl?.includes('firebasestorage') ? 'VAULT' : 'LINK'
   );
+  const [showMediaSelector, setShowMediaSelector] = useState(false);
 
   const handleChange = (key, value) => {
     onChange(key, value);
   };
 
-  const handleUploadComplete = (url, filename) => {
+  const handleVaultSelect = (url, asset) => {
     handleChange('externalUrl', url);
+    // Optionally store other metadata from asset if needed
+    if (asset.duration) handleChange('durationMin', Math.round(asset.duration / 60));
   };
 
   return (
@@ -39,23 +42,23 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
         </button>
         <button
           type="button"
-          onClick={() => setSourceType('UPLOAD')}
+          onClick={() => setSourceType('VAULT')}
           className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-            sourceType === 'UPLOAD' 
+            sourceType === 'VAULT' 
               ? 'bg-orange-100 text-orange-800' 
               : 'text-gray-600 hover:bg-orange-50'
           }`}
         >
-          <Upload size={14} />
-          Upload Video
+          <Database size={14} />
+          From Media Vault
         </button>
       </div>
       
       {/* Video Source Input */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-          {sourceType === 'LINK' ? <ExternalLink size={14} /> : <Upload size={14} />}
-          {sourceType === 'LINK' ? 'Video URL' : 'Upload Video File'}
+          {sourceType === 'LINK' ? <ExternalLink size={14} /> : <Database size={14} />}
+          {sourceType === 'LINK' ? 'Video URL' : 'Select Video from Vault'}
         </label>
 
         {sourceType === 'LINK' ? (
@@ -73,29 +76,45 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
           </>
         ) : (
           <div className="space-y-2">
-            {details.externalUrl && (
+            {details.externalUrl ? (
               <div className="flex items-center gap-2 p-2 bg-white border rounded-md">
-                <span className="text-xs text-gray-500 truncate flex-1">{details.externalUrl}</span>
+                <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center text-orange-600">
+                  <Film size={16} />
+                </div>
+                <span className="text-sm text-gray-700 truncate flex-1">{details.externalUrl}</span>
                 <button
                   type="button"
                   onClick={() => handleChange('externalUrl', '')}
-                  className="text-xs text-red-500 hover:text-red-700"
+                  className="text-xs text-red-500 hover:text-red-700 px-2"
                 >
-                  Remove
+                  Change
                 </button>
               </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowMediaSelector(true)}
+                className="w-full p-8 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors flex flex-col items-center justify-center gap-2 text-orange-800"
+              >
+                <Database size={24} />
+                <span className="font-medium">Select Video from Vault</span>
+              </button>
             )}
-            <FileUploader 
-              folder="videos" 
-              accept="video/*" 
-              onUploadComplete={handleUploadComplete} 
-            />
             <p className="text-xs text-gray-500">
-              Supported formats: MP4, WebM, MOV. Max size depends on your plan.
+              Select a video file previously uploaded to the Media Vault.
             </p>
           </div>
         )}
       </div>
+
+      {showMediaSelector && (
+        <MediaSelector
+          mediaType="video"
+          value={details.externalUrl}
+          onChange={handleVaultSelect}
+          onClose={() => setShowMediaSelector(false)}
+        />
+      )}
 
       {/* Speaker */}
       <div>

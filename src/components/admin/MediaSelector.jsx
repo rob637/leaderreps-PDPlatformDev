@@ -7,29 +7,53 @@ import {
   Image as ImageIcon,
   Check,
   Loader,
-  Database
+  Database,
+  AlertCircle
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { getMediaAssets, MEDIA_TYPES } from '../../services/mediaService';
+import { getUnifiedContent, CONTENT_TYPES } from '../../services/unifiedContentService';
 
 const MediaSelector = ({ value, onChange, mediaType = 'ALL', onClose }) => {
   const { db } = useAppServices();
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [usedAssets, setUsedAssets] = useState({}); // Map of url -> contentTitle
 
   useEffect(() => {
     const loadAssets = async () => {
       setLoading(true);
       try {
-        // Map 'video'/'document' to MEDIA_TYPES if needed, or pass 'ALL'
+        // 1. Load Media Assets
         const typeFilter = mediaType === 'video' ? MEDIA_TYPES.VIDEO : 
                            mediaType === 'document' ? MEDIA_TYPES.DOCUMENT : 
                            'ALL';
                            
-        const data = await getMediaAssets(db, typeFilter);
-        setAssets(data);
+        const [mediaData, contentData] = await Promise.all([
+          getMediaAssets(db, typeFilter),
+          getUnifiedContent(db, 'ALL') // Fetch all content to check usage
+        ]);
+
+        // 2. Check Usage
+        const usageMap = {};
+        contentData.forEach(item => {
+          // Check Video Details
+          if (item.details?.externalUrl) {
+            usageMap[item.details.externalUrl] = item.title;
+          }
+          // Check Document Details
+          if (item.details?.url) {
+            usageMap[item.details.url] = item.title;
+          }
+          // Check Read & Rep PDF
+          if (item.details?.pdfUrl) {
+            usageMap[item.details.pdfUrl] = item.title;
+          }
+        });
+
+        setAssets(mediaData);
+        setUsedAssets(usageMap);
       } catch (error) {
         console.error("Error loading media assets:", error);
       } finally {
@@ -47,7 +71,7 @@ const MediaSelector = ({ value, onChange, mediaType = 'ALL', onClose }) => {
   );
 
   const handleSelect = (asset) => {
-    setSelectedAsset(asset);
+    if (usedAssets[asset.url] && usedAssets[asset.url] !== value) return; // Prevent selection if used
     onChange(asset.url, asset); // Return URL and full asset object
     onClose();
   };
@@ -97,23 +121,29 @@ const MediaSelector = ({ value, onChange, mediaType = 'ALL', onClose }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {filteredAssets.map((asset) => {
                 const isSelected = value === asset.url;
+                const isUsed = usedAssets[asset.url];
+                const isUsedByOther = isUsed && !isSelected; // Used by someone else
+                
                 const Icon = asset.type === MEDIA_TYPES.VIDEO ? Film : 
                              asset.type === MEDIA_TYPES.IMAGE ? ImageIcon : FileText;
                 
                 return (
                   <button
                     key={asset.id}
-                    onClick={() => handleSelect(asset)}
+                    onClick={() => !isUsedByOther && handleSelect(asset)}
+                    disabled={isUsedByOther}
                     className={`
-                      flex items-start gap-3 p-3 rounded-lg border text-left transition-all group
+                      flex items-start gap-3 p-3 rounded-lg border text-left transition-all group relative
                       ${isSelected 
                         ? 'border-corporate-teal bg-corporate-teal/5 ring-1 ring-corporate-teal' 
-                        : 'border-slate-200 hover:border-corporate-teal/50 hover:bg-slate-50'}
+                        : isUsedByOther
+                          ? 'border-slate-200 bg-slate-50 opacity-75 cursor-not-allowed'
+                          : 'border-slate-200 hover:border-corporate-teal/50 hover:bg-slate-50'}
                     `}
                   >
                     <div className={`
                       p-2 rounded-lg flex-shrink-0
-                      ${isSelected ? 'bg-white text-corporate-teal' : 'bg-slate-100 text-slate-500 group-hover:text-corporate-teal'}
+                      ${isSelected ? 'bg-white text-corporate-teal' : 'bg-slate-100 text-slate-500'}
                     `}>
                       <Icon className="w-5 h-5" />
                     </div>
@@ -126,6 +156,12 @@ const MediaSelector = ({ value, onChange, mediaType = 'ALL', onClose }) => {
                         <span>•</span>
                         <span className="uppercase">{asset.type}</span>
                       </div>
+                      {isUsedByOther && (
+                        <div className="mt-2 text-xs text-amber-600 flex items-center gap-1 bg-amber-50 p-1 rounded">
+                          <AlertCircle size={12} />
+                          <span className="truncate">Used in: {isUsed}</span>
+                        </div>
+                      )}
                     </div>
                     {isSelected && <Check className="w-4 h-4 text-corporate-teal" />}
                   </button>
