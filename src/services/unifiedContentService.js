@@ -27,6 +27,7 @@ export const CONTENT_TYPES = {
   READ_REP: 'READ_REP',
   VIDEO: 'VIDEO',
   TOOL: 'TOOL',
+  DOCUMENT: 'DOCUMENT',
   SKILL: 'SKILL'
 };
 

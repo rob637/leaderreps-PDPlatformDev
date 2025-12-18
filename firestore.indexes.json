@@ -29,6 +29,20 @@
       ]
     },
     {
+      "collectionGroup": "content_library",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "visibility",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "content_readings",
       "queryScope": "COLLECTION",
       "fields": [

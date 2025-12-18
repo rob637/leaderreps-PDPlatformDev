@@ -18,6 +18,7 @@ import ExerciseDetailsEditor from './details/ExerciseDetailsEditor';
 import RepDetailsEditor from './details/RepDetailsEditor';
 import SkillDetailsEditor from './details/SkillDetailsEditor';
 import VideoDetailsEditor from './details/VideoDetailsEditor';
+import DocumentDetailsEditor from './details/DocumentDetailsEditor';
 import ContentPicker from './pickers/ContentPicker';
 
 const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
@@ -176,6 +177,8 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
         return <RepDetailsEditor details={formData.details} onChange={handleDetailsUpdate} type={type} />;
       case CONTENT_TYPES.VIDEO:
         return <VideoDetailsEditor details={formData.details} onChange={handleDetailsUpdate} />;
+      case CONTENT_TYPES.DOCUMENT:
+        return <DocumentDetailsEditor details={formData.details} onChange={handleDetailsUpdate} />;
       case CONTENT_TYPES.SKILL:
         return <SkillDetailsEditor details={formData.details} onChange={handleDetailsUpdate} />;
       default:
@@ -366,6 +369,15 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700">Tools</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(formData.visibility || []).includes(CONTENT_TYPES.DOCUMENT)}
+                  onChange={() => handleVisibilityChange(CONTENT_TYPES.DOCUMENT)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Documents</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
