@@ -121,8 +121,8 @@ const AdminPortal = () => {
         // { id: 'cohorts', label: 'Cohorts', icon: Users },
         { id: 'daily-plan', label: 'Daily Plan (New)', icon: Calendar },
         { id: 'devplan', label: 'Legacy Plan', icon: Calendar },
-        { id: 'library', label: 'Metadata Library', icon: Library },
-        { id: 'content', label: 'Content Wrapper', icon: FileText },
+        { id: 'content', label: 'Content Library', icon: FileText },
+        { id: 'library', label: 'Structure Library', icon: Library },
         { id: 'media', label: 'Media Vault', icon: Database }
       ]
     },
