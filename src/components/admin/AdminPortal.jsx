@@ -36,6 +36,7 @@ import DailyRepsLibrary from './DailyRepsLibrary';
 import DailyPlanManager from './DailyPlanManager';
 import CohortManager from './CohortManager';
 import UserManagement from './UserManagement';
+import LeaderProfileReports from './LeaderProfileReports';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -135,6 +136,12 @@ const AdminPortal = () => {
       ]
     },
     {
+      title: 'Reports',
+      items: [
+        { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText }
+      ]
+    },
+    {
       title: 'Engineering',
       items: [
         { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
@@ -190,6 +197,8 @@ const AdminPortal = () => {
         return <SystemWidgets />;
       case 'migration':
         return <MigrationTool />;
+      case 'leader-profiles':
+        return <LeaderProfileReports />;
       default:
         return <AdminDashboard />;
     }

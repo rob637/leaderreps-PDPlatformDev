@@ -23,11 +23,19 @@ const DEFAULT_LEADER_PROFILE = {
   industry: '',
   yearsInRole: '',
   directReports: '',
+  roleResponsibility: '',
+  yearsManaging: '',
   
   // Leadership Context
   biggestChallenge: '',
   primaryGoal: '',
   leadershipStyle: '',
+  leadershipStyleDescription: '',
+  currentHabit: '',
+  successDefinition: '',
+  feedbackReceptionScore: 0,
+  feedbackGivingScore: 0,
+  feedbackPreference: '',
   
   // Preferences
   preferredLearningTime: '',

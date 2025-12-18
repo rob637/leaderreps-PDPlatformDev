@@ -9,12 +9,11 @@ import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 
 // Company size options
 const COMPANY_SIZES = [
-  { value: '1-10', label: '1-10 employees' },
-  { value: '11-50', label: '11-50 employees' },
-  { value: '51-200', label: '51-200 employees' },
-  { value: '201-500', label: '201-500 employees' },
-  { value: '501-1000', label: '501-1,000 employees' },
-  { value: '1000+', label: '1,000+ employees' }
+  { value: '1-10', label: '1-10' },
+  { value: '11-50', label: '11-50' },
+  { value: '51-200', label: '51-200' },
+  { value: '200+', label: '200+' },
+  { value: 'n/a', label: 'n/a' }
 ];
 
 // Industry options
@@ -36,11 +35,28 @@ const YEARS_OPTIONS = [
 
 // Direct reports options
 const DIRECT_REPORTS_OPTIONS = [
-  { value: '0', label: 'None (Individual Contributor)' },
-  { value: '1-3', label: '1-3 people' },
-  { value: '4-7', label: '4-7 people' },
-  { value: '8-15', label: '8-15 people' },
-  { value: '15+', label: '15+ people' }
+  { value: '0', label: 'None yet!' },
+  { value: '1-2', label: '1-2' },
+  { value: '3-5', label: '3-5' },
+  { value: '6-10', label: '6-10' },
+  { value: '11+', label: '11+' }
+];
+
+// Years managing options
+const YEARS_MANAGING_OPTIONS = [
+  { value: '0', label: 'None yet!' },
+  { value: '<1', label: '<1' },
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '4+', label: '4+' }
+];
+
+// Feedback preference options
+const FEEDBACK_PREFERENCE_OPTIONS = [
+  { value: 'direct', label: 'Direct and to the point' },
+  { value: 'encouraging', label: 'Encouraging and positive' },
+  { value: 'examples', label: 'Clear examples and suggestions' }
 ];
 
 // Learning time preferences
@@ -237,6 +253,32 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
     </div>
   );
 
+  // Render linear scale
+  const renderLinearScale = (field, label, minLabel = 'Not Comfortable', maxLabel = 'Very Comfortable') => (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-slate-700">{label}</label>
+      <div className="flex items-center justify-between px-2 bg-slate-50 p-3 rounded-xl">
+        <span className="text-xs text-slate-500 w-20">{minLabel}</span>
+        <div className="flex gap-4 sm:gap-8">
+          {[1, 2, 3, 4, 5].map(val => (
+            <label key={val} className="flex flex-col items-center cursor-pointer group">
+              <input
+                type="radio"
+                name={field}
+                value={val}
+                checked={parseInt(formData[field]) === val}
+                onChange={() => handleChange(field, val)}
+                className="w-5 h-5 text-corporate-teal focus:ring-corporate-teal border-slate-300 cursor-pointer"
+              />
+              <span className={`text-xs mt-1 font-medium ${parseInt(formData[field]) === val ? 'text-corporate-teal' : 'text-slate-400 group-hover:text-slate-600'}`}>{val}</span>
+            </label>
+          ))}
+        </div>
+        <span className="text-xs text-slate-500 w-20 text-right">{maxLabel}</span>
+      </div>
+    </div>
+  );
+
   // Render step content
   const renderStepContent = () => {
     switch (currentStep) {
@@ -249,7 +291,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
             </div>
             {renderInput('email', 'Email Address', 'email', true, 'john@company.com')}
             {renderInput('phoneNumber', 'Phone Number', 'tel', false, '+1 (555) 123-4567',
-              'Optional: For habit reminders and event notifications via SMS'
+              'By providing your phone number, you consent to receive text messages including habit reminders and notifications of upcoming event dates and times.'
             )}
             {formData.phoneNumber && (
               <label className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">
@@ -269,19 +311,52 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
         return (
           <div className="space-y-4">
             {renderInput('companyName', 'Company Name', 'text', true, 'Acme Corporation')}
-            {renderSelect('companySize', 'Company Size', COMPANY_SIZES, true)}
+            {renderSelect('companySize', 'Company Size (# of employees)', COMPANY_SIZES, true)}
             {renderSelect('industry', 'Industry', INDUSTRIES.map(i => ({ value: i, label: i })))}
-            {renderInput('department', 'Department or Function', 'text', true, 'e.g., Sales, Engineering, Operations')}
-            {renderInput('jobTitle', 'Job Title', 'text', false, 'e.g., Senior Manager, Team Lead')}
+            {renderInput('department', 'Department or Function', 'text', true, 'e.g., Sales, Marketing, Operations, etc.')}
+            {renderInput('jobTitle', 'Current Job Title', 'text', true)}
+            {renderTextarea('roleResponsibility', 'In your role, what are you responsible for delivering?', 'We\'re looking for more of an understanding of your current role, not just title.')}
           </div>
         );
 
       case 2: // Leadership
         return (
-          <div className="space-y-4">
-            {renderSelect('yearsInRole', 'Years in Current Role', YEARS_OPTIONS)}
-            {renderSelect('directReports', 'Number of Direct Reports', DIRECT_REPORTS_OPTIONS)}
-            <div className="space-y-1">
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+                {renderSelect('yearsInRole', 'Years in Current Role', YEARS_OPTIONS)}
+                {renderSelect('directReports', 'How many direct reports do you have?', DIRECT_REPORTS_OPTIONS)}
+            </div>
+            {renderSelect('yearsManaging', 'How many years of experience do you have managing direct reports?', YEARS_MANAGING_OPTIONS)}
+            
+            {renderTextarea('leadershipStyleDescription', 'Describe your leadership style in 1-2 sentences.')}
+            {renderTextarea('currentHabit', 'What is one leadership habit or mindset you\'re working on right now?')}
+            {renderTextarea('successDefinition', 'What would success look like for you at the end of this program?')}
+            
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+                {renderLinearScale('feedbackReceptionScore', 'On a scale of 1-5, how comfortable are you receiving feedback?')}
+                {renderLinearScale('feedbackGivingScore', 'On a scale of 1-5, how comfortable are you giving feedback?')}
+            </div>
+
+            <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700">What type of feedback helps you grow the most?</label>
+                <div className="space-y-2">
+                    {FEEDBACK_PREFERENCE_OPTIONS.map(opt => (
+                        <label key={opt.value} className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input
+                                type="radio"
+                                name="feedbackPreference"
+                                value={opt.value}
+                                checked={formData.feedbackPreference === opt.value}
+                                onChange={() => handleChange('feedbackPreference', opt.value)}
+                                className="w-4 h-4 text-corporate-teal focus:ring-corporate-teal border-slate-300"
+                            />
+                            <span className="text-sm text-slate-700">{opt.label}</span>
+                        </label>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-1 pt-4 border-t border-slate-100">
               <label className="block text-sm font-medium text-slate-700">
                 Preferred Learning Time
               </label>
