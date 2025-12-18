@@ -256,47 +256,57 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     
     // Also check for incomplete items from previous week(s)
     const currentWeekNum = currentWeek.weekNumber;
-    const prevWeekNum = currentWeekNum - 1;
     
-    // Allow looking back to Week 0 and negative weeks (Prep Phase)
-    // We only stop if we're way back before any possible content (e.g. before Prep)
-    if (prevWeekNum < -5) {
-      return explicitCarryOver;
+    // Determine which previous weeks to check
+    // Usually just the immediate previous week
+    const weeksToCheck = [currentWeekNum - 1];
+    
+    // SPECIAL CASE: If we are in Week 1 (Start of Dev Plan), 
+    // we must also check the Prep Phase weeks (0, -1, -2) 
+    // because there is a gap in week numbers and we want to carry over Prep items.
+    if (currentWeekNum === 1) {
+        weeksToCheck.push(0, -1, -2);
     }
     
     let prevWeekItems = [];
 
-    // STRATEGY 1: Check Daily Plan (New Architecture)
-    if (dailyPlan && dailyPlan.length > 0) {
-      const prevWeekDays = dailyPlan.filter(d => d.weekNumber === prevWeekNum);
-      
-      prevWeekDays.forEach(day => {
-        if (day.actions) {
-          const normalized = normalizeDailyActions(day.actions, day.id);
-          // Filter out Daily Reps and ensure Required
-          // Note: 'weekly_action' type usually implies required in the new plan
-          const validActions = normalized.filter(a => 
-            a.type !== 'daily_rep' && 
-            a.required
-          );
-          prevWeekItems.push(...validActions);
+    // Iterate through all weeks to check
+    weeksToCheck.forEach(checkWeekNum => {
+        // STRATEGY 1: Check Daily Plan (New Architecture)
+        if (dailyPlan && dailyPlan.length > 0) {
+          const prevWeekDays = dailyPlan.filter(d => d.weekNumber === checkWeekNum);
+          
+          prevWeekDays.forEach(day => {
+            if (day.actions) {
+              const normalized = normalizeDailyActions(day.actions, day.id);
+              // Filter out Daily Reps and ensure Required
+              // Note: 'weekly_action' type usually implies required in the new plan
+              const validActions = normalized.filter(a => 
+                a.type !== 'daily_rep' && 
+                a.required
+              );
+              prevWeekItems.push(...validActions);
+            }
+          });
+        } 
+        
+        // STRATEGY 2: Fallback to Master Plan (Legacy Architecture)
+        // Only if we didn't find anything in Daily Plan OR if we want to support hybrid
+        // Note: We only check Master Plan if we haven't found items for THIS specific week check yet
+        // (This is a simplification, but prevents duplicates if both exist)
+        if (masterPlan.length > 0) {
+          // Find previous week in masterPlan
+          const prevWeek = masterPlan.find(w => w.weekNumber === checkWeekNum);
+          if (prevWeek) {
+            const legacyItems = [
+              ...normalizeItems(prevWeek.content || prevWeek.contentItems || [], 'Content'),
+              ...normalizeItems(prevWeek.community || prevWeek.communityItems || [], 'Community'),
+              ...normalizeItems(prevWeek.coaching || prevWeek.coachingItems || [], 'Coaching')
+            ];
+            prevWeekItems.push(...legacyItems);
+          }
         }
-      });
-    } 
-    
-    // STRATEGY 2: Fallback to Master Plan (Legacy Architecture)
-    // Only if we didn't find anything in Daily Plan OR if we want to support hybrid
-    if (prevWeekItems.length === 0 && masterPlan.length > 0) {
-      // Find previous week in masterPlan
-      const prevWeek = masterPlan.find(w => w.weekNumber === prevWeekNum);
-      if (prevWeek) {
-        prevWeekItems = [
-          ...normalizeItems(prevWeek.content || prevWeek.contentItems || [], 'Content'),
-          ...normalizeItems(prevWeek.community || prevWeek.communityItems || [], 'Community'),
-          ...normalizeItems(prevWeek.coaching || prevWeek.coachingItems || [], 'Coaching')
-        ];
-      }
-    }
+    });
     
     // Filter to incomplete items that aren't already in explicitCarryOver
     const explicitIds = new Set(explicitCarryOver.map(i => i.id));
@@ -314,7 +324,9 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       }
       
       // Skip if it was completed in the legacy system
-      const prevWeekProgress = devPlanHook.userState?.weekProgress?.[`week-${String(prevWeekNum).padStart(2, '0')}`];
+      // Check against the week the item actually belongs to (we don't have item.weekNumber easily here, 
+      // but we can check the main previous week as a heuristic, or just rely on item progress)
+      const prevWeekProgress = devPlanHook.userState?.weekProgress?.[`week-${String(currentWeekNum - 1).padStart(2, '0')}`];
       if (prevWeekProgress?.itemsCompleted?.includes(item.id)) {
         return false;
       }
@@ -323,12 +335,15 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     }).map(item => ({
       ...item,
       carriedOver: true,
-      originalWeek: prevWeekNum,
+      originalWeek: currentWeekNum - 1, // Just mark as previous week for display simplicity
       carryCount: 1
     }));
     
+    // Deduplicate items by ID (in case same item found in multiple checks)
+    const uniqueIncomplete = Array.from(new Map(incompleteFromPrevWeek.map(item => [item.id, item])).values());
+    
     // Combine both sources
-    return [...explicitCarryOver, ...incompleteFromPrevWeek];
+    return [...explicitCarryOver, ...uniqueIncomplete];
   }, [currentWeek?.weekNumber, getCarriedOverItems, masterPlan, dailyPlan, getItemProgress, devPlanHook.userState?.weekProgress]);
 
   // Calculate progress (MUST be before any early returns)
