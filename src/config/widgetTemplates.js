@@ -2175,12 +2175,9 @@ const TimeTravelerWidget = () => {
            <div className="text-xs text-slate-500 mb-2">
              Start Date: {startDate ? startDate.toLocaleDateString() : 'Not Set'}
            </div>
-           <button
-              onClick={handleResetPlanStartDate}
-              className="w-full px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-800 font-medium rounded-lg transition-colors text-xs"
-            >
-              Reset Start Date to NOW
-            </button>
+           <div className="text-xs text-slate-400 italic">
+             Start Date is now managed by Cohort settings.
+           </div>
         </div>
       </div>
     </Card>

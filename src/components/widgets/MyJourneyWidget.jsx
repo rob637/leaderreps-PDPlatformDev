@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Compass, CheckCircle, Calendar, User, Users, Rocket, 
-  Clock, ChevronRight, Shield
+  Clock, ChevronRight, Shield, Settings
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useDailyPlan, PHASES } from '../../hooks/useDailyPlan';
+import { useAppServices } from '../../services/useAppServices';
 
 /**
  * MyJourneyWidget - Shows user's cohort and journey progress in Locker
@@ -24,6 +25,42 @@ const MyJourneyWidget = () => {
     journeyDay,
     daysFromStart 
   } = useDailyPlan();
+  const { updateDevelopmentPlanData } = useAppServices();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [password, setPassword] = useState('');
+  const [newCount, setNewCount] = useState(journeyDay || 1);
+
+  const handleUpdateLoginCount = async () => {
+    if (password !== '7777') {
+      alert('Incorrect password');
+      return;
+    }
+
+    const count = parseInt(newCount, 10);
+    if (isNaN(count) || count < 0) return;
+
+    // Generate dummy dates to simulate login history
+    // We use past dates ending with today to ensure the count is correct
+    // and the system sees "today" as visited.
+    const newLog = [];
+    const today = new Date();
+    for (let i = 0; i < count; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - (count - 1 - i)); // Past dates ending today
+      newLog.push(d.toISOString().split('T')[0]);
+    }
+
+    try {
+      await updateDevelopmentPlanData({ prepVisitLog: newLog });
+      setIsEditing(false);
+      setPassword('');
+      alert(`Login count updated to ${count}`);
+    } catch (error) {
+      console.error('Error updating login count:', error);
+      alert('Failed to update login count');
+    }
+  };
 
   // Calculate days until or since start
   const getDaysDisplay = () => {
@@ -129,11 +166,49 @@ const MyJourneyWidget = () => {
         {currentPhase?.id === 'pre-start' && journeyDay && (
           <div className="bg-white rounded-xl p-4 border border-slate-200">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-slate-700">Onboarding Progress</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-700">Onboarding Progress</span>
+                <button 
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="text-slate-300 hover:text-slate-500 transition-colors"
+                  title="Admin: Update Login Count"
+                >
+                  <Settings className="w-3 h-3" />
+                </button>
+              </div>
               <span className="text-xs text-slate-500">
                 Day {Math.min(journeyDay, 5)} of 5
               </span>
             </div>
+
+            {/* Admin Edit Mode */}
+            {isEditing && (
+              <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="text-xs font-bold text-slate-700 mb-2">Update Login Count (Test)</div>
+                <div className="flex gap-2 mb-2">
+                  <input 
+                    type="password" 
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-20 px-2 py-1 text-xs border rounded"
+                  />
+                  <input 
+                    type="number" 
+                    placeholder="Count"
+                    value={newCount}
+                    onChange={(e) => setNewCount(e.target.value)}
+                    className="w-16 px-2 py-1 text-xs border rounded"
+                  />
+                </div>
+                <button 
+                  onClick={handleUpdateLoginCount}
+                  className="w-full py-1 bg-corporate-teal text-white text-xs font-bold rounded hover:bg-teal-700"
+                >
+                  Update Count
+                </button>
+              </div>
+            )}
             
             {/* Progress Dots */}
             <div className="flex items-center justify-between gap-2">
