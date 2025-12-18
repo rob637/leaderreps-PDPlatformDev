@@ -71,6 +71,28 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
         const workouts = await getUnifiedContent(db, CONTENT_TYPES.WORKOUT);
         setAvailablePrograms(programs);
         setAvailableWorkouts(workouts);
+
+        // Check for existing membership if editing an item
+        if (item && item.id) {
+          const existingProgramIds = programs
+            .filter(p => {
+              const modules = p.details?.modules || p.details?.workouts || [];
+              return modules.some(m => m.id === item.id);
+            })
+            .map(p => p.id);
+          
+          const existingWorkoutIds = workouts
+            .filter(w => {
+              const exercises = w.details?.exercises || [];
+              return exercises.some(e => e.id === item.id);
+            })
+            .map(w => w.id);
+
+          setPushTargets({
+            programs: existingProgramIds,
+            workouts: existingWorkoutIds
+          });
+        }
       } catch (error) {
         console.error("Error fetching push targets:", error);
       }
