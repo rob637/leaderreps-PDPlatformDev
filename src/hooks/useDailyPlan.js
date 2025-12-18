@@ -665,7 +665,7 @@ export const useDailyPlan = () => {
                 introducedOnDay: day.dayNumber,
                 introducedOnDayId: day.id,
                 // Use day.dayNumber for display: "Prep Day X"
-                introducedLabel: `Prep Day ${day.dayNumber}`
+                introducedLabel: `Login ${day.dayNumber}`
               });
             });
         }
@@ -778,7 +778,7 @@ export const useDailyPlan = () => {
         phase: currentPhase,
         phaseDayNumber: phaseDayNumber,
         displayDay: currentPhase.id === 'pre-start' 
-          ? `Prep Day ${journeyDay}` // Use journeyDay (visit count) for display
+          ? `Login ${journeyDay}` // Use journeyDay (visit count) for display
           : currentPhase.id === 'start'
             ? `Day ${phaseDayNumber}`
             : `Post Day ${phaseDayNumber}`,
@@ -795,7 +795,7 @@ export const useDailyPlan = () => {
         dayNumber: dbDayNumber,
         phase: currentPhase,
         phaseDayNumber: phaseDayNumber,
-        displayDay: `Prep Day ${journeyDay}`, // Use journeyDay (visit count) for display
+        displayDay: `Login ${journeyDay}`, // Use journeyDay (visit count) for display
         actions: cumulativeActions,
         userProgress: { itemsCompleted: [] },
         isCompleted: false

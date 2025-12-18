@@ -274,7 +274,7 @@ const PrepWelcomeBanner = () => {
   const getBadgeText = () => {
     if (isPrepComplete) return 'Prep Complete';
     if (clampedJourneyDay > 5 && hasIncompleteRequiredActions) return 'Finish Strong';
-    return `Prep Day ${effectiveJourneyDay}`;
+    return `Login ${effectiveJourneyDay}`;
   };
 
   return (
@@ -510,13 +510,13 @@ const PrepWelcomeBanner = () => {
                         ? 'bg-corporate-teal' 
                         : 'bg-white/20'
                     }`}
-                    title={`Prep Day ${day}`}
+                    title={`Login ${day}`}
                   />
                 ))}
               </div>
             )}
             <span className="text-[10px] text-slate-500">
-              {isQuickStart ? 'Quick Start Mode' : isPrepComplete ? 'Prep Complete!' : `Prep ${effectiveJourneyDay} of 5`}
+              {isQuickStart ? 'Quick Start Mode' : isPrepComplete ? 'Prep Complete!' : `Login ${effectiveJourneyDay} of 5`}
             </span>
           </div>
 
