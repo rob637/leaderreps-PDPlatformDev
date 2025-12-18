@@ -251,21 +251,27 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   const carriedOverItems = useMemo(() => {
     if (!currentWeek?.weekNumber) return [];
     
+    const currentWeekNum = currentWeek.weekNumber;
+
+    // RULE 1: No carry-over display WITHIN the Prep Phase
+    // Prep Phase is a single container (Weeks <= 0). 
+    // Items shouldn't "carry over" from Day 1 to Day 2, etc.
+    if (currentWeekNum <= 0) {
+        return [];
+    }
+
     // Get explicitly carried over items
     const explicitCarryOver = getCarriedOverItems(currentWeek.weekNumber);
-    
-    // Also check for incomplete items from previous week(s)
-    const currentWeekNum = currentWeek.weekNumber;
     
     // Determine which previous weeks to check
     // Usually just the immediate previous week
     const weeksToCheck = [currentWeekNum - 1];
     
-    // SPECIAL CASE: If we are in Week 1 (Start of Dev Plan), 
-    // we must also check the Prep Phase weeks (0, -1, -2) 
-    // because there is a gap in week numbers and we want to carry over Prep items.
+    // RULE 2: Transition from Prep Phase to Dev Plan (Week 1)
+    // If we are in Week 1, we must check ALL Prep Phase weeks (0, -1, -2, etc.)
+    // to ensure any required items missed during Prep are carried over.
     if (currentWeekNum === 1) {
-        weeksToCheck.push(0, -1, -2);
+        weeksToCheck.push(0, -1, -2, -3, -4); // Check deep into Prep history
     }
     
     let prevWeekItems = [];
@@ -303,7 +309,9 @@ const ThisWeeksActionsWidget = ({ scope }) => {
               ...normalizeItems(prevWeek.community || prevWeek.communityItems || [], 'Community'),
               ...normalizeItems(prevWeek.coaching || prevWeek.coachingItems || [], 'Coaching')
             ];
-            prevWeekItems.push(...legacyItems);
+            // Only keep REQUIRED items from legacy plan
+            const requiredLegacyItems = legacyItems.filter(item => item.required);
+            prevWeekItems.push(...requiredLegacyItems);
           }
         }
     });
