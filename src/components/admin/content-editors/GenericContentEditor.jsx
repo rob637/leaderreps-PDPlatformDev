@@ -1,10 +1,11 @@
 // src/components/admin/content-editors/GenericContentEditor.jsx
 import React, { useState, useEffect } from 'react';
-import { Save, X, ArrowLeft, Plus, Tag } from 'lucide-react';
+import { Save, X, ArrowLeft, Plus, Tag, Layout, Dumbbell, CheckSquare } from 'lucide-react';
 import { useAppServices } from '../../../services/useAppServices';
 import { 
   addUnifiedContent, 
   updateUnifiedContent, 
+  getUnifiedContent,
   CONTENT_STATUS,
   DIFFICULTY_LEVELS,
   ROLE_LEVELS,
@@ -30,9 +31,19 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
     estimatedTime: '', // in minutes
     isHiddenUntilUnlocked: false,
     skills: [], // Array of { id, title }
+    visibility: [], // Array of CONTENT_TYPES to display in
     details: {},
     ...item
   });
+  
+  // Push Targets State
+  const [availablePrograms, setAvailablePrograms] = useState([]);
+  const [availableWorkouts, setAvailableWorkouts] = useState([]);
+  const [pushTargets, setPushTargets] = useState({
+    programs: [], // Array of IDs
+    workouts: []  // Array of IDs
+  });
+
   const [saving, setSaving] = useState(false);
   const [showSkillPicker, setShowSkillPicker] = useState(false);
 
@@ -41,10 +52,30 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
       setFormData({
         ...item,
         details: item.details || {},
-        skills: item.skills || []
+        skills: item.skills || [],
+        visibility: item.visibility || []
       });
+    } else {
+      // For new items, default visibility includes the primary type
+      setFormData(prev => ({
+        ...prev,
+        visibility: [type]
+      }));
     }
-  }, [item]);
+
+    // Fetch available Programs and Workouts for "Push" functionality
+    const fetchTargets = async () => {
+      try {
+        const programs = await getUnifiedContent(db, CONTENT_TYPES.PROGRAM);
+        const workouts = await getUnifiedContent(db, CONTENT_TYPES.WORKOUT);
+        setAvailablePrograms(programs);
+        setAvailableWorkouts(workouts);
+      } catch (error) {
+        console.error("Error fetching push targets:", error);
+      }
+    };
+    fetchTargets();
+  }, [item, db, type]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -52,6 +83,28 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
       ...prev, 
       [name]: type === 'checkbox' ? checked : value 
     }));
+  };
+
+  const handleVisibilityChange = (contentType) => {
+    setFormData(prev => {
+      const current = prev.visibility || [];
+      if (current.includes(contentType)) {
+        return { ...prev, visibility: current.filter(t => t !== contentType) };
+      } else {
+        return { ...prev, visibility: [...current, contentType] };
+      }
+    });
+  };
+
+  const handlePushTargetChange = (targetType, id) => {
+    setPushTargets(prev => {
+      const current = prev[targetType] || [];
+      if (current.includes(id)) {
+        return { ...prev, [targetType]: current.filter(i => i !== id) };
+      } else {
+        return { ...prev, [targetType]: [...current, id] };
+      }
+    });
   };
 
   const handleDetailsUpdate = (key, value) => {
@@ -97,9 +150,9 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
       };
 
       if (item?.id) {
-        await updateUnifiedContent(db, item.id, payload);
+        await updateUnifiedContent(db, item.id, payload, pushTargets);
       } else {
-        await addUnifiedContent(db, payload);
+        await addUnifiedContent(db, payload, pushTargets);
       }
       onSave();
     } catch (error) {
@@ -288,6 +341,96 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
               rows={3}
               className="w-full p-2 border rounded-lg"
             />
+          </div>
+
+          {/* --- NEW: Display In (Visibility) --- */}
+          <div className="col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+              <Layout size={16} /> Display In Libraries
+            </h3>
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(formData.visibility || []).includes(CONTENT_TYPES.VIDEO)}
+                  onChange={() => handleVisibilityChange(CONTENT_TYPES.VIDEO)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Videos</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(formData.visibility || []).includes(CONTENT_TYPES.TOOL)}
+                  onChange={() => handleVisibilityChange(CONTENT_TYPES.TOOL)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Tools</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(formData.visibility || []).includes(CONTENT_TYPES.READ_REP)}
+                  onChange={() => handleVisibilityChange(CONTENT_TYPES.READ_REP)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Read & Reps</span>
+              </label>
+            </div>
+          </div>
+
+          {/* --- NEW: Push to Programs --- */}
+          <div className="col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+              <Layout size={16} /> Add to Programs
+            </h3>
+            <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-md bg-white p-2">
+              {availablePrograms.length === 0 ? (
+                <p className="text-xs text-gray-500 p-2">No programs available.</p>
+              ) : (
+                availablePrograms.map(prog => (
+                  <label key={prog.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={pushTargets.programs.includes(prog.id)}
+                      onChange={() => handlePushTargetChange('programs', prog.id)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 truncate">{prog.title}</span>
+                  </label>
+                ))
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Selected programs will have this content appended to their module list.
+            </p>
+          </div>
+
+          {/* --- NEW: Push to Workouts --- */}
+          <div className="col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+              <Dumbbell size={16} /> Add to Workouts
+            </h3>
+            <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-md bg-white p-2">
+              {availableWorkouts.length === 0 ? (
+                <p className="text-xs text-gray-500 p-2">No workouts available.</p>
+              ) : (
+                availableWorkouts.map(workout => (
+                  <label key={workout.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={pushTargets.workouts.includes(workout.id)}
+                      onChange={() => handlePushTargetChange('workouts', workout.id)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 truncate">{workout.title}</span>
+                  </label>
+                ))
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Selected workouts will have this content appended to their exercise list.
+            </p>
           </div>
 
           {/* Skill Tagging - Only show if NOT editing a Skill itself */}

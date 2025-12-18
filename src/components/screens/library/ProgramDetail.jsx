@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useContentAccess } from '../../../hooks/useContentAccess';
 import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
-import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
+import { UNIFIED_COLLECTION, CONTENT_TYPES } from '../../../services/unifiedContentService';
 import { PageLayout } from '../../ui/PageLayout.jsx';
-import { Loader, PlayCircle, CheckCircle, Clock, BarChart, ArrowRight, Lock } from 'lucide-react';
+import { Loader, PlayCircle, CheckCircle, Clock, BarChart, ArrowRight, Lock, BookOpen, Wrench, Film, Dumbbell } from 'lucide-react';
 import { Card, Button, Badge } from '../../screens/developmentplan/DevPlanComponents.jsx';
 
 const ProgramDetail = (props) => {
   const { db, navigate } = useAppServices();
   const { isContentUnlocked } = useContentAccess();
   const [program, setProgram] = useState(null);
-  const [workouts, setWorkouts] = useState([]);
+  const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
@@ -29,25 +29,38 @@ const ProgramDetail = (props) => {
         const programSnap = await getDoc(programRef);
         
         if (programSnap.exists()) {
-          setProgram({ id: programSnap.id, ...programSnap.data() });
+          const programData = { id: programSnap.id, ...programSnap.data() };
+          setProgram(programData);
           
-          // 2. Fetch Child Workouts
-          // Query: type=WORKOUT, parentId=programId, orderBy sequenceOrder
-          const workoutsRef = collection(db, UNIFIED_COLLECTION);
-          const q = query(
-            workoutsRef, 
-            where('type', '==', 'WORKOUT'),
-            where('parentId', '==', programId),
-            orderBy('sequenceOrder', 'asc')
-          );
+          // 2. Determine Modules Source
+          // Priority 1: 'details.modules' (New Mixed Content Model)
+          // Priority 2: 'details.workouts' (Legacy Embedded Model)
+          // Priority 3: Child Query (Legacy Parent-Child Model)
           
-          const workoutsSnap = await getDocs(q);
-          const workoutsData = workoutsSnap.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          
-          setWorkouts(workoutsData);
+          if (programData.details?.modules && programData.details.modules.length > 0) {
+            setModules(programData.details.modules);
+          } else if (programData.details?.workouts && programData.details.workouts.length > 0) {
+            // Map legacy workouts to module format
+            setModules(programData.details.workouts.map(w => ({ ...w, type: CONTENT_TYPES.WORKOUT })));
+          } else {
+            // Fallback: Query children
+            const workoutsRef = collection(db, UNIFIED_COLLECTION);
+            const q = query(
+              workoutsRef, 
+              where('type', '==', 'WORKOUT'),
+              where('parentId', '==', programId),
+              orderBy('sequenceOrder', 'asc')
+            );
+            
+            const workoutsSnap = await getDocs(q);
+            const workoutsData = workoutsSnap.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+              type: CONTENT_TYPES.WORKOUT
+            }));
+            
+            setModules(workoutsData);
+          }
         }
       } catch (error) {
         console.error("Error fetching program details:", error);
@@ -58,6 +71,40 @@ const ProgramDetail = (props) => {
 
     fetchProgramData();
   }, [db, programId]);
+
+  const handleModuleClick = (module) => {
+    // Navigate based on type
+    switch (module.type) {
+      case CONTENT_TYPES.WORKOUT:
+        navigate('workout-detail', { id: module.id, title: module.title });
+        break;
+      case CONTENT_TYPES.READ_REP:
+        navigate('read-rep-detail', { id: module.id });
+        break;
+      case CONTENT_TYPES.TOOL:
+        navigate('tool-detail', { id: module.id });
+        break;
+      case CONTENT_TYPES.VIDEO:
+        if (module.url) {
+            window.open(module.url, '_blank');
+        } else {
+            console.log("Navigate to video:", module.id);
+        }
+        break;
+      default:
+        console.warn("Unknown module type:", module.type);
+    }
+  };
+
+  const getIconForType = (type) => {
+    switch (type) {
+      case CONTENT_TYPES.VIDEO: return <Film className="w-5 h-5 text-blue-500" />;
+      case CONTENT_TYPES.TOOL: return <Wrench className="w-5 h-5 text-orange-500" />;
+      case CONTENT_TYPES.READ_REP: return <BookOpen className="w-5 h-5 text-green-500" />;
+      case CONTENT_TYPES.WORKOUT: return <Dumbbell className="w-5 h-5 text-purple-500" />;
+      default: return <CheckCircle className="w-5 h-5 text-slate-400" />;
+    }
+  };
 
   if (loading) {
     return (
@@ -131,7 +178,7 @@ const ProgramDetail = (props) => {
                   {program.metadata?.difficulty || 'Foundation'} Level
                 </Badge>
                 <Badge variant="teal" icon={CheckCircle}>
-                  {workouts.length} Workouts
+                  {modules.length} Modules
                 </Badge>
               </div>
             </div>
@@ -150,47 +197,54 @@ const ProgramDetail = (props) => {
           </div>
         </div>
 
-        {/* Workouts List */}
+        {/* Modules List */}
         <div>
           <h3 className="text-lg font-bold text-corporate-navy mb-4 flex items-center gap-2">
             <span className="bg-corporate-navy text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">
-              {workouts.length}
+              {modules.length}
             </span>
             Program Modules
           </h3>
           
           <div className="space-y-4">
-            {workouts.map((workout, index) => (
+            {modules.map((module, index) => (
               <div 
-                key={workout.id}
-                onClick={() => navigate('workout-detail', { id: workout.id, title: workout.title })}
+                key={module.id}
+                onClick={() => handleModuleClick(module)}
                 className="group bg-white border border-slate-200 rounded-lg p-5 hover:border-corporate-teal hover:shadow-md transition-all cursor-pointer flex items-center gap-4"
               >
                 <div className="flex-shrink-0 w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center group-hover:bg-corporate-teal group-hover:text-white transition-colors">
-                  {index + 1}
+                  {getIconForType(module.type)}
                 </div>
                 
                 <div className="flex-grow">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Module {index + 1} • {module.type?.replace('_', ' ')}
+                    </span>
+                  </div>
                   <h4 className="font-bold text-slate-800 group-hover:text-corporate-teal transition-colors">
-                    {workout.title}
+                    {module.title}
                   </h4>
                   <p className="text-sm text-slate-500 line-clamp-1">
-                    {workout.description}
+                    {module.description}
                   </p>
                 </div>
                 
                 <div className="flex-shrink-0 flex items-center gap-3">
-                  <span className="text-xs font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded">
-                    {workout.metadata?.durationMin || 45} min
-                  </span>
+                  {module.metadata?.durationMin && (
+                    <span className="text-xs font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded">
+                      {module.metadata.durationMin} min
+                    </span>
+                  )}
                   <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-corporate-teal" />
                 </div>
               </div>
             ))}
             
-            {workouts.length === 0 && (
+            {modules.length === 0 && (
               <div className="text-center p-8 border-2 border-dashed border-slate-200 rounded-lg text-slate-400">
-                No workouts have been added to this program yet.
+                No modules have been added to this program yet.
               </div>
             )}
           </div>

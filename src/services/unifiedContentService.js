@@ -77,14 +77,118 @@ export const getUnifiedContent = async (db, type, options = {}) => {
     q = query(q, orderBy('updatedAt', 'desc'));
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    let results = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    // If type is provided, also check 'visibility' array for items that might be cross-listed
+    // This is a client-side merge because Firestore doesn't support OR queries across different fields easily in this context
+    if (type && type !== 'ALL') {
+      const visibilityQuery = query(
+        collection(db, UNIFIED_COLLECTION), 
+        where('visibility', 'array-contains', type),
+        orderBy('updatedAt', 'desc')
+      );
+      
+      const visibilitySnapshot = await getDocs(visibilityQuery);
+      const visibilityResults = visibilitySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Merge and deduplicate
+      const existingIds = new Set(results.map(r => r.id));
+      visibilityResults.forEach(item => {
+        if (!existingIds.has(item.id)) {
+          results.push(item);
+        }
+      });
+    }
+
+    return results;
   } catch (error) {
     console.error(`Error getting unified content for type ${type}:`, error);
     throw error;
   }
+};
+
+/**
+ * Helper to push content to parent containers (Programs/Workouts)
+ */
+const pushContentToParents = async (db, contentId, contentData, pushTargets) => {
+  if (!pushTargets) return;
+
+  const { programs, workouts } = pushTargets;
+  const batchUpdates = [];
+
+  // 1. Push to Programs
+  if (programs && programs.length > 0) {
+    for (const programId of programs) {
+      const programRef = doc(db, UNIFIED_COLLECTION, programId);
+      const programSnap = await getDoc(programRef);
+      
+      if (programSnap.exists()) {
+        const programData = programSnap.data();
+        const currentModules = programData.details?.modules || programData.details?.workouts || [];
+        
+        // Check if already exists
+        if (!currentModules.find(m => m.id === contentId)) {
+          const newModule = {
+            id: contentId,
+            title: contentData.title,
+            type: contentData.type, // Use primary type
+            description: contentData.description || ''
+          };
+          
+          const updatedModules = [...currentModules, newModule];
+          
+          batchUpdates.push(
+            updateDoc(programRef, {
+              'details.modules': updatedModules,
+              updatedAt: serverTimestamp()
+            })
+          );
+        }
+      }
+    }
+  }
+
+  // 2. Push to Workouts
+  if (workouts && workouts.length > 0) {
+    for (const workoutId of workouts) {
+      const workoutRef = doc(db, UNIFIED_COLLECTION, workoutId);
+      const workoutSnap = await getDoc(workoutRef);
+      
+      if (workoutSnap.exists()) {
+        const workoutData = workoutSnap.data();
+        const currentExercises = workoutData.details?.exercises || [];
+        
+        // Check if already exists
+        if (!currentExercises.find(e => e.id === contentId)) {
+           // Note: Workouts typically contain Exercises, but can now contain other content types in this flexible model
+           // We'll treat them as "exercises" or "blocks"
+           const newBlock = {
+            id: contentId,
+            title: contentData.title,
+            type: contentData.type,
+            description: contentData.description || ''
+          };
+
+          const updatedExercises = [...currentExercises, newBlock];
+          
+          batchUpdates.push(
+            updateDoc(workoutRef, {
+              'details.exercises': updatedExercises,
+              updatedAt: serverTimestamp()
+            })
+          );
+        }
+      }
+    }
+  }
+
+  await Promise.all(batchUpdates);
 };
 
 /**
@@ -110,8 +214,9 @@ export const getUnifiedContentById = async (db, id) => {
  * Add a new content item
  * @param {object} db 
  * @param {object} data - Content data object
+ * @param {object} pushTargets - Optional { programs: [], workouts: [] } to add this content to
  */
-export const addUnifiedContent = async (db, data) => {
+export const addUnifiedContent = async (db, data, pushTargets = null) => {
   try {
     const contentRef = collection(db, UNIFIED_COLLECTION);
     
@@ -124,6 +229,12 @@ export const addUnifiedContent = async (db, data) => {
     };
 
     const docRef = await addDoc(contentRef, payload);
+    
+    // Handle Push to Parents
+    if (pushTargets) {
+      await pushContentToParents(db, docRef.id, payload, pushTargets);
+    }
+
     return { id: docRef.id, ...payload };
   } catch (error) {
     console.error('Error adding unified content:', error);
@@ -134,7 +245,7 @@ export const addUnifiedContent = async (db, data) => {
 /**
  * Update an existing content item
  */
-export const updateUnifiedContent = async (db, id, data) => {
+export const updateUnifiedContent = async (db, id, data, pushTargets = null) => {
   try {
     const docRef = doc(db, UNIFIED_COLLECTION, id);
     
@@ -144,6 +255,12 @@ export const updateUnifiedContent = async (db, id, data) => {
     };
 
     await updateDoc(docRef, payload);
+
+    // Handle Push to Parents
+    if (pushTargets) {
+      await pushContentToParents(db, id, payload, pushTargets);
+    }
+
     return { id, ...payload };
   } catch (error) {
     console.error(`Error updating content ${id}:`, error);
