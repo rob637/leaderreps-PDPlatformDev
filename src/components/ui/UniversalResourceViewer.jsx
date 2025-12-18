@@ -125,28 +125,29 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
         return (
           <div className="flex flex-col h-[70vh] w-full">
             {/* Synopsis Section */}
-            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 mb-4 flex-shrink-0 overflow-y-auto max-h-[40vh]">
+            <div className={`bg-slate-50 p-6 rounded-xl border border-slate-100 mb-4 overflow-y-auto ${url ? 'max-h-[40vh] flex-shrink-0' : 'flex-1 h-full'}`}>
               <div className="flex items-center gap-2 mb-3">
                 <FileText className="w-5 h-5 text-corporate-teal" />
                 <h3 className="font-bold text-slate-700">Synopsis</h3>
               </div>
-              {resource.synopsis ? (
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                  {resource.synopsis}
-                </p>
+              {resource.synopsis || resource.details?.synopsis ? (
+                <div 
+                  className="text-slate-700 text-sm leading-relaxed prose-sm prose-blue max-w-none [&>h3]:text-corporate-navy [&>h3]:font-bold [&>h3]:mt-4 [&>h3]:mb-2 [&>h4]:text-corporate-teal [&>h4]:font-bold [&>h4]:mt-3 [&>h4]:mb-1 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>p]:mb-3 [&>blockquote]:border-l-4 [&>blockquote]:border-corporate-teal [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4"
+                  dangerouslySetInnerHTML={{ __html: resource.synopsis || resource.details?.synopsis }}
+                />
               ) : (
                 <p className="text-sm text-slate-400 italic">No synopsis available.</p>
               )}
               
-              {resource.author && (
+              {(resource.author || resource.details?.author) && (
                 <div className="mt-4 pt-4 border-t border-slate-200">
-                  <p className="text-xs text-slate-500 font-medium">Author: {resource.author}</p>
+                  <p className="text-xs text-slate-500 font-medium">Author: {resource.author || resource.details?.author}</p>
                 </div>
               )}
             </div>
 
             {/* PDF Viewer (if URL exists) */}
-            {url ? (
+            {url && (
               <div className="flex-1 bg-slate-100 rounded-lg overflow-hidden relative min-h-[300px]">
                  <iframe 
                    src={url} 
@@ -164,10 +165,6 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
                       Open Full PDF
                     </a>
                  </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                <p className="text-sm text-slate-400">No PDF attached to this resource.</p>
               </div>
             )}
           </div>

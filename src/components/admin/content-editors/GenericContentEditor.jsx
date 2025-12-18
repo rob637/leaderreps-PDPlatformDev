@@ -193,6 +193,20 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
             />
           </div>
 
+          {/* Special Case: Author for Read & Rep (Moved up for better UX) */}
+          {type === CONTENT_TYPES.READ_REP && (
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
+              <input
+                type="text"
+                value={formData.details?.author || ''}
+                onChange={(e) => handleDetailsUpdate('author', e.target.value)}
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g. James Clear"
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select

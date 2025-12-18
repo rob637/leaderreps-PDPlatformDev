@@ -34,25 +34,47 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
     setGenerating(true);
     try {
       const prompt = `
-        Write a professional, engaging synopsis for the book "${details.title || 'Unknown Title'}" by ${details.author || 'Unknown Author'}.
+        Write a comprehensive, deep-dive executive synopsis for the book "${details.title || 'Unknown Title'}" by ${details.author || 'Unknown Author'}.
         
-        Target Audience: Executive Leaders and Managers.
+        Target Audience: Executive Leaders and Managers who need deep insights without reading the full book.
+        Length: Approximately 1500-2000 words (equivalent to 2-3 pages).
+        Tone: Professional, insightful, authoritative, and actionable.
         
         Formatting Requirements:
         - Use HTML tags for formatting (no markdown).
-        - Use <h3> for section headings.
+        - Use <h3> for main section headings.
+        - Use <h4> for sub-headings.
         - Use <strong> for bold text.
         - Use <ul> and <li> for lists.
         - Use <p> for paragraphs.
+        - Use <blockquote> for key quotes.
         
         Structure:
-        1. <h3>Executive Summary</h3>: A compelling hook and overview (2-3 paragraphs).
-        2. <h3>Key Leadership Takeaways</h3>: A bulleted list of 3-5 actionable insights.
-        3. <h3>Why It Matters</h3>: A brief paragraph on why this is relevant for modern leaders.
-        4. <hr/>
-        5. <p style="font-size: 0.8em; color: #666; text-align: center;"><em>AI-Generated Synopsis by LeaderReps</em></p>
+        1. <h3>Executive Summary</h3>: A comprehensive overview of the book's core thesis and value proposition (3-4 paragraphs).
         
-        Make it look professional, clean, and ready to display on a website.
+        2. <h3>The Core Philosophy</h3>: A deep dive into the central argument or philosophy of the book. Explain the "Why" and "What" in detail.
+        
+        3. <h3>Key Concepts & Frameworks</h3>: Break down the 3-5 most important concepts or frameworks presented in the book. For each concept:
+           - Use a <h4> subheading.
+           - Explain the concept thoroughly.
+           - Provide examples or context given in the book.
+        
+        4. <h3>Critical Leadership Insights</h3>:
+           - Discuss specific insights relevant to leadership, management, and organizational culture.
+           - How does this challenge conventional wisdom?
+        
+        5. <h3>Actionable Application</h3>:
+           - <h4>For the Individual Leader</h4>: Specific habits or actions to adopt.
+           - <h4>For the Team/Organization</h4>: How to implement these ideas at scale.
+        
+        6. <h3>Notable Quotes</h3>: 3-5 powerful quotes from the book that capture its essence.
+        
+        7. <h3>Conclusion</h3>: A final wrap-up on why this book matters today.
+        
+        8. <hr/>
+        9. <p style="font-size: 0.8em; color: #666; text-align: center;"><em>Comprehensive Executive Synopsis by LeaderReps AI</em></p>
+        
+        Ensure the content is rich, detailed, and provides high value. Do not be superficial.
       `;
 
       const payload = {
@@ -137,19 +159,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
 
       {type === CONTENT_TYPES.READ_REP && (
         <>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Author
-            </label>
-            <input
-              type="text"
-              name="author"
-              value={details.author || ''}
-              onChange={handleChange}
-              placeholder="e.g. James Clear"
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
+          {/* Author field moved to GenericContentEditor for better visibility */}
 
           {/* AI Prompt Helper */}
           <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-4">
