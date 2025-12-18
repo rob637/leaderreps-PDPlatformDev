@@ -326,6 +326,19 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       // Skip Onboarding items (they are handled specially on Day 1)
       if (item.type === 'onboarding' || item.id.startsWith('onboarding-')) return false;
       
+      // INTELLIGENT COMPLETION CHECK
+      // Check global state for specific onboarding concepts regardless of item ID
+      // This handles the case where legacy items (with different IDs) represent the same concept as the new Onboarding tasks
+      const labelLower = (item.label || item.title || '').toLowerCase();
+      
+      if (labelLower.includes('complete leader profile') && leaderProfileComplete) {
+        return false; 
+      }
+      
+      if (labelLower.includes('complete baseline assessment') && baselineAssessmentComplete) {
+        return false;
+      }
+      
       // Check progress
       const progress = getItemProgress(item.id);
       
@@ -355,7 +368,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     
     // Combine both sources
     return [...explicitCarryOver, ...uniqueIncomplete];
-  }, [currentWeek?.weekNumber, getCarriedOverItems, masterPlan, dailyPlan, getItemProgress, devPlanHook.userState?.weekProgress]);
+  }, [currentWeek?.weekNumber, getCarriedOverItems, masterPlan, dailyPlan, getItemProgress, devPlanHook.userState?.weekProgress, leaderProfileComplete, baselineAssessmentComplete]);
 
   // Calculate progress (MUST be before any early returns)
   const completedCount = useMemo(() => {
@@ -747,7 +760,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
           {/* Skip Button (for carried over items) - ONLY show if no resource button, or if explicitly requested */}
           {/* We hide it by default if there's a resource button to avoid "double icon" confusion, unless user hovers */}
           {isCarriedOver && !isCompleted && (
-            <div className={`relative ${item.resourceId || item.url ? 'opacity-0 group-hover:opacity-100 transition-opacity' : ''}`}>
+            <div className={`relative ${item.resourceId || item.url ? 'invisible group-hover:visible' : ''}`}>
               {showSkipConfirm === item.id ? (
                 <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1 shadow-sm absolute right-0 z-10">
                   <button
