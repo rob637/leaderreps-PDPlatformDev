@@ -192,9 +192,10 @@ const ReadRepDetail = ({ navParams }) => {
                       <BookOpen className="w-5 h-5" />
                       Synopsis & Key Takeaways
                     </h3>
-                    <div className="whitespace-pre-wrap text-blue-800 text-sm leading-relaxed">
-                      {book.details.synopsis}
-                    </div>
+                    <div 
+                      className="text-blue-900 text-sm leading-relaxed prose-sm prose-blue max-w-none [&>h3]:text-blue-800 [&>h3]:font-bold [&>h3]:mt-4 [&>h3]:mb-2 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>p]:mb-3"
+                      dangerouslySetInnerHTML={{ __html: book.details.synopsis }}
+                    />
                   </div>
                 )}
 

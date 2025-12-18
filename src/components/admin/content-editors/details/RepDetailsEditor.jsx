@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { CONTENT_TYPES } from '../../../../services/unifiedContentService';
 import { MEDIA_TYPES } from '../../../../services/mediaService';
 import MediaPicker from '../pickers/MediaPicker';
-import { Database, Bot, Copy, Check } from 'lucide-react';
+import { Database, Bot, Copy, Check, Sparkles, Loader } from 'lucide-react';
+import { useAppServices } from '../../../../services/useAppServices';
 
 const RepDetailsEditor = ({ details, onChange, type }) => {
+  const { callSecureGeminiAPI, GEMINI_MODEL } = useAppServices();
   const [showMediaPicker, setShowMediaPicker] = useState(null); // 'VIDEO' | 'DOCUMENT' | null
   const [copied, setCopied] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -22,16 +25,57 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
     setShowMediaPicker(null);
   };
 
-  const AI_PROMPT = `Please provide a synopsis for the book '[Book Title]' by [Author]. Include:
-1. A brief summary of the book.
-2. Key points or takeaways.
-3. How it is relevant to leadership.
-4. Actionable insights for leaders.`;
+  const handleGenerateSynopsis = async () => {
+    if (!details.title && !details.author) {
+      alert('Please enter a Title or Author first.');
+      return;
+    }
 
-  const copyPrompt = () => {
-    navigator.clipboard.writeText(AI_PROMPT);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setGenerating(true);
+    try {
+      const prompt = `
+        Write a professional, engaging synopsis for the book "${details.title || 'Unknown Title'}" by ${details.author || 'Unknown Author'}.
+        
+        Target Audience: Executive Leaders and Managers.
+        
+        Formatting Requirements:
+        - Use HTML tags for formatting (no markdown).
+        - Use <h3> for section headings.
+        - Use <strong> for bold text.
+        - Use <ul> and <li> for lists.
+        - Use <p> for paragraphs.
+        
+        Structure:
+        1. <h3>Executive Summary</h3>: A compelling hook and overview (2-3 paragraphs).
+        2. <h3>Key Leadership Takeaways</h3>: A bulleted list of 3-5 actionable insights.
+        3. <h3>Why It Matters</h3>: A brief paragraph on why this is relevant for modern leaders.
+        4. <hr/>
+        5. <p style="font-size: 0.8em; color: #666; text-align: center;"><em>AI-Generated Synopsis by LeaderReps</em></p>
+        
+        Make it look professional, clean, and ready to display on a website.
+      `;
+
+      const payload = {
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        model: GEMINI_MODEL,
+      };
+
+      const result = await callSecureGeminiAPI(payload);
+      const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (text) {
+        // Strip markdown code blocks if Gemini adds them
+        const cleanText = text.replace(/```html/g, '').replace(/```/g, '').trim();
+        onChange('synopsis', cleanText);
+      } else {
+        alert('Failed to generate synopsis. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating synopsis:', error);
+      alert('Error generating synopsis: ' + error.message);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   return (
@@ -104,20 +148,29 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
                 <Bot size={18} />
                 <span>AI Synopsis Generator</span>
               </div>
-              <button
-                onClick={copyPrompt}
-                className="flex items-center gap-1 text-xs font-medium bg-white text-indigo-600 px-2 py-1 rounded border border-indigo-200 hover:bg-indigo-50 transition-colors"
-              >
-                {copied ? <Check size={12} /> : <Copy size={12} />}
-                {copied ? 'Copied!' : 'Copy Prompt'}
-              </button>
             </div>
-            <p className="text-xs text-indigo-600 mb-2">
-              Use this prompt with ChatGPT/Claude to generate a consistent synopsis:
+            <p className="text-xs text-indigo-600 mb-3">
+              Generate a professionally formatted synopsis with headings, bold text, and key takeaways.
             </p>
-            <div className="bg-white p-2 rounded border border-indigo-100 text-xs text-gray-600 font-mono whitespace-pre-wrap">
-              {AI_PROMPT}
-            </div>
+            
+            <button
+              type="button"
+              onClick={handleGenerateSynopsis}
+              disabled={generating}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-sm"
+            >
+              {generating ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  Generating Synopsis...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Generate Professional Synopsis
+                </>
+              )}
+            </button>
           </div>
 
           <div>
