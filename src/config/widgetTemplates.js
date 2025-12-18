@@ -50,7 +50,7 @@ export const WIDGET_TEMPLATES = {
                 </div>
                 <div>
                    <h4 className="font-bold text-amber-900">You have {missedDays.length} missed days</h4>
-                   <p className="text-xs text-amber-700">Catch up to stay on track with your cohort.</p>
+                   <p className="text-xs text-amber-700">Log in each day to gain better leadership skills and keep up with your cohort.</p>
                 </div>
              </div>
              <button 
