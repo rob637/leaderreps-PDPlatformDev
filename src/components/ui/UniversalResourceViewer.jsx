@@ -150,7 +150,7 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
             {url && (
               <div className="flex-1 bg-slate-100 rounded-lg overflow-hidden relative min-h-[300px]">
                  <iframe 
-                   src={url} 
+                   src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
                    className="w-full h-full" 
                    title={title}
                  />
@@ -189,67 +189,29 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
           );
         }
 
-        // 1. Check for Office Docs (docx, pptx, xlsx) -> MUST Use Google Docs Viewer
-        // We check this BEFORE the generic 'alt=media' check to prevent downloading
-        const isOfficeDoc = url && url.toLowerCase().match(/\.(docx|doc|pptx|ppt|xlsx|xls)/);
-        
-        if (isOfficeDoc) {
-            const encodedUrl = url ? encodeURIComponent(url) : '';
-            const viewerUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
-            
+        // Check for Images
+        const isImage = url && url.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)/);
+        if (isImage) {
             return (
-              <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative">
-                 <iframe 
-                   src={viewerUrl} 
-                   className="w-full h-full" 
-                   title={title} 
-                 />
-                 {/* Fallback Link Overlay */}
-                 <div className="absolute bottom-4 right-4">
-                    <a 
-                      href={url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
-                    >
-                      <Download className="w-3 h-3" />
-                      Download / Open Directly
-                    </a>
-                 </div>
-              </div>
+                <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center bg-black/5">
+                    <img src={url} alt={title} className="max-w-full max-h-full object-contain" />
+                    <div className="absolute bottom-4 right-4">
+                        <a 
+                          href={url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Open Original
+                        </a>
+                    </div>
+                </div>
             );
         }
 
-        // 2. For PDFs from Firebase Storage or other sources - try native browser PDF viewer
-        // Modern browsers can render PDFs directly in iframes
-        // Note: 'alt=media' is common for Firebase Storage, but we've already handled Office docs above
-        const isPDF = url && (url.toLowerCase().includes('.pdf') || url.includes('alt=media'));
-        
-        if (isPDF) {
-          return (
-            <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative">
-               <iframe 
-                 src={url} 
-                 className="w-full h-full" 
-                 title={title}
-               />
-               {/* Fallback Link Overlay */}
-               <div className="absolute bottom-4 right-4">
-                  <a 
-                    href={url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
-                  >
-                    <Download className="w-3 h-3" />
-                    {url.toLowerCase().includes('.pdf') ? 'Open Full PDF' : 'Download / Open Directly'}
-                  </a>
-               </div>
-            </div>
-          );
-        }
-
-        // Fallback to Google Viewer for anything else (unknown types)
+        // For Office Docs, PDFs, and generic files -> Use Google Docs Viewer
+        // This ensures "in-app" viewing and avoids direct downloads or new tabs
         const encodedUrl = url ? encodeURIComponent(url) : '';
         const viewerUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
         
@@ -260,7 +222,7 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
                className="w-full h-full" 
                title={title} 
              />
-             {/* Fallback Link Overlay (in case viewer fails) */}
+             {/* Fallback Link Overlay */}
              <div className="absolute bottom-4 right-4">
                 <a 
                   href={url} 

@@ -258,7 +258,9 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     const currentWeekNum = currentWeek.weekNumber;
     const prevWeekNum = currentWeekNum - 1;
     
-    if (prevWeekNum < 1) {
+    // Allow looking back to Week 0 and negative weeks (Prep Phase)
+    // We only stop if we're way back before any possible content (e.g. before Prep)
+    if (prevWeekNum < -5) {
       return explicitCarryOver;
     }
     
