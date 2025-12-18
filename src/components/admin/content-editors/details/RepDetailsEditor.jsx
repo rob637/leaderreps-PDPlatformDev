@@ -56,19 +56,29 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
       `;
 
       const payload = {
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        model: GEMINI_MODEL,
+        prompt: prompt,
+        model: GEMINI_MODEL || 'gemini-2.0-flash',
       };
 
       const result = await callSecureGeminiAPI(payload);
-      const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      // Handle both direct text response (if proxy simplifies it) or standard Gemini response
+      let text = '';
+      if (result?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        text = result.candidates[0].content.parts[0].text;
+      } else if (result?.text) {
+        text = result.text;
+      } else if (typeof result === 'string') {
+        text = result;
+      }
 
       if (text) {
         // Strip markdown code blocks if Gemini adds them
         const cleanText = text.replace(/```html/g, '').replace(/```/g, '').trim();
         onChange('synopsis', cleanText);
       } else {
-        alert('Failed to generate synopsis. Please try again.');
+        console.error('Unexpected API response:', result);
+        alert('Failed to generate synopsis. Unexpected response format.');
       }
     } catch (error) {
       console.error('Error generating synopsis:', error);
