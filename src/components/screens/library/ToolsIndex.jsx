@@ -88,13 +88,13 @@ const ToolsIndex = () => {
       result = result.filter(t => t.metadata?.toolType === typeFilter);
     }
     
-    // Access Control Filter: Only show unlocked content (Progressive Disclosure)
-    result = result.filter(t => {
-      if (t.isHiddenUntilUnlocked) {
-        return isContentUnlocked(t);
-      }
-      return true;
-    });
+    // Access Control Filter REMOVED to show locked content
+    // result = result.filter(t => {
+    //   if (t.isHiddenUntilUnlocked) {
+    //     return isContentUnlocked(t);
+    //   }
+    //   return true;
+    // });
 
     return result;
   }, [tools, searchQuery, selectedSkills, typeFilter, isContentUnlocked]);
@@ -271,7 +271,7 @@ const ToolsIndex = () => {
                       
                       {/* Action */}
                       <a 
-                        href={isUnlocked ? tool.metadata?.url : undefined} 
+                        href={isUnlocked ? (tool.metadata?.url || tool.url || tool.fileUrl) : undefined} 
                         target={isUnlocked ? "_blank" : undefined}
                         rel={isUnlocked ? "noopener noreferrer" : undefined}
                         onClick={(e) => {

@@ -72,11 +72,7 @@ export const TierBadge = ({ tier, size = 'sm' }) => {
     );
   }
 
-  return (
-    <span className={`inline-flex items-center gap-1 font-bold rounded-full bg-slate-100 text-slate-600 ${sizeClasses}`}>
-      Free
-    </span>
-  );
+  return null;
 };
 
 // ============================================

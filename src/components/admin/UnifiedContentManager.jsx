@@ -106,13 +106,7 @@ const UnifiedContentManager = () => {
           <h1 className="text-2xl font-bold text-gray-900">Unified Content Library</h1>
           <p className="text-sm text-gray-500">Manage Programs, Workouts, and Resources</p>
         </div>
-        <button 
-          onClick={handleAddNew}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus size={20} />
-          Add {TABS.find(t => t.id === activeTab)?.label.slice(0, -1)}
-        </button>
+        {/* Add Button Removed - Content is pushed from Content Wrappers */}
       </div>
 
       {/* Main Layout */}
