@@ -851,13 +851,28 @@ export const useDailyPlan = () => {
     }
 
     // Calculate Missed Days (only for START phase - cohort-based)
+    // UPDATED LOGIC (12/18/25):
+    // Users are only "behind" if they have incomplete required actions from PREVIOUS weeks.
+    // Within the current week, they have the full week to complete actions.
     let missed = [];
     if (currentPhase.trackMissedDays) {
+      // Determine current week number based on current day
+      // Note: dbDayNumber is the current day (e.g. 16)
+      // We need to find the week number for this day.
+      const currentDayObj = dailyPlan.find(d => d.dayNumber === dbDayNumber);
+      const currentWeekNum = currentDayObj?.weekNumber || Math.ceil((dbDayNumber - 14) / 7);
+
       missed = dailyPlan
         .filter(d => {
           // Only track missed days within the current phase
           const dayPhase = getPhaseFromDbDay(d.dayNumber);
-          return dayPhase.id === currentPhase.id && d.dayNumber < dbDayNumber;
+          
+          // Only look at days from PREVIOUS weeks
+          // If d.weekNumber < currentWeekNum, it's a past week.
+          // If d.weekNumber === currentWeekNum, it's the current week (not missed yet).
+          const isPastWeek = d.weekNumber < currentWeekNum;
+          
+          return dayPhase.id === currentPhase.id && isPastWeek;
         })
         .filter(d => {
           // 1. Check legacy dailyProgress (fast check)
