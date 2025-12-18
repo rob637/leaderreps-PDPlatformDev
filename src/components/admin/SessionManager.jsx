@@ -688,16 +688,16 @@ const SessionManager = () => {
 
       {/* Session List View */}
       {viewMode === 'list' && !editingSession && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-200">
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Session</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase rounded-tl-xl">Session</th>
                 <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Date & Time</th>
                 <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Type</th>
                 <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Attendees</th>
                 <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Status</th>
-                <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 uppercase">Actions</th>
+                <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 uppercase rounded-tr-xl">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
