@@ -26,9 +26,9 @@ const TABS = [
   { id: CONTENT_TYPES.PROGRAM, label: 'Programs', icon: Layout },
   { id: CONTENT_TYPES.WORKOUT, label: 'Workouts', icon: Dumbbell },
   { id: CONTENT_TYPES.SKILL, label: 'Skills', icon: Zap },
-  { id: CONTENT_TYPES.READ_REP, label: 'Read & Reps', icon: BookOpen },
-  { id: CONTENT_TYPES.VIDEO, label: 'Videos', icon: Film },
-  { id: CONTENT_TYPES.TOOL, label: 'Tools', icon: Wrench },
+  // { id: CONTENT_TYPES.READ_REP, label: 'Read & Reps', icon: BookOpen },
+  // { id: CONTENT_TYPES.VIDEO, label: 'Videos', icon: Film },
+  // { id: CONTENT_TYPES.TOOL, label: 'Tools', icon: Wrench },
 ];
 
 const UnifiedContentManager = () => {
