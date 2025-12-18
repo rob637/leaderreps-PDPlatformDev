@@ -15,7 +15,8 @@ import {
   ExternalLink,
   Edit,
   X,
-  RefreshCw
+  RefreshCw,
+  CheckCircle
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -27,10 +28,12 @@ import {
   updateAssetReferences,
   MEDIA_TYPES 
 } from '../../services/mediaService';
+import { getUnifiedContent } from '../../services/unifiedContentService';
 
 const MediaLibrary = () => {
   const { db, storage } = useAppServices();
   const [assets, setAssets] = useState([]);
+  const [wrappedUrlMap, setWrappedUrlMap] = useState(new Map()); // Map<url, contentItem>
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -48,8 +51,35 @@ const MediaLibrary = () => {
   const loadAssets = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getMediaAssets(db, filterType);
-      setAssets(data);
+      const [assetsData, contentData] = await Promise.all([
+        getMediaAssets(db, filterType),
+        getUnifiedContent(db, 'ALL') // Fetch all content to check for wrappers
+      ]);
+      
+      setAssets(assetsData);
+
+      // Build map of wrapped URLs
+      const urlMap = new Map();
+      contentData.forEach(item => {
+        const details = item.details || {};
+        // Check all possible URL fields
+        const urls = [
+          details.externalUrl,
+          details.url,
+          details.videoUrl,
+          details.pdfUrl,
+          details.coverUrl
+        ].filter(Boolean);
+
+        urls.forEach(url => {
+          // Store the first wrapper found for this URL
+          if (!urlMap.has(url)) {
+            urlMap.set(url, item);
+          }
+        });
+      });
+      setWrappedUrlMap(urlMap);
+
     } catch (error) {
       console.error('Error loading assets:', error);
     } finally {
@@ -208,6 +238,19 @@ const MediaLibrary = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const renderWrappedIndicator = (asset) => {
+    const wrapper = wrappedUrlMap.get(asset.url);
+    if (!wrapper) return null;
+
+    return (
+      <div className="absolute top-2 right-2 z-10" title={`Wrapped by: ${wrapper.title}`}>
+        <div className="bg-green-500 text-white p-1 rounded-full shadow-sm">
+          <CheckCircle size={14} />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
@@ -339,6 +382,8 @@ const MediaLibrary = () => {
                     <FileText size={48} className="text-gray-300" />
                   )}
                   
+                  {renderWrappedIndicator(asset)}
+
                   {/* Overlay Actions */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button 
@@ -396,10 +441,15 @@ const MediaLibrary = () => {
                   <tr key={asset.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded flex items-center justify-center">
+                        <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded flex items-center justify-center relative">
                           {asset.type === MEDIA_TYPES.IMAGE ? (
                             <img src={asset.url} alt="" className="h-10 w-10 rounded object-cover" />
                           ) : getIconForType(asset.type)}
+                          {wrappedUrlMap.has(asset.url) && (
+                            <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 border border-white" title="Wrapped">
+                              <CheckCircle size={10} />
+                            </div>
+                          )}
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{asset.title}</div>
