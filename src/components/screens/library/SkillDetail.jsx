@@ -7,7 +7,7 @@ import { PageLayout } from '../../ui/PageLayout.jsx';
 import { Loader, PlayCircle, Video, BookOpen, FileText, Zap, ArrowRight, Lock } from 'lucide-react';
 import { Card, Button, Badge } from '../../screens/developmentplan/DevPlanComponents.jsx';
 
-const SkillDetail = ({ navParams }) => {
+const SkillDetail = (props) => {
   const { db, navigate } = useAppServices();
   const { isContentUnlocked } = useContentAccess();
   const [skill, setSkill] = useState(null);
@@ -18,7 +18,9 @@ const SkillDetail = ({ navParams }) => {
     tools: []
   });
   const [loading, setLoading] = useState(true);
-  const skillId = navParams?.id;
+  
+  // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
+  const skillId = props.id || props.navParams?.id;
 
   useEffect(() => {
     const fetchSkillData = async () => {

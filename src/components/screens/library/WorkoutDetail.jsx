@@ -7,14 +7,16 @@ import { PageLayout } from '../../ui/PageLayout.jsx';
 import { Loader, Dumbbell, Clock, BarChart, Play, CheckCircle, ChevronDown, ChevronUp, Zap, Lock } from 'lucide-react';
 import { Button } from '../../screens/developmentplan/DevPlanComponents.jsx';
 
-const WorkoutDetail = ({ navParams }) => {
+const WorkoutDetail = (props) => {
   const { db, navigate } = useAppServices();
   const { isContentUnlocked } = useContentAccess();
   const [workout, setWorkout] = useState(null);
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedExercise, setExpandedExercise] = useState(null);
-  const workoutId = navParams?.id;
+  
+  // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
+  const workoutId = props.id || props.navParams?.id;
 
   useEffect(() => {
     const fetchWorkoutData = async () => {

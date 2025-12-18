@@ -27,6 +27,7 @@ import {
 } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { buildModulePath } from '../../services/pathUtils';
+import PrepStatusModal from './PrepStatusModal';
 
 const UserManagement = () => {
   const { db } = useAppServices();
@@ -47,6 +48,7 @@ const UserManagement = () => {
     customMessage: "You're invited to join the LeaderReps Arena!"
   });
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [selectedUserForPrep, setSelectedUserForPrep] = useState(null);
   const [sendingInvite, setSendingInvite] = useState(false);
 
   // Cohort Form State
@@ -527,16 +529,24 @@ const UserManagement = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleToggleUserStatus(user.id, user.disabled)}
-                          className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
-                            user.disabled 
-                              ? 'bg-green-50 text-green-600 hover:bg-green-100' 
-                              : 'bg-red-50 text-red-600 hover:bg-red-100'
-                          }`}
-                        >
-                          {user.disabled ? 'Enable' : 'Disable'}
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setSelectedUserForPrep(user)}
+                            className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"
+                          >
+                            Prep Status
+                          </button>
+                          <button
+                            onClick={() => handleToggleUserStatus(user.id, user.disabled)}
+                            className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
+                              user.disabled 
+                                ? 'bg-green-50 text-green-600 hover:bg-green-100' 
+                                : 'bg-red-50 text-red-600 hover:bg-red-100'
+                            }`}
+                          >
+                            {user.disabled ? 'Enable' : 'Disable'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -922,6 +932,14 @@ const UserManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Prep Status Modal */}
+      <PrepStatusModal
+        isOpen={!!selectedUserForPrep}
+        onClose={() => setSelectedUserForPrep(null)}
+        userId={selectedUserForPrep?.id}
+        userName={selectedUserForPrep?.displayName || selectedUserForPrep?.email}
+      />
     </div>
   );
 };

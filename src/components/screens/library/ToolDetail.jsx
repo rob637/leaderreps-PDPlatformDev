@@ -8,12 +8,14 @@ import { Loader, Wrench, ExternalLink, Lock, FileText, Video, Link as LinkIcon }
 import { Button } from '../../screens/developmentplan/DevPlanComponents.jsx';
 import { SkillTag, TierBadge } from '../../ui/ContentBadges.jsx';
 
-const ToolDetail = ({ navParams }) => {
+const ToolDetail = (props) => {
   const { db, navigate } = useAppServices();
   const { isContentUnlocked } = useContentAccess();
   const [tool, setTool] = useState(null);
   const [loading, setLoading] = useState(true);
-  const toolId = navParams?.id;
+  
+  // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
+  const toolId = props.id || props.navParams?.id;
 
   useEffect(() => {
     const fetchTool = async () => {

@@ -10,7 +10,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Target, TrendingUp, Calendar, Zap, Crosshair, Flag, ClipboardList, CheckCircle, AlertCircle, Eye, ArrowRight } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import BaselineAssessment from './developmentplan/BaselineAssessment';
+import LeaderProfileForm from '../profile/LeaderProfileForm';
 import PlanTracker from './developmentplan/PlanTracker';
 import ProgressScan from './developmentplan/ProgressScan';
 import DetailedPlanView from './developmentplan/DetailedPlanView';
@@ -103,8 +106,16 @@ export default function DevelopmentPlan(props) {
     metadata: globalMetadata,
     navigate
   } = services || {};
+
+  // Hooks for Phase & Profile Checks
+  const { daysFromStart } = useDailyPlan();
+  const { profile } = useLeaderProfile();
   
-    // Width debugging - AGGRESSIVE LOGGING
+  const isStartPhase = daysFromStart >= 0;
+  // Check profile completion (safely)
+  const isLeaderProfileComplete = profile?.isComplete;
+  
+  // Width debugging - AGGRESSIVE LOGGING
   React.useEffect(() => {
     console.log('🔍 [DEVPLAN] Width debug useEffect FIRED');
     const container = document.querySelector('.page-corporate');
@@ -205,6 +216,7 @@ export default function DevelopmentPlan(props) {
   const [isSaving, setIsSaving] = useState(false); // Used to detect in-progress save
   const [error, setError] = useState(null);
   const [justCompletedBaseline, setJustCompletedBaseline] = useState(false); // Prevent returning to baseline after save
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // ===== MOVED HOOKS (Fix Conditional Hooks) =====
   // (Removed unused hooks)
@@ -594,6 +606,65 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       {/* Dashboard / Widget View */}
       {view === 'dashboard' && (
         <div className="space-y-8">
+          
+          {/* Required Setup Banner (Carry Over from Prep Phase) */}
+          {isStartPhase && (!isLeaderProfileComplete || !hasCurrentPlan) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 shadow-sm animate-in fade-in slide-in-from-top-4">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-amber-100 rounded-full text-amber-600">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-amber-900 mb-2">
+                    Complete Your Setup
+                  </h3>
+                  <p className="text-amber-800 mb-4">
+                    To get the most out of your Development Plan, please complete these required steps from the Prep Phase.
+                  </p>
+                  <div className="space-y-3">
+                    {!isLeaderProfileComplete && (
+                      <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-amber-100">
+                        <span className="font-medium text-slate-700">Leader Profile</span>
+                        <Button 
+                          size="sm" 
+                          onClick={() => setShowProfileModal(true)}
+                          className="bg-amber-600 hover:bg-amber-700 text-white border-transparent"
+                        >
+                          Complete Profile
+                        </Button>
+                      </div>
+                    )}
+                    {!hasCurrentPlan && (
+                      <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-amber-100">
+                        <span className="font-medium text-slate-700">Baseline Assessment</span>
+                        <Button 
+                          size="sm" 
+                          onClick={() => setView('baseline')}
+                          className="bg-amber-600 hover:bg-amber-700 text-white border-transparent"
+                        >
+                          Start Assessment
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Profile Modal */}
+          {showProfileModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl my-8 overflow-hidden">
+                <LeaderProfileForm 
+                  onComplete={() => setShowProfileModal(false)} 
+                  onClose={() => setShowProfileModal(false)}
+                  isModal={true}
+                />
+              </div>
+            </div>
+          )}
+
           {/* 1. Baseline Widget (Always show if enabled - handles its own completed state) */}
           {isFeatureEnabled('baseline-assessment') && (
              <WidgetRenderer widgetId="baseline-assessment" scope={widgetScope}>

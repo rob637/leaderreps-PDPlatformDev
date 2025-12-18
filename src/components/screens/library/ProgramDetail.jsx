@@ -7,13 +7,15 @@ import { PageLayout } from '../../ui/PageLayout.jsx';
 import { Loader, PlayCircle, CheckCircle, Clock, BarChart, ArrowRight, Lock } from 'lucide-react';
 import { Card, Button, Badge } from '../../screens/developmentplan/DevPlanComponents.jsx';
 
-const ProgramDetail = ({ navParams }) => {
+const ProgramDetail = (props) => {
   const { db, navigate } = useAppServices();
   const { isContentUnlocked } = useContentAccess();
   const [program, setProgram] = useState(null);
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const programId = navParams?.id;
+  
+  // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
+  const programId = props.id || props.navParams?.id;
 
   useEffect(() => {
     const fetchProgramData = async () => {

@@ -13,14 +13,15 @@ const COMPLEXITY_MAP = {
   High:   { label: 'Advanced',     color: 'text-red-600',   icon: Target, bg: 'bg-red-50' },
 };
 
-const ReadRepDetail = ({ navParams }) => {
+const ReadRepDetail = (props) => {
   const { db, navigate } = useAppServices();
   const { isContentUnlocked } = useContentAccess();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('brief'); // brief, flyer, action
 
-  const bookId = navParams?.id;
+  // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
+  const bookId = props.id || props.navParams?.id;
 
   useEffect(() => {
     const fetchBook = async () => {
