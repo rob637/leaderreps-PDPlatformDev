@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   Shield, Target, ArrowRight, Rocket, Calendar, Quote, Sparkles, 
   CheckCircle2, BookOpen, Video, Sunrise, Moon, LayoutDashboard,
@@ -7,6 +7,7 @@ import {
 import { useDailyPlan, ONBOARDING_MODULES } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
 import { useAppServices } from '../../services/useAppServices';
+import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 
 /**
  * PrepWelcomeBanner - Progressive Onboarding for Prep Phase
@@ -25,6 +26,28 @@ const PrepWelcomeBanner = () => {
   const { user } = useAppServices();
   const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay, currentDayData, userState } = useDailyPlan();
   const { getItemProgress } = useActionProgress();
+  const { isComplete: leaderProfileComplete } = useLeaderProfile();
+
+  // Baseline Assessment completion tracking
+  const baselineAssessmentComplete = useMemo(() => {
+    const assessmentHistory = userState?.assessmentHistory;
+    return assessmentHistory && assessmentHistory.length > 0;
+  }, [userState?.assessmentHistory]);
+
+  // Normalize daily plan actions to match ThisWeeksActionsWidget IDs
+  // This ensures we check the exact same IDs that are being saved
+  const normalizeDailyActions = (actions, dayId) => {
+    return (actions || []).map((action, idx) => {
+      const label = action.label || 'Daily Action';
+      // Same fallback ID generation as ThisWeeksActionsWidget
+      const fallbackId = `daily-${dayId}-${label.toLowerCase().replace(/\s+/g, '-').substring(0, 20)}-${idx}`;
+      
+      return {
+        ...action,
+        id: action.id || fallbackId,
+      };
+    });
+  };
   
   // Debug logging
   console.log('[PrepWelcomeBanner] Rendering with:', {
@@ -67,7 +90,9 @@ const PrepWelcomeBanner = () => {
   const clampedJourneyDay = Math.min(journeyDay || 1, phaseDayNumber || 14);
   
   // Check for incomplete required actions
-  const actions = currentDayData?.actions || [];
+  const actions = useMemo(() => {
+    return normalizeDailyActions(currentDayData?.actions, currentDayData?.id);
+  }, [currentDayData]);
   
   const incompleteRequiredActions = actions.filter(action => {
     // An action is required if it's not explicitly optional AND not explicitly marked as not required.
@@ -76,6 +101,15 @@ const PrepWelcomeBanner = () => {
     
     // If not required, skip it immediately
     if (!isRequired) return false;
+
+    // Special checks for Profile and Assessment (auto-complete logic)
+    // This matches ThisWeeksActionsWidget logic for onboarding tasks
+    if (action.id === 'onboarding-leader-profile' || action.label?.toLowerCase().includes('leader profile')) {
+        if (leaderProfileComplete) return false;
+    }
+    if (action.id === 'onboarding-baseline-assessment' || action.label?.toLowerCase().includes('baseline assessment')) {
+        if (baselineAssessmentComplete) return false;
+    }
     
     // Check completion status using the unified action progress system
     // This handles both legacy week-based and new day-based completions
