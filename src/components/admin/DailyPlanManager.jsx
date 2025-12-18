@@ -98,7 +98,7 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
           text-xs font-bold px-2 py-1 rounded-full
           ${day.weekNumber < 1 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}
         `}>
-          Day {displayDayNumber || day.dayNumber}
+          {day.weekNumber < 1 ? 'Login' : 'Day'} {displayDayNumber || day.dayNumber}
         </span>
         <div className="flex items-center gap-1">
           {weeklyResourceCount > 0 && (
@@ -287,7 +287,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
       {/* Header */}
       <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
         <div>
-          <h3 className="font-bold text-corporate-navy">Edit Day {displayDayNumber || formData.dayNumber}</h3>
+          <h3 className="font-bold text-corporate-navy">Edit {formData.weekNumber < 1 ? 'Login' : 'Day'} {displayDayNumber || formData.dayNumber}</h3>
           <p className="text-xs text-slate-500">Week {formData.weekNumber}</p>
         </div>
         <div className="flex gap-2">
