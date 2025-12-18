@@ -323,6 +323,9 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       // Skip if already in explicit carry over
       if (explicitIds.has(item.id)) return false;
       
+      // Skip Onboarding items (they are handled specially on Day 1)
+      if (item.type === 'onboarding' || item.id.startsWith('onboarding-')) return false;
+      
       // Check progress
       const progress = getItemProgress(item.id);
       
@@ -741,20 +744,21 @@ const ThisWeeksActionsWidget = ({ scope }) => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1 -mr-1">
-          {/* Skip Button (for carried over items) */}
+          {/* Skip Button (for carried over items) - ONLY show if no resource button, or if explicitly requested */}
+          {/* We hide it by default if there's a resource button to avoid "double icon" confusion, unless user hovers */}
           {isCarriedOver && !isCompleted && (
-            <div className="relative">
+            <div className={`relative ${item.resourceId || item.url ? 'opacity-0 group-hover:opacity-100 transition-opacity' : ''}`}>
               {showSkipConfirm === item.id ? (
-                <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
+                <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1 shadow-sm absolute right-0 z-10">
                   <button
                     onClick={() => handleSkip(item)}
-                    className="px-3 py-2 min-h-[36px] text-xs text-red-600 hover:bg-red-50 rounded touch-manipulation active:scale-95"
+                    className="px-3 py-2 min-h-[36px] text-xs text-red-600 hover:bg-red-50 rounded touch-manipulation active:scale-95 whitespace-nowrap"
                   >
                     Skip
                   </button>
                   <button
                     onClick={() => setShowSkipConfirm(null)}
-                    className="px-3 py-2 min-h-[36px] text-xs text-slate-500 hover:bg-slate-50 rounded touch-manipulation active:scale-95"
+                    className="px-3 py-2 min-h-[36px] text-xs text-slate-500 hover:bg-slate-50 rounded touch-manipulation active:scale-95 whitespace-nowrap"
                   >
                     Cancel
                   </button>
@@ -765,7 +769,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
                     e.stopPropagation();
                     setShowSkipConfirm(item.id);
                   }}
-                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all touch-manipulation active:scale-95"
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all touch-manipulation active:scale-95"
                   title="Skip this item"
                 >
                   <SkipForward className="w-5 h-5" />
