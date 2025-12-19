@@ -537,15 +537,45 @@ export const useDailyPlan = () => {
   const journeyDay = useMemo(() => {
     // Get the visit log from user state
     const visitLog = userState.prepVisitLog || [];
-    const todayStr = simulatedNow.toISOString().split('T')[0];
     
-    // Calculate count of visited days
+    // 1. Calculate Real Journey Day (based on real time)
+    // We use real time as the baseline because visitLog reflects real logins
+    const realNow = new Date();
+    const realNowStr = realNow.toISOString().split('T')[0];
+    
     let count = visitLog.length;
     
-    // If today is not in the log yet (but we are here), add 1 to the count
+    // If today (real) is not in the log yet, add 1 to the count
     // This ensures the UI reflects the current visit immediately
-    if (!visitLog.includes(todayStr)) {
+    if (!visitLog.includes(realNowStr)) {
       count += 1;
+    }
+
+    // 2. TIME TRAVEL ADJUSTMENT
+    // If time travel is active, we simulate that the user has visited every day
+    // between real-now and simulated-now. This allows admins to test Prep Phase progression.
+    if (timeOffset !== 0) {
+        const simulatedDate = new Date(realNow.getTime() + timeOffset);
+        
+        // Normalize to midnight to count calendar days
+        const realMidnight = new Date(realNow); 
+        realMidnight.setHours(0,0,0,0);
+        
+        const simMidnight = new Date(simulatedDate); 
+        simMidnight.setHours(0,0,0,0);
+        
+        const diffMs = simMidnight.getTime() - realMidnight.getTime();
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+        
+        if (diffDays > 0) {
+            count += diffDays;
+            console.log('[useDailyPlan] Time Travel Active: Added simulated visits', { 
+                diffDays, 
+                newCount: count,
+                realNow: realNowStr,
+                simulated: simulatedDate.toISOString().split('T')[0]
+            });
+        }
     }
     
     // Default to 1 if no visits tracked yet
@@ -553,13 +583,14 @@ export const useDailyPlan = () => {
     
     console.log('[useDailyPlan] journeyDay calculation (Sequential):', {
       visitLogLength: visitLog.length,
-      todayStr,
-      isTodayLogged: visitLog.includes(todayStr),
+      realNowStr,
+      isTodayLogged: visitLog.includes(realNowStr),
+      timeOffset,
       calculatedJourneyDay
     });
     
     return calculatedJourneyDay;
-  }, [userState.prepVisitLog, simulatedNow]);
+  }, [userState.prepVisitLog, timeOffset]);
 
   // 3. Calculate Days From Start (can be negative for Pre-Start)
   const daysFromStart = useMemo(() => {
