@@ -74,43 +74,70 @@ const ProgramDetail = (props) => {
     fetchProgramData();
   }, [db, programId]);
 
-  const handleModuleClick = (module) => {
+  const handleModuleClick = async (module) => {
+    // Helper to resolve URL from various fields
+    const resolveUrl = (m) => m.url || m.metadata?.url || m.fileUrl || m.metadata?.externalUrl || m.videoUrl;
+
+    // If URL is missing in the embedded module, try to fetch the latest doc
+    let activeModule = module;
+    let resourceUrl = resolveUrl(module);
+
+    if (!resourceUrl && module.id) {
+      try {
+        const docRef = doc(db, UNIFIED_COLLECTION, module.id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const freshData = { id: docSnap.id, ...docSnap.data() };
+          resourceUrl = resolveUrl(freshData);
+          if (resourceUrl) {
+            activeModule = { ...freshData, url: resourceUrl };
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching fresh module data:", err);
+      }
+    }
+
     // Navigate based on type
-    switch (module.type) {
+    switch (activeModule.type) {
       case CONTENT_TYPES.WORKOUT:
-        navigate('workout-detail', { id: module.id, title: module.title });
+        navigate('workout-detail', { id: activeModule.id, title: activeModule.title });
         break;
       case CONTENT_TYPES.READ_REP:
-        navigate('read-rep-detail', { id: module.id });
+        navigate('read-rep-detail', { id: activeModule.id });
         break;
       case CONTENT_TYPES.TOOL:
         // Open tool in viewer if possible, otherwise navigate
-        if (module.url || module.metadata?.url) {
+        if (resourceUrl) {
              setSelectedResource({
-                 ...module,
-                 url: module.url || module.metadata?.url
+                 ...activeModule,
+                 url: resourceUrl
              });
         } else {
-            navigate('tool-detail', { id: module.id });
+            navigate('tool-detail', { id: activeModule.id });
         }
         break;
       case CONTENT_TYPES.VIDEO:
-        if (module.url) {
-            setSelectedResource(module);
+        if (resourceUrl) {
+            setSelectedResource({ ...activeModule, url: resourceUrl });
         } else {
-            console.log("Navigate to video:", module.id);
+            console.log("Video URL not found for:", activeModule.id);
+            alert("This video content is currently unavailable.");
         }
         break;
       case CONTENT_TYPES.DOCUMENT:
-        if (module.url || module.metadata?.url || module.fileUrl) {
+        if (resourceUrl) {
              setSelectedResource({
-                 ...module,
-                 url: module.url || module.metadata?.url || module.fileUrl
+                 ...activeModule,
+                 url: resourceUrl
              });
+        } else {
+            console.log("Document URL not found for:", activeModule.id);
+            alert("This document is currently unavailable.");
         }
         break;
       default:
-        console.warn("Unknown module type:", module.type);
+        console.warn("Unknown module type:", activeModule.type);
     }
   };
 
