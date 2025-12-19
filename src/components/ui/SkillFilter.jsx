@@ -2,7 +2,8 @@
 // Skill-based filtering component for content libraries
 
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { UNIFIED_COLLECTION } from '../../services/unifiedContentService';
 import { Target, X, ChevronDown } from 'lucide-react';
 
 // Pillar colors (matching SkillsIndex)
@@ -20,13 +21,30 @@ const SkillFilter = ({ db, selectedSkills = [], onSkillsChange, compact = false 
   useEffect(() => {
     const fetchSkills = async () => {
       try {
-        const snapshot = await getDocs(collection(db, 'skills'));
-        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Fetch from Unified Content Library (New System)
+        const q = query(collection(db, UNIFIED_COLLECTION), where('type', '==', 'SKILL'));
+        const snapshot = await getDocs(q);
+        
+        const items = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return { 
+            id: doc.id, 
+            name: data.title, 
+            pillar: data.details?.domain || 'Uncategorized',
+            ...data 
+          };
+        });
+
         // Sort by pillar then name
         items.sort((a, b) => {
           const pillarOrder = ['Lead Self', 'Lead Work', 'Lead People'];
           const pillarDiff = pillarOrder.indexOf(a.pillar) - pillarOrder.indexOf(b.pillar);
-          if (pillarDiff !== 0) return pillarDiff;
+          // If not in known pillars, put at end
+          if (pillarDiff !== 0) {
+             if (pillarOrder.indexOf(a.pillar) === -1) return 1;
+             if (pillarOrder.indexOf(b.pillar) === -1) return -1;
+             return pillarDiff;
+          }
           return a.name.localeCompare(b.name);
         });
         setSkills(items);

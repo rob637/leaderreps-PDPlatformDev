@@ -7,12 +7,14 @@ import { PageLayout } from '../../ui/PageLayout.jsx';
 import { Loader, Wrench, ExternalLink, Lock, FileText, Video, Link as LinkIcon } from 'lucide-react';
 import { Button } from '../../screens/developmentplan/DevPlanComponents.jsx';
 import { SkillTag, TierBadge } from '../../ui/ContentBadges.jsx';
+import UniversalResourceViewer from '../../ui/UniversalResourceViewer.jsx';
 
 const ToolDetail = (props) => {
   const { db, navigate } = useAppServices();
   const { isContentUnlocked } = useContentAccess();
   const [tool, setTool] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showViewer, setShowViewer] = useState(false);
   
   // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
   const toolId = props.id || props.navParams?.id;
@@ -104,6 +106,12 @@ const ToolDetail = (props) => {
         { label: tool.title, path: null }
       ]}
     >
+      {showViewer && (
+        <UniversalResourceViewer 
+          resource={{...tool, url: tool.metadata?.url}} 
+          onClose={() => setShowViewer(false)} 
+        />
+      )}
       <div className="max-w-3xl mx-auto">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-8">
@@ -142,15 +150,13 @@ const ToolDetail = (props) => {
             )}
 
             <div className="flex justify-center pt-6 border-t border-slate-100">
-              <a 
-                href={tool.metadata?.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
+              <button 
+                onClick={() => setShowViewer(true)}
                 className="flex items-center gap-2 px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
               >
                 <ExternalLink className="w-5 h-5" />
                 Open Resource
-              </a>
+              </button>
             </div>
           </div>
         </div>

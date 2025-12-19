@@ -214,8 +214,16 @@ const ReadRepDetail = (props) => {
             )}
 
             {activeTab === 'flyer' && (
-              <div className="prose max-w-none text-slate-700">
-                {book.metadata?.fullFlyerHTML ? (
+              <div className="prose max-w-none text-slate-700 h-full">
+                {(book.details?.pdfUrl || book.metadata?.pdfUrl) ? (
+                   <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative">
+                     <iframe 
+                       src={`https://docs.google.com/gview?url=${encodeURIComponent(book.details?.pdfUrl || book.metadata?.pdfUrl)}&embedded=true`}
+                       className="w-full h-full" 
+                       title="Flyer"
+                     />
+                   </div>
+                ) : book.metadata?.fullFlyerHTML ? (
                   <div dangerouslySetInnerHTML={{ __html: book.metadata.fullFlyerHTML }} />
                 ) : (
                   <div className="text-center py-12 text-slate-400">

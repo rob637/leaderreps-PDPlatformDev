@@ -8,6 +8,7 @@ import { CONTENT_COLLECTIONS } from '../../../services/contentService';
 import { Loader, FileText, Video, Link as LinkIcon, Download, Search, SlidersHorizontal, Wrench, ExternalLink, Lock } from 'lucide-react';
 import { TierBadge, SkillTag } from '../../ui/ContentBadges.jsx';
 import SkillFilter from '../../ui/SkillFilter.jsx';
+import UniversalResourceViewer from '../../ui/UniversalResourceViewer.jsx';
 
 const ToolsIndex = () => {
   const { db } = useAppServices();
@@ -18,6 +19,7 @@ const ToolsIndex = () => {
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
+  const [selectedTool, setSelectedTool] = useState(null);
 
   useEffect(() => {
     const loadTools = async () => {
@@ -79,7 +81,10 @@ const ToolsIndex = () => {
     // Skills filter
     if (selectedSkills.length > 0) {
       result = result.filter(t => 
-        t.skills?.some(skill => selectedSkills.includes(skill))
+        t.skills?.some(skill => {
+          const skillId = typeof skill === 'object' ? skill.id : skill;
+          return selectedSkills.includes(skillId);
+        })
       );
     }
     
@@ -114,6 +119,12 @@ const ToolsIndex = () => {
       { label: 'Library', path: 'library' },
       { label: 'Tools', path: null }
     ]}>
+      {selectedTool && (
+        <UniversalResourceViewer 
+          resource={selectedTool} 
+          onClose={() => setSelectedTool(null)} 
+        />
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         
         {/* Hero Section */}
@@ -270,23 +281,27 @@ const ToolsIndex = () => {
                       </div>
                       
                       {/* Action */}
-                      <a 
-                        href={isUnlocked ? (tool.metadata?.url || tool.url || tool.fileUrl) : undefined} 
-                        target={isUnlocked ? "_blank" : undefined}
-                        rel={isUnlocked ? "noopener noreferrer" : undefined}
+                      <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (!isUnlocked) e.preventDefault();
+                          if (isUnlocked) {
+                            const resourceUrl = tool.metadata?.url || tool.url || tool.fileUrl;
+                            setSelectedTool({
+                              ...tool,
+                              url: resourceUrl
+                            });
+                          }
                         }}
-                        className={`flex items-center gap-2 px-4 py-2 border font-bold rounded-lg transition-colors whitespace-nowrap flex-shrink-0 ${
+                        disabled={!isUnlocked}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
                           isUnlocked 
-                            ? 'border-blue-600 text-blue-600 hover:bg-blue-50 cursor-pointer' 
-                            : 'border-slate-300 text-slate-400 cursor-not-allowed'
+                            ? 'bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-600 cursor-pointer' 
+                            : 'bg-slate-50 text-slate-300 cursor-not-allowed'
                         }`}
+                        title="Open Tool"
                       >
-                        <ExternalLink className="w-4 h-4" />
-                        Open
-                      </a>
+                        {getIcon(tool.metadata?.toolType)}
+                      </button>
                     </div>
                   </div>
                 );

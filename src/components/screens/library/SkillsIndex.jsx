@@ -12,9 +12,23 @@ const SkillsIndex = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, 'skills'), orderBy('name'));
+    // Fetch from Unified Content Library (New System)
+    const q = query(collection(db, UNIFIED_COLLECTION), where('type', '==', 'SKILL'));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const items = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+          id: doc.id, 
+          name: data.title, 
+          description: data.description,
+          pillar: data.details?.domain || 'Uncategorized',
+          ...data 
+        };
+      });
+      
+      // Sort by name
+      items.sort((a, b) => a.name.localeCompare(b.name));
+
       setSkills(items);
       
       // Fetch content counts for each skill
@@ -23,7 +37,7 @@ const SkillsIndex = () => {
         try {
           const contentQ = query(
             collection(db, UNIFIED_COLLECTION),
-            where('skills', 'array-contains', skill.id),
+            where('skillIds', 'array-contains', skill.id),
             where('status', '==', 'PUBLISHED')
           );
           const contentSnap = await getDocs(contentQ);
@@ -48,16 +62,11 @@ const SkillsIndex = () => {
 
   // Get pillar color based on skill pillar
   const getPillarStyle = (pillar) => {
-    switch (pillar) {
-      case 'LEAD_SELF':
-        return { bg: 'bg-purple-50', icon: 'text-purple-600', border: 'border-purple-200' };
-      case 'LEAD_WORK':
-        return { bg: 'bg-blue-50', icon: 'text-blue-600', border: 'border-blue-200' };
-      case 'LEAD_PEOPLE':
-        return { bg: 'bg-teal-50', icon: 'text-teal-600', border: 'border-teal-200' };
-      default:
-        return { bg: 'bg-indigo-50', icon: 'text-indigo-600', border: 'border-indigo-200' };
-    }
+    const p = (pillar || '').toUpperCase();
+    if (p.includes('SELF')) return { bg: 'bg-purple-50', icon: 'text-purple-600', border: 'border-purple-200' };
+    if (p.includes('WORK')) return { bg: 'bg-blue-50', icon: 'text-blue-600', border: 'border-blue-200' };
+    if (p.includes('PEOPLE')) return { bg: 'bg-teal-50', icon: 'text-teal-600', border: 'border-teal-200' };
+    return { bg: 'bg-indigo-50', icon: 'text-indigo-600', border: 'border-indigo-200' };
   };
 
   return (

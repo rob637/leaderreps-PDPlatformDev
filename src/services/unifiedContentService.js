@@ -229,6 +229,11 @@ export const addUnifiedContent = async (db, data, pushTargets = null) => {
       status: data.status || CONTENT_STATUS.DRAFT
     };
 
+    // Auto-populate skillIds for querying if skills are present
+    if (data.skills && Array.isArray(data.skills)) {
+      payload.skillIds = data.skills.map(s => (typeof s === 'object' ? s.id : s));
+    }
+
     const docRef = await addDoc(contentRef, payload);
     
     // Handle Push to Parents
@@ -254,6 +259,11 @@ export const updateUnifiedContent = async (db, id, data, pushTargets = null) => 
       ...data,
       updatedAt: serverTimestamp()
     };
+
+    // Auto-populate skillIds for querying if skills are present
+    if (data.skills && Array.isArray(data.skills)) {
+      payload.skillIds = data.skills.map(s => (typeof s === 'object' ? s.id : s));
+    }
 
     await updateDoc(docRef, payload);
 

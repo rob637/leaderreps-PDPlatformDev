@@ -44,7 +44,10 @@ const WorkoutsIndex = () => {
     // Skills filter
     if (selectedSkills.length > 0) {
       result = result.filter(w => 
-        w.skills?.some(skill => selectedSkills.includes(skill))
+        w.skills?.some(skill => {
+          const skillId = typeof skill === 'object' ? skill.id : skill;
+          return selectedSkills.includes(skillId);
+        })
       );
     }
     

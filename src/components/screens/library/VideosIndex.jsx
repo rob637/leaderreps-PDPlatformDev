@@ -81,7 +81,10 @@ const VideosIndex = () => {
     // Skills filter
     if (selectedSkills.length > 0) {
       result = result.filter(v => 
-        v.skills?.some(skill => selectedSkills.includes(skill))
+        v.skills?.some(skill => {
+          const skillId = typeof skill === 'object' ? skill.id : skill;
+          return selectedSkills.includes(skillId);
+        })
       );
     }
     

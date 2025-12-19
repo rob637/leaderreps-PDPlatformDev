@@ -6,6 +6,7 @@ import { UNIFIED_COLLECTION, CONTENT_TYPES } from '../../../services/unifiedCont
 import { PageLayout } from '../../ui/PageLayout.jsx';
 import { Loader, PlayCircle, CheckCircle, Clock, BarChart, ArrowRight, Lock, BookOpen, Wrench, Film, Dumbbell } from 'lucide-react';
 import { Card, Button, Badge } from '../../screens/developmentplan/DevPlanComponents.jsx';
+import UniversalResourceViewer from '../../ui/UniversalResourceViewer.jsx';
 
 const ProgramDetail = (props) => {
   const { db, navigate } = useAppServices();
@@ -13,6 +14,7 @@ const ProgramDetail = (props) => {
   const [program, setProgram] = useState(null);
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedResource, setSelectedResource] = useState(null);
   
   // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
   const programId = props.id || props.navParams?.id;
@@ -82,11 +84,19 @@ const ProgramDetail = (props) => {
         navigate('read-rep-detail', { id: module.id });
         break;
       case CONTENT_TYPES.TOOL:
-        navigate('tool-detail', { id: module.id });
+        // Open tool in viewer if possible, otherwise navigate
+        if (module.url || module.metadata?.url) {
+             setSelectedResource({
+                 ...module,
+                 url: module.url || module.metadata?.url
+             });
+        } else {
+            navigate('tool-detail', { id: module.id });
+        }
         break;
       case CONTENT_TYPES.VIDEO:
         if (module.url) {
-            window.open(module.url, '_blank');
+            setSelectedResource(module);
         } else {
             console.log("Navigate to video:", module.id);
         }
@@ -98,11 +108,11 @@ const ProgramDetail = (props) => {
 
   const getIconForType = (type) => {
     switch (type) {
-      case CONTENT_TYPES.VIDEO: return <Film className="w-5 h-5 text-blue-500" />;
-      case CONTENT_TYPES.TOOL: return <Wrench className="w-5 h-5 text-orange-500" />;
-      case CONTENT_TYPES.READ_REP: return <BookOpen className="w-5 h-5 text-green-500" />;
-      case CONTENT_TYPES.WORKOUT: return <Dumbbell className="w-5 h-5 text-purple-500" />;
-      default: return <CheckCircle className="w-5 h-5 text-slate-400" />;
+      case CONTENT_TYPES.VIDEO: return <Film className="w-5 h-5" />;
+      case CONTENT_TYPES.TOOL: return <Wrench className="w-5 h-5" />;
+      case CONTENT_TYPES.READ_REP: return <BookOpen className="w-5 h-5" />;
+      case CONTENT_TYPES.WORKOUT: return <Dumbbell className="w-5 h-5" />;
+      default: return <CheckCircle className="w-5 h-5" />;
     }
   };
 
@@ -159,6 +169,12 @@ const ProgramDetail = (props) => {
         { label: program.title, path: null }
       ]}
     >
+      {selectedResource && (
+        <UniversalResourceViewer 
+          resource={selectedResource} 
+          onClose={() => setSelectedResource(null)} 
+        />
+      )}
       <div className="max-w-5xl mx-auto space-y-8">
         
         {/* Program Overview Card */}
@@ -203,7 +219,7 @@ const ProgramDetail = (props) => {
             <span className="bg-corporate-navy text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">
               {modules.length}
             </span>
-            Program Modules
+            Program Content
           </h3>
           
           <div className="space-y-4">
@@ -220,7 +236,7 @@ const ProgramDetail = (props) => {
                 <div className="flex-grow">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      Module {index + 1} • {module.type?.replace('_', ' ')}
+                      Content {index + 1} • {module.type?.replace('_', ' ')}
                     </span>
                   </div>
                   <h4 className="font-bold text-slate-800 group-hover:text-corporate-teal transition-colors">
@@ -237,14 +253,16 @@ const ProgramDetail = (props) => {
                       {module.metadata.durationMin} min
                     </span>
                   )}
-                  <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-corporate-teal" />
+                  <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-corporate-teal/10 transition-colors text-slate-400 group-hover:text-corporate-teal">
+                    {getIconForType(module.type)}
+                  </div>
                 </div>
               </div>
             ))}
             
             {modules.length === 0 && (
               <div className="text-center p-8 border-2 border-dashed border-slate-200 rounded-lg text-slate-400">
-                No modules have been added to this program yet.
+                No content has been added to this program yet.
               </div>
             )}
           </div>

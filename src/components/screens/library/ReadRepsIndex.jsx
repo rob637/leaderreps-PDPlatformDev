@@ -76,7 +76,10 @@ const ReadRepsIndex = () => {
     // Skills filter
     if (selectedSkills.length > 0) {
       result = result.filter(b => 
-        b.skills?.some(skill => selectedSkills.includes(skill))
+        b.skills?.some(skill => {
+          const skillId = typeof skill === 'object' ? skill.id : skill;
+          return selectedSkills.includes(skillId);
+        })
       );
     }
     

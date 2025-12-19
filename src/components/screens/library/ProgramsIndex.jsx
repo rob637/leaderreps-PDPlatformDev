@@ -43,7 +43,10 @@ const ProgramsIndex = () => {
     // Skills filter
     if (selectedSkills.length > 0) {
       result = result.filter(p => 
-        p.skills?.some(skill => selectedSkills.includes(skill))
+        p.skills?.some(skill => {
+          const skillId = typeof skill === 'object' ? skill.id : skill;
+          return selectedSkills.includes(skillId);
+        })
       );
     }
     
@@ -165,10 +168,18 @@ const ProgramsIndex = () => {
                 )}
 
                 {/* Program Image/Header */}
-                <div className="h-36 bg-gradient-to-br from-indigo-50 to-purple-100 flex items-center justify-center relative">
-                  <span className="text-5xl font-bold text-indigo-200 group-hover:text-indigo-300 transition-colors">
-                    {program.title?.charAt(0)}
-                  </span>
+                <div className="h-36 bg-gradient-to-br from-indigo-50 to-purple-100 flex items-center justify-center relative overflow-hidden">
+                  {(program.coverUrl || program.image || program.thumbnail) ? (
+                    <img 
+                      src={program.coverUrl || program.image || program.thumbnail} 
+                      alt={program.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <span className="text-5xl font-bold text-indigo-200 group-hover:text-indigo-300 transition-colors">
+                      {program.title?.charAt(0)}
+                    </span>
+                  )}
                   {/* Tier Badge */}
                   {program.tier && (
                     <div className="absolute top-3 right-3">
