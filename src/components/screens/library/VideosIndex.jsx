@@ -10,6 +10,7 @@ const VideosIndex = () => {
       subtitle="Leadership videos and talks to inspire and educate."
       icon={Film}
       detailRoute="video-detail" // Assuming this route exists or will be handled
+      indexRoute="videos-index"
       color="text-corporate-orange"
       bgColor="bg-corporate-orange/10"
     />

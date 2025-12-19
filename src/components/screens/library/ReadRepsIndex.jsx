@@ -10,6 +10,7 @@ const ReadRepsIndex = () => {
       subtitle="Curated books and articles with actionable exercises."
       icon={BookOpen}
       detailRoute="read-rep-detail"
+      indexRoute="read-reps-index"
       color="text-corporate-navy"
       bgColor="bg-corporate-navy/10"
     />

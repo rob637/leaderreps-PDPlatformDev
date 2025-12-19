@@ -14,6 +14,7 @@ const ContentListView = ({
   subtitle, 
   icon: Icon, 
   detailRoute,
+  indexRoute, // Optional: Explicitly define the index route (e.g., 'videos-index')
   color,
   bgColor
 }) => {
@@ -260,12 +261,17 @@ const ContentListView = ({
                   bgColor={bgColor}
                   onClick={() => {
                     if (isUnlocked && actualDetailRoute) {
+                      // Determine the correct return path (index route)
+                      // 1. Use explicit indexRoute prop if provided
+                      // 2. Fallback to inferring from detailRoute (legacy behavior, though often incorrect for plural/singular)
+                      const returnPath = indexRoute || detailRoute.replace('-detail', '-index');
+
                       navigate(actualDetailRoute, { 
                         id: item.id, 
                         title: item.title,
                         fromLibrary: {
                           title: title,
-                          path: detailRoute.replace('-detail', '-index') // Infer index route from detail route prop
+                          path: returnPath
                         }
                       });
                     }

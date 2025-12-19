@@ -10,6 +10,7 @@ const ToolsIndex = () => {
       subtitle="Checklists, templates, and job aids for quick application."
       icon={Wrench}
       detailRoute="tool-detail"
+      indexRoute="tools-index"
       color="text-corporate-teal"
       bgColor="bg-corporate-teal/10"
     />

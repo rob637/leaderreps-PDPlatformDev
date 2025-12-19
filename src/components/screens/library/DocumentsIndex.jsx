@@ -10,6 +10,7 @@ const DocumentsIndex = () => {
       subtitle="Reference materials, guides, and whitepapers."
       icon={FileText}
       detailRoute="document-detail"
+      indexRoute="documents-index"
       color="text-slate-600"
       bgColor="bg-slate-100"
     />
