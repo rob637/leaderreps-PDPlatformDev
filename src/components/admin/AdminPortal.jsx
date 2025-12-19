@@ -37,6 +37,7 @@ import DailyPlanManager from './DailyPlanManager';
 import CohortManager from './CohortManager';
 import UserManagement from './UserManagement';
 import LeaderProfileReports from './LeaderProfileReports';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -268,6 +269,13 @@ const AdminPortal = () => {
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
           <div className="max-w-6xl mx-auto">
+            <BreadcrumbNav 
+              items={[
+                { label: 'Admin Command Center', path: 'dashboard' },
+                { label: navGroups.flatMap(g => g.items).find(i => i.id === activeTab)?.label || 'Dashboard', path: null }
+              ]} 
+              navigate={(path) => setActiveTab(path)} 
+            />
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[600px] p-6">
               {renderContent()}
             </div>
