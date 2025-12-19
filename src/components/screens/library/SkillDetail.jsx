@@ -1,17 +1,18 @@
-import { ContentListItem } from '../../ui/ContentListItem.jsx';
+import React, { useState, useEffect } from 'react';
+import { useAppServices } from '../../../services/useAppServices.jsx';
+import { useContentAccess } from '../../../hooks/useContentAccess';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { UNIFIED_COLLECTION, CONTENT_TYPES } from '../../../services/unifiedContentService';
+import { getContentGroupById, GROUP_TYPES } from '../../../services/contentGroupsService';
+import { PageLayout } from '../../ui/PageLayout.jsx';
+import { Loader, Zap, CheckCircle, Lock, BookOpen, Wrench, Film, FileText } from 'lucide-react';
+import { Button, Badge } from '../../screens/developmentplan/DevPlanComponents.jsx';
 
 const SkillDetail = (props) => {
   const { db, navigate } = useAppServices();
   const { isContentUnlocked } = useContentAccess();
   const [skill, setSkill] = useState(null);
-  const [relatedContent, setRelatedContent] = useState({
-    programs: [],
-    workouts: [],
-    readReps: [],
-    tools: [],
-    videos: [],
-    documents: []
-  });
+  const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
@@ -24,36 +25,28 @@ const SkillDetail = (props) => {
       try {
         setLoading(true);
         
-        // 1. Fetch Skill Details
-        const skillRef = doc(db, UNIFIED_COLLECTION, skillId);
-        const skillSnap = await getDoc(skillRef);
+        // 1. Fetch Skill Details from LOV
+        const skillData = await getContentGroupById(db, GROUP_TYPES.SKILLS, skillId);
         
-        if (skillSnap.exists()) {
-          setSkill({ id: skillSnap.id, ...skillSnap.data() });
+        if (skillData) {
+          setSkill(skillData);
           
-          // 2. Fetch Related Content
+          // 2. Query content where skills array contains this skillId
           const contentRef = collection(db, UNIFIED_COLLECTION);
           const q = query(
-            contentRef, 
+            contentRef,
             where('skills', 'array-contains', skillId),
-            where('status', '==', 'PUBLISHED')
+            where('status', '==', 'PUBLISHED'),
+            orderBy('updatedAt', 'desc')
           );
           
           const contentSnap = await getDocs(q);
-          const allContent = contentSnap.docs.map(doc => ({
+          const contentItems = contentSnap.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           }));
           
-          // Group by type
-          setRelatedContent({
-            programs: allContent.filter(c => c.type === 'PROGRAM'),
-            workouts: allContent.filter(c => c.type === 'WORKOUT'),
-            readReps: allContent.filter(c => c.type === 'READ_REP'),
-            tools: allContent.filter(c => c.type === 'TOOL'),
-            videos: allContent.filter(c => c.type === 'VIDEO'),
-            documents: allContent.filter(c => c.type === 'DOCUMENT')
-          });
+          setContent(contentItems);
         }
       } catch (error) {
         console.error("Error fetching skill details:", error);
@@ -64,6 +57,51 @@ const SkillDetail = (props) => {
 
     fetchSkillData();
   }, [db, skillId]);
+
+  const handleContentClick = (item) => {
+    // Navigate based on content type
+    const navState = { 
+      fromSkill: { 
+        id: skillId, 
+        title: skill?.label 
+      } 
+    };
+
+    switch (item.type) {
+      case CONTENT_TYPES.VIDEO:
+        navigate('video-detail', { id: item.id, ...navState });
+        break;
+      case CONTENT_TYPES.READ_REP:
+        navigate('read-rep-detail', { id: item.id, ...navState });
+        break;
+      case CONTENT_TYPES.TOOL:
+        navigate('tool-detail', { id: item.id, ...navState });
+        break;
+      case CONTENT_TYPES.DOCUMENT:
+        navigate('document-detail', { id: item.id, ...navState });
+        break;
+      default:
+        console.warn("Unknown content type:", item.type);
+    }
+  };
+
+  const getIconForType = (type) => {
+    switch (type) {
+      case CONTENT_TYPES.VIDEO: return <Film className="w-5 h-5" />;
+      case CONTENT_TYPES.TOOL: return <Wrench className="w-5 h-5" />;
+      case CONTENT_TYPES.READ_REP: return <BookOpen className="w-5 h-5" />;
+      case CONTENT_TYPES.DOCUMENT: return <FileText className="w-5 h-5" />;
+      default: return <CheckCircle className="w-5 h-5" />;
+    }
+  };
+
+  // Group content by type for display
+  const groupedContent = {
+    videos: content.filter(c => c.type === CONTENT_TYPES.VIDEO),
+    documents: content.filter(c => c.type === CONTENT_TYPES.DOCUMENT),
+    readReps: content.filter(c => c.type === CONTENT_TYPES.READ_REP),
+    tools: content.filter(c => c.type === CONTENT_TYPES.TOOL)
+  };
 
   if (loading) {
     return (
@@ -88,37 +126,58 @@ const SkillDetail = (props) => {
     );
   }
 
-  const ContentSection = ({ title, items, icon: Icon, route, color, bgColor }) => {
-    if (!items || items.length === 0) return null;
+  const renderContentSection = (items, title, icon, bgColor, textColor) => {
+    if (items.length === 0) return null;
     
     return (
       <div className="mb-8">
         <h3 className="text-lg font-bold text-corporate-navy mb-4 flex items-center gap-2">
-          <Icon className="w-5 h-5 text-corporate-teal" />
-          {title}
-          <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-xs ml-2">
+          <span className={`${bgColor} ${textColor} w-6 h-6 rounded-full flex items-center justify-center text-xs`}>
             {items.length}
           </span>
+          {title}
         </h3>
         
-        <div className="flex flex-col gap-3">
-          {items.map(item => {
-            const isUnlocked = isContentUnlocked(item);
+        <div className="space-y-3">
+          {items.map((item) => {
+            const isLocked = item.isHiddenUntilUnlocked && !isContentUnlocked(item);
             
             return (
-              <ContentListItem 
+              <div 
                 key={item.id}
-                {...item}
-                icon={Icon}
-                isUnlocked={isUnlocked}
-                color={color}
-                bgColor={bgColor}
-                onClick={() => {
-                  if (isUnlocked) {
-                    navigate(route, { id: item.id, title: item.title });
+                onClick={() => !isLocked && handleContentClick(item)}
+                className={`
+                  group bg-white border rounded-lg p-4 flex items-center gap-4 transition-all
+                  ${isLocked 
+                    ? 'border-slate-200 opacity-60 cursor-not-allowed' 
+                    : 'border-slate-200 hover:border-teal-500 hover:shadow-md cursor-pointer'
                   }
-                }}
-              />
+                `}
+              >
+                <div className={`
+                  flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors
+                  ${isLocked 
+                    ? 'bg-slate-100 text-slate-400' 
+                    : 'bg-slate-100 text-slate-500 group-hover:bg-teal-500 group-hover:text-white'
+                  }
+                `}>
+                  {isLocked ? <Lock className="w-5 h-5" /> : getIconForType(item.type)}
+                </div>
+                
+                <div className="flex-grow min-w-0">
+                  <h4 className={`font-bold transition-colors ${isLocked ? 'text-slate-400' : 'text-slate-800 group-hover:text-teal-600'}`}>
+                    {item.title}
+                  </h4>
+                  {item.description && (
+                    <p className="text-sm text-slate-500 line-clamp-1">
+                      {item.description}
+                    </p>
+                  )}
+                  {isLocked && item.unlockDay && (
+                    <p className="text-xs text-slate-400 mt-1">Unlocks on Day {item.unlockDay}</p>
+                  )}
+                </div>
+              </div>
             );
           })}
         </div>
@@ -128,99 +187,52 @@ const SkillDetail = (props) => {
 
   return (
     <PageLayout 
-      title={skill.name} 
+      title={skill.label} 
       subtitle={skill.description}
-      icon={Zap}
       breadcrumbs={[
         { label: 'Home', path: 'dashboard' },
         { label: 'Library', path: 'library' },
         { label: 'Skills', path: 'skills-index' },
-        { label: skill.name, path: null }
+        { label: skill.label, path: null }
       ]}
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto space-y-8">
         
-        {/* Skill Header Card */}
-        <div className="bg-gradient-to-r from-indigo-50 to-white rounded-xl border border-indigo-100 p-6 mb-8">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 flex-shrink-0">
-              <Zap className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-indigo-900 mb-1">About this Skill</h2>
-              <p className="text-indigo-800/80 text-sm leading-relaxed">
-                {skill.longDescription || skill.description || "Mastering this skill is essential for effective leadership."}
-              </p>
+        {/* Skill Overview Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row gap-8">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
+                  <Zap className="w-6 h-6 text-teal-600" />
+                </div>
+                <h2 className="text-xl font-bold text-corporate-navy">{skill.label}</h2>
+              </div>
+              {skill.description && (
+                <p className="text-slate-600 mb-6 leading-relaxed">
+                  {skill.description}
+                </p>
+              )}
+              
+              <div className="flex flex-wrap gap-4">
+                <Badge variant="teal" icon={CheckCircle}>
+                  {content.length} Related Content Items
+                </Badge>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Content Sections */}
-        <div className="space-y-2">
-          <ContentSection 
-            title="Programs" 
-            items={relatedContent.programs} 
-            icon={PlayCircle} 
-            route="program-detail"
-            color="text-corporate-navy"
-            bgColor="bg-corporate-navy/10"
-          />
+        {/* Content by Type */}
+        <div>
+          {renderContentSection(groupedContent.videos, 'Videos', Film, 'bg-pink-500', 'text-white')}
+          {renderContentSection(groupedContent.documents, 'Documents', FileText, 'bg-blue-500', 'text-white')}
+          {renderContentSection(groupedContent.readReps, 'Read & Reps', BookOpen, 'bg-green-500', 'text-white')}
+          {renderContentSection(groupedContent.tools, 'Tools', Wrench, 'bg-orange-500', 'text-white')}
           
-          <ContentSection 
-            title="Workouts" 
-            items={relatedContent.workouts} 
-            icon={Video} 
-            route="workout-detail"
-            color="text-corporate-teal"
-            bgColor="bg-corporate-teal/10"
-          />
-          
-          <ContentSection 
-            title="Read & Reps" 
-            items={relatedContent.readReps} 
-            icon={BookOpen} 
-            route="read-rep-detail"
-            color="text-corporate-navy"
-            bgColor="bg-corporate-navy/10"
-          />
-          
-          <ContentSection 
-            title="Videos" 
-            items={relatedContent.videos} 
-            icon={Film} 
-            route="video-detail"
-            color="text-corporate-orange"
-            bgColor="bg-corporate-orange/10"
-          />
-
-          <ContentSection 
-            title="Tools" 
-            items={relatedContent.tools} 
-            icon={FileText} 
-            route="tool-detail"
-            color="text-corporate-teal"
-            bgColor="bg-corporate-teal/10"
-          />
-
-          <ContentSection 
-            title="Documents" 
-            items={relatedContent.documents} 
-            icon={FileText} 
-            route="document-detail"
-            color="text-slate-600"
-            bgColor="bg-slate-100"
-          />
-          
-          {/* Empty State */}
-          {Object.values(relatedContent).every(arr => arr.length === 0) && (
-            <div className="text-center p-12 border-2 border-dashed border-slate-200 rounded-xl">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-                <Zap className="w-8 h-8" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-700 mb-2">No Content Yet</h3>
-              <p className="text-slate-500 max-w-md mx-auto">
-                We haven't tagged any content with this skill yet. Check back soon as we update our library.
-              </p>
+          {content.length === 0 && (
+            <div className="text-center p-8 border-2 border-dashed border-slate-200 rounded-lg text-slate-400">
+              No content has been tagged with this skill yet.
             </div>
           )}
         </div>

@@ -111,6 +111,48 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "content_library",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "programs",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "content_library",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "workouts",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "content_library",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "skills",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

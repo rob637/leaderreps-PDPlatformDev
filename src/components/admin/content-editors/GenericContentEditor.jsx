@@ -1,16 +1,19 @@
 // src/components/admin/content-editors/GenericContentEditor.jsx
 import React, { useState, useEffect } from 'react';
-import { Save, X, ArrowLeft, Plus, Tag, Layout, Dumbbell, CheckSquare } from 'lucide-react';
+import { Save, X, ArrowLeft, Plus, Tag, Layout, Dumbbell, CheckSquare, BookOpen } from 'lucide-react';
 import { useAppServices } from '../../../services/useAppServices';
 import { 
   addUnifiedContent, 
   updateUnifiedContent, 
-  getUnifiedContent,
   CONTENT_STATUS,
   DIFFICULTY_LEVELS,
   ROLE_LEVELS,
   CONTENT_TYPES
 } from '../../../services/unifiedContentService';
+import { 
+  getContentGroups,
+  GROUP_TYPES 
+} from '../../../services/contentGroupsService';
 
 import ProgramDetailsEditor from './details/ProgramDetailsEditor';
 import WorkoutDetailsEditor from './details/WorkoutDetailsEditor';
@@ -32,28 +35,29 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
     roleLevel: ROLE_LEVELS.ALL,
     estimatedTime: '', // in minutes
     isHiddenUntilUnlocked: false,
-    skills: [], // Array of { id, title }
     visibility: [], // Array of CONTENT_TYPES to display in
+    // NEW: Arrays of group IDs for the simplified model
+    programs: [],   // Array of program IDs from LOV
+    workouts: [],   // Array of workout IDs from LOV
+    skills: [],     // Array of skill IDs from LOV
     details: {},
     ...item
   });
   
-  // Push Targets State
+  // Content Groups from LOVs
   const [availablePrograms, setAvailablePrograms] = useState([]);
   const [availableWorkouts, setAvailableWorkouts] = useState([]);
-  const [pushTargets, setPushTargets] = useState({
-    programs: [], // Array of IDs
-    workouts: []  // Array of IDs
-  });
+  const [availableSkills, setAvailableSkills] = useState([]);
 
   const [saving, setSaving] = useState(false);
-  const [showSkillPicker, setShowSkillPicker] = useState(false);
 
   useEffect(() => {
     if (item) {
       setFormData({
         ...item,
         details: item.details || {},
+        programs: item.programs || [],
+        workouts: item.workouts || [],
         skills: item.skills || [],
         visibility: item.visibility || []
       });
@@ -65,40 +69,22 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
       }));
     }
 
-    // Fetch available Programs and Workouts for "Push" functionality
-    const fetchTargets = async () => {
+    // Fetch available Programs, Workouts, and Skills from LOVs
+    const fetchGroups = async () => {
       try {
-        const programs = await getUnifiedContent(db, CONTENT_TYPES.PROGRAM);
-        const workouts = await getUnifiedContent(db, CONTENT_TYPES.WORKOUT);
+        const [programs, workouts, skills] = await Promise.all([
+          getContentGroups(db, GROUP_TYPES.PROGRAMS),
+          getContentGroups(db, GROUP_TYPES.WORKOUTS),
+          getContentGroups(db, GROUP_TYPES.SKILLS)
+        ]);
         setAvailablePrograms(programs);
         setAvailableWorkouts(workouts);
-
-        // Check for existing membership if editing an item
-        if (item && item.id) {
-          const existingProgramIds = programs
-            .filter(p => {
-              const modules = p.details?.modules || p.details?.workouts || [];
-              return modules.some(m => m.id === item.id);
-            })
-            .map(p => p.id);
-          
-          const existingWorkoutIds = workouts
-            .filter(w => {
-              const exercises = w.details?.exercises || [];
-              return exercises.some(e => e.id === item.id);
-            })
-            .map(w => w.id);
-
-          setPushTargets({
-            programs: existingProgramIds,
-            workouts: existingWorkoutIds
-          });
-        }
+        setAvailableSkills(skills);
       } catch (error) {
-        console.error("Error fetching push targets:", error);
+        console.error("Error fetching content groups:", error);
       }
     };
-    fetchTargets();
+    fetchGroups();
   }, [item, db, type]);
 
   const handleChange = (e) => {
@@ -120,13 +106,14 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
     });
   };
 
-  const handlePushTargetChange = (targetType, id) => {
-    setPushTargets(prev => {
-      const current = prev[targetType] || [];
-      if (current.includes(id)) {
-        return { ...prev, [targetType]: current.filter(i => i !== id) };
+  // NEW: Handle group selection changes (Programs, Workouts, Skills)
+  const handleGroupChange = (groupField, groupId) => {
+    setFormData(prev => {
+      const current = prev[groupField] || [];
+      if (current.includes(groupId)) {
+        return { ...prev, [groupField]: current.filter(id => id !== groupId) };
       } else {
-        return { ...prev, [targetType]: [...current, id] };
+        return { ...prev, [groupField]: [...current, groupId] };
       }
     });
   };
@@ -141,29 +128,6 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
     }));
   };
 
-  const handleAddSkills = (selectedSkills) => {
-    const newSkills = [...(formData.skills || [])];
-    // Handle both single and multi select return
-    const skillsToAdd = Array.isArray(selectedSkills) ? selectedSkills : [selectedSkills];
-    
-    skillsToAdd.forEach(s => {
-      if (!newSkills.find(existing => existing.id === s.id)) {
-        newSkills.push({
-          id: s.id,
-          title: s.title
-        });
-      }
-    });
-    setFormData(prev => ({ ...prev, skills: newSkills }));
-    setShowSkillPicker(false);
-  };
-
-  const removeSkill = (index) => {
-    const newSkills = [...(formData.skills || [])];
-    newSkills.splice(index, 1);
-    setFormData(prev => ({ ...prev, skills: newSkills }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -174,9 +138,10 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
       };
 
       if (item?.id) {
-        await updateUnifiedContent(db, item.id, payload, pushTargets);
+        // No longer pass pushTargets - groups are stored directly on the content item
+        await updateUnifiedContent(db, item.id, payload);
       } else {
-        await addUnifiedContent(db, payload, pushTargets);
+        await addUnifiedContent(db, payload);
       }
       onSave();
     } catch (error) {
@@ -416,101 +381,86 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
             </div>
           </div>
 
-          {/* --- NEW: Push to Programs --- */}
+          {/* --- Programs (from LOV) --- */}
           <div className="col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
             <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <Layout size={16} /> Add to Programs
+              <Layout size={16} /> Programs
             </h3>
+            <p className="text-xs text-gray-500 mb-2">
+              Select which programs this content belongs to.
+            </p>
             <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-md bg-white p-2">
               {availablePrograms.length === 0 ? (
-                <p className="text-xs text-gray-500 p-2">No programs available.</p>
+                <p className="text-xs text-gray-500 p-2">No programs defined. Add programs in LOV Manager.</p>
               ) : (
                 availablePrograms.map(prog => (
                   <label key={prog.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={pushTargets.programs.includes(prog.id)}
-                      onChange={() => handlePushTargetChange('programs', prog.id)}
+                      checked={(formData.programs || []).includes(prog.id)}
+                      onChange={() => handleGroupChange('programs', prog.id)}
                       className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 truncate">{prog.title}</span>
+                    <span className="text-sm text-gray-700 truncate">{prog.label}</span>
                   </label>
                 ))
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Selected programs will have this content appended to their module list.
-            </p>
           </div>
 
-          {/* --- NEW: Push to Workouts --- */}
+          {/* --- Workouts (from LOV) --- */}
           <div className="col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
             <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <Dumbbell size={16} /> Add to Workouts
+              <Dumbbell size={16} /> Workouts
             </h3>
+            <p className="text-xs text-gray-500 mb-2">
+              Select which workouts this content belongs to.
+            </p>
             <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-md bg-white p-2">
               {availableWorkouts.length === 0 ? (
-                <p className="text-xs text-gray-500 p-2">No workouts available.</p>
+                <p className="text-xs text-gray-500 p-2">No workouts defined. Add workouts in LOV Manager.</p>
               ) : (
                 availableWorkouts.map(workout => (
                   <label key={workout.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={pushTargets.workouts.includes(workout.id)}
-                      onChange={() => handlePushTargetChange('workouts', workout.id)}
+                      checked={(formData.workouts || []).includes(workout.id)}
+                      onChange={() => handleGroupChange('workouts', workout.id)}
                       className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 truncate">{workout.title}</span>
+                    <span className="text-sm text-gray-700 truncate">{workout.label}</span>
                   </label>
                 ))
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Selected workouts will have this content appended to their exercise list.
-            </p>
           </div>
 
-          {/* Skill Tagging - Only show if NOT editing a Skill itself */}
-          {type !== CONTENT_TYPES.SKILL && (
-            <div className="col-span-2">
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Related Skills
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowSkillPicker(true)}
-                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                >
-                  <Plus size={16} />
-                  Add Skill
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 min-h-[60px]">
-                {(formData.skills || []).map((skill, index) => (
-                  <span 
-                    key={skill.id}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm bg-white border border-gray-200 text-gray-700 shadow-sm"
-                  >
-                    <Tag size={12} className="text-gray-400" />
-                    {skill.title}
-                    <button
-                      type="button"
-                      onClick={() => removeSkill(index)}
-                      className="ml-1 text-gray-400 hover:text-red-500"
-                    >
-                      <X size={14} />
-                    </button>
-                  </span>
-                ))}
-                {(formData.skills || []).length === 0 && (
-                  <span className="text-sm text-gray-400 italic self-center">
-                    No skills tagged. Add skills to improve discoverability.
-                  </span>
-                )}
-              </div>
+          {/* --- Skills (from LOV) --- */}
+          <div className="col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+              <BookOpen size={16} /> Skills
+            </h3>
+            <p className="text-xs text-gray-500 mb-2">
+              Tag this content with relevant skills.
+            </p>
+            <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-md bg-white p-2">
+              {availableSkills.length === 0 ? (
+                <p className="text-xs text-gray-500 p-2">No skills defined. Add skills in LOV Manager.</p>
+              ) : (
+                availableSkills.map(skill => (
+                  <label key={skill.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={(formData.skills || []).includes(skill.id)}
+                      onChange={() => handleGroupChange('skills', skill.id)}
+                      className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700 truncate">{skill.label}</span>
+                  </label>
+                ))
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Type Specific Details */}
@@ -518,16 +468,6 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
           {renderDetailsEditor()}
         </div>
       </form>
-
-      {showSkillPicker && (
-        <ContentPicker
-          type={CONTENT_TYPES.SKILL}
-          multiSelect={true}
-          selectedIds={(formData.skills || []).map(s => s.id)}
-          onSelect={handleAddSkills}
-          onClose={() => setShowSkillPicker(false)}
-        />
-      )}
     </div>
   );
 };

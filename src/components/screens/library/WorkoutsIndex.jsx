@@ -1,17 +1,18 @@
 import React from 'react';
 import { Dumbbell } from 'lucide-react';
-import ContentListView from './ContentListView.jsx';
+import ContentGroupsListView from './ContentGroupsListView.jsx';
+import { GROUP_TYPES } from '../../../services/contentGroupsService';
 
 const WorkoutsIndex = () => {
   return (
-    <ContentListView
-      type="WORKOUT"
+    <ContentGroupsListView
+      groupType={GROUP_TYPES.WORKOUTS}
       title="Workouts"
       subtitle="Practical training sessions to build skills through practice."
       icon={Dumbbell}
       detailRoute="workout-detail"
-      color="text-corporate-teal"
-      bgColor="bg-corporate-teal/10"
+      color="text-orange-600"
+      bgColor="bg-orange-100"
     />
   );
 };
