@@ -351,9 +351,6 @@ export const createAppServices = (db, userId) => {
   }
 
   const updateDevelopmentPlanData = async (updates, { merge = true } = {}) => {
-    console.warn('[DEV_PLAN UPDATE] Legacy Plan update called - ignoring.', updates);
-    return true; // Pretend success
-    /*
     console.log('%c[DEV_PLAN UPDATE] updateDevelopmentPlanData CALLED', 'background: #8b5cf6; color: white; font-weight: bold; padding: 4px 8px;');
     console.log('[DEV_PLAN UPDATE] db exists:', !!db);
     console.log('[DEV_PLAN UPDATE] userId:', userId);
@@ -383,7 +380,6 @@ export const createAppServices = (db, userId) => {
     const result = await setDocEx(db, path, convertedUpdates, merge);
     console.log('[DEV_PLAN UPDATE] setDocEx result:', result);
     return result;
-    */
   };
 
   const updateDailyPracticeData = async (updates) => {
