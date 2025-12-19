@@ -22,6 +22,7 @@ const ReadRepDetail = (props) => {
 
   // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
   const bookId = props.id || props.navParams?.id;
+  const fromProgram = props.fromProgram || props.navParams?.fromProgram;
 
   useEffect(() => {
     const fetchBook = async () => {
@@ -89,15 +90,21 @@ const ReadRepDetail = (props) => {
   const complexity = COMPLEXITY_MAP[book.metadata?.complexity] || COMPLEXITY_MAP['Medium'];
   const ComplexityIcon = complexity.icon;
 
+  const breadcrumbs = [
+    { label: 'Library', path: 'library' },
+    ...(fromProgram ? [{ label: fromProgram.title, path: 'program-detail', params: { id: fromProgram.id } }] : [{ label: 'Read & Reps', path: 'read-reps-index' }]),
+    { label: book.title, path: null }
+  ];
+
   return (
     <PageLayout 
       title={book.title} 
       subtitle={book.metadata?.author}
-      breadcrumbs={[
-        { label: 'Library', path: 'library' },
-        { label: 'Read & Reps', path: 'read-reps-index' },
-        { label: book.title, path: null }
-      ]}
+      breadcrumbs={breadcrumbs}
+      backTo={fromProgram ? 'program-detail' : 'read-reps-index'}
+      backParams={fromProgram ? { id: fromProgram.id } : undefined}
+      navigate={navigate}
+    >
     >
       <div className="max-w-5xl mx-auto">
         

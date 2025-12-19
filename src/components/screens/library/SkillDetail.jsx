@@ -1,11 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useAppServices } from '../../../services/useAppServices.jsx';
-import { useContentAccess } from '../../../hooks/useContentAccess';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
-import { PageLayout } from '../../ui/PageLayout.jsx';
-import { Loader, PlayCircle, Video, BookOpen, FileText, Zap, ArrowRight, Lock } from 'lucide-react';
-import { Card, Button, Badge } from '../../screens/developmentplan/DevPlanComponents.jsx';
+import { ContentListItem } from '../../ui/ContentListItem.jsx';
 
 const SkillDetail = (props) => {
   const { db, navigate } = useAppServices();
@@ -15,7 +8,9 @@ const SkillDetail = (props) => {
     programs: [],
     workouts: [],
     readReps: [],
-    tools: []
+    tools: [],
+    videos: [],
+    documents: []
   });
   const [loading, setLoading] = useState(true);
   
@@ -30,7 +25,6 @@ const SkillDetail = (props) => {
         setLoading(true);
         
         // 1. Fetch Skill Details
-        // FIXED: Now fetching from 'content_library' (Unified Collection) instead of 'skills'
         const skillRef = doc(db, UNIFIED_COLLECTION, skillId);
         const skillSnap = await getDoc(skillRef);
         
@@ -38,8 +32,6 @@ const SkillDetail = (props) => {
           setSkill({ id: skillSnap.id, ...skillSnap.data() });
           
           // 2. Fetch Related Content
-          // Query content where 'skills' array-contains skillId
-          // Note: We need to be careful not to fetch the skill itself if it has its own ID in the skills array
           const contentRef = collection(db, UNIFIED_COLLECTION);
           const q = query(
             contentRef, 
@@ -58,7 +50,9 @@ const SkillDetail = (props) => {
             programs: allContent.filter(c => c.type === 'PROGRAM'),
             workouts: allContent.filter(c => c.type === 'WORKOUT'),
             readReps: allContent.filter(c => c.type === 'READ_REP'),
-            tools: allContent.filter(c => c.type === 'TOOL')
+            tools: allContent.filter(c => c.type === 'TOOL'),
+            videos: allContent.filter(c => c.type === 'VIDEO'),
+            documents: allContent.filter(c => c.type === 'DOCUMENT')
           });
         }
       } catch (error) {
@@ -94,7 +88,7 @@ const SkillDetail = (props) => {
     );
   }
 
-  const ContentSection = ({ title, items, icon: Icon, typeLabel, route }) => {
+  const ContentSection = ({ title, items, icon: Icon, route, color, bgColor }) => {
     if (!items || items.length === 0) return null;
     
     return (
@@ -107,52 +101,25 @@ const SkillDetail = (props) => {
           </span>
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-3">
           {items.map(item => {
             const isUnlocked = isContentUnlocked(item);
             
             return (
-            <div 
-              key={item.id}
-              onClick={() => isUnlocked ? navigate(route, { id: item.id, title: item.title }) : null}
-              className={`bg-white border rounded-lg p-4 transition-all group flex items-start gap-3 relative ${
-                isUnlocked 
-                  ? 'border-slate-200 hover:border-corporate-teal hover:shadow-md cursor-pointer' 
-                  : 'border-slate-100 opacity-75 cursor-not-allowed'
-              }`}
-            >
-              {!isUnlocked && (
-                <div className="absolute inset-0 bg-slate-50/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-lg">
-                  <div className="bg-white/90 p-2 rounded-full shadow-sm border border-slate-200">
-                    <Lock className="w-4 h-4 text-slate-400" />
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-1">
-                <Icon className="w-5 h-5 text-slate-400 group-hover:text-corporate-teal transition-colors" />
-              </div>
-              <div className="flex-grow">
-                <h4 className="font-bold text-slate-800 group-hover:text-corporate-teal transition-colors text-sm sm:text-base">
-                  {item.title}
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-500 line-clamp-2 mt-1">
-                  {item.description}
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">
-                    {item.metadata?.difficulty || 'General'}
-                  </span>
-                  {item.metadata?.durationMin && (
-                    <span className="text-[10px] text-slate-400">
-                      {item.metadata.durationMin} min
-                    </span>
-                  )}
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-corporate-teal self-center" />
-            </div>
-          );
+              <ContentListItem 
+                key={item.id}
+                {...item}
+                icon={Icon}
+                isUnlocked={isUnlocked}
+                color={color}
+                bgColor={bgColor}
+                onClick={() => {
+                  if (isUnlocked) {
+                    navigate(route, { id: item.id, title: item.title });
+                  }
+                }}
+              />
+            );
           })}
         </div>
       </div>
@@ -171,7 +138,7 @@ const SkillDetail = (props) => {
         { label: skill.name, path: null }
       ]}
     >
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         
         {/* Skill Header Card */}
         <div className="bg-gradient-to-r from-indigo-50 to-white rounded-xl border border-indigo-100 p-6 mb-8">
@@ -195,6 +162,8 @@ const SkillDetail = (props) => {
             items={relatedContent.programs} 
             icon={PlayCircle} 
             route="program-detail"
+            color="text-corporate-navy"
+            bgColor="bg-corporate-navy/10"
           />
           
           <ContentSection 
@@ -202,20 +171,44 @@ const SkillDetail = (props) => {
             items={relatedContent.workouts} 
             icon={Video} 
             route="workout-detail"
+            color="text-corporate-teal"
+            bgColor="bg-corporate-teal/10"
           />
           
           <ContentSection 
             title="Read & Reps" 
             items={relatedContent.readReps} 
             icon={BookOpen} 
-            route="read-rep-detail" // Assuming this route exists or will exist
+            route="read-rep-detail"
+            color="text-corporate-navy"
+            bgColor="bg-corporate-navy/10"
           />
           
+          <ContentSection 
+            title="Videos" 
+            items={relatedContent.videos} 
+            icon={Film} 
+            route="video-detail"
+            color="text-corporate-orange"
+            bgColor="bg-corporate-orange/10"
+          />
+
           <ContentSection 
             title="Tools" 
             items={relatedContent.tools} 
             icon={FileText} 
-            route="tool-detail" // Assuming this route exists or will exist
+            route="tool-detail"
+            color="text-corporate-teal"
+            bgColor="bg-corporate-teal/10"
+          />
+
+          <ContentSection 
+            title="Documents" 
+            items={relatedContent.documents} 
+            icon={FileText} 
+            route="document-detail"
+            color="text-slate-600"
+            bgColor="bg-slate-100"
           />
           
           {/* Empty State */}

@@ -99,42 +99,28 @@ const ProgramDetail = (props) => {
     }
 
     // Navigate based on type
+    const navState = { 
+      fromProgram: { 
+        id: program.id, 
+        title: program.title 
+      } 
+    };
+
     switch (activeModule.type) {
       case CONTENT_TYPES.WORKOUT:
-        navigate('workout-detail', { id: activeModule.id, title: activeModule.title });
+        navigate('workout-detail', { id: activeModule.id, title: activeModule.title, ...navState });
         break;
       case CONTENT_TYPES.READ_REP:
-        navigate('read-rep-detail', { id: activeModule.id });
+        navigate('read-rep-detail', { id: activeModule.id, ...navState });
         break;
       case CONTENT_TYPES.TOOL:
-        // Open tool in viewer if possible, otherwise navigate
-        if (resourceUrl) {
-             setSelectedResource({
-                 ...activeModule,
-                 url: resourceUrl
-             });
-        } else {
-            navigate('tool-detail', { id: activeModule.id });
-        }
+        navigate('tool-detail', { id: activeModule.id, ...navState });
         break;
       case CONTENT_TYPES.VIDEO:
-        if (resourceUrl) {
-            setSelectedResource({ ...activeModule, url: resourceUrl });
-        } else {
-            console.log("Video URL not found for:", activeModule.id);
-            alert("This video content is currently unavailable.");
-        }
+        navigate('video-detail', { id: activeModule.id, ...navState });
         break;
       case CONTENT_TYPES.DOCUMENT:
-        if (resourceUrl) {
-             setSelectedResource({
-                 ...activeModule,
-                 url: resourceUrl
-             });
-        } else {
-            console.log("Document URL not found for:", activeModule.id);
-            alert("This document is currently unavailable.");
-        }
+        navigate('document-detail', { id: activeModule.id, ...navState });
         break;
       default:
         console.warn("Unknown module type:", activeModule.type);

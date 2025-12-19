@@ -84,6 +84,15 @@ const ScreenMap = {
   'videos-index': lazy(() =>
     import('../components/screens/library/VideosIndex.jsx')
   ),
+  'video-detail': lazy(() =>
+    import('../components/screens/library/VideoDetail.jsx')
+  ),
+  'documents-index': lazy(() =>
+    import('../components/screens/library/DocumentsIndex.jsx')
+  ),
+  'document-detail': lazy(() =>
+    import('../components/screens/library/DocumentDetail.jsx')
+  ),
   'admin-content-home': lazy(() =>
     import('../components/admin/ContentAdminHome.jsx')
   ),

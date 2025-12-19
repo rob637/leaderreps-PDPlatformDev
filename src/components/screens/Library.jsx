@@ -5,6 +5,7 @@ import { BookOpen, ShieldCheck, Film, Sparkles, Target, Trophy, Users, TrendingU
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { PageLayout, PageGrid, NoWidgetsEnabled } from '../ui';
 import { DashboardCard } from '../ui/DashboardCard';
+import { ContentListItem } from '../ui/ContentListItem';
 import { collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { UNIFIED_COLLECTION } from '../../services/unifiedContentService';
 import { useFeatures } from '../../providers/FeatureProvider';
@@ -120,6 +121,15 @@ const Library = () => {
         screen: 'tools-index',
         color: 'text-corporate-teal',
         bgColor: 'bg-corporate-teal/10'
+      },
+      {
+        id: 'documents',
+        title: 'Documents',
+        description: 'Reference materials, guides, and whitepapers.',
+        icon: FileText,
+        screen: 'documents-index',
+        color: 'text-slate-600',
+        bgColor: 'bg-slate-100'
       }
     ];
 
@@ -163,9 +173,9 @@ const Library = () => {
     >
       <WidgetRenderer widgetId="content-library-main" scope={scope}>
         {libraryItems.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+          <div className="flex flex-col gap-3 max-w-3xl mx-auto">
             {libraryItems.map(item => (
-              <DashboardCard 
+              <ContentListItem 
                 key={item.id}
                 {...item}
                 onClick={() => handleCardClick(item)}
