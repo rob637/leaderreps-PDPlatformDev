@@ -543,11 +543,15 @@ export const useDailyPlan = () => {
     const realNow = new Date();
     const realNowStr = realNow.toISOString().split('T')[0];
     
-    let count = visitLog.length;
+    // Filter log to only include real past/present visits
+    // This excludes any "future" visits added by Time Travel to prevent double counting
+    const realVisits = visitLog.filter(date => date <= realNowStr);
+    
+    let count = realVisits.length;
     
     // If today (real) is not in the log yet, add 1 to the count
     // This ensures the UI reflects the current visit immediately
-    if (!visitLog.includes(realNowStr)) {
+    if (!realVisits.includes(realNowStr)) {
       count += 1;
     }
 
