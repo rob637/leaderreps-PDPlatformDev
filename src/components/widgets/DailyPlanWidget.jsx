@@ -5,6 +5,7 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, getDoc } from 'firebase/firestore';
 import { UNIFIED_COLLECTION } from '../../services/unifiedContentService';
+import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 
 const DailyPlanWidget = ({ scope }) => {
   const { currentDayData } = useDailyPlan();
@@ -117,11 +118,12 @@ const DailyPlanWidget = ({ scope }) => {
         </div>
       </Card>
 
-      {/* Synopsis Modal */}
+      {/* Resource Viewer Modal */}
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         title={selectedResource?.title || 'Resource Details'}
+        maxWidth="4xl" // Make it wider for the viewer
       >
         {loadingResource ? (
           <div className="flex flex-col items-center justify-center p-12 space-y-3">
@@ -129,49 +131,12 @@ const DailyPlanWidget = ({ scope }) => {
             <p className="text-sm text-slate-400">Loading content...</p>
           </div>
         ) : selectedResource ? (
-          <div className="space-y-6">
-            {/* Header Info */}
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-blue-50 rounded-xl">
-                <FileText className="w-8 h-8 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-800">{selectedResource.title}</h3>
-                {selectedResource.author && (
-                  <p className="text-sm text-slate-500 font-medium">By {selectedResource.author}</p>
-                )}
-                <div className="flex gap-2 mt-2">
-                  <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold uppercase">
-                    Read & Rep
-                  </span>
-                  <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold uppercase">
-                    Optional
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Synopsis */}
-            {selectedResource.synopsis ? (
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Synopsis</h4>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                  {selectedResource.synopsis}
-                </p>
-              </div>
-            ) : (
-              <div className="text-center p-8 bg-slate-50 rounded-xl border border-slate-100 border-dashed">
-                <p className="text-sm text-slate-400 italic">No synopsis available for this content.</p>
-              </div>
-            )}
-
-            {/* Action Button */}
-            <button 
-              onClick={() => setIsModalOpen(false)}
-              className="w-full py-3 bg-corporate-navy text-white rounded-xl font-bold hover:bg-corporate-teal transition-colors"
-            >
-              Close
-            </button>
+          <div className="min-h-[60vh]">
+            <UniversalResourceViewer 
+              resource={selectedResource} 
+              onClose={() => setIsModalOpen(false)}
+              inline={true}
+            />
           </div>
         ) : (
           <div className="text-center p-8">

@@ -4,7 +4,9 @@ import { X, ExternalLink, Download, FileText, Film, Link as LinkIcon, Layers } f
 const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
   if (!resource) return null;
 
-  const { url, resourceType, type: legacyType, title, description } = resource;
+  // Extract URL from either legacy top-level field or new details object
+  const url = resource.url || resource.details?.url;
+  const { resourceType, type: legacyType, title, description } = resource;
 
   // Helper to determine content type if not explicitly provided
   const getContentType = () => {
