@@ -227,12 +227,24 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
         // Google Viewer (gview) often fails with "No preview available" for signed URLs or large files
         const isPdf = url && url.toLowerCase().includes('.pdf');
         if (isPdf) {
+           // Fix for broken tokens in 'vault' path: Strip token to rely on public access rules
+           let pdfUrl = url;
+           if (url.includes('firebasestorage.googleapis.com') && (url.includes('/vault%2F') || url.includes('/vault/'))) {
+              try {
+                const urlObj = new URL(url);
+                urlObj.searchParams.delete('token');
+                pdfUrl = urlObj.toString();
+              } catch (e) {
+                console.warn('Failed to process PDF URL:', e);
+              }
+           }
+
            return (
              <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative flex flex-col">
                 <div className="flex-1 relative bg-slate-200">
                     {/* Use object tag for native PDF rendering */}
                     <object
-                      data={url}
+                      data={pdfUrl}
                       type="application/pdf"
                       className="w-full h-full"
                     >
