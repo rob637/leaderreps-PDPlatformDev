@@ -118,6 +118,36 @@ export const BREADCRUMB_MAP = {
   ],
 
   // ============================================
+  // LIBRARY - Videos
+  // ============================================
+  'videos-index': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Library', path: 'library' },
+    { label: 'Videos', path: null }
+  ],
+  'video-detail': (params) => [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Library', path: 'library' },
+    { label: 'Videos', path: 'videos-index' },
+    { label: params?.title || 'Video', path: null }
+  ],
+
+  // ============================================
+  // LIBRARY - Documents
+  // ============================================
+  'documents-index': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Library', path: 'library' },
+    { label: 'Documents', path: null }
+  ],
+  'document-detail': (params) => [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Library', path: 'library' },
+    { label: 'Documents', path: 'documents-index' },
+    { label: params?.title || 'Document', path: null }
+  ],
+
+  // ============================================
   // COACHING HUB
   // ============================================
   'coaching-hub': [
