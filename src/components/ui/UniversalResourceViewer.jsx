@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, ExternalLink, Download, FileText, Film, Link as LinkIcon, Layers } from 'lucide-react';
 
-const UniversalResourceViewer = ({ resource, onClose }) => {
+const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
   if (!resource) return null;
 
   const { url, resourceType, type: legacyType, title, description } = resource;
@@ -265,6 +265,14 @@ const UniversalResourceViewer = ({ resource, onClose }) => {
         );
     }
   };
+
+  if (inline) {
+    return (
+      <div className="w-full bg-slate-100 rounded-lg overflow-hidden">
+        {renderContent()}
+      </div>
+    );
+  }
 
   return (
     <div 

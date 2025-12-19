@@ -54,7 +54,7 @@ const DocumentDetail = (props) => {
       <div className="max-w-4xl mx-auto p-6">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6">
-            <UniversalResourceViewer resource={document} />
+            <UniversalResourceViewer resource={document} inline={true} />
             <div className="mt-6">
               <h2 className="text-xl font-bold mb-2">{document.title}</h2>
               <p className="text-slate-600">{document.description}</p>
