@@ -175,7 +175,18 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
       case 'document':
       case 'tool': {
         // Check for Google Docs/Sheets/Slides (Native Google Drive Links)
-        if (url && (url.includes('docs.google.com') || url.includes('drive.google.com'))) {
+        // Expanded to catch more variations and prevent them from falling through to gview
+        const isGoogleDrive = url && (
+          url.includes('docs.google.com') || 
+          url.includes('drive.google.com') || 
+          url.includes('sheets.google.com') || 
+          url.includes('slides.google.com') ||
+          url.includes('google.com/document') ||
+          url.includes('google.com/spreadsheets') ||
+          url.includes('google.com/presentation')
+        );
+
+        if (isGoogleDrive) {
           let embedUrl = url;
           if (url.includes('/edit')) {
             embedUrl = url.replace('/edit', '/preview');
