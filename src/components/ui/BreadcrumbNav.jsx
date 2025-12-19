@@ -26,7 +26,7 @@ export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
       // Navigate to parent breadcrumb (second-to-last item)
       const parentItem = items[items.length - 2];
       if (parentItem?.path) {
-        navigate(parentItem.path);
+        navigate(parentItem.path, parentItem.params);
       } else {
         navigate('dashboard');
       }
@@ -69,7 +69,7 @@ export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
                 </span>
               ) : (
                 <button 
-                  onClick={() => item.path && navigate(item.path)}
+                  onClick={() => item.path && navigate(item.path, item.params)}
                   className={`hover:text-corporate-teal hover:underline transition-colors flex items-center gap-1 ${!item.path ? 'cursor-default hover:no-underline' : ''}`}
                   disabled={!item.path}
                 >

@@ -25,6 +25,7 @@ async function checkDocuments() {
         console.log(`Title: ${data.title}`);
         console.log(`Type: ${data.type}`); // Should be undefined or something
         console.log(`IsActive: ${data.isActive}`);
+        console.log(`IsHiddenUntilUnlocked: ${data.isHiddenUntilUnlocked}`);
       });
     }
   } catch (error) {
