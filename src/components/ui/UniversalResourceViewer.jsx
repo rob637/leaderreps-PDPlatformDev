@@ -242,41 +242,16 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
            return (
              <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative flex flex-col">
                 <div className="flex-1 relative bg-slate-200">
-                    {/* Use object tag for native PDF rendering */}
-                    <object
-                      data={pdfUrl}
-                      type="application/pdf"
-                      className="w-full h-full"
-                    >
-                      {/* Fallback for browsers that don't support object PDF embedding (e.g. mobile sometimes) */}
-                      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                        <p className="text-slate-500 mb-4">
-                          This browser doesn't support inline PDF viewing.
-                        </p>
-                        <a 
-                          href={url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="bg-corporate-teal text-white px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-teal-700 transition-colors flex items-center gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          Download PDF
-                        </a>
-                      </div>
-                    </object>
+                    {/* Use Google Viewer as Primary (User Preference) */}
+                    <iframe 
+                       src={`https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`}
+                       className="w-full h-full" 
+                       title={title}
+                    />
                 </div>
 
                 {/* Footer with Fallback Options */}
                 <div className="bg-white border-t border-slate-200 p-2 flex justify-center gap-4 text-xs">
-                    <a 
-                      href={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-slate-500 hover:text-corporate-navy flex items-center gap-1"
-                    >
-                        <ExternalLink className="w-3 h-3" /> Try Google Viewer
-                    </a>
-                    <span className="text-slate-300">|</span>
                     <a 
                       href={url} 
                       target="_blank" 
