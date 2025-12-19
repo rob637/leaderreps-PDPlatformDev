@@ -48,8 +48,14 @@ const UpdateNotification = () => {
   useEffect(() => {
     if (needRefresh && !dismissed) {
       // Fetch the new version info with cache bust
-      fetch('/version.json?t=' + Date.now())
-        .then(res => res.json())
+      // Use relative path to support subdirectories
+      const versionUrl = new URL('version.json', window.location.href).href;
+      
+      fetch(`${versionUrl}?t=${Date.now()}`)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
         .then(data => {
           console.log(`[PWA] Current: v${APP_VERSION}, Available: v${data.version}`);
           if (data.version !== APP_VERSION) {
@@ -58,7 +64,7 @@ const UpdateNotification = () => {
           }
         })
         .catch(err => {
-          console.error('[PWA] Version check failed:', err);
+          console.warn('[PWA] Version check failed, showing generic update prompt:', err);
           // Still show notification even if version check fails
           setShowNotification(true);
         });

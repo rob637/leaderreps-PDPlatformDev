@@ -55,6 +55,15 @@ export default defineConfig({
         
         // Runtime caching strategies
         runtimeCaching: [
+          // Version check - Network Only (always fetch fresh version)
+          {
+            urlPattern: ({ url }) => url.pathname.endsWith('version.json'),
+            handler: 'NetworkOnly',
+            options: {
+              networkTimeoutSeconds: 3,
+            },
+          },
+          
           // Firebase Auth - Network Only (always fresh auth state)
           {
             urlPattern: ({ url }) => 
