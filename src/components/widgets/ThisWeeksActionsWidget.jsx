@@ -249,19 +249,25 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   // 1. Items explicitly marked as carried over in progress data
   // 2. Incomplete items from the previous week that haven't been tracked yet
   const carriedOverItems = useMemo(() => {
-    if (!currentWeek?.weekNumber) return [];
+    if (!currentWeek?.weekNumber) {
+      console.log('[CarryOver] No currentWeek.weekNumber, returning empty');
+      return [];
+    }
     
     const currentWeekNum = currentWeek.weekNumber;
+    console.log('[CarryOver] currentWeekNum:', currentWeekNum);
 
     // RULE 1: No carry-over display WITHIN the Prep Phase
     // Prep Phase is a single container (Weeks <= 0). 
     // Items shouldn't "carry over" from Day 1 to Day 2, etc.
     if (currentWeekNum <= 0) {
+        console.log('[CarryOver] In Prep Phase (week <= 0), no carryover');
         return [];
     }
 
     // Get explicitly carried over items
     const explicitCarryOver = getCarriedOverItems(currentWeek.weekNumber);
+    console.log('[CarryOver] explicitCarryOver:', explicitCarryOver.length);
     
     // Determine which previous weeks to check
     // Usually just the immediate previous week
@@ -272,6 +278,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     // to ensure any required items missed during Prep are carried over.
     if (currentWeekNum === 1) {
         weeksToCheck.push(0, -1, -2, -3, -4); // Check deep into Prep history
+        console.log('[CarryOver] Week 1 detected - checking Prep weeks:', weeksToCheck);
     }
     
     let prevWeekItems = [];
@@ -281,6 +288,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         // STRATEGY 1: Check Daily Plan (New Architecture)
         if (dailyPlan && dailyPlan.length > 0) {
           const prevWeekDays = dailyPlan.filter(d => d.weekNumber === checkWeekNum);
+          console.log(`[CarryOver] Week ${checkWeekNum} has ${prevWeekDays.length} days in dailyPlan`);
           
           prevWeekDays.forEach(day => {
             if (day.actions) {
@@ -319,6 +327,8 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     // Filter to incomplete items that aren't already in explicitCarryOver
     const explicitIds = new Set(explicitCarryOver.map(i => i.id));
     
+    console.log('[CarryOver] prevWeekItems before filtering:', prevWeekItems.length, prevWeekItems.map(i => i.label));
+    
     const incompleteFromPrevWeek = prevWeekItems.filter(item => {
       // Skip if already in explicit carry over
       if (explicitIds.has(item.id)) return false;
@@ -332,10 +342,12 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       const labelLower = (item.label || item.title || '').toLowerCase();
       
       if (labelLower.includes('complete leader profile') && leaderProfileComplete) {
+        console.log('[CarryOver] Skipping Leader Profile (completed globally)');
         return false; 
       }
       
       if (labelLower.includes('complete baseline assessment') && baselineAssessmentComplete) {
+        console.log('[CarryOver] Skipping Baseline Assessment (completed globally)');
         return false;
       }
       
@@ -344,6 +356,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
       
       // Skip if completed or skipped
       if (progress.status === 'completed' || progress.status === 'skipped' || progress.status === 'archived') {
+        console.log(`[CarryOver] Skipping "${item.label}" (status: ${progress.status})`);
         return false;
       }
       
@@ -355,6 +368,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
         return false;
       }
       
+      console.log(`[CarryOver] Including "${item.label}" as incomplete carryover`);
       return true;
     }).map(item => ({
       ...item,
@@ -365,6 +379,8 @@ const ThisWeeksActionsWidget = ({ scope }) => {
     
     // Deduplicate items by ID (in case same item found in multiple checks)
     const uniqueIncomplete = Array.from(new Map(incompleteFromPrevWeek.map(item => [item.id, item])).values());
+    
+    console.log('[CarryOver] Final carried over items:', uniqueIncomplete.length, uniqueIncomplete.map(i => i.label));
     
     // Combine both sources
     return [...explicitCarryOver, ...uniqueIncomplete];
