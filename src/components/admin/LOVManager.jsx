@@ -192,25 +192,44 @@ const LOVManager = () => {
                   Format: <strong>Quote Text | Author Name</strong> (use pipe symbol to separate)
                 </p>
               )}
+              {/* Check if items are objects (content groups) - show read-only notice */}
+              {editingItem.items?.length > 0 && typeof editingItem.items[0] === 'object' && (
+                <p className="text-xs text-blue-600 mb-2 bg-blue-50 p-2 rounded border border-blue-200">
+                  Content Groups (Programs, Workouts, Skills) are managed via the Content Admin panel.
+                </p>
+              )}
               <div className="space-y-2 max-h-96 overflow-y-auto p-2 border rounded-lg bg-gray-50">
-                {editingItem.items.map((item, index) => (
-                  <div key={index} className="flex gap-2">
-                    <span className="p-2 text-gray-400 text-xs w-8 text-center">{index + 1}</span>
-                    <input
-                      type="text"
-                      value={item}
-                      onChange={(e) => handleItemChange(index, e.target.value)}
-                      className="flex-1 p-2 border rounded-lg bg-white"
-                      placeholder="Value..."
-                    />
-                    <button
-                      onClick={() => removeItem(index)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+                {editingItem.items.map((item, index) => {
+                  const isObjectItem = typeof item === 'object';
+                  const displayValue = isObjectItem ? (item?.label || item?.title || '') : item;
+                  
+                  return (
+                    <div key={index} className="flex gap-2">
+                      <span className="p-2 text-gray-400 text-xs w-8 text-center">{index + 1}</span>
+                      <input
+                        type="text"
+                        value={displayValue}
+                        onChange={(e) => {
+                          if (!isObjectItem) {
+                            handleItemChange(index, e.target.value);
+                          }
+                        }}
+                        className={`flex-1 p-2 border rounded-lg ${isObjectItem ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                        placeholder="Value..."
+                        disabled={isObjectItem}
+                        title={isObjectItem ? 'Object items are read-only here' : ''}
+                      />
+                      {!isObjectItem && (
+                        <button
+                          onClick={() => removeItem(index)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
                 <button
                   onClick={addItem}
                   className="w-full py-2 text-sm text-teal-600 font-semibold hover:bg-teal-50 rounded-lg border border-dashed border-teal-300 flex items-center justify-center gap-1"
@@ -285,7 +304,7 @@ const LOVManager = () => {
                   {lov.items?.slice(0, 5).map((item, i) => (
                     <li key={i} className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-teal-400"></div>
-                      {item}
+                      {typeof item === 'string' ? item : item?.label || item?.title || '(unnamed)'}
                     </li>
                   ))}
                 </ul>
