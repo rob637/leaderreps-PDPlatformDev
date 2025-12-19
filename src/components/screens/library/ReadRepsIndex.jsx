@@ -96,6 +96,17 @@ const ReadRepsIndex = () => {
       return true;
     });
 
+    // Sort: Active (Unlocked) first, then Alphabetical
+    result.sort((a, b) => {
+      const aUnlocked = isContentUnlocked(a);
+      const bUnlocked = isContentUnlocked(b);
+      
+      if (aUnlocked && !bUnlocked) return -1;
+      if (!aUnlocked && bUnlocked) return 1;
+      
+      return (a.title || '').localeCompare(b.title || '');
+    });
+
     return result;
   }, [books, searchQuery, selectedSkills, categoryFilter, isContentUnlocked]);
 
@@ -203,93 +214,91 @@ const ReadRepsIndex = () => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredBooks.map((book) => {
-              const isUnlocked = isContentUnlocked(book);
-              
-              return (
-              <div 
-                key={book.id} 
-                onClick={() => isUnlocked ? navigate('read-rep-detail', { id: book.id, title: book.title }) : null}
-                className={`bg-white border rounded-xl overflow-hidden transition-all group flex flex-col h-full relative ${
-                  isUnlocked 
-                    ? 'border-slate-200 hover:shadow-lg hover:border-emerald-300 cursor-pointer' 
-                    : 'border-slate-100 opacity-75 cursor-not-allowed'
-                }`}
-              >
-                {!isUnlocked && (
-                  <div className="absolute inset-0 bg-slate-50/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                    <div className="bg-white/90 p-3 rounded-full shadow-sm border border-slate-200">
-                      <Lock className="w-6 h-6 text-slate-400" />
-                    </div>
-                  </div>
-                )}
-
-                {/* Book Cover */}
-                <div className="h-48 bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden group-hover:shadow-inner transition-all">
-                  {(book.details?.coverUrl || book.metadata?.coverUrl || book.coverUrl) ? (
-                    <img 
-                      src={book.details?.coverUrl || book.metadata?.coverUrl || book.coverUrl} 
-                      alt={book.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <BookOpen className="w-16 h-16 text-slate-300 group-hover:text-emerald-400 transition-colors" />
-                    </div>
-                  )}
-                  
-                  {/* Category Badge */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                    <span className="inline-flex items-center gap-1 text-white text-xs font-bold">
-                      <Tag className="w-3 h-3" />
-                      {book.metadata?.category || 'General'}
-                    </span>
-                  </div>
-                  
-                  {/* Tier Badge */}
-                  {book.tier && (
-                    <div className="absolute top-3 right-3">
-                      <TierBadge tier={book.tier} size="xs" />
-                    </div>
-                  )}
-                </div>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="divide-y divide-slate-100">
+              {filteredBooks.map((book) => {
+                const isUnlocked = isContentUnlocked(book);
                 
-                {/* Content */}
-                <div className="p-4 flex flex-col flex-grow">
-                  <h3 className="font-bold text-slate-800 line-clamp-2 mb-1 group-hover:text-emerald-600 transition-colors">
-                    {book.title}
-                  </h3>
-                  
-                  {book.metadata?.author && (
-                    <p className="text-sm text-slate-500 flex items-center gap-1 mb-2">
-                      <User className="w-3 h-3" />
-                      {book.metadata.author}
-                    </p>
-                  )}
-                  
-                  <p className="text-xs text-slate-400 line-clamp-2 flex-grow mb-3">
-                    {book.description}
-                  </p>
-                  
-                  {/* Skills */}
-                  {book.skills?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {book.skills.slice(0, 2).map(skill => (
-                        <SkillTag key={skill} skill={skill.replace('skill_', '')} size="xs" />
-                      ))}
+                return (
+                  <div 
+                    key={book.id} 
+                    onClick={() => isUnlocked ? navigate('read-rep-detail', { id: book.id, title: book.title }) : null}
+                    className={`p-5 transition-colors group relative ${
+                      isUnlocked 
+                        ? 'hover:bg-slate-50 cursor-pointer' 
+                        : 'opacity-75 cursor-not-allowed'
+                    }`}
+                  >
+                    {!isUnlocked && (
+                      <div className="absolute inset-0 bg-slate-50/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                        <div className="bg-white/90 p-2 rounded-full shadow-sm border border-slate-200">
+                          <Lock className="w-5 h-5 text-slate-400" />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-start gap-4">
+                      {/* Cover Image / Icon */}
+                      <div className="w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100 border border-slate-200">
+                        {(book.details?.coverUrl || book.metadata?.coverUrl || book.coverUrl) ? (
+                          <img 
+                            src={book.details?.coverUrl || book.metadata?.coverUrl || book.coverUrl} 
+                            alt={book.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <BookOpen className="w-8 h-8 text-slate-300" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-grow min-w-0">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h3 className="font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
+                              {book.title}
+                            </h3>
+                            {book.metadata?.author && (
+                              <p className="text-sm text-slate-500 flex items-center gap-1 mt-1">
+                                <User className="w-3 h-3" />
+                                {book.metadata.author}
+                              </p>
+                            )}
+                          </div>
+                          
+                          {/* Tier Badge */}
+                          {book.tier && (
+                            <TierBadge tier={book.tier} size="sm" />
+                          )}
+                        </div>
+                        
+                        <p className="text-sm text-slate-500 line-clamp-2 mt-2">
+                          {book.description}
+                        </p>
+                        
+                        {/* Metadata & Skills */}
+                        <div className="flex flex-wrap items-center gap-3 mt-3">
+                          <div className="flex items-center gap-2">
+                            <DurationBadge minutes={book.metadata?.readingTimeMin || 30} size="xs" />
+                            <DifficultyBadge level={book.metadata?.difficulty || 'FOUNDATION'} size="xs" />
+                          </div>
+                          
+                          {book.skills?.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {book.skills.slice(0, 3).map(skill => (
+                                <SkillTag key={skill} skill={skill.replace('skill_', '')} size="xs" />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  
-                  {/* Metadata */}
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 mt-auto">
-                    <DurationBadge minutes={book.metadata?.readingTimeMin || 30} size="xs" />
-                    <DifficultyBadge level={book.metadata?.difficulty || 'FOUNDATION'} size="xs" />
                   </div>
-                </div>
-              </div>
-            );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

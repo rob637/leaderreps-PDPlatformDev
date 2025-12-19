@@ -50,8 +50,19 @@ const ProgramsIndex = () => {
       );
     }
     
+    // Sort: Active (unlocked) first, then Alphabetical
+    result.sort((a, b) => {
+      const aUnlocked = isContentUnlocked(a);
+      const bUnlocked = isContentUnlocked(b);
+      
+      if (aUnlocked && !bUnlocked) return -1;
+      if (!aUnlocked && bUnlocked) return 1;
+      
+      return (a.title || '').localeCompare(b.title || '');
+    });
+    
     return result;
-  }, [programs, searchQuery, selectedSkills]);
+  }, [programs, searchQuery, selectedSkills, isContentUnlocked]);
 
   return (
     <PageLayout 
@@ -138,7 +149,8 @@ const ProgramsIndex = () => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="divide-y divide-slate-100">
             {filteredPrograms.map((program) => {
               const isUnlocked = isContentUnlocked(program);
               
@@ -150,74 +162,76 @@ const ProgramsIndex = () => {
                     navigate('program-detail', { id: program.id, title: program.title });
                   }
                 }}
-                className={`bg-white border border-slate-200 rounded-xl overflow-hidden transition-all flex flex-col h-full relative ${
+                className={`p-5 transition-all group relative ${
                   isUnlocked 
-                    ? 'hover:shadow-lg hover:border-indigo-300 cursor-pointer group' 
-                    : 'opacity-90 cursor-not-allowed'
+                    ? 'hover:bg-slate-50 cursor-pointer' 
+                    : 'bg-slate-50/50 opacity-75 cursor-not-allowed'
                 }`}
               >
                 {/* Lock Overlay */}
                 {!isUnlocked && (
-                  <div className="absolute inset-0 bg-slate-50/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center text-slate-500">
-                    <div className="bg-white p-3 rounded-full shadow-md mb-2 border border-slate-100">
-                      <Lock className="w-6 h-6 text-slate-400" />
-                    </div>
-                    <span className="text-sm font-bold text-slate-700">Locked</span>
-                    <span className="text-xs text-slate-500 mt-1 px-4 text-center">Available in Development Plan</span>
+                  <div className="absolute right-4 top-4 z-10">
+                    <Lock className="w-5 h-5 text-slate-400" />
                   </div>
                 )}
 
-                {/* Program Image/Header */}
-                <div className="h-36 bg-gradient-to-br from-indigo-50 to-purple-100 flex items-center justify-center relative overflow-hidden">
-                  {(program.coverUrl || program.image || program.thumbnail) ? (
-                    <img 
-                      src={program.coverUrl || program.image || program.thumbnail} 
-                      alt={program.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <span className="text-5xl font-bold text-indigo-200 group-hover:text-indigo-300 transition-colors">
-                      {program.title?.charAt(0)}
-                    </span>
-                  )}
-                  {/* Tier Badge */}
-                  {program.tier && (
-                    <div className="absolute top-3 right-3">
-                      <TierBadge tier={program.tier} size="xs" />
-                    </div>
-                  )}
-                </div>
-                
-                {/* Content */}
-                <div className="p-5 flex flex-col flex-grow">
-                  <h3 className="font-bold text-lg text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
-                    {program.title}
-                  </h3>
-                  <p className="text-sm text-slate-500 mb-4 line-clamp-2 flex-grow">
-                    {program.description}
-                  </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Program Image/Header */}
+                  <div className="w-24 h-24 bg-gradient-to-br from-indigo-50 to-purple-100 rounded-xl flex items-center justify-center relative overflow-hidden flex-shrink-0">
+                    {(program.coverUrl || program.image || program.thumbnail) ? (
+                      <img 
+                        src={program.coverUrl || program.image || program.thumbnail} 
+                        alt={program.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <span className="text-3xl font-bold text-indigo-200 group-hover:text-indigo-300 transition-colors">
+                        {program.title?.charAt(0)}
+                      </span>
+                    )}
+                  </div>
                   
-                  {/* Skills Tags */}
-                  {program.skills?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {program.skills.slice(0, 3).map(skill => (
-                        <SkillTag key={skill.id || skill} skill={skill.title || skill.replace('skill_', '')} size="xs" />
-                      ))}
-                      {program.skills.length > 3 && (
-                        <span className="text-xs text-slate-400">+{program.skills.length - 3}</span>
+                  {/* Content */}
+                  <div className="flex-grow">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="font-bold text-lg text-slate-800 group-hover:text-indigo-600 transition-colors">
+                          {program.title}
+                        </h3>
+                        <p className="text-sm text-slate-500 line-clamp-2 mt-1">
+                          {program.description}
+                        </p>
+                      </div>
+                      
+                      {/* Tier Badge */}
+                      {program.tier && (
+                        <TierBadge tier={program.tier} size="sm" />
                       )}
                     </div>
-                  )}
-                  
-                  {/* Metadata Footer */}
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                    <DurationBadge minutes={(program.metadata?.durationWeeks || 4) * 7 * 60} size="xs" />
-                    <DifficultyBadge level={program.metadata?.difficulty || 'FOUNDATION'} size="xs" />
+                    
+                    {/* Metadata Row */}
+                    <div className="flex flex-wrap items-center gap-3 mt-4">
+                      <DurationBadge minutes={(program.metadata?.durationWeeks || 4) * 7 * 60} />
+                      <DifficultyBadge level={program.metadata?.difficulty || 'FOUNDATION'} />
+                      
+                      {/* Skills Tags */}
+                      {program.skills?.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {program.skills.slice(0, 3).map(skill => (
+                            <SkillTag key={skill.id || skill} skill={skill.title || skill.replace('skill_', '')} size="sm" />
+                          ))}
+                          {program.skills.length > 3 && (
+                            <span className="text-xs text-slate-400">+{program.skills.length - 3}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             );
             })}
+            </div>
           </div>
         )}
       </div>

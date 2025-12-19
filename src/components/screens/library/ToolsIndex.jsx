@@ -101,6 +101,17 @@ const ToolsIndex = () => {
     //   return true;
     // });
 
+    // Sort: Active (Unlocked) first, then Alphabetical
+    result.sort((a, b) => {
+      const aUnlocked = isContentUnlocked(a);
+      const bUnlocked = isContentUnlocked(b);
+      
+      if (aUnlocked && !bUnlocked) return -1;
+      if (!aUnlocked && bUnlocked) return 1;
+      
+      return (a.title || '').localeCompare(b.title || '');
+    });
+
     return result;
   }, [tools, searchQuery, selectedSkills, typeFilter, isContentUnlocked]);
 

@@ -117,64 +117,68 @@ const SkillsIndex = () => {
             <p className="text-xs text-slate-400">Admin: Run the 'Seed Skills' migration.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {skills.map((skill) => {
-              const counts = contentCounts[skill.id] || { programs: 0, workouts: 0, readReps: 0, tools: 0, total: 0 };
-              const style = getPillarStyle(skill.pillar);
-              
-              return (
-                <div 
-                  key={skill.id} 
-                  onClick={() => navigate('skill-detail', { id: skill.id, title: skill.name })}
-                  className={`bg-white rounded-xl border ${style.border} p-6 hover:border-corporate-teal hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full`}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`w-12 h-12 ${style.bg} rounded-full flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <Zap className={`w-6 h-6 ${style.icon}`} />
-                    </div>
-                    <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-corporate-teal group-hover:translate-x-1 transition-all" />
-                  </div>
-                  
-                  <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-corporate-teal transition-colors">
-                    {skill.name}
-                  </h3>
-                  
-                  <p className="text-sm text-slate-500 line-clamp-2 flex-grow mb-4">
-                    {skill.description}
-                  </p>
-                  
-                  {/* Content Counts */}
-                  <div className="pt-4 border-t border-slate-100">
-                    {counts.total > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {counts.programs > 0 && (
-                          <span className="flex items-center gap-1 text-[10px] font-bold bg-purple-50 text-purple-600 px-2 py-1 rounded-full">
-                            <Layers className="w-3 h-3" /> {counts.programs} Program{counts.programs !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                        {counts.workouts > 0 && (
-                          <span className="flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-full">
-                            <Dumbbell className="w-3 h-3" /> {counts.workouts} Workout{counts.workouts !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                        {counts.readReps > 0 && (
-                          <span className="flex items-center gap-1 text-[10px] font-bold bg-green-50 text-green-600 px-2 py-1 rounded-full">
-                            <BookOpen className="w-3 h-3" /> {counts.readReps} Book{counts.readReps !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                        {counts.tools > 0 && (
-                          <span className="flex items-center gap-1 text-[10px] font-bold bg-orange-50 text-orange-600 px-2 py-1 rounded-full">
-                            <Wrench className="w-3 h-3" /> {counts.tools} Tool{counts.tools !== 1 ? 's' : ''}
-                          </span>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="divide-y divide-slate-100">
+              {skills.map((skill) => {
+                const counts = contentCounts[skill.id] || { programs: 0, workouts: 0, readReps: 0, tools: 0, total: 0 };
+                const style = getPillarStyle(skill.pillar);
+                
+                return (
+                  <div 
+                    key={skill.id} 
+                    onClick={() => navigate('skill-detail', { id: skill.id, title: skill.name })}
+                    className="p-5 transition-colors hover:bg-slate-50 cursor-pointer group"
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Icon */}
+                      <div className={`w-12 h-12 ${style.bg} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                        <Zap className={`w-6 h-6 ${style.icon}`} />
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-grow min-w-0">
+                        <div className="flex items-start justify-between gap-4">
+                          <h3 className="font-bold text-slate-800 group-hover:text-corporate-teal transition-colors">
+                            {skill.name}
+                          </h3>
+                          <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-corporate-teal group-hover:translate-x-1 transition-all" />
+                        </div>
+                        
+                        <p className="text-sm text-slate-500 line-clamp-2 mt-1">
+                          {skill.description}
+                        </p>
+                        
+                        {/* Content Counts */}
+                        {counts.total > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {counts.programs > 0 && (
+                              <span className="flex items-center gap-1 text-[10px] font-bold bg-purple-50 text-purple-600 px-2 py-1 rounded-full">
+                                <Layers className="w-3 h-3" /> {counts.programs}
+                              </span>
+                            )}
+                            {counts.workouts > 0 && (
+                              <span className="flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-full">
+                                <Dumbbell className="w-3 h-3" /> {counts.workouts}
+                              </span>
+                            )}
+                            {counts.readReps > 0 && (
+                              <span className="flex items-center gap-1 text-[10px] font-bold bg-green-50 text-green-600 px-2 py-1 rounded-full">
+                                <BookOpen className="w-3 h-3" /> {counts.readReps}
+                              </span>
+                            )}
+                            {counts.tools > 0 && (
+                              <span className="flex items-center gap-1 text-[10px] font-bold bg-orange-50 text-orange-600 px-2 py-1 rounded-full">
+                                <Wrench className="w-3 h-3" /> {counts.tools}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
-                    ) : (
-                      <span className="text-xs text-slate-400 italic">Content coming soon</span>
-                    )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

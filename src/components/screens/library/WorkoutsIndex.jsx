@@ -58,8 +58,19 @@ const WorkoutsIndex = () => {
       );
     }
     
+    // Sort: Active (unlocked) first, then Alphabetical
+    result.sort((a, b) => {
+      const aUnlocked = isContentUnlocked(a);
+      const bUnlocked = isContentUnlocked(b);
+      
+      if (aUnlocked && !bUnlocked) return -1;
+      if (!aUnlocked && bUnlocked) return 1;
+      
+      return (a.title || '').localeCompare(b.title || '');
+    });
+    
     return result;
-  }, [workouts, searchQuery, selectedSkills, difficultyFilter]);
+  }, [workouts, searchQuery, selectedSkills, difficultyFilter, isContentUnlocked]);
 
   return (
     <PageLayout title="Workouts" breadcrumbs={[
@@ -167,7 +178,8 @@ const WorkoutsIndex = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="divide-y divide-slate-100">
             {filteredWorkouts.map((workout) => {
               const isUnlocked = isContentUnlocked(workout);
               
@@ -175,23 +187,21 @@ const WorkoutsIndex = () => {
               <div 
                 key={workout.id} 
                 onClick={() => isUnlocked ? navigate('workout-detail', { id: workout.id, title: workout.title }) : null}
-                className={`bg-white border rounded-xl p-5 transition-all group relative ${
+                className={`p-5 transition-all group relative ${
                   isUnlocked 
-                    ? 'border-slate-200 hover:shadow-lg hover:border-orange-300 cursor-pointer' 
-                    : 'border-slate-100 opacity-75 cursor-not-allowed'
+                    ? 'hover:bg-slate-50 cursor-pointer' 
+                    : 'bg-slate-50/50 opacity-75 cursor-not-allowed'
                 }`}
               >
                 {!isUnlocked && (
-                  <div className="absolute inset-0 bg-slate-50/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl">
-                    <div className="bg-white/90 p-3 rounded-full shadow-sm border border-slate-200">
-                      <Lock className="w-6 h-6 text-slate-400" />
-                    </div>
+                  <div className="absolute right-4 top-4 z-10">
+                    <Lock className="w-5 h-5 text-slate-400" />
                   </div>
                 )}
 
                 <div className="flex flex-col sm:flex-row gap-4">
                   {/* Icon */}
-                  <div className="w-16 h-16 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-orange-100 transition-colors">
+                  <div className="w-16 h-16 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                     <Dumbbell className="w-8 h-8 text-orange-500" />
                   </div>
                   
@@ -227,14 +237,17 @@ const WorkoutsIndex = () => {
                   
                   {/* Action */}
                   <div className="flex items-center sm:self-center">
-                    <button className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 transition-colors whitespace-nowrap group-hover:shadow-md">
-                      Start <ArrowRight className="w-4 h-4" />
-                    </button>
+                    {isUnlocked ? (
+                      <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-orange-600 group-hover:translate-x-1 transition-all" />
+                    ) : (
+                      <Lock className="w-5 h-5 text-slate-300" />
+                    )}
                   </div>
                 </div>
               </div>
               );
             })}
+            </div>
           </div>
         )}
       </div>
