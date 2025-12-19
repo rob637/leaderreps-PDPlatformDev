@@ -35,6 +35,12 @@ const VideoDetail = (props) => {
   if (loading) return <div className="p-12 flex justify-center"><Loader className="animate-spin" /></div>;
   if (!video) return <div className="p-12 text-center">Video not found.</div>;
 
+  // Extract URL from details for UniversalResourceViewer
+  const videoWithUrl = {
+    ...video,
+    url: video.details?.externalUrl || video.url || video.metadata?.url
+  };
+
   const breadcrumbs = [
     { label: 'Home', path: 'dashboard' },
     { label: 'Library', path: 'library' },
@@ -54,7 +60,7 @@ const VideoDetail = (props) => {
       <div className="max-w-4xl mx-auto p-6">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6">
-            <UniversalResourceViewer resource={video} inline={true} />
+            <UniversalResourceViewer resource={videoWithUrl} inline={true} />
             <div className="mt-6">
               <h2 className="text-xl font-bold mb-2">{video.title}</h2>
               <p className="text-slate-600">{video.description}</p>

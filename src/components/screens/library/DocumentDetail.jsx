@@ -35,6 +35,12 @@ const DocumentDetail = (props) => {
   if (loading) return <div className="p-12 flex justify-center"><Loader className="animate-spin" /></div>;
   if (!document) return <div className="p-12 text-center">Document not found.</div>;
 
+  // Extract URL from details for UniversalResourceViewer
+  const documentWithUrl = {
+    ...document,
+    url: document.details?.url || document.url || document.metadata?.url
+  };
+
   const breadcrumbs = [
     { label: 'Home', path: 'dashboard' },
     { label: 'Library', path: 'library' },
@@ -54,7 +60,7 @@ const DocumentDetail = (props) => {
       <div className="max-w-4xl mx-auto p-6">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6">
-            <UniversalResourceViewer resource={document} inline={true} />
+            <UniversalResourceViewer resource={documentWithUrl} inline={true} />
             <div className="mt-6">
               <h2 className="text-xl font-bold mb-2">{document.title}</h2>
               <p className="text-slate-600">{document.description}</p>

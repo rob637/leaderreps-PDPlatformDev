@@ -108,7 +108,7 @@ const ToolDetail = (props) => {
     >
       {showViewer && (
         <UniversalResourceViewer 
-          resource={{...tool, url: tool.metadata?.url}} 
+          resource={{...tool, url: tool.details?.url || tool.metadata?.url || tool.url}} 
           onClose={() => setShowViewer(false)} 
         />
       )}

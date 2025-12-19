@@ -105,7 +105,6 @@ const ReadRepDetail = (props) => {
       backParams={fromProgram ? { id: fromProgram.id } : undefined}
       navigate={navigate}
     >
-    >
       <div className="max-w-5xl mx-auto">
         
         {/* Header Card */}

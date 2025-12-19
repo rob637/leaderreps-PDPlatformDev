@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useContentAccess } from '../../../hooks/useContentAccess';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { Loader, Search, SlidersHorizontal, Lock, Zap } from 'lucide-react';
 import SkillFilter from '../../ui/SkillFilter.jsx';
@@ -26,13 +26,49 @@ const ContentListView = ({
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    // Fetch ONLY from Unified Content Library
-    const q = query(collection(db, UNIFIED_COLLECTION), where('type', '==', type), where('status', '==', 'PUBLISHED'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setItems(fetchedItems);
+    // Fetch from Unified Content Library
+    // Query 1: Items with primary type match
+    const typeQuery = query(
+      collection(db, UNIFIED_COLLECTION), 
+      where('type', '==', type), 
+      where('status', '==', 'PUBLISHED')
+    );
+    
+    // Query 2: Items with visibility array containing this type (cross-listed content)
+    const visibilityQuery = query(
+      collection(db, UNIFIED_COLLECTION),
+      where('visibility', 'array-contains', type),
+      where('status', '==', 'PUBLISHED')
+    );
+
+    // Set up real-time listener for primary type
+    const unsubscribe = onSnapshot(typeQuery, async (typeSnapshot) => {
+      const typeItems = typeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Also fetch visibility-based items (one-time fetch, merged with real-time)
+      try {
+        const visibilitySnapshot = await getDocs(visibilityQuery);
+        const visibilityItems = visibilitySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Merge and deduplicate
+        const allItems = [...typeItems];
+        const existingIds = new Set(typeItems.map(item => item.id));
+        
+        visibilityItems.forEach(item => {
+          if (!existingIds.has(item.id)) {
+            allItems.push(item);
+          }
+        });
+        
+        setItems(allItems);
+      } catch (err) {
+        console.error('Error fetching visibility items:', err);
+        setItems(typeItems); // Fallback to type-only items
+      }
+      
       setLoading(false);
     });
+    
     return () => unsubscribe();
   }, [db, type]);
 
@@ -177,6 +213,23 @@ const ContentListView = ({
             {filteredItems.map((item) => {
               const isUnlocked = isContentUnlocked(item);
               
+              // Determine the correct detail route based on the item's actual type
+              // This handles cross-listed items (e.g., a DOCUMENT showing in Videos list)
+              const getDetailRoute = (itemType) => {
+                switch (itemType) {
+                  case 'VIDEO': return 'video-detail';
+                  case 'DOCUMENT': return 'document-detail';
+                  case 'TOOL': return 'tool-detail';
+                  case 'READ_REP': return 'read-rep-detail';
+                  case 'WORKOUT': return 'workout-detail';
+                  case 'PROGRAM': return 'program-detail';
+                  case 'SKILL': return 'skill-detail';
+                  default: return detailRoute;
+                }
+              };
+              
+              const actualDetailRoute = getDetailRoute(item.type);
+              
               return (
                 <ContentListItem 
                   key={item.id}
@@ -186,8 +239,8 @@ const ContentListView = ({
                   color={color}
                   bgColor={bgColor}
                   onClick={() => {
-                    if (isUnlocked && detailRoute) {
-                      navigate(detailRoute, { id: item.id, title: item.title });
+                    if (isUnlocked && actualDetailRoute) {
+                      navigate(actualDetailRoute, { id: item.id, title: item.title });
                     }
                   }}
                 />
