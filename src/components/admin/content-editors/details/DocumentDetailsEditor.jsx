@@ -126,12 +126,12 @@ const DocumentDetailsEditor = ({ details = {}, onChange }) => {
       {/* Media Selector Modal */}
       {showMediaSelector && (
         <MediaSelector
-          onSelect={(url, asset) => {
+          onChange={(url, asset) => {
             handleVaultSelect(url, asset);
             setShowMediaSelector(false);
           }}
           onClose={() => setShowMediaSelector(false)}
-          allowedTypes={['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation']}
+          mediaType="document"
         />
       )}
     </div>

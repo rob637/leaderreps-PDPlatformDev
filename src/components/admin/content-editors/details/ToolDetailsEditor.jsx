@@ -121,7 +121,7 @@ const ToolDetailsEditor = ({ details = {}, onChange }) => {
       {/* Media Selector Modal */}
       {showMediaSelector && (
         <MediaSelector
-          onSelect={(url, asset) => {
+          onChange={(url, asset) => {
             handleVaultSelect(url, asset);
             setShowMediaSelector(false);
           }}
