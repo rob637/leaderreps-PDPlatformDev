@@ -13,6 +13,8 @@ const DocumentDetail = (props) => {
   
   const docId = props.id || props.navParams?.id;
   const fromProgram = props.fromProgram || props.navParams?.fromProgram;
+  const fromLibrary = props.fromLibrary || props.navParams?.fromLibrary;
+  const fromSkill = props.fromSkill || props.navParams?.fromSkill;
 
   useEffect(() => {
     const fetchDoc = async () => {
@@ -44,7 +46,17 @@ const DocumentDetail = (props) => {
   const breadcrumbs = [
     { label: 'Home', path: 'dashboard' },
     { label: 'Library', path: 'library' },
-    ...(fromProgram ? [{ label: fromProgram.title, path: 'program-detail', params: { id: fromProgram.id } }] : [{ label: 'Documents', path: 'documents-index' }]),
+    ...(fromProgram 
+      ? [{ label: fromProgram.title, path: 'program-detail', params: { id: fromProgram.id } }] 
+      : fromSkill
+        ? [
+            { label: 'Skills', path: 'skills-index' },
+            { label: fromSkill.title, path: 'skill-detail', params: { id: fromSkill.id } }
+          ]
+        : fromLibrary
+          ? [{ label: fromLibrary.title, path: fromLibrary.path }]
+          : [{ label: 'Documents', path: 'documents-index' }]
+    ),
     { label: document.title, path: null }
   ];
 
@@ -53,8 +65,17 @@ const DocumentDetail = (props) => {
       title={document.title} 
       subtitle="Document Library"
       breadcrumbs={breadcrumbs}
-      backTo={fromProgram ? 'program-detail' : 'documents-index'}
-      backParams={fromProgram ? { id: fromProgram.id } : undefined}
+      backTo={
+        fromProgram ? 'program-detail' : 
+        fromSkill ? 'skill-detail' : 
+        fromLibrary ? fromLibrary.path : 
+        'documents-index'
+      }
+      backParams={
+        fromProgram ? { id: fromProgram.id } : 
+        fromSkill ? { id: fromSkill.id } : 
+        undefined
+      }
       navigate={navigate}
     >
       <div className="max-w-4xl mx-auto p-6">

@@ -18,6 +18,8 @@ const ToolDetail = (props) => {
   
   // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
   const toolId = props.id || props.navParams?.id;
+  const fromLibrary = props.fromLibrary || props.navParams?.fromLibrary;
+  const fromSkill = props.fromSkill || props.navParams?.fromSkill;
 
   useEffect(() => {
     const fetchTool = async () => {
@@ -102,7 +104,15 @@ const ToolDetail = (props) => {
       subtitle="Tool & Resource"
       breadcrumbs={[
         { label: 'Library', path: 'library' },
-        { label: 'Tools', path: 'tools-index' },
+        ...(fromSkill
+          ? [
+              { label: 'Skills', path: 'skills-index' },
+              { label: fromSkill.title, path: 'skill-detail', params: { id: fromSkill.id } }
+            ]
+          : fromLibrary 
+            ? [{ label: fromLibrary.title, path: fromLibrary.path }]
+            : [{ label: 'Tools', path: 'tools-index' }]
+        ),
         { label: tool.title, path: null }
       ]}
     >

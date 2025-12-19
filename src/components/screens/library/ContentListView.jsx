@@ -43,8 +43,18 @@ const ContentListView = ({
 
     // Set up real-time listener for primary type
     const unsubscribe = onSnapshot(typeQuery, async (typeSnapshot) => {
-      const typeItems = typeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const rawTypeItems = typeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
+      // Filter out items that have explicitly opted out of this library via visibility settings
+      const typeItems = rawTypeItems.filter(item => {
+        // If visibility is defined, it must include the current type
+        if (item.visibility && Array.isArray(item.visibility)) {
+          return item.visibility.includes(type);
+        }
+        // If visibility is undefined/null, assume it belongs in its primary type library (legacy support)
+        return true;
+      });
+
       // Also fetch visibility-based items (one-time fetch, merged with real-time)
       try {
         const visibilitySnapshot = await getDocs(visibilityQuery);
@@ -240,7 +250,14 @@ const ContentListView = ({
                   bgColor={bgColor}
                   onClick={() => {
                     if (isUnlocked && actualDetailRoute) {
-                      navigate(actualDetailRoute, { id: item.id, title: item.title });
+                      navigate(actualDetailRoute, { 
+                        id: item.id, 
+                        title: item.title,
+                        fromLibrary: {
+                          title: title,
+                          path: detailRoute.replace('-detail', '-index') // Infer index route from detail route prop
+                        }
+                      });
                     }
                   }}
                 />

@@ -37,6 +37,7 @@ import UserManagement from './UserManagement';
 import LeaderProfileReports from './LeaderProfileReports';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav';
 import { useAppServices } from '../../services/useAppServices';
+import { useNavigation } from '../../providers/NavigationProvider';
 import { doc, getDoc } from 'firebase/firestore';
 
 // Define version locally if not available globally
@@ -45,9 +46,16 @@ const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '
 
 const AdminPortal = () => {
   const { user, db } = useAppServices();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { navParams } = useNavigation();
+  const [activeTab, setActiveTab] = useState(navParams?.tab || 'dashboard');
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (navParams?.tab) {
+      setActiveTab(navParams.tab);
+    }
+  }, [navParams]);
 
   useEffect(() => {
     const checkAdminStatus = async () => {

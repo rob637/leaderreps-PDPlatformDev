@@ -14,6 +14,7 @@ import {
   deleteUnifiedContent
 } from '../../services/unifiedContentService';
 import GenericContentEditor from './content-editors/GenericContentEditor';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav';
 
 const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
   const { db, navigate } = useAppServices();
@@ -83,9 +84,18 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
   }
 
   return (
-    <div className="p-6 bg-white rounded-xl shadow-sm border border-slate-200">
-      {/* Header */}
-      <div className="flex justify-between items-start mb-6">
+    <div className="max-w-6xl mx-auto">
+      <BreadcrumbNav 
+        items={[
+          { label: 'Admin Command Center', path: 'admin-portal' },
+          { label: 'Content Library', path: 'admin-portal', params: { tab: 'content' } },
+          { label: title, path: null }
+        ]}
+        navigate={navigate}
+      />
+      <div className="p-6 bg-white rounded-xl shadow-sm border border-slate-200">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
             {Icon && <div className="p-2 bg-slate-100 rounded-lg"><Icon className="w-6 h-6 text-slate-600" /></div>}
@@ -166,6 +176,7 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 };
