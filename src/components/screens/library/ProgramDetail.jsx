@@ -4,7 +4,7 @@ import { useContentAccess } from '../../../hooks/useContentAccess';
 import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { UNIFIED_COLLECTION, CONTENT_TYPES } from '../../../services/unifiedContentService';
 import { PageLayout } from '../../ui/PageLayout.jsx';
-import { Loader, PlayCircle, CheckCircle, Clock, BarChart, ArrowRight, Lock, BookOpen, Wrench, Film, Dumbbell } from 'lucide-react';
+import { Loader, PlayCircle, CheckCircle, Clock, BarChart, ArrowRight, Lock, BookOpen, Wrench, Film, Dumbbell, FileText } from 'lucide-react';
 import { Card, Button, Badge } from '../../screens/developmentplan/DevPlanComponents.jsx';
 import UniversalResourceViewer from '../../ui/UniversalResourceViewer.jsx';
 
@@ -101,6 +101,14 @@ const ProgramDetail = (props) => {
             console.log("Navigate to video:", module.id);
         }
         break;
+      case CONTENT_TYPES.DOCUMENT:
+        if (module.url || module.metadata?.url || module.fileUrl) {
+             setSelectedResource({
+                 ...module,
+                 url: module.url || module.metadata?.url || module.fileUrl
+             });
+        }
+        break;
       default:
         console.warn("Unknown module type:", module.type);
     }
@@ -112,6 +120,7 @@ const ProgramDetail = (props) => {
       case CONTENT_TYPES.TOOL: return <Wrench className="w-5 h-5" />;
       case CONTENT_TYPES.READ_REP: return <BookOpen className="w-5 h-5" />;
       case CONTENT_TYPES.WORKOUT: return <Dumbbell className="w-5 h-5" />;
+      case CONTENT_TYPES.DOCUMENT: return <FileText className="w-5 h-5" />;
       default: return <CheckCircle className="w-5 h-5" />;
     }
   };

@@ -293,10 +293,10 @@ const ToolsIndex = () => {
                           }
                         }}
                         disabled={!isUnlocked}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
+                        className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
                           isUnlocked 
-                            ? 'bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-600 cursor-pointer' 
-                            : 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                            ? 'text-slate-400 hover:bg-blue-50 hover:text-blue-600 cursor-pointer' 
+                            : 'text-slate-300 cursor-not-allowed'
                         }`}
                         title="Open Tool"
                       >
