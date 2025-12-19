@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { FileText, ExternalLink, FileType, Link as LinkIcon, Database } from 'lucide-react';
+import { Wrench, ExternalLink, Link as LinkIcon, Database, Video, FileText } from 'lucide-react';
 import MediaSelector from '../../MediaSelector';
 
-const DocumentDetailsEditor = ({ details = {}, onChange }) => {
+const ToolDetailsEditor = ({ details = {}, onChange }) => {
   const [sourceType, setSourceType] = useState(
     details.url?.includes('firebasestorage') ? 'VAULT' : 'LINK'
   );
@@ -14,31 +14,29 @@ const DocumentDetailsEditor = ({ details = {}, onChange }) => {
 
   const handleVaultSelect = (url, asset) => {
     handleChange('url', url);
-    // Auto-detect file type from metadata if possible
+    // Auto-detect type
     if (asset?.contentType) {
-      if (asset.contentType.includes('pdf')) handleChange('fileType', 'PDF');
-      else if (asset.contentType.includes('word') || asset.contentType.includes('document')) handleChange('fileType', 'DOCX');
-      else if (asset.contentType.includes('sheet') || asset.contentType.includes('excel')) handleChange('fileType', 'XLSX');
-      else if (asset.contentType.includes('presentation') || asset.contentType.includes('powerpoint')) handleChange('fileType', 'PPTX');
+      if (asset.contentType.includes('video')) handleChange('toolType', 'VIDEO_RESOURCE');
+      else if (asset.contentType.includes('pdf') || asset.contentType.includes('document')) handleChange('toolType', 'ARTICLE');
     }
   };
 
   return (
-    <div className="space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
-      <h3 className="font-semibold text-blue-800 flex items-center gap-2">
-        <FileText size={18} />
-        Document Details
+    <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+      <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+        <Wrench size={18} />
+        Tool Details
       </h3>
       
       {/* Source Type Selector */}
-      <div className="flex gap-4 border-b border-blue-200 pb-2">
+      <div className="flex gap-4 border-b border-gray-200 pb-2">
         <button
           type="button"
           onClick={() => setSourceType('LINK')}
           className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
             sourceType === 'LINK' 
-              ? 'bg-blue-100 text-blue-800' 
-              : 'text-gray-600 hover:bg-blue-50'
+              ? 'bg-gray-200 text-gray-800' 
+              : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
           <LinkIcon size={14} />
@@ -49,8 +47,8 @@ const DocumentDetailsEditor = ({ details = {}, onChange }) => {
           onClick={() => setSourceType('VAULT')}
           className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
             sourceType === 'VAULT' 
-              ? 'bg-blue-100 text-blue-800' 
-              : 'text-gray-600 hover:bg-blue-50'
+              ? 'bg-gray-200 text-gray-800' 
+              : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
           <Database size={14} />
@@ -58,11 +56,11 @@ const DocumentDetailsEditor = ({ details = {}, onChange }) => {
         </button>
       </div>
 
-      {/* Document Source Input */}
+      {/* Tool Source Input */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
           {sourceType === 'LINK' ? <ExternalLink size={14} /> : <Database size={14} />}
-          {sourceType === 'LINK' ? 'Document URL' : 'Select Document from Vault'}
+          {sourceType === 'LINK' ? 'Tool URL' : 'Select Resource from Vault'}
         </label>
 
         {sourceType === 'LINK' ? (
@@ -70,15 +68,15 @@ const DocumentDetailsEditor = ({ details = {}, onChange }) => {
             type="url"
             value={details.url || ''}
             onChange={(e) => handleChange('url', e.target.value)}
-            placeholder="https://example.com/document.pdf"
+            placeholder="https://example.com/tool"
             className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
           />
         ) : (
           <div className="space-y-2">
             {details.url ? (
               <div className="flex items-center gap-2 p-2 bg-white border rounded-md">
-                <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center text-blue-600">
-                  <FileText size={16} />
+                <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-gray-600">
+                  <Wrench size={16} />
                 </div>
                 <span className="text-sm text-gray-700 truncate flex-1">{details.url}</span>
                 <button
@@ -93,32 +91,29 @@ const DocumentDetailsEditor = ({ details = {}, onChange }) => {
               <button
                 type="button"
                 onClick={() => setShowMediaSelector(true)}
-                className="w-full p-8 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors flex flex-col items-center justify-center gap-2 text-blue-800"
+                className="w-full p-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors flex flex-col items-center justify-center gap-2 text-gray-800"
               >
                 <Database size={24} />
-                <span className="font-medium">Select Document from Vault</span>
+                <span className="font-medium">Select Resource from Vault</span>
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* File Type */}
+      {/* Tool Type */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-          <FileType size={14} />
-          File Type
+          <Wrench size={14} />
+          Tool Type
         </label>
         <select
-          value={details.fileType || 'PDF'}
-          onChange={(e) => handleChange('fileType', e.target.value)}
+          value={details.toolType || 'ARTICLE'}
+          onChange={(e) => handleChange('toolType', e.target.value)}
           className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
         >
-          <option value="PDF">PDF</option>
-          <option value="DOCX">Word (DOCX)</option>
-          <option value="PPTX">PowerPoint (PPTX)</option>
-          <option value="XLSX">Excel (XLSX)</option>
-          <option value="LINK">External Link</option>
+          <option value="ARTICLE">Article / Document</option>
+          <option value="VIDEO_RESOURCE">Video Resource</option>
           <option value="OTHER">Other</option>
         </select>
       </div>
@@ -131,11 +126,11 @@ const DocumentDetailsEditor = ({ details = {}, onChange }) => {
             setShowMediaSelector(false);
           }}
           onClose={() => setShowMediaSelector(false)}
-          allowedTypes={['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation']}
+          mediaType="ALL"
         />
       )}
     </div>
   );
 };
 
-export default DocumentDetailsEditor;
+export default ToolDetailsEditor;

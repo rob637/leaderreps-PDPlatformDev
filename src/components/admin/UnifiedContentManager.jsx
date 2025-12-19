@@ -47,7 +47,9 @@ const UnifiedContentManager = () => {
   const loadContent = async () => {
     setLoading(true);
     try {
-      const data = await getUnifiedContent(db, activeTab);
+      // skipVisibilityMerge: true ensures we only see items with exact type match
+      // (prevents Videos from appearing in Documents tab, etc.)
+      const data = await getUnifiedContent(db, activeTab, { skipVisibilityMerge: true });
       setContentList(data);
     } catch (error) {
       console.error('Error loading content:', error);

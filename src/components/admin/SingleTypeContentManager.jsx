@@ -30,7 +30,8 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
   const loadContent = async () => {
     setLoading(true);
     try {
-      const data = await getUnifiedContent(db, type);
+      // skipVisibilityMerge: true ensures we only see items with exact type match
+      const data = await getUnifiedContent(db, type, { skipVisibilityMerge: true });
       setContentList(data);
     } catch (error) {
       console.error('Error loading content:', error);

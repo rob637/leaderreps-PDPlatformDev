@@ -19,6 +19,7 @@ import RepDetailsEditor from './details/RepDetailsEditor';
 import SkillDetailsEditor from './details/SkillDetailsEditor';
 import VideoDetailsEditor from './details/VideoDetailsEditor';
 import DocumentDetailsEditor from './details/DocumentDetailsEditor';
+import ToolDetailsEditor from './details/ToolDetailsEditor';
 import ContentPicker from './pickers/ContentPicker';
 
 const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
@@ -201,6 +202,8 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
         return <VideoDetailsEditor details={formData.details} onChange={handleDetailsUpdate} />;
       case CONTENT_TYPES.DOCUMENT:
         return <DocumentDetailsEditor details={formData.details} onChange={handleDetailsUpdate} />;
+      case CONTENT_TYPES.TOOL:
+        return <ToolDetailsEditor details={formData.details} onChange={handleDetailsUpdate} />;
       case CONTENT_TYPES.SKILL:
         return <SkillDetailsEditor details={formData.details} onChange={handleDetailsUpdate} />;
       default:

@@ -58,7 +58,8 @@ export const ROLE_LEVELS = {
  * Get content items filtered by type and other options
  * @param {object} db - Firestore instance
  * @param {string} type - Content Type (from CONTENT_TYPES)
- * @param {object} options - { status, category, limit }
+ * @param {object} options - { status, category, limit, skipVisibilityMerge }
+ *   - skipVisibilityMerge: if true, only returns items where type matches exactly (used in admin panel)
  */
 export const getUnifiedContent = async (db, type, options = {}) => {
   try {
@@ -83,9 +84,9 @@ export const getUnifiedContent = async (db, type, options = {}) => {
       ...doc.data()
     }));
 
-    // If type is provided, also check 'visibility' array for items that might be cross-listed
-    // This is a client-side merge because Firestore doesn't support OR queries across different fields easily in this context
-    if (type && type !== 'ALL') {
+    // If type is provided and skipVisibilityMerge is NOT set, also check 'visibility' array for cross-listed items
+    // skipVisibilityMerge=true is used in admin panel where we want strict type filtering
+    if (type && type !== 'ALL' && !options.skipVisibilityMerge) {
       const visibilityQuery = query(
         collection(db, UNIFIED_COLLECTION), 
         where('visibility', 'array-contains', type),
