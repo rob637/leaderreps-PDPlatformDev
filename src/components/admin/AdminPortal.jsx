@@ -12,7 +12,6 @@ import {
   Calendar,
   BookOpen,
   TestTube2,
-  Library,
   ArrowLeftRight,
   BrainCircuit,
   List,
@@ -22,7 +21,6 @@ import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
 import FeatureManager from './FeatureManager';
 import ContentAdminHome from './ContentAdminHome'; // Existing component
-import UnifiedContentManager from './UnifiedContentManager'; // New component
 import MediaLibrary from './MediaLibrary'; // New component
 // import MigrationTool from './MigrationTool'; // New component
 import SystemWidgets from './SystemWidgets';
@@ -123,7 +121,6 @@ const AdminPortal = () => {
         { id: 'daily-plan', label: 'Daily Plan (New)', icon: Calendar },
         { id: 'devplan', label: 'Legacy Plan', icon: Calendar },
         { id: 'content', label: 'Content Library', icon: FileText },
-        { id: 'library', label: 'Structure Library', icon: Library },
         { id: 'media', label: 'Media Vault', icon: Database }
       ]
     },
@@ -174,8 +171,7 @@ const AdminPortal = () => {
         return <DailyPlanManager />;
       case 'devplan':
         return <DevPlanManager />;
-      case 'library':
-        return <UnifiedContentManager />;
+      // 'library' tab removed - Programs/Workouts/Skills now managed as LOVs
       case 'media':
         return <MediaLibrary />;
       case 'diagnostics':
