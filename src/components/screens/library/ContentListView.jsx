@@ -85,6 +85,16 @@ const ContentListView = ({
   // Filter items
   const filteredItems = useMemo(() => {
     let result = items;
+
+    // Safety check: Ensure visibility rules are respected
+    // This handles cases where items might have slipped through the initial fetch logic
+    result = result.filter(item => {
+      // If visibility is explicitly set as an array, it MUST include the current library type
+      if (Array.isArray(item.visibility)) {
+        return item.visibility.includes(type);
+      }
+      return true;
+    });
     
     // Search filter
     if (searchQuery.trim()) {
