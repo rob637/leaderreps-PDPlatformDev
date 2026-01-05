@@ -228,7 +228,9 @@ const UserManagement = () => {
         status: 'pending',
         createdAt: serverTimestamp(),
         token: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
-        createdBy: 'admin'
+        createdBy: 'admin',
+        isTest: inviteForm.isTest || false,
+        testRecipient: inviteForm.isTest ? (inviteForm.testRecipient || user.email) : null
       };
 
       await addDoc(collection(db, 'invitations'), inviteData);
@@ -240,7 +242,9 @@ const UserManagement = () => {
         name: '',
         role: 'user',
         cohortId: '',
-        customMessage: "You're invited to join the LeaderReps Arena!"
+        customMessage: "You're invited to join the LeaderReps Arena!",
+        isTest: false,
+        testRecipient: ''
       });
       fetchData();
     } catch (error) {
@@ -746,6 +750,35 @@ const UserManagement = () => {
                   onChange={e => setInviteForm({...inviteForm, customMessage: e.target.value})}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                 ></textarea>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="checkbox"
+                    id="isTest"
+                    checked={inviteForm.isTest || false}
+                    onChange={e => setInviteForm({...inviteForm, isTest: e.target.checked})}
+                    className="rounded border-slate-300 text-corporate-teal focus:ring-corporate-teal"
+                  />
+                  <label htmlFor="isTest" className="text-sm font-medium text-slate-700">Send as Test Invite</label>
+                </div>
+                
+                {inviteForm.isTest && (
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">Redirect Email To (Optional - defaults to you)</label>
+                    <input
+                      type="email"
+                      value={inviteForm.testRecipient || ''}
+                      onChange={e => setInviteForm({...inviteForm, testRecipient: e.target.value})}
+                      className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-corporate-teal"
+                      placeholder={user?.email || "your-email@example.com"}
+                    />
+                    <p className="text-xs text-amber-600 mt-1">
+                      The invitation will be created for <strong>{inviteForm.email}</strong>, but the email will be sent to the address above.
+                    </p>
+                  </div>
+                )}
               </div>
               
               <div className="pt-4 flex gap-3">

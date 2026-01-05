@@ -63,13 +63,30 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
   });
 
   const inviteLink = `https://leaderreps-pd-platform.web.app/auth?invite=${token}`;
+  
+  // Handle Test Mode
+  let recipientEmail = email;
+  let subjectPrefix = "";
+  
+  if (invitation.isTest) {
+    recipientEmail = invitation.testRecipient || emailUser; // Default to sender if no recipient specified
+    subjectPrefix = `[TEST INVITE for ${email}] `;
+    logger.info(`🧪 Test Mode: Redirecting email for ${email} to ${recipientEmail}`);
+  }
 
   const mailOptions = {
     from: `"LeaderReps Platform" <${emailUser}>`,
-    to: email,
-    subject: "You're invited to LeaderReps PD Platform",
+    to: recipientEmail,
+    subject: `${subjectPrefix}You're invited to LeaderReps PD Platform`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        ${invitation.isTest ? `
+          <div style="background-color: #fff7ed; border: 1px solid #fdba74; padding: 10px; margin-bottom: 20px; border-radius: 6px; color: #9a3412;">
+            <strong>🧪 TEST MODE</strong><br/>
+            This invitation was created for: <strong>${email}</strong><br/>
+            But sent to you for testing purposes.
+          </div>
+        ` : ''}
         <h2 style="color: #0f172a;">Welcome to LeaderReps!</h2>
         <p>You have been invited to join the LeaderReps Professional Development Platform.</p>
         <p>Click the button below to accept your invitation and set up your account:</p>
@@ -87,7 +104,7 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
 
   try {
     await transporter.sendMail(mailOptions);
-    logger.info(`Invitation email sent to ${email}`);
+    logger.info(`Invitation email sent to ${recipientEmail} (Original: ${email})`);
     
     // Update the invitation document to mark as sent
     await snapshot.ref.update({ 
