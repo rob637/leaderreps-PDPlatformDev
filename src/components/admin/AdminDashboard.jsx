@@ -70,13 +70,15 @@ const AdminDashboard = () => {
       try {
         // 1. Users
         const usersSnap = await getDocs(collection(db, 'users'));
-        const totalUsers = usersSnap.size;
+        // Filter for real users (must have email)
+        const realUsers = usersSnap.docs.filter(doc => doc.data().email);
+        const totalUsers = realUsers.length;
         
         // Calculate Active Today (assuming lastActive timestamp exists, otherwise 0)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         let activeCount = 0;
-        usersSnap.docs.forEach(doc => {
+        realUsers.forEach(doc => {
           const data = doc.data();
           if (data.lastActive) {
             // Handle Firestore Timestamp, Date object, or string/number
@@ -91,11 +93,29 @@ const AdminDashboard = () => {
         });
 
         // 2. Content
+        // Check CMS Collections
         const readingsSnap = await getDocs(collection(db, 'content_readings'));
         const videosSnap = await getDocs(collection(db, 'content_videos'));
         const coursesSnap = await getDocs(collection(db, 'content_courses'));
         
-        const totalContent = readingsSnap.size + videosSnap.size + coursesSnap.size;
+        // Check Legacy Catalogs (metadata collection)
+        let legacyCount = 0;
+        try {
+          const catalogs = ['reading_catalog', 'video_catalog', 'course_catalog'];
+          for (const cat of catalogs) {
+            const catDoc = await getDoc(doc(db, 'metadata', cat));
+            if (catDoc.exists()) {
+              const data = catDoc.data();
+              if (data.items && typeof data.items === 'object') {
+                legacyCount += Object.keys(data.items).length;
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Error checking legacy catalogs:', e);
+        }
+
+        const totalContent = readingsSnap.size + videosSnap.size + coursesSnap.size + legacyCount;
 
         // 3. Issues (System Alerts)
         // We'll query a 'system_alerts' collection. If it doesn't exist, it returns 0.

@@ -1581,17 +1581,10 @@ render(<NotificationsWidget />);
     'locker-controller': `
 const LockerController = () => {
   const [currentTime, setCurrentTime] = React.useState(new Date());
-  const [isSettingDate, setIsSettingDate] = React.useState(false);
-  const [newStartDate, setNewStartDate] = React.useState('');
 
   // Get scope data
-  const { developmentPlanData, updateDevelopmentPlanData } = typeof scope !== 'undefined' ? scope : {};
+  const { developmentPlanData } = typeof scope !== 'undefined' ? scope : {};
   
-  // DEBUG: Log what we're receiving
-  // console.log('[LockerController] developmentPlanData:', developmentPlanData);
-  // console.log('[LockerController] developmentPlanData?.startDate:', developmentPlanData?.startDate);
-  // console.log('[LockerController] updateDevelopmentPlanData available:', !!updateDevelopmentPlanData);
-
   React.useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -1657,43 +1650,6 @@ const LockerController = () => {
   const currentWeek = currentWeekNum && currentWeekNum > 0 
     ? \`Week \${currentWeekNum}\` 
     : (startDate ? 'Not Started Yet' : 'Not Set');
-
-  const handleSetStartDate = async () => {
-    if (!newStartDate || !updateDevelopmentPlanData) return;
-    try {
-      // Parse the date and set to midnight local time
-      // Fix: Ensure we create a valid date object from the input string (YYYY-MM-DD)
-      // Appending T12:00:00 avoids timezone issues where midnight might shift to previous day
-      const dateObj = new Date(newStartDate + 'T12:00:00');
-      
-      // Then reset to midnight local time for consistency
-      dateObj.setHours(0, 0, 0, 0);
-
-      await updateDevelopmentPlanData({ startDate: dateObj });
-      setIsSettingDate(false);
-      setNewStartDate('');
-      // alert('Start date set successfully!'); // Removed alert for better UX
-      // window.location.reload(); // Removed reload, React state should update
-    } catch (error) {
-      console.error('Error setting start date:', error);
-      alert('Error setting start date: ' + error.message);
-    }
-  };
-
-  const handleSetToToday = async () => {
-    if (!updateDevelopmentPlanData) return;
-    try {
-      // Use simulated "now" if time traveling, otherwise real now
-      const today = new Date(simulatedNow);
-      today.setHours(0, 0, 0, 0); // Midnight of simulated day
-      await updateDevelopmentPlanData({ startDate: today });
-      // alert('Start date set to today!'); // Removed alert
-      // window.location.reload(); // Removed reload
-    } catch (error) {
-      console.error('Error setting start date:', error);
-      alert('Error setting start date: ' + error.message);
-    }
-  };
 
   return (
     <Card 
@@ -1766,49 +1722,7 @@ const LockerController = () => {
               }) : 'Not Set'}
             </p>
           </div>
-          {!isSettingDate && (
-            <button
-              onClick={() => setIsSettingDate(true)}
-              className="px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-medium rounded-lg transition-colors"
-            >
-              {startDate ? 'Change' : 'Set Date'}
-            </button>
-          )}
         </div>
-        
-        {isSettingDate && (
-          <div className="mt-3 p-3 bg-white rounded-lg border border-indigo-200">
-            <div className="flex gap-2 mb-2">
-              <input
-                type="date"
-                value={newStartDate}
-                onChange={(e) => setNewStartDate(e.target.value)}
-                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              <button
-                onClick={handleSetStartDate}
-                disabled={!newStartDate}
-                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                Save
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSetToToday}
-                className="flex-1 px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 text-xs font-medium rounded-lg transition-colors"
-              >
-                Set to Today (Dec 2, 2025 for Alpha)
-              </button>
-              <button
-                onClick={() => { setIsSettingDate(false); setNewStartDate(''); }}
-                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
     </Card>

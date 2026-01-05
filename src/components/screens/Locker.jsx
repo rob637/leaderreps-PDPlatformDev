@@ -50,9 +50,19 @@ const Locker = () => {
   }, [currentDayData]);
 
   // Arena Data
-  // Assuming winsList is an array of { text, completed, date } objects
-  // If it's not present, default to empty array
-  const winsList = dailyPracticeData?.winsList || [];
+  // Combine history with today's completed wins so they appear immediately
+  const historyWins = dailyPracticeData?.winsList || [];
+  const todayWins = dailyPracticeData?.morningBookend?.wins?.filter(w => w.completed && w.text) || [];
+  
+  const todayDate = dailyPracticeData?.date || new Date().toLocaleDateString('en-CA');
+  const formattedTodayWins = todayWins.map(w => ({
+    id: w.id,
+    text: w.text,
+    completed: true,
+    date: todayDate
+  }));
+  
+  const winsList = [...formattedTodayWins, ...historyWins];
   
   // Evening Bookend Data
   const eveningBookend = dailyPracticeData?.eveningBookend || {};
