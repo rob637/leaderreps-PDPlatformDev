@@ -13,6 +13,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const nodemailer = require("nodemailer");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -20,6 +21,88 @@ const db = admin.firestore();
 
 // Global options for cost control
 setGlobalOptions({ maxInstances: 10, region: "us-central1" });
+
+/**
+ * SEND INVITATION EMAIL (Firestore Trigger)
+ * Listens for new documents in the 'invitations' collection and sends an email.
+ */
+exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocumentCreated("invitations/{invitationId}", async (event) => {
+  const snapshot = event.data;
+  if (!snapshot) {
+    logger.error("No data associated with the event");
+    return;
+  }
+  
+  const invitation = snapshot.data();
+  const email = invitation.email;
+  const token = invitation.token;
+  
+  if (!email || !token) {
+    logger.error("Invitation missing email or token", invitation);
+    return;
+  }
+
+  // Configure Nodemailer transporter
+  // Note: For production, use a dedicated email service like SendGrid, Mailgun, or AWS SES.
+  // For development/testing with Gmail, you need an App Password.
+  // Set config: firebase functions:config:set email.user="your-email@gmail.com" email.pass="your-app-password"
+  const emailUser = process.env.EMAIL_USER || (require("firebase-functions").config().email?.user);
+  const emailPass = process.env.EMAIL_PASS || (require("firebase-functions").config().email?.pass);
+
+  if (!emailUser || !emailPass) {
+    logger.error("Email credentials not configured. Set email.user and email.pass.");
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: emailUser,
+      pass: emailPass,
+    },
+  });
+
+  const inviteLink = `https://leaderreps-pd-platform.web.app/auth?invite=${token}`;
+
+  const mailOptions = {
+    from: `"LeaderReps Platform" <${emailUser}>`,
+    to: email,
+    subject: "You're invited to LeaderReps PD Platform",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #0f172a;">Welcome to LeaderReps!</h2>
+        <p>You have been invited to join the LeaderReps Professional Development Platform.</p>
+        <p>Click the button below to accept your invitation and set up your account:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${inviteLink}" style="background-color: #0f766e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Accept Invitation</a>
+        </div>
+        <p>Or copy and paste this link into your browser:</p>
+        <p><a href="${inviteLink}">${inviteLink}</a></p>
+        <p>This invitation will expire in 7 days.</p>
+        <hr style="border: 1px solid #e2e8f0; margin: 30px 0;" />
+        <p style="color: #64748b; font-size: 12px;">If you did not expect this invitation, please ignore this email.</p>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    logger.info(`Invitation email sent to ${email}`);
+    
+    // Update the invitation document to mark as sent
+    await snapshot.ref.update({ 
+      status: "sent",
+      sentAt: admin.firestore.FieldValue.serverTimestamp() 
+    });
+    
+  } catch (error) {
+    logger.error("Error sending invitation email:", error);
+    await snapshot.ref.update({ 
+      status: "error", 
+      error: error.message 
+    });
+  }
+});
 
 /**
  * GEMINI AI PROXY
