@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../services/useAppServices';
-import { collection, query, orderBy, getDocs, serverTimestamp, arrayUnion } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, serverTimestamp, arrayUnion, doc, getDoc } from 'firebase/firestore';
 import { timeChange$ } from '../services/timeService';
 import { useActionProgress } from './useActionProgress';
 
@@ -337,15 +337,22 @@ export const useDailyPlan = () => {
       
       // Get cohortId from user data or development plan
       const cohortId = user?.cohortId || developmentPlanData?.cohortId;
+      
       if (!cohortId) {
-        console.log('[useDailyPlan] No cohortId found for user');
+        // Only log if we expected a cohort (e.g. in Start Phase)
+        // Otherwise this log is too noisy for new users
+        if (developmentPlanData?.startDate) {
+           console.log('[useDailyPlan] No cohortId found for user (has startDate)');
+        }
         return;
       }
       
+      // Avoid re-fetching if we already have the correct cohort data
+      if (cohortData?.id === cohortId) return;
+
       try {
-        const { doc: fsDoc, getDoc: fsGetDoc } = await import('firebase/firestore');
-        const cohortRef = fsDoc(db, 'cohorts', cohortId);
-        const cohortSnap = await fsGetDoc(cohortRef);
+        const cohortRef = doc(db, 'cohorts', cohortId);
+        const cohortSnap = await getDoc(cohortRef);
         
         if (cohortSnap.exists()) {
           const data = cohortSnap.data();
@@ -367,7 +374,7 @@ export const useDailyPlan = () => {
     };
     
     fetchCohort();
-  }, [db, user, developmentPlanData?.cohortId]);
+  }, [db, user, developmentPlanData?.cohortId, cohortData?.id]);
 
   // 2. Derive User State & Current Day
   const userState = useMemo(() => {
