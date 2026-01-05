@@ -30,7 +30,7 @@ import { buildModulePath } from '../../services/pathUtils';
 import PrepStatusModal from './PrepStatusModal';
 
 const UserManagement = () => {
-  const { db } = useAppServices();
+  const { db, user } = useAppServices();
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'invites', 'cohorts'
   const [users, setUsers] = useState([]);
   const [adminEmails, setAdminEmails] = useState([]);
