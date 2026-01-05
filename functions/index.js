@@ -837,20 +837,24 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
           if (rule.criteria === 'always') {
             shouldSend = true;
           } else {
-            // Fetch Daily Log
-            const logRef = db.collection('users').doc(userId).collection('daily_logs').doc(localDateId);
-            const logSnap = await logRef.get();
-            const logData = logSnap.exists ? logSnap.data() : {};
+            // Fetch Current Daily Practice Data (Live Data)
+            // Note: daily_logs are archives. We need the live 'current' doc.
+            const practiceRef = db.collection('users').doc(userId).collection('daily_practice').doc('current');
+            const practiceSnap = await practiceRef.get();
+            const practiceData = practiceSnap.exists ? practiceSnap.data() : {};
 
             switch (rule.criteria) {
               case 'am_bookend_incomplete':
-                shouldSend = !logData.amBookend?.completed;
+                // Check if Morning Bookend (Win the Day) is completed
+                shouldSend = !practiceData.morningBookend?.winCompleted;
                 break;
               case 'pm_bookend_incomplete':
-                shouldSend = !logData.eveningBookend?.completed;
+                // Check if Evening Bookend (Reflection) is completed
+                shouldSend = !practiceData.eveningBookend?.completedAt;
                 break;
               case 'daily_action_incomplete':
-                shouldSend = !logData.dailyAction?.completed; 
+                // Check if Daily Rep is completed
+                shouldSend = practiceData.dailyTargetRepStatus !== 'Completed'; 
                 break;
               default:
                 logger.warn(`Unknown criteria: ${rule.criteria}`);
