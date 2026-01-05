@@ -24,7 +24,6 @@ import ContentAdminHome from './ContentAdminHome'; // Existing component
 import MediaLibrary from './MediaLibrary'; // New component
 // import MigrationTool from './MigrationTool'; // New component
 import SystemWidgets from './SystemWidgets';
-import DevPlanManager from './DevPlanManager';
 import DocumentationCenter from './DocumentationCenter';
 import TestCenter from './TestCenter';
 import CommunityManager from './CommunityManager';
@@ -127,7 +126,6 @@ const AdminPortal = () => {
         { id: 'users', label: 'User Management', icon: Users },
         // { id: 'cohorts', label: 'Cohorts', icon: Users },
         { id: 'daily-plan', label: 'Daily Plan (New)', icon: Calendar },
-        { id: 'devplan', label: 'Legacy Plan', icon: Calendar },
         { id: 'content', label: 'Content Library', icon: FileText },
         { id: 'media', label: 'Media Vault', icon: Database }
       ]
@@ -177,8 +175,6 @@ const AdminPortal = () => {
         return <TestCenter />;
       case 'daily-plan':
         return <DailyPlanManager />;
-      case 'devplan':
-        return <DevPlanManager />;
       // 'library' tab removed - Programs/Workouts/Skills now managed as LOVs
       case 'media':
         return <MediaLibrary />;

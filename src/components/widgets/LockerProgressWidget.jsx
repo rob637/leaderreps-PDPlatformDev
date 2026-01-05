@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useActionProgress, BADGES, POINTS } from '../../hooks/useActionProgress';
-import { useDevPlan } from '../../hooks/useDevPlan';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 /**
  * LockerProgressWidget - Comprehensive Progress Tracking Display
@@ -30,15 +30,22 @@ const LockerProgressWidget = () => {
     loading 
   } = useActionProgress();
   
-  const { currentWeek, masterPlan } = useDevPlan();
+  const { phaseDayNumber, currentPhase } = useDailyPlan();
   
   const accomplishments = useMemo(() => getAccomplishments(), [getAccomplishments]);
   const outstandingItems = useMemo(() => getOutstandingItems(), [getOutstandingItems]);
   const earnedBadges = useMemo(() => getEarnedBadges(), [getEarnedBadges]);
   
   // Calculate overall progress
-  const totalWeeks = masterPlan?.length || 26;
-  const currentWeekNum = currentWeek?.weekNumber || 1;
+  const totalWeeks = 8;
+  const currentWeekNum = useMemo(() => {
+    if (currentPhase?.id === 'pre-start') return 0;
+    if (currentPhase?.id === 'start') {
+      return Math.ceil(phaseDayNumber / 7);
+    }
+    return 1;
+  }, [currentPhase, phaseDayNumber]);
+
   const overallProgressPercent = Math.round((currentWeekNum / totalWeeks) * 100);
 
   const toggleWeek = (weekNum) => {

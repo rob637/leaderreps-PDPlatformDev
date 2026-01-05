@@ -1,72 +1,103 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BookOpen, CheckCircle, Circle, MessageSquare, Users, Video, Zap, Repeat, Play, FileText, ExternalLink, Loader, Layers } from 'lucide-react';
 import { Card } from '../ui';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useActionProgress } from '../../hooks/useActionProgress';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 
 const DevelopmentPlanWidget = ({ scope }) => {
   const { db } = useAppServices();
   const [viewingResource, setViewingResource] = useState(null);
   const [loadingResource, setLoadingResource] = useState(false);
+
+  // Use Daily Plan Hook
   const { 
-    currentWeek,
-    userProgress,
-    handleItemToggle,
-    handleReflectionUpdate
-  } = scope;
-
-  if (!currentWeek) return null;
-
-  const { 
-    title, 
-    focus, 
-    phase, 
-    description, 
-    weekNumber,
-    estimatedTimeMinutes,
-    skills = [],
-    pillars = [],
-    difficultyLevel,
-    content = [], 
-    community = [], 
-    coaching = [],
-    reps = [],
-    dailyReps = [],
-    reflectionPrompt
-  } = currentWeek;
-
-  const {
-    completedItems = [],
-    reflectionResponse = ''
-  } = userProgress || {};
-
-  // Normalize content items - DevPlanManager saves with different field names
-  const normalizeItems = (items, defaultType) => {
-    return (items || []).map(item => ({
-      ...item,
-      id: item.id || item.contentItemId || item.communityItemId || item.coachingItemId,
-      type: item.type || item.contentItemType || item.communityItemType || item.coachingItemType || defaultType,
-      label: item.label || item.contentItemLabel || item.communityItemLabel || item.coachingItemLabel || item.title,
-      required: item.required !== false && item.isRequiredContent !== false && item.optional !== true,
-      url: item.url,
-      resourceId: item.resourceId || item.contentItemId || item.communityItemId || item.coachingItemId,
-      resourceType: item.resourceType || (item.type || item.contentItemType || '').toLowerCase()
-    }));
-  };
-
-  const allItems = [
-    ...normalizeItems(content, 'content'),
-    ...normalizeItems(community, 'community'),
-    ...normalizeItems(coaching, 'coaching')
-  ];
-  // The spec says: requiredItemsCount – total required items in this week.
-  // So let's filter by required.
+    dailyPlan, 
+    currentPhase, 
+    phaseDayNumber,
+    toggleItemComplete: toggleDailyItem,
+    userState
+  } = useDailyPlan();
   
-  const requiredItems = allItems.filter(i => i.required !== false && i.optional !== true);
-  const requiredCompletedCount = requiredItems.filter(i => completedItems.includes(i.id)).length;
-  const progressPercent = requiredItems.length > 0 ? (requiredCompletedCount / requiredItems.length) * 100 : 0;
+  const { getItemProgress, completeItem, uncompleteItem } = useActionProgress();
+
+  // Calculate Current Week
+  const currentWeekNumber = useMemo(() => {
+    if (currentPhase?.id === 'pre-start') return 0;
+    if (currentPhase?.id === 'start') {
+      return Math.ceil(phaseDayNumber / 7);
+    }
+    return 1;
+  }, [currentPhase, phaseDayNumber]);
+
+  // Get Week Data
+  const weekData = useMemo(() => {
+    if (!dailyPlan || dailyPlan.length === 0) return null;
+    
+    // Filter for current week days
+    // Note: This logic assumes standard 7-day weeks starting from day 1 of the phase
+    const startDay = (currentWeekNumber - 1) * 7 + 1;
+    const endDay = currentWeekNumber * 7;
+    const phaseStartDbDay = 15; // Hardcoded for Start Phase
+    const absStartDay = phaseStartDbDay + startDay - 1;
+    const absEndDay = phaseStartDbDay + endDay - 1;
+    
+    const weekDays = dailyPlan.filter(d => 
+      d.dayNumber >= absStartDay && 
+      d.dayNumber <= absEndDay
+    );
+    
+    // Aggregate actions
+    const actions = [];
+    weekDays.forEach(day => {
+      if (day.actions) {
+        actions.push(...day.actions.map((a, idx) => ({
+          ...a, 
+          dayId: day.id,
+          id: a.id || `daily-${day.id}-${idx}` // Ensure ID
+        })));
+      }
+    });
+    
+    // Try to find week metadata from the first day of the week (if stored there)
+    // or fallback to generic info
+    const firstDay = weekDays[0] || {};
+    
+    return {
+      title: currentPhase?.displayName || 'Development Plan',
+      weekNumber: currentWeekNumber,
+      focus: firstDay.weekFocus || `Week ${currentWeekNumber} Focus`,
+      description: firstDay.weekDescription || 'Complete your daily actions to progress.',
+      actions
+    };
+  }, [dailyPlan, currentWeekNumber, currentPhase]);
+
+  // Calculate Progress
+  const completedItems = useMemo(() => {
+    const completedSet = new Set();
+    if (userState?.dailyProgress) {
+      Object.values(userState.dailyProgress).forEach(dayProgress => {
+        if (dayProgress.itemsCompleted) {
+          dayProgress.itemsCompleted.forEach(id => completedSet.add(id));
+        }
+      });
+    }
+    return Array.from(completedSet);
+  }, [userState?.dailyProgress]);
+
+  const progressPercent = useMemo(() => {
+    if (!weekData || weekData.actions.length === 0) return 0;
+    const completedCount = weekData.actions.filter(item => {
+      const progress = getItemProgress(item.id);
+      return progress.status === 'completed' || completedItems.includes(item.id);
+    }).length;
+    return Math.round((completedCount / weekData.actions.length) * 100);
+  }, [weekData, getItemProgress, completedItems]);
+
+  if (!weekData) return null;
 
   const getItemIcon = (type) => {
     const normalizedType = (type || '').toUpperCase();
@@ -78,26 +109,19 @@ const DevelopmentPlanWidget = ({ scope }) => {
       case 'READ_AND_REP': return BookOpen;
       case 'LEADER_CIRCLE': return Users;
       case 'OPEN_GYM': return Users;
-      // Legacy support
       case 'VIDEO': return Video;
       case 'READING': return BookOpen;
       case 'DOCUMENT': return FileText;
       case 'COURSE': return Layers;
       case 'COMMUNITY': return Users;
       case 'COACHING': return MessageSquare;
-      
-      case 'workout': return Video;
-      case 'read_and_rep': return BookOpen;
-      case 'leader_circle': return Users;
-      case 'open_gym': return Users;
       default: return Circle;
     }
   };
 
   const handleViewResource = async (e, item) => {
-    e.stopPropagation(); // Prevent toggling completion
+    e.stopPropagation();
     
-    // Use provided URL if present (unless it's PDQ, which we want to re-fetch to get the real doc)
     if (item.url && !item.title?.toLowerCase().includes('pdq')) {
       setViewingResource({
           ...item,
@@ -111,21 +135,12 @@ const DevelopmentPlanWidget = ({ scope }) => {
     if (resourceId) {
       setLoadingResource(item.id);
       try {
-        // Try fetching from the new unified 'content_library' collection first
         const contentRef = doc(db, 'content_library', resourceId);
         const contentSnap = await getDoc(contentRef);
         
-        let resourceData = null;
-
         if (contentSnap.exists()) {
            const data = contentSnap.data();
-           resourceData = { 
-               id: contentSnap.id, 
-               ...data, 
-               resourceType: data.type 
-           };
-
-           // Map details to url for viewer compatibility
+           let resourceData = { id: contentSnap.id, ...data, resourceType: data.type };
            if (data.type === 'REP' && data.details?.videoUrl) {
                resourceData.url = data.details.videoUrl;
                resourceData.resourceType = 'video';
@@ -137,42 +152,41 @@ const DevelopmentPlanWidget = ({ scope }) => {
                    resourceData.url = data.details.pdfUrl;
                    resourceData.resourceType = 'pdf';
                }
-               // TODO: Handle text-only content in Viewer
            }
+           setViewingResource(resourceData);
         } else {
-            // Fallback to legacy collections if not found in 'content_library'
-            const type = (item.resourceType || item.type || '').toLowerCase();
-            
-            let collectionName = CONTENT_COLLECTIONS.READINGS;
-            if (type === 'video' || type === 'workout') collectionName = CONTENT_COLLECTIONS.VIDEOS;
-            else if (type === 'community' || type === 'leader_circle' || type === 'open_gym') collectionName = CONTENT_COLLECTIONS.COMMUNITY;
-            else if (type === 'coaching') collectionName = CONTENT_COLLECTIONS.COACHING;
-            else if (type === 'document' || type === 'tool') collectionName = CONTENT_COLLECTIONS.DOCUMENTS;
-            else if (type === 'course' || type === 'program') collectionName = CONTENT_COLLECTIONS.COURSES;
-            
-            const docRef = doc(db, collectionName, resourceId);
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {
-              resourceData = { id: docSnap.id, ...docSnap.data(), resourceType: type };
-            } else {
-              console.warn(`Resource not found in ${collectionName} (ID: ${resourceId})`);
-              alert("Resource not found. It may have been deleted.");
-              return;
-            }
+            // Fallback logic...
+            alert("Resource not found.");
         }
-
-        // Always open in the viewer (UniversalResourceViewer handles embedding logic)
-        if (resourceData) {
-            setViewingResource(resourceData);
-        }
-
       } catch (error) {
         console.error("Error fetching resource:", error);
         alert("Failed to load resource.");
       } finally {
         setLoadingResource(false);
       }
+    }
+  };
+
+  const handleToggle = async (item) => {
+    const itemId = item.id;
+    if (!itemId) return;
+    
+    const progress = getItemProgress(itemId);
+    const isCurrentlyComplete = progress.status === 'completed' || completedItems.includes(itemId);
+    
+    if (item.dayId) {
+      toggleDailyItem(item.dayId, itemId, !isCurrentlyComplete);
+    }
+    
+    if (isCurrentlyComplete) {
+      await uncompleteItem(itemId);
+    } else {
+      await completeItem(itemId, {
+        currentWeek: currentWeekNumber,
+        weekNumber: currentWeekNumber,
+        category: item.category?.toLowerCase(),
+        label: item.label || item.title
+      });
     }
   };
 
@@ -184,160 +198,78 @@ const DevelopmentPlanWidget = ({ scope }) => {
           onClose={() => setViewingResource(null)} 
         />
       )}
-      <Card title={phase} subtitle={title} icon={BookOpen} accent="BLUE">
-      <div className="space-y-4">
-        {/* Header Info */}
-        <div>
-          <div className="flex justify-between items-start mb-1">
-            <h3 className="text-lg font-bold text-slate-800">{focus}</h3>
-            {weekNumber && (
+      <Card title={weekData.title} subtitle={`Week ${weekData.weekNumber}`} icon={BookOpen} accent="BLUE">
+        <div className="space-y-4">
+          {/* Header Info */}
+          <div>
+            <div className="flex justify-between items-start mb-1">
+              <h3 className="text-lg font-bold text-slate-800">{weekData.focus}</h3>
               <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full uppercase tracking-wider">
-                Week {weekNumber}
+                Week {weekData.weekNumber}
               </span>
-            )}
-          </div>
-          <p className="text-sm text-slate-600 mb-3">{description}</p>
-          
-          {/* Metadata Tags */}
-          <div className="flex flex-wrap gap-2 mb-2">
-            {difficultyLevel && (
-              <span className="text-[10px] font-bold text-slate-500 border border-slate-200 px-2 py-0.5 rounded uppercase">
-                {difficultyLevel}
-              </span>
-            )}
-            {estimatedTimeMinutes && (
-              <span className="text-[10px] font-bold text-slate-500 border border-slate-200 px-2 py-0.5 rounded uppercase">
-                {estimatedTimeMinutes} mins
-              </span>
-            )}
-            {pillars.map(p => (
-              <span key={p} className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase">
-                {p}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs font-medium text-slate-500">
-            <span>Progress</span>
-            <span>{Math.round(progressPercent)}%</span>
-          </div>
-          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-blue-500 transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Action Items */}
-        <div className="space-y-2">
-          <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
-            This Week's Actions
-          </p>
-          
-          {allItems.map((item) => {
-            const isCompleted = completedItems.includes(item.id);
-            const Icon = getItemIcon(item.type);
+            </div>
+            <p className="text-sm text-slate-600 mb-3">{weekData.description}</p>
             
-            return (
+            {/* Progress Bar */}
+            <div className="w-full bg-slate-100 rounded-full h-2 mb-1">
               <div 
-                key={item.id} 
-                className={`flex items-center gap-3 p-3 rounded-xl transition-colors cursor-pointer border ${
-                  isCompleted 
-                    ? 'bg-green-50 border-green-200' 
-                    : 'bg-white hover:bg-slate-50 border-slate-200'
-                }`}
-                onClick={() => handleItemToggle(item.id)}
-              >
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                  isCompleted ? 'bg-green-100 text-green-600' : 'bg-blue-50 text-blue-600'
-                }`}>
-                  <Icon size={16} />
-                </div>
-                
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <p className={`text-sm font-medium ${isCompleted ? 'text-slate-500' : 'text-slate-800'}`}>
-                      {item.label}
-                    </p>
-                    {item.recommendedWeekDay && !isCompleted && (
-                      <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase ml-2 whitespace-nowrap">
-                        {item.recommendedWeekDay}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-500 capitalize">
-                    {item.type.replace(/_/g, ' ')} • {item.required === false || item.optional ? 'Optional' : 'Required'}
-                  </p>
-                </div>
-
-                {(item.resourceId || item.url) && (
-                  <button
-                    onClick={(e) => handleViewResource(e, item)}
-                    className="p-2 text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-full transition-colors"
-                    title="View Resource"
-                  >
-                    {loadingResource === item.id ? (
-                      <Loader className="w-5 h-5 animate-spin" />
-                    ) : item.resourceType === 'video' ? (
-                      <Play className="w-5 h-5" />
-                    ) : item.resourceType === 'reading' || item.resourceType === 'pdf' || item.resourceType === 'document' ? (
-                      <FileText className="w-5 h-5" />
-                    ) : item.resourceType === 'course' ? (
-                      <Layers className="w-5 h-5" />
-                    ) : (
-                      <ExternalLink className="w-5 h-5" />
-                    )}
-                  </button>
-                )}
-
-                {isCompleted && <CheckCircle className="w-5 h-5 text-green-500" />}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Daily Reps Section */}
-        {(reps.length > 0 || dailyReps.length > 0) && (
-          <div className="space-y-2 pt-2 border-t border-slate-100">
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider flex items-center gap-2">
-              <Zap className="w-4 h-4 text-[#00A896]" />
-              Daily Reps
-            </p>
-            <p className="text-xs text-slate-400 mb-2">
-              Practice these daily to reinforce learning
-            </p>
-            <div className="space-y-2">
-              {[...dailyReps, ...reps].map((rep, idx) => (
-                <div 
-                  key={rep.repId || rep.id || idx}
-                  className="flex items-start gap-3 p-3 bg-[#00A896]/10 border border-[#00A896]/20 rounded-xl"
-                >
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-[#00A896]/20 text-[#00A896]">
-                    <Repeat className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-800">
-                      {rep.repLabel || rep.label || rep.name || 'Daily Rep'}
-                    </p>
-                    {rep.repType && (
-                      <p className="text-xs text-[#00A896] capitalize">
-                        {rep.repType}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
+                className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${progressPercent}%` }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-xs text-slate-500">
+              <span>{progressPercent}% Complete</span>
+              <span>{weekData.actions.length} Items</span>
             </div>
           </div>
-        )}
 
+          {/* Actions List */}
+          <div className="space-y-2">
+            {weekData.actions.map((item, idx) => {
+              const progress = getItemProgress(item.id);
+              const isCompleted = progress.status === 'completed' || completedItems.includes(item.id);
+              const Icon = getItemIcon(item.type);
 
-      </div>
-    </Card>
+              return (
+                <div 
+                  key={item.id || idx}
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                    isCompleted ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200 hover:border-blue-300'
+                  }`}
+                >
+                  <div 
+                    onClick={() => handleToggle(item)}
+                    className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer transition-colors ${
+                      isCompleted ? 'bg-blue-500 border-blue-500' : 'border-slate-300 hover:border-blue-400'
+                    }`}
+                  >
+                    {isCompleted && <CheckCircle className="w-3 h-3 text-white" />}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-700'}`}>
+                      {item.label || item.title}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <Icon className="w-3 h-3" />
+                      <span className="capitalize">{item.type?.replace(/_/g, ' ').toLowerCase()}</span>
+                    </div>
+                  </div>
+
+                  {(item.resourceId || item.url) && (
+                    <button
+                      onClick={(e) => handleViewResource(e, item)}
+                      className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      {loadingResource === item.id ? <Loader className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Card>
     </>
   );
 };

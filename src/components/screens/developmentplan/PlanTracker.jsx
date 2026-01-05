@@ -1,15 +1,14 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Target, TrendingUp, Calendar, Edit, ArrowLeft, Zap, Crosshair, Flag, Loader, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, Card, ProgressBar } from './DevPlanComponents';
-import { generatePlanSummary } from './devPlanUtils';
 import ProgressBreakdown from './ProgressBreakdown';
 import QuickPlanEditor from './QuickPlanEditor';
 import WidgetRenderer from '../../admin/WidgetRenderer';
 import { useFeatures } from '../../../providers/FeatureProvider';
 import { ZONE_CONFIG } from '../../../config/zoneConfig';
 import { NoWidgetsEnabled } from '../../ui';
-import { useDevPlan } from '../../../hooks/useDevPlan';
-import debounce from 'lodash.debounce';
+import { useDailyPlan } from '../../../hooks/useDailyPlan'; // CHANGED
+import { useAppServices } from '../../../services/useAppServices';
 
 const PlanTracker = ({ 
   plan: legacyPlan, 
@@ -23,27 +22,90 @@ const PlanTracker = ({
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
+  const { updateDevelopmentPlanData } = useAppServices();
 
-  // Use the new hook
+  // Use Daily Plan Hook (New Architecture)
   const { 
-    masterPlan,
+    dailyPlan,
     userState, 
     toggleItemComplete, 
-    completeWeek,
-    updateDevelopmentPlanData,
     loading,
-    simulatedNow
-  } = useDevPlan();
+    currentPhase,
+    phaseDayNumber
+  } = useDailyPlan();
+
+  // Calculate Current Week Number
+  const currentWeekNumber = useMemo(() => {
+    if (currentPhase?.id === 'pre-start') return 0;
+    if (currentPhase?.id === 'start') {
+      return Math.ceil(phaseDayNumber / 7);
+    }
+    return 1;
+  }, [currentPhase, phaseDayNumber]);
 
   const [viewIndex, setViewIndex] = useState(0);
 
-  // Sync viewIndex with user's current week on load AND when time travel changes
+  // Sync viewIndex with user's current week on load
   useEffect(() => {
-    if (userState && userState.currentWeekIndex !== undefined) {
-      console.log('[PlanTracker] Syncing viewIndex to currentWeekIndex:', userState.currentWeekIndex);
-      setViewIndex(userState.currentWeekIndex);
+    if (currentWeekNumber > 0) {
+      // viewIndex is 0-based, currentWeekNumber is 1-based
+      setViewIndex(currentWeekNumber - 1);
     }
-  }, [userState?.currentWeekIndex]);
+  }, [currentWeekNumber]);
+
+  // Construct Virtual Master Plan from Daily Plan
+  const masterPlan = useMemo(() => {
+    if (!dailyPlan || dailyPlan.length === 0) return [];
+    
+    // Filter for Start Phase days (Development Plan)
+    // Assuming Start Phase is days 15-70 (8 weeks)
+    const startPhaseDays = dailyPlan.filter(d => d.phase === 'start' || (d.dayNumber >= 15 && d.dayNumber <= 70));
+    
+    // Group by week
+    const weeks = [];
+    const totalWeeks = 8; // Hardcoded for now, or derive from config
+    
+    for (let i = 1; i <= totalWeeks; i++) {
+      const startDay = (i - 1) * 7 + 1;
+      const endDay = i * 7;
+      const phaseStartDbDay = 15;
+      const absStartDay = phaseStartDbDay + startDay - 1;
+      const absEndDay = phaseStartDbDay + endDay - 1;
+      
+      const weekDays = startPhaseDays.filter(d => 
+        d.dayNumber >= absStartDay && 
+        d.dayNumber <= absEndDay
+      );
+      
+      // Aggregate content/actions
+      const actions = [];
+      weekDays.forEach(day => {
+        if (day.actions) {
+          actions.push(...day.actions.map((a, idx) => ({
+            ...a, 
+            dayId: day.id,
+            id: a.id || `daily-${day.id}-${idx}`,
+            dayNumber: day.dayNumber
+          })));
+        }
+      });
+      
+      // Try to get week metadata from first day
+      const firstDay = weekDays[0] || {};
+      
+      weeks.push({
+        weekNumber: i,
+        weekBlockId: `week-${String(i).padStart(2, '0')}`,
+        title: `Week ${i}`,
+        focus: firstDay.weekFocus || `Week ${i} Focus`,
+        description: firstDay.weekDescription || 'Weekly development plan.',
+        content: actions.filter(a => a.type !== 'daily_rep'), // Treat actions as content for the tracker
+        actions: actions
+      });
+    }
+    
+    return weeks;
+  }, [dailyPlan]);
 
   // Determine the week to display
   const displayWeek = useMemo(() => {
@@ -52,7 +114,7 @@ const PlanTracker = ({
     return masterPlan[safeIndex];
   }, [masterPlan, viewIndex]);
 
-  const isEditable = userState && viewIndex === userState.currentWeekIndex;
+  const isEditable = currentWeekNumber === (displayWeek?.weekNumber || 0);
 
   // Local state for reflection
   const [localReflection, setLocalReflection] = useState('');
@@ -60,7 +122,7 @@ const PlanTracker = ({
   // Sync local reflection with DB when loaded
   useEffect(() => {
     if (displayWeek && userState) {
-      const weekKey = displayWeek.weekBlockId || `week-${String(displayWeek.weekNumber).padStart(2, '0')}`;
+      const weekKey = displayWeek.weekBlockId;
       const progress = userState.weekProgress?.[weekKey] || {};
       setLocalReflection(progress.reflection || '');
     }
@@ -70,60 +132,58 @@ const PlanTracker = ({
   const currentWeek = useMemo(() => {
     if (!displayWeek) return null;
     
-    // Helper to normalize items
-    const normalize = (items, typePrefix) => (items || []).map(item => ({
-      id: item[`${typePrefix}Id`] || item.id,
-      resourceId: item[`${typePrefix}Id`] || item.id,
-      label: item[`${typePrefix}Label`] || item.label,
-      type: item[`${typePrefix}Type`] || item.type,
-      required: item.isRequiredContent ?? true,
-      optional: item.isOptionalCoachingItem ?? false,
-      recommendedWeekDay: item.recommendedWeekDay
+    // Helper to normalize items (adapted for Daily Plan actions)
+    const normalize = (items) => (items || []).map(item => ({
+      id: item.id,
+      resourceId: item.resourceId || item.id,
+      label: item.label || item.title,
+      type: item.type || 'content',
+      required: item.required !== false && !item.optional,
+      optional: item.optional === true,
+      dayNumber: item.dayNumber
     }));
-
-    // Normalize reps - they use repId, repLabel, repType
-    const normalizeReps = (items) => (items || []).map(item => ({
-      id: item.repId || item.id,
-      repId: item.repId || item.id,
-      resourceId: item.repId || item.id,
-      label: item.repLabel || item.label,
-      repLabel: item.repLabel || item.label,
-      repType: item.repType || item.type,
-      type: item.repType || item.type,
-      isRequired: item.isRequired ?? true
-    }));
-
-    const normalizedReps = normalizeReps(displayWeek.reps);
-    const normalizedDailyReps = normalizeReps(displayWeek.dailyReps);
 
     return {
       ...displayWeek,
-      content: normalize(displayWeek.content, 'contentItem'),
-      community: normalize(displayWeek.community, 'communityItem'),
-      coaching: normalize(displayWeek.coaching, 'coachingItem'),
-      reps: normalizedReps,
-      dailyReps: normalizedDailyReps
+      content: normalize(displayWeek.content),
+      // Community/Coaching might be mixed in content/actions in Daily Plan
+      // We can filter if needed, or just pass everything as content
+      community: [], 
+      coaching: []
     };
   }, [displayWeek]);
 
   const userProgress = useMemo(() => {
     if (!displayWeek) return { completedItems: [], reflectionResponse: '' };
-    const weekKey = displayWeek.weekBlockId || `week-${String(displayWeek.weekNumber).padStart(2, '0')}`;
-    const progress = userState.weekProgress?.[weekKey] || {};
+    
+    // Get completed items from userState.dailyProgress
+    const completedSet = new Set();
+    if (userState?.dailyProgress) {
+      Object.values(userState.dailyProgress).forEach(dayProgress => {
+        if (dayProgress.itemsCompleted) {
+          dayProgress.itemsCompleted.forEach(id => completedSet.add(id));
+        }
+      });
+    }
+    
     return {
-      completedItems: progress.itemsCompleted || [],
+      completedItems: Array.from(completedSet),
       reflectionResponse: localReflection
     };
   }, [displayWeek, userState, localReflection]);
 
   const handleItemToggle = useCallback((itemId) => {
-    if (!isEditable) return; // Prevent editing past/future weeks
+    // Find item to get dayId
+    // We need to search in the current week's actions
+    const item = displayWeek?.actions?.find(i => i.id === itemId);
+    if (!item || !item.dayId) return;
+    
     const isComplete = !userProgress.completedItems.includes(itemId);
-    toggleItemComplete(itemId, isComplete);
-  }, [isEditable, userProgress.completedItems, toggleItemComplete]);
+    toggleItemComplete(item.dayId, itemId, isComplete);
+  }, [displayWeek, userProgress.completedItems, toggleItemComplete]);
 
   const handleReflectionUpdate = useCallback((text) => {
-    if (!isEditable) return; // Prevent editing past/future weeks
+    if (!isEditable) return;
     setLocalReflection(text);
   }, [isEditable]);
 
@@ -131,7 +191,7 @@ const PlanTracker = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       if (isEditable && displayWeek && localReflection !== (userState.weekProgress?.[displayWeek.weekBlockId]?.reflection || '')) {
-        const weekKey = displayWeek.weekBlockId || `week-${String(displayWeek.weekNumber).padStart(2, '0')}`;
+        const weekKey = displayWeek.weekBlockId;
         updateDevelopmentPlanData({
           [`weekProgress.${weekKey}.reflection`]: localReflection
         });
@@ -151,29 +211,23 @@ const PlanTracker = ({
   // Generate summary
   const summary = useMemo(() => {
     if (currentWeek) {
-      // Calculate progress for the current week
-      const allItems = [
-        ...(currentWeek.content || []),
-        ...(currentWeek.community || []),
-        ...(currentWeek.coaching || [])
-      ];
-      
-      const requiredItems = allItems.filter(i => i.required !== false && i.optional !== true);
+      const allItems = currentWeek.content || [];
+      const requiredItems = allItems.filter(i => i.required);
       const completedCount = requiredItems.filter(i => userProgress.completedItems.includes(i.id)).length;
       const progress = requiredItems.length > 0 ? Math.round((completedCount / requiredItems.length) * 100) : 0;
 
       return {
-        totalSkills: currentWeek.skills?.length || 0,
+        totalSkills: 0, // Skills might not be tracked in Daily Plan yet
         completedSkills: completedCount, 
         progress: progress, 
         currentWeek: currentWeek.weekNumber
       };
     }
-    return legacyPlan ? generatePlanSummary(legacyPlan) : null;
-  }, [currentWeek, legacyPlan, userProgress]);
+    return null;
+  }, [currentWeek, userProgress]);
 
   const scope = useMemo(() => ({
-    plan: legacyPlan,
+    plan: null, // Legacy plan is null
     summary,
     cycle,
     handleShowBreakdown: () => setShowBreakdown(true),
@@ -188,7 +242,7 @@ const PlanTracker = ({
     userProgress,
     handleItemToggle,
     handleReflectionUpdate
-  }), [legacyPlan, summary, cycle, onScan, onTimeline, onDetail, currentWeek, userProgress, handleItemToggle, handleReflectionUpdate]);
+  }), [summary, cycle, onScan, onTimeline, onDetail, currentWeek, userProgress, handleItemToggle, handleReflectionUpdate]);
 
   if (loading) {
     return (
@@ -198,7 +252,7 @@ const PlanTracker = ({
     );
   }
 
-  if (!currentWeek && !legacyPlan && !sortedFeatures.includes('development-plan')) {
+  if (!currentWeek && !sortedFeatures.includes('development-plan')) {
     return (
       <div className="text-center py-8">
         <Target className="w-12 h-12 mx-auto mb-4 text-slate-400" />

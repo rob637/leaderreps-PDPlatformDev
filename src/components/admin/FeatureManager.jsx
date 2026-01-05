@@ -7,7 +7,7 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import { WIDGET_TEMPLATES, FEATURE_METADATA } from '../../config/widgetTemplates';
 import { useAppServices } from '../../services/useAppServices';
 import { useDashboard } from '../screens/dashboard/DashboardHooks';
-import { useDevPlan } from '../../hooks/useDevPlan';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 import { Card } from '../ui';
 import { Button, ProgressBar } from '../screens/developmentplan/DevPlanComponents';
@@ -26,10 +26,23 @@ const FeatureManager = () => {
   } = useAppServices();
 
   // --- DEV PLAN HOOK ---
-  const { currentWeek: devPlanCurrentWeek, userState: devPlanUserState, simulatedNow } = useDevPlan();
-  const currentWeekNumber = devPlanUserState?.currentWeekIndex != null 
-    ? devPlanUserState.currentWeekIndex + 1 
-    : null;
+  const { 
+    userState: devPlanUserState, 
+    simulatedNow,
+    phaseDayNumber,
+    currentPhase
+  } = useDailyPlan();
+
+  const currentWeekNumber = React.useMemo(() => {
+    if (currentPhase?.id === 'pre-start') return 0;
+    if (currentPhase?.id === 'start') {
+      return Math.ceil(phaseDayNumber / 7);
+    }
+    return 1;
+  }, [currentPhase, phaseDayNumber]);
+
+  // Mock for legacy compatibility if needed
+  const devPlanCurrentWeek = null;
 
   // --- HOOKS FOR REAL DATA ---
   const {

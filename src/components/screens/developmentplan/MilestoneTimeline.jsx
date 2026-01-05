@@ -1,16 +1,42 @@
-// src/components/developmentplan/MilestoneTimeline.jsx
-// Visual timeline showing progress through the 12-week development cycle
-
-import React, { useEffect } from 'react';
-// REQ #5: Import Button and ArrowLeft
+import React, { useEffect, useMemo } from 'react';
 import { CheckCircle, Circle, Flag, Calendar, ArrowLeft } from 'lucide-react';
 import { Card, Badge, Button } from './DevPlanComponents';
-import { MILESTONE_CONFIG, getCurrentWeek, getCurrentPhase } from './devPlanUtils';
+import { useDailyPlan } from '../../../hooks/useDailyPlan';
 
-const MilestoneTimeline = ({ plan, onBack }) => {
-  const currentWeek = getCurrentWeek(plan);
-  const currentPhase = getCurrentPhase(currentWeek);
-  
+// New 8-Week Config for Daily Plan
+const DAILY_PLAN_PHASES = [
+  { 
+    name: 'Foundation', 
+    weeks: [1, 2, 3, 4], 
+    color: 'var(--corporate-teal)', 
+    description: 'Building core habits and understanding'
+  },
+  { 
+    name: 'Acceleration', 
+    weeks: [5, 6, 7, 8], 
+    color: 'var(--corporate-orange)', 
+    description: 'Expanding skills and consistent practice'
+  }
+];
+
+const MilestoneTimeline = ({ onBack }) => {
+  const { phaseDayNumber, currentPhase } = useDailyPlan();
+
+  // Calculate current week (1-8)
+  const currentWeek = useMemo(() => {
+    if (currentPhase?.id === 'pre-start') return 0;
+    if (currentPhase?.id === 'start') {
+      return Math.ceil(phaseDayNumber / 7);
+    }
+    return 8; // Post-start capped at 8 for this view
+  }, [currentPhase, phaseDayNumber]);
+
+  // Determine current phase object
+  const currentPhaseObj = useMemo(() => {
+    if (currentWeek <= 4) return DAILY_PLAN_PHASES[0];
+    return DAILY_PLAN_PHASES[1];
+  }, [currentWeek]);
+
   // Width debugging
   useEffect(() => {
     setTimeout(() => {
@@ -31,172 +57,105 @@ const MilestoneTimeline = ({ plan, onBack }) => {
   }, []);
   
   return (
-    // REQ #5: Improved wrapper div for better layout - FULL WIDTH
     <div className="w-full mx-auto p-4 sm:p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-5 lg:space-y-6" style={{ maxWidth: '1400px' }}>
       
-      {/* REQ #5: Added Back Button */}
       <div className="mb-0">
         <Button onClick={onBack} variant="nav-back" size="sm">
           <ArrowLeft className="w-4 h-4" /> Back to Tracker
         </Button>
       </div>
 
-      <Card title="12-Week Journey" icon={Calendar} accent="PURPLE">
+      <Card title="8-Week Journey" icon={Calendar} accent="PURPLE">
         {/* Phase Overview */}
-        <div className="mb-8 p-3 sm:p-4 lg:p-6 rounded-xl" style={{ background: `${currentPhase.color}10` }}>
+        <div className="mb-8 p-3 sm:p-4 lg:p-6 rounded-xl" style={{ background: `${currentPhaseObj.color}10` }}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
             <div>
-              <Badge variant="purple" size="lg">Week {currentWeek} of 12</Badge>
+              <Badge variant="purple" size="lg">Week {Math.max(1, currentWeek)} of 8</Badge>
               <h4 className="text-xl sm:text-2xl font-bold mt-3" style={{ color: 'var(--corporate-navy)' }}>
-                {currentPhase.name} Phase
+                {currentPhaseObj.name} Phase
               </h4>
-              <p className="text-base text-gray-600 mt-1">{currentPhase.description}</p>
-            </div>
-            <div className="text-center md:text-right">
-              <p className="text-5xl font-bold" style={{ color: currentPhase.color }}>
-                {Math.round((currentWeek / 12) * 100)}%
+              <p className="text-slate-600 mt-1">
+                {currentPhaseObj.description}
               </p>
-              <p className="text-sm text-gray-600 mt-1">Complete</p>
+            </div>
+            <div className="text-right hidden md:block">
+              <div className="text-3xl font-bold" style={{ color: currentPhaseObj.color }}>
+                {Math.round((currentWeek / 8) * 100)}%
+              </div>
+              <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Complete</div>
             </div>
           </div>
         </div>
 
-        {/* Timeline - IMPROVED LAYOUT */}
-        <div className="space-y-4 sm:space-y-6 lg:space-y-8">
-          {MILESTONE_CONFIG.phases.map((phase, phaseIdx) => (
-            <div key={phase.name} className="relative">
-              {/* Phase Header - IMPROVED */}
-              <div className="flex items-center gap-4 mb-4">
-                <div 
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg"
-                  style={{ background: phase.color }}
-                >
-                  {phaseIdx + 1}
+        {/* Timeline Visualization */}
+        <div className="relative px-2 sm:px-4 py-8">
+          {/* Connecting Line */}
+          <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -translate-y-1/2 hidden md:block" />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-4 relative">
+            {DAILY_PLAN_PHASES.map((phase, phaseIdx) => (
+              <div key={phase.name} className="relative">
+                {/* Phase Label (Mobile) */}
+                <div className="md:hidden mb-4 font-bold text-lg" style={{ color: phase.color }}>
+                  {phase.name}
                 </div>
-                <div>
-                  <h5 className="font-bold text-lg" style={{ color: 'var(--corporate-navy)' }}>
-                    {phase.name}
-                  </h5>
-                  <p className="text-sm text-gray-600">
-                    Weeks {phase.weeks[0]}-{phase.weeks[phase.weeks.length - 1]}
-                  </p>
-                </div>
-              </div>
 
-              {/* Week Markers - IMPROVED GRID */}
-              <div className="ml-6 pl-6 border-l-2" style={{ borderColor: '#E5E7EB' }}>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {phase.weeks.map(weekNum => {
-                    const isPast = weekNum < currentWeek;
-                    const isCurrent = weekNum === currentWeek;
-                    
+                <div className="grid grid-cols-4 gap-2 sm:gap-4">
+                  {phase.weeks.map((week) => {
+                    const isCompleted = week < currentWeek;
+                    const isCurrent = week === currentWeek;
+                    const isLocked = week > currentWeek;
+
                     return (
-                      <div 
-                        key={weekNum}
-                        className={`p-3 rounded-xl border-2 transition-all ${
-                          isCurrent ? 'ring-2 shadow-lg' : 'shadow-sm'
-                        }`}
-                        style={{
-                          borderColor: isPast || isCurrent ? phase.color : '#E5E7EB',
-                          background: isPast ? `${phase.color}10` : isCurrent ? `${phase.color}20` : 'white',
-                          ringColor: isCurrent ? phase.color : 'transparent',
-                        }}
-                      >
-                        <div className="flex items-center justify-center gap-2">
-                          {isPast ? (
-                            <CheckCircle className="w-5 h-5" style={{ color: phase.color }} />
+                      <div key={week} className="flex flex-col items-center relative group">
+                        {/* Node */}
+                        <div 
+                          className={`
+                            w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center z-10 transition-all duration-300
+                            ${isCurrent ? 'scale-110 ring-4 ring-offset-2' : ''}
+                            ${isLocked ? 'bg-slate-100 text-slate-400' : ''}
+                            ${isCompleted ? 'bg-white text-white' : ''}
+                            ${isCurrent ? 'bg-white text-white' : ''}
+                          `}
+                          style={{
+                            backgroundColor: isCompleted || isCurrent ? phase.color : undefined,
+                            ringColor: isCurrent ? `${phase.color}40` : undefined
+                          }}
+                        >
+                          {isCompleted ? (
+                            <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                           ) : isCurrent ? (
-                            <Flag className="w-5 h-5" style={{ color: phase.color }} />
+                            <Flag className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                           ) : (
-                            <Circle className="w-5 h-5 text-gray-400" />
+                            <span className="font-bold text-sm">{week}</span>
                           )}
-                          <span 
-                            className={`text-sm font-bold ${
-                              isPast || isCurrent ? '' : 'text-gray-400'
-                            }`}
-                            style={{ color: isPast || isCurrent ? phase.color : undefined }}
-                          >
-                            Week {weekNum}
-                          </span>
+                        </div>
+
+                        {/* Label */}
+                        <div className="mt-3 text-center">
+                          <div className={`text-xs font-bold ${isCurrent ? 'text-corporate-navy' : 'text-slate-500'}`}>
+                            Week {week}
+                          </div>
+                          {isCurrent && (
+                            <div className="text-[10px] font-bold text-corporate-orange uppercase mt-1 animate-pulse">
+                              Current
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
                   })}
                 </div>
+                
+                {/* Phase Label (Desktop) */}
+                <div className="hidden md:block text-center mt-8 font-bold text-sm uppercase tracking-wider" style={{ color: phase.color }}>
+                  {phase.name} Phase
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Key Milestones - IMPROVED LAYOUT */}
-        <div className="mt-8 p-3 sm:p-4 lg:p-6 rounded-xl border-2 shadow-sm" style={{ borderColor: '#E5E7EB', background: '#FCFCFA' }}>
-          <h5 className="font-bold text-lg mb-4" style={{ color: 'var(--corporate-navy)' }}>
-            🎯 Key Milestones
-          </h5>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <MilestoneItem 
-              week={2}
-              label="Foundation Set"
-              completed={currentWeek >= 2}
-              description="Initial habits established"
-            />
-            <MilestoneItem 
-              week={6}
-              label="Practice Groove"
-              completed={currentWeek >= 6}
-              description="Consistent daily application"
-            />
-            <MilestoneItem 
-              week={8}
-              label="Integration Point"
-              completed={currentWeek >= 8}
-              description="Skills becoming natural"
-            />
-            <MilestoneItem 
-              week={11}
-              label="Mastery Level"
-              completed={currentWeek >= 11}
-              description="Unconscious competence achieved"
-            />
-            <MilestoneItem 
-              week={12}
-              label="Progress Scan"
-              completed={currentWeek >= 12}
-              description="Reassess and plan next cycle"
-            />
+            ))}
           </div>
         </div>
       </Card>
-    </div>
-  );
-};
-
-// Helper component for milestone items - IMPROVED
-const MilestoneItem = ({ week, label, completed, description }) => {
-  return (
-    <div className="flex items-start gap-3 p-3 rounded-lg bg-white shadow-sm">
-      <div 
-        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-          completed ? 'bg-green-100' : 'bg-gray-100'
-        }`}
-      >
-        {completed ? (
-          <CheckCircle className="w-5 h-5 text-green-600" />
-        ) : (
-          <Circle className="w-5 h-5 text-gray-400" />
-        )}
-      </div>
-      <div className="flex-1">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-bold" style={{ color: 'var(--corporate-navy)' }}>
-            Week {week}:
-          </span>
-          <span className={`text-sm font-bold ${completed ? 'text-green-600' : 'text-gray-500'}`}>
-            {label}
-          </span>
-        </div>
-        <p className="text-xs text-gray-600">{description}</p>
-      </div>
     </div>
   );
 };
