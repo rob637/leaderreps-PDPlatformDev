@@ -38,13 +38,13 @@ const Locker = () => {
       };
     }
 
-    return currentDayData?.locker || {
-      showProfile: true,
-      showReminders: true,
-      showAMWins: true,
-      showDailyReps: true,
-      showScorecard: true,
-      showReflection: true
+    return {
+      showProfile: currentDayData?.locker?.showProfile ?? true,
+      showReminders: currentDayData?.locker?.showReminders ?? true,
+      showAMWins: currentDayData?.locker?.showAMWins ?? true,
+      showDailyReps: currentDayData?.locker?.showDailyReps ?? true,
+      showScorecard: currentDayData?.locker?.showScorecard ?? true,
+      showReflection: currentDayData?.locker?.showReflection ?? true
     };
   }, [currentDayData]);
 
