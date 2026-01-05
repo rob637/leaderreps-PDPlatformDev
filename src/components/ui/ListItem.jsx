@@ -183,6 +183,7 @@ ListItem.displayName = 'ListItem';
  * ListItemAction - Action button for list items
  */
 const ListItemAction = React.forwardRef(({
+  // eslint-disable-next-line no-unused-vars
   icon: Icon = MoreVertical,
   onClick,
   className,

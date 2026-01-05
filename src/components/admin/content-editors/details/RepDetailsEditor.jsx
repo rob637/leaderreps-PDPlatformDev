@@ -8,7 +8,7 @@ import { useAppServices } from '../../../../services/useAppServices';
 const RepDetailsEditor = ({ details, onChange, type }) => {
   const { callSecureGeminiAPI, GEMINI_MODEL } = useAppServices();
   const [showMediaPicker, setShowMediaPicker] = useState(null); // 'VIDEO' | 'DOCUMENT' | 'IMAGE' | null
-  const [copied, setCopied] = useState(false);
+  // const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
 
   const handleChange = (e) => {

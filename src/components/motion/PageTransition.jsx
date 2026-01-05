@@ -2,6 +2,7 @@
  * PageTransition - Screen transition animations
  */
 import React, { forwardRef } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReducedMotion } from './useAnimations';
 import { springPage } from './springPresets';
@@ -52,7 +53,7 @@ const PageTransition = forwardRef(({
   children,
   variant = 'slideUpFade',
   className = '',
-  mode = 'wait',
+  // mode = 'wait',
   ...props
 }, ref) => {
   const reducedMotion = useReducedMotion();

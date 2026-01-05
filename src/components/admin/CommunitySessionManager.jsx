@@ -943,7 +943,7 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
 // Session Row Component
 const SessionRow = ({ session, registrations, onEdit, onDelete, onDuplicate, onViewAttendees, onUpdateStatus, onExport }) => {
   const typeConfig = COMMUNITY_SESSION_TYPE_CONFIG[session.sessionType] || COMMUNITY_SESSION_TYPE_CONFIG.community_event;
-  const isPast = new Date(session.date) < new Date();
+  // const isPast = new Date(session.date) < new Date();
   
   return (
     <tr className="hover:bg-slate-50 transition-colors group">

@@ -41,10 +41,10 @@ const SkipLinks = ({
           className={`
             fixed top-0 left-0 z-[9999]
             px-4 py-2 m-2
-            bg-[#002E47] text-white
+            bg-corporate-navy text-white
             font-medium rounded-lg
             transform transition-transform duration-200
-            focus:outline-none focus:ring-2 focus:ring-[#47A88D] focus:ring-offset-2
+            focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2
             ${focusedIndex === index ? 'translate-y-0' : '-translate-y-full'}
           `}
         >

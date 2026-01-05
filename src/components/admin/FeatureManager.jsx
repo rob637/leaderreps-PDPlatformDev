@@ -15,7 +15,7 @@ import { ENHANCEMENT_IDEAS } from '../../data/enhancementIdeas';
 import ThisWeeksActionsWidget from '../widgets/ThisWeeksActionsWidget';
 
 const FeatureManager = () => {
-  const { features, toggleFeature, updateFeatureOrder, isFeatureEnabled, saveFeature, deleteFeature } = useFeatures();
+  const { features, toggleFeature, isFeatureEnabled, saveFeature, deleteFeature } = useFeatures();
   const { 
     user, 
     dailyPracticeData, 
@@ -27,7 +27,7 @@ const FeatureManager = () => {
 
   // --- DEV PLAN HOOK ---
   const { 
-    userState: devPlanUserState, 
+    // userState: devPlanUserState, 
     simulatedNow,
     phaseDayNumber,
     currentPhase
@@ -61,11 +61,11 @@ const FeatureManager = () => {
     morningWIN,
     setMorningWIN,
     morningWins, // New Array - REAL DATA
-    setMorningWins,
+    // setMorningWins,
     handleUpdateWin, // REAL HANDLER
     handleSaveSingleWin, // REAL HANDLER
     handleToggleWinComplete, // REAL HANDLER
-    handleSaveAllWins, // REAL HANDLER
+    // handleSaveAllWins, // REAL HANDLER
     otherTasks,
     handleToggleTask,
     handleRemoveTask,
@@ -273,6 +273,7 @@ const FeatureManager = () => {
     allQuotes: globalMetadata?.SYSTEM_QUOTES || []
   };
 
+  // eslint-disable-next-line no-unused-vars
   const getScopeForWidget = (widgetId) => {
     if (widgetId === 'daily-quote') {
       return {
@@ -333,6 +334,7 @@ const FeatureManager = () => {
     return { ...REAL_SCOPE, options: features[widgetId]?.options || {}, ThisWeeksActionsWidget };
   };
 
+  // eslint-disable-next-line no-unused-vars
   const getInputDescriptionsForWidget = (widgetId) => {
     const common = {};
 

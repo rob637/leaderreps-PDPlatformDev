@@ -46,7 +46,7 @@ const RepFeedItem = ({ item }) => {
         console.log('Comment clicked');
     };
 
-    const handleReact = (item) => {
+    const handleReact = () => {
         // For now, just show an alert
         console.log('React clicked');
     };
@@ -106,8 +106,8 @@ const RepFeedItem = ({ item }) => {
  */
 const CommunityFeedScreen = () => {
     // --- Consume Services ---
-    const { navigate, user, featureFlags, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
-    const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]); // Safe user object
+    const { navigate, featureFlags, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
+    // const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]); // Safe user object
 
     // --- Local State ---
     const [feedFilter, setFeedFilter] = useState('pod'); // Filter state: 'pod' or 'all'

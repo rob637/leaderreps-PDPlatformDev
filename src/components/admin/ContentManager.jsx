@@ -1,7 +1,7 @@
 // src/components/admin/ContentManager.jsx
 // Generic Content Management UI for any content type
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Plus, 
   Edit, 
@@ -26,7 +26,6 @@ import {
   addContent, 
   updateContent, 
   deleteContent, 
-  uploadResourceFile,
   CONTENT_COLLECTIONS 
 } from '../../services/contentService';
 import MediaSelector from './MediaSelector';
@@ -61,7 +60,7 @@ const ContentManager = ({ contentType, title, description }) => {
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false); // eslint-disable-line no-unused-vars
   const [showMediaSelector, setShowMediaSelector] = useState(false);
   const editFormRef = useRef(null);
   
@@ -70,12 +69,7 @@ const ContentManager = ({ contentType, title, description }) => {
   const displayTitle = title || config.label;
   const displayDesc = description || '';
 
-  // Load content
-  useEffect(() => {
-    loadContent();
-  }, [contentType]);
-
-  const loadContent = async () => {
+  const loadContent = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getAllContentAdmin(db, contentType);
@@ -85,7 +79,12 @@ const ContentManager = ({ contentType, title, description }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [db, contentType]);
+
+  // Load content
+  useEffect(() => {
+    loadContent();
+  }, [loadContent]);
 
   const handleAdd = () => {
     setEditingItem({
@@ -121,6 +120,7 @@ const ContentManager = ({ contentType, title, description }) => {
     }, 100);
   };
 
+  /*
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -149,6 +149,7 @@ const ContentManager = ({ contentType, title, description }) => {
       setIsUploading(false);
     }
   };
+  */
 
   const handleSave = async () => {
     try {

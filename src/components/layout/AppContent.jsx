@@ -1,6 +1,6 @@
 // src/components/layout/AppContent.jsx 
 
-import React, { Suspense, useCallback, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { signOut, updateProfile } from 'firebase/auth';
 import { LogOut, Loader, Settings, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
@@ -17,8 +17,11 @@ const AppContent = ({
   currentScreen,
   user,
   navParams,
+  // eslint-disable-next-line no-unused-vars
   isMobileOpen,
+  // eslint-disable-next-line no-unused-vars
   setIsMobileOpen,
+  // eslint-disable-next-line no-unused-vars
   isAuthRequired,
   auth,
   goBack,
@@ -53,13 +56,15 @@ const AppContent = ({
     }
   }, [user]);
 
+  /*
   const toggleDeveloperMode = () => {
     const newMode = !isDeveloperMode;
     setIsDeveloperMode(newMode);
     localStorage.setItem('arena-developer-mode', newMode.toString());
   };
+  */
 
-  const { navigate, isAdmin, membershipData, logout, globalMetadata } = useAppServices();
+  const { navigate, isAdmin, membershipData, logout } = useAppServices();
 
   const handleSignOut = async () => {
     try {

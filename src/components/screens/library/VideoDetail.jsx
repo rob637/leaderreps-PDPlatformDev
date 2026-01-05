@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../../services/useAppServices.jsx';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from '../../../services/firebaseUtils';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { PageLayout } from '../../ui/PageLayout.jsx';
 import { Loader, Film } from 'lucide-react';

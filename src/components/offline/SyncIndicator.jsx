@@ -2,6 +2,7 @@
  * SyncIndicator - Shows sync status for pending actions
  */
 import React from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { Cloud, CloudOff, RefreshCw, Check, AlertCircle } from 'lucide-react';
 import useOffline from './useOffline';

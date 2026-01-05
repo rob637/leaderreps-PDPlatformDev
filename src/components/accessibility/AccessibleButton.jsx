@@ -33,12 +33,12 @@ const AccessibleButton = forwardRef(({
   // Variant classes
   const variantClasses = {
     primary: `
-      bg-[#47A88D] text-white
-      hover:bg-[#3d9178]
+      bg-corporate-teal text-white
+      hover:bg-corporate-teal-dark
       disabled:bg-gray-300 disabled:text-gray-500
     `,
     secondary: `
-      bg-white text-[#002E47] border border-[#002E47]
+      bg-white text-corporate-navy border border-corporate-navy
       hover:bg-gray-50
       disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-300
     `,
@@ -48,7 +48,7 @@ const AccessibleButton = forwardRef(({
       disabled:bg-gray-300 disabled:text-gray-500
     `,
     ghost: `
-      bg-transparent text-[#002E47]
+      bg-transparent text-corporate-navy
       hover:bg-gray-100
       disabled:text-gray-400
     `,
@@ -56,7 +56,7 @@ const AccessibleButton = forwardRef(({
 
   // Focus ring only for keyboard users
   const focusClasses = isKeyboardUser
-    ? 'focus:outline-none focus:ring-2 focus:ring-[#47A88D] focus:ring-offset-2'
+    ? 'focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2'
     : 'focus:outline-none';
 
   const handleClick = (e) => {

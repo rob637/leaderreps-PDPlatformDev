@@ -2,14 +2,13 @@
 // RESTORED: Widget System Integration with Widget Lab
 // Uses WidgetRenderer for dynamic, customizable widgets
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { useDashboard } from './dashboard/DashboardHooks';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { 
-  UnifiedAnchorEditorModal, CalendarSyncModal, 
-  SaveIndicator
+  UnifiedAnchorEditorModal, CalendarSyncModal 
 } from './dashboard/DashboardComponents';
 import { 
   Sunrise, Moon, Flame, Trophy, Bell, Target, Calendar,
@@ -51,7 +50,7 @@ const Dashboard = () => {
   const {
     // Identity & Anchors
     identityStatement,
-    setIdentityStatement,
+    // setIdentityStatement,
     habitAnchor,
     whyStatement,
     handleSaveIdentity,
@@ -86,7 +85,7 @@ const Dashboard = () => {
     
     // Streak
     streakCount,
-    streakCoins,
+    // streakCoins,
     
     // Additional Reps
     additionalCommitments,
@@ -98,9 +97,9 @@ const Dashboard = () => {
     isSavingScorecard,
 
     // Mode
-    isArenaMode,
-    handleToggleMode,
-    isTogglingMode
+    // isArenaMode,
+    // handleToggleMode,
+    // isTogglingMode
   } = useDashboard({
     dailyPracticeData,
     updateDailyPracticeData,
@@ -110,7 +109,7 @@ const Dashboard = () => {
   // Modal states
   const [showAnchorModal, setShowAnchorModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
-  const [showSaveIndicator, setShowSaveIndicator] = useState(false);
+  // const [showSaveIndicator, setShowSaveIndicator] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
 
   // Computed values for widget scope
@@ -569,8 +568,6 @@ const Dashboard = () => {
         isOpen={showCalendarModal}
         onClose={() => setShowCalendarModal(false)}
       />
-
-      <SaveIndicator show={showSaveIndicator} />
     </div>
   );
 };

@@ -2,7 +2,7 @@
 // Centralized library for defining Daily Reps with descriptions
 // These can then be selected in the Dev Plan Manager for each week
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, 
   Edit, 
@@ -36,11 +36,7 @@ const DailyRepsLibrary = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState(null);
 
-  useEffect(() => {
-    loadReps();
-  }, []);
-
-  const loadReps = async () => {
+  const loadReps = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getAllContentAdmin(db, CONTENT_COLLECTIONS.DAILY_REPS);
@@ -51,7 +47,11 @@ const DailyRepsLibrary = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [db]);
+
+  useEffect(() => {
+    loadReps();
+  }, [loadReps]);
 
   const handleAdd = () => {
     setEditingItem({

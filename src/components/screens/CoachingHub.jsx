@@ -5,7 +5,7 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import { useCoachingSessions, SESSION_TYPES } from '../../hooks/useCoachingSessions';
 import { useCoachingRegistrations, REGISTRATION_STATUS } from '../../hooks/useCoachingRegistrations';
-import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from '../../services/firebaseUtils';
 import { 
   Loader, Users, Calendar, MessageSquare, Video, 
   Clock, ChevronLeft, ChevronRight, Play, Bot, UserCheck,
@@ -13,29 +13,11 @@ import {
 } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
-import { NoWidgetsEnabled } from '../ui';
+import { NoWidgetsEnabled, TabButton } from '../ui';
 
 // ============================================
 // TAB NAVIGATION
 // ============================================
-const TabButton = ({ active, onClick, icon: IconComponent, label, badge }) => (
-  <button
-    onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-3 min-h-[44px] font-medium text-sm border-b-2 transition-all duration-150 whitespace-nowrap touch-manipulation active:scale-[0.98] ${
-      active 
-        ? 'border-corporate-teal text-corporate-teal' 
-        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 active:bg-slate-50'
-    }`}
-  >
-    <IconComponent className="w-4 h-4" />
-    {label}
-    {badge > 0 && (
-      <span className="bg-corporate-teal/10 text-corporate-teal text-xs font-bold px-2 py-0.5 rounded-full">
-        {badge}
-      </span>
-    )}
-  </button>
-);
 
 // ============================================
 // CALENDAR VIEW COMPONENT
@@ -427,24 +409,24 @@ const CoachingHub = () => {
   const { db, navigate, user } = useAppServices();
   const { isFeatureEnabled } = useFeatures();
   const { currentDayNumber, unlockedContentIds } = useDailyPlan();
-  const { zoneVisibility, isPrepComplete } = useAccessControlContext();
+  const { zoneVisibility } = useAccessControlContext();
   
   // Use the new coaching hooks
   const { 
     sessions: newSessions, 
-    thisWeekSessions,
-    upcomingSessions: hookUpcomingSessions,
+    // thisWeekSessions,
+    // upcomingSessions: hookUpcomingSessions,
     loading: sessionsLoading,
-    sessionTypes 
+    // sessionTypes 
   } = useCoachingSessions();
   
   const {
     registrations: newRegistrations,
     registerForSession,
     cancelRegistration,
-    isRegistered: checkIsRegistered,
-    getUpcomingRegistrations,
-    getPastRegistrations,
+    // isRegistered: checkIsRegistered,
+    // getUpcomingRegistrations,
+    // getPastRegistrations,
     loading: registrationsLoading
   } = useCoachingRegistrations();
   

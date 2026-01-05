@@ -53,6 +53,7 @@ Heading.displayName = 'Heading';
  */
 const Text = React.forwardRef(({ 
   variant = 'default',
+  // eslint-disable-next-line no-unused-vars
   as: Component = 'p',
   className, 
   children, 

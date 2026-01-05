@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useContentAccess } from '../../../hooks/useContentAccess';
-import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs } from '../../../services/firebaseUtils';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { Loader, Search, SlidersHorizontal, Lock, Zap } from 'lucide-react';
 import SkillFilter from '../../ui/SkillFilter.jsx';
@@ -130,7 +130,7 @@ const ContentListView = ({
     });
     
     return result;
-  }, [items, searchQuery, selectedSkills, isContentUnlocked]);
+  }, [items, searchQuery, selectedSkills, isContentUnlocked, type]);
 
   return (
     <PageLayout 

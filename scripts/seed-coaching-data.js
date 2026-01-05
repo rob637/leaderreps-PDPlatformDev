@@ -19,7 +19,7 @@
 // Copy this entire block into the browser console
 
 (function() {
-  const { collection, doc, setDoc, getDocs, deleteDoc, serverTimestamp, writeBatch } = firebase.firestore;
+  const { collection, doc, setDoc, getDocs, deleteDoc, serverTimestamp } = firebase.firestore;
   const db = firebase.firestore();
 
   const SESSION_TYPES = {

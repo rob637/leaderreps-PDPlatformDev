@@ -2,6 +2,7 @@
  * HapticButton - Button with haptic feedback
  */
 import React, { forwardRef } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { haptic } from './useHaptics';
 import { springSnappy } from '../motion/springPresets';

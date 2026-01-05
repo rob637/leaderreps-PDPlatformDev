@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PageLayout } from '../../ui/PageLayout.jsx';
 import { useAppServices } from '../../../services/useAppServices.jsx';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs } from '../../../services/firebaseUtils';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { getContentGroups, GROUP_TYPES } from '../../../services/contentGroupsService';
 import { Loader, Zap, ArrowRight, Film, Dumbbell, BookOpen, Wrench, FileText, Search } from 'lucide-react';

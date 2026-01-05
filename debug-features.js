@@ -1,5 +1,5 @@
-const { initializeApp } = require('firebase/app');
-const { getFirestore, doc, getDoc } = require('firebase/firestore');
+// const { initializeApp } = require('firebase/app');
+const { getFirestore } = require('firebase/firestore');
 const fs = require('fs');
 
 // Read config

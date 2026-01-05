@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronRight, ArrowLeft, Home } from 'lucide-react';
-import { useNavigation } from '../../providers/NavigationProvider';
+// import { useNavigation } from '../../providers/NavigationProvider';
 
 // App version from build
 const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';

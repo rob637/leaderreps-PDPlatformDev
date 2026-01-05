@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../services/useAppServices';
-import { collection, query, orderBy, getDocs, serverTimestamp, arrayUnion, doc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { timeChange$ } from '../services/timeService';
 import { useActionProgress } from './useActionProgress';
 
@@ -374,7 +374,7 @@ export const useDailyPlan = () => {
     };
     
     fetchCohort();
-  }, [db, user, developmentPlanData?.cohortId, cohortData?.id]);
+  }, [db, user, developmentPlanData?.cohortId, cohortData?.id, developmentPlanData?.startDate]);
 
   // 2. Derive User State & Current Day
   const userState = useMemo(() => {
@@ -989,7 +989,7 @@ export const useDailyPlan = () => {
       unlockedResources, // New: enriched resource data
       prepPhaseInfo: prepInfo // New: Prep Phase welcome/countdown data
     };
-  }, [dailyPlan, dbDayNumber, currentPhase, phaseDayNumber, userState.dailyProgress, journeyDay, cohortData, daysFromStart]);
+  }, [dailyPlan, dbDayNumber, currentPhase, phaseDayNumber, userState.dailyProgress, journeyDay, cohortData, daysFromStart, getItemProgress]);
 
   // Legacy: currentDayNumber for backward compatibility
   // This returns the "user-facing" day number (negative for prep, positive for start)

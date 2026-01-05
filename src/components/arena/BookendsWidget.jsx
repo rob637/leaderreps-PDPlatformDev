@@ -6,7 +6,7 @@ const BookendsWidget = ({
   onUpdatePM, 
   onAddWin,
   stats,
-  wins = [],
+  // wins = [],
   mode,
   setMode,
   reflectionHistory = []
@@ -23,7 +23,7 @@ const BookendsWidget = ({
   });
 
   // Filter completed wins for PM view
-  const completedWins = wins.filter(w => w.completed);
+  // const completedWins = wins.filter(w => w.completed);
 
   // Sync props to local state when they change (initial load)
   useEffect(() => {

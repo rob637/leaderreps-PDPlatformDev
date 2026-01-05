@@ -29,7 +29,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
   const skillProgress = useMemo(() => {
     if (!plan || !plan.coreReps) return [];
     
-    const skillCatalog = globalMetadata?.SKILL_CATALOG?.items || globalMetadata?.SKILL_CATALOG || [];
+    // const skillCatalog = globalMetadata?.SKILL_CATALOG?.items || globalMetadata?.SKILL_CATALOG || [];
     
     return plan.coreReps.map(rep => {
       // Use skillName from adapted rep (already has the name!)

@@ -138,7 +138,7 @@ const AdminFunctions = () => {
         navigate, 
         isAdmin, 
         featureFlags: initialFlags, 
-        metadata, 
+        // metadata, 
         updateGlobalMetadata, 
         isLoading: isAppLoading, 
         globalMetadata 

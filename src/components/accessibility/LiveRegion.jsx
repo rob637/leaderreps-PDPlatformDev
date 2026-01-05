@@ -8,6 +8,7 @@ let messageQueue = [];
 let setMessageExternal = null;
 
 // External function to trigger announcements from anywhere
+// eslint-disable-next-line react-refresh/only-export-components
 export const announce = (message, priority = 'polite') => {
   if (setMessageExternal) {
     setMessageExternal({ message, priority });
@@ -17,11 +18,13 @@ export const announce = (message, priority = 'polite') => {
 };
 
 // Convenience methods
+// eslint-disable-next-line react-refresh/only-export-components
 export const announcePolite = (message) => announce(message, 'polite');
+// eslint-disable-next-line react-refresh/only-export-components
 export const announceAssertive = (message) => announce(message, 'assertive');
 
 const LiveRegion = ({
-  politeness = 'polite', // 'polite' | 'assertive' | 'off'
+  // politeness = 'polite', // 'polite' | 'assertive' | 'off' - unused
   atomic = true,
   relevant = 'additions text',
   clearDelay = 3000,

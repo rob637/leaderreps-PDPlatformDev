@@ -85,7 +85,7 @@ const WinTheDayWidget = ({ scope }) => {
         <button 
           onClick={handleSaveAll}
           disabled={isSaving}
-          className="w-full mt-2 py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2 text-sm"
+          className="w-full mt-2 py-2 bg-corporate-navy text-white rounded-xl font-bold hover:bg-corporate-navy/90 transition-colors flex items-center justify-center gap-2 text-sm"
         >
           {isSaving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Priorities

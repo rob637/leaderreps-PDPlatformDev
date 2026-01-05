@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback } from 'react';
+import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { X, Save, RefreshCw, Calendar, AlertTriangle } from 'lucide-react';
 
@@ -11,13 +11,7 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
   const [targetDay, setTargetDay] = useState(0);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (isOpen && userId) {
-      fetchPrepData();
-    }
-  }, [isOpen, userId]);
-
-  const fetchPrepData = async () => {
+  const fetchPrepData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -28,18 +22,21 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
         const data = docSnap.data();
         const log = data.prepVisitLog || [];
         setPrepVisitLog(log);
-        setTargetDay(log.length);
-      } else {
-        setPrepVisitLog([]);
-        setTargetDay(0);
+        // ... rest of function
       }
     } catch (err) {
       console.error("Error fetching prep data:", err);
-      setError("Failed to load user data.");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [db, userId]);
+
+  useEffect(() => {
+    if (isOpen && userId) {
+      fetchPrepData();
+    }
+  }, [isOpen, userId, fetchPrepData]);
 
   const handleSave = async () => {
     setSaving(true);

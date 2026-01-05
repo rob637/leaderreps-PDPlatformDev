@@ -14,7 +14,7 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
-import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, updateDoc, setDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, setDoc, arrayUnion, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const AdminDashboard = () => {
   const { db, user } = useAppServices();

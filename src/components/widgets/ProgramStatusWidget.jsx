@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Calendar, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
@@ -6,7 +6,7 @@ import { Card } from '../ui';
 
 const ProgramStatusWidget = () => {
   const { user, updateDevelopmentPlanData } = useAppServices();
-  const { currentDayNumber, effectiveDayNumber, userState, simulatedNow } = useDailyPlan();
+  const { currentDayNumber, userState, simulatedNow } = useDailyPlan();
   const [isFixing, setIsFixing] = useState(false);
 
   const startDate = userState?.startDate ? (

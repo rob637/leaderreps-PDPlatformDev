@@ -70,7 +70,7 @@ const RadioButtonInput = ({ question, options, value, onChange }) => {
 };
 
 
-const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null, mode = 'create', isWidget = false }) => {
+const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null, isWidget = false }) => {
   // One state object for all answers
   const [responses, setResponses] = useState(initialData?.answers || {});
   

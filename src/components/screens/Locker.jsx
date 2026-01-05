@@ -19,7 +19,7 @@ const LOCKER_FEATURES = [
 ];
 
 const Locker = () => {
-  const { dailyPracticeData, commitmentData, navigate, db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
+  const { dailyPracticeData, commitmentData, navigate, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
   const { currentDayData } = useDailyPlan();
 

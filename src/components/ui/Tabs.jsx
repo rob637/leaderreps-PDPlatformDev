@@ -205,6 +205,7 @@ const TabButton = React.forwardRef(({
   label,
   icon: Icon,
   minimized = false,
+  badge,
   className,
   ...props
 }, ref) => (
@@ -223,6 +224,14 @@ const TabButton = React.forwardRef(({
   >
     {Icon && <Icon className="w-4 h-4" />}
     {!minimized && label}
+    {badge !== undefined && (
+      <span className={cn(
+        "ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold",
+        active ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
+      )}>
+        {badge}
+      </span>
+    )}
   </button>
 ));
 

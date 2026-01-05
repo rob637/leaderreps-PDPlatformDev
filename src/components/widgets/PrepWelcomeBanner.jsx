@@ -77,8 +77,8 @@ const PrepWelcomeBanner = () => {
     onboarding: originalOnboarding = null,
     isAccelerated = false,
     isQuickStart = false,
-    totalActions = 0,
-    progressPercent = 0,
+    // totalActions = 0,
+    // progressPercent = 0,
     cohortName = null,
     facilitator = null
   } = info;
@@ -282,8 +282,8 @@ const PrepWelcomeBanner = () => {
       isLaunch 
         ? 'bg-gradient-to-br from-emerald-600 via-corporate-teal to-corporate-navy' 
         : isHighExcitement
-          ? 'bg-gradient-to-br from-corporate-teal via-[#002E47] to-corporate-navy'
-          : 'bg-gradient-to-br from-corporate-navy via-[#002E47] to-corporate-teal'
+          ? 'bg-gradient-to-br from-corporate-teal via-corporate-navy to-corporate-navy'
+          : 'bg-gradient-to-br from-corporate-navy via-corporate-navy to-corporate-teal'
     }`}>
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">

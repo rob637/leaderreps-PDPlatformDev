@@ -2,9 +2,10 @@
  * Stagger - Container that staggers children animations
  */
 import React, { forwardRef } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { useReducedMotion } from './useAnimations';
-import { staggerChildren } from './springPresets';
+// import { staggerChildren } from './springPresets';
 
 const Stagger = forwardRef(({
   children,

@@ -1,5 +1,5 @@
 // src/components/admin/UnifiedContentManager.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Layout, 
   Dumbbell, 
@@ -40,15 +40,11 @@ const UnifiedContentManager = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    loadContent();
-  }, [activeTab]);
-
-  const loadContent = async () => {
+  const loadContent = useCallback(async () => {
     setLoading(true);
     try {
       // skipVisibilityMerge: true ensures we only see items with exact type match
-      // (prevents Videos from appearing in Documents tab, etc.)
+      // ... rest of function
       const data = await getUnifiedContent(db, activeTab, { skipVisibilityMerge: true });
       setContentList(data);
     } catch (error) {
@@ -56,7 +52,11 @@ const UnifiedContentManager = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [db, activeTab]);
+
+  useEffect(() => {
+    loadContent();
+  }, [loadContent]);
 
   const handleAddNew = () => {
     setSelectedItem(null);

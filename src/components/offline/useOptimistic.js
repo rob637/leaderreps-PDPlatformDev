@@ -14,7 +14,7 @@ import useOffline from './useOffline';
 const useOptimistic = (initialValue, options = {}) => {
   const {
     onError,
-    retryOnReconnect = true,
+    // retryOnReconnect = true,
     maxRetries = 3,
   } = options;
 
@@ -125,7 +125,7 @@ const useOptimistic = (initialValue, options = {}) => {
 /**
  * useOptimisticList - Optimistic updates for list operations
  */
-export const useOptimisticList = (initialList = [], options = {}) => {
+export const useOptimisticList = (initialList = [], /* options = {} */) => {
   const [list, setList] = useState(initialList);
   const [pendingIds, setPendingIds] = useState(new Set());
   const previousList = useRef(initialList);

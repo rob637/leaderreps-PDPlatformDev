@@ -27,6 +27,7 @@ function getDerivedDuration(book) {
   return null;
 }
 
+/*
 function getDeepDataSignature(booksObject) {
     if (!booksObject || typeof booksObject !== 'object') return 'empty';
     try {
@@ -37,6 +38,7 @@ function getDeepDataSignature(booksObject) {
         return 'error-signature';
     }
 }
+*/
 
 function getActionSteps() { return ['Define the outcome, then design the smallest repeatable action.']; }
 function getFrameworks() { return [{ name: 'Core Principles', desc: 'Prioritize outcomes, feedback loops, and small, testable steps.' }]; }

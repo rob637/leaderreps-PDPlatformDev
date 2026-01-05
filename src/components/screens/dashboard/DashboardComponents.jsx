@@ -1,7 +1,7 @@
 // src/components/screens/dashboard/DashboardComponents.jsx
 // MODIFIED: Refactored to use Atomic Components
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Target, Clock, User, Save, Loader, CheckCircle, TrendingUp, Star, 
   ChevronDown, ChevronUp, Plus, X, Sunrise, Moon, Flame, Anchor,
@@ -16,7 +16,9 @@ import { Input, Textarea } from '../../ui/Input';
 import { Checkbox } from '../../ui/Checkbox';
 import { Badge } from '../../ui/Badge';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '../../ui/Modal';
+export { TabButton } from '../../ui/Tabs';
 
+/*
 // --- Helper function to format timestamps ---
 const formatTimestamp = (timestamp) => {
   if (!timestamp) return 'Just now';
@@ -44,6 +46,7 @@ const formatTimestamp = (timestamp) => {
     return 'Recently';
   }
 };
+*/
 
 /* =========================================================
    UNIFIED ANCHOR EDITOR MODAL
@@ -51,7 +54,7 @@ const formatTimestamp = (timestamp) => {
 const AnchorInputSection = ({ 
     title, description, value, setValue, 
     suggestions, onSelectSuggestion, isTextArea = false,
-    icon: Icon 
+    // icon: Icon 
 }) => {
     const suggestionPrefix = title === '1. Identity Anchor' ? '... ' : ''; 
         
@@ -265,26 +268,7 @@ export const StreakTracker = ({ streakCount, streakCoins, userEmail }) => {
   );
 };
 
-export const TabButton = ({ active, onClick, label, minimized = false }) => (
-  <button
-    type="button"
-    aria-pressed={active}
-    onClick={onClick}
-    className={`flex-1 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 relative ${
-      active 
-        ? 'bg-corporate-teal text-white shadow-md' 
-        : 'bg-transparent text-slate-600 border-2 border-slate-200 hover:bg-slate-50'
-    }`}
-  >
-    {label}
-    {minimized && !active && (
-      <span 
-        className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-corporate-orange"
-        title="Incomplete"
-      />
-    )}
-  </button>
-);
+
 
 // ... (Other components like MorningBookend, EveningBookend are omitted for brevity as they are not used in the new Dashboard. 
 // If they are needed, they should be refactored similarly. For now, I'm keeping the file clean with just the used exports and minimal legacy support.)

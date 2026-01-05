@@ -2,6 +2,7 @@
  * AnimatedToast - Animated notification toasts
  */
 import React, { createContext, useContext, useState, useCallback } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, AlertCircle, Info, X, AlertTriangle } from 'lucide-react';
 import { springSnappy } from './springPresets';

@@ -1,10 +1,10 @@
 /**
  * HapticSlider - Slider with haptic tick feedback
  */
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { haptic } from './useHaptics';
-import { useReducedMotion } from '../motion/useAnimations';
 
 const HapticSlider = ({
   value,
@@ -20,7 +20,7 @@ const HapticSlider = ({
   className = '',
   ...props
 }) => {
-  const reducedMotion = useReducedMotion();
+  // const reducedMotion = useReducedMotion();
   const sliderRef = useRef(null);
   const lastTickValue = useRef(value);
   const [isDragging, setIsDragging] = useState(false);

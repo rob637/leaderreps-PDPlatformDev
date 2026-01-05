@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
 // --- Firestore Imports ---
-import { collection, query, orderBy, getDocs } from 'firebase/firestore'; // cite: DailyPractice.jsx
+import { collection, query, orderBy, getDocs } from '../../services/firebaseUtils'; // cite: DailyPractice.jsx
 
 // --- Icons ---
 import { Archive, Loader, MessageSquare, User } from 'lucide-react';

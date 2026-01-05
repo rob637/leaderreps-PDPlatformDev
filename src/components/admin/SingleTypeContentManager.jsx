@@ -1,5 +1,5 @@
 // src/components/admin/SingleTypeContentManager.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, 
   Search,
@@ -24,11 +24,7 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    loadContent();
-  }, [type]);
-
-  const loadContent = async () => {
+  const loadContent = useCallback(async () => {
     setLoading(true);
     try {
       // skipVisibilityMerge: true ensures we only see items with exact type match
@@ -39,7 +35,11 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [db, type]);
+
+  useEffect(() => {
+    loadContent();
+  }, [loadContent]);
 
   const handleAddNew = () => {
     setSelectedItem(null);

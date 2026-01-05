@@ -35,13 +35,12 @@ import {
   getDocs, 
   doc, 
   setDoc, 
-  updateDoc,
   deleteDoc, 
   query, 
   orderBy,
   serverTimestamp 
 } from 'firebase/firestore';
-import { addContent, CONTENT_COLLECTIONS } from '../../services/contentService';
+import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import { UNIFIED_COLLECTION, CONTENT_TYPES } from '../../services/unifiedContentService';
 import { where } from 'firebase/firestore';
 import ResourceSelector from './ResourceSelector';
@@ -53,7 +52,7 @@ const DevPlanManager = () => {
   const [selectedWeekId, setSelectedWeekId] = useState(null);
   const [newWeekData, setNewWeekData] = useState(null);
   const [lovs, setLovs] = useState({});
-  const [lovIds, setLovIds] = useState({});
+  // const [lovIds, setLovIds] = useState({});
   const [availableSkills, setAvailableSkills] = useState([]); // New: Dynamic Skills
   const [dailyRepsLibrary, setDailyRepsLibrary] = useState([]); // Daily Reps Library
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'edit'
@@ -72,7 +71,7 @@ const DevPlanManager = () => {
         ids[data.title] = doc.id;
       });
       setLovs(lovData);
-      setLovIds(ids);
+      // setLovIds(ids);
 
       // 1b. Load Dynamic Skills from Content Library
       try {

@@ -5,7 +5,7 @@ import { Download, X, Info, Smartphone, Monitor, ExternalLink } from 'lucide-rea
 
 const PWAInstall = ({ collapsed = false }) => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isInstallable, setIsInstallable] = useState(false);
+  // const [isInstallable, setIsInstallable] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
 
@@ -19,13 +19,13 @@ const PWAInstall = ({ collapsed = false }) => {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setIsInstallable(true);
+      // setIsInstallable(true);
     };
 
     // Listen for successful install
     const handleAppInstalled = () => {
       setIsInstalled(true);
-      setIsInstallable(false);
+      // setIsInstallable(false);
       setDeferredPrompt(null);
     };
 
@@ -59,7 +59,7 @@ const PWAInstall = ({ collapsed = false }) => {
       
       // Clear the deferredPrompt
       setDeferredPrompt(null);
-      setIsInstallable(false);
+      // setIsInstallable(false);
     } catch (error) {
       console.error('Install failed:', error);
       setShowInstructions(true);

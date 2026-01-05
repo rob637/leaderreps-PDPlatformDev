@@ -68,10 +68,8 @@ function App() {
   // Navigation history manager for browser back/forward buttons
   const {
     pushNavigationState,
-    getCurrentState,
     goBack,
-    canGoBack,
-    clearHistory
+    canGoBack
   } = useNavigationHistory();
 
   useEffect(() => {

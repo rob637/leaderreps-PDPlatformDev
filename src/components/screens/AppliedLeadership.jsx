@@ -368,10 +368,12 @@ export default function AppliedLeadershipScreen() {
         return [];
     }, [cmsCourses, isAppLoading]);
 
+    /*
     const handleSelectSkill = useCallback((skill) => {
         setSelectedCourse(null);
         setSelectedSkill(skill);
     }, []);
+    */
 
     const handleSelectCourse = useCallback((course) => {
         setSelectedSkill(null);

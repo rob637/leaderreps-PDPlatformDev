@@ -2,6 +2,7 @@
  * HapticToggle - Toggle switch with haptic feedback
  */
 import React from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { haptic } from './useHaptics';
 import { springSnappy } from '../motion/springPresets';
@@ -93,7 +94,7 @@ const HapticToggle = ({
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         `}
         animate={{
-          backgroundColor: checked ? '#47A88D' : '#E5E7EB',
+          backgroundColor: checked ? '#47a88d' : '#e5e7eb',
         }}
         transition={{ duration: 0.2 }}
         whileTap={{ scale: disabled ? 1 : 0.95 }}

@@ -2,6 +2,7 @@
  * OfflineIndicator - Small offline status indicator
  */
 import React from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { WifiOff, Wifi } from 'lucide-react';
 import useOffline from './useOffline';

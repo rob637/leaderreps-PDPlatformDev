@@ -301,7 +301,7 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
                 src={url} 
                 className="w-full h-full flex-1" 
                 title={title}
-                onError={(e) => {
+                onError={() => {
                     // If iframe fails (X-Frame-Options), we can't easily detect it in JS, 
                     // but we provide the "Open in New Window" button below as a backup.
                 }}

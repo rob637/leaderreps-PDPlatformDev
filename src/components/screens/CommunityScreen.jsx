@@ -1,15 +1,12 @@
 // src/components/screens/CommunityScreen.jsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { membershipService } from '../../services/membershipService.js';
 import contentService, { CONTENT_COLLECTIONS } from '../../services/contentService.js';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
-import { logWidthMeasurements } from '../../utils/debugWidth.js';
-import { useFeatures } from '../../providers/FeatureProvider';
+// import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
-import { useLayout } from '../../providers/LayoutProvider';
 import PrepGate from '../ui/PrepGate';
 
 import {
@@ -17,27 +14,7 @@ import {
     Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video, BookOpen, FileText,
     Calendar, Lock
 } from 'lucide-react';
-import { Button, Card, LoadingSpinner, PageLayout, NoWidgetsEnabled } from '../ui';
-
-// --- Tab Button Component ---
-const TabButton = ({ active, onClick, icon: IconComponent, label, badge }) => (
-  <button
-    onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-3 min-h-[44px] font-medium text-sm border-b-2 transition-all duration-150 whitespace-nowrap touch-manipulation active:scale-[0.98] ${
-      active 
-        ? 'border-corporate-teal text-corporate-teal' 
-        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 active:bg-slate-50'
-    }`}
-  >
-    <IconComponent className="w-4 h-4" />
-    {label}
-    {badge > 0 && (
-      <span className="bg-corporate-teal/10 text-corporate-teal text-xs font-bold px-2 py-0.5 rounded-full">
-        {badge}
-      </span>
-    )}
-  </button>
-);
+import { Button, Card, LoadingSpinner, PageLayout, NoWidgetsEnabled, TabButton } from '../ui';
 
 // --- Sub-Components ---
 
@@ -232,7 +209,7 @@ const NewThreadView = ({ setView }) => {
 };
 
 const CommunityResourcesView = ({ db }) => {
-    const { currentDayNumber, unlockedContentIds } = useDailyPlan();
+    const { unlockedContentIds } = useDailyPlan();
     const [resources, setResources] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedResource, setSelectedResource] = useState(null);
@@ -325,11 +302,11 @@ const CommunityResourcesView = ({ db }) => {
 
 // --- Main Component ---
 
-const CommunityScreen = ({ simulatedTier }) => {
+const CommunityScreen = () => {
     const { db, user, navigate, LEADERSHIP_TIERS, isLoading: isAppLoading, error: appError } = useAppServices();
-    const { isFeatureEnabled } = useFeatures();
+    // const { getFeatureOrder } = useFeatures();
     const { unlockedContentIds, currentDayNumber } = useDailyPlan();
-    const { zoneVisibility, isPrepComplete } = useAccessControlContext();
+    const { zoneVisibility } = useAccessControlContext();
     
     const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]);
     
@@ -340,12 +317,12 @@ const CommunityScreen = ({ simulatedTier }) => {
     // Feed State
     const [currentTierFilter, setCurrentTierFilter] = useState('All');
     const [allThreads, setAllThreads] = useState([]);
-    const [isLoadingThreads, setIsLoadingThreads] = useState(true);
+    // const [isLoadingThreads, setIsLoadingThreads] = useState(true);
 
     // Fetch Threads - now using day-based unlocking
     useEffect(() => {
         const fetchThreads = async () => {
-            setIsLoadingThreads(true);
+            // setIsLoadingThreads(true);
             try {
                 const threads = await contentService.getContent(db, CONTENT_COLLECTIONS.COMMUNITY);
                 const unlockedSet = new Set((unlockedContentIds || []).map(id => String(id).toLowerCase()));
@@ -370,7 +347,7 @@ const CommunityScreen = ({ simulatedTier }) => {
             } catch (error) {
                 console.error("Error fetching threads:", error);
             } finally {
-                setIsLoadingThreads(false);
+                // setIsLoadingThreads(false);
             }
         };
         

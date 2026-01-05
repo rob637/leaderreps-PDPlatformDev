@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   getFirestore, doc, collection, getDoc, getDocs, setDoc, deleteDoc, 
   serverTimestamp, query, orderBy
-} from "firebase/firestore";
+} from "../../services/firebaseUtils";
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
   Download, Upload, Trash2, Save, Search, Edit, Plus, X,

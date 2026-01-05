@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { User, Lock, Code, Cpu, Settings, Shield, ArrowLeft, LogOut, Key, Mail, Bell, BellOff, CheckCircle } from 'lucide-react';
-import { sendPasswordResetEmail } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { sendPasswordResetEmail, doc, getDoc } from '../../services/firebaseUtils';
 import { Button, Card } from '../ui';
 import { notificationService } from '../../services/notificationService';
 

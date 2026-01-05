@@ -2,6 +2,7 @@
  * AnimatedCard - Card with hover/tap animations
  */
 import React, { forwardRef } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { useReducedMotion } from './useAnimations';
 import { springSnappy } from './springPresets';

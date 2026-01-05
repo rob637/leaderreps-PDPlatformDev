@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from '../../services/firebaseUtils';
 import { Button, Card, LoadingSpinner } from '../ui';
 import {
   Zap, ShieldCheck, ArrowLeft, Target, Briefcase, Clock, Users, CornerRightUp, X, Activity, Cpu, Eye,

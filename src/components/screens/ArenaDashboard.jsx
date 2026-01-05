@@ -2,7 +2,7 @@
 // Dashboard 3: Static "The Arena" (Wireframe Version)
 // Matches the hand-drawn wireframe layout.
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
   CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
@@ -12,14 +12,14 @@ import {
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
 import { UnifiedAnchorEditorModal } from './dashboard/DashboardComponents.jsx';
 
-const ArenaDashboard = (props) => {
+const ArenaDashboard = () => {
   const { 
     user, 
     dailyPracticeData, 
     updateDailyPracticeData,
     developmentPlanData,
     globalMetadata,
-    userData,
+    // userData,
     navigate
   } = useAppServices();
 
@@ -60,7 +60,7 @@ const ArenaDashboard = (props) => {
     
     // Streak
     streakCount,
-    streakCoins,
+    // streakCoins,
     
     // Additional Reps
     additionalCommitments,
@@ -73,7 +73,7 @@ const ArenaDashboard = (props) => {
   // --- LOCAL STATE ---
   const [isAnchorModalOpen, setIsAnchorModalOpen] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
-  const [showTaskInput, setShowTaskInput] = useState(false);
+  // const [showTaskInput, setShowTaskInput] = useState(false);
   const [isWinSaved, setIsWinSaved] = useState(false);
 
   // --- WRAPPERS FOR AUTO-SAVE ---

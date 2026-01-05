@@ -16,7 +16,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
     
     return (
         <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
-            <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#0B3B5B] mb-4">Scenario Library: Practice Conversations</h1>
+            <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-corporate-navy mb-4">Scenario Library: Practice Conversations</h1>
             <p className="text-lg text-gray-600 mb-6">Select a high-stakes scenario to practice your preparation process. Each scenario includes a unique persona for the AI simulator.</p>
             
             <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
@@ -26,7 +26,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
             <Card 
                 title="Dynamic Scenario Generator" 
                 icon={Zap} 
-                className="mb-6 bg-[#0B3B5B]/10 border-l-4 border-corporate-orange rounded-3xl" 
+                className="mb-6 bg-corporate-navy/10 border-l-4 border-corporate-orange rounded-3xl" 
                 onClick={() => setIsDynamicGeneratorVisible(true)}
             >
                 <p className="text-gray-700 text-sm">Create a custom, adaptive scenario by choosing a core conflict and adding a unique **modifier** (e.g., personality, circumstance, or context).</p>
@@ -35,24 +35,24 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
                 </div>
             </Card>
             
-            <h2 className='text-xl font-bold text-[#0B3B5B] mb-4 border-b pb-1'>Pre-Seeded Scenarios</h2>
+            <h2 className='text-xl font-bold text-corporate-navy mb-4 border-b pb-1'>Pre-Seeded Scenarios</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:p-4 lg:p-6">
                 {scenarios.map(scenario => (
                     <Card 
                         key={scenario.id} 
                         title={scenario.title} 
-                        className="border-l-4 border-[#219E8B] rounded-3xl" 
+                        className="border-l-4 border-corporate-teal rounded-3xl" 
                         onClick={() => {
                             setSelectedScenario(scenario);
                             setCoachingLabView('scenario-prep');
                         }}
                     >
                         <p className="text-sm text-gray-700 mb-3">{scenario.description}</p>
-                        <div className="text-xs font-semibold text-[#0B3B5B] bg-[#0B3B5B]/10 px-3 py-1 rounded-full inline-block">
+                        <div className="text-xs font-semibold text-corporate-navy bg-corporate-navy/10 px-3 py-1 rounded-full inline-block">
                             Persona: {scenario.persona}
                         </div>
-                        <div className="mt-4 text-[#219E8B] font-semibold flex items-center">
+                        <div className="mt-4 text-corporate-teal font-semibold flex items-center">
                             Start Preparation &rarr;
                         </div>
                     </Card>

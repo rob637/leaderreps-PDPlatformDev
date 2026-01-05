@@ -148,19 +148,21 @@ const generatePlanData = (assessment, ownerUid, contentLibrary) => {
     ];
     
     // Logic to select content and assign difficulty/duration
-    const getTargetDifficulty = (rating) => rating >= 4.5 ? 'Mastery' : rating >= 3.5 ? 'Core' : 'Intro';
+    // const getTargetDifficulty = (rating) => rating >= 4.5 ? 'Mastery' : rating >= 3.5 ? 'Core' : 'Intro';
+    /*
     const adjustDuration = (rating, duration) => {
         if (rating >= 4.5) return Math.round(duration * 0.8); 
         if (rating <= 2.5) return Math.round(duration * 1.2); 
         return duration;
     };
+    */
     
     for (let cycle = 1; cycle <= 6; cycle++) { 
         const blockDef = trainingBlocks[cycle - 1];
-        const primaryTier = blockDef.tier;
+        // const primaryTier = blockDef.tier;
         // Use the initial assessment Q score as a proxy for the Tier's self-rating
         const currentRating = selfRatings[cycle] || 3; 
-        const targetDifficulty = getTargetDifficulty(currentRating);
+        // const targetDifficulty = getTargetDifficulty(currentRating);
         const maxContent = currentRating <= 3 ? 6 : 4; 
 
         const requiredContent = [];

@@ -1,7 +1,7 @@
 /**
  * Gesture Hooks - Custom hooks for touch gesture detection
  */
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 
 /**
  * useSwipe - Detect swipe gestures

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useContentAccess } from '../../../hooks/useContentAccess';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy } from '../../../services/firebaseUtils';
 import { UNIFIED_COLLECTION, CONTENT_TYPES } from '../../../services/unifiedContentService';
 import { getContentGroupById, GROUP_TYPES } from '../../../services/contentGroupsService';
 import { PageLayout } from '../../ui/PageLayout.jsx';

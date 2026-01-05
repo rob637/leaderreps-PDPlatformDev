@@ -6,14 +6,14 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 import { PageLayout, PageGrid, NoWidgetsEnabled } from '../ui';
 import { DashboardCard } from '../ui/DashboardCard';
 import { ContentListItem } from '../ui/ContentListItem';
-import { collection, query, where, getCountFromServer } from 'firebase/firestore';
+import { collection, query, where, getCountFromServer } from '../../services/firebaseUtils';
 import { UNIFIED_COLLECTION } from '../../services/unifiedContentService';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 
 const Library = () => {
   const { navigate, db } = useAppServices();
-  const { isFeatureEnabled, getFeatureOrder } = useFeatures();
+  const { isFeatureEnabled } = useFeatures();
   const [contentCounts, setContentCounts] = useState({ readings: 0, videos: 0, courses: 0, programs: 0, workouts: 0, tools: 0 });
   const [loading, setLoading] = useState(true);
   

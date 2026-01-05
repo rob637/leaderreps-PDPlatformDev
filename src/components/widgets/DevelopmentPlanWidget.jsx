@@ -8,7 +8,7 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 
-const DevelopmentPlanWidget = ({ scope }) => {
+const DevelopmentPlanWidget = () => {
   const { db } = useAppServices();
   const [viewingResource, setViewingResource] = useState(null);
   const [loadingResource, setLoadingResource] = useState(false);

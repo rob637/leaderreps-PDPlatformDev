@@ -93,7 +93,7 @@ const MilestoneTimeline = ({ onBack }) => {
           <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -translate-y-1/2 hidden md:block" />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-4 relative">
-            {DAILY_PLAN_PHASES.map((phase, phaseIdx) => (
+            {DAILY_PLAN_PHASES.map((phase) => (
               <div key={phase.name} className="relative">
                 {/* Phase Label (Mobile) */}
                 <div className="md:hidden mb-4 font-bold text-lg" style={{ color: phase.color }}>

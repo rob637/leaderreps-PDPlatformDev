@@ -7,7 +7,7 @@
 // SENTINEL FIX (10/30/25): Sentinels are stripped in useAppServices.jsx listeners, NOT in write operations
 // 🛑 CRITICAL FIX (10/30/25): Refactored writeDevPlan to only adapt the currentPlan sub-object.
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Target, TrendingUp, Calendar, Zap, Crosshair, Flag, ClipboardList, CheckCircle, AlertCircle, Eye, ArrowRight } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
@@ -31,7 +31,7 @@ import {
   adaptComponentPlanToFirebase,
   buildVirtualSkillCatalog
 } from '../../utils/devPlanAdapter';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from '../../services/firebaseUtils';
 
 // Simple guard wrapper
 const LoadingBlock = ({ title = 'Loading…', description = 'Preparing your development plan...' }) => (
@@ -255,7 +255,7 @@ export default function DevelopmentPlan(props) {
     }
   }, [adaptedDevelopmentPlanData?.currentPlan, view, isSaving, justCompletedBaseline]);
 
-  const writeDevPlan = async (payload, { merge = true } = {}) => {
+  const writeDevPlan = useCallback(async (payload, { merge = true } = {}) => {
     setError(null);
     setIsSaving(true);
     
@@ -300,7 +300,7 @@ export default function DevelopmentPlan(props) {
     
     setIsSaving(false);
     return true;
-  };
+  }, [updateDevelopmentPlanData]);
 
   // Delete/Reset Development Plan (Developer Mode Only)
   const handleResetPlan = async () => {
@@ -372,7 +372,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   // ===== FLOW ACTIONS =====
 
   // Baseline → Generate new plan then route to tracker
-  const handleCompleteBaseline = async (assessment) => {
+  const handleCompleteBaseline = useCallback(async (assessment) => {
     
     const date = new Date().toISOString();
     const newAssessment = { ...assessment, date };
@@ -444,10 +444,10 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       console.error('[DevelopmentPlan] Failed to save plan!');
       alert('Failed to save development plan. Please try again.');
     }
-  };
+  }, [combinedSkillCatalog, adaptedDevelopmentPlanData, writeDevPlan, globalMetadata, updateDailyPracticeWriter, db, userId]);
 
   // ProgressScan → same pattern as baseline, but we show comparisons
-  const handleCompleteScan = async (newPlan, newAssessment) => {
+  const handleCompleteScan = useCallback(async (newPlan, newAssessment) => {
     const date = new Date().toISOString();
     const withDate = { ...newAssessment, date };
 
@@ -487,15 +487,15 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       
       // REQ #16: FIX - Do not manually set view. Let the useEffect handle it.
     }
-  };
+  }, [adaptedDevelopmentPlanData, writeDevPlan, globalMetadata, updateDailyPracticeWriter]);
 
-  const handleEditPlan = async (updatedPlan) => {
+  const handleEditPlan = useCallback(async (updatedPlan) => {
     // NOTE: This plan is assumed to be in the component's 'coreReps' format,
     // so it will hit the 'else if (coreReps)' conversion logic in writeDevPlan.
     const payload = { currentPlan: updatedPlan, updatedAt: new Date().toISOString() };
     const ok = await writeDevPlan(payload, { merge: true });
     return ok;
-  };
+  }, [writeDevPlan]);
 
   // Get latest assessment if available
   const latestAssessment = adaptedDevelopmentPlanData?.assessmentHistory?.length > 0 

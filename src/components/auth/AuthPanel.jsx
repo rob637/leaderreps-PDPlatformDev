@@ -9,7 +9,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   GoogleAuthProvider,
-  signInWithPopup
+  // signInWithPopup
 } from 'firebase/auth';
 import { 
   collection, 
@@ -193,6 +193,7 @@ function AuthPanel({ auth, db, onSuccess }) {
     }
   };
 
+  /*
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setStatusMessage('');
@@ -264,6 +265,7 @@ function AuthPanel({ auth, db, onSuccess }) {
       setIsLoading(false);
     }
   };
+  */
 
   if (checkingInvite) {
       return (

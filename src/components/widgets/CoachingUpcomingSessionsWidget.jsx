@@ -160,11 +160,11 @@ const CoachingUpcomingSessionsWidget = ({ scope = {} }) => {
   } = scope;
   
   // Internal state for calendar if not controlled externally
-  const [internalViewMode, setInternalViewMode] = useState('list');
+  const [internalViewMode] = useState('list');
   const [currentDate, setCurrentDate] = useState(new Date());
   
   const activeViewMode = setViewMode ? viewMode : internalViewMode;
-  const toggleViewMode = setViewMode || setInternalViewMode;
+  // const toggleViewMode = setViewMode || setInternalViewMode;
   
   // Use upcomingSessions if provided, otherwise filter sessions
   const displaySessions = useMemo(() => {

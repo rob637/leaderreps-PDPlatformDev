@@ -2,6 +2,7 @@
  * SwipeNavigator - Swipe between pages/tabs
  */
 import React, { useState, useRef, useCallback } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { useReducedMotion } from '../motion/useAnimations';
 import { springPage } from '../motion/springPresets';
@@ -20,7 +21,7 @@ const SwipeNavigator = ({
   const containerRef = useRef(null);
   const touchStart = useRef({ x: 0, y: 0 });
   const [direction, setDirection] = useState(0);
-  const controls = useAnimation();
+  // const controls = useAnimation();
   
   const pages = React.Children.toArray(children);
   const totalPages = pages.length;

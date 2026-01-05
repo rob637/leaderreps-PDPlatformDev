@@ -1,27 +1,30 @@
 // src/components/admin/ContentAdminHome.jsx
 // Admin dashboard for content management
 
-import React, { useState } from 'react';
-import { BookOpen, Film, GraduationCap, ArrowLeft, Settings, RefreshCw, Trash2, Users, BrainCircuit, List } from 'lucide-react';
+import React from 'react';
+import { BookOpen, Film, GraduationCap, ArrowLeft, Settings, Users, BrainCircuit, List } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
-import { CONTENT_COLLECTIONS, addContent } from '../../services/contentService';
-import { collection, doc, getDoc, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
+import { CONTENT_COLLECTIONS } from '../../services/contentService';
 
 const COLORS = {
-  NAVY: '#002E47',
-  ORANGE: '#E04E1B',
-  TEAL: '#47A88D',
-  LIGHT_GRAY: '#FCFCFA',
+  NAVY: '#002e47',
+  ORANGE: '#e04e1b',
+  TEAL: '#47a88d',
+  LIGHT_GRAY: '#fcfcfa',
   MUTED: '#6B7280'
 };
 
 const ContentAdminHome = () => {
-  const { navigate, db } = useAppServices();
+  const { navigate } = useAppServices();
+  
+  /*
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationStatus, setMigrationStatus] = useState('');
   const [isRemoving, setIsRemoving] = useState(false);
   const [removalStatus, setRemovalStatus] = useState('');
+  */
 
+  /*
   const mapTier = (oldTier) => {
     const tierMap = {
       'free': 'free',
@@ -398,6 +401,7 @@ const ContentAdminHome = () => {
       setIsRemoving(false);
     }
   };
+  */
 
   const contentTypes = [
     {
@@ -486,11 +490,11 @@ const ContentAdminHome = () => {
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            {migrationStatus && (
+            {/* {migrationStatus && (
               <span className="text-sm font-medium text-teal-600 animate-pulse">
                 {migrationStatus}
               </span>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -498,6 +502,37 @@ const ContentAdminHome = () => {
       {/* Content Type Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {contentTypes.map((type) => {
+          const Icon = type.icon;
+          return (
+            <button
+              key={type.id}
+              onClick={() => navigate(type.route)}
+              className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all text-left border-2 hover:border-opacity-100"
+              style={{ borderColor: `${type.color}40` }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div 
+                  className="w-12 h-12 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: `${type.color}20` }}
+                >
+                  <Icon className="w-6 h-6" style={{ color: type.color }} />
+                </div>
+                <h2 className="text-xl font-bold text-corporate-navy">
+                  {type.label}
+                </h2>
+              </div>
+              <p className="text-sm text-slate-500">
+                {type.description}
+              </p>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Advanced Types */}
+      <h2 className="text-xl font-bold text-corporate-navy mb-4">Advanced Modules</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {advancedTypes.map((type) => {
           const Icon = type.icon;
           return (
             <button

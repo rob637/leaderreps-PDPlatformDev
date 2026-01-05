@@ -2,11 +2,11 @@
 import React from 'react';
 import { Home, BookOpen, MessageSquare, Users, Archive } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
+// import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
 
 const MobileBottomNav = ({ currentScreen }) => {
   const { navigate } = useAppServices();
-  const { zoneVisibility } = useDayBasedAccessControl();
+  // const { zoneVisibility } = useDayBasedAccessControl();
   
   // 5 buttons: Dashboard, Content, Communication, Coaching, Locker
   const navItems = [

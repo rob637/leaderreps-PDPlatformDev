@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 import { Check } from 'lucide-react';
 
-const Checkbox = React.forwardRef(({ className, checked, onCheckedChange, label, subLabel, disabled, ...props }, ref) => {
+const Checkbox = React.forwardRef(({ className, checked, onCheckedChange, label, subLabel, disabled }, _ref) => {
   return (
     <div 
       className={cn(

@@ -54,7 +54,7 @@ const GroundingRepWidget = ({ scope }) => {
                 handleSaveIdentity(identityStatement);
                 setEditing(false);
               }}
-              className="flex-1 py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-corporate-navy text-white rounded-xl font-bold hover:bg-corporate-navy/90 transition-colors flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
               Save
@@ -93,7 +93,7 @@ const GroundingRepWidget = ({ scope }) => {
             You haven't defined your Leadership Identity Statement yet.
           </p>
           <button 
-            className="px-4 py-2 bg-[#002E47] text-white rounded-lg text-sm font-bold hover:bg-[#003E5F] transition-colors"
+            className="px-4 py-2 bg-corporate-navy text-white rounded-lg text-sm font-bold hover:bg-corporate-navy/90 transition-colors"
             onClick={() => setEditing(true)}
           >
             Create LIS

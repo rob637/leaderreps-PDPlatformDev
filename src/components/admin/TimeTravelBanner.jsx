@@ -7,7 +7,7 @@ import { timeService } from '../../services/timeService';
  * TimeTravelBanner - Shows a visible indicator when time travel is active
  * Only visible to admins during testing
  */
-const TimeTravelBanner = ({ isAdmin, onMidnightRollover }) => {
+const TimeTravelBanner = ({ onMidnightRollover }) => {
   const { now, isTimeTravelActive, resetTime, travelTo } = useTime();
   const [displayTime, setDisplayTime] = useState(now);
   const [lastDate, setLastDate] = useState(timeService.getTodayStr());

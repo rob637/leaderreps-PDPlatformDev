@@ -49,7 +49,7 @@ const DocumentationCenter = () => {
   const [aiSuggestions, setAiSuggestions] = useState('');
   const [selectedDocId, setSelectedDocId] = useState('all');
   const [updatedDocContent, setUpdatedDocContent] = useState('');
-  const [isApplying, setIsApplying] = useState(false);
+  // const [isApplying, setIsApplying] = useState(false);
   const [kaizenMode, setKaizenMode] = useState('update'); // 'update' or 'suggest'
   const [commitStatus, setCommitStatus] = useState(''); // '', 'committing', 'success', 'error'
   const [commitMessage, setCommitMessage] = useState('');

@@ -177,11 +177,13 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
     const [isAuditing, setIsAuditing] = useState(false);
 
 
+    /*
     const extractScore = (critiqueText, auditName) => {
         const regex = new RegExp(`${auditName}.*?\\(Score:\\s*(\\d+)/100\\)`, 'i');
         const match = critiqueText.match(regex);
         return match ? parseInt(match[1], 10) : null;
     };
+    */
 
     const extractKeyTakeaway = (critiqueText) => {
         const regex = /### Next Practice Point\s*\n\n(.*?)(?:\n\n|z)/si;
@@ -254,10 +256,10 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
                 const result = await callSecureGeminiAPI(payload);
                 const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Critique generation failed. Check API connection.";
                 
-                const overallScore = extractScore(aiText, 'Overall Score');
-                const sbiScore = extractScore(aiText, 'SBI Effectiveness');
-                const empathyScore = extractScore(aiText, 'Active Listening & Empathy');
-                const resolutionScore = extractScore(aiText, 'Resolution Drive');
+                // const overallScore = extractScore(aiText, 'Overall Score');
+                // const sbiScore = extractScore(aiText, 'SBI Effectiveness');
+                // const empathyScore = extractScore(aiText, 'Active Listening & Empathy');
+                // const resolutionScore = extractScore(aiText, 'Resolution Drive');
                 const takeaway = extractKeyTakeaway(aiText);
 
                 setScoreBreakdown({
@@ -1092,7 +1094,7 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
 
 
 // --- MICRO-LEARNING MODULE VIEW ---
-const MicroLearningView = ({ topic, setCoachingLabView, onComplete }) => {
+const MicroLearningView = ({ topic, onComplete }) => {
     const [currentSlide, setCurrentSlide] = useState(0);
     
     const modules = {
@@ -1452,20 +1454,20 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
     const [showMicroLearningPrompt, setShowMicroLearningPrompt] = useState(false);
     const [tempSelectedScenario, setTempSelectedScenario] = useState(null);
     const [scenarios, setScenarios] = useState([]);
-    const [isLoadingScenarios, setIsLoadingScenarios] = useState(true);
+    // const [isLoadingScenarios, setIsLoadingScenarios] = useState(true);
     
     const { db } = useAppServices();
 
     useEffect(() => {
         const fetchScenarios = async () => {
-            setIsLoadingScenarios(true);
+            // setIsLoadingScenarios(true);
             try {
                 const data = await contentService.getContent(db, CONTENT_COLLECTIONS.COACHING);
                 setScenarios(data);
             } catch (error) {
                 console.error("Error fetching scenarios:", error);
             } finally {
-                setIsLoadingScenarios(false);
+                // setIsLoadingScenarios(false);
             }
         };
         

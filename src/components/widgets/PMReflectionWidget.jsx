@@ -57,7 +57,7 @@ const PMReflectionWidget = ({
         <button 
           onClick={() => handleSaveEveningBookend()}
           disabled={isSavingBookend || (!reflectionGood && !reflectionBetter)}
-          className="w-full py-3 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full py-3 bg-corporate-navy text-white rounded-xl font-bold hover:bg-corporate-navy/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {isSavingBookend ? <Loader className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
           Save Reflection

@@ -2,7 +2,7 @@
 // Dashboard 4: Fully Modular "The Arena"
 // All sections are controlled by Feature Lab flags.
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
   CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
@@ -18,10 +18,10 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 import { Card } from '../ui';
-import { useLayout } from '../../providers/LayoutProvider';
+// import { useLayout } from '../../providers/LayoutProvider';
 import { LayoutToggle } from '../ui/LayoutToggle';
 import PMReflectionWidget from '../widgets/PMReflectionWidget';
-import { serverTimestamp } from 'firebase/firestore';
+import { serverTimestamp } from '../../services/firebaseUtils';
 import { FadeIn, Stagger } from '../motion';
 import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import PrepGate from '../ui/PrepGate';
@@ -50,7 +50,7 @@ const DASHBOARD_FEATURES = [
   'scorecard'
 ];
 
-const Dashboard = (props) => {
+const Dashboard = () => {
   const { 
     user, 
     dailyPracticeData, 
@@ -58,20 +58,15 @@ const Dashboard = (props) => {
     developmentPlanData,
     updateDevelopmentPlanData,
     globalMetadata,
-    userData,
     navigate,
     db // <--- Added db here
   } = useAppServices();
 
-  const { layoutMode } = useLayout();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
   
   // Day-based Access Control (includes Prep Gate)
   const { 
-    prepStatus, 
-    isPrepComplete, 
-    effectiveDayNumber,
-    zoneVisibility 
+    isPrepComplete
   } = useAccessControlContext();
 
   // 2. Daily Plan (New Architecture - Three Phase System)
@@ -82,7 +77,6 @@ const Dashboard = (props) => {
     currentPhase,       // NEW: Phase info { id, name, displayName, trackMissedDays }
     phaseDayNumber,     // NEW: Day within current phase
     missedDays,
-    userState: dailyPlanUserState, 
     simulatedNow,
     toggleItemComplete 
   } = useDailyPlan();
@@ -200,7 +194,7 @@ const Dashboard = (props) => {
 // ...existing code...
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
-  const [showTaskInput, setShowTaskInput] = useState(false);
+  // const [showTaskInput, setShowTaskInput] = useState(false);
   const [isWinSaved, setIsWinSaved] = useState(false);
   const [isEditingLIS, setIsEditingLIS] = useState(false);
 

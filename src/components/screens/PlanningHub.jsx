@@ -643,7 +643,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
     const objectives = useMemo(() => (strategicContentData?.okrs || []).map((o) => {
         const progress = Math.random(); // MOCK
         const status = progress > 0.8 ? 'On Track' : progress > 0.4 ? 'Needs Attention' : 'At Risk';
-        const color = progress > 0.8 ? '#47A88D' : progress > 0.4 ? '#E04E1B' : '#E04E1B';
+        const color = progress > 0.8 ? '#47a88d' : progress > 0.4 ? '#e04e1b' : '#e04e1b';
         return { id: o.id, title: o.objective, progress, status, color, successionDependency: o.successionDependency };
     }), [strategicContentData?.okrs]);
 

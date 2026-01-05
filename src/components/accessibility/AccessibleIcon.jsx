@@ -4,7 +4,7 @@
 import React from 'react';
 
 const AccessibleIcon = ({
-  icon: Icon,
+  icon: Icon, // eslint-disable-line no-unused-vars
   label,
   decorative = false,
   size = 20,
@@ -49,7 +49,7 @@ const AccessibleIcon = ({
  * Icon button with proper accessibility
  */
 export const IconButton = ({
-  icon: Icon,
+  icon: Icon, // eslint-disable-line no-unused-vars
   label,
   onClick,
   disabled = false,
@@ -72,7 +72,7 @@ export const IconButton = ({
 
   const variantClasses = {
     ghost: 'hover:bg-gray-100 text-gray-600',
-    primary: 'bg-[#47A88D] hover:bg-[#3d9178] text-white',
+    primary: 'bg-corporate-teal hover:bg-corporate-teal-dark text-white',
     secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700',
   };
 
@@ -85,7 +85,7 @@ export const IconButton = ({
       className={`
         inline-flex items-center justify-center
         rounded-lg transition-colors
-        focus:outline-none focus:ring-2 focus:ring-[#47A88D] focus:ring-offset-2
+        focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2
         disabled:opacity-50 disabled:cursor-not-allowed
         ${sizeClasses[size]}
         ${variantClasses[variant]}

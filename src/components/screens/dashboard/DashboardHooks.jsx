@@ -5,12 +5,12 @@
 // ENHANCED (12/02/25): Added midnight rollover logic for Time Traveler testing
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { serverTimestamp } from 'firebase/firestore';
+import { serverTimestamp } from '../../../services/firebaseUtils';
 import { useAppServices } from '../../../hooks/useAppServices';
 import { timeService } from '../../../services/timeService';
 
 // Helper function to check if developer mode is enabled
-const isDeveloperMode = () => localStorage.getItem('arena-developer-mode') === 'true';
+// const isDeveloperMode = () => localStorage.getItem('arena-developer-mode') === 'true';
 
 /* =========================================================
    MAIN DASHBOARD HOOK
@@ -19,10 +19,10 @@ const isDeveloperMode = () => localStorage.getItem('arena-developer-mode') === '
 export const useDashboard = ({
   dailyPracticeData,
   updateDailyPracticeData, // <--- Prop from useAppServices
-  globalMetadata, // <--- Added for Scorecard calculation
+  // globalMetadata, // <--- Added for Scorecard calculation
   devPlanCurrentWeek, // <--- Added for Scorecard reps from Dev Plan (12/05/25)
-  db,
-  userId
+  // db,
+  // userId
 }) => {
   
   // === ARENA MODE STATE ===
@@ -1544,7 +1544,7 @@ export const useDashboard = ({
    ADAPTER HOOK FOR ATOMIC DASHBOARD
    Maps legacy useDashboard logic to the new data structure
 ========================================================= */
-export const useDashboardData = (user) => {
+export const useDashboardData = () => {
   const { dailyPracticeData, updateDailyPracticeData, globalMetadata, isLoading } = useAppServices();
   
   // Use the existing logic hook

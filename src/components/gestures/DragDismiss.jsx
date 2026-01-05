@@ -2,6 +2,7 @@
  * DragDismiss - Drag to dismiss modal/sheet
  */
 import React, { useRef, useState, useCallback } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, useAnimation } from 'framer-motion';
 import { useReducedMotion } from '../motion/useAnimations';
 import { springModal } from '../motion/springPresets';

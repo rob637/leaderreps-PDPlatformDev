@@ -1,5 +1,6 @@
 // src/components/admin/CoachingManager.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { TabButton } from '../ui';
 import { 
   Plus, 
   Edit, 
@@ -31,28 +32,6 @@ import {
 import { seedCoachingData, clearCoachingData } from '../../services/coachingService';
 import SessionManager from './SessionManager';
 
-// Tab Button Component
-const TabButton = ({ active, onClick, icon: Icon, label, badge }) => (
-  <button
-    onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-colors ${
-      active 
-        ? 'border-corporate-teal text-corporate-teal' 
-        : 'border-transparent text-slate-500 hover:text-slate-700'
-    }`}
-  >
-    <Icon className="w-5 h-5" />
-    {label}
-    {badge !== undefined && (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-        active ? 'bg-corporate-teal text-white' : 'bg-slate-200 text-slate-600'
-      }`}>
-        {badge}
-      </span>
-    )}
-  </button>
-);
-
 const CoachingManager = () => {
   const { db, navigate } = useAppServices();
   const [scenarios, setScenarios] = useState([]);
@@ -64,16 +43,12 @@ const CoachingManager = () => {
   const [activeTab, setActiveTab] = useState('sessions'); // 'sessions', 'scenarios', 'data'
   
   // Session data management state
-  const [sessionDataExpanded, setSessionDataExpanded] = useState(false);
+  // const [sessionDataExpanded, setSessionDataExpanded] = useState(false);
   const [seedingData, setSeedingData] = useState(false);
   const [clearingData, setClearingData] = useState(false);
   const [sessionMessage, setSessionMessage] = useState(null);
 
-  useEffect(() => {
-    loadContent();
-  }, []);
-
-  const loadContent = async () => {
+  const loadContent = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getAllContentAdmin(db, CONTENT_COLLECTIONS.COACHING);
@@ -83,7 +58,11 @@ const CoachingManager = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [db]);
+
+  useEffect(() => {
+    loadContent();
+  }, [loadContent]);
 
   const handleAdd = () => {
     setEditingItem({
@@ -189,6 +168,7 @@ const CoachingManager = () => {
   };
 
   // Session Data Management Functions
+  /*
   const handleSeedSessionData = async () => {
     if (!confirm('This will create sample coaching session types and 4 weeks of upcoming sessions. Continue?')) {
       return;
@@ -238,6 +218,7 @@ const CoachingManager = () => {
       setClearingData(false);
     }
   };
+  */
 
   if (loading) {
     return (

@@ -2,6 +2,7 @@
  * OfflineBanner - Full-width offline notification banner
  */
 import React from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { WifiOff, RefreshCw } from 'lucide-react';
 import useOffline from './useOffline';

@@ -10,7 +10,7 @@ const FocusTrap = ({
   autoFocus = true,
   restoreFocus = true,
   className = '',
-  as: Component = 'div',
+  as: Component = 'div', // eslint-disable-line no-unused-vars
   onEscape,
   ...props
 }) => {

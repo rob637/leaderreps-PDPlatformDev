@@ -41,11 +41,11 @@ const generateCalendarUrl = (calendarEvent) => {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 };
 
-const ThisWeeksActionsWidget = ({ scope }) => {
+const ThisWeeksActionsWidget = () => {
   const { db } = useAppServices();
   const [viewingResource, setViewingResource] = useState(null);
   const [loadingResource, setLoadingResource] = useState(false);
-  const [showSkipConfirm, setShowSkipConfirm] = useState(null);
+  // const [showSkipConfirm, setShowSkipConfirm] = useState(null);
 
   // Use Daily Plan Hook (New Architecture)
   const { 
@@ -59,7 +59,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   } = useDailyPlan();
 
   const actionProgress = useActionProgress();
-  const coachingRegistrations = useCoachingRegistrations();
+  // const coachingRegistrations = useCoachingRegistrations();
   
   // Leader Profile completion tracking (for auto-check in Pre-Start)
   const { isComplete: leaderProfileComplete } = useLeaderProfile();
@@ -74,15 +74,15 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   const { 
     completeItem, 
     uncompleteItem, 
-    skipItem, 
+    // skipItem, 
     getItemProgress,
     getCarriedOverItems
   } = actionProgress;
   
   // Coaching registrations
-  const {
-    registrations: userRegistrations
-  } = coachingRegistrations;
+  // const {
+    // registrations: userRegistrations
+  // } = coachingRegistrations;
 
   // Calculate Current Week Number
   const currentWeekNumber = useMemo(() => {
@@ -303,37 +303,37 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   };
 
   // Helper to check if an item is a coaching item
-  const isCoachingItem = (item) => {
-    const category = (item.category || '').toLowerCase();
-    const type = (item.type || item.coachingItemType || '').toLowerCase();
-    if (category === 'coaching') return true;
-    const coachingTypes = ['open_gym', 'opengym', 'leader_circle', 'leadercircle', 'workshop', 'live_workout', 'one_on_one', 'coaching'];
-    return coachingTypes.some(ct => type.includes(ct));
-  };
+  // const isCoachingItem = (item) => {
+  //   const category = (item.category || '').toLowerCase();
+  //   const type = (item.type || item.coachingItemType || '').toLowerCase();
+  //   if (category === 'coaching') return true;
+  //   const coachingTypes = ['open_gym', 'opengym', 'leader_circle', 'leadercircle', 'workshop', 'live_workout', 'one_on_one', 'coaching'];
+  //   return coachingTypes.some(ct => type.includes(ct));
+  // };
   
   // Helper to find user's registration for a coaching item
-  const findRegistrationForItem = (item) => {
-    if (!userRegistrations || userRegistrations.length === 0) return null;
-    const exactMatch = userRegistrations.find(reg => reg.coachingItemId === item.id && reg.status !== 'cancelled');
-    if (exactMatch) return exactMatch;
-    // ... (simplified for brevity, can add back fuzzy matching if needed)
-    return null;
-  };
+  // const findRegistrationForItem = (item) => {
+  //   if (!userRegistrations || userRegistrations.length === 0) return null;
+  //   const exactMatch = userRegistrations.find(reg => reg.coachingItemId === item.id && reg.status !== 'cancelled');
+  //   if (exactMatch) return exactMatch;
+  //   // ... (simplified for brevity, can add back fuzzy matching if needed)
+  //   return null;
+  // };
   
   // Handler for coaching item completion
-  const handleCoachingComplete = async (itemId, metadata) => {
-    await completeItem(itemId, {
-      ...metadata,
-      currentWeek: currentWeekNumber,
-      category: 'coaching'
-    });
-    // Also toggle in Daily Plan if possible (need dayId)
-    // We'll need to find the item to get its dayId
-    const item = allActions.find(i => i.id === itemId);
-    if (item && item.dayId) {
-      toggleDailyItem(item.dayId, itemId, true);
-    }
-  };
+  // const handleCoachingComplete = async (itemId, metadata) => {
+  //   await completeItem(itemId, {
+  //     ...metadata,
+  //     currentWeek: currentWeekNumber,
+  //     category: 'coaching'
+  //   });
+  //   // Also toggle in Daily Plan if possible (need dayId)
+  //   // We'll need to find the item to get its dayId
+  //   const item = allActions.find(i => i.id === itemId);
+  //   if (item && item.dayId) {
+  //     toggleDailyItem(item.dayId, itemId, true);
+  //   }
+  // };
 
   const handleViewResource = async (e, item) => {
     e.stopPropagation();
@@ -415,7 +415,7 @@ const ThisWeeksActionsWidget = ({ scope }) => {
   };
 
   // Action Item Renderer
-  const ActionItem = ({ item, idx, isCarriedOver = false }) => {
+  const ActionItem = ({ item, isCarriedOver = false }) => {
     const progress = getItemProgress(item.id);
     const isCompleted = item.isOnboardingTask 
       ? item.autoComplete 

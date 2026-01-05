@@ -2,6 +2,7 @@
  * HorizontalScroll - Horizontal scrolling container with snap
  */
 import React, { useRef, useState, useCallback, useEffect } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useReducedMotion } from '../motion/useAnimations';

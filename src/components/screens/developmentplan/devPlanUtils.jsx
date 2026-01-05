@@ -277,7 +277,7 @@ export const generatePlanFromAssessment = (assessment, skillCatalog = []) => {
   
   focusAreas.forEach((category) => {
     const recommendedSkills = getRecommendedSkills(category, skillCatalog, 2);
-    recommendedSkills.forEach((skill) => {
+    recommendedSkills.forEach((_skill) => {
       skills.push({
   });
       

@@ -17,7 +17,7 @@ const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;
 
 const UpdateNotification = () => {
   const {
-    needRefresh: [needRefresh, setNeedRefresh],
+    needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(registration) {

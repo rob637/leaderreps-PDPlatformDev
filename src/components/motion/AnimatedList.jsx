@@ -2,9 +2,10 @@
  * AnimatedList - List with staggered item animations
  */
 import React, { forwardRef } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReducedMotion } from './useAnimations';
-import { springDefault, staggerChildren } from './springPresets';
+import { springDefault } from './springPresets';
 
 const itemVariants = {
   hidden: { 

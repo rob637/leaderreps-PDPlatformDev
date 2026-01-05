@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const DashboardCard = ({ title, description, icon: Icon, onClick, color, bgColor, badge, count }) => {
+export const DashboardCard = ({ title, description, onClick, color, bgColor, badge, count }) => {
   return (
     <button
       onClick={onClick}

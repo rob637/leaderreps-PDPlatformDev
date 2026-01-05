@@ -1,5 +1,5 @@
 // src/components/admin/LOVManager.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, 
   Edit, 
@@ -34,11 +34,7 @@ const LOVManager = () => {
   const [editingObjectItem, setEditingObjectItem] = useState(null);
   const [editingObjectIndex, setEditingObjectIndex] = useState(null);
 
-  useEffect(() => {
-    loadContent();
-  }, []);
-
-  const loadContent = async () => {
+  const loadContent = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getAllContentAdmin(db, CONTENT_COLLECTIONS.LOV);
@@ -48,7 +44,11 @@ const LOVManager = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [db]);
+
+  useEffect(() => {
+    loadContent();
+  }, [loadContent]);
 
   // Check if a LOV uses object items (content groups)
   const isContentGroupLov = (lov) => {

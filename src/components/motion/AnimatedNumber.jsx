@@ -2,6 +2,7 @@
  * AnimatedNumber - Smooth number transitions
  */
 import React, { useEffect, useState, useRef } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { useReducedMotion } from './useAnimations';
 
@@ -60,7 +61,7 @@ const AnimatedNumber = ({
 export const AnimatedPercentage = ({
   value,
   className = '',
-  barClassName = '',
+  // barClassName = '',
   showBar = true,
   barColor = 'bg-teal-500',
   ...props

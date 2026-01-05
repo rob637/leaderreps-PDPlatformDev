@@ -7,7 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { UNIFIED_COLLECTION } from '../../services/unifiedContentService';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 
-const DailyPlanWidget = ({ scope }) => {
+const DailyPlanWidget = () => {
   const { currentDayData } = useDailyPlan();
   const { db, navigate } = useAppServices();
   const [selectedResource, setSelectedResource] = useState(null);

@@ -117,6 +117,7 @@ const MembershipModule = () => {
                 nextDate.setDate(today.getDate() + 365);
             }
             
+            /*
             const newPaymentRecord = {
                 date: new Date().toISOString(),
                 amount: selectedPlan.price,
@@ -125,6 +126,7 @@ const MembershipModule = () => {
                 planId: selectedPlan.id,
                 recurrence: selectedPlan.recurrence,
             };
+            */
 
             // Remove all warning/expiration notifications upon successful payment
             const newNotifications = membershipData.notifications.filter(n => n.type !== 'warning' && n.type !== 'expiration');
@@ -140,6 +142,7 @@ const MembershipModule = () => {
         } else {
             setPaymentStatus('failure');
             // Log failure to history as well
+            /*
             const failedRecord = {
                 date: new Date().toISOString(),
                 amount: selectedPlan.price,
@@ -149,12 +152,13 @@ const MembershipModule = () => {
                 recurrence: selectedPlan.recurrence,
                 error: 'Payment declined by mock gateway.'
             };
+            */
             await updateMembershipData({
   });
             // Show error message
             setTimeout(() => setPaymentStatus(null), 3000);
         }
-    }, [selectedPlan, paymentMethod, membershipData, updateMembershipData]);
+    }, [selectedPlan, membershipData, updateMembershipData]);
 
 
     if (isLoading || !membershipData) {

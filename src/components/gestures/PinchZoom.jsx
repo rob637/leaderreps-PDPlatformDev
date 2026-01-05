@@ -2,6 +2,7 @@
  * PinchZoom - Pinch to zoom component
  */
 import React, { useRef, useState, useCallback } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { usePinch, useDoubleTap } from './useGestures';
 import { useReducedMotion } from '../motion/useAnimations';
@@ -71,6 +72,7 @@ const PinchZoom = ({
   });
 
   // Handle panning when zoomed
+  /*
   const handlePan = useCallback((e) => {
     if (scale <= 1 || disabled) return;
     
@@ -83,6 +85,7 @@ const PinchZoom = ({
       y: prev.y + e.movementY || 0,
     }));
   }, [scale, disabled]);
+  */
 
   if (reducedMotion || disabled) {
     return <div className={className}>{children}</div>;

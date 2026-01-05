@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useContentAccess } from '../../../hooks/useContentAccess';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from '../../../services/firebaseUtils';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { PageLayout } from '../../ui/PageLayout.jsx';
 import { Loader, BookOpen, Clock, Target, CheckCircle, AlertTriangle, FileText, Layers, Zap, Lock } from 'lucide-react';

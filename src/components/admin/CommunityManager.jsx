@@ -1,5 +1,6 @@
 // src/components/admin/CommunityManager.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { TabButton } from '../ui';
 import { 
   Plus, 
   Edit, 
@@ -26,28 +27,6 @@ import {
 } from '../../services/contentService';
 import CommunitySessionManager from './CommunitySessionManager';
 
-// Tab Button Component
-const TabButton = ({ active, onClick, icon: Icon, label, badge }) => (
-  <button
-    onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-colors ${
-      active 
-        ? 'border-corporate-teal text-corporate-teal' 
-        : 'border-transparent text-slate-500 hover:text-slate-700'
-    }`}
-  >
-    <Icon className="w-5 h-5" />
-    {label}
-    {badge !== undefined && (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-        active ? 'bg-corporate-teal text-white' : 'bg-slate-200 text-slate-600'
-      }`}>
-        {badge}
-      </span>
-    )}
-  </button>
-);
-
 const CommunityManager = () => {
   const { db, navigate, user } = useAppServices();
   const [activeTab, setActiveTab] = useState('sessions'); // 'sessions', 'posts'
@@ -56,25 +35,26 @@ const CommunityManager = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
 
-  useEffect(() => {
-    if (activeTab === 'posts') {
-      loadContent();
-    } else {
-      setLoading(false);
-    }
-  }, [activeTab]);
-
-  const loadContent = async () => {
+  const loadContent = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getAllContentAdmin(db, CONTENT_COLLECTIONS.COMMUNITY);
       setPosts(data);
+      // ... rest of function
     } catch (error) {
       console.error('Error loading community posts:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [db]);
+
+  useEffect(() => {
+    if (activeTab === 'feed') {
+      loadContent();
+    } else {
+      setLoading(false);
+    }
+  }, [activeTab, loadContent]);
 
   const handleAdd = () => {
     setEditingItem({

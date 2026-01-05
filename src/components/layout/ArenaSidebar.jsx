@@ -20,11 +20,11 @@ import {
 } from 'lucide-react';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
+// import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
 
-const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user, membershipData }) => {
+const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user }) => {
   const { identityStatement, habitAnchor, whyStatement } = useAppServices();
-  const { zoneVisibility } = useDayBasedAccessControl();
+  // const { zoneVisibility } = useDayBasedAccessControl();
   const [showAnchors, setShowAnchors] = useState(false);
 
   // Developer Mode State

@@ -9,7 +9,7 @@ export const ContentListItem = ({
   color, 
   bgColor, 
   badge, 
-  count,
+  // count,
   isUnlocked = true,
   metadata = {},
   skills = []

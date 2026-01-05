@@ -95,7 +95,7 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
 const CommunityUpcomingSessionsWidget = () => {
   const { upcomingSessions, loading: sessionsLoading } = useCommunitySessions();
   const { isRegistered, registerForSession, cancelRegistration } = useCommunityRegistrations();
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'calendar'
+  // const [viewMode, setViewMode] = useState('list'); // 'list', 'calendar'
   const [filterType, setFilterType] = useState('all');
 
   // Filter sessions
