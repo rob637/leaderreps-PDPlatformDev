@@ -8,6 +8,7 @@ import { useNotifications } from '../../providers/NotificationProvider';
 import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
 import LockerProgressWidget from '../widgets/LockerProgressWidget';
 import MyJourneyWidget from '../widgets/MyJourneyWidget';
+import NotificationSettingsWidget from '../widgets/NotificationSettingsWidget';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 const LOCKER_FEATURES = [
@@ -140,7 +141,7 @@ const Locker = () => {
       <MyJourneyWidget />
       
       <WidgetRenderer widgetId="locker-controller" scope={scope} />
-      <WidgetRenderer widgetId="locker-reminders" scope={scope} />
+      <NotificationSettingsWidget />
       
       {sortedFeatures.length > 0 ? (
         <div className="grid grid-cols-1 gap-6">

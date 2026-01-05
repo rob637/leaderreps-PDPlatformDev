@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   User, Building2, Briefcase, Users, Target, Clock, 
   CheckCircle, ChevronRight, ChevronLeft, Save, Loader,
-  Phone, Mail, MapPin, Award, Sparkles, AlertCircle
+  Phone, Mail, MapPin, Award, Sparkles, AlertCircle, Bell
 } from 'lucide-react';
 import { Card, Button } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
@@ -293,17 +293,74 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
             {renderInput('phoneNumber', 'Phone Number', 'tel', false, '+1 (555) 123-4567',
               'By providing your phone number, you consent to receive text messages including habit reminders and notifications of upcoming event dates and times.'
             )}
-            {formData.phoneNumber && (
-              <label className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">
-                <input
-                  type="checkbox"
-                  checked={formData.preferSMS || false}
-                  onChange={e => handleChange('preferSMS', e.target.checked)}
-                  className="rounded border-slate-300 text-corporate-teal focus:ring-corporate-teal"
-                />
-                I consent to receive SMS notifications about QuickStart events and reminders
-              </label>
-            )}
+            
+            <div className="bg-slate-50 p-4 rounded-xl space-y-3 border border-slate-200">
+              <h4 className="text-sm font-semibold text-corporate-navy flex items-center gap-2">
+                <Bell className="w-4 h-4" /> Notification Preferences
+              </h4>
+              
+              {/* Email Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-slate-500" />
+                  <span className="text-sm text-slate-700">Email Notifications</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={formData.notificationSettings?.channels?.email ?? true}
+                    onChange={(e) => {
+                      const currentSettings = formData.notificationSettings || { channels: { email: true, sms: false } };
+                      setFormData(prev => ({
+                        ...prev,
+                        notificationSettings: {
+                          ...currentSettings,
+                          channels: {
+                            ...currentSettings.channels || {},
+                            email: e.target.checked
+                          }
+                        }
+                      }));
+                    }}
+                  />
+                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-corporate-teal/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-corporate-teal"></div>
+                </label>
+              </div>
+
+              {/* SMS Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-slate-500" />
+                  <span className="text-sm text-slate-700">SMS Notifications</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={formData.notificationSettings?.channels?.sms ?? false}
+                    disabled={!formData.phoneNumber}
+                    onChange={(e) => {
+                      const currentSettings = formData.notificationSettings || { channels: { email: true, sms: false } };
+                      setFormData(prev => ({
+                        ...prev,
+                        notificationSettings: {
+                          ...currentSettings,
+                          channels: {
+                            ...currentSettings.channels || {},
+                            sms: e.target.checked
+                          }
+                        }
+                      }));
+                    }}
+                  />
+                  <div className={`w-9 h-5 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${!formData.phoneNumber ? 'bg-slate-100 cursor-not-allowed' : 'bg-slate-200 peer-checked:bg-corporate-teal'}`}></div>
+                </label>
+              </div>
+              {!formData.phoneNumber && (
+                <p className="text-xs text-slate-400 italic ml-6">Add a phone number to enable SMS</p>
+              )}
+            </div>
           </div>
         );
 
@@ -425,9 +482,9 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
   };
 
   return (
-    <div className={`${isModal ? 'bg-white rounded-2xl shadow-xl overflow-hidden w-full mx-auto' : ''}`}>
+    <div className={`${isModal ? 'bg-white rounded-2xl shadow-xl overflow-hidden w-full mx-auto flex flex-col max-h-[85vh]' : 'flex flex-col h-full'}`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-6">
+      <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-6 flex-shrink-0">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <User className="w-6 h-6" />
           Complete Your Leader Profile
@@ -450,7 +507,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
       </div>
 
       {/* Step Indicators */}
-      <div className="flex border-b border-slate-200 bg-slate-50">
+      <div className="flex border-b border-slate-200 bg-slate-50 flex-shrink-0">
         {STEPS.map((step, idx) => {
           const Icon = step.icon;
           const isActive = idx === currentStep;
@@ -492,7 +549,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
       </div>
 
       {/* Form Content */}
-      <div className="p-6">
+      <div className="p-6 flex-1 overflow-y-auto">
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
             <StepIcon className="w-5 h-5 text-corporate-teal" />
@@ -505,7 +562,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-200">
+      <div className="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-200 flex-shrink-0">
         <button
           onClick={currentStep === 0 ? onClose : handlePrevious}
           className="flex items-center gap-1 px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"

@@ -772,3 +772,147 @@ exports.sendTestNotification = onRequest(
     }
   }
 );
+
+/**
+ * SCHEDULED NOTIFICATION CHECK
+ * Runs every 15 minutes to check for scheduled notifications based on user timezones.
+ */
+exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event) => {
+  logger.info("Starting scheduled notification check...");
+  
+  try {
+    // 1. Get all enabled notification rules
+    const rulesSnap = await db.collection('notification_rules').where('enabled', '==', true).get();
+    if (rulesSnap.empty) {
+      logger.info("No enabled notification rules found.");
+      return;
+    }
+    const rules = rulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // 2. Get all users with notifications enabled
+    const usersSnap = await db.collection('users').where('notificationSettings.enabled', '==', true).get();
+    if (usersSnap.empty) {
+      logger.info("No users with notifications enabled.");
+      return;
+    }
+
+    const notificationsToSend = [];
+
+    // 3. Iterate users and check rules
+    for (const userDoc of usersSnap.docs) {
+      const userData = userDoc.data();
+      const userId = userDoc.id;
+      const settings = userData.notificationSettings;
+      const timezone = settings.timezone || 'UTC';
+
+      // Get User's Local Time
+      const now = new Date();
+      const timeOptions = { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false };
+      const timeParts = new Intl.DateTimeFormat('en-US', timeOptions).formatToParts(now);
+      const localHour = parseInt(timeParts.find(p => p.type === 'hour').value);
+      const localMinute = parseInt(timeParts.find(p => p.type === 'minute').value);
+      
+      // Get User's Local Date (YYYY-MM-DD) for checking logs
+      const dateOptions = { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' };
+      const dateParts = new Intl.DateTimeFormat('en-US', dateOptions).formatToParts(now);
+      const year = dateParts.find(p => p.type === 'year').value;
+      const month = dateParts.find(p => p.type === 'month').value;
+      const day = dateParts.find(p => p.type === 'day').value;
+      const localDateId = `${year}-${month}-${day}`;
+
+      for (const rule of rules) {
+        const [ruleHour, ruleMinute] = rule.time.split(':').map(Number);
+
+        // Check if time matches (within 14 minutes window)
+        const localTotalMinutes = localHour * 60 + localMinute;
+        const ruleTotalMinutes = ruleHour * 60 + ruleMinute;
+        
+        // Handle day wrap-around if needed (e.g. rule 23:55, local 00:05) - ignoring for simplicity now
+        const diff = localTotalMinutes - ruleTotalMinutes;
+        
+        if (diff >= 0 && diff < 15) {
+          // Check Criteria
+          let shouldSend = false;
+          
+          if (rule.criteria === 'always') {
+            shouldSend = true;
+          } else {
+            // Fetch Daily Log
+            const logRef = db.collection('users').doc(userId).collection('daily_logs').doc(localDateId);
+            const logSnap = await logRef.get();
+            const logData = logSnap.exists ? logSnap.data() : {};
+
+            switch (rule.criteria) {
+              case 'am_bookend_incomplete':
+                shouldSend = !logData.amBookend?.completed;
+                break;
+              case 'pm_bookend_incomplete':
+                shouldSend = !logData.eveningBookend?.completed;
+                break;
+              case 'daily_action_incomplete':
+                shouldSend = !logData.dailyAction?.completed; 
+                break;
+              default:
+                logger.warn(`Unknown criteria: ${rule.criteria}`);
+            }
+          }
+
+          if (shouldSend) {
+            notificationsToSend.push({
+              user: userData,
+              rule: rule,
+              localDateId
+            });
+          }
+        }
+      }
+    }
+
+    // 4. Send Notifications
+    for (const item of notificationsToSend) {
+      const { user, rule } = item;
+      const settings = user.notificationSettings;
+
+      // Email
+      if (settings.channels?.email && user.email) {
+        await sendEmailNotification(user.email, rule.name, rule.message);
+      }
+
+      // SMS
+      if (settings.channels?.sms && settings.phoneNumber) {
+        logger.info(`[SMS] To: ${settings.phoneNumber} | Msg: ${rule.message}`);
+      }
+    }
+
+    logger.info(`Processed ${notificationsToSend.length} notifications.`);
+
+  } catch (error) {
+    logger.error("Error in scheduledNotificationCheck", error);
+  }
+});
+
+// Helper to send email
+async function sendEmailNotification(email, subject, message) {
+  const emailUser = process.env.EMAIL_USER || (require("firebase-functions").config().email?.user);
+  const emailPass = process.env.EMAIL_PASS || (require("firebase-functions").config().email?.pass);
+
+  if (!emailUser || !emailPass) return;
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: emailUser, pass: emailPass },
+  });
+
+  try {
+    await transporter.sendMail({
+      from: `"LeaderReps" <${emailUser}>`,
+      to: email,
+      subject: `🔔 ${subject}`,
+      text: message,
+      html: `<p>${message}</p><p><a href="https://leaderreps-pd-platform.web.app">Open LeaderReps</a></p>`
+    });
+    logger.info(`Notification email sent to ${email}`);
+  } catch (e) {
+    logger.error(`Failed to send email to ${email}`, e);
+  }
+}

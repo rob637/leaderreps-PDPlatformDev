@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useAppServices } from '../services/useAppServices';
 
 /**
@@ -112,6 +112,30 @@ export const useLeaderProfile = () => {
       };
 
       await setDoc(profileRef, dataToSave, { merge: true });
+
+      // Sync notification settings to main user doc
+      if (profileData.notificationSettings || profileData.phoneNumber || profileData.timezone) {
+        const userRef = doc(db, 'users', user.uid);
+        const updates = {};
+        
+        if (profileData.notificationSettings) {
+          updates['notificationSettings'] = profileData.notificationSettings;
+        }
+        
+        // Ensure phone number is synced if changed here
+        if (profileData.phoneNumber) {
+          updates['notificationSettings.phoneNumber'] = profileData.phoneNumber;
+        }
+
+        // Ensure timezone is synced
+        if (profileData.timezone) {
+          updates['notificationSettings.timezone'] = profileData.timezone;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          await updateDoc(userRef, updates).catch(err => console.warn("Failed to sync user settings", err));
+        }
+      }
       
       setProfile(prev => ({
         ...prev,

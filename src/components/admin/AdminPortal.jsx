@@ -15,7 +15,8 @@ import {
   ArrowLeftRight,
   BrainCircuit,
   List,
-  Dumbbell
+  Dumbbell,
+  Bell
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
@@ -34,6 +35,7 @@ import DailyPlanManager from './DailyPlanManager';
 import CohortManager from './CohortManager';
 import UserManagement from './UserManagement';
 import LeaderProfileReports from './LeaderProfileReports';
+import NotificationManager from './NotificationManager';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
@@ -127,7 +129,8 @@ const AdminPortal = () => {
         // { id: 'cohorts', label: 'Cohorts', icon: Users },
         { id: 'daily-plan', label: 'Daily Plan (New)', icon: Calendar },
         { id: 'content', label: 'Content Library', icon: FileText },
-        { id: 'media', label: 'Media Vault', icon: Database }
+        { id: 'media', label: 'Media Vault', icon: Database },
+        { id: 'notifications', label: 'Notifications', icon: Bell }
       ]
     },
     {
@@ -178,6 +181,8 @@ const AdminPortal = () => {
       // 'library' tab removed - Programs/Workouts/Skills now managed as LOVs
       case 'media':
         return <MediaLibrary />;
+      case 'notifications':
+        return <NotificationManager />;
       case 'diagnostics':
         return <SystemDiagnostics />;
       case 'content':

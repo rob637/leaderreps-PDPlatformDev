@@ -68,6 +68,7 @@ const Library = () => {
     // Hardcoded list based on new architecture requirements
     // We bypass feature flags for the core 5 pillars to ensure they always show
     const allLibraryItems = [
+      /* Temporarily hidden per requirements
       {
         id: 'programs',
         title: 'Programs',
@@ -86,6 +87,7 @@ const Library = () => {
         color: 'text-corporate-teal',
         bgColor: 'bg-corporate-teal/10'
       },
+      */
       {
         id: 'skills',
         title: 'Skills',
