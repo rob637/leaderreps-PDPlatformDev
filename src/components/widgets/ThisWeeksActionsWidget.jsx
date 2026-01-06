@@ -501,9 +501,9 @@ const ThisWeeksActionsWidget = () => {
             e.stopPropagation();
             if (!item.isInteractive) handleToggle(item);
           }}
-          className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${item.isInteractive ? '' : 'cursor-pointer touch-manipulation active:scale-90'} ${getCheckboxStyles()}`}
+          className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 ${getCheckboxStyles()}`}
         >
-          {isCompleted && <CheckCircle className="w-4 h-4 text-white" />}
+          {isCompleted && <CheckCircle className="w-4 h-4 text-white pointer-events-none" />}
         </div>
 
         <div className="flex-1 min-w-0">
