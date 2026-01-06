@@ -129,7 +129,7 @@ const LISAuditorView = ({ setQuickStartView }) => {
 
             {/* Back Button */}
             <Button onClick={() => setQuickStartView('quick-start-home')} variant="nav-back" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to QuickStart Program
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Foundation Program
             </Button>
 
             {/* Main Content Grid */}
@@ -257,7 +257,7 @@ const QuickStartAcceleratorScreen = () => {
                               <Zap className="w-7 h-7 flex-shrink-0 text-corporate-orange"/>
                             </div>
                             <div>
-                                <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>QuickStart Program</h1>
+                                <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>Foundation Program</h1>
                                 <p className="text-sm text-slate-500 mt-1">Core Pillar</p>
                             </div>
                         </header>
@@ -320,8 +320,8 @@ const QuickStartAcceleratorScreen = () => {
     // }
 
     // Loading/Error Checks
-    if (isAppLoading) return <LoadingSpinner message="Loading QuickStart Program..." />;
-    if (appError) return <ConfigError message={`Failed to load QuickStart Program: ${appError.message}`} />;
+    if (isAppLoading) return <LoadingSpinner message="Loading Foundation Program..." />;
+    if (appError) return <ConfigError message={`Failed to load Foundation Program: ${appError.message}`} />;
 
     return (
       <div className="min-h-screen bg-slate-50"> {/* Consistent BG */}

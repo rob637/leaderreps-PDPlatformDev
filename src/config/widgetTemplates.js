@@ -744,10 +744,10 @@ const NotificationsWidget = () => {
     let route = 'business-readings';
     let category = item.contentItemType || item.type || 'Content';
     
-    // Special routing for QuickStart items (Workbook, PDQ)
+    // Special routing for Foundation items (Workbook, PDQ)
     if (label.toLowerCase().includes('workbook') || label.toLowerCase().includes('pdq') || label.toLowerCase().includes('feedback loop')) {
       route = 'quick-start-accelerator';
-      category = 'QuickStart Tool';
+      category = 'Foundation Tool';
     } else if (itemType.includes('video') || itemType.includes('workout')) {
       route = 'leadership-videos';
       category = itemType.includes('workout') ? 'Workout' : 'Video';
@@ -2981,7 +2981,7 @@ export const FEATURE_METADATA = {
     name: 'Leader Profile',
     description: 'Complete Your Leader Profile',
     purpose: 'Onboarding profile completion widget.',
-    extendedDescription: 'Prompts users to complete their leadership profile during Prep Phase. Collects personal info, professional context, and goals to personalize the QuickStart experience.',
+    extendedDescription: 'Prompts users to complete their leadership profile during Prep Phase. Collects personal info, professional context, and goals to personalize the Foundation experience.',
     inputs: ['userProfile'],
     outputs: ['saveProfile'],
     componentPath: 'src/components/widgets/LeaderProfileWidget.jsx',

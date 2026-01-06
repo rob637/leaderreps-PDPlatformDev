@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
 import { 
-  Shield, Target, ArrowRight, Rocket, Calendar, Quote, Sparkles, 
-  CheckCircle2, BookOpen, Video, Sunrise, Moon, LayoutDashboard,
-  ChevronRight, Zap, GraduationCap, Users, PlayCircle
+  Target, Rocket, Calendar, Quote, 
+  ChevronRight, Users
 } from 'lucide-react';
 import { useDailyPlan, ONBOARDING_MODULES } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
@@ -75,19 +74,15 @@ const PrepWelcomeBanner = () => {
     welcome = { headline: "Your Journey Begins Now, Leader", subtext: "Preparing for your leadership transformation.", excitement: 'start' },
     quote = { quote: "Leadership is not about being in charge. It's about taking care of those in your charge.", author: "Simon Sinek" },
     onboarding: originalOnboarding = null,
-    isAccelerated = false,
-    isQuickStart = false,
-    // totalActions = 0,
-    // progressPercent = 0,
     cohortName = null,
+    cohortStartDate = null,
     facilitator = null
   } = info;
 
   // Get user's first name for personalization
   const firstName = user?.displayName?.split(' ')[0] || 'Leader';
   
-  // Excitement level determines visual styling
-  const isHighExcitement = welcome.excitement === 'high' || welcome.excitement === 'launch';
+  // Launch mode for Session One
   const isLaunch = welcome.excitement === 'launch';
   
   // Calculate effective journey day
@@ -214,15 +209,15 @@ const PrepWelcomeBanner = () => {
 
   // Get the subtext - different for Day 1 vs other days
   const getSubtext = () => {
-    // After 5 days of prep, show countdown to QuickStart
+    // After 5 days of prep, show countdown to Session One
     if (isPrepComplete) {
       if (daysUntilStart <= 0) {
-        return "Your QuickStart begins today! Let's launch your leadership journey.";
+        return "Session One begins today! Let's launch your leadership journey.";
       }
       if (daysUntilStart === 1) {
-        return "QuickStart begins tomorrow! Keep practicing your daily rituals.";
+        return "Session One begins tomorrow! Keep practicing your daily rituals.";
       }
-      return `You've completed your prep! ${daysUntilStart} days until QuickStart. Keep practicing your AM & PM Bookends.`;
+      return `You've completed your prep! ${daysUntilStart} days until Session One. Keep practicing your AM & PM Bookends.`;
     }
 
     // If past day 5 but not complete
@@ -252,61 +247,27 @@ const PrepWelcomeBanner = () => {
     });
   }
 
-  // Get icon for onboarding module
-  const getModuleIcon = (moduleId) => {
-    const icons = {
-      'welcome': GraduationCap,
-      'bookends': Sunrise,
-      'reading': BookOpen,
-      'video': Video,
-      'recap': LayoutDashboard,
-      'welcome-bookends': Zap,
-      'content-recap': LayoutDashboard,
-      'quick-start': Rocket,
-      'finish-strong': Target
-    };
-    return icons[moduleId] || Target;
-  };
-
-  const ModuleIcon = onboarding ? getModuleIcon(onboarding.id) : Target;
-
-  // Determine badge text - show actual day for Days 6+
-  const getBadgeText = () => {
-    if (isPrepComplete) return 'Prep Complete';
-    if (clampedJourneyDay > 5 && hasIncompleteRequiredActions) return 'Finish Strong';
-    return `Login ${effectiveJourneyDay}`;
-  };
-
   return (
-    <div className={`relative overflow-hidden rounded-2xl shadow-xl mb-6 ${
+    <div className={`relative overflow-hidden rounded-2xl shadow-lg mb-6 ${
       isLaunch 
         ? 'bg-gradient-to-br from-emerald-600 via-corporate-teal to-corporate-navy' 
-        : isHighExcitement
-          ? 'bg-gradient-to-br from-corporate-teal via-corporate-navy to-corporate-navy'
-          : 'bg-gradient-to-br from-corporate-navy via-corporate-navy to-corporate-teal'
+        : 'bg-gradient-to-br from-corporate-navy to-corporate-teal'
     }`}>
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
+      {/* Simplified Background Pattern - Clean and minimal */}
+      <div className="absolute inset-0 opacity-5">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-corporate-teal rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
-        {isHighExcitement && (
-          <>
-            <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-yellow-400 rounded-full blur-2xl animate-pulse"></div>
-            <div className="absolute bottom-1/4 right-1/3 w-24 h-24 bg-emerald-400 rounded-full blur-2xl animate-pulse delay-150"></div>
-          </>
-        )}
       </div>
 
       <div className="relative p-6 sm:p-8">
         <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
           
-          {/* Left Content */}
+          {/* Left Content - Simplified */}
           <div className="flex-1 space-y-4">
-            {/* Phase Badge with Cohort Name - Show journey day (1-5) or "Prep Complete" */}
+            {/* Phase Badge - Cleaner, simpler */}
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-2 text-corporate-teal font-bold tracking-wider text-xs uppercase">
-                {isLaunch ? <Rocket className="w-4 h-4 animate-bounce" /> : <Shield className="w-4 h-4" />}
-                <span>{getBadgeText()}</span>
+                <Target className="w-4 h-4" />
+                <span>Foundation Prep</span>
               </div>
               {cohortName && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 flex items-center gap-1">
@@ -319,15 +280,10 @@ const PrepWelcomeBanner = () => {
                   ✓ READY
                 </span>
               )}
-              {isAccelerated && !isPrepComplete && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-400 font-bold">
-                  {isQuickStart ? 'QUICK START' : 'ACCELERATED'}
-                </span>
-              )}
             </div>
             
-            {/* Dynamic Headline - Personalized with user name and cohort */}
-            <h2 className={`text-2xl sm:text-3xl font-bold text-white font-heading leading-tight ${isLaunch ? 'animate-pulse' : ''}`}>
+            {/* Dynamic Headline - Clean and direct */}
+            <h2 className="text-2xl sm:text-3xl font-bold text-white font-heading leading-tight">
               {getPersonalizedHeadline()}
             </h2>
             
@@ -348,119 +304,15 @@ const PrepWelcomeBanner = () => {
               </div>
             )}
 
-            {/* Today's Focus - What's New (Skip the box on Day 1 since headline IS the welcome) */}
-            {onboarding && effectiveJourneyDay > 1 && (
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg ${
-                    isQuickStart ? 'bg-yellow-400/20' : 'bg-corporate-teal/20'
-                  }`}>
-                    <ModuleIcon className={`w-5 h-5 ${
-                      isQuickStart ? 'text-yellow-400' : 'text-corporate-teal'
-                    }`} />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-white font-semibold text-sm mb-1">
-                      {onboarding.title}
-                    </h3>
-                    
-                    {/* Features being introduced */}
-                    {onboarding.widgets && onboarding.widgets.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {onboarding.widgets.slice(0, 4).map((widget, idx) => {
-                          const widgetLabels = {
-                            'leaderProfile': 'Leader Profile',
-                            'baselineAssessment': 'Baseline Assessment',
-                            'todaysActions': 'Today\'s Actions',
-                            'amBookend': 'AM Bookend',
-                            'pmBookend': 'PM Bookend',
-                            'readingContent': 'Reading Library',
-                            'videoContent': 'Video Library',
-                            'appOverview': 'App Guide'
-                          };
-                          
-                          // Special handling for video content
-                          if (widget === 'videoContent') {
-                            return (
-                              <span 
-                                key={idx}
-                                className="text-xs px-2 py-1 rounded-md bg-white/10 text-white/80 flex items-center gap-1"
-                              >
-                                <PlayCircle className="w-3 h-3 text-emerald-400" />
-                                {widgetLabels[widget] || widget}
-                                <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded text-white/90 ml-1 font-medium tracking-wide">OPTIONAL</span>
-                              </span>
-                            );
-                          }
-
-                          return (
-                            <span 
-                              key={idx}
-                              className="text-xs px-2 py-1 rounded-md bg-white/10 text-white/80 flex items-center gap-1"
-                            >
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                              {widgetLabels[widget] || widget}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
-                    
-                    {/* Tip */}
-                    {onboarding.tip && (
-                      <div className="mt-3 flex items-start gap-2 text-xs text-slate-400">
-                        <Sparkles className="w-3 h-3 text-yellow-400 mt-0.5 flex-shrink-0" />
-                        <span>{onboarding.tip}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Day 1: Show widgets inline without nested box */}
-            {onboarding && effectiveJourneyDay === 1 && (
-              <div className="flex flex-wrap gap-2">
-                {onboarding.widgets?.slice(0, 4).map((widget, idx) => {
-                  const widgetLabels = {
-                    'leaderProfile': 'Leader Profile',
-                    'baselineAssessment': 'Baseline Assessment',
-                    'todaysActions': 'Today\'s Actions',
-                    'amBookend': 'AM Bookend',
-                    'pmBookend': 'PM Bookend'
-                  };
-                  return (
-                    <span 
-                      key={idx}
-                      className="text-xs px-2 py-1 rounded-md bg-white/10 text-white/80 flex items-center gap-1"
-                    >
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                      {widgetLabels[widget] || widget}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-            
-            {/* Day 1 Tip */}
-            {onboarding?.tip && effectiveJourneyDay === 1 && (
-              <div className="flex items-start gap-2 text-xs text-slate-400">
-                <Sparkles className="w-3 h-3 text-yellow-400 mt-0.5 flex-shrink-0" />
-                <span>{onboarding.tip}</span>
-              </div>
-            )}
-
-
-
-            {/* Call to Action */}
-            {onboarding?.callToAction && (
+            {/* Call to Action - Simple and direct */}
+            {hasIncompleteRequiredActions && (
               <div className="mt-3 flex items-center gap-2 text-sm text-corporate-teal">
                 <ChevronRight className="w-4 h-4" />
-                <span className="font-medium">{onboarding.callToAction}</span>
+                <span className="font-medium">Complete your {incompleteRequiredActions.length} required action{incompleteRequiredActions.length !== 1 ? 's' : ''} below</span>
               </div>
             )}
             
-            {/* Daily Quote */}
+            {/* Daily Quote - Keep for inspiration */}
             <div className="mt-4 pt-4 border-t border-white/10">
               <div className="flex gap-3 items-start">
                 <Quote className="w-5 h-5 text-corporate-teal/60 flex-shrink-0 mt-0.5" />
@@ -476,16 +328,10 @@ const PrepWelcomeBanner = () => {
             </div>
           </div>
 
-          {/* Right Visual - Countdown Circle + Journey Progress */}
-          <div className="hidden lg:flex flex-col items-center gap-4">
-            {/* Countdown Circle */}
-            <div className={`relative w-24 h-24 rounded-full flex items-center justify-center shadow-lg ${
-              isLaunch 
-                ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/30 animate-pulse' 
-                : isHighExcitement
-                  ? 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-yellow-500/30'
-                  : 'bg-gradient-to-br from-corporate-teal to-emerald-600 shadow-corporate-teal/20'
-            }`}>
+          {/* Right Visual - Countdown to Session One with Date - Clean and simple */}
+          <div className="hidden lg:flex flex-col items-center gap-3">
+            {/* Countdown Circle - Simplified */}
+            <div className="relative w-24 h-24 rounded-full flex items-center justify-center shadow-lg bg-gradient-to-br from-corporate-teal to-emerald-600 shadow-corporate-teal/20">
               {isLaunch ? (
                 <Rocket className="w-10 h-10 text-white" />
               ) : (
@@ -497,26 +343,27 @@ const PrepWelcomeBanner = () => {
                 </div>
               )}
             </div>
-            <span className="text-xs text-slate-400 font-medium">until QuickStart</span>
+            <span className="text-xs text-slate-400 font-medium">until Session One</span>
             
-            {/* Journey Progress Dots (show 5 modules) */}
-            {!isQuickStart && (
-              <div className="flex gap-1.5 mt-2">
-                {[1, 2, 3, 4, 5].map((day) => (
-                  <div 
-                    key={day}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      effectiveJourneyDay >= day 
-                        ? 'bg-corporate-teal' 
-                        : 'bg-white/20'
-                    }`}
-                    title={`Login ${day}`}
-                  />
-                ))}
+            {/* Session One Date - Show actual date from cohort */}
+            {cohortStartDate && (
+              <div className="text-center bg-white/5 rounded-lg px-3 py-2 border border-white/10">
+                <div className="flex items-center gap-1.5 text-white/90">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span className="text-xs font-medium">
+                    {new Date(cohortStartDate).toLocaleDateString('en-US', { 
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </span>
+                </div>
               </div>
             )}
+            
+            {/* Prep Status - Simple indicator without login counts */}
             <span className="text-[10px] text-slate-500">
-              {isQuickStart ? 'Quick Start Mode' : isPrepComplete ? 'Prep Complete!' : `Login ${effectiveJourneyDay} of 5`}
+              {isPrepComplete ? '✓ Prep Complete' : 'Prep in Progress'}
             </span>
           </div>
 

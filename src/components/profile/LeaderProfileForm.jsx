@@ -429,14 +429,6 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
                     ))}
                 </div>
             </div>
-
-            <div className="space-y-1 pt-4 border-t border-slate-100">
-              <label className="block text-sm font-medium text-slate-700">
-                Preferred Learning Time
-              </label>
-              <p className="text-xs text-slate-500 mb-2">When do you typically have time for leadership development?</p>
-              {renderOptionCards('preferredLearningTime', LEARNING_TIMES)}
-            </div>
           </div>
         );
 
@@ -446,7 +438,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
             {renderTextarea('biggestChallenge', 'What is your biggest leadership challenge right now?',
               'e.g., Managing a growing team, giving difficult feedback, time management...'
             )}
-            {renderTextarea('primaryGoal', 'What do you hope to achieve through QuickStart?',
+            {renderTextarea('primaryGoal', 'What do you hope to achieve through the Foundation program?',
               'e.g., Become more confident in difficult conversations, build a stronger team culture...'
             )}
             <div className="bg-gradient-to-r from-corporate-teal/10 to-corporate-orange/10 p-4 rounded-xl border border-corporate-teal/20">
@@ -455,7 +447,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
                 <div>
                   <h4 className="font-semibold text-corporate-navy">You're almost there!</h4>
                   <p className="text-sm text-slate-600 mt-1">
-                    Your responses help us personalize your QuickStart journey. 
+                    Your responses help us personalize your Foundation journey. 
                     We'll use this to recommend relevant content and coaching.
                   </p>
                 </div>
@@ -484,7 +476,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
           <CheckCircle className="w-10 h-10 text-green-500" />
         </div>
         <h3 className="text-xl font-bold text-corporate-navy mb-2">Profile Complete!</h3>
-        <p className="text-slate-600">Welcome to QuickStart Leadership Development</p>
+        <p className="text-slate-600">Welcome to Foundation Leadership Development</p>
       </div>
     );
   }
@@ -589,8 +581,8 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
         </button>
 
         <div className="flex items-center gap-3">
-          {/* Save & Exit - available on middle steps only (not first, not last) */}
-          {currentStep > 0 && currentStep < STEPS.length - 1 && (
+          {/* Save & Exit - available on all pages except last */}
+          {currentStep < STEPS.length - 1 && (
             <button
               onClick={handleSaveAndExit}
               disabled={saving}

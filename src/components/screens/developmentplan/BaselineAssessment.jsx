@@ -1,10 +1,10 @@
 // src/components/developmentplan/BaselineAssessment.jsx
 // REFACTORED: Converted to a single-page, modern form. (Req #14)
-// Uses new 1-3 goal input fields. (Req #15)
 // UPDATED (10/30/25): Replaced Likert component with new styled radio buttons (Req #2)
+// UPDATED: Removed goal-setting section per Ryan's feedback
 
 import React, { useState } from 'react';
-import { ArrowRight, Loader, Plus, X, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react'; // Added Plus, X, Chevrons, CheckCircle
+import { ArrowRight, Loader, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import { 
   Button, 
   Card, 
@@ -14,7 +14,6 @@ import {
 } from './DevPlanComponents';
 import { 
   ASSESSMENT_QUESTIONS, 
-  OPEN_ENDED_QUESTION, // We'll still use its title
   LIKERT_SCALE
 } from './devPlanUtils';
 
@@ -74,9 +73,6 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
   // One state object for all answers
   const [responses, setResponses] = useState(initialData?.answers || {});
   
-  // REQ #15: State for 1-3 goals
-  const [goals, setGoals] = useState(initialData?.openEnded && initialData.openEnded.length > 0 ? initialData.openEnded : ['']);
-  
   // Widget expansion state
   const [isExpanded, setIsExpanded] = useState(!isWidget || !initialData);
 
@@ -86,10 +82,9 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
   
   // Check if all Likert questions are answered
   const allLikertAnswered = completedQuestions === totalQuestions;
-  // Check if at least one goal is entered
-  const atLeastOneGoal = goals.some(g => g.trim() !== '');
   
-  const isComplete = allLikertAnswered && atLeastOneGoal;
+  // Assessment is complete when all questions are answered (goals removed)
+  const isComplete = allLikertAnswered;
   
   // NEW: State for simulated loading delay
   const [isGenerating, setIsGenerating] = useState(false);
@@ -99,35 +94,9 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
   const handleResponse = (questionId, value) => {
     setResponses(prev => ({ ...prev, [questionId]: value }));
   };
-  
-  // --- REQ #15: Goal Handlers ---
-  const handleGoalChange = (index, value) => {
-    const newGoals = [...goals];
-    newGoals[index] = value;
-    setGoals(newGoals);
-  };
-  
-  const addGoal = () => {
-    if (goals.length < 3) {
-      setGoals([...goals, '']);
-    }
-  };
-  
-  const removeGoal = (index) => {
-    if (goals.length > 1) {
-      const newGoals = goals.filter((_, i) => i !== index);
-      setGoals(newGoals);
-    } else {
-      // Don't remove the last one, just clear it
-      setGoals(['']);
-    }
-  };
 
   const handleComplete = () => {
     if (!allLikertAnswered) {
-      return;
-    }
-    if (!atLeastOneGoal) {
       return;
     }
 
@@ -139,8 +108,8 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
         const assessment = {
             date: new Date().toISOString(),
             answers: responses,
-            // REQ #15: Send goals as a filtered array
-            openEnded: goals.map(g => g.trim()).filter(g => g),
+            // Goals removed per Ryan's feedback
+            openEnded: [],
             cycle: 1,
         };
         
@@ -237,52 +206,6 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
             ))}
           </div>
 
-          {/* REQ #15: Open-ended goals section */}
-          <div className="mt-8 p-3 sm:p-4 lg:p-6 rounded-lg" style={{ background: 'var(--corporate-orange-10)' }}>
-            <label className="block text-lg font-semibold mb-2" style={{ color: 'var(--corporate-navy)' }}>
-              {OPEN_ENDED_QUESTION.text}
-            </label>
-            <p className="text-sm mb-4" style={{ color: 'var(--corporate-teal)' }}>
-              {OPEN_ENDED_QUESTION.placeholder} (Add up to 3)
-            </p>
-            
-            <div className="space-y-3">
-              {goals.map((goal, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    className="flex-1 w-full p-3 border rounded-lg focus:ring-2 transition-all border-corporate-teal focus:ring-corporate-orange"
-                    value={goal}
-                    onChange={(e) => handleGoalChange(index, e.target.value)}
-                    placeholder={`Leadership goal #${index + 1}`}
-                    disabled={isTotalLoading}
-                  />
-                  <button
-                    onClick={() => removeGoal(index)}
-                    className="p-2 rounded-full text-gray-400 hover:bg-red-100 hover:text-red-600 transition-colors"
-                    title="Remove goal"
-                    disabled={goals.length === 1 || isTotalLoading}
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            
-            {goals.length < 3 && (
-              <Button
-                onClick={addGoal}
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                disabled={isTotalLoading}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Another Goal
-              </Button>
-            )}
-          </div>
-
           {/* The "One Banana" - Complete Button */}
           <div className="pt-8">
             <Button
@@ -301,7 +224,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
             </Button>
             {!isComplete && (
               <p className="text-center text-sm mt-3" style={{ color: 'var(--corporate-teal)' }}>
-                Please answer all {totalQuestions} questions and add at least one goal to complete the assessment.
+                Please answer all {totalQuestions} questions to complete the assessment.
               </p>
             )}
           </div>

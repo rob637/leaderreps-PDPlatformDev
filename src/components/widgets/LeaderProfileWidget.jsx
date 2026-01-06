@@ -79,7 +79,7 @@ const LeaderProfileWidget = () => {
               </h3>
               
               <p className="text-sm text-slate-600 mb-3" style={{ fontFamily: 'var(--font-body)' }}>
-                Help us personalize your QuickStart journey. Takes about 2 minutes.
+                Help us personalize your Foundation journey. Takes about 2 minutes.
               </p>
 
               {/* Progress indicator */}

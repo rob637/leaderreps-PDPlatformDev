@@ -3,7 +3,7 @@ export const SEED_DATA = [
   {
     title: 'Program Phases',
     description: 'High-level segments of the 26-week program',
-    items: ['Prep Week', 'QuickStart', 'Spaced Learning', 'Clear Performance', 'Impact', 'Mastery'],
+    items: ['Prep Week', 'Foundation', 'Spaced Learning', 'Clear Performance', 'Impact', 'Mastery'],
     isActive: true
   },
   {

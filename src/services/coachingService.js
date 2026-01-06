@@ -338,15 +338,15 @@ export const seedCoachingData = async (db) => {
     },
     {
       id: 'live-workout-qs1',
-      title: 'QuickStart Session 1: Foundation',
-      description: 'Live delivery of QuickStart Week 1 workout. Interactive session with Q&A.',
+      title: 'Foundation Session 1',
+      description: 'Live delivery of Foundation Week 1 workout. Interactive session with Q&A.',
       sessionType: SESSION_TYPES.LIVE_WORKOUT,
       coach: 'Ryan',
       durationMinutes: 90,
       maxAttendees: 30,
       skillFocus: ['leadership-foundations'],
       linkedWorkoutId: 'workout-qs1',
-      linkedProgramId: 'quickstart',
+      linkedProgramId: 'foundation',
       recurrence: {
         type: 'none'
       },

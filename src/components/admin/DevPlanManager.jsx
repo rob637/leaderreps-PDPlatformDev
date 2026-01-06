@@ -593,7 +593,7 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, dailyRepsLibra
                   value={formData.title} 
                   onChange={e => handleChange('title', e.target.value)}
                   className="w-full p-2 border rounded"
-                  placeholder="e.g. QuickStart S1"
+                  placeholder="e.g. Foundation S1"
                 />
               </div>
 
@@ -1255,7 +1255,7 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, dailyRepsLibra
                   value={formData.prerequisites} 
                   onChange={e => handleChange('prerequisites', e.target.value)}
                   className="w-full p-2 border rounded"
-                  placeholder="e.g. QuickStart S1"
+                  placeholder="e.g. Foundation S1"
                 />
               </div>
               <div>
@@ -1360,7 +1360,7 @@ const DevPlanReportModal = ({ weeks, onClose }) => {
 
   // Phase colors for badges
   const phaseColors = {
-    'QuickStart': 'bg-green-100 text-green-700',
+    'Foundation': 'bg-green-100 text-green-700',
     'Spaced Learning': 'bg-yellow-100 text-yellow-700',
     'Clear Performance': 'bg-cyan-100 text-cyan-700',
     'Impact': 'bg-purple-100 text-purple-700'

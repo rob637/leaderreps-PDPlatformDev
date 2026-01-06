@@ -2,8 +2,8 @@
   {
     "weekBlockId": "week-02-quickstart",
     "weekNumber": 2,
-    "title": "QuickStart – Week 2",
-    "phase": "QuickStart",
+    "title": "Foundation – Week 2",
+    "phase": "Foundation",
     "focus": "Anchoring Feedback",
     "description": "Build the habit of giving simple, clear feedback anchored to your leadership identity.",
     "startOffsetWeeks": 1,
@@ -16,7 +16,7 @@
       {
         "contentItemId": "qs-session-2",
         "contentItemType": "workout",
-        "contentItemLabel": "QuickStart Session 2: Anchoring Feedback",
+        "contentItemLabel": "Foundation Session 2: Anchoring Feedback",
         "isRequiredContent": true
       },
       {

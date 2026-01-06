@@ -266,15 +266,21 @@ const ThisWeeksActionsWidget = () => {
     return Array.from(completedSet);
   }, [userState?.dailyProgress]);
 
-  const completedCount = useMemo(() => {
-    return allActions.filter(item => {
+  // Filter to only required items for progress calculation
+  const requiredActions = useMemo(() => {
+    return allActions.filter(item => item.required !== false && !item.optional);
+  }, [allActions]);
+
+  const completedRequiredCount = useMemo(() => {
+    return requiredActions.filter(item => {
       const progress = getItemProgress(item.id);
       return progress.status === 'completed' || completedItems.includes(item.id);
     }).length;
-  }, [allActions, getItemProgress, completedItems]);
+  }, [requiredActions, getItemProgress, completedItems]);
 
-  const totalCount = allActions.length + carriedOverItems.length;
-  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  // Progress percentage based only on required items (per Ryan's feedback)
+  const totalRequiredCount = requiredActions.length;
+  const progressPercent = totalRequiredCount > 0 ? Math.round((completedRequiredCount / totalRequiredCount) * 100) : 0;
 
   // Dynamic title
   const widgetTitle = currentPhase?.id === 'pre-start' 
@@ -570,11 +576,11 @@ const ThisWeeksActionsWidget = () => {
         </div>
 
         {/* Completion Celebration */}
-        {progressPercent === 100 && totalCount > 0 && (
+        {progressPercent === 100 && totalRequiredCount > 0 && (
           <div className="mt-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 text-center">
             <div className="text-2xl mb-1">🎉</div>
             <p className="text-sm font-semibold text-emerald-800">Week {currentWeekNumber} Complete!</p>
-            <p className="text-xs text-emerald-600 mt-1">Great work! You've completed all actions for this week.</p>
+            <p className="text-xs text-emerald-600 mt-1">Great work! You've completed all required actions for this week.</p>
           </div>
         )}
       </Card>

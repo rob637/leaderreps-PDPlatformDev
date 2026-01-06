@@ -164,15 +164,15 @@ export const ACCELERATED_MODULES = {
   // 1-2 days until start: 1 session (everything)
   accelerated_1: [
     { 
-      id: 'quick-start', 
-      title: 'Quick Start Guide',
+      id: 'foundation', 
+      title: 'Foundation Guide',
       headline: 'Welcome, Leader! Let\'s Get You Ready Fast',
       description: 'Your training starts very soon! Here\'s everything you need to know to hit the ground running.',
       widgets: ['leaderProfile', 'baselineAssessment', 'amBookend', 'pmBookend', 'appOverview'],
       features: ['leader_profile', 'baseline_assessment', 'am_bookend', 'pm_bookend', 'full_access'],
       callToAction: 'Complete your profile and assessment before Day 1!',
       tip: 'Focus on the Leader Profile and Baseline Assessment first - they\'re essential for personalization.',
-      isQuickStart: true
+      isFoundation: true
     }
   ]
 };
@@ -705,10 +705,11 @@ export const useDailyPlan = () => {
         journeyDay,
         onboarding: onboardingModule,
         isAccelerated: daysUntilStart <= 4,
-        isQuickStart: daysUntilStart <= 2,
+        isFoundation: daysUntilStart <= 2,
         // Cohort info (if available)
         cohort: cohortData,
         cohortName: cohortData?.name,
+        cohortStartDate: cohortData?.startDate,
         facilitator: cohortData?.facilitator,
         // Summary of prep completion
         totalActions: cumulativeActions.length,
@@ -851,17 +852,17 @@ export const useDailyPlan = () => {
         const qsAction = {
           id: `qs-session-${sessionNum}`,
           type: 'community', // Use community icon
-          label: `QuickStart Session ${sessionNum}`,
+          label: `Foundation Session ${sessionNum}`,
           description: dateStr ? `Live 2-hour session on ${dateStr} at ${timeStr}` : `Live 2-hour session at ${timeStr}`,
           resourceId: null, 
           enabled: true,
           isSystemInjected: true,
           // Calendar data for "Add to Calendar" button
           calendarEvent: sessionDateObj ? {
-            title: `QuickStart Session ${sessionNum} - LeaderReps`,
+            title: `Foundation Session ${sessionNum} - LeaderReps`,
             startDate: sessionDateObj,
             duration: 120, // 2 hours in minutes
-            description: `QuickStart Session ${sessionNum} for LeaderReps Professional Development`,
+            description: `Foundation Session ${sessionNum} for LeaderReps Professional Development`,
             location: cohortData.meetingLink || 'Virtual - Link TBD'
           } : null
         };

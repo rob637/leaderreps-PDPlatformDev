@@ -21,7 +21,7 @@ export const BREADCRUMB_MAP = {
   ],
   'quick-start-accelerator': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'QuickStart', path: null }
+    { label: 'Foundation', path: null }
   ],
   'executive-reflection': [
     { label: 'Home', path: 'dashboard' },

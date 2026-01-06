@@ -37,7 +37,7 @@
  * @property {number} weekNumber - Sequence index (1-26)
  * @property {string} title - User-facing title
  * @property {string} focus - Main skill/theme focus
- * @property {string} phase - High-level program segment (QuickStart, Spaced Learning, etc.)
+ * @property {string} phase - High-level program segment (Foundation, Spaced Learning, etc.)
  * @property {string} [description] - Short summary
  * @property {number} startOffsetWeeks - Weeks after program start to unlock
  * @property {number} [estimatedTimeMinutes] - Rough total time estimate
