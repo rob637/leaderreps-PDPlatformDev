@@ -22,7 +22,10 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
         const data = docSnap.data();
         const log = data.prepVisitLog || [];
         setPrepVisitLog(log);
-        // ... rest of function
+        setTargetDay(log.length); // Initialize targetDay to current count
+      } else {
+        setPrepVisitLog([]);
+        setTargetDay(0);
       }
     } catch (err) {
       console.error("Error fetching prep data:", err);

@@ -23,7 +23,7 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 // import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user }) => {
-  const { identityStatement, habitAnchor, whyStatement } = useAppServices();
+  const { identityStatement, habitAnchor, whyStatement, globalMetadata, isAdmin } = useAppServices();
   // const { zoneVisibility } = useDayBasedAccessControl();
   const [showAnchors, setShowAnchors] = useState(false);
 
@@ -46,9 +46,15 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     };
   }, []);
 
-  // Admin Check
-  const ADMIN_EMAILS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
-  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
+  // isAdmin is now provided by DataProvider via useAppServices
+  // Debug logging for admin status
+  React.useEffect(() => {
+    console.log('[ArenaSidebar] Admin check:', {
+      userEmail: user?.email,
+      isAdmin,
+      adminEmails: globalMetadata?.adminemails
+    });
+  }, [user?.email, isAdmin, globalMetadata?.adminemails]);
 
   // Feature Flags (Mock for now, should come from context/service)
   const MOCK_FEATURE_FLAGS = { 

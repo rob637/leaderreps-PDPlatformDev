@@ -1,7 +1,7 @@
 // src/services/globalMetadata.js
 import { useState, useEffect } from 'react';
 import { getDocEx } from './firestoreUtils'; // Assuming firestoreUtils.js exists
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, onSnapshot } from 'firebase/firestore';
 import { UNIFIED_COLLECTION, CONTENT_TYPES } from './unifiedContentService';
 import { 
     MOCK_FEATURE_FLAGS, LEADERSHIP_TIERS_FALLBACK, MOCK_REP_LIBRARY, MOCK_EXERCISE_LIBRARY,
@@ -53,12 +53,11 @@ export const useGlobalMetadata = (db, isAuthReady) => {
       return;
     }
 
-    const fetchMetadata = async () => {
-      try {
-          const configSnap = await getDocEx(db, 'metadata/config');
-          const configData = configSnap.exists() ? configSnap.data() : {};
+    let unsubscribeConfig = null;
 
-          // --- NEW: Fetch Unified Content Library ---
+    const initializeMetadata = async () => {
+      try {
+          // --- Fetch Unified Content Library (one-time) ---
           let unifiedReps = [];
           let unifiedWorkouts = [];
           let unifiedExercises = [];
@@ -74,7 +73,6 @@ export const useGlobalMetadata = (db, isAuthReady) => {
           } catch (err) {
             console.error("Error fetching unified content:", err);
           }
-          // ------------------------------------------
 
           const iconComponents = {
             HeartPulse, Briefcase, Users, AlertTriangle, TrendingUp, Zap,
@@ -85,28 +83,39 @@ export const useGlobalMetadata = (db, isAuthReady) => {
               iconMap[name] = iconComponents[name];
           });
 
-          setMetadata(prev => ({
-              ...prev,
-              featureFlags: cfg(configData, ['feature_flags', 'featureFlags'], MOCK_FEATURE_FLAGS),
-              adminemails: cfg(configData, ['adminemails', 'ADMIN_EMAILS'], ADMIN_EMAILS),
-              LEADERSHIP_TIERS: cfg(configData, ['leadership_tiers', 'LEADERSHIP_TIERS'], LEADERSHIP_TIERS_FALLBACK),
-              REP_LIBRARY: unifiedReps.length > 0 ? { items: unifiedReps } : cfg(configData, ['rep_library', 'REP_LIBRARY'], MOCK_REP_LIBRARY),
-              EXERCISE_LIBRARY: unifiedExercises.length > 0 ? { items: unifiedExercises } : cfg(configData, ['exercise_library', 'EXERCISE_LIBRARY'], MOCK_EXERCISE_LIBRARY),
-              WORKOUT_LIBRARY: unifiedWorkouts.length > 0 ? { items: unifiedWorkouts } : cfg(configData, ['workout_library', 'WORKOUT_LIBRARY'], MOCK_WORKOUT_LIBRARY),
-              COURSE_LIBRARY: cfg(configData, ['course_library', 'COURSE_LIBRARY'], MOCK_COURSE_LIBRARY),
-              SKILL_CATALOG: cfg(configData, ['skill_catalog', 'SKILL_CATALOG'], MOCK_SKILL_CATALOG),
-              IDENTITY_ANCHOR_CATALOG: cfg(configData, ['identity_anchor_catalog', 'IDENTITY_ANCHOR_CATALOG'], MOCK_IDENTITY_ANCHOR_CATALOG),
-              HABIT_ANCHOR_CATALOG: cfg(configData, ['habit_anchor_catalog', 'HABIT_ANCHOR_CATALOG'], MOCK_HABIT_ANCHOR_CATALOG),
-              WHY_CATALOG: cfg(configData, ['why_catalog', 'WHY_CATALOG'], MOCK_WHY_CATALOG),
-              READING_CATALOG: cfg(configData, ['reading_catalog', 'READING_CATALOG'], MOCK_READING_CATALOG),
-              VIDEO_CATALOG: cfg(configData, ['video_catalog', 'VIDEO_CATALOG'], MOCK_VIDEO_CATALOG),
-              SCENARIO_CATALOG: cfg(configData, ['scenario_catalog', 'SCENARIO_CATALOG'], MOCK_SCENARIO_CATALOG),
-              MEMBERSHIP_PLANS: cfg(configData, ['membership_plans', 'MEMBERSHIP_PLANS'], MOCK_MEMBERSHIP_PLANS),
-              RESOURCE_LIBRARY: cfg(configData, ['resource_library', 'RESOURCE_LIBRARY'], {}),
-              APP_ID: cfg(configData, ['app_id', 'APP_ID'], 'default-app-id'),
-              GEMINI_MODEL: cfg(configData, ['gemini_model', 'GEMINI_MODEL'], GEMINI_MODEL),
-              IconMap: iconMap,
-          }));
+          // --- Subscribe to config document for real-time admin email updates ---
+          const configRef = doc(db, 'metadata', 'config');
+          unsubscribeConfig = onSnapshot(configRef, (configSnap) => {
+            const configData = configSnap.exists() ? configSnap.data() : {};
+            
+            setMetadata(prev => ({
+                ...prev,
+                featureFlags: cfg(configData, ['feature_flags', 'featureFlags'], MOCK_FEATURE_FLAGS),
+                adminemails: cfg(configData, ['adminemails', 'ADMIN_EMAILS'], ADMIN_EMAILS),
+                LEADERSHIP_TIERS: cfg(configData, ['leadership_tiers', 'LEADERSHIP_TIERS'], LEADERSHIP_TIERS_FALLBACK),
+                REP_LIBRARY: unifiedReps.length > 0 ? { items: unifiedReps } : cfg(configData, ['rep_library', 'REP_LIBRARY'], MOCK_REP_LIBRARY),
+                EXERCISE_LIBRARY: unifiedExercises.length > 0 ? { items: unifiedExercises } : cfg(configData, ['exercise_library', 'EXERCISE_LIBRARY'], MOCK_EXERCISE_LIBRARY),
+                WORKOUT_LIBRARY: unifiedWorkouts.length > 0 ? { items: unifiedWorkouts } : cfg(configData, ['workout_library', 'WORKOUT_LIBRARY'], MOCK_WORKOUT_LIBRARY),
+                COURSE_LIBRARY: cfg(configData, ['course_library', 'COURSE_LIBRARY'], MOCK_COURSE_LIBRARY),
+                SKILL_CATALOG: cfg(configData, ['skill_catalog', 'SKILL_CATALOG'], MOCK_SKILL_CATALOG),
+                IDENTITY_ANCHOR_CATALOG: cfg(configData, ['identity_anchor_catalog', 'IDENTITY_ANCHOR_CATALOG'], MOCK_IDENTITY_ANCHOR_CATALOG),
+                HABIT_ANCHOR_CATALOG: cfg(configData, ['habit_anchor_catalog', 'HABIT_ANCHOR_CATALOG'], MOCK_HABIT_ANCHOR_CATALOG),
+                WHY_CATALOG: cfg(configData, ['why_catalog', 'WHY_CATALOG'], MOCK_WHY_CATALOG),
+                READING_CATALOG: cfg(configData, ['reading_catalog', 'READING_CATALOG'], MOCK_READING_CATALOG),
+                VIDEO_CATALOG: cfg(configData, ['video_catalog', 'VIDEO_CATALOG'], MOCK_VIDEO_CATALOG),
+                SCENARIO_CATALOG: cfg(configData, ['scenario_catalog', 'SCENARIO_CATALOG'], MOCK_SCENARIO_CATALOG),
+                MEMBERSHIP_PLANS: cfg(configData, ['membership_plans', 'MEMBERSHIP_PLANS'], MOCK_MEMBERSHIP_PLANS),
+                RESOURCE_LIBRARY: cfg(configData, ['resource_library', 'RESOURCE_LIBRARY'], {}),
+                APP_ID: cfg(configData, ['app_id', 'APP_ID'], 'default-app-id'),
+                GEMINI_MODEL: cfg(configData, ['gemini_model', 'GEMINI_MODEL'], GEMINI_MODEL),
+                IconMap: iconMap,
+            }));
+            setLoading(false);
+          }, (error) => {
+            console.error("[GLOBAL CONFIG] Error subscribing to config:", error);
+            setError(error);
+            setLoading(false);
+          });
 
       } catch (e) {
           console.error("[CRITICAL GLOBAL READ FAIL] Metadata fetch failed.", e);
@@ -119,12 +128,18 @@ export const useGlobalMetadata = (db, isAuthReady) => {
               APP_ID: 'error-app-id',
               adminemails: ADMIN_EMAILS,
           });
-      } finally {
           setLoading(false);
       }
     };
 
-    fetchMetadata();
+    initializeMetadata();
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribeConfig) {
+        unsubscribeConfig();
+      }
+    };
 
   }, [db, isAuthReady]);
 

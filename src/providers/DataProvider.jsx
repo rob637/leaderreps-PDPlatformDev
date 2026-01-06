@@ -157,14 +157,20 @@ const DataProvider = ({
   );
 
   const isAdmin = useMemo(() => {
-    const PRIMARY_ADMIN_EMAILS = ['rob@sagecg.com', 'admin@leaderreps.com', 'ryan@leaderreps.com'];
     const adminEmails = resolvedMetadata.adminemails || [];
     const userEmail = user?.email?.toLowerCase();
-    const isPrimaryAdmin = !!userEmail && PRIMARY_ADMIN_EMAILS.includes(userEmail);
-    return (
-      isPrimaryAdmin ||
-      (!!userEmail && Array.isArray(adminEmails) && adminEmails.includes(userEmail))
+    // Case-insensitive check against dynamic adminemails from Firestore
+    const result = (
+      !!userEmail && 
+      Array.isArray(adminEmails) && 
+      adminEmails.some(email => email.toLowerCase() === userEmail)
     );
+    console.log('[DataProvider] isAdmin calculation:', {
+      userEmail,
+      adminEmails,
+      isAdmin: result
+    });
+    return result;
   }, [user, resolvedMetadata]);
 
   const hasPendingDailyPractice = useMemo(() => {

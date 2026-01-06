@@ -93,12 +93,19 @@ function App() {
     const unsubscribe = onAuthStateChanged(firebaseServices.auth, (user) => {
       // Check for invitation link
       const params = new URLSearchParams(window.location.search);
-      const hasInvite = params.get('token') || params.get('invite');
+      const inviteToken = params.get('token') || params.get('invite');
 
-      if (user && hasInvite) {
+      if (user && inviteToken) {
         // If user follows an invite link while logged in, sign them out
         // so they can accept the invite correctly via AuthPanel.
         console.log("🔒 User logged in but Invite Access detected. Signing out...");
+        
+        // Save the token to sessionStorage so AuthPanel can retrieve it after signout
+        sessionStorage.setItem('pendingInviteToken', inviteToken);
+        
+        // Clear the token from URL to prevent infinite loop
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
         signOut(firebaseServices.auth).then(() => {
           setUser(null);
           setIsAuthReady(true);

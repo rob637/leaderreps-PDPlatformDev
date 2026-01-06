@@ -25,7 +25,9 @@ import {
   deleteDoc,
   serverTimestamp,
   orderBy,
-  Timestamp
+  Timestamp,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { buildModulePath } from '../../services/pathUtils';
@@ -110,17 +112,23 @@ const UserManagement = () => {
           type: 'user'
         }));
 
-        // Fetch Invites
+        // Fetch Invites - only show pending/sent invites (not accepted ones)
         const invitesRef = collection(db, 'invitations');
         const qInvites = query(invitesRef, orderBy('createdAt', 'desc'));
         const invitesSnap = await getDocs(qInvites);
-        const invitesList = invitesSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          displayName: doc.data().name, // Map name to displayName for consistent rendering
-          status: 'Pending',
-          type: 'invite'
-        }));
+        const invitesList = invitesSnap.docs
+          .filter(doc => {
+            const status = doc.data().status;
+            // Only show invites that haven't been accepted yet
+            return status === 'pending' || status === 'sent';
+          })
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            displayName: doc.data().name, // Map name to displayName for consistent rendering
+            status: 'Pending',
+            type: 'invite'
+          }));
 
         // Combine and sort by email
         const allUsers = [...usersList, ...invitesList].sort((a, b) => 
@@ -241,6 +249,61 @@ const UserManagement = () => {
     } catch (error) {
       console.error("Error assigning cohort:", error);
       alert("Failed to assign cohort.");
+    }
+  };
+
+  const handleChangeRole = async (userId, newRole) => {
+    const targetUser = users.find(u => u.id === userId);
+    if (!targetUser) return;
+
+    const isInvite = targetUser.type === 'invite';
+    const currentIsAdmin = adminEmails.includes(targetUser.email);
+    const newIsAdmin = newRole === 'admin';
+    
+    const roleLabel = newRole === 'admin' ? 'Admin' : 'User';
+    const confirmMessage = isInvite
+      ? `Change role for invite "${targetUser.displayName || targetUser.email}" to ${roleLabel}?`
+      : `Change role for "${targetUser.displayName || targetUser.email}" to ${roleLabel}?${newIsAdmin ? '\n\nThis will grant admin access to the Admin Command Center.' : ''}`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      if (isInvite) {
+        // Update Invitation
+        const inviteRef = doc(db, 'invitations', userId);
+        await updateDoc(inviteRef, { role: newRole });
+      } else {
+        // 1. Update User Profile
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, { role: newRole });
+
+        // 2. Update adminemails list in metadata/config
+        const configRef = doc(db, 'metadata', 'config');
+        
+        if (newIsAdmin && !currentIsAdmin) {
+          // Add to admin emails
+          await updateDoc(configRef, {
+            adminemails: arrayUnion(targetUser.email)
+          });
+          setAdminEmails([...adminEmails, targetUser.email]);
+        } else if (!newIsAdmin && currentIsAdmin) {
+          // Remove from admin emails
+          await updateDoc(configRef, {
+            adminemails: arrayRemove(targetUser.email)
+          });
+          setAdminEmails(adminEmails.filter(e => e !== targetUser.email));
+        }
+      }
+
+      // Optimistic Update for user role
+      setUsers(users.map(u => 
+        u.id === userId ? { ...u, role: newRole } : u
+      ));
+      
+      alert(`Role updated to ${roleLabel} successfully.`);
+    } catch (error) {
+      console.error("Error changing role:", error);
+      alert("Failed to change role.");
     }
   };
 
@@ -568,13 +631,18 @@ const UserManagement = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          adminEmails.includes(user.email) 
-                            ? 'bg-purple-100 text-purple-800' 
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {adminEmails.includes(user.email) ? 'Admin' : (user.role || 'User')}
-                        </span>
+                        <select
+                          value={adminEmails.includes(user.email) ? 'admin' : (user.role || 'user')}
+                          onChange={(e) => handleChangeRole(user.id, e.target.value)}
+                          className={`text-xs px-2.5 py-1 rounded-md border-0 font-medium cursor-pointer ${
+                            adminEmails.includes(user.email) || user.role === 'admin'
+                              ? 'bg-purple-100 text-purple-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}
+                        >
+                          <option value="user">User</option>
+                          <option value="admin">Admin</option>
+                        </select>
                       </td>
                       <td className="px-6 py-4">
                         <select
@@ -815,7 +883,6 @@ const UserManagement = () => {
                   >
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
-                    <option value="coach">Coach</option>
                   </select>
                 </div>
                 <div>

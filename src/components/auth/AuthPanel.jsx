@@ -49,7 +49,17 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
     const checkInvite = async () => {
       const params = new URLSearchParams(window.location.search);
       // Check for both 'token' (new) and 'invite' (legacy/test)
-      const token = params.get('token') || params.get('invite');
+      // Also check sessionStorage for token saved by App.jsx when signing out logged-in users
+      let token = params.get('token') || params.get('invite');
+      
+      // If no token in URL, check sessionStorage (used when logged-in user clicked invite link)
+      if (!token) {
+        token = sessionStorage.getItem('pendingInviteToken');
+        if (token) {
+          console.log("AuthPanel: Found pending invite token in sessionStorage");
+          sessionStorage.removeItem('pendingInviteToken'); // Clear it after reading
+        }
+      }
       
       console.log("AuthPanel: Checking token:", token, "Functions available:", !!functions);
 
@@ -59,15 +69,11 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
       }
 
       if (!functions) {
-        // Functions not ready yet, wait for re-render
         console.log("AuthPanel: Waiting for functions...");
-        // Keep checkingInvite(true) so loader persists
         return;
       }
 
-      // If we are here, we have token and functions
       try {
-        // Tell user we are validating
         setStatusMessage('Validating invitation...');
         const validateInvitation = httpsCallable(functions, 'validateInvitation');
         const result = await validateInvitation({ token });
@@ -76,10 +82,10 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
         
         // Accept invites that are 'pending' (just created) or 'sent' (email was delivered)
         if (data.status === 'pending' || data.status === 'sent') {
-          setInviteData(data); // data already contains id
+          setInviteData(data);
           setEmail(data.email);
           setMode('signup');
-          setStatusMessage(''); // Clear validating message
+          setStatusMessage('');
           if (data.name) setName(data.name);
         } else {
           console.warn("AuthPanel: Invite status not valid for signup:", data.status);
@@ -94,7 +100,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
     };
     
     checkInvite();
-  }, [functions]); // Changed dependency from db to functions
+  }, [functions]);
 
   const handleAction = async () => {
     setIsLoading(true);
@@ -118,7 +124,13 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
         
         if (!name) throw new Error('Name is required for signup.');
 
-        // Create User
+        // FIRST: Clear token from URL BEFORE creating user to prevent sign-out loop
+        // (App.jsx signs out users who have invite tokens in URL)
+        if (window.location.search.includes('token=') || window.location.search.includes('invite=')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Create User (this also logs them in automatically)
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           email,
@@ -133,30 +145,28 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
         // Handle Invite Acceptance & Cohort Assignment
         if (inviteData && db) {
             try {
-                // 1. Mark invite as accepted
-                // We use a Cloud Function because the user doesn't have permission to write to 'invitations' directly
+                console.log("[AuthPanel] Processing invite acceptance, inviteData:", inviteData);
+                
+                // Call Cloud Function to accept invite
+                // The function handles: marking accepted, adding admin email, and saving user profile
                 if (functions) {
+                    console.log("[AuthPanel] Calling acceptInvitation function...");
                     const acceptInvitation = httpsCallable(functions, 'acceptInvitation');
-                    await acceptInvitation({ inviteId: inviteData.id });
+                    const result = await acceptInvitation({ inviteId: inviteData.id });
+                    console.log("[AuthPanel] acceptInvitation succeeded:", result.data);
                 }
 
-                // 2. Assign Cohort to User Profile
+                // Initialize Development Plan with Cohort Start Date (if cohort assigned)
                 if (inviteData.cohortId) {
-                    const userRef = doc(db, 'users', userCredential.user.uid);
-                    // We use setDoc with merge because ensureUserDocs might not have run yet
-                    await setDoc(userRef, {
-                        cohortId: inviteData.cohortId,
-                        arenaEntryDate: serverTimestamp() // Track when user first entered via invite
-                    }, { merge: true });
-
-                    // 3. Initialize Development Plan with Cohort Start Date
+                    console.log("[AuthPanel] Fetching cohort data for start date...");
                     const cohortDoc = await getDoc(doc(db, 'cohorts', inviteData.cohortId));
                     if (cohortDoc.exists()) {
                         const cohortData = cohortDoc.data();
+                        console.log("[AuthPanel] Cohort data:", cohortData);
                         const devPlanPath = buildModulePath(userCredential.user.uid, 'development_plan', 'current');
+                        console.log("[AuthPanel] Creating dev plan at:", devPlanPath);
                         
                         // Create the plan with the start date AND default fields
-                        // This ensures ensureUserDocs doesn't overwrite or skip it
                         await setDoc(doc(db, devPlanPath), {
                             currentCycle: 1,
                             createdAt: serverTimestamp(),
@@ -166,17 +176,23 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                             currentPlan: null,
                             startDate: cohortData.startDate
                         });
+                        console.log("[AuthPanel] Dev plan created with cohort start date");
+                    } else {
+                        console.warn("[AuthPanel] Cohort document not found:", inviteData.cohortId);
                     }
 
-                    // 4. Increment cohort member count
+                    // Increment cohort member count
                     try {
                         const cohortRef = doc(db, 'cohorts', inviteData.cohortId);
                         await updateDoc(cohortRef, {
                             memberCount: increment(1)
                         });
+                        console.log("[AuthPanel] Cohort member count incremented");
                     } catch (countErr) {
                         console.warn("Failed to increment cohort member count:", countErr);
                     }
+                } else {
+                    console.log("[AuthPanel] No cohortId in inviteData");
                 }
             } catch (err) {
                 console.error("Error processing invite acceptance:", err);

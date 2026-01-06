@@ -50,7 +50,7 @@ export const NotificationProvider = ({ children }) => {
 
   // Load settings from Firestore
   useEffect(() => {
-    if (!user || !db) return;
+    if (!user || !db || !user.uid) return;
 
     const loadSettings = async () => {
       try {
@@ -82,7 +82,7 @@ export const NotificationProvider = ({ children }) => {
   // Save settings to Firestore
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const saveSettings = async (newReminders, newSentLog) => {
-    if (!user || !db) return;
+    if (!user || !db || !user.uid) return;
     try {
       const remindersToSave = newReminders || reminders;
       const sanitizedReminders = {};

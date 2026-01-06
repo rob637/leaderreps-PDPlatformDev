@@ -25,27 +25,27 @@ const db = admin.firestore();
 // setGlobalOptions({ maxInstances: 10, region: "us-central1" });
 
 /**
- * VALIDATE INVITATION (Callable - Gen 2)
+ * VALIDATE INVITATION (Gen 1 - HTTPS Callable)
  * Allows frontend to lookup invite details by token without exposing the whole collection.
- * Using Gen 2 onCall with explicit cors: true to fix CORS issues.
+ * Using Gen 1 for reliable unauthenticated CORS handling.
  */
-exports.validateInvitation = onCall({ cors: true, region: "us-central1" }, async (request) => {
-    logger.info("validateInvitation called (V2)", { data: request.data });
+exports.validateInvitation = functionsV1.https.onCall(async (data, context) => {
+    logger.info("validateInvitation called (Gen1)", { data });
     
-    const { token } = request.data;
+    const { token } = data;
     if (!token) {
         logger.error("Missing token argument");
-        throw new HttpsError('invalid-argument', 'The function must be called with a "token" argument.');
+        throw new functionsV1.https.HttpsError('invalid-argument', 'The function must be called with a "token" argument.');
     }
 
     try {
         const invitesRef = db.collection('invitations');
-        const q = invitesRef.where('token', '==', token).limit(1); // Removed .get() here as it is done in next line? No, .get() is needed.
+        const q = invitesRef.where('token', '==', token).limit(1);
         const snapshot = await q.get();
 
         if (snapshot.empty) {
             logger.warn("Invitation not found for token", { token });
-            throw new HttpsError('not-found', 'Invitation not found.');
+            throw new functionsV1.https.HttpsError('not-found', 'Invitation not found.');
         }
 
         const doc = snapshot.docs[0];
@@ -63,16 +63,17 @@ exports.validateInvitation = onCall({ cors: true, region: "us-central1" }, async
         };
     } catch (error) {
         logger.error("Error in validateInvitation", error);
-        if (error instanceof HttpsError) {
+        if (error.code) {
             throw error;
         }
-        throw new HttpsError('internal', error.message || 'Unknown internal error');
+        throw new functionsV1.https.HttpsError('internal', error.message || 'Unknown internal error');
     }
 });
 
 /**
  * ACCEPT INVITATION (Callable - Gen 2)
  * Marks invitation as accepted and links it to the user.
+ * Also handles admin role assignment by adding email to adminemails list.
  * Protected: Can only be called by authenticated users.
  */
 exports.acceptInvitation = onCall({ cors: true, region: "us-central1" }, async (request) => {
@@ -95,13 +96,48 @@ exports.acceptInvitation = onCall({ cors: true, region: "us-central1" }, async (
         throw new HttpsError('not-found', 'Invitation not found.');
     }
     
+    const inviteData = inviteDoc.data();
+    
+    // Mark invite as accepted
     await inviteRef.update({
         status: 'accepted',
         acceptedAt: admin.firestore.FieldValue.serverTimestamp(),
         acceptedBy: uid
     });
+    
+    // If admin role, add email to adminemails list in metadata/config
+    // This must be done server-side because new users don't have admin permissions yet
+    if (inviteData.role === 'admin' && inviteData.email) {
+        try {
+            const configRef = db.collection('metadata').doc('config');
+            await configRef.update({
+                adminemails: admin.firestore.FieldValue.arrayUnion(inviteData.email)
+            });
+            logger.info("Added admin email to config", { email: inviteData.email });
+        } catch (adminErr) {
+            logger.error("Failed to add admin email to config", adminErr);
+            // Don't fail the whole operation if this fails
+        }
+    }
+    
+    // Also save the role and cohortId to the user profile
+    // This ensures the user profile has the correct data from the invite
+    try {
+        const userRef = db.collection('users').doc(uid);
+        const userData = {
+            role: inviteData.role || 'user',
+            arenaEntryDate: admin.firestore.FieldValue.serverTimestamp()
+        };
+        if (inviteData.cohortId) {
+            userData.cohortId = inviteData.cohortId;
+        }
+        await userRef.set(userData, { merge: true });
+        logger.info("User profile updated with invite data", { uid, role: inviteData.role, cohortId: inviteData.cohortId });
+    } catch (userErr) {
+        logger.error("Failed to update user profile", userErr);
+    }
 
-    return { success: true };
+    return { success: true, role: inviteData.role };
 });
 
 /**
