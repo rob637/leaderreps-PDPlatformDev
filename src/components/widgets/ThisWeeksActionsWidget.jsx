@@ -263,16 +263,22 @@ const ThisWeeksActionsWidget = () => {
     // Let's use a Set of completed item IDs for fast lookup
     const completedSet = new Set();
     
-    if (userState?.dailyProgress) {
-      Object.values(userState.dailyProgress).forEach(dayProgress => {
-        if (dayProgress.itemsCompleted) {
-          dayProgress.itemsCompleted.forEach(id => completedSet.add(id));
-        }
-      });
-    }
+    const dailyProgress = userState?.dailyProgress || {};
+    console.log('[ThisWeeksActions] Computing completedItems from dailyProgress:', {
+      keys: Object.keys(dailyProgress),
+      day001: dailyProgress['day-001']?.itemsCompleted
+    });
     
-    return Array.from(completedSet);
-  }, [userState?.dailyProgress]);
+    Object.values(dailyProgress).forEach(dayProgress => {
+      if (dayProgress && dayProgress.itemsCompleted) {
+        dayProgress.itemsCompleted.forEach(id => completedSet.add(id));
+      }
+    });
+    
+    const result = Array.from(completedSet);
+    console.log('[ThisWeeksActions] completedItems result:', result);
+    return result;
+  }, [userState]);
 
   // Filter to only required items for progress calculation
   const requiredActions = useMemo(() => {
