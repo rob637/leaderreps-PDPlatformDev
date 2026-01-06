@@ -575,7 +575,6 @@ const Dashboard = () => {
             <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
               Dashboard
             </h1>
-            <LayoutDashboard className="w-7 h-7 text-corporate-teal" />
           </div>
           <p className="text-slate-500 mt-2 leading-relaxed" style={{ fontFamily: 'var(--font-body)' }}>
             {greeting} Welcome to your daily practice.

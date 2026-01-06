@@ -9,7 +9,7 @@ import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, serverTim
 import { 
   Loader, Users, Calendar, MessageSquare, Video, 
   Clock, ChevronLeft, ChevronRight, Play, Bot, UserCheck,
-  CalendarDays, ExternalLink, Lock
+  CalendarDays, ExternalLink, Lock, Megaphone
 } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
@@ -622,6 +622,7 @@ const CoachingHub = () => {
       <PageLayout 
         title="Coaching" 
         subtitle="Live sessions, on-demand practice, and personalized coaching"
+        icon={Megaphone}
         breadcrumbs={[
           { label: 'Home', path: 'dashboard' },
           { label: 'Coaching', path: null }
@@ -654,6 +655,7 @@ const CoachingHub = () => {
     <PageLayout 
       title="Coaching" 
       subtitle="Live sessions, on-demand practice, and personalized coaching"
+      icon={Megaphone}
       breadcrumbs={[
         { label: 'Home', path: 'dashboard' },
         { label: 'Coaching', path: null }

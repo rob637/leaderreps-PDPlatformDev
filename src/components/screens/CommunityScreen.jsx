@@ -12,7 +12,7 @@ import PrepGate from '../ui/PrepGate';
 import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
     Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video, BookOpen, FileText,
-    Calendar, Lock
+    Calendar, Lock, Network
 } from 'lucide-react';
 import { Button, Card, LoadingSpinner, PageLayout, NoWidgetsEnabled, TabButton } from '../ui';
 
@@ -375,7 +375,7 @@ const CommunityScreen = () => {
             <PageLayout
                 title="Community Hub"
                 subtitle="Connect, share insights, and grow with fellow leaders."
-                icon={Users}
+                icon={Network}
                 navigate={navigate}
             >
                 <div className="max-w-2xl mx-auto">
@@ -401,7 +401,7 @@ const CommunityScreen = () => {
         <PageLayout
             title="Community Hub"
             subtitle="Connect, share insights, and grow with fellow leaders."
-            icon={Users}
+            icon={Network}
             navigate={navigate}
         >
             {/* Tab Navigation */}
