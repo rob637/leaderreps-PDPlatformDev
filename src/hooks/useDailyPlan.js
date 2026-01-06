@@ -706,10 +706,12 @@ export const useDailyPlan = () => {
         onboarding: onboardingModule,
         isAccelerated: daysUntilStart <= 4,
         isFoundation: daysUntilStart <= 2,
-        // Cohort info (if available)
+        // Cohort info (if available) - convert Firestore Timestamp to Date
         cohort: cohortData,
         cohortName: cohortData?.name,
-        cohortStartDate: cohortData?.startDate,
+        cohortStartDate: cohortData?.startDate?.toDate ? cohortData.startDate.toDate() : 
+                         cohortData?.startDate?.seconds ? new Date(cohortData.startDate.seconds * 1000) :
+                         cohortData?.startDate ? new Date(cohortData.startDate) : null,
         facilitator: cohortData?.facilitator,
         // Summary of prep completion
         totalActions: cumulativeActions.length,
