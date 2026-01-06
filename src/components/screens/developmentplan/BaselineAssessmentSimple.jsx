@@ -58,10 +58,19 @@ const RATING_OPTIONS = [
 ];
 
 const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, initialData = null }) => {
-  const [responses, setResponses] = useState(initialData?.answers || {});
+  // Only keep answers for questions that exist in current assessment
+  const validQuestionIds = ASSESSMENT_QUESTIONS.map(q => q.id);
+  const initialResponses = initialData?.answers 
+    ? Object.fromEntries(
+        Object.entries(initialData.answers).filter(([key]) => validQuestionIds.includes(key))
+      )
+    : {};
+  
+  const [responses, setResponses] = useState(initialResponses);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const completedCount = Object.keys(responses).length;
+  // Count only responses for current questions
+  const completedCount = ASSESSMENT_QUESTIONS.filter(q => responses[q.id] !== undefined).length;
   const totalQuestions = ASSESSMENT_QUESTIONS.length;
   const isComplete = completedCount === totalQuestions;
   const progress = (completedCount / totalQuestions) * 100;
@@ -77,11 +86,16 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
     
     // Brief delay for UX
     setTimeout(() => {
+      // Only include answers for current questions
+      const validAnswers = Object.fromEntries(
+        validQuestionIds.map(id => [id, responses[id]]).filter(([, val]) => val !== undefined)
+      );
+      
       const assessment = {
         date: new Date().toISOString(),
-        answers: responses,
+        answers: validAnswers,
         openEnded: [],
-        cycle: 1,
+        cycle: initialData?.cycle ? initialData.cycle + 1 : 1,
       };
       
       onComplete(assessment);
