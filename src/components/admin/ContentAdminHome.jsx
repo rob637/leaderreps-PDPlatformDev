@@ -2,7 +2,7 @@
 // Admin dashboard for content management
 
 import React from 'react';
-import { BookOpen, Film, GraduationCap, ArrowLeft, Settings, Users, BrainCircuit, List } from 'lucide-react';
+import { BookOpen, Film, GraduationCap, ArrowLeft, Settings, Users, BrainCircuit, List, ClipboardEdit } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 
@@ -435,6 +435,14 @@ const ContentAdminHome = () => {
       description: 'Wrap book syntheses with metadata',
       color: COLORS.TEAL,
       route: 'admin-wrapper-readrep'
+    },
+    {
+      id: 'interactive',
+      label: 'Interactive',
+      icon: ClipboardEdit,
+      description: 'Forms like Leader Profile & Baseline Assessment',
+      color: '#0d9488',
+      route: 'admin-wrapper-interactive'
     }
   ];
 

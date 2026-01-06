@@ -114,6 +114,9 @@ const ScreenMap = {
   'admin-wrapper-book': lazy(() =>
     import('../components/admin/wrappers/BookWrapper.jsx')
   ),
+  'admin-wrapper-interactive': lazy(() =>
+    import('../components/admin/wrappers/InteractiveWrapper.jsx')
+  ),
   'admin-portal': lazy(() =>
     import('../components/admin/AdminPortal.jsx')
   ),
