@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Compass, CheckCircle, Calendar, User, Users, Rocket, 
+  Compass, Calendar, User, Users, Rocket, 
   Clock, ChevronRight, Shield, Settings
 } from 'lucide-react';
 import { Card } from '../ui';
@@ -167,7 +167,7 @@ const MyJourneyWidget = () => {
           <div className="bg-white rounded-xl p-4 border border-slate-200">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-slate-700">Onboarding Progress</span>
+                <span className="text-sm font-medium text-slate-700">Login Streak</span>
                 <button 
                   onClick={() => setIsEditing(!isEditing)}
                   className="text-slate-300 hover:text-slate-500 transition-colors"
@@ -177,7 +177,7 @@ const MyJourneyWidget = () => {
                 </button>
               </div>
               <span className="text-xs text-slate-500">
-                Day {Math.min(journeyDay, 5)} of 5
+                {Math.min(journeyDay, 5)} of 5 logins
               </span>
             </div>
 
@@ -210,7 +210,7 @@ const MyJourneyWidget = () => {
               </div>
             )}
             
-            {/* Progress Dots */}
+            {/* Progress Dots - Shows Login Days, not Activity Completion */}
             <div className="flex items-center justify-between gap-2">
               {[1, 2, 3, 4, 5].map((day) => (
                 <div key={day} className="flex-1 flex flex-col items-center">
@@ -221,11 +221,8 @@ const MyJourneyWidget = () => {
                         : 'bg-slate-100 text-slate-400'
                     }`}
                   >
-                    {journeyDay >= day ? (
-                      <CheckCircle className="w-5 h-5" />
-                    ) : (
-                      <span className="text-sm font-medium">{day}</span>
-                    )}
+                    {/* Show day number always - checkmark was misleading */}
+                    <span className="text-sm font-bold">{day}</span>
                   </div>
                   <span className="text-[10px] text-slate-500 mt-1">
                     {day === 1 && 'Profile'}

@@ -4,13 +4,23 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // Helper function to check if user is admin
+    // Checks hardcoded admin list first, then dynamic admin lists in metadata
+    // Note: Case-sensitive comparison - ensure emails are stored lowercase
     function isAdmin() {
+      let hardcodedAdmins = ['rob@sagecg.com', 'admin@leaderreps.com', 'ryan@leaderreps.com'];
+      let userEmail = request.auth.token.email;
+      
       return request.auth != null && (
-        request.auth.token.email in ['rob@sagecg.com', 'admin@leaderreps.com', 'ryan@leaderreps.com'] ||
+        // 1. Check hardcoded admin list
+        userEmail in hardcodedAdmins ||
+        // 2. Check metadata/config for dynamic admin list
         (exists(/databases/$(database)/documents/metadata/config) && 
-         get(/databases/$(database)/documents/metadata/config).data.adminemails.hasAny([request.auth.token.email])) ||
+         'adminemails' in get(/databases/$(database)/documents/metadata/config).data &&
+         get(/databases/$(database)/documents/metadata/config).data.adminemails.hasAny([userEmail])) ||
+        // 3. Check global/metadata for dynamic admin list (fallback)
         (exists(/databases/$(database)/documents/global/metadata) && 
-         get(/databases/$(database)/documents/global/metadata).data.adminemails.hasAny([request.auth.token.email]))
+         'adminemails' in get(/databases/$(database)/documents/global/metadata).data &&
+         get(/databases/$(database)/documents/global/metadata).data.adminemails.hasAny([userEmail]))
       );
     }
 
@@ -42,8 +52,17 @@ service cloud.firestore {
       allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
     
-    // User profiles and data
-    match /users/{userId}/{document=**} {
+    // User profiles and data - Allow admins to list ALL users (collection-level query)
+    match /users/{userId} {
+      // Allow admins to list/query all users at collection level
+      allow list: if isAdmin();
+      // Allow individual user reads/writes
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+    
+    // User subcollections (action_progress, etc.)
+    match /users/{userId}/{subcollection}/{document=**} {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
       allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
