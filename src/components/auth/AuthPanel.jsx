@@ -367,6 +367,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
               </label>
               <input
                 type="text"
+                autoComplete="name"
                 className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
                 placeholder="John Doe"
                 value={name}
@@ -382,6 +383,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
             </label>
             <input
               type="email"
+              autoComplete={isSignup ? "email" : "username"}
               className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal disabled:bg-slate-50 disabled:text-slate-500 transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
               placeholder="name@company.com"
               value={email}
@@ -398,6 +400,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
               </label>
               <input
                 type="password"
+                autoComplete={isSignup ? "new-password" : "current-password"}
                 className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
                 placeholder="••••••••"
                 value={password}
@@ -414,6 +417,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
               </label>
               <input
                 type="text"
+                autoComplete="off"
                 className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
                 placeholder="Enter code"
                 value={secretCode}
