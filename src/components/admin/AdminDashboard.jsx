@@ -11,10 +11,24 @@ import {
   ShieldCheck,
   Plus,
   Trash2,
-  LayoutDashboard
+  LayoutDashboard,
+  UserPlus,
+  LogIn,
+  UserCheck,
+  CheckCircle,
+  Play,
+  ClipboardCheck,
+  Trophy,
+  Flame,
+  Shield,
+  Settings,
+  ToggleRight,
+  Bell,
+  Zap
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, setDoc, arrayUnion, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ACTIVITY_TYPES, getActivityMeta, logActivity as logActivityService, getTodaysSummary, cleanupOldLogs } from '../../services/activityLogger';
 
 const AdminDashboard = () => {
   const { db, user } = useAppServices();
@@ -27,6 +41,7 @@ const AdminDashboard = () => {
     systemStatus: 'Checking...'
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  const [activitySummary, setActivitySummary] = useState({ signups: 0, logins: 0, completions: 0, adminActions: 0, total: 0 });
   const [selectedMetric, setSelectedMetric] = useState(null);
   const [detailData, setDetailData] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -36,16 +51,36 @@ const AdminDashboard = () => {
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [isAddingAdmin, setIsAddingAdmin] = useState(false);
 
-  // Helper to log system activity
-  const logActivity = async (action, details = '') => {
+  // Icon map for activity types
+  const ActivityIcon = ({ type, className }) => {
+    const meta = getActivityMeta(type);
+    const iconMap = {
+      'UserPlus': UserPlus,
+      'LogIn': LogIn,
+      'UserCheck': UserCheck,
+      'CheckCircle': CheckCircle,
+      'Play': Play,
+      'ClipboardCheck': ClipboardCheck,
+      'Trophy': Trophy,
+      'Flame': Flame,
+      'Shield': Shield,
+      'Settings': Settings,
+      'ToggleRight': ToggleRight,
+      'Bell': Bell,
+      'AlertTriangle': AlertTriangle
+    };
+    const IconComponent = iconMap[meta.icon] || Zap;
+    return <IconComponent className={className} />;
+  };
+
+  // Helper to log system activity (enhanced)
+  const logActivity = async (action, details = '', activityType = ACTIVITY_TYPES.ADMIN_ACTION) => {
     try {
-      await addDoc(collection(db, 'system_logs'), {
+      await logActivityService(db, activityType, {
         action,
         details,
-        user: user?.email || 'Unknown',
-        userId: user?.uid || 'Unknown',
-        timestamp: serverTimestamp(),
-        type: 'admin_action'
+        userEmail: user?.email,
+        userId: user?.uid
       });
       
       // Refresh logs locally
@@ -53,11 +88,16 @@ const AdminDashboard = () => {
         { 
           id: 'temp-' + Date.now(), 
           action, 
+          type: activityType.type,
           user: user?.email, 
           time: 'Just now' 
         },
         ...prev
-      ].slice(0, 5));
+      ].slice(0, 10));
+      
+      // Refresh summary
+      const summary = await getTodaysSummary(db);
+      setActivitySummary(summary);
     } catch (error) {
       console.error("Failed to log activity:", error);
     }
@@ -70,21 +110,31 @@ const AdminDashboard = () => {
       try {
         // 1. Users
         const usersSnap = await getDocs(collection(db, 'users'));
-        // Filter for real users (must have email)
-        const realUsers = usersSnap.docs.filter(doc => doc.data().email);
+        // Filter for real/active users (must have email AND displayName)
+        const realUsers = usersSnap.docs.filter(doc => {
+          const data = doc.data();
+          return data.email && data.displayName;
+        });
         const totalUsers = realUsers.length;
         
-        // Calculate Active Today (assuming lastActive timestamp exists, otherwise 0)
+        // Calculate Active Today - check both lastActive and lastLogin fields
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         let activeCount = 0;
         realUsers.forEach(doc => {
           const data = doc.data();
-          if (data.lastActive) {
+          // Check both lastActive and lastLogin fields
+          const lastActiveField = data.lastActive || data.lastLogin;
+          if (lastActiveField) {
             // Handle Firestore Timestamp, Date object, or string/number
-            const lastActiveDate = typeof data.lastActive.toDate === 'function' 
-              ? data.lastActive.toDate() 
-              : new Date(data.lastActive);
+            let lastActiveDate;
+            if (typeof lastActiveField.toDate === 'function') {
+              lastActiveDate = lastActiveField.toDate();
+            } else if (typeof lastActiveField === 'string' || typeof lastActiveField === 'number') {
+              lastActiveDate = new Date(lastActiveField);
+            } else {
+              lastActiveDate = new Date(0); // Invalid date
+            }
 
             if (lastActiveDate >= today) {
               activeCount++;
@@ -122,11 +172,10 @@ const AdminDashboard = () => {
         const alertsSnap = await getDocs(query(collection(db, 'system_alerts'), where('status', '==', 'open')));
         const pendingIssues = alertsSnap.size;
 
-        // 4. Activity Logs
-        // Try to fetch from 'system_logs'
+        // 4. Activity Logs - Fetch last 10 with enhanced display
         let activity = [];
         try {
-          const logsQuery = query(collection(db, 'system_logs'), orderBy('timestamp', 'desc'), limit(5));
+          const logsQuery = query(collection(db, 'system_logs'), orderBy('timestamp', 'desc'), limit(10));
           const logsSnap = await getDocs(logsQuery);
           activity = logsSnap.docs.map(doc => {
             const data = doc.data();
@@ -139,6 +188,7 @@ const AdminDashboard = () => {
               if (diff < 60) timeStr = 'Just now';
               else if (diff < 3600) timeStr = `${Math.floor(diff/60)}m ago`;
               else if (diff < 86400) timeStr = `${Math.floor(diff/3600)}h ago`;
+              else if (diff < 604800) timeStr = `${Math.floor(diff/86400)}d ago`;
               else timeStr = date.toLocaleDateString();
             }
             
@@ -150,6 +200,14 @@ const AdminDashboard = () => {
           });
         } catch (e) {
           console.log('No logs collection found or permission denied', e);
+        }
+        
+        // 4b. Get today's activity summary
+        try {
+          const summary = await getTodaysSummary(db);
+          setActivitySummary(summary);
+        } catch (e) {
+          console.log('Could not fetch activity summary', e);
         }
         
         // 5. Fetch Admins
@@ -203,31 +261,59 @@ const AdminDashboard = () => {
 
     try {
       if (metric === 'users') {
-        // Fetch users sorted by creation date (newest first)
-        const usersSnap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50)));
+        // Fetch all users (no orderBy to include users without createdAt)
+        const usersSnap = await getDocs(collection(db, 'users'));
         
-        const users = usersSnap.docs.map(doc => {
-          const data = doc.data();
-          const joinedDate = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleDateString() : 'Unknown';
-          const lastActiveDate = data.lastActive?.toDate ? data.lastActive.toDate().toLocaleDateString() : 'Never';
+        const users = usersSnap.docs
+          .filter(doc => {
+            const data = doc.data();
+            // Only include users with a displayName and email
+            return data.displayName && data.email;
+          })
+          .map(doc => {
+            const data = doc.data();
+            
+            // Helper function to format Firestore timestamps
+            const formatDate = (field) => {
+              if (!field) return null;
+              if (typeof field.toDate === 'function') {
+                return field.toDate().toLocaleDateString();
+              }
+              if (typeof field === 'string' || typeof field === 'number') {
+                const d = new Date(field);
+                return isNaN(d.getTime()) ? null : d.toLocaleDateString();
+              }
+              return null;
+            };
+            
+            // Try multiple fields for joined date
+            const joinedDate = formatDate(data.createdAt) || formatDate(data.arenaEntryDate) || 'Unknown';
+            
+            // Try multiple fields for last active
+            const lastActiveDate = formatDate(data.lastLogin) || formatDate(data.lastActive) || 'Never';
           
-          return {
-            id: doc.id,
-            primary: (
-              <div className="flex flex-col">
-                <span className="font-bold text-corporate-navy">{data.displayName || 'No Name'}</span>
-                <span className="text-xs text-gray-500">{data.email || 'No Email'}</span>
-              </div>
-            ),
-            secondary: (
-              <div className="text-xs text-gray-500">
-                <div>Joined: {joinedDate}</div>
-                <div>Active: {lastActiveDate}</div>
-              </div>
-            ),
-            status: data.role || 'User'
-          };
-        });
+            return {
+              id: doc.id,
+              primary: (
+                <div className="flex flex-col">
+                  <span className="font-bold text-corporate-navy">{data.displayName}</span>
+                  <span className="text-xs text-gray-500">{data.email}</span>
+                </div>
+              ),
+              secondary: (
+                <div className="text-xs text-gray-500">
+                  <div>Joined: {joinedDate}</div>
+                  <div>Active: {lastActiveDate}</div>
+                </div>
+              ),
+              status: data.role || 'user',
+              // Store raw data for sorting
+              _createdAt: data.createdAt?.toDate?.() || data.arenaEntryDate?.toDate?.() || new Date(0)
+            };
+          })
+          // Sort by created date (newest first)
+          .sort((a, b) => b._createdAt - a._createdAt);
+          
         setDetailData(users);
       } else if (metric === 'content') {
         // Show breakdown
@@ -347,7 +433,7 @@ const AdminDashboard = () => {
             <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
               <Users className="w-6 h-6" />
             </div>
-            <span className="text-xs font-bold text-gray-400 uppercase">Total Users</span>
+            <span className="text-xs font-bold text-gray-400 uppercase">Total Active Users</span>
           </div>
           <div className="text-3xl font-bold text-corporate-navy">{stats.totalUsers}</div>
           <div className="text-sm text-green-600 mt-2 flex items-center gap-1">
@@ -492,30 +578,81 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Recent Activity - Enhanced */}
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-bold text-corporate-navy font-serif mb-6">Recent System Activity</h3>
-          <div className="space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-corporate-navy font-serif">Recent System Activity</h3>
+            <button 
+              onClick={async () => {
+                if (window.confirm('Delete logs older than 30 days?')) {
+                  const deleted = await cleanupOldLogs(db, 30);
+                  alert(`Cleaned up ${deleted} old logs`);
+                }
+              }}
+              className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+              title="Clean up old logs"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+          
+          {/* Today's Summary Stats */}
+          <div className="grid grid-cols-4 gap-2 mb-4 p-3 bg-gradient-to-r from-slate-50 to-blue-50 rounded-lg border border-slate-100">
+            <div className="text-center">
+              <div className="text-lg font-bold text-green-600">{activitySummary.signups}</div>
+              <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Sign-ups</div>
+            </div>
+            <div className="text-center border-l border-slate-200">
+              <div className="text-lg font-bold text-blue-600">{activitySummary.logins}</div>
+              <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Logins</div>
+            </div>
+            <div className="text-center border-l border-slate-200">
+              <div className="text-lg font-bold text-purple-600">{activitySummary.completions}</div>
+              <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Completions</div>
+            </div>
+            <div className="text-center border-l border-slate-200">
+              <div className="text-lg font-bold text-slate-600">{activitySummary.adminActions}</div>
+              <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Admin</div>
+            </div>
+          </div>
+          
+          {/* Activity Log List */}
+          <div className="space-y-2 max-h-80 overflow-y-auto">
             {recentActivity.length > 0 ? (
-              recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-corporate-navy text-white flex items-center justify-center font-bold text-sm">
-                      {(activity.user || 'S').charAt(0).toUpperCase()}
+              recentActivity.map((activity) => {
+                const meta = getActivityMeta(activity.type);
+                return (
+                  <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-full ${meta.bgColor} ${meta.textColor} flex items-center justify-center`}>
+                        <ActivityIcon type={activity.type} className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-corporate-navy text-sm">{activity.action || 'Unknown Action'}</div>
+                        <div className="text-xs text-gray-500 flex items-center gap-2">
+                          <span>{activity.user || 'System'}</span>
+                          {activity.details && (
+                            <>
+                              <span className="text-gray-300">•</span>
+                              <span className="text-gray-400 truncate max-w-[150px]">{activity.details}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-medium text-corporate-navy">{activity.action || 'Unknown Action'}</div>
-                      <div className="text-xs text-gray-500">{activity.user || 'System'}</div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400 whitespace-nowrap">
+                      <Clock className="w-3 h-3" />
+                      {activity.time || 'Recently'}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Clock className="w-4 h-4" />
-                    {activity.time || 'Recently'}
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
-              <div className="text-gray-500 italic text-center py-8">No recent activity logs found.</div>
+              <div className="text-gray-500 italic text-center py-8">
+                <Zap className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                <div>No recent activity logs found.</div>
+                <div className="text-xs mt-1">Activity will appear here as users interact with the platform.</div>
+              </div>
             )}
           </div>
         </div>
@@ -525,4 +662,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-

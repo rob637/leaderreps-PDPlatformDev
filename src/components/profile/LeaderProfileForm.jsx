@@ -6,6 +6,9 @@ import {
 } from 'lucide-react';
 import { Card, Button } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
+import { logActivity, ACTIVITY_TYPES } from '../../services/activityLogger';
+import { db } from '../../lib/firebase';
+import { useAuth } from '../../hooks/useAuth';
 
 // Company size options
 const COMPANY_SIZES = [
@@ -79,6 +82,7 @@ const STEPS = [
 
 const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
   const { profile, loading, saving, saveProfile, isComplete: profileAlreadyComplete } = useLeaderProfile();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
@@ -149,6 +153,19 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
     const success = await saveProfile(formData, true);
     
     if (success) {
+      // Log profile completion activity
+      try {
+        await logActivity(db, ACTIVITY_TYPES.PROFILE_COMPLETE, {
+          userId: user?.uid,
+          userName: `${formData.firstName} ${formData.lastName}`,
+          userEmail: formData.email,
+          company: formData.companyName,
+          role: formData.jobTitle || formData.department
+        });
+      } catch (e) {
+        console.error('Failed to log profile completion:', e);
+      }
+      
       setShowSuccess(true);
       setTimeout(() => {
         onComplete?.();

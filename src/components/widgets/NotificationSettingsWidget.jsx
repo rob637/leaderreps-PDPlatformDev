@@ -130,11 +130,9 @@ const NotificationSettingsWidget = () => {
               <Select 
                 value={settings.timezone}
                 onChange={(e) => setSettings({...settings, timezone: e.target.value})}
-              >
-                {COMMON_TIMEZONES.map(tz => (
-                  <option key={tz} value={tz}>{tz}</option>
-                ))}
-              </Select>
+                options={COMMON_TIMEZONES.map(tz => ({ value: tz, label: tz.replace(/_/g, ' ') }))}
+                placeholder="Select your timezone"
+              />
               <p className="text-xs text-gray-500 mt-1">Notifications will be sent based on this time.</p>
             </div>
 

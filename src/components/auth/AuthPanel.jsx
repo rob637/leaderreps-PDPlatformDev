@@ -22,10 +22,12 @@ import {
   setDoc, 
   serverTimestamp,
   getDoc,
-  increment
+  increment,
+  addDoc
 } from 'firebase/firestore';
 import { Loader } from 'lucide-react';
 import { buildModulePath } from '../../services/pathUtils';
+import { ACTIVITY_TYPES, logActivity } from '../../services/activityLogger';
 
 const SECRET_SIGNUP_CODE = '7777';
 
@@ -61,13 +63,15 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
         }
       }
       
-      console.log("AuthPanel: Checking token:", token, "Functions available:", !!functions);
-
+      // No token found - immediately show login form (don't wait for functions)
       if (!token) {
         setCheckingInvite(false);
         return;
       }
 
+      console.log("AuthPanel: Checking token:", token, "Functions available:", !!functions);
+
+      // Token found but functions not ready yet - keep waiting
       if (!functions) {
         console.log("AuthPanel: Waiting for functions...");
         return;
@@ -109,7 +113,23 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
       await setPersistence(auth, browserSessionPersistence);
 
       if (mode === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        // Update lastLogin timestamp in user document
+        try {
+          const userRef = doc(db, 'users', userCredential.user.uid);
+          await updateDoc(userRef, {
+            lastLogin: serverTimestamp()
+          });
+        } catch (e) {
+          console.warn('Could not update lastLogin:', e);
+        }
+        // Log login activity
+        logActivity(db, ACTIVITY_TYPES.USER_LOGIN, {
+          action: 'User Login',
+          userEmail: userCredential.user.email,
+          userId: userCredential.user.uid,
+          details: 'Successful login'
+        });
         onSuccess();
       } else if (mode === 'reset') {
         if (!email) throw new Error('Email is required for password reset.');
@@ -146,6 +166,14 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
         if (inviteData && db) {
             try {
                 console.log("[AuthPanel] Processing invite acceptance, inviteData:", inviteData);
+                
+                // Log signup activity
+                logActivity(db, ACTIVITY_TYPES.USER_SIGNUP, {
+                  action: 'New User Sign-up',
+                  userEmail: userCredential.user.email,
+                  userId: userCredential.user.uid,
+                  details: inviteData.cohortId ? `Cohort: ${inviteData.cohortId}` : 'Direct signup'
+                });
                 
                 // Call Cloud Function to accept invite
                 // The function handles: marking accepted, adding admin email, and saving user profile
@@ -198,6 +226,14 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                 console.error("Error processing invite acceptance:", err);
                 // Don't block login if this fails, but log it
             }
+        } else if (db) {
+            // Log signup for non-invite users
+            logActivity(db, ACTIVITY_TYPES.USER_SIGNUP, {
+              action: 'New User Sign-up',
+              userEmail: userCredential.user.email,
+              userId: userCredential.user.uid,
+              details: 'Direct signup with secret code'
+            });
         }
 
         onSuccess();
@@ -252,6 +288,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                 displayName: result.user.displayName,
                 photoURL: result.user.photoURL,
                 createdAt: serverTimestamp(),
+                lastLogin: serverTimestamp(),
                 arenaEntryDate: serverTimestamp(), // When user first entered the arena
                 role: 'user' // Default role
             });
@@ -271,6 +308,11 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                     currentPlan: null
                 });
             }
+        } else {
+            // Existing user - update lastLogin
+            await updateDoc(userRef, {
+              lastLogin: serverTimestamp()
+            });
         }
       }
 

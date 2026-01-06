@@ -1480,7 +1480,7 @@ render(<NotificationsWidget />);
     'dev-plan-focus-areas': `
 <Card title="Focus Areas" icon={Crosshair} accent="TEAL">
   <div className="space-y-3">
-    {plan.focusAreas && plan.focusAreas.map((area, index) => (
+    {plan && plan.focusAreas && plan.focusAreas.map((area, index) => (
       <div key={index} className="p-4 bg-slate-50 rounded-lg border border-slate-100">
         <h3 className="font-bold text-corporate-navy mb-1">
           {area.name}
@@ -1500,12 +1500,13 @@ render(<NotificationsWidget />);
 </Card>
     `,
     'dev-plan-goal': `
+{plan && plan.openEndedAnswer && (
 <Card title="Your Goal" icon={Flag} accent="ORANGE">
   <p className="text-slate-700 italic border-l-4 border-corporate-orange pl-4 py-1">
     "{plan.openEndedAnswer}"
   </p>
-
 </Card>
+)}
     `,
     'daily-quote': `(() => {
   // Helper to parse quote

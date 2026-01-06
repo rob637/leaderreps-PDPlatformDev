@@ -3,11 +3,15 @@ export const ZONE_CONFIG = {
     'development-plan'
   ],
   'development-plan': [
+    'development-plan',
+    'dev-plan-tracker',
     'dev-plan-header',
     'dev-plan-stats',
     'dev-plan-actions',
     'dev-plan-focus-areas',
     'dev-plan-goal',
-    'development-plan'
+    'dev-plan-roadmap',
+    'dev-plan-timeline',
+    'dev-plan-details'
   ]
 };

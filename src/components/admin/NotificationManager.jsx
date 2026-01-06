@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { Card, Button, Input, Select, Badge } from '../ui';
-import { Trash2, Edit2, Plus, Bell, Clock, AlertCircle } from 'lucide-react';
+import { Trash2, Edit2, Plus, Bell, Clock, AlertCircle, Send, Mail, MessageSquare } from 'lucide-react';
 
 const CRITERIA_OPTIONS = [
   { value: 'am_bookend_incomplete', label: 'AM Bookend Not Done' },
@@ -17,6 +17,13 @@ const NotificationManager = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [currentRule, setCurrentRule] = useState(null);
+  const [testingNotification, setTestingNotification] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  
+  // Test Form State
+  const [testEmail, setTestEmail] = useState('');
+  const [testPhone, setTestPhone] = useState('');
+  const [testMessage, setTestMessage] = useState('This is a test notification from LeaderReps!');
 
   // Form State
   const [formData, setFormData] = useState({
@@ -87,6 +94,47 @@ const NotificationManager = () => {
     setIsEditing(true);
   };
 
+  const handleTestNotification = async () => {
+    if (!testEmail && !testPhone) {
+      setTestResult({ success: false, message: 'Please enter an email or phone number' });
+      return;
+    }
+    
+    setTestingNotification(true);
+    setTestResult(null);
+    
+    try {
+      const response = await fetch('https://us-central1-leaderreps-pd-platform.cloudfunctions.net/sendTestEmailSms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: testEmail || null,
+          phone: testPhone || null,
+          message: testMessage,
+          type: 'both'
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        const messages = [];
+        if (data.results?.email?.success) messages.push(`Email sent to ${testEmail}`);
+        if (data.results?.email?.success === false) messages.push(`Email failed: ${data.results.email.error}`);
+        if (data.results?.sms?.success) messages.push(`SMS sent to ${testPhone}`);
+        if (data.results?.sms?.success === false) messages.push(`SMS failed: ${data.results.sms.error}`);
+        
+        setTestResult({ success: true, message: messages.join(' | ') || 'Test completed' });
+      } else {
+        setTestResult({ success: false, message: data.error || 'Test failed' });
+      }
+    } catch (error) {
+      setTestResult({ success: false, message: error.message });
+    } finally {
+      setTestingNotification(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -111,6 +159,62 @@ const NotificationManager = () => {
           Add Rule
         </Button>
       </div>
+
+      {/* Test Notification Section */}
+      <Card className="p-6 bg-blue-50 border-blue-200">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Send className="w-5 h-5" />
+          Test Notifications
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Send a test email and/or SMS to verify the notification system is working properly.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <Mail className="w-4 h-4" /> Email Address
+            </label>
+            <Input 
+              type="email"
+              value={testEmail} 
+              onChange={(e) => setTestEmail(e.target.value)}
+              placeholder="test@example.com"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <MessageSquare className="w-4 h-4" /> Phone Number
+            </label>
+            <Input 
+              type="tel"
+              value={testPhone} 
+              onChange={(e) => setTestPhone(e.target.value)}
+              placeholder="+15551234567"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Test Message</label>
+            <Input 
+              value={testMessage} 
+              onChange={(e) => setTestMessage(e.target.value)}
+              placeholder="Test notification message"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-4 mt-4">
+          <Button 
+            onClick={handleTestNotification} 
+            disabled={testingNotification || (!testEmail && !testPhone)}
+          >
+            {testingNotification ? 'Sending...' : 'Send Test Notification'}
+          </Button>
+          {testResult && (
+            <div className={`text-sm ${testResult.success ? 'text-green-600' : 'text-red-600'}`}>
+              {testResult.message}
+            </div>
+          )}
+        </div>
+      </Card>
 
       {isEditing && (
         <Card className="p-6 bg-gray-50 border-blue-200">
@@ -172,7 +276,7 @@ const NotificationManager = () => {
       )}
 
       <div className="grid gap-4">
-        {rules.map(rule => (
+        {[...rules].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00')).map(rule => (
           <Card key={rule.id} className="p-4 flex justify-between items-center">
             <div className="flex items-start gap-4">
               <div className={`p-2 rounded-full ${rule.enabled ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>

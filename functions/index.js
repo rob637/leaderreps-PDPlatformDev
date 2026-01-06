@@ -5,6 +5,7 @@
  * - scheduledDailyRollover: Runs at 11:59 PM to archive daily data and reset for the new day
  * - manualRollover: HTTP endpoint to manually trigger rollover for a specific user (catch-up)
  * - geminiProxy: Secure proxy for Gemini AI API calls
+ * - scheduledNotificationCheck: Checks for scheduled notifications every 15 minutes
  */
 
 // const { setGlobalOptions } = require("firebase-functions");
@@ -16,6 +17,7 @@ const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const nodemailer = require("nodemailer");
+const twilio = require("twilio");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -914,6 +916,49 @@ exports.sendTestNotification = onRequest(
 );
 
 /**
+ * SEND TEST EMAIL/SMS NOTIFICATION
+ * Admin endpoint to test email and SMS notifications.
+ * Usage: POST /sendTestEmailSms with body: { email, phone, message }
+ */
+exports.sendTestEmailSms = onRequest(
+  {
+    cors: true,
+  },
+  async (req, res) => {
+    const { email, phone, message, type } = req.body;
+    const testMessage = message || "This is a test notification from LeaderReps!";
+    const results = { email: null, sms: null };
+
+    try {
+      // Send Email
+      if (email && (!type || type === 'email' || type === 'both')) {
+        try {
+          await sendEmailNotification(email, "Test Notification", testMessage);
+          results.email = { success: true, sentTo: email };
+        } catch (e) {
+          results.email = { success: false, error: e.message };
+        }
+      }
+
+      // Send SMS
+      if (phone && (!type || type === 'sms' || type === 'both')) {
+        try {
+          await sendSmsNotification(phone, testMessage);
+          results.sms = { success: true, sentTo: phone };
+        } catch (e) {
+          results.sms = { success: false, error: e.message };
+        }
+      }
+
+      res.json({ success: true, results });
+    } catch (error) {
+      logger.error("Test email/sms error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
  * SCHEDULED NOTIFICATION CHECK
  * Runs every 15 minutes to check for scheduled notifications based on user timezones.
  */
@@ -1022,9 +1067,9 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
         await sendEmailNotification(user.email, rule.name, rule.message);
       }
 
-      // SMS
+      // SMS via Twilio
       if (settings.channels?.sms && settings.phoneNumber) {
-        logger.info(`[SMS] To: ${settings.phoneNumber} | Msg: ${rule.message}`);
+        await sendSmsNotification(settings.phoneNumber, rule.message);
       }
     }
 
@@ -1034,6 +1079,30 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
     logger.error("Error in scheduledNotificationCheck", error);
   }
 });
+
+// Helper to send SMS via Twilio
+async function sendSmsNotification(phoneNumber, message) {
+  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+  const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
+  const twilioFrom = process.env.TWILIO_PHONE_NUMBER;
+
+  if (!twilioSid || !twilioAuth || !twilioFrom) {
+    logger.warn("Twilio credentials not configured. SMS not sent.");
+    return;
+  }
+
+  try {
+    const client = twilio(twilioSid, twilioAuth);
+    const result = await client.messages.create({
+      body: `LeaderReps: ${message}`,
+      from: twilioFrom,
+      to: phoneNumber
+    });
+    logger.info(`SMS sent to ${phoneNumber}: ${result.sid}`);
+  } catch (e) {
+    logger.error(`Failed to send SMS to ${phoneNumber}`, e);
+  }
+}
 
 // Helper to send email
 async function sendEmailNotification(email, subject, message) {

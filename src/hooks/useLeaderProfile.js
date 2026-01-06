@@ -113,28 +113,22 @@ export const useLeaderProfile = () => {
 
       await setDoc(profileRef, dataToSave, { merge: true });
 
-      // Sync notification settings to main user doc
+      // Sync notification settings to main user doc (used by NotificationSettingsWidget in Locker)
       if (profileData.notificationSettings || profileData.phoneNumber || profileData.timezone) {
         const userRef = doc(db, 'users', user.uid);
-        const updates = {};
         
-        if (profileData.notificationSettings) {
-          updates['notificationSettings'] = profileData.notificationSettings;
-        }
-        
-        // Ensure phone number is synced if changed here
-        if (profileData.phoneNumber) {
-          updates['notificationSettings.phoneNumber'] = profileData.phoneNumber;
-        }
+        // Build complete notification settings object that matches NotificationSettingsWidget format
+        const notificationSettings = {
+          enabled: true, // If they're setting preferences, enable notifications
+          timezone: profileData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
+          channels: {
+            email: profileData.notificationSettings?.channels?.email ?? true,
+            sms: profileData.notificationSettings?.channels?.sms ?? false
+          },
+          phoneNumber: profileData.phoneNumber || ''
+        };
 
-        // Ensure timezone is synced
-        if (profileData.timezone) {
-          updates['notificationSettings.timezone'] = profileData.timezone;
-        }
-
-        if (Object.keys(updates).length > 0) {
-          await updateDoc(userRef, updates).catch(err => console.warn("Failed to sync user settings", err));
-        }
+        await updateDoc(userRef, { notificationSettings }).catch(err => console.warn("Failed to sync user settings", err));
       }
       
       setProfile(prev => ({
