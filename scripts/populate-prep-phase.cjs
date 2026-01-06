@@ -35,10 +35,18 @@ const db = admin.firestore();
 // These are all available from Day 1 and can be completed in any order
 const PREP_ACTIONS = [
   // REQUIRED ITEMS (5) - Must complete before Session One
+  // NOTE: Leader Profile and Baseline Assessment are now INTERACTIVE content items
+  // They are handled directly in ThisWeeksActionsWidget with IDs:
+  //   - interactive-leader-profile
+  //   - interactive-baseline-assessment
+  // These items below are kept for legacy compatibility but filtered out in the widget
   {
     id: 'action-prep-leader-profile',
     label: 'Complete Your Leader Profile',
-    type: 'onboarding',
+    type: 'interactive',
+    resourceId: 'interactive-leader-profile',
+    resourceType: 'INTERACTIVE',
+    handlerType: 'leader-profile',
     description: 'Tell us about yourself to personalize your journey',
     required: true,
     optional: false,
@@ -48,8 +56,11 @@ const PREP_ACTIONS = [
   },
   {
     id: 'action-prep-baseline-assessment',
-    label: 'Complete Baseline Assessment',
-    type: 'onboarding',
+    label: 'Take Baseline Assessment',
+    type: 'interactive',
+    resourceId: 'interactive-baseline-assessment',
+    resourceType: 'INTERACTIVE',
+    handlerType: 'baseline-assessment',
     description: 'Assess your current leadership skills',
     required: true,
     optional: false,

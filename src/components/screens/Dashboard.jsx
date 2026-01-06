@@ -26,14 +26,14 @@ import { FadeIn, Stagger } from '../motion';
 import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import PrepGate from '../ui/PrepGate';
 import ProgramStatusWidget from '../widgets/ProgramStatusWidget';
-import LeaderProfileWidget from '../widgets/LeaderProfileWidget';
-import BaselineAssessmentWidget from '../widgets/BaselineAssessmentWidget';
+// NOTE: LeaderProfileWidget and BaselineAssessmentWidget removed - now handled as 
+// INTERACTIVE content items in ThisWeeksActionsWidget
 
 const DASHBOARD_FEATURES = [
   'program-status-debug',
   'prep-welcome-banner',  // Moved to top - welcome banner should be first in Prep Phase
-  'leader-profile',
-  'baseline-assessment',
+  // 'leader-profile',      // REMOVED - now in ThisWeeksActionsWidget as INTERACTIVE
+  // 'baseline-assessment', // REMOVED - now in ThisWeeksActionsWidget as INTERACTIVE
   'welcome-message',
   'daily-quote',
   'am-bookend-header',

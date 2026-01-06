@@ -58,18 +58,17 @@ async function configurePrepDay1() {
     // Dashboard Widget Visibility (Lock & Key)
     dashboard: {
       'program-status-debug': true,
-      'leader-profile': true,         // SHOW - Profile completion
-      'baseline-assessment': true,    // SHOW - Assessment completion
+      // 'leader-profile' and 'baseline-assessment' REMOVED - now handled as INTERACTIVE content in this-weeks-actions
       'prep-welcome-banner': true,    // SHOW - Welcome message
       'welcome-message': true,        // SHOW - Greeting
       'daily-quote': true,            // SHOW - Inspirational
       'weekly-focus': true,           // SHOW - Today's focus
+      'this-weeks-actions': true,     // SHOW - Contains Leader Profile & Baseline Assessment as INTERACTIVE items
       
       // Hide during Prep Phase
       'am-bookend-header': false,
       'win-the-day': false,
       'daily-leader-reps': false,
-      'this-weeks-actions': false,
       'grounding-rep': false,
       'pm-bookend-header': false,
       'pm-bookend': false,

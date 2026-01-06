@@ -28,7 +28,8 @@ export const CONTENT_TYPES = {
   VIDEO: 'VIDEO',
   TOOL: 'TOOL',
   DOCUMENT: 'DOCUMENT',
-  SKILL: 'SKILL'
+  SKILL: 'SKILL',
+  INTERACTIVE: 'INTERACTIVE'  // For in-app forms like Leader Profile, Baseline Assessment
 };
 
 // Content Status Enum

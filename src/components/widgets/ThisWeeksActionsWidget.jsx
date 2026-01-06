@@ -15,6 +15,8 @@ import CoachingActionItem from '../coaching/CoachingActionItem';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
+import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
+import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
 
 // Helper function to generate Google Calendar URL
 const generateCalendarUrl = (calendarEvent) => {
@@ -42,10 +44,15 @@ const generateCalendarUrl = (calendarEvent) => {
 };
 
 const ThisWeeksActionsWidget = () => {
-  const { db } = useAppServices();
+  const { db, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const [viewingResource, setViewingResource] = useState(null);
   const [loadingResource, setLoadingResource] = useState(false);
   // const [showSkipConfirm, setShowSkipConfirm] = useState(null);
+  
+  // Interactive content modals
+  const [showLeaderProfileModal, setShowLeaderProfileModal] = useState(false);
+  const [showBaselineModal, setShowBaselineModal] = useState(false);
+  const [savingBaseline, setSavingBaseline] = useState(false);
 
   // Use Daily Plan Hook (New Architecture)
   const { 
@@ -161,7 +168,7 @@ const ThisWeeksActionsWidget = () => {
       // Let's stick to currentDayData for Prep Phase as it handles the logic best
       const dailyNormalized = normalizeDailyActions(currentDayData?.actions, currentDayData?.id, currentDayData?.dayNumber);
       
-      // Filter out Leader Profile and Baseline Assessment from daily actions (handled by onboarding tasks)
+      // Filter out Leader Profile and Baseline Assessment from daily actions (handled by interactive content)
       const onboardingLabels = ['leader profile', 'baseline assessment'];
       const filteredDailyActions = dailyNormalized.filter(action => {
         const labelLower = (action.label || '').toLowerCase();
@@ -170,38 +177,39 @@ const ThisWeeksActionsWidget = () => {
         return true;
       });
       
-      // Only show onboarding tasks on Day 1 of journey
-      if (journeyDay === 1) {
-        const onboardingTasks = [
-          {
-            id: 'onboarding-leader-profile',
-            type: 'onboarding',
-            label: 'Complete Your Leader Profile',
-            required: true,
-            category: 'Onboarding',
-            fromDailyPlan: false,
-            isOnboardingTask: true,
-            autoComplete: leaderProfileComplete,
-            icon: 'User',
-            description: 'Tell us about yourself to personalize your journey'
-          },
-          {
-            id: 'onboarding-baseline-assessment',
-            type: 'onboarding',
-            label: 'Take Baseline Assessment',
-            required: true,
-            category: 'Onboarding',
-            fromDailyPlan: false,
-            isOnboardingTask: true,
-            autoComplete: baselineAssessmentComplete,
-            icon: 'ClipboardCheck',
-            description: 'Assess your current leadership skills'
-          }
-        ];
-        return [...onboardingTasks, ...filteredDailyActions];
-      }
-      
-      return filteredDailyActions;
+      // Interactive content items (Leader Profile & Baseline Assessment)
+      // These are now managed in content_library as INTERACTIVE type
+      const interactiveItems = [
+        {
+          id: 'interactive-leader-profile',
+          type: 'INTERACTIVE',
+          handlerType: 'leader-profile',
+          label: 'Complete Your Leader Profile',
+          required: true,
+          category: 'Onboarding',
+          fromDailyPlan: false,
+          isInteractive: true,
+          autoComplete: leaderProfileComplete,
+          icon: 'User',
+          description: 'Tell us about yourself to personalize your journey',
+          estimatedMinutes: 3
+        },
+        {
+          id: 'interactive-baseline-assessment',
+          type: 'INTERACTIVE',
+          handlerType: 'baseline-assessment',
+          label: 'Take Baseline Assessment',
+          required: true,
+          category: 'Onboarding',
+          fromDailyPlan: false,
+          isInteractive: true,
+          autoComplete: baselineAssessmentComplete,
+          icon: 'ClipboardCheck',
+          description: 'Assess your current leadership skills',
+          estimatedMinutes: 5
+        }
+      ];
+      return [...interactiveItems, ...filteredDailyActions];
     }
     
     // Start/Post phase = Show actions for the CURRENT WEEK
@@ -304,6 +312,7 @@ const ThisWeeksActionsWidget = () => {
       case 'COURSE': return Layers;
       case 'COMMUNITY': return Users;
       case 'COACHING': return MessageSquare;
+      case 'INTERACTIVE': return User;  // Interactive content items
       default: return Circle;
     }
   };
@@ -340,6 +349,32 @@ const ThisWeeksActionsWidget = () => {
   //     toggleDailyItem(item.dayId, itemId, true);
   //   }
   // };
+  
+  // Handler for INTERACTIVE content items (Leader Profile, Baseline Assessment)
+  const handleInteractiveClick = (item) => {
+    if (item.handlerType === 'leader-profile') {
+      setShowLeaderProfileModal(true);
+    } else if (item.handlerType === 'baseline-assessment') {
+      setShowBaselineModal(true);
+    }
+  };
+  
+  // Handler for Baseline Assessment completion
+  const handleBaselineComplete = async (assessment) => {
+    setSavingBaseline(true);
+    try {
+      const newHistory = [...(developmentPlanData?.assessmentHistory || []), assessment];
+      await updateDevelopmentPlanData({
+        assessmentHistory: newHistory,
+        'currentPlan.focusAreas': assessment.focusAreas || []
+      });
+      setShowBaselineModal(false);
+    } catch (error) {
+      console.error('Error saving baseline assessment:', error);
+    } finally {
+      setSavingBaseline(false);
+    }
+  };
 
   const handleViewResource = async (e, item) => {
     e.stopPropagation();
@@ -423,11 +458,12 @@ const ThisWeeksActionsWidget = () => {
   // Action Item Renderer
   const ActionItem = ({ item, isCarriedOver = false }) => {
     const progress = getItemProgress(item.id);
-    const isCompleted = item.isOnboardingTask 
+    // Interactive items use autoComplete (derived from hooks), others use progress tracking
+    const isCompleted = item.isInteractive 
       ? item.autoComplete 
       : (progress.status === 'completed' || completedItems.includes(item.id));
     const isSkipped = progress.status === 'skipped';
-    const Icon = item.isOnboardingTask 
+    const Icon = item.isInteractive 
       ? (item.icon === 'User' ? User : ClipboardCheck)
       : getIcon(item.type);
     
@@ -448,11 +484,24 @@ const ThisWeeksActionsWidget = () => {
       return 'text-blue-600';
     };
     
+    // Determine click handler for the main row
+    const handleRowClick = () => {
+      if (item.isInteractive && !isCompleted) {
+        handleInteractiveClick(item);
+      }
+    };
+    
     return (
-      <div className={`group flex items-start gap-3 p-3 rounded-xl border transition-all ${getCategoryStyles()}`}>
+      <div 
+        className={`group flex items-start gap-3 p-3 rounded-xl border transition-all ${getCategoryStyles()} ${item.isInteractive && !isCompleted ? 'cursor-pointer' : ''}`}
+        onClick={item.isInteractive && !isCompleted ? handleRowClick : undefined}
+      >
         <div
-          onClick={item.isOnboardingTask ? undefined : () => handleToggle(item)}
-          className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${item.isOnboardingTask ? '' : 'cursor-pointer touch-manipulation active:scale-90'} ${getCheckboxStyles()}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!item.isInteractive) handleToggle(item);
+          }}
+          className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${item.isInteractive ? '' : 'cursor-pointer touch-manipulation active:scale-90'} ${getCheckboxStyles()}`}
         >
           {isCompleted && <CheckCircle className="w-4 h-4 text-white" />}
         </div>
@@ -462,13 +511,13 @@ const ThisWeeksActionsWidget = () => {
             <p className={`text-sm font-bold ${isCompleted ? 'text-emerald-700 line-through' : 'text-slate-700'}`}>
               {item.label || item.title || 'Untitled Action'}
             </p>
-            {item.isOnboardingTask && !isCompleted && (
+            {item.isInteractive && !isCompleted && (
               <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded uppercase tracking-wider">Auto-tracks</span>
             )}
-            {!item.isOnboardingTask && item.required !== false && !item.optional && !isCarriedOver && (
+            {!item.isInteractive && item.required !== false && !item.optional && !isCarriedOver && (
               <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
             )}
-            {!item.isOnboardingTask && item.optional && !isCarriedOver && (
+            {!item.isInteractive && item.optional && !isCarriedOver && (
               <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">Optional</span>
             )}
             {isCarriedOver && (
@@ -480,7 +529,7 @@ const ThisWeeksActionsWidget = () => {
           
           <div className={`flex items-center gap-2 text-xs ${getIconColor()}`}>
             <Icon className="w-3 h-3" />
-            {item.isOnboardingTask ? (
+            {item.isInteractive ? (
               <span className="text-slate-600">{item.description}</span>
             ) : (
               <>
@@ -510,7 +559,21 @@ const ThisWeeksActionsWidget = () => {
             </a>
           )}
 
-          {(item.resourceId || item.url) && (
+          {/* Interactive items get a click button to open modal */}
+          {item.isInteractive && !isCompleted && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleInteractiveClick(item);
+              }}
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-xl transition-all"
+            >
+              <ExternalLink className="w-5 h-5" />
+            </button>
+          )}
+
+          {/* Regular content items with resources */}
+          {!item.isInteractive && (item.resourceId || item.url) && (
             <button
               onClick={(e) => handleViewResource(e, item)}
               className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-xl transition-all"
@@ -584,6 +647,39 @@ const ThisWeeksActionsWidget = () => {
           </div>
         )}
       </Card>
+      
+      {/* Leader Profile Modal */}
+      {showLeaderProfileModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg my-8">
+            <LeaderProfileFormSimple 
+              onComplete={() => setShowLeaderProfileModal(false)}
+              onClose={() => setShowLeaderProfileModal(false)}
+            />
+          </div>
+        </div>
+      )}
+      
+      {/* Baseline Assessment Modal */}
+      {showBaselineModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg my-8">
+            <button 
+              onClick={() => setShowBaselineModal(false)}
+              className="absolute -top-2 -right-2 z-10 p-2 rounded-full bg-white shadow-lg text-slate-500 hover:text-slate-700"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <BaselineAssessmentSimple 
+              onComplete={handleBaselineComplete}
+              isLoading={savingBaseline}
+              initialData={developmentPlanData?.assessmentHistory?.[developmentPlanData.assessmentHistory.length - 1]}
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -2976,26 +2976,30 @@ export const FEATURE_METADATA = {
     outputs: [],
   },
   'leader-profile': {
-    core: true,
+    core: false,  // DEPRECATED - Now handled as INTERACTIVE content in ThisWeeksActionsWidget
     category: 'Dashboard',
-    name: 'Leader Profile',
+    name: 'Leader Profile (Legacy)',
     description: 'Complete Your Leader Profile',
-    purpose: 'Onboarding profile completion widget.',
-    extendedDescription: 'Prompts users to complete their leadership profile during Prep Phase. Collects personal info, professional context, and goals to personalize the Foundation experience.',
+    purpose: 'DEPRECATED: Now handled as INTERACTIVE content type in ThisWeeksActionsWidget.',
+    extendedDescription: 'Legacy widget. Leader Profile is now managed as an INTERACTIVE content item in the Content Library and appears inline in the Actions list.',
     inputs: ['userProfile'],
     outputs: ['saveProfile'],
     componentPath: 'src/components/widgets/LeaderProfileWidget.jsx',
+    deprecated: true,
+    replacedBy: 'INTERACTIVE content type (interactive-leader-profile)'
   },
   'baseline-assessment': {
-    core: true,
+    core: false,  // DEPRECATED - Now handled as INTERACTIVE content in ThisWeeksActionsWidget
     category: 'Dashboard',
-    name: 'Baseline Assessment',
+    name: 'Baseline Assessment (Legacy)',
     description: 'Complete Your Baseline Assessment',
-    purpose: 'Leadership skills self-assessment and goal setting.',
-    extendedDescription: 'Prompts users to assess their current leadership skills and set 1-3 development goals. Creates the foundation for their personalized Development Plan.',
+    purpose: 'DEPRECATED: Now handled as INTERACTIVE content type in ThisWeeksActionsWidget.',
+    extendedDescription: 'Legacy widget. Baseline Assessment is now managed as an INTERACTIVE content item in the Content Library and appears inline in the Actions list.',
     inputs: ['developmentPlanData'],
     outputs: ['assessmentHistory'],
     componentPath: 'src/components/widgets/BaselineAssessmentWidget.jsx',
+    deprecated: true,
+    replacedBy: 'INTERACTIVE content type (interactive-baseline-assessment)'
   },
   'prep-welcome-banner': {
     core: true,
