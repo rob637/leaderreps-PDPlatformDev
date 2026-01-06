@@ -95,7 +95,6 @@ export const PageLayout = ({
               <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                 {title}
               </h1>
-              {Icon && <Icon className={`w-7 h-7 ${iconColorClass}`} />}
             </div>
             
             {sub && (
