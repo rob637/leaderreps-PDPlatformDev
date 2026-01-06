@@ -5,13 +5,13 @@ service cloud.firestore {
     
     // Helper function to check if user is admin
     // Checks hardcoded admin list first, then dynamic admin lists in metadata
-    // Note: Case-sensitive comparison - ensure emails are stored lowercase
+    // All comparisons are case-insensitive (emails converted to lowercase)
     function isAdmin() {
       let hardcodedAdmins = ['rob@sagecg.com', 'admin@leaderreps.com', 'ryan@leaderreps.com'];
-      let userEmail = request.auth.token.email;
+      let userEmail = request.auth.token.email.lower();
       
       return request.auth != null && (
-        // 1. Check hardcoded admin list
+        // 1. Check hardcoded admin list (lowercase comparison)
         userEmail in hardcodedAdmins ||
         // 2. Check metadata/config for dynamic admin list
         (exists(/databases/$(database)/documents/metadata/config) && 
