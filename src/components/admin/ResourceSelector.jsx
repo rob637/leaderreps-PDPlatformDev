@@ -11,7 +11,8 @@ import {
   Users,
   MessageSquare,
   PlusCircle,
-  Layers
+  Layers,
+  ClipboardEdit
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { getAllContentAdmin, CONTENT_COLLECTIONS } from '../../services/contentService';
@@ -56,15 +57,16 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
         switch (activeCategory) {
           case 'content':
-            // Fetch from Wrappers (Videos, Docs, Courses) and Unified (Read & Reps)
+            // Fetch from Wrappers (Videos, Docs, Courses) and Unified (Read & Reps, Interactive)
             collections = [
               CONTENT_COLLECTIONS.COURSES
             ];
-            // Fetch Read & Reps, Videos, and Documents from Unified Collection
+            // Fetch Read & Reps, Videos, Documents, and Interactive from Unified Collection
             unifiedTypes = [
               UNIFIED_TYPES?.READ_REP || 'READ_REP',
               UNIFIED_TYPES?.VIDEO || 'VIDEO',
-              UNIFIED_TYPES?.DOCUMENT || 'DOCUMENT'
+              UNIFIED_TYPES?.DOCUMENT || 'DOCUMENT',
+              UNIFIED_TYPES?.INTERACTIVE || 'INTERACTIVE'
             ];
             console.log('[ResourceSelector] Fetching Unified Types:', unifiedTypes);
             break;
@@ -111,6 +113,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               if (itemType === (UNIFIED_TYPES?.READ_REP || 'READ_REP')) type = 'read_rep';
               else if (itemType === (UNIFIED_TYPES?.VIDEO || 'VIDEO') || itemType === (UNIFIED_TYPES?.REP || 'REP')) type = 'video';
               else if (itemType === (UNIFIED_TYPES?.DOCUMENT || 'DOCUMENT')) type = 'document';
+              else if (itemType === (UNIFIED_TYPES?.INTERACTIVE || 'INTERACTIVE')) type = 'interactive';
               
               return { 
                 ...item, 
@@ -236,6 +239,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
       case 'course': return Layers;
       case 'community': return Users;
       case 'coaching': return MessageSquare;
+      case 'interactive': return ClipboardEdit;
       default: return LinkIcon;
     }
   };
@@ -259,6 +263,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               selectedResource.resourceType === 'course' ? 'bg-purple-100 text-purple-600' :
               selectedResource.resourceType === 'community' ? 'bg-green-100 text-green-600' :
               selectedResource.resourceType === 'coaching' ? 'bg-indigo-100 text-indigo-600' :
+              selectedResource.resourceType === 'interactive' ? 'bg-teal-100 text-teal-600' :
               'bg-slate-100 text-slate-600'
             }`}>
               {React.createElement(getIcon(selectedResource.resourceType), { size: 12 })}
@@ -357,6 +362,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
                           resource.resourceType === 'course' ? 'bg-purple-100 text-purple-600' :
                           resource.resourceType === 'community' ? 'bg-green-100 text-green-600' :
                           resource.resourceType === 'coaching' ? 'bg-indigo-100 text-indigo-600' :
+                          resource.resourceType === 'interactive' ? 'bg-teal-100 text-teal-600' :
                           'bg-slate-100 text-slate-600'
                         }`}>
                           <Icon size={16} />
