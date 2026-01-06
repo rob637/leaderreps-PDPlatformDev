@@ -1,12 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   Target, Rocket, Calendar, Quote, 
-  ChevronRight, Users
+  ChevronRight, Users, Info
 } from 'lucide-react';
 import { useDailyPlan, ONBOARDING_MODULES } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
 import { useAppServices } from '../../services/useAppServices';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
+import FacilitatorProfileModal from './FacilitatorProfileModal';
 
 /**
  * PrepWelcomeBanner - Progressive Onboarding for Prep Phase
@@ -26,6 +27,7 @@ const PrepWelcomeBanner = () => {
   const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay, currentDayData, userState } = useDailyPlan();
   const { getItemProgress } = useActionProgress();
   const { isComplete: leaderProfileComplete } = useLeaderProfile();
+  const [showFacilitatorModal, setShowFacilitatorModal] = useState(false);
 
   // Baseline Assessment completion tracking
   const baselineAssessmentComplete = useMemo(() => {
@@ -291,18 +293,38 @@ const PrepWelcomeBanner = () => {
               {getSubtext()}
             </p>
 
-            {/* Facilitator Introduction - Show on Day 1 if available */}
+            {/* Facilitator Introduction - Show on Day 1 if available, clickable for more info */}
             {effectiveJourneyDay === 1 && facilitator && (
-              <div className="flex items-center gap-3 bg-white/5 rounded-lg px-4 py-3 border border-white/10">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-corporate-teal to-corporate-navy flex items-center justify-center text-white font-bold text-sm">
-                  {facilitator.name?.charAt(0) || '?'}
+              <button
+                onClick={() => setShowFacilitatorModal(true)}
+                className="flex items-center gap-3 bg-white/5 hover:bg-white/10 rounded-lg px-4 py-3 border border-white/10 hover:border-white/20 transition-all group text-left"
+              >
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-corporate-teal to-corporate-navy flex items-center justify-center text-white font-bold text-sm overflow-hidden">
+                  {facilitator.photoUrl ? (
+                    <img 
+                      src={facilitator.photoUrl} 
+                      alt={facilitator.name}
+                      className="w-10 h-10 object-cover"
+                    />
+                  ) : (
+                    facilitator.name?.charAt(0) || '?'
+                  )}
                 </div>
-                <div>
-                  <p className="text-white font-medium text-sm">{facilitator.name}</p>
-                  <p className="text-slate-400 text-xs">Your Facilitator</p>
+                <div className="flex-1">
+                  <p className="text-white font-medium text-sm group-hover:text-corporate-teal transition-colors">{facilitator.name}</p>
+                  <p className="text-slate-400 text-xs">Your Facilitator • Tap for details</p>
                 </div>
-              </div>
+                <Info className="w-4 h-4 text-white/30 group-hover:text-corporate-teal transition-colors" />
+              </button>
             )}
+
+            {/* Facilitator Profile Modal */}
+            <FacilitatorProfileModal
+              facilitator={facilitator}
+              cohortName={cohortName}
+              isOpen={showFacilitatorModal}
+              onClose={() => setShowFacilitatorModal(false)}
+            />
 
             {/* Call to Action - Simple and direct */}
             {hasIncompleteRequiredActions && (

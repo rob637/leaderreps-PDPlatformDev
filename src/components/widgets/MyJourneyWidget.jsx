@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { 
   Compass, Calendar, User, Users, Rocket, 
-  Clock, ChevronRight, Shield, Settings
+  Clock, ChevronRight, Shield, Settings, Info
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useDailyPlan, PHASES } from '../../hooks/useDailyPlan';
 import { useAppServices } from '../../services/useAppServices';
+import FacilitatorProfileModal from './FacilitatorProfileModal';
 
 /**
  * MyJourneyWidget - Shows user's cohort and journey progress in Locker
@@ -30,6 +31,7 @@ const MyJourneyWidget = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [password, setPassword] = useState('');
   const [newCount, setNewCount] = useState(journeyDay || 1);
+  const [showFacilitatorModal, setShowFacilitatorModal] = useState(false);
 
   const handleUpdateLoginCount = async () => {
     if (password !== '7777') {
@@ -239,24 +241,39 @@ const MyJourneyWidget = () => {
 
         {/* Facilitator Info */}
         {cohortData?.facilitator && (
-          <div className="flex items-center gap-3 bg-white rounded-xl p-4 border border-slate-200">
+          <button
+            onClick={() => setShowFacilitatorModal(true)}
+            className="w-full flex items-center gap-3 bg-white rounded-xl p-4 border border-slate-200 hover:border-corporate-teal/30 hover:bg-corporate-teal/5 transition-all group text-left"
+          >
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-corporate-navy to-corporate-teal flex items-center justify-center text-white font-bold text-lg shadow-sm">
-              {cohortData.facilitator.name?.charAt(0) || '?'}
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-slate-800">{cohortData.facilitator.name}</p>
-              <p className="text-xs text-slate-500">Your Facilitator</p>
-              {cohortData.facilitator.email && (
-                <a 
-                  href={`mailto:${cohortData.facilitator.email}`}
-                  className="text-xs text-corporate-teal hover:underline"
-                >
-                  {cohortData.facilitator.email}
-                </a>
+              {cohortData.facilitator.photoUrl ? (
+                <img 
+                  src={cohortData.facilitator.photoUrl} 
+                  alt={cohortData.facilitator.name}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                cohortData.facilitator.name?.charAt(0) || '?'
               )}
             </div>
-          </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-slate-800 group-hover:text-corporate-teal transition-colors truncate">{cohortData.facilitator.name}</p>
+              <p className="text-xs text-slate-500">Your Facilitator</p>
+              {cohortData.facilitator.email && (
+                <p className="text-xs text-corporate-teal truncate">{cohortData.facilitator.email}</p>
+              )}
+            </div>
+            <Info className="w-4 h-4 text-slate-300 group-hover:text-corporate-teal transition-colors flex-shrink-0" />
+          </button>
         )}
+
+        {/* Facilitator Profile Modal */}
+        <FacilitatorProfileModal
+          facilitator={cohortData?.facilitator}
+          cohortName={cohortData?.name}
+          isOpen={showFacilitatorModal}
+          onClose={() => setShowFacilitatorModal(false)}
+        />
 
         {/* Current Phase */}
         <div className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 border border-slate-200">
