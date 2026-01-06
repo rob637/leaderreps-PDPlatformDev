@@ -431,20 +431,37 @@ const ThisWeeksActionsWidget = () => {
 
   const handleToggle = async (item) => {
     const itemId = item.id;
-    if (!itemId) return;
+    if (!itemId) {
+      console.error('[ThisWeeksActions] handleToggle called with no itemId', item);
+      return;
+    }
     
     const progress = getItemProgress(itemId);
     const isCurrentlyComplete = progress.status === 'completed' || completedItems.includes(itemId);
     
+    console.log('[ThisWeeksActions] handleToggle:', {
+      itemId,
+      itemLabel: item.label,
+      isCurrentlyComplete,
+      progressStatus: progress.status,
+      inCompletedItems: completedItems.includes(itemId),
+      fromDailyPlan: item.fromDailyPlan,
+      dayId: item.dayId,
+      isInteractive: item.isInteractive
+    });
+    
     // 1. Update Daily Plan (Source of Truth for Day-by-Day)
     if (item.fromDailyPlan && item.dayId) {
+      console.log('[ThisWeeksActions] Calling toggleDailyItem:', item.dayId, itemId, !isCurrentlyComplete);
       toggleDailyItem(item.dayId, itemId, !isCurrentlyComplete);
     }
     
     // 2. Update Action Progress (Legacy/Global tracking)
     if (isCurrentlyComplete) {
+      console.log('[ThisWeeksActions] Calling uncompleteItem:', itemId);
       await uncompleteItem(itemId);
     } else {
+      console.log('[ThisWeeksActions] Calling completeItem:', itemId);
       await completeItem(itemId, {
         currentWeek: currentWeekNumber,
         weekNumber: currentWeekNumber,
@@ -499,6 +516,12 @@ const ThisWeeksActionsWidget = () => {
         <div
           onClick={(e) => {
             e.stopPropagation();
+            console.log('[ThisWeeksActions] Checkbox clicked:', {
+              itemId: item.id,
+              itemLabel: item.label,
+              isInteractive: item.isInteractive,
+              willCallToggle: !item.isInteractive
+            });
             if (!item.isInteractive) handleToggle(item);
           }}
           className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 ${getCheckboxStyles()}`}
