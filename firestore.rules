@@ -171,6 +171,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Notification Rules
+    match /notification_rules/{document} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
     match /system_logs/{document=**} {
       allow read: if isAdmin();
       allow write: if isAdmin();

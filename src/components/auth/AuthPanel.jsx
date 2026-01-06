@@ -11,6 +11,7 @@ import {
   GoogleAuthProvider,
   // signInWithPopup
 } from 'firebase/auth';
+import { httpsCallable } from 'firebase/functions';
 import { 
   collection, 
   query, 
@@ -28,7 +29,7 @@ import { buildModulePath } from '../../services/pathUtils';
 
 const SECRET_SIGNUP_CODE = '7777';
 
-function AuthPanel({ auth, db, onSuccess }) {
+function AuthPanel({ auth, db, functions, onSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -47,38 +48,53 @@ function AuthPanel({ auth, db, onSuccess }) {
   useEffect(() => {
     const checkInvite = async () => {
       const params = new URLSearchParams(window.location.search);
-      const token = params.get('token');
+      // Check for both 'token' (new) and 'invite' (legacy/test)
+      const token = params.get('token') || params.get('invite');
       
-      if (token && db) {
-        try {
-          const q = query(collection(db, 'invitations'), where('token', '==', token));
-          const snapshot = await getDocs(q);
-          
-          if (!snapshot.empty) {
-            const inviteDoc = snapshot.docs[0];
-            const data = inviteDoc.data();
-            
-            if (data.status === 'pending') {
-              setInviteData({ id: inviteDoc.id, ...data });
-              setEmail(data.email);
-              setMode('signup');
-              if (data.name) setName(data.name);
-            } else {
-              setStatusMessage('This invitation has already been used or expired.');
-            }
-          } else {
-            setStatusMessage('Invalid invitation link.');
-          }
-        } catch (error) {
-          console.error("Error checking invite:", error);
-          setStatusMessage('Error validating invitation.');
-        }
+      console.log("AuthPanel: Checking token:", token, "Functions available:", !!functions);
+
+      if (!token) {
+        setCheckingInvite(false);
+        return;
       }
-      setCheckingInvite(false);
+
+      if (!functions) {
+        // Functions not ready yet, wait for re-render
+        console.log("AuthPanel: Waiting for functions...");
+        // Keep checkingInvite(true) so loader persists
+        return;
+      }
+
+      // If we are here, we have token and functions
+      try {
+        // Tell user we are validating
+        setStatusMessage('Validating invitation...');
+        const validateInvitation = httpsCallable(functions, 'validateInvitation');
+        const result = await validateInvitation({ token });
+        const data = result.data;
+        console.log("AuthPanel: Validation result:", data);
+        
+        // Accept invites that are 'pending' (just created) or 'sent' (email was delivered)
+        if (data.status === 'pending' || data.status === 'sent') {
+          setInviteData(data); // data already contains id
+          setEmail(data.email);
+          setMode('signup');
+          setStatusMessage(''); // Clear validating message
+          if (data.name) setName(data.name);
+        } else {
+          console.warn("AuthPanel: Invite status not valid for signup:", data.status);
+          setStatusMessage('This invitation has already been used or expired.');
+        }
+      } catch (error) {
+        console.error("Error checking invite:", error);
+        setStatusMessage(`Error validating invitation: ${error.message}`);
+      } finally {
+        setCheckingInvite(false);
+      }
     };
     
     checkInvite();
-  }, [db]);
+  }, [functions]); // Changed dependency from db to functions
 
   const handleAction = async () => {
     setIsLoading(true);
@@ -118,12 +134,11 @@ function AuthPanel({ auth, db, onSuccess }) {
         if (inviteData && db) {
             try {
                 // 1. Mark invite as accepted
-                const inviteRef = doc(db, 'invitations', inviteData.id);
-                await updateDoc(inviteRef, {
-                    status: 'accepted',
-                    acceptedAt: serverTimestamp(),
-                    acceptedBy: userCredential.user.uid
-                });
+                // We use a Cloud Function because the user doesn't have permission to write to 'invitations' directly
+                if (functions) {
+                    const acceptInvitation = httpsCallable(functions, 'acceptInvitation');
+                    await acceptInvitation({ inviteId: inviteData.id });
+                }
 
                 // 2. Assign Cohort to User Profile
                 if (inviteData.cohortId) {

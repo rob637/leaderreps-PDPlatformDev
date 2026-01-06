@@ -12,12 +12,14 @@ import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   onAuthStateChanged,
+  signOut
 } from 'firebase/auth';
 import {
   getFirestore,
   setLogLevel,
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getFunctions } from 'firebase/functions';
 
 // --- UI/UX & Icons ---
 import { Loader } from 'lucide-react';
@@ -80,14 +82,30 @@ function App() {
       const auth = getAuth(app);
       const db = getFirestore(app);
       const storage = getStorage(app);
+      const functions = getFunctions(app, 'us-central1');
       setLogLevel('error');
-      setFirebaseServices({ app, auth, db, storage });
+      setFirebaseServices({ app, auth, db, storage, functions });
     }
   }, []);
 
   useEffect(() => {
     if (!firebaseServices) return;
     const unsubscribe = onAuthStateChanged(firebaseServices.auth, (user) => {
+      // Check for invitation link
+      const params = new URLSearchParams(window.location.search);
+      const hasInvite = params.get('token') || params.get('invite');
+
+      if (user && hasInvite) {
+        // If user follows an invite link while logged in, sign them out
+        // so they can accept the invite correctly via AuthPanel.
+        console.log("🔒 User logged in but Invite Access detected. Signing out...");
+        signOut(firebaseServices.auth).then(() => {
+          setUser(null);
+          setIsAuthReady(true);
+        });
+        return;
+      }
+
       setUser(user);
       setIsAuthReady(true);
       if (user) {
@@ -158,7 +176,8 @@ function App() {
                       <AuthPanel 
                         auth={firebaseServices.auth} 
                         db={firebaseServices.db}
-                        onSuccess={() => navigate('dashboard')} 
+                        functions={firebaseServices.functions}
+                        onSuccess={() => navigate('dashboard')}
                       />
                     ) : (
                       <AppContent

@@ -7,9 +7,11 @@
  * - geminiProxy: Secure proxy for Gemini AI API calls
  */
 
-const { setGlobalOptions } = require("firebase-functions");
+// const { setGlobalOptions } = require("firebase-functions");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { onRequest } = require("firebase-functions/v2/https");
+const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https"); 
+// const functions = require("firebase-functions"); 
+const functionsV1 = require("firebase-functions/v1"); 
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -20,20 +22,118 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // Global options for cost control
-setGlobalOptions({ maxInstances: 10, region: "us-central1" });
+// setGlobalOptions({ maxInstances: 10, region: "us-central1" });
+
+/**
+ * VALIDATE INVITATION (Callable - Gen 2)
+ * Allows frontend to lookup invite details by token without exposing the whole collection.
+ * Using Gen 2 onCall with explicit cors: true to fix CORS issues.
+ */
+exports.validateInvitation = onCall({ cors: true, region: "us-central1" }, async (request) => {
+    logger.info("validateInvitation called (V2)", { data: request.data });
+    
+    const { token } = request.data;
+    if (!token) {
+        logger.error("Missing token argument");
+        throw new HttpsError('invalid-argument', 'The function must be called with a "token" argument.');
+    }
+
+    try {
+        const invitesRef = db.collection('invitations');
+        const q = invitesRef.where('token', '==', token).limit(1); // Removed .get() here as it is done in next line? No, .get() is needed.
+        const snapshot = await q.get();
+
+        if (snapshot.empty) {
+            logger.warn("Invitation not found for token", { token });
+            throw new HttpsError('not-found', 'Invitation not found.');
+        }
+
+        const doc = snapshot.docs[0];
+        const inviteData = doc.data();
+        logger.info("Invitation found", { id: doc.id, email: inviteData.email });
+
+        // Return safe data
+        return {
+            id: doc.id,
+            email: inviteData.email,
+            name: inviteData.name,
+            role: inviteData.role,
+            status: inviteData.status,
+            cohortId: inviteData.cohortId || null
+        };
+    } catch (error) {
+        logger.error("Error in validateInvitation", error);
+        if (error instanceof HttpsError) {
+            throw error;
+        }
+        throw new HttpsError('internal', error.message || 'Unknown internal error');
+    }
+});
+
+/**
+ * ACCEPT INVITATION (Callable - Gen 2)
+ * Marks invitation as accepted and links it to the user.
+ * Protected: Can only be called by authenticated users.
+ */
+exports.acceptInvitation = onCall({ cors: true, region: "us-central1" }, async (request) => {
+    // Check authentication
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    }
+
+    const { inviteId } = request.data;
+    const uid = request.auth.uid;
+
+    if (!inviteId) {
+        throw new HttpsError('invalid-argument', 'The function must be called with an "inviteId" argument.');
+    }
+
+    const inviteRef = db.collection('invitations').doc(inviteId);
+    const inviteDoc = await inviteRef.get();
+
+    if (!inviteDoc.exists) {
+        throw new HttpsError('not-found', 'Invitation not found.');
+    }
+    
+    await inviteRef.update({
+        status: 'accepted',
+        acceptedAt: admin.firestore.FieldValue.serverTimestamp(),
+        acceptedBy: uid
+    });
+
+    return { success: true };
+});
 
 /**
  * SEND INVITATION EMAIL (Firestore Trigger)
- * Listens for new documents in the 'invitations' collection and sends an email.
+ * Listens for new documents OR updates in the 'invitations' collection and sends an email.
+ * Handles initial creation AND resend requests.
  */
-exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocumentCreated("invitations/{invitationId}", async (event) => {
-  const snapshot = event.data;
-  if (!snapshot) {
-    logger.error("No data associated with the event");
+exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocumentWritten("invitations/{invitationId}", async (event) => {
+  const snapshot = event.data.after; // The new state
+  const before = event.data.before; // The old state
+
+  // 1. Check if document exists (it wasn't deleted)
+  if (!snapshot.exists) {
     return;
   }
   
   const invitation = snapshot.data();
+  
+  // 2. Determine if we should send the email
+  // - Case A: New document created (before.exists is false)
+  // - Case B: 'resend' flag is set to true
+  const isNew = !before.exists;
+  const isResend = invitation.resend === true;
+
+  // If neither new nor resend requested, exit
+  if (!isNew && !isResend) {
+    return;
+  }
+
+  // If it's a resend, but status is already 'sent' and we just updated it to 'sent' (loop prevention), exit
+  // Actually, we will clear the 'resend' flag after sending, so checking invitation.resend === true is sufficient trigger.
+
   const email = invitation.email;
   const token = invitation.token;
   
@@ -62,7 +162,8 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
     },
   });
 
-  const inviteLink = `https://leaderreps-pd-platform.web.app/auth?invite=${token}`;
+  // Use 'token' query param to match frontend AuthPanel expectation
+  const inviteLink = `https://leaderreps-pd-platform.web.app/auth?token=${token}`;
   
   // Handle Test Mode
   let recipientEmail = email;
@@ -106,17 +207,20 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
     await transporter.sendMail(mailOptions);
     logger.info(`Invitation email sent to ${recipientEmail} (Original: ${email})`);
     
-    // Update the invitation document to mark as sent
+    // Update the invitation document to mark as sent and clear resend flag
     await snapshot.ref.update({ 
       status: "sent",
-      sentAt: admin.firestore.FieldValue.serverTimestamp() 
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      resend: false, // Clear the flag to prevent loops
+      error: admin.firestore.FieldValue.delete() // Clear any previous errors
     });
     
   } catch (error) {
     logger.error("Error sending invitation email:", error);
     await snapshot.ref.update({ 
       status: "error", 
-      error: error.message 
+      error: error.message,
+      resend: false // Clear flag even on error to prevent infinite retry loops
     });
   }
 });

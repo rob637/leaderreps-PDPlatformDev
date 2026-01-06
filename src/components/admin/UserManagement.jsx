@@ -9,7 +9,9 @@ import {
   AlertTriangle,
   RefreshCw,
   Copy,
-  Trash2
+  Trash2,
+  Clock,
+  Send
 } from 'lucide-react';
 import { 
   collection, 
@@ -97,14 +99,35 @@ const UserManagement = () => {
       }
 
       if (activeTab === 'users') {
+        // Fetch Users
         const usersRef = collection(db, 'users');
-        const q = query(usersRef, orderBy('email'));
-        const snapshot = await getDocs(q);
-        const usersList = snapshot.docs.map(doc => ({
+        const qUsers = query(usersRef, orderBy('email'));
+        const usersSnap = await getDocs(qUsers);
+        const usersList = usersSnap.docs.map(doc => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
+          status: doc.data().disabled ? 'Disabled' : 'Active',
+          type: 'user'
         }));
-        setUsers(usersList);
+
+        // Fetch Invites
+        const invitesRef = collection(db, 'invitations');
+        const qInvites = query(invitesRef, orderBy('createdAt', 'desc'));
+        const invitesSnap = await getDocs(qInvites);
+        const invitesList = invitesSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          displayName: doc.data().name, // Map name to displayName for consistent rendering
+          status: 'Pending',
+          type: 'invite'
+        }));
+
+        // Combine and sort by email
+        const allUsers = [...usersList, ...invitesList].sort((a, b) => 
+          (a.email || '').localeCompare(b.email || '')
+        );
+        
+        setUsers(allUsers);
       } else if (activeTab === 'invites') {
         const invitesRef = collection(db, 'invitations');
         const q = query(invitesRef, orderBy('createdAt', 'desc'));
@@ -178,32 +201,75 @@ const UserManagement = () => {
     const cohort = cohorts.find(c => c.id === cohortId);
     if (!cohort) return;
 
-    if (!window.confirm(`Assign user to cohort "${cohort.name}"? This will reset their start date to ${new Date(cohort.startDate.seconds * 1000).toLocaleDateString()}.`)) return;
+    const targetUser = users.find(u => u.id === userId);
+    if (!targetUser) return;
+
+    const isInvite = targetUser.type === 'invite';
+    const confirmMessage = isInvite 
+      ? `Assign invite for "${targetUser.displayName || targetUser.email}" to cohort "${cohort.name}"?`
+      : `Assign user to cohort "${cohort.name}"? This will reset their start date to ${new Date(cohort.startDate.seconds * 1000).toLocaleDateString()}.`;
+
+    if (!window.confirm(confirmMessage)) return;
 
     try {
-      // 1. Update User Profile
-      const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, { cohortId });
+      if (isInvite) {
+        // Update Invitation
+        const inviteRef = doc(db, 'invitations', userId);
+        await updateDoc(inviteRef, { cohortId });
+      } else {
+        // 1. Update User Profile
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, { cohortId });
 
-      // 2. Update Development Plan Start Date
-      // Path: modules/{userId}/development_plan/current
-      const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
-      const devPlanRef = doc(db, devPlanPath);
-      
-      // Use setDoc with merge: true to handle cases where the plan doesn't exist yet
-      await setDoc(devPlanRef, {
-        startDate: cohort.startDate
-      }, { merge: true });
+        // 2. Update Development Plan Start Date
+        // Path: modules/{userId}/development_plan/current
+        const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
+        const devPlanRef = doc(db, devPlanPath);
+        
+        // Use setDoc with merge: true to handle cases where the plan doesn't exist yet
+        await setDoc(devPlanRef, {
+          startDate: cohort.startDate
+        }, { merge: true });
+      }
 
       // Optimistic Update
       setUsers(users.map(u => 
         u.id === userId ? { ...u, cohortId } : u
       ));
       
-      alert("User assigned to cohort successfully.");
+      alert(`${isInvite ? 'Invite' : 'User'} assigned to cohort successfully.`);
     } catch (error) {
       console.error("Error assigning cohort:", error);
-      alert("Failed to assign cohort. Ensure the user has initialized their account.");
+      alert("Failed to assign cohort.");
+    }
+  };
+
+  const handleResendInvite = async (userObj) => {
+    // Determine the email and test status
+    const email = userObj.email;
+    const isTest = userObj.isTest;
+    const testRecipient = userObj.testRecipient;
+    const displayName = userObj.displayName || userObj.name || email;
+    const inviteId = userObj.id;
+
+    let message = `Resend invitation to ${displayName} (${email})?`;
+    
+    if (isTest) {
+      message += `\n\n(TEST MODE: This email will be redirected to ${testRecipient || 'admin'})`;
+    }
+
+    if (!window.confirm(message)) return;
+    
+    try {
+      await updateDoc(doc(db, 'invitations', inviteId), {
+        resend: true,
+        status: 'pending',
+        updatedAt: serverTimestamp()
+      });
+      alert(`Invitation re-sent to ${isTest ? (testRecipient || 'admin') : email}.`);
+    } catch (error) {
+      console.error("Error resending invite:", error);
+      alert("Failed to resend invite");
     }
   };
 
@@ -359,6 +425,7 @@ const UserManagement = () => {
     try {
       await deleteDoc(doc(db, 'invitations', inviteId));
       setInvites(invites.filter(i => i.id !== inviteId));
+      setUsers(users.filter(u => u.id !== inviteId));
     } catch (error) {
       console.error("Error deleting invite:", error);
     }
@@ -378,7 +445,7 @@ const UserManagement = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">User Management</h2>
+          <h2 className="text-2xl font-bold text-slate-800">User Management <span className="text-xs text-slate-400 font-normal">(v1.2.1)</span></h2>
           <p className="text-slate-500">Manage users, cohorts, and invitations</p>
         </div>
         <div className="flex gap-2">
@@ -409,7 +476,7 @@ const UserManagement = () => {
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
-          Active Users
+          Users
         </button>
         <button
           onClick={() => setActiveTab('cohorts')}
@@ -522,7 +589,11 @@ const UserManagement = () => {
                         </select>
                       </td>
                       <td className="px-6 py-4">
-                        {user.disabled ? (
+                        {user.status === 'Pending' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <Clock className="w-3 h-3" /> Pending
+                          </span>
+                        ) : user.disabled ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                             <XCircle className="w-3 h-3" /> Disabled
                           </span>
@@ -534,22 +605,42 @@ const UserManagement = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => setSelectedUserForPrep(user)}
-                            className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"
-                          >
-                            Prep Status
-                          </button>
-                          <button
-                            onClick={() => handleToggleUserStatus(user.id, user.disabled)}
-                            className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
-                              user.disabled 
-                                ? 'bg-green-50 text-green-600 hover:bg-green-100' 
-                                : 'bg-red-50 text-red-600 hover:bg-red-100'
-                            }`}
-                          >
-                            {user.disabled ? 'Enable' : 'Disable'}
-                          </button>
+                          {user.type === 'user' ? (
+                            <>
+                              <button
+                                onClick={() => setSelectedUserForPrep(user)}
+                                className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"
+                              >
+                                Prep Status
+                              </button>
+                              <button
+                                onClick={() => handleToggleUserStatus(user.id, user.disabled)}
+                                className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
+                                  user.disabled 
+                                    ? 'bg-green-50 text-green-600 hover:bg-green-100' 
+                                    : 'bg-red-50 text-red-600 hover:bg-red-100'
+                                }`}
+                              >
+                                {user.disabled ? 'Enable' : 'Disable'}
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleResendInvite(user)}
+                                className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center gap-1"
+                                title="Resend Invite"
+                              >
+                                <Send className="w-3 h-3" /> Resend
+                              </button>
+                              <button
+                                onClick={() => handleDeleteInvite(user.id)}
+                                className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-red-50 text-red-600 hover:bg-red-100"
+                              >
+                                Delete Invite
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
