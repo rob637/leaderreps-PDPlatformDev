@@ -486,15 +486,15 @@ const ThisWeeksActionsWidget = () => {
     
     // Determine click handler for the main row
     const handleRowClick = () => {
-      if (item.isInteractive && !isCompleted) {
+      if (item.isInteractive) {
         handleInteractiveClick(item);
       }
     };
     
     return (
       <div 
-        className={`group flex items-start gap-3 p-3 rounded-xl border transition-all ${getCategoryStyles()} ${item.isInteractive && !isCompleted ? 'cursor-pointer' : ''}`}
-        onClick={item.isInteractive && !isCompleted ? handleRowClick : undefined}
+        className={`group flex items-start gap-3 p-3 rounded-xl border transition-all ${getCategoryStyles()} ${item.isInteractive ? 'cursor-pointer' : ''}`}
+        onClick={item.isInteractive ? handleRowClick : undefined}
       >
         <div
           onClick={(e) => {
@@ -559,14 +559,15 @@ const ThisWeeksActionsWidget = () => {
             </a>
           )}
 
-          {/* Interactive items get a click button to open modal */}
-          {item.isInteractive && !isCompleted && (
+          {/* Interactive items get a click button to open modal (always visible for create/edit) */}
+          {item.isInteractive && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleInteractiveClick(item);
               }}
               className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-xl transition-all"
+              title={isCompleted ? 'Edit' : 'Complete'}
             >
               <ExternalLink className="w-5 h-5" />
             </button>
