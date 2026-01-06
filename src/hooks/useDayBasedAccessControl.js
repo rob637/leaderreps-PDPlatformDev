@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useDailyPlan } from './useDailyPlan';
 import { useAppServices } from '../services/useAppServices';
+import useLeaderProfile from './useLeaderProfile';
 
 /**
  * Day-Based Access Control Hook
@@ -20,13 +21,16 @@ export const useDayBasedAccessControl = () => {
     loading,
     unlockedContentIds 
   } = useDailyPlan();
+  const { isComplete: leaderProfileIsComplete } = useLeaderProfile();
 
   // --- PREP GATE CHECK ---
   // User must complete these before accessing Day 1+:
-  // 1. Leader Profile (user.profileComplete or user.name exists)
+  // 1. Leader Profile (profile.isComplete from useLeaderProfile - NOT just displayName!)
   // 2. Baseline Assessment (developmentPlanData.currentPlan.focusAreas exists)
   const prepStatus = useMemo(() => {
-    const hasLeaderProfile = !!(user?.name || user?.displayName || user?.profileComplete);
+    // Use the actual profile completion status from useLeaderProfile
+    // Do NOT use user.displayName as that comes from Firebase Auth, not the profile form
+    const hasLeaderProfile = leaderProfileIsComplete;
     const hasBaselineAssessment = !!(
       developmentPlanData?.currentPlan?.focusAreas && 
       developmentPlanData.currentPlan.focusAreas.length > 0
@@ -41,7 +45,7 @@ export const useDayBasedAccessControl = () => {
         !hasBaselineAssessment && 'Baseline Assessment'
       ].filter(Boolean)
     };
-  }, [user, developmentPlanData]);
+  }, [leaderProfileIsComplete, developmentPlanData]);
 
   // --- EFFECTIVE DAY ---
   // If prep is not complete, user is locked to prep phase (Day -14 to Day -1)
