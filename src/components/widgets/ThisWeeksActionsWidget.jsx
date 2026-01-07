@@ -131,7 +131,9 @@ const ThisWeeksActionsWidget = () => {
         // Mark as coming from daily plan for UI distinction
         fromDailyPlan: true,
         dayId: dayId,
-        dayNumber: dayNumber
+        dayNumber: dayNumber,
+        // Pass through estimated time
+        estimatedMinutes: action.estimatedMinutes
       };
     });
   };
@@ -588,9 +590,9 @@ const ThisWeeksActionsWidget = () => {
                 {item.description && (
                   <><span>•</span><span className="text-slate-600">{item.description}</span></>
                 )}
-                {/* Show Day Number for context in weekly view */}
-                {item.dayNumber && (
-                   <><span>•</span><span className="text-slate-500">Day {item.dayNumber - 14}</span></>
+                {/* Show estimated time to complete */}
+                {item.estimatedMinutes && (
+                   <><span>•</span><span className="text-slate-500">{item.estimatedMinutes} min</span></>
                 )}
               </>
             )}
