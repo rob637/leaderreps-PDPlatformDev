@@ -1,61 +1,40 @@
 // src/components/screens/developmentplan/BaselineAssessmentSimple.jsx
-// Enhanced assessment with 8 core questions - scrollable modal-friendly design
+// Simplified assessment UI - uses shared questions from devPlanUtils for consistency
 
 import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle, Loader, ClipboardCheck, X } from 'lucide-react';
 import { Button } from '../../ui';
+import { ASSESSMENT_QUESTIONS, LIKERT_SCALE } from './devPlanUtils';
 
-// 8-question assessment covering key leadership areas
-const ASSESSMENT_QUESTIONS = [
-  { 
-    id: 'q1', 
-    text: 'I clearly communicate priorities and ensure my team understands how their work connects to broader goals.',
-    category: 'Communication'
-  },
-  { 
-    id: 'q2', 
-    text: 'I consistently provide actionable feedback that helps my team members grow and improve.',
-    category: 'Coaching'
-  },
-  { 
-    id: 'q3', 
-    text: 'I create opportunities for team members to develop new skills and take on stretch assignments.',
-    category: 'Development'
-  },
-  { 
-    id: 'q4', 
-    text: 'I actively seek diverse perspectives and encourage open dialogue, even when opinions differ from mine.',
-    category: 'Inclusion'
-  },
-  { 
-    id: 'q5', 
-    text: 'I effectively manage my time and energy to balance strategic thinking with day-to-day execution.',
-    category: 'Self-Management'
-  },
-  { 
-    id: 'q6', 
-    text: 'I build strong relationships across the organization to advance team goals and remove barriers.',
-    category: 'Influence'
-  },
-  { 
-    id: 'q7', 
-    text: 'Decisions on my team are made efficiently, with the right people involved and clear follow-through.',
-    category: 'Execution'
-  },
-  { 
-    id: 'q8', 
-    text: 'I intentionally model openness and vulnerability to build trust within my team.',
-    category: 'Trust'
-  }
-];
+// Map questions to categories for display
+const QUESTION_CATEGORIES = {
+  q1: 'Communication',
+  q2: 'Coaching',
+  q3: 'Development',
+  q4: 'Inclusion',
+  q5: 'Self-Management',
+  q6: 'Influence',
+  q7: 'Execution',
+  q8: 'Trust',
+  q9: 'Conflict',
+  q10: 'Recognition'
+};
 
-const RATING_OPTIONS = [
-  { value: 1, label: 'Strongly Disagree', shortLabel: 'SD', color: 'bg-red-100 border-red-300 text-red-700 hover:bg-red-200' },
-  { value: 2, label: 'Disagree', shortLabel: 'D', color: 'bg-orange-100 border-orange-300 text-orange-700 hover:bg-orange-200' },
-  { value: 3, label: 'Neutral', shortLabel: 'N', color: 'bg-yellow-100 border-yellow-300 text-yellow-700 hover:bg-yellow-200' },
-  { value: 4, label: 'Agree', shortLabel: 'A', color: 'bg-teal-100 border-teal-300 text-teal-700 hover:bg-teal-200' },
-  { value: 5, label: 'Strongly Agree', shortLabel: 'SA', color: 'bg-green-100 border-green-300 text-green-700 hover:bg-green-200' }
-];
+const RATING_OPTIONS = LIKERT_SCALE.map((item, idx) => {
+  const colors = [
+    'bg-red-100 border-red-300 text-red-700 hover:bg-red-200',
+    'bg-orange-100 border-orange-300 text-orange-700 hover:bg-orange-200',
+    'bg-yellow-100 border-yellow-300 text-yellow-700 hover:bg-yellow-200',
+    'bg-teal-100 border-teal-300 text-teal-700 hover:bg-teal-200',
+    'bg-green-100 border-green-300 text-green-700 hover:bg-green-200'
+  ];
+  const shortLabels = ['SD', 'D', 'N', 'A', 'SA'];
+  return {
+    ...item,
+    shortLabel: shortLabels[idx],
+    color: colors[idx]
+  };
+});
 
 const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, initialData = null }) => {
   // Only keep answers for questions that exist in current assessment
@@ -199,7 +178,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
               </span>
               <div className="flex-1">
                 <p className="text-slate-700 font-medium leading-relaxed text-sm">{question.text}</p>
-                <span className="text-xs text-slate-400 mt-1 inline-block">{question.category}</span>
+                <span className="text-xs text-slate-400 mt-1 inline-block">{QUESTION_CATEGORIES[question.id] || ''}</span>
               </div>
             </div>
             
