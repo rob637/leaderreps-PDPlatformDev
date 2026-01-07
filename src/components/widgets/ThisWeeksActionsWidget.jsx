@@ -457,9 +457,34 @@ const ThisWeeksActionsWidget = () => {
     });
     
     // 1. Update Daily Plan (Source of Truth for Day-by-Day)
-    if (item.fromDailyPlan && item.dayId) {
-      console.log('[ThisWeeksActions] Calling toggleDailyItem:', item.dayId, itemId, !isCurrentlyComplete);
-      toggleDailyItem(item.dayId, itemId, !isCurrentlyComplete);
+    if (item.fromDailyPlan) {
+      if (isCurrentlyComplete) {
+        // When UNCOMPLETING, find the day where this item was completed
+        // It may have been completed on a different day than the current display day
+        const dailyProgress = userState?.dailyProgress || {};
+        let completedOnDayId = null;
+        
+        for (const [dayId, dayProgress] of Object.entries(dailyProgress)) {
+          if (dayProgress?.itemsCompleted?.includes(itemId)) {
+            completedOnDayId = dayId;
+            break;
+          }
+        }
+        
+        if (completedOnDayId) {
+          console.log('[ThisWeeksActions] Found item completed on day:', completedOnDayId, '- calling toggleDailyItem to uncomplete');
+          toggleDailyItem(completedOnDayId, itemId, false);
+        } else {
+          console.log('[ThisWeeksActions] Item not found in dailyProgress, using item.dayId:', item.dayId);
+          if (item.dayId) {
+            toggleDailyItem(item.dayId, itemId, false);
+          }
+        }
+      } else if (item.dayId) {
+        // When COMPLETING, use the item's assigned day
+        console.log('[ThisWeeksActions] Calling toggleDailyItem to complete:', item.dayId, itemId);
+        toggleDailyItem(item.dayId, itemId, true);
+      }
     }
     
     // 2. Update Action Progress (Legacy/Global tracking)
