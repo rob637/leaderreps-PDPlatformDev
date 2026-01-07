@@ -590,11 +590,16 @@ export const useDailyPlan = () => {
     if (!start || isNaN(start.getTime())) return 0;
 
     // Calculate difference in days from cohort start
+    // Normalize both dates to start of day (midnight) for accurate day counting
+    // This ensures "Jan 7 at 11pm" to "Jan 15" counts as 8 days, not 7
+    const startOfToday = new Date(simulatedNow.getFullYear(), simulatedNow.getMonth(), simulatedNow.getDate());
+    const startOfStartDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    
     // Negative = before start (Pre-Start phase)
     // Zero = start day (first day of Foundations)
     // Positive = after start
-    const diffMs = simulatedNow.getTime() - start.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffMs = startOfToday.getTime() - startOfStartDate.getTime();
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
     console.log('[useDailyPlan] Days From Start:', {
       source: cohortData?.startDate ? 'cohort' : 'user',
