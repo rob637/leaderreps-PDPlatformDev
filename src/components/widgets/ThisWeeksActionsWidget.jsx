@@ -243,18 +243,102 @@ const ThisWeeksActionsWidget = () => {
     
   }, [dailyPlan, currentPhase?.id, journeyDay, currentDayData, leaderProfileComplete, baselineAssessmentComplete, currentWeekNumber]);
 
-  // Get carried over items (Simplified for Daily Plan)
+  // Get carried over items (including incomplete prep phase items)
   const carriedOverItems = useMemo(() => {
     // No carryover in Prep Phase
     if (currentPhase?.id === 'pre-start') return [];
     
+    const carriedItems = [];
+    
     // Get explicitly carried over items from actionProgress
     const explicitCarryOver = getCarriedOverItems(currentWeekNumber);
+    carriedItems.push(...explicitCarryOver);
     
-    // TODO: Implement automatic carryover from previous weeks in Daily Plan
-    // For now, rely on explicit carryover
-    return explicitCarryOver;
-  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems]);
+    // Check for incomplete prep phase items (interactive items)
+    // These should carry over to Start phase if not completed
+    if (currentPhase?.id === 'start') {
+      // Leader Profile - if not complete, carry over
+      if (!leaderProfileComplete) {
+        carriedItems.push({
+          id: 'interactive-leader-profile',
+          type: 'INTERACTIVE',
+          handlerType: 'leader-profile',
+          label: 'Complete Your Leader Profile',
+          required: true,
+          category: 'Onboarding',
+          fromDailyPlan: false,
+          isInteractive: true,
+          autoComplete: false,
+          icon: 'User',
+          description: 'Tell us about yourself to personalize your journey',
+          estimatedMinutes: 3,
+          carriedOver: true
+        });
+      }
+      
+      // Baseline Assessment - if not complete, carry over
+      if (!baselineAssessmentComplete) {
+        carriedItems.push({
+          id: 'interactive-baseline-assessment',
+          type: 'INTERACTIVE',
+          handlerType: 'baseline-assessment',
+          label: 'Take Baseline Assessment',
+          required: true,
+          category: 'Onboarding',
+          fromDailyPlan: false,
+          isInteractive: true,
+          autoComplete: false,
+          icon: 'ClipboardCheck',
+          description: 'Assess your current leadership skills',
+          estimatedMinutes: 5,
+          carriedOver: true
+        });
+      }
+      
+      // Also check for incomplete prep phase daily plan items
+      const prepDays = dailyPlan.filter(d => d.dayNumber >= 1 && d.dayNumber <= 14);
+      const dailyProgress = userState?.dailyProgress || {};
+      
+      prepDays.forEach(day => {
+        if (day.actions && Array.isArray(day.actions)) {
+          day.actions.forEach((action, idx) => {
+            // Skip if not required
+            if (action.optional || action.required === false) return;
+            
+            // Check if completed in dailyProgress
+            const actionId = action.id || `daily-${day.id}-${(action.label || '').toLowerCase().replace(/\s+/g, '-').substring(0, 20)}-${idx}`;
+            const isCompleted = Object.values(dailyProgress).some(
+              dp => dp?.itemsCompleted?.includes(actionId)
+            );
+            
+            if (!isCompleted) {
+              // Filter out items that are in the interactive list or daily reps
+              const labelLower = (action.label || '').toLowerCase();
+              if (labelLower.includes('leader profile') || labelLower.includes('baseline assessment')) return;
+              if (action.type === 'daily_rep') return;
+              
+              carriedItems.push({
+                ...action,
+                id: actionId,
+                label: action.label || 'Prep Action',
+                required: true,
+                category: 'Prep Phase',
+                fromDailyPlan: true,
+                dayId: day.id,
+                dayNumber: day.dayNumber,
+                carriedOver: true,
+                resourceId: action.resourceId,
+                resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
+                url: action.url || action.videoUrl || action.link || action.details?.externalUrl
+              });
+            }
+          });
+        }
+      });
+    }
+    
+    return carriedItems;
+  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, leaderProfileComplete, baselineAssessmentComplete, dailyPlan, userState?.dailyProgress]);
 
   // Calculate progress
   const completedItems = useMemo(() => {
