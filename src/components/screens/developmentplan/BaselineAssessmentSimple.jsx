@@ -1,7 +1,7 @@
 // src/components/screens/developmentplan/BaselineAssessmentSimple.jsx
 // Enhanced assessment with 8 core questions - scrollable modal-friendly design
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle, Loader, ClipboardCheck, X } from 'lucide-react';
 import { Button } from '../../ui';
 
@@ -68,6 +68,15 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
   
   const [responses, setResponses] = useState(initialResponses);
   const [isGenerating, setIsGenerating] = useState(false);
+  const formRef = useRef(null);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    if (formRef.current) {
+      formRef.current.scrollTop = 0;
+    }
+    window.scrollTo(0, 0);
+  }, []);
 
   // Count only responses for current questions
   const completedCount = ASSESSMENT_QUESTIONS.filter(q => responses[q.id] !== undefined).length;
@@ -121,7 +130,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div ref={formRef} className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
       {/* Header - Fixed */}
       <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-5 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">

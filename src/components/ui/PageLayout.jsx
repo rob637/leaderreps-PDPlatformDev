@@ -4,7 +4,7 @@
 //          {/* page content */}
 //        </PageLayout>
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { BreadcrumbNav } from './BreadcrumbNav';
 import { useNavigation } from '../../providers/NavigationProvider';
@@ -51,6 +51,11 @@ export const PageLayout = ({
   sidebarLeft = false,
 }) => {
   const { breadcrumbs: contextBreadcrumbs, navigate: contextNavigate } = useNavigation();
+  
+  // Scroll to top when page mounts or title changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [title]);
   
   // Use prop navigate if provided, otherwise use context
   const navigate = propNavigate || onNavigate || contextNavigate;

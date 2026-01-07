@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   User, Building2, CheckCircle, ChevronRight, Save, Loader,
   AlertCircle, X, Bell, Mail, Phone
@@ -92,6 +92,16 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const formRef = useRef(null);
+
+  // Scroll to top when form mounts
+  useEffect(() => {
+    if (formRef.current) {
+      formRef.current.scrollTop = 0;
+    }
+    // Also scroll window for non-modal usage
+    window.scrollTo(0, 0);
+  }, []);
 
   // Initialize form data from profile or user
   useEffect(() => {
@@ -177,7 +187,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
   }
 
   return (
-    <div className={`${isModal ? 'bg-white rounded-2xl shadow-xl overflow-hidden' : ''}`}>
+    <div ref={formRef} className={`${isModal ? 'bg-white rounded-2xl shadow-xl overflow-hidden' : ''}`}>
       {/* Header */}
       <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-6 relative">
         {isModal && onClose && (

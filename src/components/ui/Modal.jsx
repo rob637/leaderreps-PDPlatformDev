@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { cn } from '../../lib/utils';
 import { X } from 'lucide-react';
 
@@ -18,22 +18,34 @@ const ModalOverlay = React.forwardRef(({ className, onClick, ...props }, ref) =>
 ModalOverlay.displayName = 'ModalOverlay';
 
 // --- Modal Content ---
-const ModalContent = React.forwardRef(({ className, children, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
-      'w-full max-w-lg max-h-[90vh] overflow-y-auto',
-      'bg-white rounded-2xl shadow-2xl border border-slate-100',
-      'animate-in fade-in-0 zoom-in-95 slide-in-from-left-1/2 slide-in-from-top-[48%]',
-      className
-    )}
-    style={{ fontFamily: 'var(--font-body)' }}
-    {...props}
-  >
-    {children}
-  </div>
-));
+const ModalContent = React.forwardRef(({ className, children, ...props }, ref) => {
+  const innerRef = useRef(null);
+  const resolvedRef = ref || innerRef;
+  
+  // Scroll to top when modal content mounts
+  useEffect(() => {
+    if (resolvedRef.current) {
+      resolvedRef.current.scrollTop = 0;
+    }
+  }, []);
+  
+  return (
+    <div
+      ref={resolvedRef}
+      className={cn(
+        'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
+        'w-full max-w-lg max-h-[90vh] overflow-y-auto',
+        'bg-white rounded-2xl shadow-2xl border border-slate-100',
+        'animate-in fade-in-0 zoom-in-95 slide-in-from-left-1/2 slide-in-from-top-[48%]',
+        className
+      )}
+      style={{ fontFamily: 'var(--font-body)' }}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+});
 ModalContent.displayName = 'ModalContent';
 
 // --- Modal Header ---

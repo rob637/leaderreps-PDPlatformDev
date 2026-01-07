@@ -128,6 +128,9 @@ function App() {
     setCurrentScreen(screen);
     setNavParams(params);
     
+    // Scroll to top on navigation
+    window.scrollTo(0, 0);
+    
     // Persist navigation state
     localStorage.setItem('lastScreen', screen);
     localStorage.setItem('lastNavParams', JSON.stringify(params));
