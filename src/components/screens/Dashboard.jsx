@@ -24,7 +24,6 @@ import PMReflectionWidget from '../widgets/PMReflectionWidget';
 import { serverTimestamp } from '../../services/firebaseUtils';
 import { FadeIn, Stagger } from '../motion';
 import { useAccessControlContext } from '../../providers/AccessControlProvider';
-import PrepGate from '../ui/PrepGate';
 import ProgramStatusWidget from '../widgets/ProgramStatusWidget';
 // NOTE: LeaderProfileWidget and BaselineAssessmentWidget removed - now handled as 
 // INTERACTIVE content items in ThisWeeksActionsWidget
@@ -557,11 +556,8 @@ const Dashboard = () => {
   return (
     <div className="p-5 sm:p-6 lg:p-8 space-y-5 bg-[#FAFBFC] min-h-screen relative">
       <div className="max-w-[860px] mx-auto">
-      {/* Prep Gate - Block Day 1+ until prep complete */}
-      {currentDayNumber >= 1 && !isPrepComplete ? (
-        <PrepGate />
-      ) : (
-        <>
+      {/* Prep Gate Removed - incomplete prep items now carry over as past due */}
+      <>
       {/* Layout Toggle - Desktop Only - COMMENTED OUT FOR NOW
       <div className="absolute top-6 right-6 z-10 hidden lg:block">
         <LayoutToggle />
@@ -614,7 +610,6 @@ const Dashboard = () => {
         onToggleAction={toggleItemComplete}
       />
         </>
-      )}
       </div>
     </div>
   );
