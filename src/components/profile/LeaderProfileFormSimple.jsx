@@ -25,6 +25,58 @@ const DIRECT_REPORTS_OPTIONS = [
   { value: '8+', label: '8+ people' }
 ];
 
+// Input field component - MOVED OUTSIDE to prevent re-creation on each render
+const InputField = ({ field, label, type = 'text', required = false, placeholder = '', value, onChange, error }) => (
+  <div className="space-y-1">
+    <label className="block text-sm font-medium text-slate-700">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <input
+      type={type}
+      value={value || ''}
+      onChange={e => onChange(field, e.target.value)}
+      placeholder={placeholder}
+      className={`w-full px-4 py-3 rounded-xl border-2 transition-all
+        ${error 
+          ? 'border-red-300 bg-red-50 focus:border-red-500' 
+          : 'border-slate-200 bg-white focus:border-corporate-teal'
+        }
+        focus:outline-none focus:ring-4 focus:ring-corporate-teal/20`}
+    />
+    {error && (
+      <p className="text-xs text-red-500 flex items-center gap-1">
+        <AlertCircle className="w-3 h-3" /> {error}
+      </p>
+    )}
+  </div>
+);
+
+// Select field component - MOVED OUTSIDE to prevent re-creation on each render
+const SelectField = ({ field, label, options, required = false, placeholder = 'Select...', value, onChange, error }) => (
+  <div className="space-y-1">
+    <label className="block text-sm font-medium text-slate-700">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <select
+      value={value || ''}
+      onChange={e => onChange(field, e.target.value)}
+      className={`w-full px-4 py-3 rounded-xl border-2 transition-all appearance-none bg-white
+        ${error ? 'border-red-300 bg-red-50' : 'border-slate-200 focus:border-corporate-teal'}
+        focus:outline-none focus:ring-4 focus:ring-corporate-teal/20`}
+    >
+      <option value="">{placeholder}</option>
+      {options.map(opt => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+    {error && (
+      <p className="text-xs text-red-500 flex items-center gap-1">
+        <AlertCircle className="w-3 h-3" /> {error}
+      </p>
+    )}
+  </div>
+);
+
 /**
  * Simplified Leader Profile Form
  * Single page with essential fields only:
@@ -104,58 +156,6 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
     }
   };
 
-  // Input field component
-  const InputField = ({ field, label, type = 'text', required = false, placeholder = '' }) => (
-    <div className="space-y-1">
-      <label className="block text-sm font-medium text-slate-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        value={formData[field] || ''}
-        onChange={e => handleChange(field, e.target.value)}
-        placeholder={placeholder}
-        className={`w-full px-4 py-3 rounded-xl border-2 transition-all
-          ${errors[field] 
-            ? 'border-red-300 bg-red-50 focus:border-red-500' 
-            : 'border-slate-200 bg-white focus:border-corporate-teal'
-          }
-          focus:outline-none focus:ring-4 focus:ring-corporate-teal/20`}
-      />
-      {errors[field] && (
-        <p className="text-xs text-red-500 flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" /> {errors[field]}
-        </p>
-      )}
-    </div>
-  );
-
-  // Select field component
-  const SelectField = ({ field, label, options, required = false, placeholder = 'Select...' }) => (
-    <div className="space-y-1">
-      <label className="block text-sm font-medium text-slate-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <select
-        value={formData[field] || ''}
-        onChange={e => handleChange(field, e.target.value)}
-        className={`w-full px-4 py-3 rounded-xl border-2 transition-all appearance-none bg-white
-          ${errors[field] ? 'border-red-300 bg-red-50' : 'border-slate-200 focus:border-corporate-teal'}
-          focus:outline-none focus:ring-4 focus:ring-corporate-teal/20`}
-      >
-        <option value="">{placeholder}</option>
-        {options.map(opt => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-      {errors[field] && (
-        <p className="text-xs text-red-500 flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" /> {errors[field]}
-        </p>
-      )}
-    </div>
-  );
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 bg-white rounded-2xl">
@@ -203,12 +203,12 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
       <div className="p-6 space-y-5">
         {/* Name Row */}
         <div className="grid grid-cols-2 gap-4">
-          <InputField field="firstName" label="First Name" required placeholder="John" />
-          <InputField field="lastName" label="Last Name" required placeholder="Smith" />
+          <InputField field="firstName" label="First Name" required placeholder="John" value={formData.firstName} onChange={handleChange} error={errors.firstName} />
+          <InputField field="lastName" label="Last Name" required placeholder="Smith" value={formData.lastName} onChange={handleChange} error={errors.lastName} />
         </div>
 
         {/* Email */}
-        <InputField field="email" label="Email" type="email" required placeholder="john@company.com" />
+        <InputField field="email" label="Email" type="email" required placeholder="john@company.com" value={formData.email} onChange={handleChange} error={errors.email} />
 
         {/* Phone Number */}
         <div className="space-y-1">
@@ -231,14 +231,14 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
 
         {/* Company & Role */}
         <div className="grid grid-cols-2 gap-4">
-          <InputField field="companyName" label="Company" required placeholder="Acme Corp" />
-          <InputField field="jobTitle" label="Job Title" required placeholder="Engineering Manager" />
+          <InputField field="companyName" label="Company" required placeholder="Acme Corp" value={formData.companyName} onChange={handleChange} error={errors.companyName} />
+          <InputField field="jobTitle" label="Job Title" required placeholder="Engineering Manager" value={formData.jobTitle} onChange={handleChange} error={errors.jobTitle} />
         </div>
 
         {/* Team Size */}
         <div className="grid grid-cols-2 gap-4">
-          <SelectField field="companySize" label="Company Size" options={COMPANY_SIZES} />
-          <SelectField field="directReports" label="Direct Reports" options={DIRECT_REPORTS_OPTIONS} />
+          <SelectField field="companySize" label="Company Size" options={COMPANY_SIZES} value={formData.companySize} onChange={handleChange} error={errors.companySize} />
+          <SelectField field="directReports" label="Direct Reports" options={DIRECT_REPORTS_OPTIONS} value={formData.directReports} onChange={handleChange} error={errors.directReports} />
         </div>
 
         {/* Primary Goal - Optional but helpful */}
