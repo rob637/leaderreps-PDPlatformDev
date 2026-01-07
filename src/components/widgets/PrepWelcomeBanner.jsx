@@ -52,8 +52,42 @@ const PrepWelcomeBanner = () => {
 
   // Check for incomplete required actions (Moved before early return to satisfy Rules of Hooks)
   const actions = useMemo(() => {
-    return normalizeDailyActions(currentDayData?.actions, currentDayData?.id);
-  }, [currentDayData]);
+    const dailyActions = normalizeDailyActions(currentDayData?.actions, currentDayData?.id);
+    
+    // Filter out Leader Profile and Baseline Assessment from daily actions (handled by interactive content)
+    const onboardingLabels = ['leader profile', 'baseline assessment'];
+    const filteredDailyActions = dailyActions.filter(action => {
+      const labelLower = (action.label || '').toLowerCase();
+      return !onboardingLabels.some(keyword => labelLower.includes(keyword));
+    });
+    
+    // Add interactive content items (Leader Profile & Baseline Assessment)
+    // These match the IDs used in ThisWeeksActionsWidget
+    const interactiveItems = [
+      {
+        id: 'interactive-leader-profile',
+        type: 'INTERACTIVE',
+        handlerType: 'leader-profile',
+        label: 'Complete Your Leader Profile',
+        required: true,
+        optional: false,
+        isInteractive: true,
+        autoComplete: leaderProfileComplete
+      },
+      {
+        id: 'interactive-baseline-assessment',
+        type: 'INTERACTIVE',
+        handlerType: 'baseline-assessment',
+        label: 'Take Baseline Assessment',
+        required: true,
+        optional: false,
+        isInteractive: true,
+        autoComplete: baselineAssessmentComplete
+      }
+    ];
+    
+    return [...interactiveItems, ...filteredDailyActions];
+  }, [currentDayData, leaderProfileComplete, baselineAssessmentComplete]);
   
   // Debug logging
   console.log('[PrepWelcomeBanner] Rendering with:', {
@@ -99,13 +133,10 @@ const PrepWelcomeBanner = () => {
     // If not required, skip it immediately
     if (!isRequired) return false;
 
-    // Special checks for Profile and Assessment (auto-complete logic)
-    // This matches ThisWeeksActionsWidget logic for onboarding tasks
-    if (action.id === 'onboarding-leader-profile' || action.label?.toLowerCase().includes('leader profile')) {
-        if (leaderProfileComplete) return false;
-    }
-    if (action.id === 'onboarding-baseline-assessment' || action.label?.toLowerCase().includes('baseline assessment')) {
-        if (baselineAssessmentComplete) return false;
+    // Interactive items (Leader Profile & Baseline Assessment) have autoComplete flag
+    // that tracks their completion status directly
+    if (action.isInteractive && action.autoComplete) {
+      return false; // Already completed
     }
     
     // Check completion status using the unified action progress system

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   User, Building2, CheckCircle, ChevronRight, Save, Loader,
-  AlertCircle, X
+  AlertCircle, X, Bell, Mail, Phone
 } from 'lucide-react';
 import { Button } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
@@ -210,6 +210,25 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
         {/* Email */}
         <InputField field="email" label="Email" type="email" required placeholder="john@company.com" />
 
+        {/* Phone Number */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-slate-700">
+            Phone Number <span className="text-slate-400">(optional)</span>
+          </label>
+          <input
+            type="tel"
+            value={formData.phoneNumber || ''}
+            onChange={e => handleChange('phoneNumber', e.target.value)}
+            placeholder="+1 (555) 123-4567"
+            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white
+              focus:border-corporate-teal focus:outline-none focus:ring-4 focus:ring-corporate-teal/20
+              transition-all"
+          />
+          <p className="text-xs text-slate-500">
+            By providing your phone number, you consent to receive text messages including habit reminders and event notifications.
+          </p>
+        </div>
+
         {/* Company & Role */}
         <div className="grid grid-cols-2 gap-4">
           <InputField field="companyName" label="Company" required placeholder="Acme Corp" />
@@ -236,6 +255,75 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
               focus:border-corporate-teal focus:outline-none focus:ring-4 focus:ring-corporate-teal/20
               resize-none transition-all"
           />
+        </div>
+
+        {/* Notification Preferences */}
+        <div className="bg-slate-50 p-4 rounded-xl space-y-3 border border-slate-200">
+          <h4 className="text-sm font-semibold text-corporate-navy flex items-center gap-2">
+            <Bell className="w-4 h-4" /> Notification Preferences
+          </h4>
+          
+          {/* Email Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-slate-500" />
+              <span className="text-sm text-slate-700">Email Notifications</span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer"
+                checked={formData.notificationSettings?.channels?.email ?? true}
+                onChange={(e) => {
+                  const currentSettings = formData.notificationSettings || { channels: { email: true, sms: false } };
+                  setFormData(prev => ({
+                    ...prev,
+                    notificationSettings: {
+                      ...currentSettings,
+                      channels: {
+                        ...currentSettings.channels || {},
+                        email: e.target.checked
+                      }
+                    }
+                  }));
+                }}
+              />
+              <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-corporate-teal/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-corporate-teal"></div>
+            </label>
+          </div>
+
+          {/* SMS Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4 text-slate-500" />
+              <span className="text-sm text-slate-700">SMS Notifications</span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer"
+                checked={formData.notificationSettings?.channels?.sms ?? false}
+                disabled={!formData.phoneNumber}
+                onChange={(e) => {
+                  const currentSettings = formData.notificationSettings || { channels: { email: true, sms: false } };
+                  setFormData(prev => ({
+                    ...prev,
+                    notificationSettings: {
+                      ...currentSettings,
+                      channels: {
+                        ...currentSettings.channels || {},
+                        sms: e.target.checked
+                      }
+                    }
+                  }));
+                }}
+              />
+              <div className={`w-9 h-5 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${!formData.phoneNumber ? 'bg-slate-100 cursor-not-allowed' : 'bg-slate-200 peer-checked:bg-corporate-teal peer-focus:ring-4 peer-focus:ring-corporate-teal/20'}`}></div>
+            </label>
+          </div>
+          {!formData.phoneNumber && (
+            <p className="text-xs text-slate-400 italic ml-6">Add a phone number to enable SMS</p>
+          )}
         </div>
       </div>
 

@@ -540,10 +540,7 @@ const ThisWeeksActionsWidget = () => {
             <p className={`text-sm font-bold ${isCompleted ? 'text-emerald-700 line-through' : 'text-slate-700'}`}>
               {item.label || item.title || 'Untitled Action'}
             </p>
-            {item.isInteractive && !isCompleted && (
-              <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded uppercase tracking-wider">Auto-tracks</span>
-            )}
-            {!item.isInteractive && item.required !== false && !item.optional && !isCarriedOver && (
+            {item.required !== false && !item.optional && !isCarriedOver && !isCompleted && (
               <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
             )}
             {!item.isInteractive && item.optional && !isCarriedOver && (
