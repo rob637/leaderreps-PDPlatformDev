@@ -498,11 +498,9 @@ const Dashboard = () => {
         // BLOCK - prep requirements not complete
         console.log(`[Dashboard] Prep NOT complete: HIDING ${widgetId}`);
         return false;
-      } else {
-        // UNLOCK - all 5 prep requirements are done
-        console.log(`[Dashboard] Prep complete: showing ${widgetId}`);
-        return true;
       }
+      // Prep complete - fall through to check dashboard config below
+      console.log(`[Dashboard] Prep complete: checking dashboard config for ${widgetId}`);
     }
 
     if (!currentDayData?.dashboard) return defaultVal;
