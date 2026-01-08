@@ -59,6 +59,8 @@ exports.validateInvitation = functionsV1.https.onCall(async (data, context) => {
             id: doc.id,
             email: inviteData.email,
             name: inviteData.name,
+            firstName: inviteData.firstName || '',
+            lastName: inviteData.lastName || '',
             role: inviteData.role,
             status: inviteData.status,
             cohortId: inviteData.cohortId || null
@@ -76,6 +78,7 @@ exports.validateInvitation = functionsV1.https.onCall(async (data, context) => {
  * ACCEPT INVITATION (Callable - Gen 2)
  * Marks invitation as accepted and links it to the user.
  * Also handles admin role assignment by adding email to adminemails list.
+ * For test users, saves isTestUser flag and testNotificationRecipient for notification override.
  * Protected: Can only be called by authenticated users.
  */
 exports.acceptInvitation = onCall({ cors: true, region: "us-central1" }, async (request) => {
@@ -132,6 +135,12 @@ exports.acceptInvitation = onCall({ cors: true, region: "us-central1" }, async (
         };
         if (inviteData.cohortId) {
             userData.cohortId = inviteData.cohortId;
+        }
+        // Save test user information for notification routing
+        if (inviteData.isTest) {
+            userData.isTestUser = true;
+            userData.testNotificationRecipient = inviteData.testRecipient || null;
+            logger.info("Test user flagged for notification override", { uid, testRecipient: inviteData.testRecipient });
         }
         await userRef.set(userData, { merge: true });
         logger.info("User profile updated with invite data", { uid, role: inviteData.role, cohortId: inviteData.cohortId });
@@ -826,16 +835,26 @@ exports.scheduledDailyNotifications = onSchedule(
             logger.info(`User ${user.email} has no FCM token, skipping.`);
             continue;
           }
+          
+          // Handle test users - still send push notifications but log it
+          const isTestUser = user.isTestUser === true;
+          if (isTestUser) {
+            logger.info(`🧪 Test user ${user.email} - Push notification would be sent for Day ${currentDay}`);
+            // Still send the push notification (goes to their device if registered)
+          }
 
           // Send push notification
           const message = {
             notification: {
-              title: `🎯 Day ${currentDay}: ${dayData.title || 'Today\'s Focus'}`,
+              title: isTestUser 
+                ? `🧪 [TEST] Day ${currentDay}: ${dayData.title || 'Today\'s Focus'}`
+                : `🎯 Day ${currentDay}: ${dayData.title || 'Today\'s Focus'}`,
               body: notificationText.substring(0, 100),
             },
             data: {
               dayNumber: String(currentDay),
               screen: 'dashboard',
+              isTest: isTestUser ? 'true' : 'false',
             },
             token: fcmToken,
           };
@@ -1061,15 +1080,34 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
     for (const item of notificationsToSend) {
       const { user, rule } = item;
       const settings = user.notificationSettings;
+      
+      // Handle test users - redirect notifications to override email
+      const isTestUser = user.isTestUser === true;
+      const overrideEmail = user.testNotificationRecipient;
 
       // Email
       if (settings.channels?.email && user.email) {
-        await sendEmailNotification(user.email, rule.name, rule.message);
+        // For test users, ALWAYS use override email or skip
+        // Never send to actual test email addresses (e.g., ryan2@test.com)
+        if (isTestUser) {
+          if (overrideEmail) {
+            const subjectPrefix = `[TEST for ${user.email}] `;
+            await sendEmailNotification(overrideEmail, `${subjectPrefix}${rule.name}`, rule.message);
+            logger.info(`🧪 Test user notification redirected: ${user.email} -> ${overrideEmail}`);
+          } else {
+            logger.info(`🧪 Test user ${user.email} has no override email, skipping notification`);
+          }
+        } else {
+          // Regular user - send to their email
+          await sendEmailNotification(user.email, rule.name, rule.message);
+        }
       }
 
-      // SMS via Twilio
-      if (settings.channels?.sms && settings.phoneNumber) {
+      // SMS via Twilio - Skip for test users (don't send test SMS)
+      if (settings.channels?.sms && settings.phoneNumber && !isTestUser) {
         await sendSmsNotification(settings.phoneNumber, rule.message);
+      } else if (settings.channels?.sms && isTestUser) {
+        logger.info(`🧪 SMS skipped for test user ${user.email}`);
       }
     }
 

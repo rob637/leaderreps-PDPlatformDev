@@ -3,7 +3,7 @@ import {
   CheckCircle, Circle, Play, BookOpen, Users, Video, FileText, Zap, 
   ExternalLink, Loader, Layers, MessageSquare, 
   SkipForward, Clock, AlertTriangle,
-  User, ClipboardCheck, Calendar
+  User, ClipboardCheck, Calendar, ChevronDown, ChevronUp, Trophy
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
@@ -53,6 +53,9 @@ const ThisWeeksActionsWidget = () => {
   const [showLeaderProfileModal, setShowLeaderProfileModal] = useState(false);
   const [showBaselineModal, setShowBaselineModal] = useState(false);
   const [savingBaseline, setSavingBaseline] = useState(false);
+  
+  // Prep Complete expanded state (default collapsed when all done)
+  const [prepExpanded, setPrepExpanded] = useState(false);
 
   // Use Daily Plan Hook (New Architecture)
   const { 
@@ -62,7 +65,8 @@ const ThisWeeksActionsWidget = () => {
     currentDayData, 
     toggleItemComplete: toggleDailyItem,
     userState,
-    journeyDay
+    journeyDay,
+    prepRequirementsComplete
   } = useDailyPlan();
 
   const actionProgress = useActionProgress();
@@ -142,45 +146,10 @@ const ThisWeeksActionsWidget = () => {
   const allActions = useMemo(() => {
     if (!dailyPlan || dailyPlan.length === 0) return [];
 
-    // Pre-Start phase = Day-by-Day only (cumulative up to journeyDay)
+    // Pre-Start phase = COMPLETION-BASED (not day-based)
     if (currentPhase?.id === 'pre-start') {
-      // Get current day's actions (cumulative logic is handled in useDailyPlan for currentDayData, 
-      // but here we want to be explicit about what we show)
-      
-      // In Prep Phase, we show actions for the CURRENT Journey Day
-      // (Previous days are "done" or carried over if we implemented that, but Prep is linear)
-      // Actually, useDailyPlan says "cumulativeActions: true" for Prep Phase.
-      // So we should show actions from Day 1 to Journey Day.
-      
-      // Filter dailyPlan for Prep Phase days <= journeyDay
-      const prepDays = dailyPlan.filter(d => 
-        d.phase === 'pre-start' && 
-        d.dayNumber <= 14 // Hardcoded prep phase length or use config
-      );
-      
-      // Sort by dayNumber
-      prepDays.sort((a, b) => a.dayNumber - b.dayNumber);
-      
-      // Take days up to journeyDay (mapped to 1-14)
-      // Note: journeyDay is 1-based index of visits.
-      // If journeyDay is 1, we show Day 1.
-      // If journeyDay is 2, we show Day 1 and Day 2? Or just Day 2?
-      // Usually "cumulative" means "everything available so far".
-      
-      // Let's stick to currentDayData for Prep Phase as it handles the logic best
-      const dailyNormalized = normalizeDailyActions(currentDayData?.actions, currentDayData?.id, currentDayData?.dayNumber);
-      
-      // Filter out Leader Profile and Baseline Assessment from daily actions (handled by interactive content)
-      const onboardingLabels = ['leader profile', 'baseline assessment'];
-      const filteredDailyActions = dailyNormalized.filter(action => {
-        const labelLower = (action.label || '').toLowerCase();
-        if (onboardingLabels.some(keyword => labelLower.includes(keyword))) return false;
-        if (action.type === 'daily_rep') return false;
-        return true;
-      });
-      
       // Interactive content items (Leader Profile & Baseline Assessment)
-      // These are now managed in content_library as INTERACTIVE type
+      // These are part of the 5 required items
       const interactiveItems = [
         {
           id: 'interactive-leader-profile',
@@ -211,7 +180,65 @@ const ThisWeeksActionsWidget = () => {
           estimatedMinutes: 5
         }
       ];
-      return [...interactiveItems, ...filteredDailyActions];
+      
+      // Get ALL prep phase actions from daily plan
+      const prepDays = dailyPlan.filter(d => 
+        d.phase === 'pre-start' && 
+        d.dayNumber <= 14
+      );
+      
+      let allPrepActions = [];
+      prepDays.forEach(day => {
+        if (day.actions) {
+          allPrepActions.push(...normalizeDailyActions(day.actions, day.id, day.dayNumber));
+        }
+      });
+      
+      // Filter out Leader Profile and Baseline Assessment (handled by interactive items)
+      // and Daily Reps
+      const onboardingLabels = ['leader profile', 'baseline assessment'];
+      const filteredPrepActions = allPrepActions.filter(action => {
+        const labelLower = (action.label || '').toLowerCase();
+        if (onboardingLabels.some(keyword => labelLower.includes(keyword))) return false;
+        if (action.type === 'daily_rep') return false;
+        return true;
+      });
+      
+      // COMPLETION-BASED GATING:
+      // If prep requirements are NOT all complete, only show the 5 required items
+      // (Leader Profile, Baseline Assessment, Video, Workbook, Exercises)
+      if (!prepRequirementsComplete?.allComplete) {
+        // Filter to only the 5 required prep items
+        // Use actual IDs from Firestore: action-prep-001-video, action-prep-001-workbook, action-prep-003-exercises
+        const REQUIRED_IDS = [
+          'action-prep-001-video',
+          'action-prep-001-workbook',
+          'action-prep-003-exercises',
+          // Legacy IDs for backwards compatibility
+          'prep-foundation-video',
+          'prep-workbook-download',
+          'prep-exercises'
+        ];
+        const requiredPrepActions = filteredPrepActions.filter(action => {
+          const actionId = (action.id || '').toLowerCase();
+          const labelLower = (action.label || '').toLowerCase();
+          // Check by ID
+          if (REQUIRED_IDS.some(id => actionId.includes(id))) return true;
+          // Check by label for Video - handle "Watch Foundation S1 Prep Video" format
+          if ((labelLower.includes('foundation') && labelLower.includes('video')) || 
+              labelLower.includes('watch the video') ||
+              labelLower.includes('prep video')) return true;
+          // Check by label for Workbook
+          if (labelLower.includes('workbook') || labelLower.includes('download')) return true;
+          // Check by label for Exercises  
+          if (labelLower.includes('exercises') || labelLower.includes('complete exercises')) return true;
+          return false;
+        });
+        return [...interactiveItems, ...requiredPrepActions];
+      }
+      
+      // Prep is complete - show ALL remaining prep phase items
+      return [...interactiveItems, ...filteredPrepActions];
     }
     
     // Start/Post phase = Show actions for the CURRENT WEEK
@@ -384,8 +411,41 @@ const ThisWeeksActionsWidget = () => {
 
   // Dynamic title
   const widgetTitle = currentPhase?.id === 'pre-start' 
-    ? "Actions" 
+    ? "Prep Actions" 
     : "This Week's Actions";
+
+  // Separate actions into Required Prep and Additional Prep for prep phase
+  const requiredPrepActions = useMemo(() => {
+    if (currentPhase?.id !== 'pre-start') return [];
+    // The 5 required items: Leader Profile, Baseline Assessment, Video, Workbook, Exercises
+    // These are already filtered in allActions when prepRequirementsComplete is not allComplete
+    // But we need to explicitly identify them for the section labels
+    return allActions.filter(action => {
+      const actionId = (action.id || '').toLowerCase();
+      const labelLower = (action.label || '').toLowerCase();
+      
+      // Interactive items (Leader Profile & Baseline Assessment)
+      if (action.isInteractive) return true;
+      
+      // Check by known IDs
+      const requiredIds = ['action-prep-001-video', 'action-prep-001-workbook', 'action-prep-003-exercises'];
+      if (requiredIds.some(id => actionId.includes(id))) return true;
+      
+      // Check by label patterns
+      if ((labelLower.includes('foundation') && labelLower.includes('video')) || labelLower.includes('prep video')) return true;
+      if (labelLower.includes('workbook') || labelLower.includes('download')) return true;
+      if (labelLower.includes('exercises') || labelLower.includes('session 1 prep')) return true;
+      
+      return false;
+    });
+  }, [currentPhase?.id, allActions]);
+  
+  const additionalPrepActions = useMemo(() => {
+    if (currentPhase?.id !== 'pre-start') return [];
+    // All other prep actions that aren't in the required list
+    const requiredIds = requiredPrepActions.map(a => a.id);
+    return allActions.filter(action => !requiredIds.includes(action.id));
+  }, [currentPhase?.id, allActions, requiredPrepActions]);
 
   // Helper to get icon based on type
   const getIcon = (type) => {
@@ -667,7 +727,12 @@ const ThisWeeksActionsWidget = () => {
           <div className={`flex items-center gap-2 text-xs ${getIconColor()}`}>
             <Icon className="w-3 h-3" />
             {item.isInteractive ? (
-              <span className="text-slate-600">{item.description}</span>
+              <>
+                <span className="text-slate-600">{item.description}</span>
+                {item.estimatedMinutes && (
+                  <><span>•</span><span className="text-slate-500">{item.estimatedMinutes} min</span></>
+                )}
+              </>
             ) : (
               <>
                 <span className="capitalize">{item.type?.replace(/_/g, ' ').toLowerCase() || 'Action'}</span>
@@ -733,63 +798,189 @@ const ThisWeeksActionsWidget = () => {
         />
       )}
       <Card title={widgetTitle} icon={CheckCircle} accent="TEAL">
-        {/* Carried Over Items */}
-        {carriedOverItems.length > 0 && (
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-2 px-1">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-slate-500" />
-                <span className="text-sm font-bold text-slate-700 uppercase tracking-wider">Prior Week - Incomplete</span>
+        
+        {/* ========== PREP PHASE: Progress-Based Sections ========== */}
+        {currentPhase?.id === 'pre-start' && (
+          <>
+            {/* SECTION 1: Required Prep */}
+            {!prepRequirementsComplete?.allComplete ? (
+              // Required Prep NOT Complete - Show as primary section
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    <span className="text-sm font-bold text-amber-800 uppercase tracking-wider">Required Prep</span>
+                  </div>
+                  <div className="flex-1 h-px bg-amber-200"></div>
+                  <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                    {prepRequirementsComplete?.completedCount || 0}/5 complete
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mb-3 px-1">
+                  Complete these 5 items to unlock your leadership development tools.
+                </p>
+                <div className="space-y-1 p-3 bg-amber-50/50 rounded-xl border border-amber-200/60">
+                  {requiredPrepActions.map((item, idx) => (
+                    <ActionItem key={item.id || idx} item={item} idx={idx} />
+                  ))}
+                </div>
               </div>
-              <div className="flex-1 h-px bg-slate-200"></div>
-              <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">{carriedOverItems.length} items</span>
-            </div>
-            <div className="space-y-1 p-3 bg-slate-50/80 rounded-xl border border-slate-200/60">
-              {carriedOverItems.map((item, idx) => (
-                <ActionItem key={item.id || `carried-${idx}`} item={item} idx={idx} isCarriedOver={true} />
-              ))}
-            </div>
-          </div>
+            ) : (
+              // Required Prep IS Complete - Show collapsed celebration
+              <div className="mb-4">
+                <button
+                  onClick={() => setPrepExpanded(!prepExpanded)}
+                  className="w-full group flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100 transition-all"
+                >
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <Trophy className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-bold text-emerald-800">🎉 Required Prep Complete!</p>
+                    <p className="text-xs text-emerald-600">
+                      All 5 tasks done — Your leadership tools are now unlocked below!
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 p-2 text-emerald-600 group-hover:text-emerald-800 transition-colors">
+                    {prepExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </div>
+                </button>
+                
+                {prepExpanded && (
+                  <div className="mt-2 p-3 bg-white/80 rounded-xl border border-slate-200/60 space-y-2">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Completed Items</p>
+                    {prepRequirementsComplete.items.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        <span className="text-emerald-700">{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Explore Your Tools - Admin-configurable content (when prep complete) */}
+            {prepRequirementsComplete?.allComplete && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 px-1">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm font-bold text-purple-800 uppercase tracking-wider">Explore Your Tools</span>
+                  </div>
+                  <div className="flex-1 h-px bg-purple-200"></div>
+                  {additionalPrepActions.length > 0 && (
+                    <span className="text-xs font-medium text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                      {additionalPrepActions.length} items
+                    </span>
+                  )}
+                </div>
+                
+                {/* Congratulations Banner */}
+                <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+                      <Trophy className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-emerald-800">🎉 Congratulations!</p>
+                      <p className="text-xs text-emerald-700">
+                        You've completed all required prep. Your leadership tools are now unlocked!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {additionalPrepActions.length > 0 ? (
+                  <>
+                    <p className="text-xs text-slate-600 px-1">
+                      Explore these tools at your own pace before Session 1:
+                    </p>
+                    <div className="space-y-1 p-3 bg-purple-50/50 rounded-xl border border-purple-200/60">
+                      {additionalPrepActions.map((item, idx) => (
+                        <ActionItem key={item.id || idx} item={item} idx={idx} />
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-500 px-1 italic">
+                    No additional exploration items configured. Check back soon!
+                  </p>
+                )}
+                
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
+                  <p className="text-xs text-slate-600">
+                    🚀 <span className="font-semibold">You're all set!</span> Session 1 will build on everything you've learned.
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
         )}
+        
+        {/* ========== START/POST PHASE: Week-Based Actions ========== */}
+        {currentPhase?.id !== 'pre-start' && (
+          <>
+            {/* Carried Over Items */}
+            {carriedOverItems.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-slate-500" />
+                    <span className="text-sm font-bold text-slate-700 uppercase tracking-wider">Prior Week - Incomplete</span>
+                  </div>
+                  <div className="flex-1 h-px bg-slate-200"></div>
+                  <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">{carriedOverItems.length} items</span>
+                </div>
+                <div className="space-y-1 p-3 bg-slate-50/80 rounded-xl border border-slate-200/60">
+                  {carriedOverItems.map((item, idx) => (
+                    <ActionItem key={item.id || `carried-${idx}`} item={item} idx={idx} isCarriedOver={true} />
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* Current Week Items */}
-        {allActions.length > 0 && (
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-teal-600" />
-              <span className="text-sm font-bold text-teal-800 uppercase tracking-wider">This Week</span>
+            {/* Current Week Items */}
+            {allActions.length > 0 && (
+              <div className="flex items-center gap-2 mb-2 px-1">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-teal-600" />
+                  <span className="text-sm font-bold text-teal-800 uppercase tracking-wider">This Week</span>
+                </div>
+                <div className="flex-1 h-px bg-teal-200"></div>
+                <span className="text-xs font-medium text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full">{allActions.length} items</span>
+              </div>
+            )}
+
+            {/* Actions list */}
+            <div className="space-y-1">
+              {allActions.length === 0 && carriedOverItems.length === 0 ? (
+                <div className="p-4 text-center text-slate-500 text-sm italic">No actions scheduled for this week.</div>
+              ) : allActions.length === 0 ? (
+                <div className="p-4 text-center text-slate-500 text-sm italic">No new actions this week. Complete your carried-over items above!</div>
+              ) : (
+                allActions.map((item, idx) => (
+                  <ActionItem key={item.id || idx} item={item} idx={idx} />
+                ))
+              )}
             </div>
-            <div className="flex-1 h-px bg-teal-200"></div>
-            <span className="text-xs font-medium text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full">{allActions.length} items</span>
-          </div>
-        )}
 
-        <div className="space-y-1">
-          {allActions.length === 0 && carriedOverItems.length === 0 ? (
-            <div className="p-4 text-center text-slate-500 text-sm italic">No actions scheduled for this week.</div>
-          ) : allActions.length === 0 ? (
-            <div className="p-4 text-center text-slate-500 text-sm italic">No new actions this week. Complete your carried-over items above!</div>
-          ) : (
-            allActions.map((item, idx) => (
-              <ActionItem key={item.id || idx} item={item} idx={idx} />
-            ))
-          )}
-        </div>
-
-        {/* Completion Celebration */}
-        {progressPercent === 100 && totalRequiredCount > 0 && (
-          <div className="mt-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 text-center">
-            <div className="text-2xl mb-1">🎉</div>
-            <p className="text-sm font-semibold text-emerald-800">Week {currentWeekNumber} Complete!</p>
-            <p className="text-xs text-emerald-600 mt-1">Great work! You've completed all required actions for this week.</p>
-          </div>
+            {/* Week Completion Celebration */}
+            {progressPercent === 100 && totalRequiredCount > 0 && (
+              <div className="mt-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 text-center">
+                <div className="text-2xl mb-1">🎉</div>
+                <p className="text-sm font-semibold text-emerald-800">Week {currentWeekNumber} Complete!</p>
+                <p className="text-xs text-emerald-600 mt-1">Great work! You've completed all required actions for this week.</p>
+              </div>
+            )}
+          </>
         )}
       </Card>
       
       {/* Leader Profile Modal */}
       {showLeaderProfileModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-lg my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-md">
             <LeaderProfileFormSimple 
               onComplete={() => setShowLeaderProfileModal(false)}
               onClose={() => setShowLeaderProfileModal(false)}

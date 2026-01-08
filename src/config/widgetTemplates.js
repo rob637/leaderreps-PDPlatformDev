@@ -2920,11 +2920,11 @@ render(<RepsHistoryWidget />);
       ) : (
         <div className="space-y-3">
           {/* Not Completed Notice */}
-          <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-3 bg-corporate-teal/5 rounded-lg border border-corporate-teal/20">
+            <AlertCircle className="w-5 h-5 text-corporate-teal flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-amber-800">Assessment Not Completed</p>
-              <p className="text-xs text-amber-600 mt-1">
+              <p className="text-sm font-semibold text-corporate-navy">Assessment Not Completed</p>
+              <p className="text-xs text-corporate-teal mt-1">
                 Complete your baseline assessment to unlock your personalized leadership development plan.
               </p>
             </div>
@@ -3335,6 +3335,17 @@ export const FEATURE_METADATA = {
     extendedDescription: 'A detailed breakdown of the development plan structure and content.',
     inputs: ['devPlanDetails'],
     outputs: [],
+  },
+  'dev-plan-journey': {
+    core: true,
+    category: 'Development Plan',
+    name: 'Development Journey',
+    description: 'Full Journey Overview',
+    purpose: 'Visual journey map.',
+    extendedDescription: 'A comprehensive visual widget showing the entire development journey including Prep Phase, Development weeks, and Post Phase with dynamic progress tracking.',
+    inputs: ['dailyPlan', 'currentPhase', 'userProgress'],
+    outputs: [],
+    componentPath: 'src/components/widgets/DevelopmentJourneyWidget.jsx',
   },
   'development-plan': {
     core: true,

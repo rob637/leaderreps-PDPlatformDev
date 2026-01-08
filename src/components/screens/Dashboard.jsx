@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
 import { MissedDaysModal } from './dashboard/MissedDaysModal';
 import { useFeatures } from '../../providers/FeatureProvider';
@@ -77,7 +78,8 @@ const Dashboard = () => {
     phaseDayNumber,     // NEW: Day within current phase
     missedDays,
     simulatedNow,
-    toggleItemComplete 
+    toggleItemComplete,
+    prepRequirementsComplete  // NEW: 5-item completion check
   } = useDailyPlan();
 
   // DEBUG: Log phase info
@@ -86,7 +88,8 @@ const Dashboard = () => {
     phaseDayNumber, 
     currentDayNumber,
     hasCurrentDayData: !!currentDayData,
-    loading: dailyPlanLoading
+    loading: dailyPlanLoading,
+    prepRequirementsComplete: prepRequirementsComplete?.allComplete
   });
 
 
@@ -219,8 +222,10 @@ const Dashboard = () => {
 
   // --- DERIVED DATA ---
   
-  // 1. Greeting & Quote
-  const greeting = `Hey, ${user?.displayName?.split(' ')[0] || 'Leader'}.`;
+  // 1. Greeting & Quote - prefer leader profile firstName over displayName
+  const { profile: leaderProfile } = useLeaderProfile();
+  const firstName = leaderProfile?.firstName || user?.displayName?.split(' ')[0] || 'Leader';
+  const greeting = `Hey, ${firstName}.`;
   const dailyQuote = useMemo(() => {
     const quotes = globalMetadata?.SYSTEM_QUOTES || [];
     if (quotes.length === 0) return "Leadership is a practice, not a position.";
@@ -473,20 +478,32 @@ const Dashboard = () => {
       'scorecard': 'showScorecard'
     };
 
-    // Force hide daily practice widgets during Prep Phase (Day < 1) - REMOVED for Lock & Key System
-    // if (currentDayNumber < 1) {
-    //   const PREP_HIDDEN_WIDGETS = [
-    //     'am-bookend-header', 
-    //     'win-the-day', 
-    //     'daily-leader-reps', 
-    //     'scorecard', 
-    //     'pm-bookend-header',
-    //     'pm-bookend',
-    //     'grounding-rep',
-    //     'lis-maker'
-    //   ];
-    //   if (PREP_HIDDEN_WIDGETS.includes(widgetId)) return false;
-    // }
+    // PREP PHASE FEATURE GATING - PROGRESS BASED, NOT DAY BASED
+    // These widgets are LOCKED until ALL 5 required prep items are complete
+    const PREP_GATED_WIDGETS = [
+      'am-bookend-header',
+      'weekly-focus',
+      'lis-maker',
+      'grounding-rep',
+      'win-the-day',
+      'daily-leader-reps',
+      'pm-bookend-header',
+      'pm-bookend',
+      'scorecard'
+    ];
+
+    // If in pre-start phase and this is a gated widget, check prep completion
+    if (currentPhase?.id === 'pre-start' && PREP_GATED_WIDGETS.includes(widgetId)) {
+      if (!prepRequirementsComplete?.allComplete) {
+        // BLOCK - prep requirements not complete
+        console.log(`[Dashboard] Prep NOT complete: HIDING ${widgetId}`);
+        return false;
+      } else {
+        // UNLOCK - all 5 prep requirements are done
+        console.log(`[Dashboard] Prep complete: showing ${widgetId}`);
+        return true;
+      }
+    }
 
     if (!currentDayData?.dashboard) return defaultVal;
 

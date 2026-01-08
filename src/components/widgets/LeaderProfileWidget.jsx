@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, CheckCircle, ChevronRight, Clock, Award, Sparkles } from 'lucide-react';
 import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
-import LeaderProfileForm from '../profile/LeaderProfileForm';
+import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 
 /**
  * Leader Profile Widget for Dashboard
@@ -50,7 +50,7 @@ const LeaderProfileWidget = () => {
         {showForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto">
-              <LeaderProfileForm 
+              <LeaderProfileFormSimple 
                 onComplete={() => setShowForm(false)}
                 onClose={() => setShowForm(false)}
               />
@@ -135,7 +135,7 @@ const LeaderProfileWidget = () => {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto">
-            <LeaderProfileForm 
+            <LeaderProfileFormSimple 
               onComplete={() => setShowForm(false)}
               onClose={() => setShowForm(false)}
             />

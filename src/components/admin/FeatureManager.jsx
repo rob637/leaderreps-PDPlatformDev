@@ -596,7 +596,7 @@ const FeatureManager = () => {
     ],
     'development-plan': [
       'leader-profile', 'baseline-assessment',
-      'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal', 'development-plan'
+      'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal', 'dev-plan-journey', 'development-plan'
     ],
     content: [
       'course-library', 'reading-hub', 'leadership-videos', 'strat-templates'

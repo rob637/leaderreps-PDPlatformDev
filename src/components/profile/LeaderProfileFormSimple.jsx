@@ -187,9 +187,9 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
   }
 
   return (
-    <div ref={formRef} className={`${isModal ? 'bg-white rounded-2xl shadow-xl overflow-hidden' : ''}`}>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-6 relative">
+    <div ref={formRef} className={`${isModal ? 'bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]' : ''}`}>
+      {/* Header - Fixed */}
+      <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-4 relative flex-shrink-0">
         {isModal && onClose && (
           <button 
             onClick={onClose}
@@ -209,8 +209,8 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
         </div>
       </div>
 
-      {/* Form */}
-      <div className="p-6 space-y-5">
+      {/* Form - Scrollable */}
+      <div className="p-4 space-y-4 overflow-y-auto flex-1">
         {/* Name Row */}
         <div className="grid grid-cols-2 gap-4">
           <InputField field="firstName" label="First Name" required placeholder="John" value={formData.firstName} onChange={handleChange} error={errors.firstName} />
@@ -337,8 +337,8 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-200">
+      {/* Footer - Fixed */}
+      <div className="flex items-center justify-between p-3 bg-slate-50 border-t border-slate-200 flex-shrink-0">
         {onClose && (
           <button
             onClick={onClose}

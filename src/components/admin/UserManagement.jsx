@@ -47,7 +47,8 @@ const UserManagement = () => {
   // Invite Form State
   const [inviteForm, setInviteForm] = useState({
     email: '',
-    name: '',
+    firstName: '',
+    lastName: '',
     role: 'user',
     cohortId: '',
     customMessage: "You're invited to join the LeaderReps Arena!"
@@ -74,9 +75,12 @@ const UserManagement = () => {
   const [isCohortModalOpen, setIsCohortModalOpen] = useState(false);
   const [savingCohort, setSavingCohort] = useState(false);
   const [facilitators, setFacilitators] = useState([]);
+  const [fetchError, setFetchError] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
+    console.log('[UserManagement] Starting fetchData...', { activeTab, userEmail: user?.email });
     try {
       // Fetch admin emails first
       let admins = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
@@ -100,7 +104,7 @@ const UserManagement = () => {
         const allUsersSnap = await getDocs(usersRef);
         const potentialFacilitators = allUsersSnap.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(u => admins.includes(u.email) || u.role === 'admin' || u.role === 'facilitator');
+          .filter(u => admins.some(a => a.toLowerCase() === u.email?.toLowerCase()) || u.role === 'admin' || u.role === 'facilitator');
         setFacilitators(potentialFacilitators);
       } catch (e) {
         console.error("Error fetching facilitators:", e);
@@ -108,9 +112,11 @@ const UserManagement = () => {
 
       if (activeTab === 'users') {
         // Fetch Users
+        console.log('[UserManagement] Fetching users from collection...');
         const usersRef = collection(db, 'users');
         const qUsers = query(usersRef, orderBy('email'));
         const usersSnap = await getDocs(qUsers);
+        console.log('[UserManagement] Got users snapshot, count:', usersSnap.docs.length);
         const usersList = usersSnap.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
@@ -122,6 +128,7 @@ const UserManagement = () => {
         const invitesRef = collection(db, 'invitations');
         const qInvites = query(invitesRef, orderBy('createdAt', 'desc'));
         const invitesSnap = await getDocs(qInvites);
+        console.log('[UserManagement] Got invitations snapshot, count:', invitesSnap.docs.length);
         const invitesList = invitesSnap.docs
           .filter(doc => {
             const status = doc.data().status;
@@ -141,6 +148,7 @@ const UserManagement = () => {
           (a.email || '').localeCompare(b.email || '')
         );
         
+        console.log('[UserManagement] Total users+invites:', allUsers.length);
         setUsers(allUsers);
       } else if (activeTab === 'invites') {
         const invitesRef = collection(db, 'invitations');
@@ -162,12 +170,14 @@ const UserManagement = () => {
         }));
         setCohorts(cohortsList);
       }
+      console.log('[UserManagement] fetchData complete', { usersCount: users.length });
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("[UserManagement] Error fetching data:", error);
+      setFetchError(error.message || 'Failed to load data. Please check your permissions.');
     } finally {
       setLoading(false);
     }
-  }, [db, activeTab]);
+  }, [db, activeTab, user?.email]);
 
   useEffect(() => {
     fetchData();
@@ -263,7 +273,8 @@ const UserManagement = () => {
     if (!targetUser) return;
 
     const isInvite = targetUser.type === 'invite';
-    const currentIsAdmin = adminEmails.includes(targetUser.email);
+    const targetEmailLower = targetUser.email?.toLowerCase();
+    const currentIsAdmin = adminEmails.some(e => e.toLowerCase() === targetEmailLower);
     const newIsAdmin = newRole === 'admin';
     
     const roleLabel = newRole === 'admin' ? 'Admin' : 'User';
@@ -287,17 +298,17 @@ const UserManagement = () => {
         const configRef = doc(db, 'metadata', 'config');
         
         if (newIsAdmin && !currentIsAdmin) {
-          // Add to admin emails
+          // Add to admin emails (always use lowercase)
           await updateDoc(configRef, {
-            adminemails: arrayUnion(targetUser.email)
+            adminemails: arrayUnion(targetEmailLower)
           });
-          setAdminEmails([...adminEmails, targetUser.email]);
+          setAdminEmails([...adminEmails, targetEmailLower]);
         } else if (!newIsAdmin && currentIsAdmin) {
-          // Remove from admin emails
+          // Remove from admin emails (use lowercase for matching)
           await updateDoc(configRef, {
-            adminemails: arrayRemove(targetUser.email)
+            adminemails: arrayRemove(targetEmailLower)
           });
-          setAdminEmails(adminEmails.filter(e => e !== targetUser.email));
+          setAdminEmails(adminEmails.filter(e => e.toLowerCase() !== targetEmailLower));
         }
       }
 
@@ -318,7 +329,10 @@ const UserManagement = () => {
     const email = userObj.email;
     const isTest = userObj.isTest;
     const testRecipient = userObj.testRecipient;
-    const displayName = userObj.displayName || userObj.name || email;
+    const displayName = userObj.displayName || 
+      (userObj.firstName || userObj.lastName 
+        ? `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim() 
+        : email);
     const inviteId = userObj.id;
 
     let message = `Resend invitation to ${displayName} (${email})?`;
@@ -356,7 +370,8 @@ const UserManagement = () => {
 
       const inviteData = {
         email: inviteForm.email,
-        name: inviteForm.name,
+        firstName: inviteForm.firstName,
+        lastName: inviteForm.lastName,
         role: inviteForm.role,
         cohortId: inviteForm.cohortId || null,
         customMessage: inviteForm.customMessage,
@@ -374,7 +389,8 @@ const UserManagement = () => {
       setIsInviteModalOpen(false);
       setInviteForm({
         email: '',
-        name: '',
+        firstName: '',
+        lastName: '',
         role: 'user',
         cohortId: '',
         customMessage: "You're invited to join the LeaderReps Arena!",
@@ -522,7 +538,8 @@ const UserManagement = () => {
 
   const filteredInvites = invites.filter(invite => 
     invite.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    invite.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    invite.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    invite.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -653,10 +670,10 @@ const UserManagement = () => {
                       </td>
                       <td className="px-6 py-4">
                         <select
-                          value={adminEmails.includes(user.email) ? 'admin' : (user.role || 'user')}
+                          value={adminEmails.some(e => e.toLowerCase() === user.email?.toLowerCase()) ? 'admin' : (user.role || 'user')}
                           onChange={(e) => handleChangeRole(user.id, e.target.value)}
                           className={`text-xs px-2.5 py-1 rounded-md border-0 font-medium cursor-pointer ${
-                            adminEmails.includes(user.email) || user.role === 'admin'
+                            adminEmails.some(e => e.toLowerCase() === user.email?.toLowerCase()) || user.role === 'admin'
                               ? 'bg-purple-100 text-purple-800' 
                               : 'bg-blue-100 text-blue-800'
                           }`}
@@ -737,7 +754,20 @@ const UserManagement = () => {
                 ) : (
                   <tr>
                     <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
-                      No users found matching your search.
+                      {fetchError ? (
+                        <div className="text-red-600">
+                          <p className="font-medium">Error loading users</p>
+                          <p className="text-sm mt-1">{fetchError}</p>
+                          <button 
+                            onClick={() => fetchData()} 
+                            className="mt-2 px-3 py-1 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      ) : (
+                        'No users found matching your search.'
+                      )}
                     </td>
                   </tr>
                 )
@@ -797,7 +827,11 @@ const UserManagement = () => {
                             <Mail className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="font-medium text-slate-900">{invite.name || 'No Name'}</p>
+                            <p className="font-medium text-slate-900">
+                              {invite.firstName || invite.lastName 
+                                ? `${invite.firstName || ''} ${invite.lastName || ''}`.trim()
+                                : 'No Name'}
+                            </p>
                             <p className="text-slate-500 text-xs">{invite.email}</p>
                           </div>
                         </div>
@@ -883,15 +917,29 @@ const UserManagement = () => {
                 />
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Full Name (Optional)</label>
-                <input
-                  type="text"
-                  value={inviteForm.name}
-                  onChange={e => setInviteForm({...inviteForm, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
-                  placeholder="John Doe"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={inviteForm.firstName}
+                    onChange={e => setInviteForm({...inviteForm, firstName: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                    placeholder="John"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={inviteForm.lastName}
+                    onChange={e => setInviteForm({...inviteForm, lastName: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                    placeholder="Doe"
+                  />
+                </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">

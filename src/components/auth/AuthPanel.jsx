@@ -34,7 +34,8 @@ const SECRET_SIGNUP_CODE = '7777';
 function AuthPanel({ auth, db, functions, onSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [secretCode, setSecretCode] = useState('');
   const [mode, setMode] = useState('login');
   const [statusMessage, setStatusMessage] = useState('');
@@ -90,7 +91,9 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
           setEmail(data.email);
           setMode('signup');
           setStatusMessage('');
-          if (data.name) setName(data.name);
+          // Set first and last name from invite data
+          if (data.firstName) setFirstName(data.firstName);
+          if (data.lastName) setLastName(data.lastName);
         } else {
           console.warn("AuthPanel: Invite status not valid for signup:", data.status);
           setStatusMessage('This invitation has already been used or expired.');
@@ -142,7 +145,8 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
             throw new Error('Invalid secret sign-up code.');
         }
         
-        if (!name) throw new Error('Name is required for signup.');
+        if (!firstName.trim()) throw new Error('First name is required for signup.');
+        if (!lastName.trim()) throw new Error('Last name is required for signup.');
 
         // FIRST: Clear token from URL BEFORE creating user to prevent sign-out loop
         // (App.jsx signs out users who have invite tokens in URL)
@@ -157,9 +161,10 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
           password
         );
         
-        // Update Profile
+        // Update Profile - combine first and last name for displayName
+        const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
         await updateProfile(userCredential.user, {
-          displayName: name
+          displayName: fullName
         });
 
         // Handle Invite Acceptance & Cohort Assignment
@@ -403,19 +408,35 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
 
         <div className="space-y-5 text-left">
           {isSignup && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Full Name
-              </label>
-              <input
-                type="text"
-                autoComplete="name"
-                className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
-                placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                style={{ fontFamily: 'var(--font-body)' }}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  autoComplete="given-name"
+                  className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
+                  placeholder="John"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  style={{ fontFamily: 'var(--font-body)' }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  autoComplete="family-name"
+                  className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  style={{ fontFamily: 'var(--font-body)' }}
+                />
+              </div>
             </div>
           )}
 
@@ -425,7 +446,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
             </label>
             <input
               type="email"
-              autoComplete={isSignup ? "email" : "username"}
+              autoComplete="username"
               className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal disabled:bg-slate-50 disabled:text-slate-500 transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
               placeholder="name@company.com"
               value={email}
@@ -556,7 +577,8 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                   setMode('login');
                   setInviteData(null);
                   setEmail('');
-                  setName('');
+                  setFirstName('');
+                  setLastName('');
               }}
               className="text-slate-500 hover:text-corporate-teal transition-colors"
             >

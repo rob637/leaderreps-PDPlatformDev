@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Compass, Calendar, User, Users, Rocket, 
-  Clock, ChevronRight, Shield, Settings, Info
+  Clock, ChevronRight, Shield, Info
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useDailyPlan, PHASES } from '../../hooks/useDailyPlan';
@@ -13,7 +13,7 @@ import FacilitatorProfileModal from './FacilitatorProfileModal';
  * 
  * Displays:
  * - Cohort name and start date
- * - Journey progress dots (1-5 onboarding days)
+ * - Prep progress (5 required items) - COMPLETION-BASED, not login-based
  * - Facilitator info
  * - Days until/since program start
  * - Current phase (Prep, Development Plan, Post)
@@ -24,45 +24,12 @@ const MyJourneyWidget = () => {
     currentPhase, 
     phaseDayNumber, 
     journeyDay,
-    daysFromStart 
+    daysFromStart,
+    prepRequirementsComplete
   } = useDailyPlan();
   const { updateDevelopmentPlanData } = useAppServices();
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [password, setPassword] = useState('');
-  const [newCount, setNewCount] = useState(journeyDay || 1);
   const [showFacilitatorModal, setShowFacilitatorModal] = useState(false);
-
-  const handleUpdateLoginCount = async () => {
-    if (password !== '7777') {
-      alert('Incorrect password');
-      return;
-    }
-
-    const count = parseInt(newCount, 10);
-    if (isNaN(count) || count < 0) return;
-
-    // Generate dummy dates to simulate login history
-    // We use past dates ending with today to ensure the count is correct
-    // and the system sees "today" as visited.
-    const newLog = [];
-    const today = new Date();
-    for (let i = 0; i < count; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - (count - 1 - i)); // Past dates ending today
-      newLog.push(d.toISOString().split('T')[0]);
-    }
-
-    try {
-      await updateDevelopmentPlanData({ prepVisitLog: newLog });
-      setIsEditing(false);
-      setPassword('');
-      alert(`Login count updated to ${count}`);
-    } catch (error) {
-      console.error('Error updating login count:', error);
-      alert('Failed to update login count');
-    }
-  };
 
   // Calculate days until or since start
   const getDaysDisplay = () => {
@@ -164,78 +131,83 @@ const MyJourneyWidget = () => {
           </div>
         )}
 
-        {/* Journey Progress (only in Prep Phase) */}
-        {currentPhase?.id === 'pre-start' && journeyDay && (
+        {/* Prep Progress (only in Prep Phase) - COMPLETION-BASED */}
+        {currentPhase?.id === 'pre-start' && prepRequirementsComplete && (
           <div className="bg-white rounded-xl p-4 border border-slate-200">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-slate-700">Login Streak</span>
-                <button 
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="text-slate-300 hover:text-slate-500 transition-colors"
-                  title="Admin: Update Login Count"
-                >
-                  <Settings className="w-3 h-3" />
-                </button>
+                <span className="text-sm font-medium text-slate-700">Prep Progress</span>
               </div>
               <span className="text-xs text-slate-500">
-                {Math.min(journeyDay, 5)} of 5 logins
+                {prepRequirementsComplete.completedCount} of 5 complete
               </span>
             </div>
-
-            {/* Admin Edit Mode */}
-            {isEditing && (
-              <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <div className="text-xs font-bold text-slate-700 mb-2">Update Login Count (Test)</div>
-                <div className="flex gap-2 mb-2">
-                  <input 
-                    type="password" 
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-20 px-2 py-1 text-xs border rounded"
-                  />
-                  <input 
-                    type="number" 
-                    placeholder="Count"
-                    value={newCount}
-                    onChange={(e) => setNewCount(e.target.value)}
-                    className="w-16 px-2 py-1 text-xs border rounded"
-                  />
-                </div>
-                <button 
-                  onClick={handleUpdateLoginCount}
-                  className="w-full py-1 bg-corporate-teal text-white text-xs font-bold rounded hover:bg-teal-700"
-                >
-                  Update Count
-                </button>
-              </div>
-            )}
             
-            {/* Progress Dots - Shows Login Days, not Activity Completion */}
-            <div className="flex items-center justify-between gap-2">
-              {[1, 2, 3, 4, 5].map((day) => (
-                <div key={day} className="flex-1 flex flex-col items-center">
+            {/* Progress Bar */}
+            <div className="mb-4">
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    prepRequirementsComplete.allComplete 
+                      ? 'bg-emerald-500' 
+                      : 'bg-corporate-teal'
+                  }`}
+                  style={{ width: `${prepRequirementsComplete.progressPercent}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-xs text-slate-400">Required Items</span>
+                <span className={`text-xs font-medium ${
+                  prepRequirementsComplete.allComplete ? 'text-emerald-600' : 'text-corporate-teal'
+                }`}>
+                  {prepRequirementsComplete.progressPercent}%
+                </span>
+              </div>
+            </div>
+            
+            {/* 5 Required Items */}
+            <div className="space-y-2">
+              {prepRequirementsComplete.items.map((item, idx) => (
+                <div 
+                  key={item.id} 
+                  className={`flex items-center gap-3 p-2 rounded-lg transition-all ${
+                    item.complete 
+                      ? 'bg-emerald-50 border border-emerald-100' 
+                      : 'bg-slate-50 border border-slate-100'
+                  }`}
+                >
                   <div 
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                      journeyDay >= day 
-                        ? 'bg-corporate-teal text-white' 
-                        : 'bg-slate-100 text-slate-400'
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      item.complete 
+                        ? 'bg-emerald-500 text-white' 
+                        : 'bg-slate-200 text-slate-500'
                     }`}
                   >
-                    {/* Show day number always - checkmark was misleading */}
-                    <span className="text-sm font-bold">{day}</span>
+                    {item.complete ? '✓' : idx + 1}
                   </div>
-                  <span className="text-[10px] text-slate-500 mt-1">
-                    {day === 1 && 'Profile'}
-                    {day === 2 && 'Bookends'}
-                    {day === 3 && 'Reading'}
-                    {day === 4 && 'Video'}
-                    {day === 5 && 'Ready!'}
+                  <span className={`text-sm ${
+                    item.complete ? 'text-emerald-700' : 'text-slate-600'
+                  }`}>
+                    {item.label}
                   </span>
                 </div>
               ))}
             </div>
+            
+            {/* Status Message */}
+            {prepRequirementsComplete.allComplete ? (
+              <div className="mt-4 p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-center">
+                <span className="text-emerald-700 font-medium text-sm">
+                  ✨ You're ready! All pre-Session 1 resources are unlocked.
+                </span>
+              </div>
+            ) : (
+              <div className="mt-4 p-3 bg-corporate-teal/5 rounded-lg border border-corporate-teal/20 text-center">
+                <span className="text-corporate-teal font-medium text-sm">
+                  Complete all items to unlock additional resources
+                </span>
+              </div>
+            )}
           </div>
         )}
 

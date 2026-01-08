@@ -76,6 +76,7 @@ const ACTION_TYPES = {
 
 const DayCard = ({ day, onEdit, displayDayNumber }) => {
   const isWeekend = day.isWeekend;
+  const isPrepPhase = day.weekNumber !== undefined && day.weekNumber <= 0;
   const linkedResourceCount = (day.actions || []).filter(a => a.resourceId).length;
   const weeklyResourceCount = day.weeklyResources ? (
     (day.weeklyResources.weeklyContent?.length || 0) +
@@ -96,9 +97,9 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
       <div className="flex justify-between items-start mb-2">
         <span className={`
           text-xs font-bold px-2 py-1 rounded-full
-          ${day.weekNumber < 1 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}
+          ${isPrepPhase ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}
         `}>
-          {day.weekNumber < 1 ? 'Login' : 'Day'} {displayDayNumber || day.dayNumber}
+          {isPrepPhase ? 'Item' : 'Day'} {displayDayNumber || day.dayNumber}
         </span>
         <div className="flex items-center gap-1">
           {weeklyResourceCount > 0 && (
@@ -725,6 +726,7 @@ const DailyPlanManager = () => {
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState(-2); // Start with Prep Phase
   const [selectedPhase, setSelectedPhase] = useState('prep'); // 'prep', 'dev', 'post'
+  const [selectedPrepSection, setSelectedPrepSection] = useState('required'); // 'required' or 'explore'
   const [editingDay, setEditingDay] = useState(null);
 
   // Phase configuration
@@ -733,13 +735,14 @@ const DailyPlanManager = () => {
       id: 'prep', 
       name: 'Prep Phase', 
       emoji: '📋',
-      description: 'Pre-program preparation (Days 1-14)',
+      description: 'Required prep items that unlock app features',
       weekRange: [-2, 0], // Weeks -2 to 0
       bgColor: 'bg-amber-50',
       textColor: 'text-amber-700',
       borderColor: 'border-amber-300',
       activeColor: 'bg-amber-500',
-      dayOffset: 0
+      dayOffset: 0,
+      isProgressBased: true // NEW: Flag for progress-based phases
     },
     dev: { 
       id: 'dev', 
@@ -764,6 +767,30 @@ const DailyPlanManager = () => {
       borderColor: 'border-slate-300',
       activeColor: 'bg-slate-500',
       dayOffset: 70
+    }
+  };
+  
+  // Prep Phase section configuration
+  const PREP_SECTIONS = {
+    required: {
+      id: 'required',
+      name: 'Required Prep',
+      emoji: '⚡',
+      description: 'Required items that must be completed to unlock app features',
+      bgColor: 'bg-amber-50',
+      textColor: 'text-amber-700',
+      borderColor: 'border-amber-300',
+      activeColor: 'bg-amber-500'
+    },
+    explore: {
+      id: 'explore',
+      name: 'Explore Your Tools',
+      emoji: '🔓',
+      description: 'Optional content unlocked after completing Required Prep',
+      bgColor: 'bg-purple-50',
+      textColor: 'text-purple-700',
+      borderColor: 'border-purple-300',
+      activeColor: 'bg-purple-500'
     }
   };
 
@@ -804,20 +831,71 @@ const DailyPlanManager = () => {
     w >= currentPhase.weekRange[0] && w <= currentPhase.weekRange[1]
   );
   
-  const currentWeekDays = weeks[selectedWeek] || [];
+  // Get all prep phase days (for progress-based view)
+  const prepDays = useMemo(() => {
+    return days.filter(day => day.weekNumber !== undefined && day.weekNumber <= 0);
+  }, [days]);
+  
+  // Separate prep days into Required vs Additional based on content
+  const { requiredPrepDays, additionalPrepDays } = useMemo(() => {
+    // Required prep: Days that contain the 5 required prep items
+    // These are typically the first few days (Day 1-3) in the data
+    // We identify them by looking for specific action labels/IDs
+    const required = [];
+    const additional = [];
+    
+    prepDays.forEach(day => {
+      const actions = day.actions || [];
+      const hasRequiredItem = actions.some(action => {
+        const id = (action.id || '').toLowerCase();
+        const label = (action.label || '').toLowerCase();
+        
+        // Check for required prep items
+        if (id.includes('action-prep-001') || id.includes('action-prep-002') || id.includes('action-prep-003')) return true;
+        if (label.includes('foundation') && (label.includes('video') || label.includes('workbook'))) return true;
+        if (label.includes('prep exercises') || label.includes('session 1 prep')) return true;
+        if (label.includes('leader profile') || label.includes('baseline assessment')) return true;
+        
+        return false;
+      });
+      
+      // Also check if day is marked as required prep (new field)
+      if (hasRequiredItem || day.isRequiredPrep) {
+        required.push(day);
+      } else {
+        additional.push(day);
+      }
+    });
+    
+    return { 
+      requiredPrepDays: required.sort((a, b) => a.dayNumber - b.dayNumber),
+      additionalPrepDays: additional.sort((a, b) => a.dayNumber - b.dayNumber)
+    };
+  }, [prepDays]);
+  
+  // Current days to display based on phase and section
+  const currentWeekDays = useMemo(() => {
+    if (selectedPhase === 'prep') {
+      // Prep phase has two sections: Required Prep and Explore Your Tools
+      return selectedPrepSection === 'required' ? requiredPrepDays : additionalPrepDays;
+    }
+    return weeks[selectedWeek] || [];
+  }, [selectedPhase, selectedPrepSection, requiredPrepDays, additionalPrepDays, weeks, selectedWeek]);
 
   // Handle phase change - jump to first week of that phase
   const handlePhaseChange = (phaseId) => {
     setSelectedPhase(phaseId);
     const phase = PHASES[phaseId];
-    const firstWeekInPhase = weekNumbers.find(w => 
-      w >= phase.weekRange[0] && w <= phase.weekRange[1]
-    );
-    if (firstWeekInPhase !== undefined) {
-      setSelectedWeek(firstWeekInPhase);
-    } else {
-      // Default to the start of the range if no data exists yet
-      setSelectedWeek(phase.weekRange[0]);
+    if (phaseId !== 'prep') {
+      const firstWeekInPhase = weekNumbers.find(w => 
+        w >= phase.weekRange[0] && w <= phase.weekRange[1]
+      );
+      if (firstWeekInPhase !== undefined) {
+        setSelectedWeek(firstWeekInPhase);
+      } else {
+        // Default to the start of the range if no data exists yet
+        setSelectedWeek(phase.weekRange[0]);
+      }
     }
   };
 
@@ -914,74 +992,112 @@ const DailyPlanManager = () => {
           ))}
         </div>
         
-        {/* Week Selector - Within Selected Phase */}
-        <div className="flex items-center gap-4">
-          <span className="text-xs font-bold text-slate-400 uppercase">Week:</span>
-          <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
-            <button 
-              onClick={() => {
-                const currentIdx = phaseWeekNumbers.indexOf(selectedWeek);
-                if (currentIdx > 0) setSelectedWeek(phaseWeekNumbers[currentIdx - 1]);
-              }}
-              disabled={phaseWeekNumbers.indexOf(selectedWeek) === 0 || phaseWeekNumbers.length === 0}
-              className="p-1.5 hover:bg-white rounded-md disabled:opacity-30"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            
-            {/* Week Pills */}
-            <div className="flex gap-1 px-2">
-              {phaseWeekNumbers.length > 0 ? (
-                phaseWeekNumbers.map(weekNum => (
-                  <button
-                    key={weekNum}
-                    onClick={() => setSelectedWeek(weekNum)}
-                    className={`
-                      px-3 py-1 rounded-md text-xs font-bold transition-all
-                      ${selectedWeek === weekNum 
-                        ? `${currentPhase.activeColor} text-white` 
-                        : 'hover:bg-white text-slate-600'
-                      }
-                    `}
-                  >
-                    {selectedPhase === 'prep' 
-                      ? `W${weekNum}` 
-                      : selectedPhase === 'dev' 
+        {/* Week/Section Selector - Context-aware based on phase */}
+        {selectedPhase === 'prep' ? (
+          // PREP PHASE: Section selector (Required Prep vs Explore Your Tools)
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-bold text-slate-400 uppercase">SECTION:</span>
+            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+              {Object.values(PREP_SECTIONS).map(section => (
+                <button
+                  key={section.id}
+                  onClick={() => setSelectedPrepSection(section.id)}
+                  className={`
+                    flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-semibold transition-all
+                    ${selectedPrepSection === section.id 
+                      ? `${section.activeColor} text-white` 
+                      : 'hover:bg-white text-slate-600'
+                    }
+                  `}
+                >
+                  <span>{section.emoji}</span>
+                  <span>{section.name}</span>
+                  <span className={`
+                    text-xs px-1.5 py-0.5 rounded-full
+                    ${selectedPrepSection === section.id ? 'bg-white/20' : 'bg-black/5'}
+                  `}>
+                    {section.id === 'required' ? requiredPrepDays.length : additionalPrepDays.length}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          // DEV/POST PHASE: Week-based selector
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-bold text-slate-400 uppercase">Week:</span>
+            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+              <button 
+                onClick={() => {
+                  const currentIdx = phaseWeekNumbers.indexOf(selectedWeek);
+                  if (currentIdx > 0) setSelectedWeek(phaseWeekNumbers[currentIdx - 1]);
+                }}
+                disabled={phaseWeekNumbers.indexOf(selectedWeek) === 0 || phaseWeekNumbers.length === 0}
+                className="p-1.5 hover:bg-white rounded-md disabled:opacity-30"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              
+              {/* Week Pills */}
+              <div className="flex gap-1 px-2">
+                {phaseWeekNumbers.length > 0 ? (
+                  phaseWeekNumbers.map(weekNum => (
+                    <button
+                      key={weekNum}
+                      onClick={() => setSelectedWeek(weekNum)}
+                      className={`
+                        px-3 py-1 rounded-md text-xs font-bold transition-all
+                        ${selectedWeek === weekNum 
+                          ? `${currentPhase.activeColor} text-white` 
+                          : 'hover:bg-white text-slate-600'
+                        }
+                      `}
+                    >
+                      {selectedPhase === 'dev' 
                         ? `Wk ${weekNum}` 
                         : `W${weekNum - 8}`
-                    }
-                  </button>
-                ))
-              ) : (
-                <span className="text-xs text-slate-400 px-2">No weeks defined</span>
-              )}
+                      }
+                    </button>
+                  ))
+                ) : (
+                  <span className="text-xs text-slate-400 px-2">No weeks defined</span>
+                )}
+              </div>
+              
+              <button 
+                onClick={() => {
+                  const currentIdx = phaseWeekNumbers.indexOf(selectedWeek);
+                  if (currentIdx < phaseWeekNumbers.length - 1) setSelectedWeek(phaseWeekNumbers[currentIdx + 1]);
+                }}
+                disabled={phaseWeekNumbers.indexOf(selectedWeek) === phaseWeekNumbers.length - 1 || phaseWeekNumbers.length === 0}
+                className="p-1.5 hover:bg-white rounded-md disabled:opacity-30"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-            
-            <button 
-              onClick={() => {
-                const currentIdx = phaseWeekNumbers.indexOf(selectedWeek);
-                if (currentIdx < phaseWeekNumbers.length - 1) setSelectedWeek(phaseWeekNumbers[currentIdx + 1]);
-              }}
-              disabled={phaseWeekNumbers.indexOf(selectedWeek) === phaseWeekNumbers.length - 1 || phaseWeekNumbers.length === 0}
-              className="p-1.5 hover:bg-white rounded-md disabled:opacity-30"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Phase Description Banner */}
-      <div className={`px-6 py-2 text-sm font-medium ${currentPhase.bgColor} ${currentPhase.textColor} border-b ${currentPhase.borderColor}`}>
-        {currentPhase.emoji} {currentPhase.description}
-      </div>
+      {/* Phase/Section Description Banner */}
+      {selectedPhase === 'prep' ? (
+        <div className={`px-6 py-2 text-sm font-medium ${PREP_SECTIONS[selectedPrepSection].bgColor} ${PREP_SECTIONS[selectedPrepSection].textColor} border-b ${PREP_SECTIONS[selectedPrepSection].borderColor}`}>
+          {PREP_SECTIONS[selectedPrepSection].emoji} {PREP_SECTIONS[selectedPrepSection].description}
+        </div>
+      ) : (
+        <div className={`px-6 py-2 text-sm font-medium ${currentPhase.bgColor} ${currentPhase.textColor} border-b ${currentPhase.borderColor}`}>
+          {currentPhase.emoji} {currentPhase.description}
+        </div>
+      )}
 
       {/* Day Cards Grid */}
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {currentWeekDays.map(day => {
-            // Calculate display day number based on phase offset
-            const displayDay = day.dayNumber - (currentPhase.dayOffset || 0);
+          {currentWeekDays.map((day, idx) => {
+            // For prep phase, show sequential item numbers within the section
+            const displayDay = selectedPhase === 'prep' 
+              ? idx + 1 
+              : day.dayNumber - (currentPhase.dayOffset || 0);
             
             return (
               <DayCard 
@@ -994,8 +1110,17 @@ const DailyPlanManager = () => {
           })}
           {currentWeekDays.length === 0 && (
             <div className="col-span-full text-center py-20 text-slate-400">
-              <p className="text-lg font-medium mb-2">No days found for Week {selectedWeek}</p>
-              <p className="text-sm">Days for this phase haven't been configured yet.</p>
+              {selectedPhase === 'prep' ? (
+                <>
+                  <p className="text-lg font-medium mb-2">No Required Prep items found</p>
+                  <p className="text-sm">Configure prep content in the daily_plan_v1 collection.</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg font-medium mb-2">No days found for Week {selectedWeek}</p>
+                  <p className="text-sm">Days for this phase haven't been configured yet.</p>
+                </>
+              )}
             </div>
           )}
         </div>

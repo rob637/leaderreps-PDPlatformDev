@@ -11,6 +11,13 @@ import useLeaderProfile from './useLeaderProfile';
  * - Prep Gate: Blocks Day 1+ until prep requirements are met
  * - Content/Community/Coaching unlocking based on current day
  * - Zone-specific visibility flags per day
+ * 
+ * UPDATED: Now uses prepRequirementsComplete for 5-item completion check:
+ * 1. Leader Profile
+ * 2. Baseline Assessment
+ * 3. Foundation Video
+ * 4. Foundation Workbook
+ * 5. Prep Exercises
  */
 export const useDayBasedAccessControl = () => {
   const { developmentPlanData, user } = useAppServices();
@@ -19,17 +26,36 @@ export const useDayBasedAccessControl = () => {
     currentDayNumber, 
     currentDayData, 
     loading,
-    unlockedContentIds 
+    unlockedContentIds,
+    prepRequirementsComplete,
+    currentPhase
   } = useDailyPlan();
   const { isComplete: leaderProfileIsComplete } = useLeaderProfile();
 
   // --- PREP GATE CHECK ---
-  // User must complete these before accessing Day 1+:
-  // 1. Leader Profile (profile.isComplete from useLeaderProfile - NOT just displayName!)
-  // 2. Baseline Assessment (developmentPlanData.currentPlan.focusAreas exists)
+  // User must complete these 5 items before accessing Day 1+:
+  // 1. Leader Profile
+  // 2. Baseline Assessment  
+  // 3. Foundation Video
+  // 4. Foundation Workbook
+  // 5. Prep Exercises
   const prepStatus = useMemo(() => {
-    // Use the actual profile completion status from useLeaderProfile
-    // Do NOT use user.displayName as that comes from Firebase Auth, not the profile form
+    // Use the new prepRequirementsComplete for comprehensive 5-item check
+    if (prepRequirementsComplete) {
+      return {
+        hasLeaderProfile: prepRequirementsComplete.leaderProfile,
+        hasBaselineAssessment: prepRequirementsComplete.baselineAssessment,
+        hasVideo: prepRequirementsComplete.videoWatched,
+        hasWorkbook: prepRequirementsComplete.workbookDownloaded,
+        hasExercises: prepRequirementsComplete.exercisesComplete,
+        isComplete: prepRequirementsComplete.allComplete,
+        completedCount: prepRequirementsComplete.completedCount,
+        totalCount: 5,
+        missingItems: prepRequirementsComplete.remaining?.map(r => r.label) || []
+      };
+    }
+    
+    // Fallback to legacy 2-item check if prepRequirementsComplete not available
     const hasLeaderProfile = leaderProfileIsComplete;
     const hasBaselineAssessment = !!(
       developmentPlanData?.currentPlan?.focusAreas && 
@@ -40,12 +66,14 @@ export const useDayBasedAccessControl = () => {
       hasLeaderProfile,
       hasBaselineAssessment,
       isComplete: hasLeaderProfile && hasBaselineAssessment,
+      completedCount: (hasLeaderProfile ? 1 : 0) + (hasBaselineAssessment ? 1 : 0),
+      totalCount: 2,
       missingItems: [
         !hasLeaderProfile && 'Leader Profile',
         !hasBaselineAssessment && 'Baseline Assessment'
       ].filter(Boolean)
     };
-  }, [leaderProfileIsComplete, developmentPlanData]);
+  }, [prepRequirementsComplete, leaderProfileIsComplete, developmentPlanData]);
 
   // --- EFFECTIVE DAY ---
   // If prep is not complete, user is locked to prep phase (Day -14 to Day -1)

@@ -3,6 +3,22 @@ import { useAppServices } from '../services/useAppServices';
 import { collection, query, orderBy, getDocs, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { timeChange$ } from '../services/timeService';
 import { useActionProgress } from './useActionProgress';
+import { useLeaderProfile } from './useLeaderProfile';
+
+/**
+ * PREP REQUIREMENT ACTION IDS
+ * ===========================
+ * These are the 5 required prep items that must be completed before Session 1.
+ * Once all 5 are complete, the user unlocks all pre-Session 1 content/widgets.
+ * Progress is COMPLETION-BASED, not day-based.
+ */
+export const PREP_REQUIREMENT_IDS = {
+  LEADER_PROFILE: 'action-prep-leader-profile',
+  BASELINE_ASSESSMENT: 'action-prep-baseline-assessment', 
+  VIDEO: 'action-prep-001-video',
+  WORKBOOK: 'action-prep-001-workbook',
+  EXERCISES: 'action-prep-003-exercises'
+};
 
 /**
  * Hook to manage the Daily Plan logic.
@@ -273,6 +289,7 @@ export const getDbDayNumber = (daysFromStart) => {
 export const useDailyPlan = () => {
   const { db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const { getItemProgress } = useActionProgress();
+  const { isComplete: leaderProfileComplete } = useLeaderProfile();
   const [dailyPlan, setDailyPlan] = useState([]);
   const [loadingPlan, setLoadingPlan] = useState(true);
   const [cohortData, setCohortData] = useState(null);
@@ -410,6 +427,88 @@ export const useDailyPlan = () => {
       onboardingCompleted: baseData.onboardingCompleted || {}
     };
   }, [developmentPlanData, user]);
+
+  // ============================================================================
+  // PREP REQUIREMENTS COMPLETION CHECK
+  // ============================================================================
+  // Tracks completion of the 5 required prep items. Once all are complete,
+  // the user unlocks all pre-Session 1 content and widgets immediately.
+  // This is COMPLETION-BASED, not day-based.
+  const prepRequirementsComplete = useMemo(() => {
+    // Helper to check if an action is completed
+    const isActionComplete = (actionId) => {
+      // Check via useActionProgress
+      const progress = getItemProgress(actionId);
+      if (progress?.status === 'completed') return true;
+      
+      // Fallback: Check all dailyProgress entries for legacy data
+      const dailyProgress = developmentPlanData?.dailyProgress || {};
+      return Object.values(dailyProgress).some(dayProgress => 
+        dayProgress?.itemsCompleted?.includes(actionId)
+      );
+    };
+
+    // 1. Leader Profile - use hook result directly
+    const leaderProfile = leaderProfileComplete || false;
+    
+    // 2. Baseline Assessment - check assessmentHistory
+    const baselineAssessment = !!(
+      developmentPlanData?.assessmentHistory && 
+      developmentPlanData.assessmentHistory.length > 0
+    ) || !!(
+      developmentPlanData?.currentPlan?.focusAreas &&
+      developmentPlanData.currentPlan.focusAreas.length > 0
+    );
+    
+    // 3. Video Watched
+    const videoWatched = isActionComplete(PREP_REQUIREMENT_IDS.VIDEO);
+    
+    // 4. Workbook Downloaded
+    const workbookDownloaded = isActionComplete(PREP_REQUIREMENT_IDS.WORKBOOK);
+    
+    // 5. Exercises Complete
+    const exercisesComplete = isActionComplete(PREP_REQUIREMENT_IDS.EXERCISES);
+
+    // Compute totals
+    const items = [
+      { id: 'leaderProfile', label: 'Leader Profile', complete: leaderProfile },
+      { id: 'baselineAssessment', label: 'Baseline Assessment', complete: baselineAssessment },
+      { id: 'videoWatched', label: 'Foundation Video', complete: videoWatched },
+      { id: 'workbookDownloaded', label: 'Foundation Workbook', complete: workbookDownloaded },
+      { id: 'exercisesComplete', label: 'Prep Exercises', complete: exercisesComplete }
+    ];
+    
+    const completedCount = items.filter(i => i.complete).length;
+    const allComplete = completedCount === 5;
+    const remaining = items.filter(i => !i.complete);
+
+    console.log('[useDailyPlan] prepRequirementsComplete:', {
+      leaderProfile,
+      baselineAssessment,
+      videoWatched,
+      workbookDownloaded,
+      exercisesComplete,
+      completedCount,
+      allComplete
+    });
+
+    return {
+      // Individual items
+      leaderProfile,
+      baselineAssessment,
+      videoWatched,
+      workbookDownloaded,
+      exercisesComplete,
+      // Computed
+      items,
+      completedCount,
+      totalCount: 5,
+      allComplete,
+      remaining,
+      // Progress percentage
+      progressPercent: Math.round((completedCount / 5) * 100)
+    };
+  }, [getItemProgress, developmentPlanData, leaderProfileComplete]);
 
   // Auto-initialize startDate if missing (only for users WITHOUT a cohort)
   useEffect(() => {
@@ -1076,6 +1175,7 @@ export const useDailyPlan = () => {
     // Prep Phase specific (NEW)
     prepPhaseInfo,          // { daysUntilStart, welcome, quote, onboarding, journeyDay, cohort, ... } - only in prep phase
     journeyDay,             // User's personal journey day (days since first prep phase visit)
+    prepRequirementsComplete, // { allComplete, completedCount, items, remaining, ... } - 5 required prep items
     
     // Legacy (for backward compatibility)
     currentDayNumber,       // User-facing day number (negative for prep, positive for start)
