@@ -449,7 +449,7 @@ const DevelopmentJourneyWidget = () => {
   } = useDailyPlan();
   
   const { getItemProgress } = useActionProgress();
-  const { isProfileComplete: leaderProfileComplete } = useLeaderProfile();
+  const { isComplete: leaderProfileComplete } = useLeaderProfile();
   
   // Check baseline assessment completion
   const baselineAssessmentComplete = useMemo(() => {
@@ -500,11 +500,8 @@ const DevelopmentJourneyWidget = () => {
     const maxDay = Math.max(...dayNumbers);
     
     // =================== PREP PHASE ===================
-    // Get all prep phase days from daily plan
-    const prepDays = dailyPlan.filter(d => 
-      d.dayNumber >= PHASES.PRE_START.dbDayStart && 
-      d.dayNumber <= PHASES.PRE_START.dbDayEnd
-    );
+    // Get all prep phase days from daily plan (phase-based, not time-based)
+    const prepDays = dailyPlan.filter(d => d.phase === 'pre-start');
     
     // Collect ALL prep actions from the daily plan
     const allPrepActions = [];

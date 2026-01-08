@@ -26,9 +26,9 @@ const Locker = () => {
 
   // Day-based locker visibility from daily plan
   const lockerVisibility = useMemo(() => {
-    // During Prep Phase, allow all enabled widgets to show (don't restrict by day config)
+    // During Prep Phase (progress-based, not time-based), allow all enabled widgets to show
     // This ensures widgets enabled in Widget Lab appear as expected
-    if (currentDayData?.phase === 'pre-start' || (currentDayData?.dayNumber && currentDayData.dayNumber < 15)) {
+    if (currentDayData?.phase === 'pre-start') {
       return {
         showProfile: true,
         showReminders: true,

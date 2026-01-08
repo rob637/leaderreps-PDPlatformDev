@@ -26,11 +26,11 @@ export const PREP_REQUIREMENT_IDS = {
  * 
  * THREE PHASE SYSTEM:
  * ==================
- * 1. PRE-START (Prep Phase) - 14 days before cohort start
+ * 1. PRE-START (Prep Phase) - PROGRESS-BASED, NOT TIME-BASED
  *    - Users can join anytime, no "behind" status
- *    - Tasks to complete before program starts
- *    - DB: dayNumber 1-14, weekNumber -2 and -1
- *    - Display: "Prep Day 1-14"
+ *    - Completion based on Required Prep items + optional Explore
+ *    - DB: phase='pre-start', dayNumber used for ordering only
+ *    - Display: "Required Prep" and "Explore" sections
  * 
  * 2. START (Foundations) - 8 weeks (56 days)
  *    - Cohort-based progression
@@ -50,8 +50,10 @@ export const PHASES = {
     id: 'pre-start',
     name: 'Pre-Start',
     displayName: 'Prep Phase',
+    // NOTE: dbDayStart/dbDayEnd are for backwards compatibility only
+    // Prep Phase identification should use phase === 'pre-start'
     dbDayStart: 1,
-    dbDayEnd: 14,
+    dbDayEnd: 14, // Legacy - actual prep can have any number of days
     weekRange: [-2, -1],
     trackMissedDays: false, // Users can start anytime
     cumulativeActions: true, // Actions accumulate - Day 1 actions persist through Day 14
@@ -448,11 +450,8 @@ export const useDailyPlan = () => {
       );
     };
     
-    // Get all prep phase days from daily plan
-    const prepDays = dailyPlan.filter(d => 
-      d.dayNumber >= PHASES.PRE_START.dbDayStart && 
-      d.dayNumber <= PHASES.PRE_START.dbDayEnd
-    );
+    // Get all prep phase days from daily plan (phase-based, not time-based)
+    const prepDays = dailyPlan.filter(d => d.phase === 'pre-start');
     
     // Collect all prep actions from the daily plan
     const allPrepActions = [];
@@ -795,9 +794,11 @@ export const useDailyPlan = () => {
     let prepInfo = null;
     
     if (currentPhase.cumulativeActions) {
-      // Accumulate all actions from Day 1 to current day
+      // PREP PHASE: Progress-based, NOT time-based
+      // Get ALL prep phase actions - they're all available from day 1
+      // The user completes Required Prep items, then can access Explore
       const prepDays = dailyPlan
-        .filter(d => d.dayNumber >= PHASES.PRE_START.dbDayStart && d.dayNumber <= dbDayNumber)
+        .filter(d => d.phase === 'pre-start')
         .sort((a, b) => a.dayNumber - b.dayNumber);
       
       prepDays.forEach(day => {
@@ -805,45 +806,19 @@ export const useDailyPlan = () => {
           day.actions
             .filter(action => action.enabled !== false) // Only include enabled actions
             .forEach(action => {
-              // Add metadata about when this action was introduced
               cumulativeActions.push({
                 ...action,
-                introducedOnDay: day.dayNumber,
-                introducedOnDayId: day.id,
-                // Use day.dayNumber for display: "Prep Day X"
-                introducedLabel: `Login ${day.dayNumber}`
+                dayId: day.id
               });
             });
         }
       });
       
-      // Calculate days until cohort start (Day 15)
-      // Use calendar-based daysFromStart (which is negative in Prep Phase)
-      // If daysFromStart is -5, daysUntilStart is 5.
-      // Fallback to dbDayNumber calculation if daysFromStart is not available or weird
-      const daysUntilStart = daysFromStart < 0 ? Math.abs(daysFromStart) : (PHASES.START.dbDayStart - dbDayNumber);
-      
-      const welcomeMessage = getPrepPhaseWelcome(daysUntilStart);
-      const dailyQuote = getDailyQuote(dbDayNumber);
-      
-      // Get the appropriate onboarding module based on user's journey day
-      // journeyDay is passed from outer scope (calculated from prepPhaseFirstVisit)
-      console.log('[useDailyPlan] Calling getOnboardingModule with:', { journeyDay, daysUntilStart });
-      const onboardingModule = getOnboardingModule(journeyDay, daysUntilStart);
-      console.log('[useDailyPlan] Received onboardingModule:', onboardingModule);
+      // Calculate days until cohort start (for countdown display only)
+      const daysUntilStart = daysFromStart < 0 ? Math.abs(daysFromStart) : 0;
       
       prepInfo = {
         daysUntilStart,
-        totalPrepDays: PHASES.PRE_START.dbDayEnd - PHASES.PRE_START.dbDayStart + 1,
-        currentPrepDay: journeyDay, // Use journeyDay (visit count) instead of calendar day
-        progressPercent: Math.round((journeyDay / 14) * 100),
-        welcome: welcomeMessage,
-        quote: dailyQuote,
-        // Progressive onboarding
-        journeyDay,
-        onboarding: onboardingModule,
-        isAccelerated: daysUntilStart <= 4,
-        isFoundation: daysUntilStart <= 2,
         // Cohort info (if available) - convert Firestore Timestamp to Date
         cohort: cohortData,
         cohortName: cohortData?.name,
@@ -851,9 +826,9 @@ export const useDailyPlan = () => {
                          cohortData?.startDate?.seconds ? new Date(cohortData.startDate.seconds * 1000) :
                          cohortData?.startDate ? new Date(cohortData.startDate) : null,
         facilitator: cohortData?.facilitator,
-        // Summary of prep completion
-        totalActions: cumulativeActions.length,
-        actionsIntroducedToday: cumulativeActions.filter(a => a.introducedOnDay === dbDayNumber).length
+        // NOTE: Progress tracking is purely completion-based via prepRequirementsComplete
+        // There are no "days" or "login counts" in the prep phase
+        totalActions: cumulativeActions.length
       };
       
       console.log('[useDailyPlan] Prep Phase cumulative actions:', {

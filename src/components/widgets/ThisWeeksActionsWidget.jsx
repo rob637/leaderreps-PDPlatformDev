@@ -146,10 +146,11 @@ const ThisWeeksActionsWidget = () => {
   const allActions = useMemo(() => {
     if (!dailyPlan || dailyPlan.length === 0) return [];
 
-    // Pre-Start phase = COMPLETION-BASED (not day-based)
+    // Pre-Start phase = COMPLETION-BASED (not day-based or time-based)
+    // Two sections: Required Prep and Explore (optional)
     if (currentPhase?.id === 'pre-start') {
       // Interactive content items (Leader Profile & Baseline Assessment)
-      // These are part of the 5 required items
+      // These are part of the required items
       const interactiveItems = [
         {
           id: 'interactive-leader-profile',
@@ -181,11 +182,8 @@ const ThisWeeksActionsWidget = () => {
         }
       ];
       
-      // Get ALL prep phase actions from daily plan
-      const prepDays = dailyPlan.filter(d => 
-        d.phase === 'pre-start' && 
-        d.dayNumber <= 14
-      );
+      // Get ALL prep phase actions from daily plan (progress-based, not day-based)
+      const prepDays = dailyPlan.filter(d => d.phase === 'pre-start');
       
       let allPrepActions = [];
       prepDays.forEach(day => {
@@ -194,51 +192,36 @@ const ThisWeeksActionsWidget = () => {
         }
       });
       
-      // Filter out Leader Profile and Baseline Assessment (handled by interactive items)
-      // and Daily Reps
+      // Filter out items handled by interactive components
       const onboardingLabels = ['leader profile', 'baseline assessment'];
       const filteredPrepActions = allPrepActions.filter(action => {
         const labelLower = (action.label || '').toLowerCase();
+        const handlerType = action.handlerType || '';
         if (onboardingLabels.some(keyword => labelLower.includes(keyword))) return false;
+        if (handlerType === 'leader-profile' || handlerType === 'baseline-assessment') return false;
         if (action.type === 'daily_rep') return false;
         return true;
       });
       
+      // Separate into Required and Explore based on flags from daily plan
+      const requiredPrepActions = filteredPrepActions.filter(action => {
+        // Required = required === true OR (required !== false AND optional !== true)
+        return action.required === true || (action.required !== false && action.optional !== true);
+      });
+      
+      const explorePrepActions = filteredPrepActions.filter(action => {
+        // Explore = optional === true OR required === false
+        return action.optional === true || action.required === false;
+      });
+      
       // COMPLETION-BASED GATING:
-      // If prep requirements are NOT all complete, only show the 5 required items
-      // (Leader Profile, Baseline Assessment, Video, Workbook, Exercises)
+      // If required prep is NOT complete, only show required items
       if (!prepRequirementsComplete?.allComplete) {
-        // Filter to only the 5 required prep items
-        // Use actual IDs from Firestore: action-prep-001-video, action-prep-001-workbook, action-prep-003-exercises
-        const REQUIRED_IDS = [
-          'action-prep-001-video',
-          'action-prep-001-workbook',
-          'action-prep-003-exercises',
-          // Legacy IDs for backwards compatibility
-          'prep-foundation-video',
-          'prep-workbook-download',
-          'prep-exercises'
-        ];
-        const requiredPrepActions = filteredPrepActions.filter(action => {
-          const actionId = (action.id || '').toLowerCase();
-          const labelLower = (action.label || '').toLowerCase();
-          // Check by ID
-          if (REQUIRED_IDS.some(id => actionId.includes(id))) return true;
-          // Check by label for Video - handle "Watch Foundation S1 Prep Video" format
-          if ((labelLower.includes('foundation') && labelLower.includes('video')) || 
-              labelLower.includes('watch the video') ||
-              labelLower.includes('prep video')) return true;
-          // Check by label for Workbook
-          if (labelLower.includes('workbook') || labelLower.includes('download')) return true;
-          // Check by label for Exercises  
-          if (labelLower.includes('exercises') || labelLower.includes('complete exercises')) return true;
-          return false;
-        });
         return [...interactiveItems, ...requiredPrepActions];
       }
       
-      // Prep is complete - show ALL remaining prep phase items
-      return [...interactiveItems, ...filteredPrepActions];
+      // Required prep is complete - show ALL prep items (including Explore)
+      return [...interactiveItems, ...requiredPrepActions, ...explorePrepActions];
     }
     
     // Start/Post phase = Show actions for the CURRENT WEEK
@@ -323,7 +306,7 @@ const ThisWeeksActionsWidget = () => {
       }
       
       // Also check for incomplete prep phase daily plan items
-      const prepDays = dailyPlan.filter(d => d.dayNumber >= 1 && d.dayNumber <= 14);
+      const prepDays = dailyPlan.filter(d => d.phase === 'pre-start');
       const dailyProgress = userState?.dailyProgress || {};
       
       prepDays.forEach(day => {

@@ -20,8 +20,8 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
       const dailyPlanSnap = await getDocs(dailyPlanQuery);
       const dailyPlan = dailyPlanSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       
-      // Filter to prep phase days (dayNumber 1-14)
-      const prepDays = dailyPlan.filter(d => d.dayNumber >= 1 && d.dayNumber <= 14);
+      // Filter to prep phase days by phase field (not time-based)
+      const prepDays = dailyPlan.filter(d => d.phase === 'pre-start');
       
       // Collect all required prep actions
       const allPrepActions = [];

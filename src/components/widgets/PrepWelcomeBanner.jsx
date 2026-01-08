@@ -10,17 +10,14 @@ import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import FacilitatorProfileModal from './FacilitatorProfileModal';
 
 /**
- * PrepWelcomeBanner - Progressive Onboarding for Prep Phase
+ * PrepWelcomeBanner - Progress-Based Onboarding for Prep Phase
  * 
- * Shows different content based on user's JOURNEY DAY (not calendar day):
- * - Day 1: Welcome, Leader Profile, Baseline Assessment
- * - Day 2: AM/PM Bookends introduction
- * - Day 3: Reading content introduction
- * - Day 4: Video content introduction
- * - Day 5+: Recap & app overview
+ * Shows content based on user's COMPLETION STATUS (not days or logins):
+ * - Not started: Welcome message, encourage to start Required Prep
+ * - In progress: Show remaining required items
+ * - Complete: Congratulations, show Explore section is unlocked
  * 
- * Late joiners get accelerated/quick-start versions.
- * Now includes cohort name and facilitator info!
+ * Includes cohort name and facilitator info if available.
  */
 const PrepWelcomeBanner = () => {
   const { user } = useAppServices();
@@ -92,10 +89,7 @@ const PrepWelcomeBanner = () => {
   // Debug logging
   console.log('[PrepWelcomeBanner] Rendering with:', {
     currentPhase: currentPhase?.id,
-    journeyDay,
-    phaseDayNumber,
-    hasOnboarding: !!prepPhaseInfo?.onboarding,
-    prepVisitLog: userState?.prepVisitLog || 'no visitLog'
+    prepRequirementsComplete: prepRequirementsComplete?.allComplete
   });
   
   // Only show in Prep Phase
@@ -106,10 +100,7 @@ const PrepWelcomeBanner = () => {
   
   const info = prepPhaseInfo || {};
   const { 
-    daysUntilStart = 14, 
-    welcome = { headline: "Your Journey Begins Now, Leader", subtext: "Preparing for your leadership transformation.", excitement: 'start' },
-    quote = { quote: "Leadership is not about being in charge. It's about taking care of those in your charge.", author: "Simon Sinek" },
-    onboarding: originalOnboarding = null,
+    daysUntilStart = 0, 
     cohortName = null,
     cohortStartDate = null,
     facilitator = null
@@ -118,16 +109,8 @@ const PrepWelcomeBanner = () => {
   // Get user's first name for personalization - prefer profile data over displayName
   const firstName = leaderProfile?.firstName || user?.displayName?.split(' ')[0] || 'Leader';
   
-  // Launch mode for Session One
-  const isLaunch = welcome.excitement === 'launch';
-  
-  // Calculate effective journey day
-  // 1. Clamp to phaseDayNumber so early birds don't get ahead of the official schedule
-  const clampedJourneyDay = Math.min(journeyDay || 1, phaseDayNumber || 14);
-  
   const incompleteRequiredActions = actions.filter(action => {
     // An action is required if it's not explicitly optional AND not explicitly marked as not required.
-    // This matches the logic in ThisWeeksActionsWidget to ensure the count matches the "Required" badges shown.
     const isRequired = action.required !== false && !action.optional;
     
     // If not required, skip it immediately
@@ -140,7 +123,6 @@ const PrepWelcomeBanner = () => {
     }
     
     // Check completion status using the unified action progress system
-    // This handles both legacy week-based and new day-based completions
     const progress = getItemProgress(action.id);
     const isCompleted = progress.status === 'completed';
     
@@ -157,16 +139,13 @@ const PrepWelcomeBanner = () => {
 
   const hasIncompleteRequiredActions = incompleteRequiredActions.length > 0;
   
-  // 2. Determine if prep is complete using the new completion-based flag
-  // This checks all 5 required prep items: Leader Profile, Baseline Assessment, Video, Workbook, Exercises
-  // When all 5 are done, prep is complete regardless of journey day
+  // Determine if prep is complete using the completion-based flag
+  // Progress-based: not day or time dependent
   const isPrepComplete = prepRequirementsComplete?.allComplete || false;
 
   // DIAGNOSTIC LOGGING
   if (currentPhase?.id === 'pre-start') {
     console.warn('[PrepWelcomeBanner] STATUS CHECK:', {
-      journeyDay,
-      clampedJourneyDay,
       isPrepComplete,
       prepRequirementsComplete: prepRequirementsComplete ? {
         allComplete: prepRequirementsComplete.allComplete,
@@ -179,104 +158,60 @@ const PrepWelcomeBanner = () => {
       userStateKeys: Object.keys(userState?.dailyProgress || {})
     });
   }
-  
-  // 3. Effective day for content lookup (capped at 5)
-  const effectiveJourneyDay = Math.min(clampedJourneyDay, 5);
 
-  // 4. Get the correct onboarding module for this effective day
-  let effectiveOnboarding = ONBOARDING_MODULES[effectiveJourneyDay];
-
-  // Override content if prep requirements not complete
-  // Use the new prepRequirementsComplete flag for accurate tracking
-  if (!isPrepComplete && prepRequirementsComplete) {
-    const remaining = prepRequirementsComplete.remaining || [];
-    const count = remaining.length;
-    
-    if (count > 0 && clampedJourneyDay >= 5) {
-      if (clampedJourneyDay > 5) {
-        // Past Day 5: Show "Finish Strong" messaging
-        effectiveOnboarding = {
-          id: 'finish-strong',
-          title: 'Finish Strong!',
-          headline: `Finish Strong!`,
-          description: `You have ${count} required task${count === 1 ? '' : 's'} left: ${remaining.map(r => r.label).join(', ')}. Complete ${count === 1 ? 'it' : 'them'} to unlock your full readiness status.`,
-          widgets: ['appOverview'],
-          tip: 'Complete your remaining prep tasks to be fully ready for Session 1.'
-        };
-      } else {
-        // Day 5 exactly: Show "Almost Ready" messaging
-        effectiveOnboarding = {
-          ...effectiveOnboarding,
-          title: 'Almost Ready!',
-          headline: `Day 5: Finish Your Toolkit`,
-          description: `You have ${count} required task${count === 1 ? '' : 's'} remaining: ${remaining.map(r => r.label).join(', ')}.`
-        };
-      }
-    }
-  }
-
-  const onboarding = effectiveOnboarding || originalOnboarding;
-
-  // Build headline - shorter, no duplicate welcome greeting
+  // Build headline - progress-based, not day-based
   const getPersonalizedHeadline = () => {
-    // After 5 days of prep, show "You're Ready!" message
+    // Prep complete - show success!
     if (isPrepComplete) {
-      return `You're Ready!`;
+      return `You're Ready, ${firstName}!`;
     }
-
-    // If past day 5 but not complete
-    if (clampedJourneyDay > 5 && !isPrepComplete) {
-        return `Finish Strong!`;
+    
+    // Get remaining count
+    const remainingCount = prepRequirementsComplete?.remaining?.length || incompleteRequiredActions.length;
+    
+    // In progress - show encouraging message
+    if (remainingCount > 0 && remainingCount < (prepRequirementsComplete?.completedCount || 0) + remainingCount) {
+      return `Keep Going, ${firstName}!`;
     }
-
-    // First day - just show cohort name without redundant greeting
-    if (clampedJourneyDay === 1) {
-      if (cohortName) {
-        return cohortName;
-      }
-      return `Foundation Prep`;
+    
+    // Just starting
+    if (cohortName) {
+      return `Welcome to ${cohortName}!`;
     }
-    // Days 2-5 use the onboarding headline if available (without name)
-    if (onboarding?.headline) {
-      // Strip any name from the headline
-      return onboarding.headline.replace(/, \${firstName}!?/g, '').replace(/,?\s*Leader!?$/g, '');
-    }
-    // Fallback
-    return `Day ${clampedJourneyDay}`;
+    return `Welcome, ${firstName}!`;
   };
 
-  // Get the subtext - different for Day 1 vs other days
+  // Get the subtext - progress-based messaging
   const getSubtext = () => {
-    // After prep requirements complete, show success message with additional resources note
+    // After prep requirements complete, show success message
     if (isPrepComplete) {
       if (daysUntilStart <= 0) {
         return "Session One begins today! Let's launch your leadership journey.";
       }
       if (daysUntilStart === 1) {
-        return "Session One begins tomorrow! You've unlocked all pre-Session 1 resources below. Practice your AM & PM Bookends.";
+        return "Fantastic! You've completed all Required Prep. Explore additional resources below while you wait for Session One tomorrow!";
       }
-      return `Great work! You've unlocked all pre-Session 1 resources. ${daysUntilStart} days until Session One — practice your AM & PM Bookends daily.`;
+      return `Fantastic! You've completed all Required Prep. Explore additional resources below while you wait for Session One in ${daysUntilStart} days.`;
     }
 
-    // If past day 5 but not complete
-    if (clampedJourneyDay > 5 && !isPrepComplete) {
-        const count = incompleteRequiredActions.length;
-        return `You have ${count} required action${count === 1 ? '' : 's'} left. Complete them to unlock all pre-Session 1 resources.`;
+    // Show remaining count
+    const remaining = prepRequirementsComplete?.remaining || [];
+    const count = remaining.length;
+    
+    if (count > 0) {
+      const completed = prepRequirementsComplete?.completedCount || 0;
+      if (completed > 0) {
+        return `You've completed ${completed} of ${completed + count} required items. Keep going!`;
+      }
+      return `Complete ${count} required item${count === 1 ? '' : 's'} to get ready for Session One.`;
     }
-
-    if (clampedJourneyDay === 1) {
-      // Day 1: Use the onboarding description as subtext
-      return onboarding?.description || welcome.subtext;
-    }
-    // Days 2-5: Use onboarding description
-    return onboarding?.description || welcome.subtext;
+    
+    return "Complete your Required Prep to unlock additional tools to explore.";
   };
 
   // DIAGNOSTIC LOGGING
   if (currentPhase?.id === 'pre-start') {
     console.log('[PrepWelcomeBanner] STATUS CHECK:', {
-      journeyDay,
-      clampedJourneyDay,
       isPrepComplete,
       hasIncomplete: hasIncompleteRequiredActions,
       incompleteCount: incompleteRequiredActions.length,
@@ -284,6 +219,9 @@ const PrepWelcomeBanner = () => {
       subtext: getSubtext()
     });
   }
+  
+  // Launch mode for Session One (when cohort starts today)
+  const isLaunch = daysUntilStart <= 0;
 
   return (
     <div className={`relative overflow-hidden rounded-2xl shadow-lg mb-6 ${
@@ -329,8 +267,8 @@ const PrepWelcomeBanner = () => {
               {getSubtext()}
             </p>
 
-            {/* Facilitator Introduction - Show on Day 1 if available, clickable for more info */}
-            {effectiveJourneyDay === 1 && facilitator && (
+            {/* Facilitator Introduction - Show if available */}
+            {facilitator && (
               <button
                 onClick={() => setShowFacilitatorModal(true)}
                 className="flex items-center gap-3 bg-white/5 hover:bg-white/10 rounded-lg px-4 py-3 border border-white/10 hover:border-white/20 transition-all group text-left"
