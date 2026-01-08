@@ -77,6 +77,7 @@ const ACTION_TYPES = {
 const DayCard = ({ day, onEdit, displayDayNumber }) => {
   const isWeekend = day.isWeekend;
   const isPrepPhase = day.weekNumber !== undefined && day.weekNumber <= 0;
+  const isExploreConfig = day.isExploreConfig || day.id === 'explore-config';
   const linkedResourceCount = (day.actions || []).filter(a => a.resourceId).length;
   const weeklyResourceCount = day.weeklyResources ? (
     (day.weeklyResources.weeklyContent?.length || 0) +
@@ -85,6 +86,46 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
     (day.weeklyResources.weeklyWorkouts?.length || 0) +
     (day.weeklyResources.weeklyTools?.length || 0)
   ) : 0;
+  
+  // Special styling for Explore config card
+  if (isExploreConfig) {
+    return (
+      <div 
+        onClick={() => onEdit(day)}
+        className="relative p-6 rounded-xl border-2 cursor-pointer transition-all hover:shadow-lg bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-300 hover:border-purple-500 col-span-full max-w-2xl"
+      >
+        <div className="flex justify-between items-start mb-3">
+          <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-purple-500 text-white">
+            🔓 Explore Configuration
+          </span>
+        </div>
+        
+        <h4 className="font-bold text-xl text-corporate-navy mb-2">
+          {day.title || 'Explore the App'}
+        </h4>
+        
+        <p className="text-sm text-slate-600 mb-4">
+          {day.focus || 'Configure the content and widgets users can explore after completing Required Prep'}
+        </p>
+        
+        <div className="flex gap-4 text-sm">
+          <span className="flex items-center gap-2 text-purple-700 bg-purple-100 px-3 py-1.5 rounded-lg">
+            <span className="font-bold">{day.actions?.length || 0}</span> Actions/Content
+          </span>
+          {linkedResourceCount > 0 && (
+            <span className="flex items-center gap-2 text-blue-700 bg-blue-100 px-3 py-1.5 rounded-lg">
+              <Link className="w-4 h-4" />
+              <span className="font-bold">{linkedResourceCount}</span> Linked Resources
+            </span>
+          )}
+        </div>
+        
+        <p className="text-xs text-purple-500 mt-4 italic">
+          Click to configure what users see when they complete Required Prep
+        </p>
+      </div>
+    );
+  }
   
   return (
     <div 
@@ -836,17 +877,17 @@ const DailyPlanManager = () => {
     return days.filter(day => day.weekNumber !== undefined && day.weekNumber <= 0);
   }, [days]);
   
-  // Separate prep days into Required vs Additional based on content
-  const { requiredPrepDays, additionalPrepDays } = useMemo(() => {
-    // Required prep: Days that contain the 5 required prep items
-    // These are typically the first few days (Day 1-3) in the data
-    // We identify them by looking for specific action labels/IDs
-    const required = [];
-    const additional = [];
+  // Separate prep days into Required Prep vs Explore
+  // Required Prep: Day marked with isRequiredPrep=true (should be ONE day with all 5 required items)
+  // Explore: A SINGLE configurable item (stored as id='explore-config')
+  const { requiredPrepDays, exploreItem } = useMemo(() => {
+    // Find the Required Prep day (should be one day with isRequiredPrep=true)
+    const requiredDay = prepDays.find(day => day.isRequiredPrep === true);
     
-    prepDays.forEach(day => {
+    // If no day is explicitly marked, fall back to finding days with required prep actions
+    const required = requiredDay ? [requiredDay] : prepDays.filter(day => {
       const actions = day.actions || [];
-      const hasRequiredItem = actions.some(action => {
+      return actions.some(action => {
         const id = (action.id || '').toLowerCase();
         const label = (action.label || '').toLowerCase();
         
@@ -858,29 +899,37 @@ const DailyPlanManager = () => {
         
         return false;
       });
-      
-      // Also check if day is marked as required prep (new field)
-      if (hasRequiredItem || day.isRequiredPrep) {
-        required.push(day);
-      } else {
-        additional.push(day);
-      }
-    });
+    }).sort((a, b) => a.dayNumber - b.dayNumber);
+    
+    // Find or create the single Explore item (stored with id='explore-config')
+    const existingExplore = days.find(d => d.id === 'explore-config');
+    const explore = existingExplore || {
+      id: 'explore-config',
+      title: 'Explore the App',
+      focus: 'Optional content and tools available after completing Required Prep',
+      dayNumber: 0,
+      weekNumber: 0,
+      isExploreConfig: true,
+      actions: [],
+      dashboard: {}
+    };
     
     return { 
-      requiredPrepDays: required.sort((a, b) => a.dayNumber - b.dayNumber),
-      additionalPrepDays: additional.sort((a, b) => a.dayNumber - b.dayNumber)
+      requiredPrepDays: required,
+      exploreItem: explore
     };
-  }, [prepDays]);
+  }, [prepDays, days]);
   
   // Current days to display based on phase and section
   const currentWeekDays = useMemo(() => {
     if (selectedPhase === 'prep') {
-      // Prep phase has two sections: Required Prep and Explore Your Tools
-      return selectedPrepSection === 'required' ? requiredPrepDays : additionalPrepDays;
+      // Prep phase has two sections: Required Prep and Explore
+      // Required Prep shows the required prep day(s)
+      // Explore shows ONE single configurable item
+      return selectedPrepSection === 'required' ? requiredPrepDays : [exploreItem];
     }
     return weeks[selectedWeek] || [];
-  }, [selectedPhase, selectedPrepSection, requiredPrepDays, additionalPrepDays, weeks, selectedWeek]);
+  }, [selectedPhase, selectedPrepSection, requiredPrepDays, exploreItem, weeks, selectedWeek]);
 
   // Handle phase change - jump to first week of that phase
   const handlePhaseChange = (phaseId) => {
@@ -994,7 +1043,7 @@ const DailyPlanManager = () => {
         
         {/* Week/Section Selector - Context-aware based on phase */}
         {selectedPhase === 'prep' ? (
-          // PREP PHASE: Section selector (Required Prep vs Explore Your Tools)
+          // PREP PHASE: Section selector (Required Prep vs Explore)
           <div className="flex items-center gap-4">
             <span className="text-xs font-bold text-slate-400 uppercase">SECTION:</span>
             <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
@@ -1016,7 +1065,7 @@ const DailyPlanManager = () => {
                     text-xs px-1.5 py-0.5 rounded-full
                     ${selectedPrepSection === section.id ? 'bg-white/20' : 'bg-black/5'}
                   `}>
-                    {section.id === 'required' ? requiredPrepDays.length : additionalPrepDays.length}
+                    {section.id === 'required' ? requiredPrepDays.length : 1}
                   </span>
                 </button>
               ))}
