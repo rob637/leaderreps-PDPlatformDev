@@ -132,6 +132,7 @@ const ThisWeeksActionsWidget = () => {
         optional: dayId === 'explore-config' ? true : (action.optional === true),
         resourceId: action.resourceId,
         resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
+        resourceTitle: action.resourceTitle,
         url: action.url || action.videoUrl || action.link || action.details?.externalUrl || action.metadata?.externalUrl,
         category,
         // Mark as coming from daily plan for UI distinction
@@ -683,8 +684,11 @@ const ThisWeeksActionsWidget = () => {
               </>
             ) : (
               <>
-                <span className="capitalize">{item.type?.replace(/_/g, ' ').toLowerCase() || 'Action'}</span>
-                {item.description && (
+                <span className="capitalize">{(item.resourceType || item.displayType || item.type)?.replace(/_/g, ' ').toLowerCase() || 'Action'}</span>
+                {item.resourceTitle && (
+                  <><span>•</span><span className="text-slate-600 font-medium">{item.resourceTitle}</span></>
+                )}
+                {item.description && !item.resourceTitle && (
                   <><span>•</span><span className="text-slate-600">{item.description}</span></>
                 )}
                 {/* Show estimated time to complete */}
