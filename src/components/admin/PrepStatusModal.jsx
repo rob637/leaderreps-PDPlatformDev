@@ -1,32 +1,69 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
-import { X, Save, RefreshCw, Calendar, AlertTriangle } from 'lucide-react';
+import { X, Save, RefreshCw, Calendar, AlertTriangle, CheckCircle, Circle, Trophy } from 'lucide-react';
+
+// The 5 required prep items
+const REQUIRED_PREP_ITEMS = [
+  { id: 'leaderProfile', label: 'Leader Profile', field: 'leaderProfile' },
+  { id: 'baselineAssessment', label: 'Baseline Assessment', field: 'baselineAssessment' },
+  { id: 'action-prep-001-video', label: 'Foundation Video', field: 'videoWatched' },
+  { id: 'action-prep-001-workbook', label: 'Foundation Workbook', field: 'workbookDownloaded' },
+  { id: 'action-prep-002-exercises', label: 'Prep Exercises', field: 'exercisesComplete' }
+];
 
 const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
   const { db } = useAppServices();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [prepVisitLog, setPrepVisitLog] = useState([]);
-  const [targetDay, setTargetDay] = useState(0);
+  const [prepStatus, setPrepStatus] = useState({});
+  const [leaderProfileData, setLeaderProfileData] = useState(null);
   const [error, setError] = useState(null);
 
   const fetchPrepData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const docRef = doc(db, `modules/${userId}/development_plan/current`);
-      const docSnap = await getDoc(docRef);
+      // Fetch development plan data
+      const devPlanRef = doc(db, `modules/${userId}/development_plan/current`);
+      const devPlanSnap = await getDoc(devPlanRef);
       
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const log = data.prepVisitLog || [];
-        setPrepVisitLog(log);
-        setTargetDay(log.length); // Initialize targetDay to current count
-      } else {
-        setPrepVisitLog([]);
-        setTargetDay(0);
-      }
+      // Fetch leader profile
+      const profileRef = doc(db, `modules/${userId}/profile/leader`);
+      const profileSnap = await getDoc(profileRef);
+      
+      // Fetch action progress
+      const actionProgressRef = doc(db, `modules/${userId}/action_progress/current`);
+      const actionProgressSnap = await getDoc(actionProgressRef);
+      
+      const devPlanData = devPlanSnap.exists() ? devPlanSnap.data() : {};
+      const profileData = profileSnap.exists() ? profileSnap.data() : null;
+      const actionProgress = actionProgressSnap.exists() ? actionProgressSnap.data() : {};
+      
+      setLeaderProfileData(profileData);
+      
+      // Determine status for each required prep item
+      const status = {
+        // Leader Profile - check if profile exists with required fields
+        leaderProfile: !!(profileData?.role && profileData?.goals?.length > 0),
+        
+        // Baseline Assessment - check assessmentHistory
+        baselineAssessment: !!(
+          devPlanData?.assessmentHistory?.length > 0 ||
+          devPlanData?.currentPlan?.focusAreas?.length > 0
+        ),
+        
+        // Video - check action progress
+        videoWatched: actionProgress?.['action-prep-001-video']?.status === 'completed',
+        
+        // Workbook - check action progress  
+        workbookDownloaded: actionProgress?.['action-prep-001-workbook']?.status === 'completed',
+        
+        // Exercises - check action progress
+        exercisesComplete: actionProgress?.['action-prep-002-exercises']?.status === 'completed'
+      };
+      
+      setPrepStatus(status);
     } catch (err) {
       console.error("Error fetching prep data:", err);
       setError(err.message);
@@ -41,40 +78,44 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
     }
   }, [isOpen, userId, fetchPrepData]);
 
+  const togglePrepItem = (field) => {
+    setPrepStatus(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      let newLog = [...prepVisitLog];
-      const currentCount = newLog.length;
-      const targetCount = parseInt(targetDay, 10);
-
-      if (targetCount > currentCount) {
-        // Add dummy dates
-        const needed = targetCount - currentCount;
-        const today = new Date();
-        for (let i = 0; i < needed; i++) {
-          // Create dates in the past to avoid future date issues, 
-          // but ensure they are unique strings
-          const d = new Date(today);
-          d.setDate(today.getDate() - (currentCount + i + 1));
-          newLog.push(d.toISOString().split('T')[0]);
-        }
-      } else if (targetCount < currentCount) {
-        // Remove latest dates
-        newLog = newLog.slice(0, targetCount);
-      }
-
-      const docRef = doc(db, `modules/${userId}/development_plan/current`);
+      const actionProgressRef = doc(db, `modules/${userId}/action_progress/current`);
       
-      // Ensure document exists (upsert)
-      // We use setDoc with merge: true in case the doc doesn't exist yet
-      const { setDoc } = await import('firebase/firestore');
-      await setDoc(docRef, {
-        prepVisitLog: newLog,
+      // Build updates for action progress
+      const actionUpdates = {};
+      
+      if (prepStatus.videoWatched) {
+        actionUpdates['action-prep-001-video'] = { status: 'completed', completedAt: new Date().toISOString() };
+      } else {
+        actionUpdates['action-prep-001-video'] = { status: 'not_started' };
+      }
+      
+      if (prepStatus.workbookDownloaded) {
+        actionUpdates['action-prep-001-workbook'] = { status: 'completed', completedAt: new Date().toISOString() };
+      } else {
+        actionUpdates['action-prep-001-workbook'] = { status: 'not_started' };
+      }
+      
+      if (prepStatus.exercisesComplete) {
+        actionUpdates['action-prep-002-exercises'] = { status: 'completed', completedAt: new Date().toISOString() };
+      } else {
+        actionUpdates['action-prep-002-exercises'] = { status: 'not_started' };
+      }
+      
+      await setDoc(actionProgressRef, {
+        ...actionUpdates,
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      setPrepVisitLog(newLog);
       onClose();
     } catch (err) {
       console.error("Error saving prep data:", err);
@@ -83,6 +124,9 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
       setSaving(false);
     }
   };
+
+  const completedCount = Object.values(prepStatus).filter(Boolean).length;
+  const allComplete = completedCount === 5;
 
   if (!isOpen) return null;
 
@@ -119,25 +163,68 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Current Prep Day (Login Count)
-                </label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="number"
-                    min="0"
-                    max="14"
-                    value={targetDay}
-                    onChange={(e) => setTargetDay(e.target.value)}
-                    className="w-24 px-4 py-2 text-lg font-bold text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
-                  />
-                  <span className="text-slate-500 text-sm">
-                    (Currently: {prepVisitLog.length})
+              {/* Progress Summary */}
+              <div className={`p-4 rounded-lg border ${allComplete ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {allComplete ? (
+                      <Trophy className="w-5 h-5 text-emerald-600" />
+                    ) : (
+                      <AlertTriangle className="w-5 h-5 text-amber-600" />
+                    )}
+                    <span className={`font-bold ${allComplete ? 'text-emerald-800' : 'text-amber-800'}`}>
+                      {allComplete ? 'Required Prep Complete!' : 'Required Prep In Progress'}
+                    </span>
+                  </div>
+                  <span className={`text-sm font-bold px-2 py-1 rounded-full ${allComplete ? 'bg-emerald-200 text-emerald-800' : 'bg-amber-200 text-amber-800'}`}>
+                    {completedCount}/5
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  Adjusting this value will add or remove entries from the user's login log to simulate progress.
+              </div>
+
+              {/* Required Prep Items */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-3">
+                  Required Prep Items (Progress-Based)
+                </label>
+                <div className="space-y-2">
+                  {REQUIRED_PREP_ITEMS.map((item) => {
+                    const isComplete = prepStatus[item.field];
+                    const isEditable = item.field !== 'leaderProfile' && item.field !== 'baselineAssessment';
+                    
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => isEditable && togglePrepItem(item.field)}
+                        disabled={!isEditable}
+                        className={`
+                          w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left
+                          ${isComplete 
+                            ? 'bg-emerald-50 border-emerald-200' 
+                            : 'bg-white border-slate-200 hover:border-slate-300'
+                          }
+                          ${!isEditable ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}
+                        `}
+                      >
+                        {isComplete ? (
+                          <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                        )}
+                        <span className={`flex-1 font-medium ${isComplete ? 'text-emerald-800' : 'text-slate-700'}`}>
+                          {item.label}
+                        </span>
+                        {!isEditable && (
+                          <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                            Read-only
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-slate-500 mt-3">
+                  Click to toggle completion status. Leader Profile and Baseline Assessment are determined by actual data and cannot be manually toggled.
                 </p>
               </div>
 
