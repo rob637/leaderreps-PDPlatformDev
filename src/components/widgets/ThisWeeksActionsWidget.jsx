@@ -185,8 +185,9 @@ const ThisWeeksActionsWidget = () => {
         }
       ];
       
-      // Get ALL prep phase actions from daily plan (progress-based, not day-based)
-      const prepDays = dailyPlan.filter(d => d.phase === 'pre-start');
+      // Get prep phase actions from daily plan (progress-based, not day-based)
+      // EXCLUDE explore-config - those are handled separately
+      const prepDays = dailyPlan.filter(d => d.phase === 'pre-start' && d.id !== 'explore-config');
       
       let allPrepActions = [];
       prepDays.forEach(day => {
@@ -206,16 +207,18 @@ const ThisWeeksActionsWidget = () => {
         return true;
       });
       
-      // Separate into Required and Explore based on flags from daily plan
+      // Required prep actions - from prep days (NOT explore-config)
+      // Required = required === true OR (required !== false AND optional !== true)
       const requiredPrepActions = filteredPrepActions.filter(action => {
-        // Required = required === true OR (required !== false AND optional !== true)
         return action.required === true || (action.required !== false && action.optional !== true);
       });
       
-      const explorePrepActions = filteredPrepActions.filter(action => {
-        // Explore = optional === true OR required === false
-        return action.optional === true || action.required === false;
-      });
+      // Explore actions come ONLY from the explore-config document
+      // This is what the admin configures in Daily Plan Manager > Explore section
+      const exploreConfig = dailyPlan.find(d => d.id === 'explore-config');
+      const explorePrepActions = exploreConfig?.actions 
+        ? normalizeDailyActions(exploreConfig.actions, 'explore-config', 0)
+        : [];
       
       // COMPLETION-BASED GATING:
       // If required prep is NOT complete, only show required items
@@ -413,10 +416,33 @@ const ThisWeeksActionsWidget = () => {
   
   const additionalPrepActions = useMemo(() => {
     if (currentPhase?.id !== 'pre-start') return [];
-    // Additional/Explore items are those explicitly marked as optional or not required
-    const requiredIds = requiredPrepActions.map(a => a.id);
-    return allActions.filter(action => !requiredIds.includes(action.id));
-  }, [currentPhase?.id, allActions, requiredPrepActions]);
+    // Explore items come ONLY from the explore-config document
+    // This is what the admin configures in Daily Plan Manager > Explore section
+    const exploreConfig = dailyPlan?.find(d => d.id === 'explore-config');
+    if (!exploreConfig?.actions || exploreConfig.actions.length === 0) return [];
+    
+    return exploreConfig.actions.map((action, idx) => {
+      const label = action.label || 'Explore Action';
+      return {
+        ...action,
+        id: action.id || `explore-${idx}`,
+        type: action.type || action.resourceType || 'content',
+        displayType: action.resourceType || action.type || 'content',
+        label: label,
+        required: false,
+        optional: true,
+        resourceId: action.resourceId,
+        resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
+        resourceTitle: action.resourceTitle,
+        url: action.url || action.videoUrl || action.link,
+        category: 'Explore',
+        fromDailyPlan: true,
+        dayId: 'explore-config',
+        dayNumber: 0,
+        estimatedMinutes: action.estimatedMinutes
+      };
+    });
+  }, [currentPhase?.id, dailyPlan]);
 
   // Helper to get icon based on type
   const getIcon = (type) => {
