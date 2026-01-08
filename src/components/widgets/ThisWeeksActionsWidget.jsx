@@ -126,8 +126,10 @@ const ThisWeeksActionsWidget = () => {
         type: action.type || action.resourceType || 'content',
         displayType: action.resourceType || action.type || 'content',
         label: label,
-        required: action.required !== false && !action.optional,
-        optional: action.optional === true,
+        // Actions from explore-config are always optional
+        // Otherwise check the flags: required if not explicitly optional
+        required: dayId === 'explore-config' ? false : (action.required !== false && !action.optional),
+        optional: dayId === 'explore-config' ? true : (action.optional === true),
         resourceId: action.resourceId,
         resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
         url: action.url || action.videoUrl || action.link || action.details?.externalUrl || action.metadata?.externalUrl,

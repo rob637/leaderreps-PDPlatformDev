@@ -203,13 +203,18 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
   };
 
   // --- Actions Management ---
+  // Detect if we're editing the Explore config
+  const isExploreConfig = day.isExploreConfig || day.id === 'explore-config';
+  
   const addAction = (type = 'daily_rep', label = '') => {
     const newAction = {
       id: `action-${Date.now()}`,
       type,
       label,
       isCompleted: false,
-      enabled: true
+      enabled: true,
+      // Auto-set optional: true for Explore config actions
+      ...(isExploreConfig ? { optional: true } : {})
     };
     setFormData(prev => ({
       ...prev,

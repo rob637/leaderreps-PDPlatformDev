@@ -471,8 +471,11 @@ export const useDailyPlan = () => {
     // Filter to get only REQUIRED prep actions
     // Required = required === true OR (required !== false AND optional !== true)
     // Exclude daily_rep type as those are not milestone items
+    // Exclude actions from explore-config (those are always optional)
     const requiredPrepActions = allPrepActions.filter(action => {
       if (action.type === 'daily_rep') return false;
+      // Actions from explore-config are always optional, not required
+      if (action.dayId === 'explore-config') return false;
       const isRequired = action.required === true || (action.required !== false && action.optional !== true);
       return isRequired;
     });
