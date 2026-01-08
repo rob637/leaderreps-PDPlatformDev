@@ -12,12 +12,9 @@ import useLeaderProfile from './useLeaderProfile';
  * - Content/Community/Coaching unlocking based on current day
  * - Zone-specific visibility flags per day
  * 
- * UPDATED: Now uses prepRequirementsComplete for 5-item completion check:
- * 1. Leader Profile
- * 2. Baseline Assessment
- * 3. Foundation Video
- * 4. Foundation Workbook
- * 5. Prep Exercises
+ * UPDATED: Now uses prepRequirementsComplete for dynamic completion check.
+ * Prep items are loaded from Firestore daily_plan_v1 collection where required=true.
+ * The count and items can change via Admin without code changes.
  */
 export const useDayBasedAccessControl = () => {
   const { developmentPlanData, user } = useAppServices();
@@ -33,14 +30,10 @@ export const useDayBasedAccessControl = () => {
   const { isComplete: leaderProfileIsComplete } = useLeaderProfile();
 
   // --- PREP GATE CHECK ---
-  // User must complete these 5 items before accessing Day 1+:
-  // 1. Leader Profile
-  // 2. Baseline Assessment  
-  // 3. Foundation Video
-  // 4. Foundation Workbook
-  // 5. Prep Exercises
+  // User must complete required prep items before accessing Day 1+
+  // Items are dynamically configured in the Daily Plan
   const prepStatus = useMemo(() => {
-    // Use the new prepRequirementsComplete for comprehensive 5-item check
+    // Use the new prepRequirementsComplete for comprehensive dynamic item check
     if (prepRequirementsComplete) {
       return {
         hasLeaderProfile: prepRequirementsComplete.leaderProfile,
@@ -50,7 +43,7 @@ export const useDayBasedAccessControl = () => {
         hasExercises: prepRequirementsComplete.exercisesComplete,
         isComplete: prepRequirementsComplete.allComplete,
         completedCount: prepRequirementsComplete.completedCount,
-        totalCount: 5,
+        totalCount: prepRequirementsComplete.totalCount || prepRequirementsComplete.items?.length || 0,
         missingItems: prepRequirementsComplete.remaining?.map(r => r.label) || []
       };
     }

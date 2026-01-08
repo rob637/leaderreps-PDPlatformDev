@@ -362,10 +362,6 @@ const ThisWeeksActionsWidget = () => {
     const completedSet = new Set();
     
     const dailyProgress = userState?.dailyProgress || {};
-    console.log('[ThisWeeksActions] Computing completedItems from dailyProgress:', {
-      keys: Object.keys(dailyProgress),
-      day001: dailyProgress['day-001']?.itemsCompleted
-    });
     
     Object.values(dailyProgress).forEach(dayProgress => {
       if (dayProgress && dayProgress.itemsCompleted) {
@@ -374,7 +370,6 @@ const ThisWeeksActionsWidget = () => {
     });
     
     const result = Array.from(completedSet);
-    console.log('[ThisWeeksActions] completedItems result:', result);
     return result;
   }, [userState]);
 
@@ -566,17 +561,6 @@ const ThisWeeksActionsWidget = () => {
     const progress = getItemProgress(itemId);
     const isCurrentlyComplete = progress.status === 'completed' || completedItems.includes(itemId);
     
-    console.log('[ThisWeeksActions] handleToggle:', {
-      itemId,
-      itemLabel: item.label,
-      isCurrentlyComplete,
-      progressStatus: progress.status,
-      inCompletedItems: completedItems.includes(itemId),
-      fromDailyPlan: item.fromDailyPlan,
-      dayId: item.dayId,
-      isInteractive: item.isInteractive
-    });
-    
     // 1. Update Daily Plan (Source of Truth for Day-by-Day)
     if (item.fromDailyPlan) {
       if (isCurrentlyComplete) {
@@ -593,27 +577,22 @@ const ThisWeeksActionsWidget = () => {
         }
         
         if (completedOnDayId) {
-          console.log('[ThisWeeksActions] Found item completed on day:', completedOnDayId, '- calling toggleDailyItem to uncomplete');
           toggleDailyItem(completedOnDayId, itemId, false);
         } else {
-          console.log('[ThisWeeksActions] Item not found in dailyProgress, using item.dayId:', item.dayId);
           if (item.dayId) {
             toggleDailyItem(item.dayId, itemId, false);
           }
         }
       } else if (item.dayId) {
         // When COMPLETING, use the item's assigned day
-        console.log('[ThisWeeksActions] Calling toggleDailyItem to complete:', item.dayId, itemId);
         toggleDailyItem(item.dayId, itemId, true);
       }
     }
     
     // 2. Update Action Progress (Legacy/Global tracking)
     if (isCurrentlyComplete) {
-      console.log('[ThisWeeksActions] Calling uncompleteItem:', itemId);
       await uncompleteItem(itemId);
     } else {
-      console.log('[ThisWeeksActions] Calling completeItem:', itemId);
       await completeItem(itemId, {
         currentWeek: currentWeekNumber,
         weekNumber: currentWeekNumber,
@@ -668,12 +647,6 @@ const ThisWeeksActionsWidget = () => {
         <div
           onClick={(e) => {
             e.stopPropagation();
-            console.log('[ThisWeeksActions] Checkbox clicked:', {
-              itemId: item.id,
-              itemLabel: item.label,
-              isInteractive: item.isInteractive,
-              willCallToggle: !item.isInteractive
-            });
             if (!item.isInteractive) handleToggle(item);
           }}
           className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 ${getCheckboxStyles()}`}

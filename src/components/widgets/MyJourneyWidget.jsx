@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { 
   Compass, Calendar, User, Users, Rocket, 
-  Clock, ChevronRight, Shield, Info
+  Clock, ChevronRight, Shield, Info, Zap
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useDailyPlan, PHASES } from '../../hooks/useDailyPlan';
 import { useAppServices } from '../../services/useAppServices';
+import { timeService } from '../../services/timeService';
 import FacilitatorProfileModal from './FacilitatorProfileModal';
 
 /**
@@ -30,6 +31,50 @@ const MyJourneyWidget = () => {
   const { updateDevelopmentPlanData } = useAppServices();
 
   const [showFacilitatorModal, setShowFacilitatorModal] = useState(false);
+  
+  // Secret time traveler state
+  const [secretClicks, setSecretClicks] = useState(0);
+  const [showTimeTraveler, setShowTimeTraveler] = useState(false);
+  const [timeTravelPassword, setTimeTravelPassword] = useState('');
+  const [timeTravelDays, setTimeTravelDays] = useState(0);
+  const [isTimeTravelUnlocked, setIsTimeTravelUnlocked] = useState(false);
+
+  // Handle secret click on "Your Cohort"
+  const handleSecretClick = () => {
+    const newCount = secretClicks + 1;
+    setSecretClicks(newCount);
+    if (newCount >= 5) {
+      setShowTimeTraveler(true);
+      setSecretClicks(0);
+    }
+  };
+
+  // Handle password unlock
+  const handlePasswordSubmit = () => {
+    if (timeTravelPassword === '7777') {
+      setIsTimeTravelUnlocked(true);
+      setTimeTravelPassword('');
+    } else {
+      alert('Invalid password');
+      setTimeTravelPassword('');
+    }
+  };
+
+  // Handle time travel
+  const handleTimeTravel = (days) => {
+    const now = timeService.getNow();
+    const target = new Date(now);
+    target.setDate(target.getDate() + days);
+    timeService.travelTo(target);
+  };
+
+  // Reset time travel
+  const handleResetTimeTravel = () => {
+    timeService.reset();
+  };
+
+  // Check if time travel is active
+  const isTimeTravelActive = timeService.isActive();
 
   // Calculate days until or since start
   const getDaysDisplay = () => {
@@ -104,7 +149,17 @@ const MyJourneyWidget = () => {
               <div>
                 <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
                   <Users className="w-3 h-3" />
-                  <span>Your Cohort</span>
+                  <span 
+                    onClick={handleSecretClick}
+                    className="cursor-default select-none"
+                    title=""
+                  >
+                    Your Cohort
+                  </span>
+                  {/* Secret time travel indicator */}
+                  {isTimeTravelActive && (
+                    <span className="ml-1 text-[10px] text-amber-600 bg-amber-100 px-1 rounded">⚡</span>
+                  )}
                 </div>
                 <h3 className="font-bold text-corporate-navy text-lg">{cohortData.name}</h3>
                 {cohortData.description && (
@@ -139,7 +194,7 @@ const MyJourneyWidget = () => {
                 <span className="text-sm font-medium text-slate-700">Prep Progress</span>
               </div>
               <span className="text-xs text-slate-500">
-                {prepRequirementsComplete.completedCount} of 5 complete
+                {prepRequirementsComplete.completedCount} of {prepRequirementsComplete.totalCount} complete
               </span>
             </div>
             
@@ -264,6 +319,109 @@ const MyJourneyWidget = () => {
             )}
           </div>
         </div>
+
+        {/* Secret Time Traveler Panel */}
+        {showTimeTraveler && (
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-600" />
+                <span className="text-sm font-bold text-amber-800">Time Traveler</span>
+              </div>
+              <button 
+                onClick={() => { setShowTimeTraveler(false); setIsTimeTravelUnlocked(false); }}
+                className="text-amber-600 hover:text-amber-800 text-xs"
+              >
+                ✕ Close
+              </button>
+            </div>
+            
+            {!isTimeTravelUnlocked ? (
+              // Password entry
+              <div className="space-y-2">
+                <input
+                  type="password"
+                  value={timeTravelPassword}
+                  onChange={(e) => setTimeTravelPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                  placeholder="Enter code..."
+                  className="w-full px-3 py-2 text-sm border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                  autoFocus
+                />
+                <button
+                  onClick={handlePasswordSubmit}
+                  className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  Unlock
+                </button>
+              </div>
+            ) : (
+              // Time travel controls
+              <div className="space-y-3">
+                {isTimeTravelActive && (
+                  <div className="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded text-center">
+                    ⚡ Time travel active: {timeService.getNow().toLocaleString()}
+                  </div>
+                )}
+                
+                {/* Quick jump buttons */}
+                <div className="grid grid-cols-4 gap-2">
+                  <button
+                    onClick={() => handleTimeTravel(-7)}
+                    className="py-2 px-2 bg-white hover:bg-amber-100 text-amber-700 text-xs font-medium rounded-lg border border-amber-200 transition-colors"
+                  >
+                    -7d
+                  </button>
+                  <button
+                    onClick={() => handleTimeTravel(-1)}
+                    className="py-2 px-2 bg-white hover:bg-amber-100 text-amber-700 text-xs font-medium rounded-lg border border-amber-200 transition-colors"
+                  >
+                    -1d
+                  </button>
+                  <button
+                    onClick={() => handleTimeTravel(1)}
+                    className="py-2 px-2 bg-white hover:bg-amber-100 text-amber-700 text-xs font-medium rounded-lg border border-amber-200 transition-colors"
+                  >
+                    +1d
+                  </button>
+                  <button
+                    onClick={() => handleTimeTravel(7)}
+                    className="py-2 px-2 bg-white hover:bg-amber-100 text-amber-700 text-xs font-medium rounded-lg border border-amber-200 transition-colors"
+                  >
+                    +7d
+                  </button>
+                </div>
+                
+                {/* Custom days input */}
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={timeTravelDays}
+                    onChange={(e) => setTimeTravelDays(parseInt(e.target.value) || 0)}
+                    className="flex-1 px-3 py-2 text-sm border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                    placeholder="Days (+/-)"
+                  />
+                  <button
+                    onClick={() => handleTimeTravel(timeTravelDays)}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Go
+                  </button>
+                </div>
+                
+                {/* Reset button */}
+                {isTimeTravelActive && (
+                  <button
+                    onClick={handleResetTimeTravel}
+                    className="w-full py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Reset to Real Time
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );

@@ -883,7 +883,7 @@ const DailyPlanManager = () => {
   }, [days]);
   
   // Separate prep days into Required Prep vs Explore
-  // Required Prep: Day marked with isRequiredPrep=true (should be ONE day with all 5 required items)
+  // Required Prep: Day marked with isRequiredPrep=true (contains all required items)
   // Explore: A SINGLE configurable item (stored as id='explore-config')
   const { requiredPrepDays, exploreItem } = useMemo(() => {
     // Find the Required Prep day (should be one day with isRequiredPrep=true)

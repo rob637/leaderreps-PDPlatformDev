@@ -79,7 +79,7 @@ const Dashboard = () => {
     missedDays,
     simulatedNow,
     toggleItemComplete,
-    prepRequirementsComplete  // NEW: 5-item completion check
+    prepRequirementsComplete  // Dynamic prep completion check (loaded from Firestore)
   } = useDailyPlan();
 
 
@@ -102,10 +102,6 @@ const Dashboard = () => {
       weekNumber: currentDayData.weekNumber || Math.ceil(currentDayData.dayNumber / 7)
     };
   }, [currentDayData]);
-
-  // DEBUG: Log the current day being returned
-  console.log('[Dashboard] currentDayData:', currentDayData);
-  console.log('[Dashboard] currentDayNumber:', currentDayNumber);
 
   // --- HOOKS ---
   const {
@@ -421,12 +417,9 @@ const Dashboard = () => {
     // Development Plan Data
     developmentPlanData,
     handleResetPlanStartDate: async () => {
-      console.log('[Dashboard] handleResetPlanStartDate called');
-      console.log('[Dashboard] updateDevelopmentPlanData exists:', !!updateDevelopmentPlanData);
       if (updateDevelopmentPlanData) {
         try {
           await updateDevelopmentPlanData({ startDate: serverTimestamp() });
-          console.log('[Dashboard] startDate set successfully');
           alert("Plan Start Date reset to NOW. Time travel will be relative to this moment.");
           window.location.reload();
         } catch (error) {
