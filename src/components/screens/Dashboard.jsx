@@ -72,6 +72,7 @@ const Dashboard = () => {
   // 2. Daily Plan (New Architecture - Three Phase System)
   const { 
     loading: dailyPlanLoading,
+    dailyPlan,          // Full daily plan array (needed for explore-config)
     currentDayData, 
     currentDayNumber,
     currentPhase,       // NEW: Phase info { id, name, displayName, trackMissedDays }
@@ -82,8 +83,10 @@ const Dashboard = () => {
     prepRequirementsComplete  // Dynamic prep completion check (loaded from Firestore)
   } = useDailyPlan();
 
-
-
+  // Get explore-config for widget visibility after prep completion
+  const exploreConfig = useMemo(() => {
+    return dailyPlan?.find(d => d.id === 'explore-config');
+  }, [dailyPlan]);
   // Adapter for Legacy Dashboard Hooks
   const devPlanCurrentWeek = useMemo(() => {
     if (!currentDayData) return null;
@@ -481,9 +484,22 @@ const Dashboard = () => {
         // BLOCK - prep requirements not complete
         return false;
       }
-      // Prep complete - fall through to check dashboard config below
+      // Prep complete - use explore-config dashboard settings
+      // This allows admin to configure which widgets appear after prep completion
+      if (exploreConfig?.dashboard) {
+        if (exploreConfig.dashboard[widgetId] !== undefined) {
+          return exploreConfig.dashboard[widgetId];
+        }
+        const legacyKey = LEGACY_WIDGET_MAP[widgetId];
+        if (legacyKey && exploreConfig.dashboard[legacyKey] !== undefined) {
+          return exploreConfig.dashboard[legacyKey];
+        }
+      }
+      // No explore-config setting, use default
+      return defaultVal;
     }
 
+    // Non-prep phase: use current day's dashboard config
     if (!currentDayData?.dashboard) return defaultVal;
 
     // 1. Check for direct Widget ID match (New System)

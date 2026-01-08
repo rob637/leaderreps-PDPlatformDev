@@ -34,6 +34,7 @@ const path = require('path');
 // Collections that contain APPLICATION data (should migrate)
 const APP_DATA_COLLECTIONS = [
   'development_plan_v1',
+  'daily_plan_v1',           // NEW: Day-by-Day Daily Plan (includes prep phase)
   'system_lovs',
   'content_readings',
   'content_videos',
@@ -49,6 +50,7 @@ const APP_DATA_COLLECTIONS = [
   'content',                 // Unified Content Library (Legacy/Migration)
   'content_library',         // Unified Content Library (Canonical)
   'skills',                  // Skills Taxonomy
+  'cohorts',                 // Cohort definitions
   'metadata',
   'config',
   'global'
