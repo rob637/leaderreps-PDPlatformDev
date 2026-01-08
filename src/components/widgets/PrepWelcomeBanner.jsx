@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { 
-  Target, Rocket, Calendar, Quote, 
+  Target, Rocket, Calendar, 
   ChevronRight, Users, Info
 } from 'lucide-react';
 import { useDailyPlan, ONBOARDING_MODULES } from '../../hooks/useDailyPlan';
@@ -307,21 +307,6 @@ const PrepWelcomeBanner = () => {
                 <span className="font-medium">Complete your {incompleteRequiredActions.length} required action{incompleteRequiredActions.length !== 1 ? 's' : ''} below</span>
               </div>
             )}
-            
-            {/* Daily Quote - Keep for inspiration */}
-            <div className="mt-4 pt-4 border-t border-white/10">
-              <div className="flex gap-3 items-start">
-                <Quote className="w-5 h-5 text-corporate-teal/60 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-slate-300/90 text-sm italic leading-relaxed">
-                    "{quote.quote}"
-                  </p>
-                  <p className="text-corporate-teal text-xs mt-1 font-medium">
-                    — {quote.author}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Right Visual - Countdown to Session One with Date - Clean and simple */}
