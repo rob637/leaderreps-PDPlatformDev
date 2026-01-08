@@ -784,7 +784,7 @@ const DailyPlanManager = () => {
     },
     explore: {
       id: 'explore',
-      name: 'Explore Your Tools',
+      name: 'Explore',
       emoji: '🔓',
       description: 'Optional content unlocked after completing Required Prep',
       bgColor: 'bg-purple-50',

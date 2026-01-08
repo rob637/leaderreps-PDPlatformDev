@@ -860,13 +860,13 @@ const ThisWeeksActionsWidget = () => {
               </div>
             )}
             
-            {/* Explore Your Tools - Admin-configurable content (when prep complete) */}
+            {/* Explore - Admin-configurable content (when prep complete) */}
             {prepRequirementsComplete?.allComplete && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 px-1">
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm font-bold text-purple-800 uppercase tracking-wider">Explore Your Tools</span>
+                    <span className="text-sm font-bold text-purple-800 uppercase tracking-wider">Explore</span>
                   </div>
                   <div className="flex-1 h-px bg-purple-200"></div>
                   {additionalPrepActions.length > 0 && (
@@ -877,15 +877,15 @@ const ThisWeeksActionsWidget = () => {
                 </div>
                 
                 {/* Congratulations Banner */}
-                <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
-                      <Trophy className="w-5 h-5 text-white" />
+                <div className="p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 rounded-xl border border-emerald-200 shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-md">
+                      <Trophy className="w-6 h-6 text-white" />
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-emerald-800">🎉 Congratulations!</p>
-                      <p className="text-xs text-emerald-700">
-                        You've completed all required prep. Your leadership tools are now unlocked!
+                    <div className="flex-1">
+                      <p className="text-base font-bold text-emerald-800 mb-1">🎉 Congratulations on completing Required Prep!</p>
+                      <p className="text-sm text-emerald-700 leading-relaxed">
+                        You're all set! Now it's time to explore the app and get familiar with your leadership development tools.
                       </p>
                     </div>
                   </div>
