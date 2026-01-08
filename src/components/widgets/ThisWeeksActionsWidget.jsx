@@ -415,34 +415,24 @@ const ThisWeeksActionsWidget = () => {
     : "This Week's Actions";
 
   // Separate actions into Required Prep and Additional Prep for prep phase
+  // Uses the `required` and `optional` flags from the daily plan data
   const requiredPrepActions = useMemo(() => {
     if (currentPhase?.id !== 'pre-start') return [];
-    // The 5 required items: Leader Profile, Baseline Assessment, Video, Workbook, Exercises
-    // These are already filtered in allActions when prepRequirementsComplete is not allComplete
-    // But we need to explicitly identify them for the section labels
+    // Required items are those with: required === true OR (required !== false AND optional !== true)
+    // Also include interactive items (Leader Profile & Baseline Assessment)
     return allActions.filter(action => {
-      const actionId = (action.id || '').toLowerCase();
-      const labelLower = (action.label || '').toLowerCase();
-      
-      // Interactive items (Leader Profile & Baseline Assessment)
+      // Interactive items are always considered required
       if (action.isInteractive) return true;
       
-      // Check by known IDs
-      const requiredIds = ['action-prep-001-video', 'action-prep-001-workbook', 'action-prep-003-exercises'];
-      if (requiredIds.some(id => actionId.includes(id))) return true;
-      
-      // Check by label patterns
-      if ((labelLower.includes('foundation') && labelLower.includes('video')) || labelLower.includes('prep video')) return true;
-      if (labelLower.includes('workbook') || labelLower.includes('download')) return true;
-      if (labelLower.includes('exercises') || labelLower.includes('session 1 prep')) return true;
-      
-      return false;
+      // Check the required/optional flags from the daily plan data
+      const isRequired = action.required === true || (action.required !== false && action.optional !== true);
+      return isRequired;
     });
   }, [currentPhase?.id, allActions]);
   
   const additionalPrepActions = useMemo(() => {
     if (currentPhase?.id !== 'pre-start') return [];
-    // All other prep actions that aren't in the required list
+    // Additional/Explore items are those explicitly marked as optional or not required
     const requiredIds = requiredPrepActions.map(a => a.id);
     return allActions.filter(action => !requiredIds.includes(action.id));
   }, [currentPhase?.id, allActions, requiredPrepActions]);

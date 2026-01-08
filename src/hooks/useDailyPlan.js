@@ -6,11 +6,11 @@ import { useActionProgress } from './useActionProgress';
 import { useLeaderProfile } from './useLeaderProfile';
 
 /**
- * PREP REQUIREMENT ACTION IDS
+ * PREP REQUIREMENT ACTION IDS (DEPRECATED - For backwards compatibility only)
  * ===========================
- * These are the 5 required prep items that must be completed before Session 1.
- * Once all 5 are complete, the user unlocks all pre-Session 1 content/widgets.
- * Progress is COMPLETION-BASED, not day-based.
+ * These are legacy hardcoded IDs. The system now dynamically reads required
+ * prep items from the daily plan data using the `required` and `optional` flags.
+ * Keep these for backwards compatibility with existing action progress data.
  */
 export const PREP_REQUIREMENT_IDS = {
   LEADER_PROFILE: 'action-prep-leader-profile',
@@ -431,8 +431,8 @@ export const useDailyPlan = () => {
   // ============================================================================
   // PREP REQUIREMENTS COMPLETION CHECK
   // ============================================================================
-  // Tracks completion of the 5 required prep items. Once all are complete,
-  // the user unlocks all pre-Session 1 content and widgets immediately.
+  // Dynamically reads required prep items from the daily plan data.
+  // Items are considered "required" if: required === true OR (required !== false AND optional !== true)
   // This is COMPLETION-BASED, not day-based.
   const prepRequirementsComplete = useMemo(() => {
     // Helper to check if an action is completed
@@ -447,68 +447,102 @@ export const useDailyPlan = () => {
         dayProgress?.itemsCompleted?.includes(actionId)
       );
     };
-
-    // 1. Leader Profile - use hook result directly
-    const leaderProfile = leaderProfileComplete || false;
     
-    // 2. Baseline Assessment - check assessmentHistory
-    const baselineAssessment = !!(
-      developmentPlanData?.assessmentHistory && 
-      developmentPlanData.assessmentHistory.length > 0
-    ) || !!(
-      developmentPlanData?.currentPlan?.focusAreas &&
-      developmentPlanData.currentPlan.focusAreas.length > 0
+    // Get all prep phase days from daily plan
+    const prepDays = dailyPlan.filter(d => 
+      d.dayNumber >= PHASES.PRE_START.dbDayStart && 
+      d.dayNumber <= PHASES.PRE_START.dbDayEnd
     );
     
-    // 3. Video Watched
-    const videoWatched = isActionComplete(PREP_REQUIREMENT_IDS.VIDEO);
+    // Collect all prep actions from the daily plan
+    const allPrepActions = [];
+    prepDays.forEach(day => {
+      if (day.actions) {
+        day.actions.forEach((action, idx) => {
+          allPrepActions.push({
+            ...action,
+            dayId: day.id,
+            dayNumber: day.dayNumber,
+            id: action.id || `daily-${day.id}-${idx}`
+          });
+        });
+      }
+    });
     
-    // 4. Workbook Downloaded
-    const workbookDownloaded = isActionComplete(PREP_REQUIREMENT_IDS.WORKBOOK);
+    // Filter to get only REQUIRED prep actions
+    // Required = required === true OR (required !== false AND optional !== true)
+    // Exclude daily_rep type as those are not milestone items
+    const requiredPrepActions = allPrepActions.filter(action => {
+      if (action.type === 'daily_rep') return false;
+      const isRequired = action.required === true || (action.required !== false && action.optional !== true);
+      return isRequired;
+    });
     
-    // 5. Exercises Complete
-    const exercisesComplete = isActionComplete(PREP_REQUIREMENT_IDS.EXERCISES);
-
-    // Compute totals
-    const items = [
-      { id: 'leaderProfile', label: 'Leader Profile', complete: leaderProfile },
-      { id: 'baselineAssessment', label: 'Baseline Assessment', complete: baselineAssessment },
-      { id: 'videoWatched', label: 'Foundation Video', complete: videoWatched },
-      { id: 'workbookDownloaded', label: 'Foundation Workbook', complete: workbookDownloaded },
-      { id: 'exercisesComplete', label: 'Prep Exercises', complete: exercisesComplete }
-    ];
+    // Build items array with completion status
+    const items = requiredPrepActions.map(action => {
+      const handlerType = action.handlerType || '';
+      const labelLower = (action.label || '').toLowerCase();
+      
+      let complete = false;
+      
+      // Special handling for interactive items
+      if (handlerType === 'leader-profile' || labelLower.includes('leader profile')) {
+        complete = leaderProfileComplete || false;
+      } else if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment')) {
+        // Check assessmentHistory or focusAreas
+        complete = !!(
+          developmentPlanData?.assessmentHistory?.length > 0 ||
+          developmentPlanData?.currentPlan?.focusAreas?.length > 0
+        );
+      } else {
+        // Standard action progress check
+        complete = isActionComplete(action.id);
+      }
+      
+      return {
+        id: action.id,
+        label: action.label || 'Required Item',
+        complete,
+        handlerType: action.handlerType,
+        type: action.type
+      };
+    });
     
     const completedCount = items.filter(i => i.complete).length;
-    const allComplete = completedCount === 5;
+    const totalCount = items.length;
+    const allComplete = totalCount > 0 && completedCount === totalCount;
     const remaining = items.filter(i => !i.complete);
 
-    console.log('[useDailyPlan] prepRequirementsComplete:', {
-      leaderProfile,
-      baselineAssessment,
-      videoWatched,
-      workbookDownloaded,
-      exercisesComplete,
+    // Also provide legacy individual flags for backwards compatibility
+    const leaderProfile = items.find(i => 
+      i.handlerType === 'leader-profile' || (i.label || '').toLowerCase().includes('leader profile')
+    )?.complete || false;
+    
+    const baselineAssessment = items.find(i => 
+      i.handlerType === 'baseline-assessment' || (i.label || '').toLowerCase().includes('baseline assessment')
+    )?.complete || false;
+
+    console.log('[useDailyPlan] prepRequirementsComplete (dynamic):', {
+      totalCount,
       completedCount,
-      allComplete
+      allComplete,
+      items: items.map(i => ({ id: i.id, label: i.label, complete: i.complete }))
     });
 
     return {
-      // Individual items
+      // Legacy individual flags (for backwards compatibility)
       leaderProfile,
       baselineAssessment,
-      videoWatched,
-      workbookDownloaded,
-      exercisesComplete,
-      // Computed
+      // Dynamic items from daily plan
       items,
       completedCount,
-      totalCount: 5,
+      totalCount,
       allComplete,
       remaining,
       // Progress percentage
-      progressPercent: Math.round((completedCount / 5) * 100)
+      progressPercent: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
     };
-  }, [getItemProgress, developmentPlanData, leaderProfileComplete]);
+  }, [getItemProgress, developmentPlanData, leaderProfileComplete, dailyPlan]);
 
   // Auto-initialize startDate if missing (only for users WITHOUT a cohort)
   useEffect(() => {

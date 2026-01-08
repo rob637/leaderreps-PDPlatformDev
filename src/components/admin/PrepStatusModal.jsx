@@ -1,38 +1,57 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc, collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { X, Save, RefreshCw, Calendar, AlertTriangle, CheckCircle, Circle, Trophy } from 'lucide-react';
-
-// The 5 required prep items
-const REQUIRED_PREP_ITEMS = [
-  { id: 'leaderProfile', label: 'Leader Profile', field: 'leaderProfile' },
-  { id: 'baselineAssessment', label: 'Baseline Assessment', field: 'baselineAssessment' },
-  { id: 'action-prep-001-video', label: 'Foundation Video', field: 'videoWatched' },
-  { id: 'action-prep-001-workbook', label: 'Foundation Workbook', field: 'workbookDownloaded' },
-  { id: 'action-prep-002-exercises', label: 'Prep Exercises', field: 'exercisesComplete' }
-];
 
 const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
   const { db } = useAppServices();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [prepStatus, setPrepStatus] = useState({});
-  const [leaderProfileData, setLeaderProfileData] = useState(null);
+  const [requiredPrepItems, setRequiredPrepItems] = useState([]);
   const [error, setError] = useState(null);
 
   const fetchPrepData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch development plan data
+      // 1. Fetch daily plan to get required prep items dynamically
+      const dailyPlanQuery = query(collection(db, 'daily_plan_v1'), orderBy('dayNumber', 'asc'));
+      const dailyPlanSnap = await getDocs(dailyPlanQuery);
+      const dailyPlan = dailyPlanSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      
+      // Filter to prep phase days (dayNumber 1-14)
+      const prepDays = dailyPlan.filter(d => d.dayNumber >= 1 && d.dayNumber <= 14);
+      
+      // Collect all required prep actions
+      const allPrepActions = [];
+      prepDays.forEach(day => {
+        if (day.actions) {
+          day.actions.forEach((action, idx) => {
+            // Skip daily_rep type
+            if (action.type === 'daily_rep') return;
+            // Check if required
+            const isRequired = action.required === true || (action.required !== false && action.optional !== true);
+            if (isRequired) {
+              allPrepActions.push({
+                ...action,
+                id: action.id || `daily-${day.id}-${idx}`,
+                dayId: day.id
+              });
+            }
+          });
+        }
+      });
+      
+      setRequiredPrepItems(allPrepActions);
+      
+      // 2. Fetch user data to check completion status
       const devPlanRef = doc(db, `modules/${userId}/development_plan/current`);
       const devPlanSnap = await getDoc(devPlanRef);
       
-      // Fetch leader profile
       const profileRef = doc(db, `modules/${userId}/profile/leader`);
       const profileSnap = await getDoc(profileRef);
       
-      // Fetch action progress
       const actionProgressRef = doc(db, `modules/${userId}/action_progress/current`);
       const actionProgressSnap = await getDoc(actionProgressRef);
       
@@ -40,28 +59,29 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
       const profileData = profileSnap.exists() ? profileSnap.data() : null;
       const actionProgress = actionProgressSnap.exists() ? actionProgressSnap.data() : {};
       
-      setLeaderProfileData(profileData);
-      
       // Determine status for each required prep item
-      const status = {
-        // Leader Profile - check if profile exists with required fields
-        leaderProfile: !!(profileData?.role && profileData?.goals?.length > 0),
+      const status = {};
+      allPrepActions.forEach(action => {
+        const handlerType = action.handlerType || '';
+        const labelLower = (action.label || '').toLowerCase();
         
-        // Baseline Assessment - check assessmentHistory
-        baselineAssessment: !!(
-          devPlanData?.assessmentHistory?.length > 0 ||
-          devPlanData?.currentPlan?.focusAreas?.length > 0
-        ),
+        let complete = false;
         
-        // Video - check action progress
-        videoWatched: actionProgress?.['action-prep-001-video']?.status === 'completed',
+        // Special handling for interactive items
+        if (handlerType === 'leader-profile' || labelLower.includes('leader profile')) {
+          complete = !!(profileData?.role && profileData?.goals?.length > 0);
+        } else if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment')) {
+          complete = !!(
+            devPlanData?.assessmentHistory?.length > 0 ||
+            devPlanData?.currentPlan?.focusAreas?.length > 0
+          );
+        } else {
+          // Check action progress
+          complete = actionProgress?.[action.id]?.status === 'completed';
+        }
         
-        // Workbook - check action progress  
-        workbookDownloaded: actionProgress?.['action-prep-001-workbook']?.status === 'completed',
-        
-        // Exercises - check action progress
-        exercisesComplete: actionProgress?.['action-prep-002-exercises']?.status === 'completed'
-      };
+        status[action.id] = complete;
+      });
       
       setPrepStatus(status);
     } catch (err) {
@@ -78,10 +98,10 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
     }
   }, [isOpen, userId, fetchPrepData]);
 
-  const togglePrepItem = (field) => {
+  const togglePrepItem = (actionId) => {
     setPrepStatus(prev => ({
       ...prev,
-      [field]: !prev[field]
+      [actionId]: !prev[actionId]
     }));
   };
 
@@ -90,26 +110,24 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
     try {
       const actionProgressRef = doc(db, `modules/${userId}/action_progress/current`);
       
-      // Build updates for action progress
+      // Build updates for action progress based on dynamic items
       const actionUpdates = {};
       
-      if (prepStatus.videoWatched) {
-        actionUpdates['action-prep-001-video'] = { status: 'completed', completedAt: new Date().toISOString() };
-      } else {
-        actionUpdates['action-prep-001-video'] = { status: 'not_started' };
-      }
-      
-      if (prepStatus.workbookDownloaded) {
-        actionUpdates['action-prep-001-workbook'] = { status: 'completed', completedAt: new Date().toISOString() };
-      } else {
-        actionUpdates['action-prep-001-workbook'] = { status: 'not_started' };
-      }
-      
-      if (prepStatus.exercisesComplete) {
-        actionUpdates['action-prep-002-exercises'] = { status: 'completed', completedAt: new Date().toISOString() };
-      } else {
-        actionUpdates['action-prep-002-exercises'] = { status: 'not_started' };
-      }
+      requiredPrepItems.forEach(item => {
+        const handlerType = item.handlerType || '';
+        const labelLower = (item.label || '').toLowerCase();
+        
+        // Skip interactive items - they can't be manually toggled
+        if (handlerType === 'leader-profile' || labelLower.includes('leader profile')) return;
+        if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment')) return;
+        
+        // Update action progress for this item
+        if (prepStatus[item.id]) {
+          actionUpdates[item.id] = { status: 'completed', completedAt: new Date().toISOString() };
+        } else {
+          actionUpdates[item.id] = { status: 'not_started' };
+        }
+      });
       
       await setDoc(actionProgressRef, {
         ...actionUpdates,
@@ -126,7 +144,8 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
   };
 
   const completedCount = Object.values(prepStatus).filter(Boolean).length;
-  const allComplete = completedCount === 5;
+  const totalCount = requiredPrepItems.length;
+  const allComplete = totalCount > 0 && completedCount === totalCount;
 
   if (!isOpen) return null;
 
@@ -177,7 +196,7 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
                     </span>
                   </div>
                   <span className={`text-sm font-bold px-2 py-1 rounded-full ${allComplete ? 'bg-emerald-200 text-emerald-800' : 'bg-amber-200 text-amber-800'}`}>
-                    {completedCount}/5
+                    {completedCount}/{totalCount}
                   </span>
                 </div>
               </div>
@@ -185,46 +204,58 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
               {/* Required Prep Items */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-3">
-                  Required Prep Items (Progress-Based)
+                  Required Prep Items (from Daily Plan)
                 </label>
-                <div className="space-y-2">
-                  {REQUIRED_PREP_ITEMS.map((item) => {
-                    const isComplete = prepStatus[item.field];
-                    const isEditable = item.field !== 'leaderProfile' && item.field !== 'baselineAssessment';
-                    
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => isEditable && togglePrepItem(item.field)}
-                        disabled={!isEditable}
-                        className={`
-                          w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left
-                          ${isComplete 
-                            ? 'bg-emerald-50 border-emerald-200' 
-                            : 'bg-white border-slate-200 hover:border-slate-300'
-                          }
-                          ${!isEditable ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}
-                        `}
-                      >
-                        {isComplete ? (
-                          <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                        ) : (
-                          <Circle className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                        )}
-                        <span className={`flex-1 font-medium ${isComplete ? 'text-emerald-800' : 'text-slate-700'}`}>
-                          {item.label}
-                        </span>
-                        {!isEditable && (
-                          <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                            Read-only
+                {requiredPrepItems.length === 0 ? (
+                  <div className="text-center py-4 text-slate-500 bg-slate-50 rounded-lg border border-slate-200">
+                    <p className="text-sm">No required prep items found in the daily plan.</p>
+                    <p className="text-xs mt-1">Configure required prep items in the Daily Plan Manager.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {requiredPrepItems.map((item) => {
+                      const handlerType = item.handlerType || '';
+                      const labelLower = (item.label || '').toLowerCase();
+                      const isComplete = prepStatus[item.id];
+                      const isInteractive = handlerType === 'leader-profile' || 
+                                           labelLower.includes('leader profile') ||
+                                           handlerType === 'baseline-assessment' || 
+                                           labelLower.includes('baseline assessment');
+                      
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => !isInteractive && togglePrepItem(item.id)}
+                          disabled={isInteractive}
+                          className={`
+                            w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left
+                            ${isComplete 
+                              ? 'bg-emerald-50 border-emerald-200' 
+                              : 'bg-white border-slate-200 hover:border-slate-300'
+                            }
+                            ${isInteractive ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}
+                          `}
+                        >
+                          {isComplete ? (
+                            <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                          ) : (
+                            <Circle className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                          )}
+                          <span className={`flex-1 font-medium ${isComplete ? 'text-emerald-800' : 'text-slate-700'}`}>
+                            {item.label || 'Required Item'}
                           </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                          {isInteractive && (
+                            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                              Read-only
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
                 <p className="text-xs text-slate-500 mt-3">
-                  Click to toggle completion status. Leader Profile and Baseline Assessment are determined by actual data and cannot be manually toggled.
+                  Click to toggle completion status. Interactive items (Leader Profile, Baseline Assessment) are determined by actual data.
                 </p>
               </div>
 

@@ -256,6 +256,11 @@ const WeekDetailPanel = ({
   
   // Helper to check if an action is completed (handles interactive items)
   const isActionCompleted = (action) => {
+    // If the action has explicit isCompleted flag (from required prep items), use it
+    if (action.isCompleted !== undefined) {
+      return action.isCompleted;
+    }
+    
     // Check if this is an interactive item by handler type OR label pattern
     const handlerType = action.handlerType || '';
     const labelLower = (action.label || '').toLowerCase();
@@ -439,7 +444,8 @@ const DevelopmentJourneyWidget = () => {
     dailyPlan, 
     currentPhase, 
     phaseDayNumber,
-    userState 
+    userState,
+    prepRequirementsComplete // Get the 5 required prep items status
   } = useDailyPlan();
   
   const { getItemProgress } = useActionProgress();
@@ -494,66 +500,83 @@ const DevelopmentJourneyWidget = () => {
     const maxDay = Math.max(...dayNumbers);
     
     // =================== PREP PHASE ===================
+    // Get all prep phase days from daily plan
     const prepDays = dailyPlan.filter(d => 
       d.dayNumber >= PHASES.PRE_START.dbDayStart && 
       d.dayNumber <= PHASES.PRE_START.dbDayEnd
     );
     
-    if (prepDays.length > 0) {
-      const prepActions = [];
-      prepDays.forEach(day => {
-        if (day.actions) {
-          prepActions.push(...day.actions.map((a, idx) => ({
-            ...a,
+    // Collect ALL prep actions from the daily plan
+    const allPrepActions = [];
+    prepDays.forEach(day => {
+      if (day.actions) {
+        day.actions.forEach((action, idx) => {
+          allPrepActions.push({
+            ...action,
             dayId: day.id,
             dayNumber: day.dayNumber,
-            id: a.id || `daily-${day.id}-${(a.label || '').toLowerCase().replace(/\s+/g, '-').substring(0, 20)}-${idx}`
-          })));
-        }
-      });
+            id: action.id || `daily-${day.id}-${idx}`
+          });
+        });
+      }
+    });
+    
+    // Filter to get only REQUIRED prep actions (required !== false AND optional !== true)
+    // Also exclude daily_rep type as those are not progress items
+    const requiredPrepActions = allPrepActions.filter(action => {
+      // Skip daily reps - they're not milestone items
+      if (action.type === 'daily_rep') return false;
+      // Check if explicitly marked as required or not optional
+      const isRequired = action.required === true || (action.required !== false && action.optional !== true);
+      return isRequired;
+    });
+    
+    // Helper to check completion for each action type
+    const checkActionComplete = (action) => {
+      const handlerType = action.handlerType || '';
+      const labelLower = (action.label || '').toLowerCase();
       
-      const mainPrepActions = prepActions.filter(a => a.type !== 'daily_rep');
-      
-      // Count completed prep actions, handling interactive items specially
-      const completedPrepCount = mainPrepActions.filter(a => {
-        // Check if this is an interactive item by handler type OR label pattern
-        const handlerType = a.handlerType || '';
-        const labelLower = (a.label || '').toLowerCase();
-        
-        // Leader Profile - check by handlerType OR label
-        if (handlerType === 'leader-profile' || labelLower.includes('leader profile')) {
-          return leaderProfileComplete;
-        }
-        // Baseline Assessment - check by handlerType OR label
-        if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment')) {
-          return baselineAssessmentComplete;
-        }
-        // Standard check for other items
-        const progress = getItemProgress(a.id);
-        return progress.status === 'completed' || completedItems.has(a.id);
-      }).length;
-      
-      // NOTE: Interactive items are already counted in mainPrepActions (from daily plan data)
-      // So we don't add them separately anymore
-      const totalPrepActions = mainPrepActions.length;
-      const totalPrepCompleted = completedPrepCount;
-      
-      segments.push({
-        id: 'prep',
-        type: 'phase',
-        phaseId: 'pre-start',
-        label: 'Prep Phase',
-        shortLabel: 'Prep',
-        theme: PHASE_THEMES['pre-start'],
-        actions: mainPrepActions,
-        totalActions: totalPrepActions,
-        completedActions: totalPrepCompleted,
-        progress: totalPrepActions > 0 ? Math.round((totalPrepCompleted / totalPrepActions) * 100) : 0,
-        daysCount: prepDays.length,
-        icon: 'rocket',
-        description: 'Get ready for your leadership journey'
-      });
-    }
+      // Leader Profile - check by handlerType OR label
+      if (handlerType === 'leader-profile' || labelLower.includes('leader profile')) {
+        return leaderProfileComplete;
+      }
+      // Baseline Assessment - check by handlerType OR label
+      if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment')) {
+        return baselineAssessmentComplete;
+      }
+      // Check action progress
+      const progress = getItemProgress(action.id);
+      if (progress.status === 'completed') return true;
+      // Check completed items set
+      if (completedItems.has(action.id)) return true;
+      return false;
+    };
+    
+    // Build required prep actions with completion status
+    const requiredPrepActionsWithStatus = requiredPrepActions.map(action => ({
+      ...action,
+      isCompleted: checkActionComplete(action),
+      isRequired: true
+    }));
+    
+    const completedRequiredCount = requiredPrepActionsWithStatus.filter(a => a.isCompleted).length;
+    const totalRequiredCount = requiredPrepActionsWithStatus.length;
+    
+    segments.push({
+      id: 'prep',
+      type: 'phase',
+      phaseId: 'pre-start',
+      label: 'Prep Phase',
+      shortLabel: 'Prep',
+      theme: PHASE_THEMES['pre-start'],
+      actions: requiredPrepActionsWithStatus,
+      totalActions: totalRequiredCount,
+      completedActions: completedRequiredCount,
+      progress: totalRequiredCount > 0 ? Math.round((completedRequiredCount / totalRequiredCount) * 100) : 0,
+      daysCount: prepDays.length,
+      icon: 'rocket',
+      description: 'Get ready for your leadership journey'
+    });
     
     // =================== DEVELOPMENT PHASE (WEEKS) ===================
     // Dynamically calculate weeks based on START phase data
@@ -668,7 +691,7 @@ const DevelopmentJourneyWidget = () => {
     const totalWeeks = segments.filter(s => s.type === 'week').length;
     
     return { segments, totalWeeks };
-  }, [dailyPlan, getItemProgress, completedItems, leaderProfileComplete, baselineAssessmentComplete]);
+  }, [dailyPlan, getItemProgress, completedItems, leaderProfileComplete, baselineAssessmentComplete, prepRequirementsComplete]);
   
   // Overall progress across entire journey
   const overallProgress = useMemo(() => {
