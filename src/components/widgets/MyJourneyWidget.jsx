@@ -13,7 +13,7 @@ import FacilitatorProfileModal from './FacilitatorProfileModal';
  * 
  * Displays:
  * - Cohort name and start date
- * - Prep progress (5 required items) - COMPLETION-BASED, not login-based
+ * - Prep progress (required items) - COMPLETION-BASED, not login-based
  * - Facilitator info
  * - Days until/since program start
  * - Current phase (Prep, Development Plan, Post)
@@ -165,7 +165,7 @@ const MyJourneyWidget = () => {
               </div>
             </div>
             
-            {/* 5 Required Items */}
+            {/* Required Items (dynamic count) */}
             <div className="space-y-2">
               {prepRequirementsComplete.items.map((item, idx) => (
                 <div 

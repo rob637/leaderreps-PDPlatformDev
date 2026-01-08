@@ -82,16 +82,6 @@ const Dashboard = () => {
     prepRequirementsComplete  // NEW: 5-item completion check
   } = useDailyPlan();
 
-  // DEBUG: Log phase info
-  console.log('[Dashboard] Phase Info:', { 
-    phase: currentPhase?.name, 
-    phaseDayNumber, 
-    currentDayNumber,
-    hasCurrentDayData: !!currentDayData,
-    loading: dailyPlanLoading,
-    prepRequirementsComplete: prepRequirementsComplete?.allComplete
-  });
-
 
 
   // Adapter for Legacy Dashboard Hooks
@@ -479,7 +469,7 @@ const Dashboard = () => {
     };
 
     // PREP PHASE FEATURE GATING - PROGRESS BASED, NOT DAY BASED
-    // These widgets are LOCKED until ALL 5 required prep items are complete
+    // These widgets are LOCKED until ALL required prep items are complete
     const PREP_GATED_WIDGETS = [
       'am-bookend-header',
       'weekly-focus',
@@ -496,11 +486,9 @@ const Dashboard = () => {
     if (currentPhase?.id === 'pre-start' && PREP_GATED_WIDGETS.includes(widgetId)) {
       if (!prepRequirementsComplete?.allComplete) {
         // BLOCK - prep requirements not complete
-        console.log(`[Dashboard] Prep NOT complete: HIDING ${widgetId}`);
         return false;
       }
       // Prep complete - fall through to check dashboard config below
-      console.log(`[Dashboard] Prep complete: checking dashboard config for ${widgetId}`);
     }
 
     if (!currentDayData?.dashboard) return defaultVal;

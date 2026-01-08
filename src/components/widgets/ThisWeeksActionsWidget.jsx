@@ -788,11 +788,11 @@ const ThisWeeksActionsWidget = () => {
                   </div>
                   <div className="flex-1 h-px bg-amber-200"></div>
                   <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                    {prepRequirementsComplete?.completedCount || 0}/5 complete
+                    {prepRequirementsComplete?.completedCount || 0}/{prepRequirementsComplete?.totalCount || requiredPrepActions.length} complete
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 mb-3 px-1">
-                  Complete these 5 items to unlock your leadership development tools.
+                  Complete these {prepRequirementsComplete?.totalCount || requiredPrepActions.length} items to get ready for Session One and access additional arena functionality.
                 </p>
                 <div className="space-y-1 p-3 bg-amber-50/50 rounded-xl border border-amber-200/60">
                   {requiredPrepActions.map((item, idx) => (

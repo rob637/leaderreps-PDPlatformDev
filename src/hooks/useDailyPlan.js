@@ -524,13 +524,6 @@ export const useDailyPlan = () => {
       i.handlerType === 'baseline-assessment' || (i.label || '').toLowerCase().includes('baseline assessment')
     )?.complete || false;
 
-    console.log('[useDailyPlan] prepRequirementsComplete (dynamic):', {
-      totalCount,
-      completedCount,
-      allComplete,
-      items: items.map(i => ({ id: i.id, label: i.label, complete: i.complete }))
-    });
-
     return {
       // Legacy individual flags (for backwards compatibility)
       leaderProfile,
@@ -1187,7 +1180,7 @@ export const useDailyPlan = () => {
     // Prep Phase specific (NEW)
     prepPhaseInfo,          // { daysUntilStart, welcome, quote, onboarding, journeyDay, cohort, ... } - only in prep phase
     journeyDay,             // User's personal journey day (days since first prep phase visit)
-    prepRequirementsComplete, // { allComplete, completedCount, items, remaining, ... } - 5 required prep items
+    prepRequirementsComplete, // { allComplete, completedCount, totalCount, items, remaining, ... } - dynamic required prep items
     
     // Legacy (for backward compatibility)
     currentDayNumber,       // User-facing day number (negative for prep, positive for start)

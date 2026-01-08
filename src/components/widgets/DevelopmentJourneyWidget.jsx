@@ -445,7 +445,7 @@ const DevelopmentJourneyWidget = () => {
     currentPhase, 
     phaseDayNumber,
     userState,
-    prepRequirementsComplete // Get the 5 required prep items status
+    prepRequirementsComplete // Get the required prep items status (dynamic count)
   } = useDailyPlan();
   
   const { getItemProgress } = useActionProgress();

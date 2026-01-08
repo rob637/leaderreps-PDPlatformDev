@@ -86,15 +86,8 @@ const PrepWelcomeBanner = () => {
     return [...interactiveItems, ...filteredDailyActions];
   }, [currentDayData, leaderProfileComplete, baselineAssessmentComplete]);
   
-  // Debug logging
-  console.log('[PrepWelcomeBanner] Rendering with:', {
-    currentPhase: currentPhase?.id,
-    prepRequirementsComplete: prepRequirementsComplete?.allComplete
-  });
-  
   // Only show in Prep Phase
   if (currentPhase?.id !== 'pre-start') {
-    console.log('[PrepWelcomeBanner] NOT showing - phase is:', currentPhase?.id);
     return null;
   }
   
@@ -142,22 +135,6 @@ const PrepWelcomeBanner = () => {
   // Determine if prep is complete using the completion-based flag
   // Progress-based: not day or time dependent
   const isPrepComplete = prepRequirementsComplete?.allComplete || false;
-
-  // DIAGNOSTIC LOGGING
-  if (currentPhase?.id === 'pre-start') {
-    console.warn('[PrepWelcomeBanner] STATUS CHECK:', {
-      isPrepComplete,
-      prepRequirementsComplete: prepRequirementsComplete ? {
-        allComplete: prepRequirementsComplete.allComplete,
-        completedCount: prepRequirementsComplete.completedCount,
-        remaining: prepRequirementsComplete.remaining?.map(i => i.label)
-      } : null,
-      hasIncomplete: hasIncompleteRequiredActions,
-      incompleteCount: incompleteRequiredActions.length,
-      totalActions: actions.length,
-      userStateKeys: Object.keys(userState?.dailyProgress || {})
-    });
-  }
 
   // Build headline - progress-based, not day-based
   const getPersonalizedHeadline = () => {
@@ -209,17 +186,6 @@ const PrepWelcomeBanner = () => {
     return "Complete your Required Prep to unlock additional tools to explore.";
   };
 
-  // DIAGNOSTIC LOGGING
-  if (currentPhase?.id === 'pre-start') {
-    console.log('[PrepWelcomeBanner] STATUS CHECK:', {
-      isPrepComplete,
-      hasIncomplete: hasIncompleteRequiredActions,
-      incompleteCount: incompleteRequiredActions.length,
-      headline: getPersonalizedHeadline(),
-      subtext: getSubtext()
-    });
-  }
-  
   // Launch mode for Session One (when cohort starts today)
   const isLaunch = daysUntilStart <= 0;
 
