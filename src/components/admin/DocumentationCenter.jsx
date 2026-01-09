@@ -36,6 +36,38 @@ import widgetTemplatesRaw from '../../config/widgetTemplates.js?raw';
 import adminPortalRaw from './AdminPortal.jsx?raw';
 
 /**
+ * Helper function to extract "Last Updated" date from markdown content
+ * Looks for patterns like "Last Updated: January 9, 2026" or "*Last Updated: January 9, 2026*"
+ */
+const extractLastUpdated = (markdownContent) => {
+  if (!markdownContent) return 'Unknown';
+  
+  // Try multiple patterns to find the last updated date
+  const patterns = [
+    // Matches: > *Last Updated: January 9, 2026*
+    /\*Last Updated:?\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4})\*/i,
+    // Matches: Last updated: January 9, 2026
+    /Last [Uu]pdated:?\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4})/i,
+    // Matches: **Last Updated:** January 2026
+    /\*\*Last Updated:?\*\*\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4})/i,
+    /\*\*Last Updated:?\*\*\s*([A-Za-z]+\s+\d{4})/i,
+    // Matches: Last Updated: January 2026
+    /Last Updated:?\s*([A-Za-z]+\s+\d{4})/i,
+    /Updated:?\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4})/i,
+    /Updated:?\s*([A-Za-z]+\s+\d{4})/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = markdownContent.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  
+  return 'Unknown';
+};
+
+/**
  * DocumentationCenter - Admin documentation hub
  * Provides access to guides, test plans, and system documentation
  */
@@ -59,9 +91,9 @@ const DocumentationCenter = () => {
   // GitHub config
   const GITHUB_OWNER = 'rob637';
   const GITHUB_REPO = 'leaderreps-PDPlatformDev';
-  const GITHUB_BRANCH = '12-12-digin';
+  const GITHUB_BRANCH = 'main';
 
-  // Document definitions
+  // Document definitions with dynamic dates extracted from the markdown files
   const documents = [
     {
       id: 'admin-guide',
@@ -70,7 +102,7 @@ const DocumentationCenter = () => {
       icon: Shield,
       color: 'bg-corporate-teal',
       category: 'Admin',
-      lastUpdated: 'December 2025',
+      lastUpdated: extractLastUpdated(adminGuideRaw),
       sections: [
         'Platform Overview',
         'Architecture & Key Concepts',
@@ -96,7 +128,7 @@ const DocumentationCenter = () => {
       icon: Users,
       color: 'bg-corporate-orange',
       category: 'User',
-      lastUpdated: 'December 2025',
+      lastUpdated: extractLastUpdated(userGuideRaw),
       sections: [
         'Getting Started',
         'Your Daily Practice',
@@ -119,7 +151,7 @@ const DocumentationCenter = () => {
       icon: ClipboardCheck,
       color: 'bg-purple-600',
       category: 'QA',
-      lastUpdated: 'December 2025',
+      lastUpdated: extractLastUpdated(testPlansRaw),
       sections: [
         'Testing Environments',
         'Daily Practice Tests',
@@ -143,7 +175,7 @@ const DocumentationCenter = () => {
       icon: GitBranch,
       color: 'bg-blue-600',
       category: 'Technical',
-      lastUpdated: 'December 2025',
+      lastUpdated: extractLastUpdated(appArchitectureRaw),
       sections: [
         'Core Application Entry Points',
         'Configuration & Environment',
@@ -389,7 +421,9 @@ Please review and improve the following documentation, making it 1% better by:
       );
       
       if (!getFileResponse.ok) {
-        throw new Error('Failed to get current file from GitHub');
+        const errorData = await getFileResponse.json().catch(() => ({}));
+        console.error('GitHub API error:', getFileResponse.status, errorData);
+        throw new Error(`Failed to get file from GitHub: ${errorData.message || getFileResponse.statusText} (${getFileResponse.status})`);
       }
       
       const fileData = await getFileResponse.json();
