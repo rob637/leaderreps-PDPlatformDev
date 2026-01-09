@@ -40,8 +40,10 @@ import {
   Search,
   PlayCircle,
   PauseCircle,
-  SkipForward
+  SkipForward,
+  ClipboardList
 } from 'lucide-react';
+import ManualTestScripts from './ManualTestScripts';
 import { useAppServices } from '../../services/useAppServices';
 import { 
   collection, 
@@ -889,6 +891,9 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
 const TestCenter = () => {
   const { user, db, dailyPracticeData, developmentPlanData } = useAppServices();
   
+  // Tab state
+  const [activeTab, setActiveTab] = useState('automated');
+  
   // State
   const [testSuites, setTestSuites] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
@@ -1124,11 +1129,46 @@ const TestCenter = () => {
             Test Center
           </h2>
           <p className="text-gray-500 text-sm mt-1">
-            Automated testing and system health monitoring
+            Automated testing, system health monitoring, and manual test scripts
           </p>
         </div>
-        
-        <div className="flex items-center gap-3">
+      </div>
+      
+      {/* Tab Navigation */}
+      <div className="flex border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('automated')}
+          className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
+            ${activeTab === 'automated' 
+              ? 'border-corporate-teal text-corporate-teal' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+        >
+          <Zap className="w-4 h-4" />
+          Automated Tests
+        </button>
+        <button
+          onClick={() => setActiveTab('manual')}
+          className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
+            ${activeTab === 'manual' 
+              ? 'border-corporate-teal text-corporate-teal' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+        >
+          <ClipboardList className="w-4 h-4" />
+          Manual Test Scripts
+          <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-bold rounded">138</span>
+        </button>
+      </div>
+      
+      {/* Manual Test Scripts Tab */}
+      {activeTab === 'manual' && (
+        <ManualTestScripts />
+      )}
+      
+      {/* Automated Tests Tab */}
+      {activeTab === 'automated' && (
+      <>
+      {/* Automated Tests Controls */}
+      <div className="flex items-center justify-end gap-3">
           {/* Auto-refresh toggle */}
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
@@ -1168,7 +1208,6 @@ const TestCenter = () => {
               Run All Tests
             </button>
           )}
-        </div>
       </div>
       
       {/* Summary Cards */}
@@ -1438,6 +1477,8 @@ const TestCenter = () => {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

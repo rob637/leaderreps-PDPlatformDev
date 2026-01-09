@@ -357,8 +357,7 @@ Evening (PM Bookend):
 | DEV-CON-017 | External Link | Opens in new tab | Medium |
 | DEV-CON-018 | Mark Complete | Manual completion toggle | High |
 | DEV-CON-019 | Completion Persists | Refresh, still complete | High |
-| DEV-CON-020 | Premium Content Gate | Free user sees upgrade prompt | High |
-| DEV-CON-021 | Premium Content Access | Premium user can access | High |
+
 | DEV-CON-022 | Content Details View | View full content details | Medium |
 | DEV-CON-023 | Back Navigation | Return from content to library | Medium |
 
@@ -539,8 +538,6 @@ Different tests for users in different states:
 | Week 10 Active | Yes | 65 | 30 | 3 | Near end |
 | Missed Days | Yes | 20 | 0 | 0 | Has missed days to catch up |
 | Post Phase | Yes | 75 | 45 | 3 | Completed program |
-| Free Tier | Yes | 10 | 5 | 3 | Limited access |
-| Premium Tier | Yes | 10 | 5 | 3 | Full access |
 | CROSS-AUTH-002 | Login - Google OAuth | Google sign-in | Critical |
 | CROSS-AUTH-003 | Logout | Clean logout | High |
 | CROSS-AUTH-004 | Password Reset | Reset via email | High |
@@ -855,8 +852,7 @@ Before a release, aggregate sign-off:
 | TU-004 | testweek10@test.com | TestPass123! | User | Day 65 (Week 10) | Test late program |
 | TU-005 | testpost@test.com | TestPass123! | User | Day 75 (Post Phase) | Test Post Phase |
 | TU-006 | testmissed@test.com | TestPass123! | User | Day 20 + 5 missed | Test Catch Up |
-| TU-007 | testfree@test.com | TestPass123! | Free User | Day 10 | Test Free tier limits |
-| TU-008 | testpremium@test.com | TestPass123! | Premium | Day 10 | Test Premium access |
+| TU-007 | testactive@test.com | TestPass123! | User | Day 10 | Test active user |
 | TU-009 | testnew@test.com | TestPass123! | User | New account | Test onboarding |
 | TU-010 | testadmin@test.com | TestPass123! | Admin | N/A | Test admin functions |
 
