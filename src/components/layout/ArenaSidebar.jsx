@@ -3,7 +3,7 @@ import {
   LayoutDashboard, 
   Target, 
   BookOpen, 
-  Network, 
+  UsersRound, 
   Megaphone, 
   User, 
   Archive,
@@ -78,8 +78,8 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
     
     { type: 'section', label: 'Resources' },
+    { id: 'community', label: 'Community', icon: UsersRound, flag: 'enableCommunity', devModeOnly: true },
     { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' }, // Using enableReadings as proxy for Content
-    { id: 'community', label: 'Community', icon: Network, flag: 'enableCommunity', devModeOnly: true },
     { id: 'coaching-hub', label: 'Coaching', icon: Megaphone, flag: 'enableLabs', devModeOnly: true },
     
     { type: 'section', label: 'Personal' },

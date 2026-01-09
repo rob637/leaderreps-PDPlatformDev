@@ -227,10 +227,9 @@ const DataProvider = ({
   const callSecureGeminiAPI = useCallback(
     async (payload) => {
       // Use the Cloud Function URL for the Gemini proxy
-      // DEV: leaderreps-pd-platform, TEST: leaderreps-test
-      const GEMINI_PROXY_URL = import.meta.env.VITE_FIREBASE_PROJECT_ID === 'leaderreps-test'
-        ? 'https://geminiproxy-qmrhrvrytq-uc.a.run.app'
-        : 'https://geminiproxy-qmrhrvrytq-uc.a.run.app';
+      // Dynamically determine based on environment
+      const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+      const GEMINI_PROXY_URL = `https://us-central1-${projectId}.cloudfunctions.net/geminiProxy`;
 
       try {
         const requestOptions = {

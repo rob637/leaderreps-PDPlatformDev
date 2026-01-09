@@ -104,7 +104,11 @@ const NotificationManager = () => {
     setTestResult(null);
     
     try {
-      const response = await fetch('https://us-central1-leaderreps-pd-platform.cloudfunctions.net/sendTestEmailSms', {
+      // Dynamically determine function URL based on environment
+      const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+      const functionUrl = `https://us-central1-${projectId}.cloudfunctions.net/sendTestEmailSms`;
+      
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

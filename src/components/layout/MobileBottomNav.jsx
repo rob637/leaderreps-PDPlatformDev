@@ -1,6 +1,6 @@
 // src/components/layout/MobileBottomNav.jsx
 import React from 'react';
-import { Home, BookOpen, Network, Megaphone, Archive } from 'lucide-react';
+import { Home, BookOpen, UsersRound, Megaphone, Archive } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 // import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
 
@@ -8,7 +8,7 @@ const MobileBottomNav = ({ currentScreen }) => {
   const { navigate } = useAppServices();
   // const { zoneVisibility } = useDayBasedAccessControl();
   
-  // 5 buttons: Dashboard, Content, Communication, Coaching, Locker
+  // 5 buttons: Dashboard, Community, Content, Coaching, Locker
   const navItems = [
     {
       id: 'dashboard',
@@ -17,16 +17,16 @@ const MobileBottomNav = ({ currentScreen }) => {
       screen: 'dashboard'
     },
     {
+      id: 'community',
+      label: 'Community',
+      icon: UsersRound,
+      screen: 'community'
+    },
+    {
       id: 'library',
       label: 'Content',
       icon: BookOpen,
       screen: 'library'
-    },
-    {
-      id: 'community',
-      label: 'Community',
-      icon: Network,
-      screen: 'community'
     },
     {
       id: 'coaching',

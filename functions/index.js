@@ -115,8 +115,9 @@ exports.acceptInvitation = onCall({ cors: true, region: "us-central1" }, async (
     if (inviteData.role === 'admin' && inviteData.email) {
         try {
             const configRef = db.collection('metadata').doc('config');
+            // Always store admin emails as lowercase for consistent matching
             await configRef.update({
-                adminemails: admin.firestore.FieldValue.arrayUnion(inviteData.email)
+                adminemails: admin.firestore.FieldValue.arrayUnion(inviteData.email.toLowerCase())
             });
             logger.info("Added admin email to config", { email: inviteData.email });
         } catch (adminErr) {
@@ -209,8 +210,14 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
     },
   });
 
+  // Dynamically determine the app URL based on the Firebase project
+  const projectId = process.env.GCLOUD_PROJECT || process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId;
+  const appDomain = projectId === 'leaderreps-test' 
+    ? 'leaderreps-test.web.app' 
+    : 'leaderreps-pd-platform.web.app';
+  
   // Use 'token' query param to match frontend AuthPanel expectation
-  const inviteLink = `https://leaderreps-pd-platform.web.app/auth?token=${token}`;
+  const inviteLink = `https://${appDomain}/auth?token=${token}`;
   
   // Handle Test Mode
   let recipientEmail = email;
@@ -282,9 +289,15 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
 exports.geminiProxy = onRequest(
   {
     cors: true,
-    // invoker: "public", // Removed to fix IAM permission error during deploy
+    invoker: "public", // Required for CORS preflight requests to work
   },
   async (req, res) => {
+    // Handle CORS preflight
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+    
     // Only allow POST requests
     if (req.method !== "POST") {
       res.status(405).json({ error: "Method not allowed" });
@@ -1154,13 +1167,19 @@ async function sendEmailNotification(email, subject, message) {
     auth: { user: emailUser, pass: emailPass },
   });
 
+  // Dynamically determine the app URL based on the Firebase project
+  const projectId = process.env.GCLOUD_PROJECT || process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId;
+  const appDomain = projectId === 'leaderreps-test' 
+    ? 'leaderreps-test.web.app' 
+    : 'leaderreps-pd-platform.web.app';
+
   try {
     await transporter.sendMail({
       from: `"LeaderReps" <${emailUser}>`,
       to: email,
       subject: `🔔 ${subject}`,
       text: message,
-      html: `<p>${message}</p><p><a href="https://leaderreps-pd-platform.web.app">Open LeaderReps</a></p>`
+      html: `<p>${message}</p><p><a href="https://${appDomain}">Open LeaderReps</a></p>`
     });
     logger.info(`Notification email sent to ${email}`);
   } catch (e) {

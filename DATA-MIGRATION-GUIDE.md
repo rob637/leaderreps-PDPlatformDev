@@ -6,8 +6,8 @@ Your app has two distinct types of data:
 
 | Type | Description | Migrates? |
 |------|-------------|-----------|
-| **Application Data** | System config, content libraries, 26-week plan, LOVs | ✅ YES |
-| **User Data** | User profiles, progress, achievements, settings | ❌ NO |
+| **Application Data** | System config, content libraries, plans, LOVs | ✅ YES |
+| **User Data** | User profiles, progress, achievements, cohorts | ❌ NO |
 
 ---
 
@@ -20,11 +20,14 @@ These collections contain system-wide data that should be the same across enviro
 | Collection | Purpose | Notes |
 |------------|---------|-------|
 | `development_plan_v1` | 26-week master plan | Created in Dev Plan Manager |
+| `daily_plan_v1` | Day-by-Day Daily Plan | Prep phase + daily content |
 | `system_lovs` | Lists of Values (dropdowns) | Created in LOV Manager |
 | `content_readings` | Reading library | Created in Content Manager |
 | `content_videos` | Video library | Created in Content Manager |
 | `content_courses` | Course catalog | Created in Content Manager |
 | `content_coaching` | Coaching scenarios | Created in Coaching Manager |
+| `content_library` | Unified content | All content types |
+| `skills` | Skills Taxonomy | Skill definitions |
 | `metadata/*` | App config, catalogs | Admin emails, etc. |
 | `config/*` | Feature flags | Widget visibility |
 | `global/*` | Global metadata | Shared app settings |
@@ -39,6 +42,8 @@ These collections contain user-specific data:
 | `modules/{userId}/*` | User progress | Environment-specific testing |
 | `content_community` | Forum posts | User-generated content |
 | `artifacts/{appId}/users/*` | User artifacts | Personal data |
+| `invitations/*` | User invitations | User-specific |
+| `cohorts/*` | Cohort membership | Contains user refs (facilitator, memberIds) |
 
 ---
 
@@ -48,16 +53,16 @@ These collections contain user-specific data:
 
 ```bash
 # 1. Export from Dev
-node scripts/migrate-app-data.js export dev
+npm run data:export dev
 
 # 2. Import to Test
-node scripts/migrate-app-data.js import test ./data-exports/app-data-dev-2024-12-03.json
+npm run data:import test ./data-exports/app-data-dev-2024-12-03.json
 ```
 
 ### Scenario 2: Sync Changes to Test After Dev Updates
 
 ```bash
-# After making changes in Dev (LOVs, content, 26-week plan)
+# After making changes in Dev (LOVs, content, daily plan)
 node scripts/migrate-app-data.js export dev
 node scripts/migrate-app-data.js import test ./data-exports/app-data-dev-YYYY-MM-DD.json
 ```
@@ -194,11 +199,34 @@ node scripts/migrate-app-data.js export test
 
 ---
 
+## Cleaning Up Test Environment
+
+If user data was accidentally migrated to Test, use the cleanup script:
+
+```bash
+# Preview what will be deleted (DRY RUN)
+npm run cleanup:test-preview
+
+# Actually delete the user data
+npm run cleanup:test-execute
+```
+
+This will remove:
+- `users` - User profiles
+- `modules` - User progress data
+- `invitations` - User invitations
+- `cohorts` - Cohort definitions (contain user references)
+
+⚠️ **WARNING**: Always run the preview first to verify what will be deleted!
+
+---
+
 ## Questions?
 
 | Question | Answer |
 |----------|--------|
 | What if I want to copy one user's data? | Manual Firestore copy or custom script |
-| How do I reset Test environment? | Delete collections, re-import from Dev |
+| How do I reset Test environment? | Use `npm run cleanup:test-execute`, then re-import app data |
 | Can I sync specific collections only? | Modify `APP_DATA_COLLECTIONS` in script |
 | What about storage (images, files)? | Need separate migration for Firebase Storage |
+| Why aren't cohorts migrated? | They contain user refs (facilitator IDs, member IDs) |

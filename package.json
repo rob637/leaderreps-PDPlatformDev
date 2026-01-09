@@ -22,7 +22,11 @@
     "test:coverage": "vitest --coverage",
     "data:export": "node scripts/migrate-app-data.cjs export",
     "data:import": "node scripts/migrate-app-data.cjs import",
-    "data:list": "node scripts/migrate-app-data.cjs list"
+    "data:list": "node scripts/migrate-app-data.cjs list",
+    "cleanup:dev-preview": "node scripts/cleanup-test-users.cjs dev --dry-run",
+    "cleanup:dev-execute": "node scripts/cleanup-test-users.cjs dev --execute",
+    "cleanup:test-preview": "node scripts/cleanup-test-users.cjs test --dry-run",
+    "cleanup:test-execute": "node scripts/cleanup-test-users.cjs test --execute"
   },
   "engines": {
     "node": ">=20.x"

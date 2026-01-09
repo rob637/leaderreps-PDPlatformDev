@@ -11,6 +11,7 @@
  * 
  * This script handles:
  *   ✅ development_plan_v1 (26-week master plan)
+ *   ✅ daily_plan_v1 (Day-by-Day Daily Plan)
  *   ✅ system_lovs (Lists of Values)
  *   ✅ content_readings (Reading library)
  *   ✅ content_videos (Video library)
@@ -25,6 +26,8 @@
  *   ❌ modules/{userId}/* (User progress)
  *   ❌ content_community (User-generated posts)
  *   ❌ artifacts/* (User artifacts)
+ *   ❌ invitations/* (User invitations)
+ *   ❌ cohorts/* (Contains user references - facilitator, memberIds)
  */
 
 const admin = require('firebase-admin');
@@ -50,7 +53,7 @@ const APP_DATA_COLLECTIONS = [
   'content',                 // Unified Content Library (Legacy/Migration)
   'content_library',         // Unified Content Library (Canonical)
   'skills',                  // Skills Taxonomy
-  'cohorts',                 // Cohort definitions
+  // NOTE: 'cohorts' removed - contains user data (facilitator, memberIds)
   'metadata',
   'config',
   'global'
@@ -61,7 +64,9 @@ const USER_DATA_COLLECTIONS = [
   'users',
   'modules',
   'artifacts',
-  'content_community'  // User-generated content
+  'content_community',  // User-generated content
+  'invitations',        // User invitations
+  'cohorts'             // Contains user refs (facilitator, memberIds)
 ];
 
 // Firebase project configurations
@@ -369,6 +374,7 @@ Examples:
 
 Data Migrated:
   ✅ development_plan_v1  - 26-week master plan
+  ✅ daily_plan_v1        - Day-by-Day Daily Plan
   ✅ system_lovs          - Lists of Values (dropdowns)
   ✅ content_readings     - Reading library
   ✅ content_videos       - Video library
@@ -383,6 +389,8 @@ Data NOT Migrated (user-specific):
   ❌ modules/*            - User progress
   ❌ content_community    - User-generated posts
   ❌ artifacts/*          - User artifacts
+  ❌ invitations/*        - User invitations
+  ❌ cohorts/*            - Contains user refs (facilitator, memberIds)
 `);
     return;
   }
