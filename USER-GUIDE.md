@@ -2,7 +2,7 @@ md
 # 📱 LeaderReps PD Platform - User Guide
 
 > **Complete guide for platform users**  
-> *Last Updated: December 7, 2025*
+> *Last Updated: January 9, 2026*
 
 ---
 
@@ -69,17 +69,21 @@ Leadership is like fitness - it requires consistent practice. We call these smal
 
 Start your day with intention:
 
-#### 1. Grounding Rep
+#### 1. Catch Up Alert (If Applicable)
+
+If you have missed days of practice, a prominent alert will appear at the top of your AM Bookend, encouraging you to catch up to keep up with the cohort.
+
+#### 2. Grounding Rep
 - Read your **Leadership Identity Statement**
 - Reflect on who you want to be as a leader
 - Tap "I'm Grounded" when complete
 
-#### 2. Win the Day
+#### 3. Win the Day
 - Set **3 high-impact priorities** for today
 - Focus on what will move the needle most
 - These become your daily wins to track
 
-#### 3. Daily Reps
+#### 4. Daily Reps
 - Review your assigned leadership habits
 - Commit to practicing them today
 - Check them off as you complete them
@@ -445,3 +449,4 @@ If you're struggling:
 *Remember: Leadership is built one rep at a time. Show up, do the work, and trust the process!*
 
 🏋️ **Keep doing your reps!**
+---
