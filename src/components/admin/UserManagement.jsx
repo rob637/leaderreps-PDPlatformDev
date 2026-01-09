@@ -124,16 +124,36 @@ const UserManagement = () => {
           type: 'user'
         }));
 
+        // Build a set of existing user emails (lowercase) for deduplication
+        const existingUserEmails = new Set(
+          usersList.map(u => (u.email || '').toLowerCase().trim())
+        );
+
         // Fetch Invites - only show pending/sent invites (not accepted ones)
+        // AND filter out invites where a user account already exists with that email
         const invitesRef = collection(db, 'invitations');
         const qInvites = query(invitesRef, orderBy('createdAt', 'desc'));
         const invitesSnap = await getDocs(qInvites);
         console.log('[UserManagement] Got invitations snapshot, count:', invitesSnap.docs.length);
         const invitesList = invitesSnap.docs
           .filter(doc => {
-            const status = doc.data().status;
+            const data = doc.data();
+            const status = data.status;
+            const inviteEmail = (data.email || '').toLowerCase().trim();
+            
             // Only show invites that haven't been accepted yet
-            return status === 'pending' || status === 'sent';
+            // AND don't already have a corresponding user account
+            const isPending = status === 'pending' || status === 'sent';
+            const hasExistingUser = existingUserEmails.has(inviteEmail);
+            
+            // If there's already a user with this email, don't show the pending invite
+            // (This handles the case where invite wasn't properly marked as accepted)
+            if (hasExistingUser && isPending) {
+              console.log(`[UserManagement] Hiding orphaned invite for ${inviteEmail} - user already exists`);
+              return false;
+            }
+            
+            return isPending;
           })
           .map(doc => ({
             id: doc.id,
@@ -361,7 +381,20 @@ const UserManagement = () => {
     setSendingInvite(true);
     
     try {
-      const existingInvite = invites.find(i => i.email.toLowerCase() === inviteForm.email.toLowerCase());
+      const normalizedEmail = inviteForm.email.toLowerCase().trim();
+      
+      // Check if a user account already exists with this email
+      const existingUser = users.find(u => 
+        u.type === 'user' && (u.email || '').toLowerCase().trim() === normalizedEmail
+      );
+      if (existingUser) {
+        alert("A user account already exists with this email address.");
+        setSendingInvite(false);
+        return;
+      }
+      
+      // Check if there's already a pending invitation for this email
+      const existingInvite = invites.find(i => i.email.toLowerCase() === normalizedEmail);
       if (existingInvite) {
         alert("An invitation has already been sent to this email.");
         setSendingInvite(false);
@@ -369,7 +402,7 @@ const UserManagement = () => {
       }
 
       const inviteData = {
-        email: inviteForm.email,
+        email: normalizedEmail,
         firstName: inviteForm.firstName,
         lastName: inviteForm.lastName,
         role: inviteForm.role,
@@ -385,7 +418,13 @@ const UserManagement = () => {
 
       await addDoc(collection(db, 'invitations'), inviteData);
       
-      alert(`Invitation created for ${inviteForm.email}`);
+      // Show appropriate message based on test mode
+      if (inviteForm.isTest) {
+        const recipient = inviteForm.testRecipient || user.email;
+        alert(`Invitation created for ${inviteForm.email}\n\n🧪 TEST MODE: Email will be sent to ${recipient}`);
+      } else {
+        alert(`Invitation created for ${inviteForm.email}`);
+      }
       setIsInviteModalOpen(false);
       setInviteForm({
         email: '',
