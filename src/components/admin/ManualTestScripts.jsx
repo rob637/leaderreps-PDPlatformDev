@@ -151,12 +151,12 @@ const ManualTestScripts = () => {
   
   const openTestScript = (filename) => {
     // For now, link to GitHub. In production, could open in-app viewer
-    const baseUrl = 'https://github.com/Rwb-git/leaderreps-PDPlatformDev/blob/main/test-scripts/';
+    const baseUrl = 'https://github.com/rob637/leaderreps-PDPlatformDev/blob/main/test-scripts/';
     window.open(baseUrl + filename, '_blank');
   };
   
   const openGitHubIssues = () => {
-    window.open('https://github.com/Rwb-git/leaderreps-PDPlatformDev/issues/new?labels=bug&template=bug_report.md', '_blank');
+    window.open('https://github.com/rob637/leaderreps-PDPlatformDev/issues/new?labels=bug&template=bug_report.md', '_blank');
   };
   
   return (
