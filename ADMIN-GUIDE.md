@@ -2,7 +2,7 @@ md
 # 📚 LeaderReps PD Platform - Administrator Guide
 
 > **Comprehensive documentation for system administrators**  
-> *Last Updated: December 7, 2025*
+> *Last Updated: January 9, 2026*
 
 ---
 
@@ -21,6 +21,7 @@ md
 11. [Deployment & Environments](#11-deployment--environments)
 12. [Troubleshooting Guide](#12-troubleshooting-guide)
 13. [Technical Reference](#13-technical-reference)
+14. [Command Line Scripts](#14-command-line-scripts)
 
 ---
 
@@ -49,6 +50,7 @@ The platform is built around the concept of **"Reps"** - small, consistent actio
 | Backend | Firebase (Firestore, Auth, Storage, Functions) |
 | Hosting | Firebase Hosting |
 | PWA | Workbox for offline support |
+| AI | Google Gemini via `@google/genai` |
 
 ---
 
@@ -118,7 +120,7 @@ User Action → React Component → Service Layer → Firestore
 | `users/{uid}/development_plan` | User's plan progress |
 | `development_plan_v1/week-XX` | Master plan templates |
 | `content_*` | Content vault collections |
-| `metadata/config` | Global configuration |
+| `metadata/config` | Global configuration, including admin email list (`adminemails`) |
 | `metadata/featureFlags` | Widget enable/disable states |
 
 ---
@@ -193,18 +195,26 @@ User Action → React Component → Service Layer → Firestore
 
 ### 4.2 Admin Portal Tabs
 
-| Tab | Purpose |
-|-----|---------|
-| **Dashboard** | System overview, quick stats |
-| **Dev Plan** | Manage Development Plan weeks |
-| **Diagnostics** | System health, error logs |
-| **Content Mgmt** | Upload/manage content (The Vault) |
-| **Widget Lab** | Enable/disable/configure widgets |
-| **System** | System widgets, time traveler |
-| **Unified Content Manager** | Bulk edit content metadata |
-| **Migration Tool** | Import/Export data |
-| **Documentation** | Access to this Admin Guide |
-| **Test Center** | Tools for testing features and functionality |
+| Tab | Purpose | Icon |
+|-----|---------|-----|
+| **Dashboard** | System overview, quick stats | `LayoutDashboard` |
+| **User Management** | Manage User Accounts and permissions | `Users` |
+| **Dev Plan** | Manage Development Plan weeks | `BookOpen` |
+| **Diagnostics** | System health, error logs | `Activity` |
+| **Content Mgmt** | Upload/manage content (The Vault) | `FileText` |
+| **Media Library** | Manage uploaded images and videos |  |
+| **Widget Lab** | Enable/disable/configure widgets | `LayoutDashboard`|
+| **System** | System widgets, time traveler | `Settings` |
+| **Daily Reps** | Manage list of Daily Reps | `Dumbbell` |
+| **LOV Manager** | Manage Lists of Values (LOVs) | `List` |
+| **Daily Plan Manager** | Manage and configure the daily plan | `Calendar` |
+| **Cohort Manager** | Manage user cohorts | `ArrowLeftRight` |
+| **Leader Profile Reports** | Generate and view leader profile reports | `BarChart2` |
+| **Notification Manager** | Manage and send notifications to users | `Bell` |
+| **Test Center** | Tools for testing features and functionality | `TestTube2` |
+| **Community Manager** | Manage community features | `Users` |
+| **Coaching Manager** | Manage coaching sessions | `FlaskConical` |
+| **Documentation** | Access to this Admin Guide | `FileText` |
 
 ### 4.3 Admin Functions (Separate Screen)
 
@@ -378,7 +388,7 @@ Widgets are **dynamic UI components** that can be:
 
 Widgets are defined in `src/config/widgetTemplates.js`:
 - Each widget has a unique ID
-- Templates use React-Live for dynamic rendering
+- Templates use React-Live or direct JSX for rendering
 - Scope variables are passed from parent components
 
 **Example Widget Template (Weekly Focus):**
@@ -395,6 +405,31 @@ Widgets are defined in `src/config/widgetTemplates.js`:
     </Card>
   );
 })()
+```
+
+**Roadmap Widget Template Example**
+
+```javascript
+// Helper for Roadmap Widgets
+export const createRoadmapWidget = (title, ideas) => `
+<div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+  <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
+    <Lightbulb className="w-5 h-5 text-yellow-500" />
+    ${title}
+  </h3>
+  <div className="space-y-3">
+    ${ideas.map(idea => `
+    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+      <div className="flex justify-between items-start mb-1">
+        <h4 className="font-bold text-slate-800 text-sm">${idea.title}</h4>
+        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full uppercase tracking-wider">Coming Soon</span>
+      </div>
+      <p className="text-xs text-slate-500 leading-relaxed">${idea.desc}</p>
+    </div>
+    `).join('')}
+  </div>
+</div>
+`;
 ```
 
 ---
@@ -580,12 +615,13 @@ npm run deploy:quick
 
 ### 11.4 Deployment Process
 
-1. Architecture check runs (validates code standards)
-2. Changes committed to git
-3. Pushed to GitHub
-4. Vite builds the app
-5. Firebase deploys hosting + rules + indexes
-6. Functions deployed separately (if changed)
+1. Architecture check runs (validates code standards) via `./scripts/ui-architecture-check.sh`
+2. ESLint validation runs via `eslint .`
+3. Changes committed to git
+4. Pushed to GitHub
+5. Vite builds the app
+6. Firebase deploys hosting + rules + indexes
+7. Functions deployed separately (if changed)
 
 ---
 
@@ -646,10 +682,18 @@ npm run build       # Try local build first
 ### 12.7 Data Migration Issues
 
 **Check:**
-1. Verify the `migrate-app-data.js` script is up-to-date.
+1. Verify the `scripts/migrate-app-data.cjs` script is up-to-date.
 2. Ensure the correct Firebase project is selected.
 3. Check for schema differences between environments.
 4. Review the script's output logs for errors.
+
+### 12.8 User Cleanup Issues
+
+**Check:**
+1. Verify the `scripts/cleanup-test-users.cjs` script is up-to-date.
+2. Ensure the correct Firebase project is selected.
+3. Review the script's output logs for errors.
+4. Check if the script is running in dry-run mode.
 
 ---
 
@@ -756,6 +800,46 @@ npm run data:export   # Export Firestore data to JSON
 npm run data:import   # Import Firestore data from JSON
 npm run data:list     # List available data exports
 ```
+
+---
+
+## 14. Command Line Scripts
+
+These scripts are located in the project root directory.
+
+### 14.1 Data Migration Script (`scripts/migrate-app-data.cjs`)
+
+This script is used to export and import Firestore data between environments.
+
+**Commands:**
+
+- `npm run data:export`: Exports Firestore data to a JSON file.
+- `npm run data:import`: Imports Firestore data from a JSON file.
+- `npm run data:list`: Lists available data exports.
+
+### 14.2 User Cleanup Script (`scripts/cleanup-test-users.cjs`)
+
+This script is used to delete test users from the Firestore database and Firebase Authentication. This is crucial for maintaining data privacy and security, especially in development and testing environments.
+
+**Commands:**
+
+- `npm run cleanup:dev-preview`:  Lists the users that would be deleted from the DEV environment without actually deleting them (dry run).
+- `npm run cleanup:dev-execute`:  Deletes test users from the DEV environment.
+- `npm run cleanup:test-preview`: Lists the users that would be deleted from the TEST environment without actually deleting them (dry run).
+- `npm run cleanup:test-execute`: Deletes test users from the TEST environment.
+
+**Options:**
+
+- `--dry-run`:  Preview the changes without executing them.
+- `--execute`:  Execute the deletion of test users.
+
+### 14.3 Sync Dev to Test Script (`sync-dev-to-test.sh`)
+
+This bash script synchronizes data from the development environment to the test environment.  It's a convenience script, check its content for the exact steps.
+
+**Command:**
+
+- `npm run sync:test`
 
 ---
 
