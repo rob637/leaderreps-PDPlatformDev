@@ -1,7 +1,7 @@
 # 🧪 LeaderReps PD Platform - Test Plans
 
 > **Comprehensive testing documentation for quality assurance**  
-> *Last Updated: December 7, 2025*
+> *Last Updated: January 9, 2026*
 
 ---
 
@@ -25,6 +25,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 10. [Mobile/Responsive Tests](#10-mobileresponsive-tests)
 11. [Performance Tests](#11-performance-tests)
 12. [Regression Test Checklist](#12-regression-test-checklist)
+13. [Cleanup Scripts Tests](#13-cleanup-scripts-tests)
 
 ---
 
@@ -122,6 +123,14 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | DP-061 | Streak Increment | Complete activity, wait for rollover | Streak +1 | |
 | DP-062 | Weekend Grace | No activity Sat/Sun, check Monday | Streak maintained | |
 | DP-063 | Weekday Reset | No activity weekday, check next day | Streak = 0 | |
+
+### 2.8 Catch Up Alert & Modal
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| DP-070 | Missed Days Alert | Skip logging in for a few days | Amber alert appears on dashboard | |
+| DP-071 | View Missed Days | Click "View Missed" on alert | Catch up modal opens | |
+| DP-072 | Catch Up Completion | Complete missed activities through modal | Scorecard reflects completion | |
 
 ---
 
@@ -271,22 +280,22 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | ADM-041 | Reset Time | Clear time offset | App shows current date | |
 | ADM-042 | View Diagnostics | Go to Diagnostics tab | System stats display | |
 
-### 6.6 Unified Content Manager
+### 6.6 ContentAdminHome (Unified Content Manager)
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-050 | Access UCM | Go to Unified Content Manager tab | UCM Interface loads | |
+| ADM-050 | Access UCM | Go to ContentAdminHome tab | UCM Interface loads | |
 | ADM-051 | Create New Content | Click "Create" | New content form opens | |
 | ADM-052 | Edit Existing Content | Select content and click "Edit" | Content editor opens | |
 | ADM-053 | Delete Content | Select content and click "Delete" | Content is removed after confirmation | |
 
-### 6.7 Migration Tool
+### 6.7 Media Library
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-060 | Access Migration Tool | Go to Migration Tool tab | Tool interface loads | |
-| ADM-061 | Export Data | Click "Export" | Data is exported successfully | |
-| ADM-062 | Import Data | Click "Import" and select file | Data is imported successfully | |
+| ADM-054 | Access Media Library | Go to Media Library tab | Media Library loads | |
+| ADM-055 | Upload Media | Upload an image or video | Media is uploaded successfully | |
+| ADM-056 | Delete Media | Select media and click "Delete" | Media is deleted after confirmation | |
 
 ### 6.8 System Diagnostics
 
@@ -317,6 +326,85 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | ADM-100 | Access Test Center | Go to Test Center tab | Testing tools load | |
 | ADM-101 | Run Unit Tests | Execute unit tests | Tests run and results displayed | |
 
+### 6.12 LOV Manager (List of Values)
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-110 | Access LOV Manager | Go to LOV Manager tab | LOV Management interface loads | |
+| ADM-111 | Create New LOV | Create a new list of values | New LOV is created | |
+| ADM-112 | Edit Existing LOV | Modify an existing list of values | LOV is updated successfully | |
+| ADM-113 | Delete LOV | Delete a list of values | LOV is deleted after confirmation | |
+
+### 6.13 DailyRepsLibrary
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-120 | Access Daily Reps Library | Go to Daily Reps Library tab | The library loads | |
+| ADM-121 | Add New Rep | Create a new daily rep | New rep is added successfully | |
+| ADM-122 | Edit Existing Rep | Modify an existing rep | Rep is updated | |
+| ADM-123 | Delete Rep | Delete a daily rep | The rep is deleted | |
+
+### 6.14 DailyPlanManager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-130 | Access Daily Plan Manager | Go to Daily Plan Manager tab | Manager loads | |
+| ADM-131 | Create New Plan | Create a new daily plan | New plan is created | |
+| ADM-132 | Edit Existing Plan | Modify an existing plan | The plan is updated | |
+| ADM-133 | Delete Plan | Delete a daily plan | Plan is deleted | |
+
+### 6.15 CohortManager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-140 | Access Cohort Manager | Go to Cohort Manager tab | The manager loads | |
+| ADM-141 | Create New Cohort | Create a new cohort | New cohort is created | |
+| ADM-142 | Edit Existing Cohort | Modify an existing cohort | Cohort is updated | |
+| ADM-143 | Delete Cohort | Delete a cohort | Cohort is deleted | |
+
+### 6.16 UserManagement
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-150 | Access User Management | Go to User Management tab | Management interface loads | |
+| ADM-151 | Search for User | Search for a user by email or ID | Relevant users are displayed | |
+| ADM-152 | Edit User Details | Modify user details | Details are updated | |
+| ADM-153 | Delete User | Delete a user | User is deleted | |
+
+### 6.17 LeaderProfileReports
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-160 | Access Leader Profile Reports | Go to Leader Profile Reports tab | Reports interface loads | |
+| ADM-161 | Generate Report | Generate a report for a specific user | Report is generated | |
+| ADM-162 | View Report | View a generated report | Report data is displayed | |
+
+### 6.18 NotificationManager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-170 | Access Notification Manager | Go to Notification Manager tab | Notification Management interface loads | |
+| ADM-171 | Create New Notification | Create a new notification | Notification is created | |
+| ADM-172 | Send Notification | Send a created notification | Notification is sent | |
+| ADM-173 | Edit Existing Notification | Modify existing notification | Notification is updated | |
+| ADM-174 | Delete Notification | Delete a notification | Notification is deleted | |
+
+### 6.19 CommunityManager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-180 | Access Community Manager | Go to Community Manager tab | Community Management interface loads | |
+| ADM-181 | Manage Users | Add or remove users from community groups | User assignments are updated | |
+| ADM-182 | View Community Activity | View posts, comments, and other activity | Activity stream is displayed | |
+
+### 6.20 CoachingManager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-190 | Access Coaching Manager | Go to Coaching Manager tab | Coaching Management interface loads | |
+| ADM-191 | Assign Coaches | Assign coaches to users or groups | Coach assignments are updated | |
+| ADM-192 | View Coaching Sessions | View scheduled or completed coaching sessions | Session details are displayed | |
+
 ---
 
 ## 7. Widget Tests
@@ -340,6 +428,14 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
 | WID-020 | Correct Header Display | Navigate to Planning Hub | Correct header displays. Sun icon, "AM Bookend: Start Strong" Text. | |
+
+### 7.4 Roadmap Widget
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| WID-030 | Roadmap Display | View dashboard where the Roadmap Widget is enabled | Roadmap widget displays with title and idea list | |
+| WID-031 | Correct Title | Verify roadmap title | Title matches the configured title | |
+| WID-032 | Idea Display | Verify idea list | Ideas are displayed with titles and descriptions | |
 
 ---
 
@@ -490,13 +586,40 @@ Run this checklist before every production deployment:
 - [ ] System Diagnostics accessible and displaying data
 - [ ] Feature Manager works
 - [ ] Unified Content Manager Works
-- [ ] Migration Tool Works
+- [ ] Media Library Works
+- [ ] LOV Manager works
+- [ ] Daily Reps Library works
+- [ ] Daily Plan Manager works
+- [ ] Cohort Manager works
+- [ ] User Management works
+- [ ] Leader Profile Reports works
+- [ ] Notification Manager works
+- [ ] Community Manager works
+- [ ] Coaching Manager works
 
 #### Cross-Cutting
 - [ ] Mobile responsive
 - [ ] No console errors
 - [ ] Notifications work
 - [ ] Performance acceptable
+
+---
+
+## 13. Cleanup Scripts Tests
+
+### 13.1 Dev Environment Cleanup
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| CLEAN-001 | Dry Run Preview | Execute `npm run cleanup:dev-preview` | Lists users to be deleted without actual deletion | |
+| CLEAN-002 | Execute Deletion | Execute `npm run cleanup:dev-execute` | Deletes test users from the DEV environment | |
+
+### 13.2 Test Environment Cleanup
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| CLEAN-010 | Dry Run Preview | Execute `npm run cleanup:test-preview` | Lists users to be deleted without actual deletion | |
+| CLEAN-011 | Execute Deletion | Execute `npm run cleanup:test-execute` | Deletes test users from the TEST environment | |
 
 ---
 
@@ -513,7 +636,7 @@ Run this checklist before every production deployment:
 
 | Date | Tester | Environment | Tests Run | Pass | Fail | Notes |
 |------|--------|-------------|-----------|------|------|-------|
-| 2025-12-06 | Initial | DEV | Baseline | - | - | Test plan created |
+| 2026-01-09 | Automated | DEV | Baseline | - | - | Updated test plan |
 
 ---
 
