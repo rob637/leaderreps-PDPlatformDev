@@ -284,7 +284,7 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
         {
           id: 'feature-flags',
           name: 'Feature Flags Document',
-          description: 'Verify feature flags are configured',
+          description: 'Check if custom feature flags are configured (optional)',
           critical: false,
           run: async () => {
             try {
@@ -292,16 +292,16 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
               const flagsSnap = await getDoc(flagsRef);
               if (!flagsSnap.exists()) {
                 return {
-                  status: TEST_STATUS.WARNING,
-                  message: 'Feature flags document not found (using defaults)',
-                  details: {}
+                  status: TEST_STATUS.PASSED,
+                  message: 'Using default feature flags (no custom overrides)',
+                  details: { note: 'Feature flags document is optional - app uses built-in defaults' }
                 };
               }
               const data = flagsSnap.data();
               const enabledCount = Object.values(data).filter(v => v === true).length;
               return {
                 status: TEST_STATUS.PASSED,
-                message: `${enabledCount} of ${Object.keys(data).length} flags enabled`,
+                message: `${enabledCount} of ${Object.keys(data).length} custom flags enabled`,
                 details: { flags: data }
               };
             } catch (error) {
@@ -418,8 +418,9 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
               snap.docs.forEach(d => {
                 const data = d.data();
                 if (!data.title) issues.push(`${d.id}: missing title`);
-                // URL can be in details.videoUrl, details.url, or top-level
-                const hasUrl = data.details?.videoUrl || data.details?.url || data.videoUrl || data.url || data.youtubeId;
+                // URL can be in many places: details.videoUrl, details.externalUrl, details.url, or top-level
+                const hasUrl = data.details?.videoUrl || data.details?.externalUrl || data.details?.url || 
+                               data.videoUrl || data.externalUrl || data.url || data.youtubeId;
                 if (!hasUrl) issues.push(`${d.id}: no video URL`);
               });
               
