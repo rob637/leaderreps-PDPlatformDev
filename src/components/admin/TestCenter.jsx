@@ -1381,7 +1381,7 @@ const TestCenter = () => {
         >
           <ClipboardList className="w-4 h-4" />
           Manual Testing
-          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">133</span>
+          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">168</span>
           <span className="px-1.5 py-0.5 bg-corporate-teal text-white text-xs font-bold rounded">START HERE</span>
         </button>
         <button

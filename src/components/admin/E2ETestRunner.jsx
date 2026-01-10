@@ -158,6 +158,26 @@ const JOURNEY_SUITES = [
       'My Coaching (5 tests)',
       'Locker Features (10 tests)'
     ]
+  },
+  {
+    id: 'post-phase',
+    name: 'Post Phase Journey',
+    file: 'journeys/post-phase.spec.js',
+    description: 'Day 71+ experience: full content access, continued practice, historical data',
+    icon: GraduationCap,
+    testCount: 26,
+    estimatedTime: '4-5 min',
+    priority: 'High',
+    category: 'graduation',
+    tests: [
+      'Day 70→71 Transition (3 tests)',
+      'Full Content Access (4 tests)',
+      'Continued Daily Practice (7 tests)',
+      'Daily Rollover (2 tests)',
+      'Historical Data (4 tests)',
+      'Zone Access Post Phase (3 tests)',
+      'Long-Term Day 100+ (3 tests)'
+    ]
   }
 ];
 

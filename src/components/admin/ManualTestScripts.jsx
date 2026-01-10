@@ -116,6 +116,17 @@ const TEST_SCRIPTS = [
     priority: 'High',
     description: 'Login, logout, signup, password reset, protected routes.',
     color: 'gray'
+  },
+  {
+    id: 'zones',
+    name: 'Zones Tests',
+    icon: Target,
+    file: '07-zones.md',
+    scenarios: 35,
+    time: '3-4 hours',
+    priority: 'High',
+    description: 'Community (Day 15+), Coaching (Day 22+), Locker, zone gates.',
+    color: 'teal'
   }
 ];
 
@@ -138,7 +149,8 @@ const getColorClasses = (color) => {
     indigo: { bg: 'bg-indigo-50', border: 'border-indigo-200', icon: 'text-indigo-500', hover: 'hover:bg-indigo-100' },
     blue: { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-500', hover: 'hover:bg-blue-100' },
     green: { bg: 'bg-green-50', border: 'border-green-200', icon: 'text-green-500', hover: 'hover:bg-green-100' },
-    gray: { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'text-gray-500', hover: 'hover:bg-gray-100' }
+    gray: { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'text-gray-500', hover: 'hover:bg-gray-100' },
+    teal: { bg: 'bg-teal-50', border: 'border-teal-200', icon: 'text-teal-500', hover: 'hover:bg-teal-100' }
   };
   return colors[color] || colors.gray;
 };
