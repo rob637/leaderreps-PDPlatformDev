@@ -50,7 +50,9 @@ export default defineConfig({
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'test-results/results.json' }],
-    ['list']
+    ['list'],
+    // Firestore reporter - uploads results to app for display
+    ['./e2e-tests/reporters/firestore-reporter.js']
   ],
   
   // Global timeout
@@ -176,6 +178,66 @@ export default defineConfig({
       name: 'unauthenticated',
       use: { ...devices['Desktop Chrome'] },
       testMatch: /auth.*\.spec\.js/,
+    },
+    
+    // ═══════════════════════════════════════════════════════════════
+    // FULL TEST SUITES - Matching Manual Test Scripts (168 scenarios)
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Authentication Suite (16 tests) - 06-authentication.md
+    {
+      name: 'suite-auth',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /suites\/01-authentication\.spec\.js/,
+    },
+    
+    // Prep Phase Suite (14 tests) - 01-prep-phase.md
+    {
+      name: 'suite-prep',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /suites\/02-prep-phase\.spec\.js/,
+    },
+    
+    // AM Bookend Suite (21 tests) - 02-dev-am-bookend.md
+    {
+      name: 'suite-am',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /suites\/03-am-bookend\.spec\.js/,
+    },
+    
+    // PM Bookend Suite (13 tests) - 03-dev-pm-bookend.md
+    {
+      name: 'suite-pm',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /suites\/04-pm-bookend\.spec\.js/,
+    },
+    
+    // Content Library Suite (22 tests) - 04-content-library.md
+    {
+      name: 'suite-content',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /suites\/05-content-library\.spec\.js/,
+    },
+    
+    // Post Phase Suite (12 tests) - 05-post-phase.md
+    {
+      name: 'suite-post',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /suites\/06-post-phase\.spec\.js/,
+    },
+    
+    // Zones Suite (35 tests) - 07-zones.md
+    {
+      name: 'suite-zones',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /suites\/07-zones\.spec\.js/,
+    },
+    
+    // ALL SUITES - Run all 168 manual test scenario automations
+    {
+      name: 'all-suites',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /suites\/.*\.spec\.js/,
     },
   ],
 

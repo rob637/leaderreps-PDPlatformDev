@@ -189,7 +189,7 @@ const LEGACY_SUITES = [
     file: 'smoke.spec.js',
     description: 'Critical path tests - run before every deployment',
     icon: Zap,
-    testCount: 20,
+    testCount: 22,  // Actual count from smoke.spec.js
     estimatedTime: '2-3 min',
     priority: 'Critical',
     category: 'smoke'
@@ -200,7 +200,7 @@ const LEGACY_SUITES = [
     file: 'auth.spec.js',
     description: 'Login, logout, signup, protected routes',
     icon: Shield,
-    testCount: 14,
+    testCount: 19,  // Actual count from auth.spec.js
     estimatedTime: '1-2 min',
     priority: 'High',
     category: 'auth'
@@ -248,6 +248,9 @@ const E2ETestRunner = () => {
   const [historicalRuns, setHistoricalRuns] = useState([]);
   const [expandedTests, setExpandedTests] = useState(new Set());
   const [copiedCommand, setCopiedCommand] = useState(false);
+  const [showPasteResults, setShowPasteResults] = useState(false);
+  const [pastedResults, setPastedResults] = useState('');
+  const [parsedResults, setParsedResults] = useState(null);
   
   // Load saved configuration
   useEffect(() => {
@@ -386,6 +389,66 @@ const E2ETestRunner = () => {
     }
   };
   
+  // Parse Playwright terminal output to extract test results
+  const parsePlaywrightOutput = (output) => {
+    const lines = output.split('\n');
+    const tests = [];
+    let passed = 0, failed = 0, skipped = 0;
+    let duration = '';
+    
+    for (const line of lines) {
+      // Match test results: ✓, ✘, or -
+      const passMatch = line.match(/✓\s+\d+.*?›\s+(.*)/);
+      const failMatch = line.match(/✘\s+\d+.*?›\s+(.*)/);
+      const skipMatch = line.match(/-\s+\d+.*?›\s+(.*)/);
+      
+      if (passMatch) {
+        tests.push({ name: passMatch[1].trim(), status: 'passed' });
+        passed++;
+      } else if (failMatch) {
+        tests.push({ name: failMatch[1].trim(), status: 'failed' });
+        failed++;
+      } else if (skipMatch) {
+        tests.push({ name: skipMatch[1].trim(), status: 'skipped' });
+        skipped++;
+      }
+      
+      // Match summary line: "22 passed (42.9s)"
+      const summaryMatch = line.match(/(\d+)\s+passed.*?(\d+\.?\d*s)/);
+      if (summaryMatch) {
+        duration = summaryMatch[2];
+      }
+      
+      // Also check for failed summary
+      const failedSummary = line.match(/(\d+)\s+failed/);
+      if (failedSummary) {
+        failed = parseInt(failedSummary[1]);
+      }
+    }
+    
+    return {
+      tests,
+      summary: { passed, failed, skipped, total: passed + failed + skipped },
+      duration,
+      timestamp: new Date().toISOString()
+    };
+  };
+  
+  // Handle paste results
+  const handleParseResults = () => {
+    if (!pastedResults.trim()) return;
+    
+    const results = parsePlaywrightOutput(pastedResults);
+    setParsedResults(results);
+    
+    // Add to history
+    setHistoricalRuns(prev => [{
+      ...results,
+      id: Date.now(),
+      env: selectedEnv
+    }, ...prev.slice(0, 9)]); // Keep last 10 runs
+  };
+  
   // Calculate totals from selected suites
   const selectedStats = selectedSuites.reduce((acc, suiteId) => {
     const suite = ALL_SUITES.find(s => s.id === suiteId);
@@ -493,6 +556,143 @@ const E2ETestRunner = () => {
                   </button>
                 </div>
               </div>
+              
+              {/* FULL SUITES - 168 Manual Test Scenarios */}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="w-4 h-4 text-blue-600" />
+                  <span className="font-semibold text-sm text-gray-700">Full Test Suites (168 Manual Scenarios Automated)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Auth Suite */}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('E2E_ENV=test npx playwright test --project=suite-auth');
+                      setCopiedCommand('suite-auth');
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Shield className="w-3 h-3 text-gray-500" />
+                      Auth (16)
+                    </span>
+                    {copiedCommand === 'suite-auth' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
+                  </button>
+                  
+                  {/* Prep Suite */}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('E2E_ENV=test npx playwright test --project=suite-prep');
+                      setCopiedCommand('suite-prep');
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
+                  >
+                    <span className="flex items-center gap-2">
+                      <UserCheck className="w-3 h-3 text-purple-500" />
+                      Prep (14)
+                    </span>
+                    {copiedCommand === 'suite-prep' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
+                  </button>
+                  
+                  {/* AM Bookend Suite */}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('E2E_ENV=test npx playwright test --project=suite-am');
+                      setCopiedCommand('suite-am');
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Sun className="w-3 h-3 text-amber-500" />
+                      AM (21)
+                    </span>
+                    {copiedCommand === 'suite-am' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
+                  </button>
+                  
+                  {/* PM Bookend Suite */}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('E2E_ENV=test npx playwright test --project=suite-pm');
+                      setCopiedCommand('suite-pm');
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Moon className="w-3 h-3 text-indigo-500" />
+                      PM (13)
+                    </span>
+                    {copiedCommand === 'suite-pm' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
+                  </button>
+                  
+                  {/* Content Suite */}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('E2E_ENV=test npx playwright test --project=suite-content');
+                      setCopiedCommand('suite-content');
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Library className="w-3 h-3 text-blue-500" />
+                      Content (22)
+                    </span>
+                    {copiedCommand === 'suite-content' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
+                  </button>
+                  
+                  {/* Post Phase Suite */}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('E2E_ENV=test npx playwright test --project=suite-post');
+                      setCopiedCommand('suite-post');
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
+                  >
+                    <span className="flex items-center gap-2">
+                      <GraduationCap className="w-3 h-3 text-green-500" />
+                      Post (12)
+                    </span>
+                    {copiedCommand === 'suite-post' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
+                  </button>
+                  
+                  {/* Zones Suite */}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('E2E_ENV=test npx playwright test --project=suite-zones');
+                      setCopiedCommand('suite-zones');
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Map className="w-3 h-3 text-teal-500" />
+                      Zones (35)
+                    </span>
+                    {copiedCommand === 'suite-zones' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
+                  </button>
+                  
+                  {/* ALL 168 */}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('E2E_ENV=test npx playwright test --project=all-suites');
+                      setCopiedCommand('all-suites');
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 text-xs font-mono flex items-center justify-between gap-2"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Target className="w-3 h-3 text-blue-600" />
+                      <strong>ALL (168)</strong>
+                    </span>
+                    {copiedCommand === 'all-suites' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-blue-400" />}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -527,21 +727,155 @@ const E2ETestRunner = () => {
             Automated Browser Tests
           </h3>
           <p className="text-sm text-gray-500 mt-1">
-            108+ Playwright tests for automated regression testing
+            {parsedResults 
+              ? `${parsedResults.summary.passed} passed, ${parsedResults.summary.failed} failed (${parsedResults.duration})`
+              : '46+ Playwright tests for automated regression testing'
+            }
           </p>
         </div>
         
-        <button
-          onClick={() => setShowConfig(!showConfig)}
-          className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors
-            ${showConfig 
-              ? 'bg-corporate-teal text-white' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-        >
-          <Settings className="w-4 h-4" />
-          Developer Config
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowPasteResults(!showPasteResults)}
+            className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors
+              ${showPasteResults 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}
+          >
+            <FileText className="w-4 h-4" />
+            {parsedResults ? 'View Results' : 'Paste Results'}
+          </button>
+          <button
+            onClick={() => setShowConfig(!showConfig)}
+            className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors
+              ${showConfig 
+                ? 'bg-corporate-teal text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          >
+            <Settings className="w-4 h-4" />
+            Developer Config
+          </button>
+        </div>
       </div>
+      
+      {/* Paste Results Panel */}
+      {showPasteResults && (
+        <div className="bg-white rounded-xl border border-blue-200 p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-bold text-corporate-navy flex items-center gap-2">
+              <FileText className="w-4 h-4 text-blue-500" />
+              Paste Terminal Output
+            </h4>
+            {parsedResults && (
+              <button
+                onClick={() => { setParsedResults(null); setPastedResults(''); }}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Clear Results
+              </button>
+            )}
+          </div>
+          
+          {!parsedResults ? (
+            <>
+              <p className="text-sm text-gray-600">
+                Run tests in your terminal, then paste the output here to see results in the app.
+              </p>
+              <textarea
+                value={pastedResults}
+                onChange={(e) => setPastedResults(e.target.value)}
+                placeholder={`Paste your Playwright output here...
+
+Example:
+  ✓ [chromium] test.spec.js:10 › My Test Name (1.2s)
+  ✘ [chromium] test.spec.js:20 › Failed Test (0.8s)
+  22 passed (42.9s)`}
+                className="w-full h-40 px-3 py-2 border border-gray-200 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              />
+              <button
+                onClick={handleParseResults}
+                disabled={!pastedResults.trim()}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Parse Results
+              </button>
+            </>
+          ) : (
+            <div className="space-y-4">
+              {/* Results Summary */}
+              <div className="grid grid-cols-4 gap-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-green-700">{parsedResults.summary.passed}</div>
+                  <div className="text-sm text-green-600">Passed</div>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-red-700">{parsedResults.summary.failed}</div>
+                  <div className="text-sm text-red-600">Failed</div>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-gray-700">{parsedResults.summary.skipped}</div>
+                  <div className="text-sm text-gray-600">Skipped</div>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-blue-700">{parsedResults.duration || 'N/A'}</div>
+                  <div className="text-sm text-blue-600">Duration</div>
+                </div>
+              </div>
+              
+              {/* Pass Rate Bar */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-gray-700">Pass Rate</span>
+                  <span className="font-bold text-gray-900">
+                    {parsedResults.summary.total > 0 
+                      ? Math.round((parsedResults.summary.passed / parsedResults.summary.total) * 100)
+                      : 0}%
+                  </span>
+                </div>
+                <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-500"
+                    style={{ 
+                      width: parsedResults.summary.total > 0 
+                        ? `${(parsedResults.summary.passed / parsedResults.summary.total) * 100}%` 
+                        : '0%' 
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {/* Test List */}
+              {parsedResults.tests.length > 0 && (
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                    <span className="font-medium text-sm text-gray-700">Test Results ({parsedResults.tests.length})</span>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto">
+                    {parsedResults.tests.map((test, idx) => (
+                      <div key={idx} className={`px-4 py-2 border-b border-gray-100 flex items-center gap-2 text-sm
+                        ${test.status === 'passed' ? 'bg-green-50/50' : test.status === 'failed' ? 'bg-red-50/50' : 'bg-gray-50/50'}`}>
+                        {test.status === 'passed' ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        ) : test.status === 'failed' ? (
+                          <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        )}
+                        <span className={test.status === 'failed' ? 'text-red-700' : 'text-gray-700'}>{test.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <p className="text-xs text-gray-500 text-center">
+                Results parsed at {new Date(parsedResults.timestamp).toLocaleString()}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
       
       {/* Configuration Panel */}
       {showConfig && (
