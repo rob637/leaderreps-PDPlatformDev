@@ -1,6 +1,6 @@
 // src/components/layout/MobileBottomNav.jsx
 import React from 'react';
-import { Home, BookOpen, UsersRound, Megaphone, Archive } from 'lucide-react';
+import { Home, BookOpen, Users, Megaphone, Archive } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 // import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
 
@@ -19,7 +19,7 @@ const MobileBottomNav = ({ currentScreen }) => {
     {
       id: 'community',
       label: 'Community',
-      icon: UsersRound,
+      icon: Users,
       screen: 'community'
     },
     {
