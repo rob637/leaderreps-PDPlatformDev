@@ -1246,7 +1246,7 @@ const TestCenter = () => {
         >
           <Database className="w-4 h-4" />
           System Health
-          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">20</span>
+          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">21</span>
         </button>
         <button
           onClick={() => setActiveTab('manual')}
