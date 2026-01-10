@@ -62,7 +62,9 @@ import {
   Map,
   Layers,
   PlayCircle,
-  BarChart3
+  BarChart3,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
