@@ -44,6 +44,7 @@ import {
   ClipboardList
 } from 'lucide-react';
 import ManualTestScripts from './ManualTestScripts';
+import E2ETestRunner from './E2ETestRunner';
 import { useAppServices } from '../../services/useAppServices';
 import { 
   collection, 
@@ -1144,7 +1145,18 @@ const TestCenter = () => {
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
         >
           <Zap className="w-4 h-4" />
-          Automated Tests
+          Data Tests
+        </button>
+        <button
+          onClick={() => setActiveTab('e2e')}
+          className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
+            ${activeTab === 'e2e' 
+              ? 'border-corporate-teal text-corporate-teal' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+        >
+          <PlayCircle className="w-4 h-4" />
+          E2E Browser Tests
+          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">NEW</span>
         </button>
         <button
           onClick={() => setActiveTab('manual')}
@@ -1162,6 +1174,11 @@ const TestCenter = () => {
       {/* Manual Test Scripts Tab */}
       {activeTab === 'manual' && (
         <ManualTestScripts />
+      )}
+      
+      {/* E2E Browser Tests Tab */}
+      {activeTab === 'e2e' && (
+        <E2ETestRunner />
       )}
       
       {/* Automated Tests Tab */}
