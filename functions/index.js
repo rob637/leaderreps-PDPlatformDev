@@ -126,16 +126,27 @@ exports.acceptInvitation = onCall({ cors: true, region: "us-central1" }, async (
         }
     }
     
-    // Also save the role and cohortId to the user profile
+    // Also save the role, cohortId, and displayName to the user profile
     // This ensures the user profile has the correct data from the invite
     try {
         const userRef = db.collection('users').doc(uid);
         const userData = {
             role: inviteData.role || 'user',
-            arenaEntryDate: admin.firestore.FieldValue.serverTimestamp()
+            arenaEntryDate: admin.firestore.FieldValue.serverTimestamp(),
+            email: inviteData.email || null
         };
+        
+        // Construct displayName from firstName and lastName
+        const firstName = inviteData.firstName || '';
+        const lastName = inviteData.lastName || '';
+        const displayName = `${firstName} ${lastName}`.trim();
+        if (displayName) {
+            userData.displayName = displayName;
+        }
+        
         if (inviteData.cohortId) {
             userData.cohortId = inviteData.cohortId;
+            logger.info("Setting cohortId on user profile", { uid, cohortId: inviteData.cohortId });
         }
         // Save test user information for notification routing
         if (inviteData.isTest) {
@@ -144,7 +155,7 @@ exports.acceptInvitation = onCall({ cors: true, region: "us-central1" }, async (
             logger.info("Test user flagged for notification override", { uid, testRecipient: inviteData.testRecipient });
         }
         await userRef.set(userData, { merge: true });
-        logger.info("User profile updated with invite data", { uid, role: inviteData.role, cohortId: inviteData.cohortId });
+        logger.info("User profile updated with invite data", { uid, role: inviteData.role, cohortId: inviteData.cohortId, displayName: displayName || '(none)' });
     } catch (userErr) {
         logger.error("Failed to update user profile", userErr);
     }

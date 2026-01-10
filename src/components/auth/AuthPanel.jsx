@@ -180,13 +180,54 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                   details: inviteData.cohortId ? `Cohort: ${inviteData.cohortId}` : 'Direct signup'
                 });
                 
+                let cloudFunctionSucceeded = false;
+                
                 // Call Cloud Function to accept invite
                 // The function handles: marking accepted, adding admin email, and saving user profile
                 if (functions) {
-                    console.log("[AuthPanel] Calling acceptInvitation function...");
-                    const acceptInvitation = httpsCallable(functions, 'acceptInvitation');
-                    const result = await acceptInvitation({ inviteId: inviteData.id });
-                    console.log("[AuthPanel] acceptInvitation succeeded:", result.data);
+                    try {
+                        console.log("[AuthPanel] Calling acceptInvitation function...");
+                        const acceptInvitation = httpsCallable(functions, 'acceptInvitation');
+                        const result = await acceptInvitation({ inviteId: inviteData.id });
+                        console.log("[AuthPanel] acceptInvitation succeeded:", result.data);
+                        cloudFunctionSucceeded = true;
+                    } catch (fnErr) {
+                        console.error("[AuthPanel] acceptInvitation function failed:", fnErr);
+                        // Continue - we'll handle this with direct writes below
+                    }
+                }
+
+                // FALLBACK: If cloud function failed or wasn't available, write user profile directly
+                // This ensures cohortId and role are always set correctly
+                if (!cloudFunctionSucceeded) {
+                    console.log("[AuthPanel] Cloud function failed/unavailable, writing user profile directly...");
+                    try {
+                        const userRef = doc(db, 'users', userCredential.user.uid);
+                        const userProfileData = {
+                            role: inviteData.role || 'user',
+                            email: inviteData.email,
+                            displayName: fullName,
+                            arenaEntryDate: serverTimestamp()
+                        };
+                        if (inviteData.cohortId) {
+                            userProfileData.cohortId = inviteData.cohortId;
+                        }
+                        await setDoc(userRef, userProfileData, { merge: true });
+                        console.log("[AuthPanel] User profile written directly with cohortId:", inviteData.cohortId);
+                        
+                        // Also mark invitation as accepted
+                        if (inviteData.id) {
+                            const inviteRef = doc(db, 'invitations', inviteData.id);
+                            await updateDoc(inviteRef, {
+                                status: 'accepted',
+                                acceptedAt: serverTimestamp(),
+                                acceptedBy: userCredential.user.uid
+                            });
+                            console.log("[AuthPanel] Invitation marked as accepted");
+                        }
+                    } catch (directWriteErr) {
+                        console.error("[AuthPanel] Direct user profile write failed:", directWriteErr);
+                    }
                 }
 
                 // Initialize Development Plan with Cohort Start Date (if cohort assigned)
