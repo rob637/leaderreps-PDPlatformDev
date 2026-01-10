@@ -146,10 +146,10 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
           {onClose && (
             <button 
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-white/20 transition-colors"
+              className="p-2 rounded-full bg-slate-700/60 hover:bg-slate-600/80 transition-colors"
               aria-label="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 text-white" />
             </button>
           )}
         </div>

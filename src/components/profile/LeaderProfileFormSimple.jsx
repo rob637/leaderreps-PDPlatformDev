@@ -193,9 +193,10 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
         {isModal && onClose && (
           <button 
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition-colors"
+            className="absolute top-4 right-4 p-2 rounded-full bg-slate-700/60 hover:bg-slate-600/80 transition-colors"
+            aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-white" />
           </button>
         )}
         <div className="flex items-center gap-3">
@@ -239,35 +240,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
           </p>
         </div>
 
-        {/* Company & Role */}
-        <div className="grid grid-cols-2 gap-4">
-          <InputField field="companyName" label="Company" required placeholder="Acme Corp" value={formData.companyName} onChange={handleChange} error={errors.companyName} />
-          <InputField field="jobTitle" label="Job Title" required placeholder="Engineering Manager" value={formData.jobTitle} onChange={handleChange} error={errors.jobTitle} />
-        </div>
-
-        {/* Team Size */}
-        <div className="grid grid-cols-2 gap-4">
-          <SelectField field="companySize" label="Company Size" options={COMPANY_SIZES} value={formData.companySize} onChange={handleChange} error={errors.companySize} />
-          <SelectField field="directReports" label="Direct Reports" options={DIRECT_REPORTS_OPTIONS} value={formData.directReports} onChange={handleChange} error={errors.directReports} />
-        </div>
-
-        {/* Primary Goal - Optional but helpful */}
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-slate-700">
-            What's your main leadership goal? <span className="text-slate-400">(optional)</span>
-          </label>
-          <textarea
-            value={formData.primaryGoal || ''}
-            onChange={e => handleChange('primaryGoal', e.target.value)}
-            placeholder="e.g., Become more confident giving feedback, build a stronger team culture..."
-            rows={2}
-            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white
-              focus:border-corporate-teal focus:outline-none focus:ring-4 focus:ring-corporate-teal/20
-              resize-none transition-all"
-          />
-        </div>
-
-        {/* Notification Preferences */}
+        {/* Notification Preferences - Right after phone number */}
         <div className="bg-slate-50 p-4 rounded-xl space-y-3 border border-slate-200">
           <h4 className="text-sm font-semibold text-corporate-navy flex items-center gap-2">
             <Bell className="w-4 h-4" /> Notification Preferences
@@ -334,6 +307,34 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
           {!formData.phoneNumber && (
             <p className="text-xs text-slate-400 italic ml-6">Add a phone number to enable SMS</p>
           )}
+        </div>
+
+        {/* Company & Role */}
+        <div className="grid grid-cols-2 gap-4">
+          <InputField field="companyName" label="Company" required placeholder="Acme Corp" value={formData.companyName} onChange={handleChange} error={errors.companyName} />
+          <InputField field="jobTitle" label="Job Title" required placeholder="Engineering Manager" value={formData.jobTitle} onChange={handleChange} error={errors.jobTitle} />
+        </div>
+
+        {/* Team Size */}
+        <div className="grid grid-cols-2 gap-4">
+          <SelectField field="companySize" label="Company Size" options={COMPANY_SIZES} value={formData.companySize} onChange={handleChange} error={errors.companySize} />
+          <SelectField field="directReports" label="Direct Reports" options={DIRECT_REPORTS_OPTIONS} value={formData.directReports} onChange={handleChange} error={errors.directReports} />
+        </div>
+
+        {/* Primary Goal - Optional but helpful */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-slate-700">
+            What's your main leadership goal? <span className="text-slate-400">(optional)</span>
+          </label>
+          <textarea
+            value={formData.primaryGoal || ''}
+            onChange={e => handleChange('primaryGoal', e.target.value)}
+            placeholder="e.g., Become more confident giving feedback, build a stronger team culture..."
+            rows={2}
+            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white
+              focus:border-corporate-teal focus:outline-none focus:ring-4 focus:ring-corporate-teal/20
+              resize-none transition-all"
+          />
         </div>
       </div>
 

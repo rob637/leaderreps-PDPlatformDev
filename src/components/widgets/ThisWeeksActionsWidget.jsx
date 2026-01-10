@@ -659,17 +659,23 @@ const ThisWeeksActionsWidget = () => {
       return 'text-blue-600';
     };
     
+    // Determine if this item is clickable (either interactive or has a resource)
+    const isClickable = item.isInteractive || item.resourceId || item.url;
+    
     // Determine click handler for the main row
-    const handleRowClick = () => {
+    const handleRowClick = (e) => {
       if (item.isInteractive) {
         handleInteractiveClick(item);
+      } else if (item.resourceId || item.url) {
+        // Open the resource viewer for content items
+        handleViewResource(e, item);
       }
     };
     
     return (
       <div 
-        className={`group flex items-start gap-3 p-3 rounded-xl border transition-all ${getCategoryStyles()} ${item.isInteractive ? 'cursor-pointer' : ''}`}
-        onClick={item.isInteractive ? handleRowClick : undefined}
+        className={`group flex items-start gap-3 p-3 rounded-xl border transition-all ${getCategoryStyles()} ${isClickable ? 'cursor-pointer' : ''}`}
+        onClick={isClickable ? handleRowClick : undefined}
       >
         <div
           onClick={(e) => {
