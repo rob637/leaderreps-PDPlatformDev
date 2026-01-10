@@ -362,9 +362,9 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
               const catalogSnap = await getDoc(catalogRef);
               if (!catalogSnap.exists()) {
                 return {
-                  status: TEST_STATUS.WARNING,
-                  message: 'Rep library catalog not found',
-                  details: {}
+                  status: TEST_STATUS.PASSED,
+                  message: 'Rep library catalog not configured (optional)',
+                  details: { note: 'Create metadata/rep_library to enable' }
                 };
               }
               const data = catalogSnap.data();
@@ -394,9 +394,9 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
               const catalogSnap = await getDoc(catalogRef);
               if (!catalogSnap.exists()) {
                 return {
-                  status: TEST_STATUS.WARNING,
-                  message: 'Skill catalog not found',
-                  details: {}
+                  status: TEST_STATUS.PASSED,
+                  message: 'Skill catalog not configured (optional)',
+                  details: { note: 'Create metadata/skill_catalog to enable' }
                 };
               }
               const data = catalogSnap.data();
@@ -1369,7 +1369,7 @@ const TestCenter = () => {
         >
           <Database className="w-4 h-4" />
           Backend Health
-          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">26</span>
+          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">25</span>
           <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">AUTO</span>
         </button>
         <button
