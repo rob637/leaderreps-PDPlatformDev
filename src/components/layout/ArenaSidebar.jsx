@@ -3,7 +3,6 @@ import {
   LayoutDashboard, 
   Target, 
   BookOpen, 
-  Users, 
   Megaphone, 
   User, 
   Archive,
@@ -18,6 +17,7 @@ import {
   Zap,
   Wrench
 } from 'lucide-react';
+import { CommunityIcon } from '../icons';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 // import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
@@ -78,7 +78,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
     
     { type: 'section', label: 'Resources' },
-    { id: 'community', label: 'Community', icon: Users, flag: 'enableCommunity', devModeOnly: true },
+    { id: 'community', label: 'Community', icon: CommunityIcon, flag: 'enableCommunity', devModeOnly: true },
     { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' }, // Using enableReadings as proxy for Content
     { id: 'coaching-hub', label: 'Coaching', icon: Megaphone, flag: 'enableLabs', devModeOnly: true },
     

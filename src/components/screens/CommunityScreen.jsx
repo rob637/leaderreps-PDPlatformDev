@@ -10,10 +10,11 @@ import WidgetRenderer from '../admin/WidgetRenderer';
 import PrepGate from '../ui/PrepGate';
 
 import {
-    Users, MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
+    MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
     Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video, BookOpen, FileText,
-    Calendar, Lock, Network
+    Calendar, Lock
 } from 'lucide-react';
+import { CommunityIcon } from '../icons';
 import { Button, Card, LoadingSpinner, PageLayout, NoWidgetsEnabled, TabButton } from '../ui';
 
 // --- Sub-Components ---
@@ -375,7 +376,7 @@ const CommunityScreen = () => {
             <PageLayout
                 title="Community Hub"
                 subtitle="Connect, share insights, and grow with fellow leaders."
-                icon={Network}
+                icon={CommunityIcon}
                 navigate={navigate}
             >
                 <div className="max-w-2xl mx-auto">
@@ -401,7 +402,7 @@ const CommunityScreen = () => {
         <PageLayout
             title="Community Hub"
             subtitle="Connect, share insights, and grow with fellow leaders."
-            icon={Network}
+            icon={CommunityIcon}
             navigate={navigate}
         >
             {/* Tab Navigation */}
