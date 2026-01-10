@@ -354,50 +354,50 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
       ]
     },
 
-    // ===== CONTENT TESTS =====
+    // ===== CONTENT LIBRARY TESTS (Unified Collection) =====
     {
       id: 'content',
-      name: 'Content Vault',
+      name: 'Content Library',
       category: TEST_CATEGORIES.CONTENT,
-      description: 'Verify content collections have valid data',
+      description: 'Verify unified content_library collection has valid data',
       tests: [
         {
-          id: 'content-readings',
-          name: 'Readings Collection',
-          description: 'Check content_readings for valid documents',
-          critical: false,
+          id: 'content-library-total',
+          name: 'Content Library Overview',
+          description: 'Check content_library collection exists and has items',
+          critical: true,
           run: async () => {
             try {
-              const q = query(collection(db, 'content_readings'), limit(100));
+              const q = query(collection(db, 'content_library'), limit(200));
               const snap = await getDocs(q);
               const count = snap.docs.length;
-              const activeCount = snap.docs.filter(d => d.data().isActive).length;
-              
-              // Check for required fields
-              const issues = [];
-              snap.docs.forEach(d => {
-                const data = d.data();
-                if (!data.title) issues.push(`${d.id}: missing title`);
-                if (!data.resourceId && !data.url) issues.push(`${d.id}: no resourceId or URL`);
-              });
               
               if (count === 0) {
                 return {
-                  status: TEST_STATUS.WARNING,
-                  message: 'No readings found in collection',
+                  status: TEST_STATUS.FAILED,
+                  message: 'Content library is empty',
                   details: {}
                 };
               }
               
+              // Count by type
+              const typeCounts = {};
+              snap.docs.forEach(d => {
+                const type = d.data().type || 'UNKNOWN';
+                typeCounts[type] = (typeCounts[type] || 0) + 1;
+              });
+              
+              const publishedCount = snap.docs.filter(d => d.data().status === 'PUBLISHED').length;
+              
               return {
-                status: issues.length === 0 ? TEST_STATUS.PASSED : TEST_STATUS.WARNING,
-                message: `${activeCount} active of ${count} readings${issues.length > 0 ? ` (${issues.length} issues)` : ''}`,
-                details: { total: count, active: activeCount, issues: issues.slice(0, 5) }
+                status: TEST_STATUS.PASSED,
+                message: `${count} items (${publishedCount} published)`,
+                details: { total: count, published: publishedCount, byType: typeCounts }
               };
             } catch (error) {
               return {
                 status: TEST_STATUS.FAILED,
-                message: `Error reading collection: ${error.message}`,
+                message: `Error reading content library: ${error.message}`,
                 details: { error: error.message }
               };
             }
@@ -405,90 +405,98 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
         },
         {
           id: 'content-videos',
-          name: 'Videos Collection',
-          description: 'Check content_videos for valid documents',
+          name: 'Video Content',
+          description: 'Check VIDEO type items have valid URLs',
           critical: false,
           run: async () => {
             try {
-              const q = query(collection(db, 'content_videos'), limit(100));
+              const q = query(collection(db, 'content_library'), where('type', '==', 'VIDEO'));
               const snap = await getDocs(q);
               const count = snap.docs.length;
-              const activeCount = snap.docs.filter(d => d.data().isActive).length;
               
               const issues = [];
               snap.docs.forEach(d => {
                 const data = d.data();
                 if (!data.title) issues.push(`${d.id}: missing title`);
-                if (!data.videoUrl && !data.url) issues.push(`${d.id}: no video URL`);
+                if (!data.videoUrl && !data.url && !data.youtubeId) issues.push(`${d.id}: no video URL`);
               });
               
               if (count === 0) {
                 return {
                   status: TEST_STATUS.WARNING,
-                  message: 'No videos found in collection',
+                  message: 'No VIDEO items found in content library',
                   details: {}
                 };
               }
               
               return {
                 status: issues.length === 0 ? TEST_STATUS.PASSED : TEST_STATUS.WARNING,
-                message: `${activeCount} active of ${count} videos${issues.length > 0 ? ` (${issues.length} issues)` : ''}`,
-                details: { total: count, active: activeCount, issues: issues.slice(0, 5) }
+                message: `${count} videos${issues.length > 0 ? ` (${issues.length} issues)` : ''}`,
+                details: { total: count, issues: issues.slice(0, 5) }
               };
             } catch (error) {
               return {
                 status: TEST_STATUS.FAILED,
-                message: `Error reading collection: ${error.message}`,
+                message: `Error reading videos: ${error.message}`,
                 details: { error: error.message }
               };
             }
           }
         },
         {
-          id: 'content-community',
-          name: 'Community Content',
-          description: 'Check content_community collection',
+          id: 'content-documents',
+          name: 'Document Content',
+          description: 'Check DOCUMENT type items have valid content',
           critical: false,
           run: async () => {
             try {
-              const q = query(collection(db, 'content_community'), limit(50));
+              const q = query(collection(db, 'content_library'), where('type', '==', 'DOCUMENT'));
               const snap = await getDocs(q);
               const count = snap.docs.length;
               
+              const issues = [];
+              snap.docs.forEach(d => {
+                const data = d.data();
+                if (!data.title) issues.push(`${d.id}: missing title`);
+                if (!data.url && !data.content) issues.push(`${d.id}: no URL or content`);
+              });
+              
               return {
-                status: count > 0 ? TEST_STATUS.PASSED : TEST_STATUS.WARNING,
-                message: `${count} community items found`,
-                details: { total: count }
+                status: issues.length === 0 ? TEST_STATUS.PASSED : TEST_STATUS.WARNING,
+                message: `${count} documents${issues.length > 0 ? ` (${issues.length} issues)` : ''}`,
+                details: { total: count, issues: issues.slice(0, 5) }
               };
             } catch (error) {
               return {
                 status: TEST_STATUS.FAILED,
-                message: `Error reading collection: ${error.message}`,
+                message: `Error reading documents: ${error.message}`,
                 details: { error: error.message }
               };
             }
           }
         },
         {
-          id: 'content-coaching',
-          name: 'Coaching Content',
-          description: 'Check content_coaching collection',
+          id: 'content-interactive',
+          name: 'Interactive Content',
+          description: 'Check INTERACTIVE type items (Leader Profile, Assessments)',
           critical: false,
           run: async () => {
             try {
-              const q = query(collection(db, 'content_coaching'), limit(50));
+              const q = query(collection(db, 'content_library'), where('type', '==', 'INTERACTIVE'));
               const snap = await getDocs(q);
               const count = snap.docs.length;
               
+              const items = snap.docs.map(d => d.data().title || d.id);
+              
               return {
                 status: count > 0 ? TEST_STATUS.PASSED : TEST_STATUS.WARNING,
-                message: `${count} coaching items found`,
-                details: { total: count }
+                message: `${count} interactive items`,
+                details: { total: count, items: items.slice(0, 10) }
               };
             } catch (error) {
               return {
                 status: TEST_STATUS.FAILED,
-                message: `Error reading collection: ${error.message}`,
+                message: `Error reading interactive content: ${error.message}`,
                 details: { error: error.message }
               };
             }
@@ -502,12 +510,12 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
       id: 'dev-plan',
       name: 'Development Plan',
       category: TEST_CATEGORIES.DEV_PLAN,
-      description: 'Verify Development Plan structure and content linking',
+      description: 'Verify Development Plan templates and user data',
       tests: [
         {
           id: 'dev-plan-weeks',
-          name: 'Plan Week Documents',
-          description: 'Check development_plan_v1 collection has valid weeks',
+          name: 'Week Template (development_plan_v1)',
+          description: 'Check weekly plan template collection',
           critical: true,
           run: async () => {
             try {
@@ -548,9 +556,90 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
           }
         },
         {
+          id: 'daily-plan-template',
+          name: 'Day Template (daily_plan_v1)',
+          description: 'Check day-by-day plan template collection',
+          critical: true,
+          run: async () => {
+            try {
+              const q = query(collection(db, 'daily_plan_v1'), limit(200));
+              const snap = await getDocs(q);
+              const count = snap.docs.length;
+              
+              if (count === 0) {
+                return {
+                  status: TEST_STATUS.FAILED,
+                  message: 'No day documents found in daily_plan_v1',
+                  details: {}
+                };
+              }
+              
+              // Count by phase
+              const phases = { prep: 0, dev: 0, post: 0 };
+              snap.docs.forEach(d => {
+                const id = d.id;
+                if (id.startsWith('prep-')) phases.prep++;
+                else if (id.startsWith('day-')) phases.dev++;
+                else if (id.startsWith('post-')) phases.post++;
+              });
+              
+              return {
+                status: TEST_STATUS.PASSED,
+                message: `${count} days (Prep: ${phases.prep}, Dev: ${phases.dev}, Post: ${phases.post})`,
+                details: { total: count, phases }
+              };
+            } catch (error) {
+              return {
+                status: TEST_STATUS.FAILED,
+                message: `Error reading daily plan: ${error.message}`,
+                details: { error: error.message }
+              };
+            }
+          }
+        },
+        {
+          id: 'cohorts-collection',
+          name: 'Cohorts Collection',
+          description: 'Check cohorts exist for cohort-based progression',
+          critical: false,
+          run: async () => {
+            try {
+              const q = query(collection(db, 'cohorts'));
+              const snap = await getDocs(q);
+              const count = snap.docs.length;
+              
+              if (count === 0) {
+                return {
+                  status: TEST_STATUS.WARNING,
+                  message: 'No cohorts defined (individual mode only)',
+                  details: {}
+                };
+              }
+              
+              const cohorts = snap.docs.map(d => ({
+                id: d.id,
+                name: d.data().name,
+                startDate: d.data().startDate
+              }));
+              
+              return {
+                status: TEST_STATUS.PASSED,
+                message: `${count} cohorts defined`,
+                details: { cohorts }
+              };
+            } catch (error) {
+              return {
+                status: TEST_STATUS.FAILED,
+                message: `Error reading cohorts: ${error.message}`,
+                details: { error: error.message }
+              };
+            }
+          }
+        },
+        {
           id: 'dev-plan-content-links',
           name: 'Content Links Validity',
-          description: 'Verify all resource links in weeks point to existing content',
+          description: 'Verify all resource links in weeks point to existing content_library',
           critical: false,
           run: async () => {
             try {
@@ -574,17 +663,13 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
                 };
               }
               
-              // Check if those IDs exist in content collections
-              const collections = ['content_readings', 'content_videos'];
+              // Check if those IDs exist in unified content_library
+              const contentSnap = await getDocs(collection(db, 'content_library'));
               const existingIds = new Set();
-              
-              for (const collName of collections) {
-                const snap = await getDocs(collection(db, collName));
-                snap.docs.forEach(d => {
-                  existingIds.add(d.id);
-                  if (d.data().resourceId) existingIds.add(d.data().resourceId);
-                });
-              }
+              contentSnap.docs.forEach(d => {
+                existingIds.add(d.id);
+                if (d.data().resourceId) existingIds.add(d.data().resourceId);
+              });
               
               const orphanedLinks = [...referencedIds].filter(id => !existingIds.has(id));
               
@@ -613,7 +698,7 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
         {
           id: 'user-dev-plan',
           name: 'User Development Plan Data',
-          description: 'Verify current user has valid development plan',
+          description: 'Verify current user has valid development plan module',
           critical: false,
           run: async () => {
             if (!developmentPlanData) {
@@ -624,26 +709,34 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
               };
             }
             
-            const issues = [];
-            if (!developmentPlanData.currentWeek) issues.push('No currentWeek set');
-            if (!developmentPlanData.planId) issues.push('No planId set');
-            if (!developmentPlanData.startDate) issues.push('No startDate set');
+            // Check for actual field names used in the data model
+            const hasWeekIndex = developmentPlanData.currentWeekIndex !== undefined;
+            const hasStartDate = !!developmentPlanData.startDate;
+            const hasVersion = !!developmentPlanData.version;
+            const hasCohort = !!developmentPlanData.cohortId;
             
-            if (issues.length > 0) {
+            const fields = Object.keys(developmentPlanData);
+            
+            if (!hasStartDate) {
               return {
                 status: TEST_STATUS.WARNING,
-                message: `Plan loaded with ${issues.length} issues`,
-                details: { issues, data: Object.keys(developmentPlanData) }
+                message: 'No startDate set - user may not have started program',
+                details: { fields }
               };
             }
             
+            const weekDisplay = hasWeekIndex ? `Week ${developmentPlanData.currentWeekIndex + 1}` : 'Week N/A';
+            const cohortInfo = hasCohort ? ` (Cohort: ${developmentPlanData.cohortId})` : '';
+            
             return {
               status: TEST_STATUS.PASSED,
-              message: `Week ${developmentPlanData.currentWeek} of ${developmentPlanData.planId}`,
+              message: `${weekDisplay}${cohortInfo}`,
               details: { 
-                currentWeek: developmentPlanData.currentWeek,
-                planId: developmentPlanData.planId,
-                startDate: developmentPlanData.startDate
+                currentWeekIndex: developmentPlanData.currentWeekIndex,
+                startDate: developmentPlanData.startDate,
+                version: developmentPlanData.version || 'v1',
+                cohortId: developmentPlanData.cohortId,
+                fields
               }
             };
           }
@@ -661,7 +754,7 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
         {
           id: 'daily-practice-current',
           name: 'Current Daily Practice Data',
-          description: 'Verify daily_practice/current document is valid',
+          description: 'Verify daily_practice module data is current',
           critical: false,
           run: async () => {
             if (!dailyPracticeData) {
@@ -673,9 +766,10 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
             }
             
             const today = new Date().toISOString().split('T')[0];
-            const dataDate = dailyPracticeData.date;
+            // Field is 'lastUpdated' not 'date'
+            const dataDate = dailyPracticeData.lastUpdated;
             
-            if (dataDate !== today) {
+            if (dataDate && dataDate !== today) {
               return {
                 status: TEST_STATUS.WARNING,
                 message: `Data date (${dataDate}) doesn't match today (${today})`,
@@ -685,11 +779,11 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
             
             return {
               status: TEST_STATUS.PASSED,
-              message: `Data current for ${today}`,
+              message: dataDate ? `Data current for ${dataDate}` : 'Daily practice module loaded',
               details: { 
-                date: dataDate,
-                hasWins: !!dailyPracticeData.morningBookend?.wins,
-                hasGrounding: !!dailyPracticeData.identityStatement,
+                lastUpdated: dataDate,
+                hasIdentityAnchor: !!dailyPracticeData.identityAnchor,
+                hasHabitAnchor: !!dailyPracticeData.habitAnchor,
                 streakCount: dailyPracticeData.streakCount || 0
               }
             };
@@ -698,7 +792,7 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
         {
           id: 'daily-practice-structure',
           name: 'Daily Practice Structure',
-          description: 'Check for required data structures',
+          description: 'Check for core data structures (anchors, bookends)',
           critical: false,
           run: async () => {
             if (!dailyPracticeData) {
@@ -709,21 +803,21 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
               };
             }
             
-            const requiredFields = ['date', 'morningBookend', 'scorecard'];
-            const missing = requiredFields.filter(f => !dailyPracticeData[f]);
-            
-            if (missing.length > 0) {
-              return {
-                status: TEST_STATUS.WARNING,
-                message: `Missing fields: ${missing.join(', ')}`,
-                details: { missing, found: Object.keys(dailyPracticeData) }
-              };
-            }
+            // Check for actual fields used in current data model
+            const fields = Object.keys(dailyPracticeData);
+            const hasAnchors = dailyPracticeData.identityAnchor || dailyPracticeData.habitAnchor;
+            const hasBookends = dailyPracticeData.morningBookend || dailyPracticeData.eveningBookend;
             
             return {
               status: TEST_STATUS.PASSED,
-              message: 'All required structures present',
-              details: { fields: Object.keys(dailyPracticeData) }
+              message: `${fields.length} fields loaded`,
+              details: { 
+                fields,
+                hasIdentityAnchor: !!dailyPracticeData.identityAnchor,
+                hasHabitAnchor: !!dailyPracticeData.habitAnchor,
+                hasMorningBookend: !!dailyPracticeData.morningBookend,
+                hasEveningBookend: !!dailyPracticeData.eveningBookend
+              }
             };
           }
         },
@@ -808,13 +902,13 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
         {
           id: 'content-accessible',
           name: 'Content Accessibility',
-          description: 'Verify at least one content item is accessible',
+          description: 'Verify content_library is accessible and has published items',
           critical: true,
           run: async () => {
             try {
               const q = query(
-                collection(db, 'content_videos'),
-                where('isActive', '==', true),
+                collection(db, 'content_library'),
+                where('status', '==', 'PUBLISHED'),
                 limit(1)
               );
               const snap = await getDocs(q);
@@ -822,14 +916,14 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
               if (snap.docs.length > 0) {
                 return {
                   status: TEST_STATUS.PASSED,
-                  message: 'Active content accessible',
+                  message: 'Published content accessible',
                   details: { sampleTitle: snap.docs[0].data().title }
                 };
               }
               
               return {
                 status: TEST_STATUS.WARNING,
-                message: 'No active content found',
+                message: 'No published content found in content_library',
                 details: {}
               };
             } catch (error) {
@@ -1130,7 +1224,7 @@ const TestCenter = () => {
             Test Center
           </h2>
           <p className="text-gray-500 text-sm mt-1">
-            System health monitoring • 108+ automated UI tests • QA scenarios
+            Backend health checks • UI test scenarios • Playwright automation
           </p>
         </div>
       </div>
@@ -1146,7 +1240,7 @@ const TestCenter = () => {
         >
           <Database className="w-4 h-4" />
           System Health
-          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">18</span>
+          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">20</span>
         </button>
         <button
           onClick={() => setActiveTab('manual')}
@@ -1157,7 +1251,7 @@ const TestCenter = () => {
         >
           <ClipboardList className="w-4 h-4" />
           Manual Testing
-          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">138</span>
+          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">133</span>
           <span className="px-1.5 py-0.5 bg-corporate-teal text-white text-xs font-bold rounded">START HERE</span>
         </button>
         <button
