@@ -5,7 +5,10 @@
  * Run before EVERY deployment to TEST or PROD
  * Tests core user journey end-to-end.
  * 
- * 36 Scenarios | Tests Core User Journey
+ * Note: Win Review feature doesn't exist - priority completion is via
+ * Win the Day checkboxes in AM Bookend (not PM Bookend)
+ * 
+ * 34 Scenarios | Tests Core User Journey
  */
 
 import { test, expect } from '@playwright/test';

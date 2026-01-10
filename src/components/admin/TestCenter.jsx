@@ -892,8 +892,8 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
 const TestCenter = () => {
   const { user, db, dailyPracticeData, developmentPlanData } = useAppServices();
   
-  // Tab state
-  const [activeTab, setActiveTab] = useState('automated');
+  // Tab state - default to manual testing for admins
+  const [activeTab, setActiveTab] = useState('manual');
   
   // State
   const [testSuites, setTestSuites] = useState([]);
@@ -1130,7 +1130,7 @@ const TestCenter = () => {
             Test Center
           </h2>
           <p className="text-gray-500 text-sm mt-1">
-            Automated testing, system health monitoring, and manual test scripts
+            System health monitoring • 108+ automated UI tests • QA scenarios
           </p>
         </div>
       </div>
@@ -1144,19 +1144,9 @@ const TestCenter = () => {
               ? 'border-corporate-teal text-corporate-teal' 
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
         >
-          <Zap className="w-4 h-4" />
-          Data Tests
-        </button>
-        <button
-          onClick={() => setActiveTab('e2e')}
-          className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
-            ${activeTab === 'e2e' 
-              ? 'border-corporate-teal text-corporate-teal' 
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-        >
-          <PlayCircle className="w-4 h-4" />
-          E2E Browser Tests
-          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">NEW</span>
+          <Database className="w-4 h-4" />
+          System Health
+          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">18</span>
         </button>
         <button
           onClick={() => setActiveTab('manual')}
@@ -1166,8 +1156,20 @@ const TestCenter = () => {
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
         >
           <ClipboardList className="w-4 h-4" />
-          Manual Test Scripts
-          <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-bold rounded">138</span>
+          Manual Testing
+          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">138</span>
+          <span className="px-1.5 py-0.5 bg-corporate-teal text-white text-xs font-bold rounded">START HERE</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('e2e')}
+          className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
+            ${activeTab === 'e2e' 
+              ? 'border-corporate-teal text-corporate-teal' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+        >
+          <PlayCircle className="w-4 h-4" />
+          Automated Tests
+          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-xs font-bold rounded">DEV</span>
         </button>
       </div>
       

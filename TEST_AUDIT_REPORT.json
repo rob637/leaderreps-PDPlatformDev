@@ -1,0 +1,922 @@
+{
+  "auditMetadata": {
+    "generatedAt": "2026-01-10",
+    "appName": "LeaderReps - The Arena",
+    "framework": "React 18 + Vite",
+    "stateManagement": "React Context + Custom Hooks",
+    "backend": "Firebase (Firestore, Auth, Functions, Storage)",
+    "routingType": "Custom Screen-Based Router (not React Router)"
+  },
+
+  "routes": {
+    "description": "Routes are managed via ScreenRouter.jsx using a ScreenMap object with lazy-loaded components",
+    "routeList": [
+      { "path": "dashboard", "component": "Dashboard.jsx", "isProtected": true, "category": "core" },
+      { "path": "development-plan", "component": "DevelopmentPlan.jsx", "isProtected": true, "category": "core" },
+      { "path": "daily-practice", "component": "DailyPractice.jsx", "isProtected": true, "category": "core" },
+      { "path": "coaching-lab", "component": "CoachingHub.jsx", "isProtected": true, "category": "feature", "aliases": ["coaching-hub", "labs"] },
+      { "path": "locker", "component": "Locker.jsx", "isProtected": true, "category": "core" },
+      { "path": "planning-hub", "component": "PlanningHub.jsx", "isProtected": true, "category": "feature" },
+      { "path": "business-readings", "component": "BusinessReadings.jsx", "isProtected": true, "category": "content" },
+      { "path": "quick-start-accelerator", "component": "QuickStartAccelerator.jsx", "isProtected": true, "category": "feature" },
+      { "path": "executive-reflection", "component": "ExecutiveReflection.jsx", "isProtected": true, "category": "feature" },
+      { "path": "community", "component": "CommunityScreen.jsx", "isProtected": true, "category": "feature" },
+      { "path": "applied-leadership", "component": "AppliedLeadership.jsx", "isProtected": true, "category": "feature" },
+      { "path": "leadership-videos", "component": "LeadershipVideos.jsx", "isProtected": true, "category": "content" },
+      { "path": "app-settings", "component": "AppSettings.jsx", "isProtected": true, "category": "settings" },
+      { "path": "membership-upgrade", "component": "MembershipUpgrade.jsx", "isProtected": true, "category": "settings", "aliases": ["membership-module"] },
+      { "path": "library", "component": "Library.jsx", "isProtected": true, "category": "content" },
+      { "path": "programs-index", "component": "library/ProgramsIndex.jsx", "isProtected": true, "category": "content" },
+      { "path": "program-detail", "component": "library/ProgramDetail.jsx", "isProtected": true, "category": "content" },
+      { "path": "workouts-index", "component": "library/WorkoutsIndex.jsx", "isProtected": true, "category": "content" },
+      { "path": "workout-detail", "component": "library/WorkoutDetail.jsx", "isProtected": true, "category": "content" },
+      { "path": "skills-index", "component": "library/SkillsIndex.jsx", "isProtected": true, "category": "content" },
+      { "path": "skill-detail", "component": "library/SkillDetail.jsx", "isProtected": true, "category": "content" },
+      { "path": "tools-index", "component": "library/ToolsIndex.jsx", "isProtected": true, "category": "content" },
+      { "path": "tool-detail", "component": "library/ToolDetail.jsx", "isProtected": true, "category": "content" },
+      { "path": "read-reps-index", "component": "library/ReadRepsIndex.jsx", "isProtected": true, "category": "content" },
+      { "path": "read-rep-detail", "component": "library/ReadRepDetail.jsx", "isProtected": true, "category": "content" },
+      { "path": "videos-index", "component": "library/VideosIndex.jsx", "isProtected": true, "category": "content" },
+      { "path": "video-detail", "component": "library/VideoDetail.jsx", "isProtected": true, "category": "content" },
+      { "path": "documents-index", "component": "library/DocumentsIndex.jsx", "isProtected": true, "category": "content" },
+      { "path": "document-detail", "component": "library/DocumentDetail.jsx", "isProtected": true, "category": "content" },
+      { "path": "features-lab", "component": "FeaturesLab.jsx", "isProtected": true, "category": "feature" },
+      { "path": "reading-hub", "component": "features/ReadingHub.jsx", "isProtected": true, "category": "feature" },
+      { "path": "course-library", "component": "features/CourseLibrary.jsx", "isProtected": true, "category": "feature" },
+      { "path": "strat-templates", "component": "features/StrategicTemplates.jsx", "isProtected": true, "category": "feature" },
+      { "path": "mastermind", "component": "features/MastermindGroups.jsx", "isProtected": true, "category": "feature" },
+      { "path": "mentor-match", "component": "features/MentorMatch.jsx", "isProtected": true, "category": "feature" },
+      { "path": "live-events", "component": "features/LiveEvents.jsx", "isProtected": true, "category": "feature" },
+      { "path": "ai-roleplay", "component": "features/AIRoleplay.jsx", "isProtected": true, "category": "feature" },
+      { "path": "360-feedback", "component": "features/Feedback360.jsx", "isProtected": true, "category": "feature" },
+      { "path": "roi-report", "component": "features/ROIReport.jsx", "isProtected": true, "category": "feature" },
+      { "path": "roadmap-tracker", "component": "RoadmapTracker.jsx", "isProtected": true, "category": "feature" },
+      { "path": "privacy-policy", "component": "legal/PrivacyPolicy.jsx", "isProtected": false, "category": "legal" },
+      { "path": "terms-of-service", "component": "legal/TermsOfService.jsx", "isProtected": false, "category": "legal" },
+      { "path": "cookie-policy", "component": "legal/CookiePolicy.jsx", "isProtected": false, "category": "legal" },
+      { "path": "contact-us", "component": "legal/ContactUs.jsx", "isProtected": false, "category": "legal" }
+    ]
+  },
+
+  "userJourneys": {
+    "newUserOnboarding": {
+      "description": "Flow for brand new users from signup to first dashboard view",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Invitation/Signup",
+          "component": "AuthPanel.jsx",
+          "testableActions": [
+            "Login with email/password",
+            "Signup with invitation token",
+            "Signup with secret code (7777)",
+            "Password reset flow",
+            "Google OAuth (if enabled)",
+            "Pre-fill from invitation data",
+            "Token validation via Cloud Function"
+          ]
+        },
+        {
+          "step": 2,
+          "name": "Prep Phase - Leader Profile",
+          "component": "LeaderProfileFormSimple.jsx",
+          "testableActions": [
+            "Fill personal info (firstName, lastName, email)",
+            "Fill professional info (company, jobTitle, companySize)",
+            "Select direct reports count",
+            "Form validation (required fields)",
+            "Auto-fill from Firebase Auth displayName/email",
+            "Save profile to Firestore",
+            "Mark profile as complete"
+          ]
+        },
+        {
+          "step": 3,
+          "name": "Prep Phase - Baseline Assessment",
+          "component": "BaselineAssessmentSimple.jsx",
+          "testableActions": [
+            "View assessment questions",
+            "Rate leadership dimensions (slider/select)",
+            "Submit assessment",
+            "Generate development plan from assessment",
+            "Save assessment to assessmentHistory"
+          ]
+        },
+        {
+          "step": 4,
+          "name": "Prep Phase - Prep Actions",
+          "component": "ThisWeeksActionsWidget.jsx",
+          "testableActions": [
+            "View required prep items",
+            "Complete prep videos/documents",
+            "Mark actions as complete",
+            "View explore (optional) items",
+            "Track prep completion progress"
+          ]
+        },
+        {
+          "step": 5,
+          "name": "Dashboard - First Day",
+          "component": "Dashboard.jsx",
+          "testableActions": [
+            "View welcome message with user name",
+            "See daily quote",
+            "View weekly focus",
+            "Access development plan"
+          ]
+        }
+      ]
+    },
+    "dailyPracticeJourney": {
+      "description": "Daily workflow for active users",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Morning Bookend (AM)",
+          "widgets": ["WinTheDayWidget", "grounding-rep", "daily-quote"],
+          "testableActions": [
+            "Enter 3 daily priorities (wins)",
+            "Toggle win completion",
+            "Save priorities (manual + autosave)",
+            "Complete grounding rep (click-to-reveal LIS)",
+            "View/read daily quote"
+          ]
+        },
+        {
+          "step": 2,
+          "name": "Daily Actions",
+          "widgets": ["ThisWeeksActionsWidget", "daily-leader-reps"],
+          "testableActions": [
+            "View today's required actions",
+            "Mark content items complete",
+            "Open resources (videos, documents, tools)",
+            "View coaching sessions",
+            "Toggle daily reps complete"
+          ]
+        },
+        {
+          "step": 3,
+          "name": "Evening Bookend (PM)",
+          "widgets": ["PMReflectionWidget", "scorecard"],
+          "testableActions": [
+            "Enter reflection - what went well",
+            "Enter reflection - what needs work",
+            "Enter reflection - closing thought",
+            "Save PM reflection",
+            "View daily scorecard",
+            "Save scorecard"
+          ]
+        }
+      ]
+    },
+    "contentConsumptionJourney": {
+      "description": "Accessing and consuming learning content",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Browse Library",
+          "component": "Library.jsx",
+          "testableActions": [
+            "View library categories (Skills, Read & Reps, Videos, Tools, Documents)",
+            "Click to navigate to category index"
+          ]
+        },
+        {
+          "step": 2,
+          "name": "Browse by Skill",
+          "component": "SkillsIndex.jsx",
+          "testableActions": [
+            "View all skills with content counts",
+            "Search/filter skills",
+            "Navigate to skill detail"
+          ]
+        },
+        {
+          "step": 3,
+          "name": "View Content Detail",
+          "component": "UniversalResourceViewer.jsx",
+          "testableActions": [
+            "View embedded YouTube videos",
+            "View embedded Vimeo videos",
+            "View embedded Loom videos",
+            "View PDF documents (iframe/viewer)",
+            "View Office documents (Google Docs viewer)",
+            "Open external links",
+            "View Read & Rep synopsis",
+            "Mark content as complete"
+          ]
+        }
+      ]
+    },
+    "communityJourney": {
+      "description": "Engaging with community features",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Community Feed",
+          "component": "CommunityScreen.jsx",
+          "testableActions": [
+            "View community threads/posts",
+            "Filter posts by leadership tier (T1-T5)",
+            "React to posts (like)",
+            "View post comments"
+          ]
+        },
+        {
+          "step": 2,
+          "name": "Create Thread",
+          "component": "NewThreadView (in CommunityScreen)",
+          "testableActions": [
+            "Enter thread title",
+            "Enter situation/context",
+            "Enter specific question",
+            "Select leadership tier",
+            "Submit thread to Firestore"
+          ]
+        }
+      ]
+    },
+    "coachingJourney": {
+      "description": "Booking and attending coaching sessions",
+      "steps": [
+        {
+          "step": 1,
+          "name": "View Coaching Calendar",
+          "component": "CoachingHub.jsx",
+          "testableActions": [
+            "View calendar month view",
+            "Navigate between months",
+            "See session types (Open Gym, Leader Circle, Workshop, 1:1)",
+            "View sessions on specific dates"
+          ]
+        },
+        {
+          "step": 2,
+          "name": "Session Registration",
+          "component": "SessionCard (in CoachingHub)",
+          "testableActions": [
+            "Register for session",
+            "Cancel registration",
+            "View session details (time, description, facilitator)",
+            "Add to Google Calendar"
+          ]
+        }
+      ]
+    },
+    "developmentPlanJourney": {
+      "description": "Creating and tracking development plan",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Baseline Assessment",
+          "component": "BaselineAssessmentSimple.jsx",
+          "testableActions": [
+            "Complete initial assessment",
+            "View recommended focus areas",
+            "Generate plan from assessment"
+          ]
+        },
+        {
+          "step": 2,
+          "name": "Plan Tracker",
+          "component": "PlanTracker.jsx",
+          "testableActions": [
+            "View current week's focus",
+            "View daily reps/actions",
+            "Track progress across weeks",
+            "View milestone timeline"
+          ]
+        },
+        {
+          "step": 3,
+          "name": "Progress Scan",
+          "component": "ProgressScan.jsx",
+          "testableActions": [
+            "View skill progress breakdown",
+            "Compare current vs baseline scores"
+          ]
+        }
+      ]
+    }
+  },
+
+  "featuresByPage": {
+    "dashboard": {
+      "component": "Dashboard.jsx",
+      "description": "Main hub showing daily practice widgets controlled by feature flags",
+      "features": [
+        {
+          "name": "Welcome Message",
+          "widgetId": "welcome-message",
+          "testableElements": ["Displays user firstName", "Shows greeting based on time"]
+        },
+        {
+          "name": "Daily Quote",
+          "widgetId": "daily-quote",
+          "testableElements": ["Displays rotating quote from SYSTEM_QUOTES", "Quote changes daily (deterministic by date)"]
+        },
+        {
+          "name": "Weekly Focus",
+          "widgetId": "weekly-focus",
+          "testableElements": ["Shows current week number", "Shows focus area text from dev plan"]
+        },
+        {
+          "name": "Grounding Rep",
+          "widgetId": "grounding-rep",
+          "testableElements": ["Click to reveal LIS (Leadership Identity Statement)", "Confetti animation on complete", "Tracks completion per day"]
+        },
+        {
+          "name": "Win the Day",
+          "widgetId": "win-the-day",
+          "testableElements": ["3 input fields for priorities", "Checkbox to mark complete", "Save button", "Autosave on blur"]
+        },
+        {
+          "name": "This Week's Actions",
+          "widgetId": "this-weeks-actions",
+          "testableElements": ["Required vs optional items", "Content type icons", "Completion checkboxes", "Resource viewer modal", "Progress indicator"]
+        },
+        {
+          "name": "Daily Leader Reps",
+          "widgetId": "daily-leader-reps",
+          "testableElements": ["List of reps for the day", "Toggle completion", "Save status"]
+        },
+        {
+          "name": "PM Reflection",
+          "widgetId": "pm-bookend",
+          "testableElements": ["3 textarea fields", "Save button", "Loading state during save"]
+        },
+        {
+          "name": "Scorecard",
+          "widgetId": "scorecard",
+          "testableElements": ["Daily score display", "Save scorecard", "View history"]
+        },
+        {
+          "name": "Prep Welcome Banner",
+          "widgetId": "prep-welcome-banner",
+          "testableElements": ["Only shows during prep phase", "Welcome instructions"]
+        },
+        {
+          "name": "Program Status Debug",
+          "widgetId": "program-status-debug",
+          "testableElements": ["Shows current day/phase info", "Developer mode only"]
+        }
+      ],
+      "modals": [
+        {
+          "name": "UnifiedAnchorEditorModal",
+          "triggers": ["Edit anchors button"],
+          "testableElements": ["Edit identity statement", "Edit habit anchor", "Edit why statement", "Save all anchors"]
+        },
+        {
+          "name": "CalendarSyncModal",
+          "triggers": ["Calendar sync button"],
+          "testableElements": ["View calendar options", "Export to calendar"]
+        },
+        {
+          "name": "MissedDaysModal",
+          "triggers": ["Catch up button (when missed days exist)"],
+          "testableElements": ["List of missed days", "Toggle missed actions complete"]
+        }
+      ]
+    },
+    "developmentPlan": {
+      "component": "DevelopmentPlan.jsx",
+      "description": "Development plan creation, tracking, and progress scanning",
+      "features": [
+        {
+          "name": "View Switching",
+          "testableElements": ["Dashboard view", "Baseline view", "Tracker view", "Scan view", "Detail view", "Timeline view"]
+        },
+        {
+          "name": "Baseline Assessment",
+          "testableElements": ["Self-rating sliders", "Submit assessment", "Auto-generate plan"]
+        },
+        {
+          "name": "Plan Tracker",
+          "testableElements": ["Week navigation", "Daily rep list", "Completion tracking"]
+        },
+        {
+          "name": "Progress Breakdown",
+          "testableElements": ["Skill-by-skill progress", "Comparison to baseline"]
+        },
+        {
+          "name": "Milestone Timeline",
+          "testableElements": ["Visual timeline", "Week markers", "Current position indicator"]
+        }
+      ]
+    },
+    "library": {
+      "component": "Library.jsx",
+      "description": "Content library hub",
+      "features": [
+        {
+          "name": "Category Navigation",
+          "testableElements": ["Skills card", "Read & Reps card", "Videos card", "Tools card", "Documents card", "Content counts per category"]
+        },
+        {
+          "name": "Loading State",
+          "testableElements": ["Spinner while fetching counts"]
+        }
+      ]
+    },
+    "skillsIndex": {
+      "component": "library/SkillsIndex.jsx",
+      "description": "Browse content by leadership skill",
+      "features": [
+        {
+          "name": "Skills List",
+          "testableElements": ["Skill cards with descriptions", "Content type badges (videos, docs, tools, read-reps)", "Click to navigate to detail"]
+        },
+        {
+          "name": "Search",
+          "testableElements": ["Search input", "Filter results by query", "Empty state when no results"]
+        },
+        {
+          "name": "Loading State",
+          "testableElements": ["Spinner while fetching skills"]
+        }
+      ]
+    },
+    "coachingHub": {
+      "component": "CoachingHub.jsx",
+      "description": "Coaching sessions and calendar",
+      "features": [
+        {
+          "name": "Calendar View",
+          "testableElements": ["Month grid display", "Previous/next month navigation", "Today highlight", "Sessions on dates", "Session type colors (Open Gym=blue, Leader Circle=purple, Workshop=teal)"]
+        },
+        {
+          "name": "Session Cards",
+          "testableElements": ["Session title", "Date/time display", "Session type badge", "Register button", "Cancel registration button", "External link if URL present"]
+        },
+        {
+          "name": "Tab Navigation",
+          "testableElements": ["Switch between views (upcoming, calendar, my sessions)"]
+        }
+      ]
+    },
+    "community": {
+      "component": "CommunityScreen.jsx",
+      "description": "Community discussions and posts",
+      "features": [
+        {
+          "name": "Feed View",
+          "testableElements": ["Thread cards", "Author info", "Tier badges", "Reaction counts", "Comment counts", "Filter by tier"]
+        },
+        {
+          "name": "New Thread Form",
+          "testableElements": ["Title input", "Context textarea", "Question textarea", "Tier select", "Submit button", "Validation", "Success message"]
+        },
+        {
+          "name": "Filter Bar",
+          "testableElements": ["Tier filter buttons (All, T1-T5)", "Active filter state"]
+        }
+      ]
+    },
+    "locker": {
+      "component": "Locker.jsx",
+      "description": "Historical data and personal progress tracking",
+      "features": [
+        {
+          "name": "Progress Widget",
+          "testableElements": ["Overall progress metrics", "Streak display"]
+        },
+        {
+          "name": "Wins History",
+          "widgetId": "locker-wins-history",
+          "testableElements": ["List of completed wins by date", "Empty state"]
+        },
+        {
+          "name": "Scorecard History",
+          "widgetId": "locker-scorecard-history",
+          "testableElements": ["Historical scorecard entries", "Score trends"]
+        },
+        {
+          "name": "Reflection History",
+          "widgetId": "locker-latest-reflection",
+          "testableElements": ["Past PM reflections", "Date stamps"]
+        },
+        {
+          "name": "Reps History",
+          "widgetId": "locker-reps-history",
+          "testableElements": ["Completed reps log"]
+        },
+        {
+          "name": "My Journey Widget",
+          "testableElements": ["Journey timeline", "Milestones reached"]
+        },
+        {
+          "name": "Notification Settings",
+          "testableElements": ["Push notification toggle", "Reminder preferences"]
+        }
+      ]
+    },
+    "appSettings": {
+      "component": "AppSettings.jsx",
+      "description": "User account and app settings",
+      "features": [
+        {
+          "name": "User Account Card",
+          "testableElements": ["Display name", "Email address", "Password reset button"]
+        },
+        {
+          "name": "Security Card",
+          "testableElements": ["2FA status indicator", "Last sign-in date", "Sign out all devices button"]
+        },
+        {
+          "name": "Push Notifications Card",
+          "testableElements": ["Notification status (enabled/disabled/blocked/unsupported)", "Enable notifications button", "Permission request flow"]
+        }
+      ]
+    },
+    "quickStartAccelerator": {
+      "component": "QuickStartAccelerator.jsx",
+      "description": "Foundation program and LIS auditor",
+      "features": [
+        {
+          "name": "LIS Auditor",
+          "testableElements": ["LIS draft textarea", "Run AI audit button", "AI critique display", "Mock critique fallback when API unavailable"]
+        },
+        {
+          "name": "Resource Viewer",
+          "testableElements": ["Auto-open resource from navigation params", "Universal resource viewer modal"]
+        }
+      ]
+    },
+    "authPanel": {
+      "component": "AuthPanel.jsx",
+      "description": "Authentication (login/signup/reset)",
+      "features": [
+        {
+          "name": "Login Mode",
+          "testableElements": ["Email input", "Password input", "Login button", "Switch to signup link", "Switch to reset link"]
+        },
+        {
+          "name": "Signup Mode",
+          "testableElements": ["Email input", "Password input", "First name input", "Last name input", "Secret code input (when no invite)", "Create account button", "Invite token pre-fill"]
+        },
+        {
+          "name": "Reset Mode",
+          "testableElements": ["Email input", "Send reset email button", "Success message"]
+        },
+        {
+          "name": "Invite Flow",
+          "testableElements": ["Token validation", "Pre-filled email/name from invite", "Cohort assignment on accept"]
+        }
+      ]
+    }
+  },
+
+  "interactiveElements": {
+    "forms": [
+      {
+        "name": "Leader Profile Form",
+        "location": "LeaderProfileFormSimple.jsx",
+        "fields": ["firstName", "lastName", "email", "phoneNumber", "companyName", "jobTitle", "companySize", "directReports"],
+        "validation": ["Required fields", "Email format"],
+        "submission": "saveProfile() -> Firestore"
+      },
+      {
+        "name": "Login Form",
+        "location": "AuthPanel.jsx",
+        "fields": ["email", "password"],
+        "validation": ["Required fields"],
+        "submission": "signInWithEmailAndPassword()"
+      },
+      {
+        "name": "Signup Form",
+        "location": "AuthPanel.jsx",
+        "fields": ["email", "password", "firstName", "lastName", "secretCode"],
+        "validation": ["Required fields", "Secret code match (7777)", "Name required"],
+        "submission": "createUserWithEmailAndPassword() -> updateProfile() -> ensureUserDocs()"
+      },
+      {
+        "name": "Password Reset Form",
+        "location": "AuthPanel.jsx",
+        "fields": ["email"],
+        "validation": ["Email required"],
+        "submission": "sendPasswordResetEmail()"
+      },
+      {
+        "name": "New Community Thread Form",
+        "location": "CommunityScreen.jsx",
+        "fields": ["title", "context", "question", "tier"],
+        "validation": ["Required fields"],
+        "submission": "contentService.addContent()"
+      },
+      {
+        "name": "PM Reflection Form",
+        "location": "PMReflectionWidget.jsx",
+        "fields": ["reflectionGood", "reflectionBetter", "reflectionBest"],
+        "validation": ["At least good or better required"],
+        "submission": "handleSaveEveningBookend()"
+      },
+      {
+        "name": "Win the Day Form",
+        "location": "WinTheDayWidget.jsx",
+        "fields": ["win1", "win2", "win3"],
+        "validation": ["None (optional)"],
+        "submission": "handleSaveAllWins()"
+      },
+      {
+        "name": "LIS Auditor Form",
+        "location": "QuickStartAccelerator.jsx",
+        "fields": ["lisDraft"],
+        "validation": ["Required for audit"],
+        "submission": "callSecureGeminiAPI()"
+      }
+    ],
+    "buttons": [
+      { "name": "Login", "location": "AuthPanel", "action": "Authenticate user" },
+      { "name": "Sign Up", "location": "AuthPanel", "action": "Create new account" },
+      { "name": "Reset Password", "location": "AuthPanel/AppSettings", "action": "Send password reset email" },
+      { "name": "Sign Out", "location": "ArenaSidebar/AppSettings", "action": "Log out user" },
+      { "name": "Navigate (sidebar items)", "location": "ArenaSidebar", "action": "Change current screen" },
+      { "name": "Navigate (mobile nav)", "location": "MobileBottomNav", "action": "Change current screen" },
+      { "name": "Save Priorities", "location": "WinTheDayWidget", "action": "Save morning wins" },
+      { "name": "Save Reflection", "location": "PMReflectionWidget", "action": "Save evening reflection" },
+      { "name": "Save Scorecard", "location": "Dashboard", "action": "Save daily scorecard" },
+      { "name": "Complete Action", "location": "ThisWeeksActionsWidget", "action": "Mark action item complete" },
+      { "name": "Register for Session", "location": "CoachingHub", "action": "Register for coaching session" },
+      { "name": "Cancel Registration", "location": "CoachingHub", "action": "Cancel coaching registration" },
+      { "name": "Start Discussion", "location": "CommunityScreen", "action": "Open new thread form" },
+      { "name": "Submit Thread", "location": "CommunityScreen", "action": "Post new community thread" },
+      { "name": "Run LIS Audit", "location": "QuickStartAccelerator", "action": "Get AI critique of LIS" },
+      { "name": "Enable Push Notifications", "location": "AppSettings", "action": "Request notification permission" },
+      { "name": "Grounding Rep Complete", "location": "Dashboard", "action": "Mark grounding rep done, reveal LIS" }
+    ],
+    "toggles": [
+      { "name": "Win Completion Checkbox", "location": "WinTheDayWidget", "state": "win.completed" },
+      { "name": "Action Completion Checkbox", "location": "ThisWeeksActionsWidget", "state": "action.isCompleted" },
+      { "name": "Additional Rep Toggle", "location": "Dashboard", "state": "commitment.status" },
+      { "name": "Developer Mode", "location": "AppSettings/localStorage", "state": "arena-developer-mode" },
+      { "name": "Sidebar Open/Close", "location": "ArenaSidebar", "state": "isOpen" }
+    ],
+    "modals": [
+      { "name": "UnifiedAnchorEditorModal", "location": "Dashboard", "purpose": "Edit identity, habit, and why statements" },
+      { "name": "CalendarSyncModal", "location": "Dashboard", "purpose": "Calendar export options" },
+      { "name": "MissedDaysModal", "location": "Dashboard", "purpose": "Catch up on missed actions" },
+      { "name": "LeaderProfileModal", "location": "ThisWeeksActionsWidget", "purpose": "Complete leader profile during prep" },
+      { "name": "BaselineAssessmentModal", "location": "ThisWeeksActionsWidget", "purpose": "Complete baseline assessment during prep" },
+      { "name": "UniversalResourceViewer", "location": "Multiple", "purpose": "View videos, documents, read-reps inline" },
+      { "name": "TwoMinuteChallengeModal", "location": "Modals folder", "purpose": "Quick challenge interaction" },
+      { "name": "Modal (generic)", "location": "ui/Modal.jsx", "purpose": "Base modal component" }
+    ],
+    "selects": [
+      { "name": "Tier Filter", "location": "CommunityScreen", "options": "All, T1, T2, T3, T4, T5" },
+      { "name": "Leadership Tier", "location": "NewThreadView", "options": "T1-T5" },
+      { "name": "Company Size", "location": "LeaderProfileForm", "options": "1-10, 11-50, 51-200, 200+" },
+      { "name": "Direct Reports", "location": "LeaderProfileForm", "options": "0, 1-3, 4-7, 8+" }
+    ],
+    "textInputs": [
+      { "name": "Search Skills", "location": "SkillsIndex", "purpose": "Filter skills list" },
+      { "name": "Win Inputs (3)", "location": "WinTheDayWidget", "purpose": "Enter daily priorities" },
+      { "name": "Reflection Textareas (3)", "location": "PMReflectionWidget", "purpose": "Enter PM reflection" },
+      { "name": "Thread Title", "location": "CommunityScreen", "purpose": "New thread title" },
+      { "name": "Thread Context", "location": "CommunityScreen", "purpose": "New thread context" },
+      { "name": "Thread Question", "location": "CommunityScreen", "purpose": "New thread question" },
+      { "name": "LIS Draft", "location": "QuickStartAccelerator", "purpose": "Draft LIS for AI audit" }
+    ]
+  },
+
+  "dataFlows": {
+    "authentication": {
+      "source": "Firebase Auth",
+      "transforms": ["onAuthStateChanged listener", "ensureUserDocs creates user_data structure"],
+      "persistence": "Session persistence (browserSessionPersistence)",
+      "userObject": "Merged from Auth user + Firestore userProfile"
+    },
+    "dailyPractice": {
+      "source": "Firestore: user_data/{userId}/daily_practice/current",
+      "readHook": "useDailyPractice (via DataProvider)",
+      "transforms": ["Timestamp sanitization", "Default value injection"],
+      "writeMethod": "updateDailyPracticeData(updates)",
+      "dataIncludes": ["morningBookend.wins", "eveningBookend.reflections", "activeCommitments", "streakCount", "identityAnchor", "habitAnchor", "whyStatement", "groundingRepCompleted"]
+    },
+    "developmentPlan": {
+      "source": "Firestore: user_data/{userId}/development_plan/current",
+      "readHook": "useDevelopmentPlan (via DataProvider)",
+      "transforms": ["adaptDevelopmentPlanData (Firebase <-> component format)", "buildVirtualSkillCatalog"],
+      "writeMethod": "updateDevelopmentPlanData(updates)",
+      "dataIncludes": ["currentPlan", "assessmentHistory", "focusAreas", "startDate"]
+    },
+    "dailyPlan": {
+      "source": "Firestore: global_data/daily_plan_v1 (or similar)",
+      "readHook": "useDailyPlan",
+      "transforms": ["Phase calculation", "Day number calculation", "Missed days tracking", "Action normalization"],
+      "dataIncludes": ["daily plan array", "current day config", "phase info", "prepRequirementsComplete"]
+    },
+    "leaderProfile": {
+      "source": "Firestore: user_data/{userId}/leader_profile/current",
+      "readHook": "useLeaderProfile",
+      "writeMethod": "saveProfile(data, markComplete)",
+      "dataIncludes": ["firstName", "lastName", "email", "companyName", "jobTitle", "companySize", "directReports", "isComplete"]
+    },
+    "actionProgress": {
+      "source": "Firestore: user_data/{userId}/action_progress/...",
+      "readHook": "useActionProgress",
+      "writeMethod": "completeItem, uncompleteItem, skipItem",
+      "dataIncludes": ["Per-action completion status", "Carried over items"]
+    },
+    "coachingSessions": {
+      "source": "Firestore: coaching_sessions collection",
+      "readHook": "useCoachingSessions",
+      "transforms": ["Filter by date/type", "Group by date for calendar"],
+      "dataIncludes": ["sessions", "session types", "dates", "facilitators"]
+    },
+    "coachingRegistrations": {
+      "source": "Firestore: coaching_registrations collection",
+      "readHook": "useCoachingRegistrations",
+      "writeMethod": "registerForSession, cancelRegistration",
+      "dataIncludes": ["user registrations", "session references"]
+    },
+    "community": {
+      "source": "Firestore: community_content collection",
+      "readService": "contentService.getContent",
+      "writeService": "contentService.addContent",
+      "dataIncludes": ["threads", "reactions", "comments", "tiers"]
+    },
+    "globalMetadata": {
+      "source": "Firestore: global_data/metadata",
+      "readHook": "globalHook (via DataProvider)",
+      "dataIncludes": ["SYSTEM_QUOTES", "adminemails", "featureFlags", "SKILL_CATALOG", "REP_LIBRARY", "LEADERSHIP_TIERS"]
+    },
+    "unifiedContent": {
+      "source": "Firestore: unified_content collection",
+      "queries": ["By type (VIDEO, READ_REP, TOOL, etc.)", "By status (PUBLISHED)", "By skills array"],
+      "readService": "unifiedContentService"
+    },
+    "geminiAPI": {
+      "source": "Cloud Function: geminiProxy",
+      "method": "callSecureGeminiAPI(payload)",
+      "usedFor": ["LIS Auditor critique", "AI coaching features"]
+    }
+  },
+
+  "stateManagement": {
+    "contexts": [
+      {
+        "name": "AppServiceContext",
+        "provider": "DataProvider.jsx",
+        "provides": ["db", "auth", "storage", "user", "isAdmin", "navigate", "all data hooks", "feature flags", "catalogs", "Gemini API"]
+      },
+      {
+        "name": "FeatureProvider",
+        "provider": "FeatureProvider.jsx",
+        "provides": ["isFeatureEnabled(id)", "getFeatureOrder(id)", "Feature flag state"]
+      },
+      {
+        "name": "LayoutProvider",
+        "provider": "LayoutProvider.jsx",
+        "provides": ["Layout preferences", "View mode toggles"]
+      },
+      {
+        "name": "AccessControlProvider",
+        "provider": "AccessControlProvider.jsx",
+        "provides": ["Day-based access control", "Zone visibility", "Prep gate status", "isPrepComplete"]
+      },
+      {
+        "name": "NotificationProvider",
+        "provider": "NotificationProvider.jsx",
+        "provides": ["Notification state", "Show/dismiss notifications"]
+      },
+      {
+        "name": "TimeProvider",
+        "provider": "TimeProvider.jsx",
+        "provides": ["Current time", "Time travel for testing"]
+      },
+      {
+        "name": "NavigationProvider",
+        "provider": "NavigationProvider.jsx",
+        "provides": ["navigate()", "canGoBack", "goBack()", "currentScreen", "navParams"]
+      },
+      {
+        "name": "OfflineProvider",
+        "provider": "useOffline.jsx",
+        "provides": ["isOnline", "isOffline", "pendingActions", "queueAction", "syncPendingActions"]
+      }
+    ],
+    "customHooks": [
+      { "name": "useAppServices", "purpose": "Access all app services via context", "file": "services/useAppServices.jsx" },
+      { "name": "useDailyPlan", "purpose": "Daily plan logic, phases, missed days", "file": "hooks/useDailyPlan.js" },
+      { "name": "useDevPlan", "purpose": "Legacy development plan hook", "file": "hooks/useDevPlan.js" },
+      { "name": "useLeaderProfile", "purpose": "Leader profile CRUD", "file": "hooks/useLeaderProfile.js" },
+      { "name": "useActionProgress", "purpose": "Track action item completion", "file": "hooks/useActionProgress.js" },
+      { "name": "useAccessControl", "purpose": "Cumulative content access", "file": "hooks/useAccessControl.js" },
+      { "name": "useDayBasedAccessControl", "purpose": "Day-based zone visibility", "file": "hooks/useDayBasedAccessControl.js" },
+      { "name": "useCoachingSessions", "purpose": "Fetch coaching sessions", "file": "hooks/useCoachingSessions.js" },
+      { "name": "useCoachingRegistrations", "purpose": "User session registrations", "file": "hooks/useCoachingRegistrations.js" },
+      { "name": "useCommunitySessions", "purpose": "Community session data", "file": "hooks/useCommunitySessions.js" },
+      { "name": "useCommunityRegistrations", "purpose": "Community registrations", "file": "hooks/useCommunityRegistrations.js" },
+      { "name": "useNavigationHistory", "purpose": "Browser history integration", "file": "hooks/useNavigationHistory.js" },
+      { "name": "useDashboard", "purpose": "Dashboard state and logic", "file": "screens/dashboard/DashboardHooks.jsx" },
+      { "name": "useFeatures", "purpose": "Feature flag access", "file": "providers/FeatureProvider.jsx" },
+      { "name": "useOnlineStatus", "purpose": "Online/offline detection", "file": "components/offline/useOffline.jsx" },
+      { "name": "useMobile", "purpose": "Mobile device detection", "file": "hooks/useMobile.js" },
+      { "name": "useAuth", "purpose": "Auth state", "file": "hooks/useAuth.js" }
+    ]
+  },
+
+  "edgeCases": {
+    "emptyStates": [
+      { "location": "SkillsIndex", "condition": "No skills defined", "uiElement": "Empty skills message" },
+      { "location": "SkillsIndex", "condition": "Search returns no results", "uiElement": "No results message" },
+      { "location": "CommunityScreen", "condition": "No posts match filter", "uiElement": "No posts message" },
+      { "location": "Locker wins history", "condition": "No wins completed", "uiElement": "Empty history message" },
+      { "location": "Locker scorecard history", "condition": "No scorecards saved", "uiElement": "Empty history message" },
+      { "location": "CoachingHub calendar", "condition": "No sessions this month", "uiElement": "Empty calendar cells" },
+      { "location": "ThisWeeksActionsWidget", "condition": "No actions for today", "uiElement": "All done message" },
+      { "location": "Dashboard widgets", "condition": "Feature disabled", "uiElement": "Widget not rendered" }
+    ],
+    "loadingStates": [
+      { "location": "App.jsx", "condition": "Firebase config loading", "uiElement": "ConfigError or spinner" },
+      { "location": "App.jsx", "condition": "Auth checking", "uiElement": "Centered spinner" },
+      { "location": "ScreenRouter", "condition": "Lazy component loading", "uiElement": "ScreenLoadingSkeleton" },
+      { "location": "Dashboard", "condition": "Daily plan loading", "uiElement": "Loading spinner with message" },
+      { "location": "Library", "condition": "Fetching content counts", "uiElement": "Loading state" },
+      { "location": "SkillsIndex", "condition": "Fetching skills", "uiElement": "Centered spinner" },
+      { "location": "LeaderProfileForm", "condition": "Loading profile", "uiElement": "Centered spinner" },
+      { "location": "LeaderProfileForm", "condition": "Saving profile", "uiElement": "Button loading state" },
+      { "location": "QuickStartAccelerator", "condition": "Generating AI critique", "uiElement": "Loading spinner in card" }
+    ],
+    "errorStates": [
+      { "location": "App.jsx", "condition": "Firebase config missing", "uiElement": "ConfigError component" },
+      { "location": "AuthPanel", "condition": "Login failed", "uiElement": "Error status message" },
+      { "location": "AuthPanel", "condition": "Signup failed", "uiElement": "Error status message" },
+      { "location": "AuthPanel", "condition": "Invalid invite token", "uiElement": "Expired/used message" },
+      { "location": "QuickStartAccelerator", "condition": "AI API call failed", "uiElement": "Error message in critique area" },
+      { "location": "CommunityScreen", "condition": "Thread post failed", "uiElement": "Alert message" },
+      { "location": "LeaderProfileForm", "condition": "Validation errors", "uiElement": "Field-level error messages" }
+    ],
+    "permissionStates": [
+      { "location": "Dashboard widgets", "condition": "Prep phase incomplete", "uiElement": "Gated widgets hidden" },
+      { "location": "ArenaSidebar", "condition": "Developer mode off", "uiElement": "Dev-only items hidden" },
+      { "location": "Admin screens", "condition": "User not admin", "uiElement": "Admin nav items hidden (or redirected)" },
+      { "location": "AppSettings notifications", "condition": "Notifications blocked in browser", "uiElement": "Blocked status + instructions" },
+      { "location": "AppSettings notifications", "condition": "Browser doesn't support FCM", "uiElement": "Unsupported status" }
+    ],
+    "offlineStates": [
+      { "location": "App (global)", "condition": "Device offline", "uiElement": "OfflineBanner at top" },
+      { "location": "Various", "condition": "Action queued while offline", "uiElement": "Pending sync indicator" },
+      { "location": "Footer", "condition": "Sync in progress", "uiElement": "SyncIndicator" }
+    ],
+    "timeBasedStates": [
+      { "location": "Dashboard", "condition": "Prep phase (days -14 to -1)", "uiElement": "Prep content, gated widgets" },
+      { "location": "Dashboard", "condition": "Start phase (days 1-56)", "uiElement": "Full daily plan, missed day tracking" },
+      { "location": "Dashboard", "condition": "Post-start phase (day 57+)", "uiElement": "Maintenance content" },
+      { "location": "Dashboard grounding rep", "condition": "Already completed today", "uiElement": "Checkmark shown, no re-trigger" },
+      { "location": "Dashboard", "condition": "Time travel active (admin)", "uiElement": "TimeTravelBanner visible" }
+    ],
+    "dataEdgeCases": [
+      { "location": "Dashboard", "condition": "No identity statement set", "uiElement": "Empty/placeholder in grounding rep" },
+      { "location": "Dashboard", "condition": "No wins entered", "uiElement": "Empty win inputs" },
+      { "location": "ThisWeeksActionsWidget", "condition": "Resource has no URL", "uiElement": "No link/external button" },
+      { "location": "UniversalResourceViewer", "condition": "Unknown video source", "uiElement": "Generic video player fallback" },
+      { "location": "DevelopmentPlan", "condition": "No assessment history", "uiElement": "Baseline assessment view shown" }
+    ]
+  },
+
+  "testingPriorities": {
+    "critical": [
+      "Authentication flow (login, signup, password reset)",
+      "Invitation flow with token validation",
+      "Leader profile completion (required for prep completion)",
+      "Baseline assessment completion",
+      "Daily action completion tracking",
+      "Win the Day save functionality",
+      "PM Reflection save functionality",
+      "Navigation between screens",
+      "Offline detection and banner display"
+    ],
+    "high": [
+      "Content library browsing and filtering",
+      "Skills index search functionality",
+      "Resource viewer for all content types (YouTube, Vimeo, PDF, etc.)",
+      "Coaching session calendar display",
+      "Session registration/cancellation",
+      "Community thread creation",
+      "Feature flag gating of widgets",
+      "Prep phase gate functionality",
+      "Mobile bottom navigation"
+    ],
+    "medium": [
+      "Community feed filtering by tier",
+      "Locker history displays",
+      "Development plan tracker views",
+      "Progress breakdown visualization",
+      "Notification permission flow",
+      "Calendar sync functionality",
+      "Missed days catch-up modal",
+      "LIS Auditor AI integration",
+      "Grounding rep click-to-reveal"
+    ],
+    "low": [
+      "Feature Lab experimental features",
+      "Streak calculation accuracy",
+      "Daily quote rotation",
+      "Time travel (admin only)",
+      "Developer mode toggle",
+      "PWA install prompt"
+    ]
+  }
+}

@@ -2,9 +2,25 @@
  * E2E Test Utilities and Helpers
  * 
  * Common utilities used across all automated test suites
+ * 
+ * USAGE:
+ *   import { login, waitForPageLoad, SELECTORS } from '../utils/test-helpers';
  */
 
 import { expect } from '@playwright/test';
+
+// Environment URLs
+export const ENVIRONMENTS = {
+  local: 'http://localhost:5173',
+  test: 'https://leaderreps-test.web.app',
+  prod: 'https://leaderreps-pd-platform.web.app'
+};
+
+// Get current environment URL
+export function getBaseUrl() {
+  const env = process.env.E2E_ENV || 'local';
+  return ENVIRONMENTS[env] || ENVIRONMENTS.local;
+}
 
 // Test credentials (use environment variables in CI)
 export const TEST_CREDENTIALS = {
@@ -15,63 +31,174 @@ export const TEST_CREDENTIALS = {
   user: {
     email: process.env.E2E_USER_EMAIL || '',
     password: process.env.E2E_USER_PASSWORD || ''
+  },
+  prepUser: {
+    email: process.env.E2E_PREP_USER_EMAIL || '',
+    password: process.env.E2E_PREP_USER_PASSWORD || ''
   }
 };
 
-// Common selectors
+// Common selectors - organized by feature area
 export const SELECTORS = {
   // Auth
+  auth: {
+    emailInput: '[data-testid="email-input"], input[type="email"], input[name="email"]',
+    passwordInput: '[data-testid="password-input"], input[type="password"], input[name="password"]',
+    loginButton: '[data-testid="login-button"], button:has-text("Sign In"), button[type="submit"]',
+    logoutButton: '[data-testid="logout-button"], button:has-text("Sign Out"), button:has-text("Logout")',
+    signupLink: 'a:has-text("Sign Up"), a:has-text("Create Account")',
+    forgotPassword: 'a:has-text("Forgot"), a:has-text("Reset")',
+  },
+  
+  // Navigation
+  nav: {
+    sidebar: '[data-testid="sidebar"], nav, aside',
+    dashboardLink: 'text=/dashboard/i, [data-testid="nav-dashboard"]',
+    devPlanLink: 'text=/dev.*plan|development/i, [data-testid="nav-devplan"]',
+    contentLink: 'text=/content|library/i, [data-testid="nav-content"]',
+    communityLink: 'text=/community/i, [data-testid="nav-community"]',
+    coachingLink: 'text=/coaching|labs/i, [data-testid="nav-coaching"]',
+    lockerLink: 'text=/locker/i, [data-testid="nav-locker"]',
+    adminLink: 'text=/admin/i, [data-testid="nav-admin"]',
+    mobileNav: '[data-testid="mobile-nav"], .mobile-nav',
+  },
+  
+  // Dashboard widgets
+  dashboard: {
+    container: '[data-testid="dashboard"], main',
+    greeting: '[data-testid="greeting"], text=/good morning|good afternoon|good evening|welcome/i',
+    streakCounter: '[data-testid="streak"], text=/streak|\\d+\\s*day/i',
+    weeklyFocus: '[data-testid="weekly-focus"], text=/week \\d+|focus/i',
+    groundingRep: '[data-testid="grounding-rep"], text=/grounding|identity/i',
+    winTheDay: '[data-testid="win-the-day"], text=/win.*day|what.?s important/i',
+    pmReflection: '[data-testid="pm-reflection"], text=/reflection|good.*better.*best/i',
+    scorecard: '[data-testid="scorecard"], text=/scorecard/i',
+    dailyQuote: '[data-testid="daily-quote"], blockquote, text=/"/i',
+  },
+  
+  // Daily Practice / Commitments
+  dailyPractice: {
+    container: '[data-testid="daily-practice"]',
+    commitmentList: '[data-testid="commitment-list"]',
+    commitmentItem: '[data-testid*="commitment-item"]',
+    addButton: 'button:has-text("Add"), button:has-text("Manage")',
+    committedButton: 'button:has-text("Committed"), button:has-text("Complete")',
+    missedButton: 'button:has-text("Missed")',
+    resetButton: 'button:has-text("Reset")',
+    reflectionInput: 'textarea[name*="reflection"], [data-testid="daily-journal"]',
+    historySection: '[data-testid="history"], text=/history|last 7 days/i',
+  },
+  
+  // Content Library
+  content: {
+    container: '[data-testid="library"], main',
+    categoryCard: '[data-testid*="category"]',
+    contentItem: '[data-testid*="content-item"], [class*="content-card"]',
+    searchInput: 'input[type="search"], input[placeholder*="search" i]',
+    filterButton: 'button:has-text("Filter")',
+    skillFilter: '[data-testid="skill-filter"]',
+    lockIcon: '[data-testid="lock-icon"], svg[class*="lock"]',
+    videoPlayer: 'video, iframe[src*="vimeo"], iframe[src*="youtube"]',
+    documentViewer: 'iframe, embed, [data-testid="doc-viewer"]',
+  },
+  
+  // Community
+  community: {
+    container: '[data-testid="community"]',
+    tabs: '[data-testid="community-tabs"]',
+    feedTab: 'button:has-text("Feed")',
+    eventsTab: 'button:has-text("Events")',
+    resourcesTab: 'button:has-text("Resources")',
+    threadCard: '[data-testid*="thread"]',
+    newThreadButton: 'button:has-text("Start Discussion"), button:has-text("New")',
+    tierFilter: '[data-testid="tier-filter"]',
+    zoneGate: 'text=/unlock|day 15|locked/i',
+  },
+  
+  // Coaching
+  coaching: {
+    container: '[data-testid="coaching"]',
+    tabs: '[data-testid="coaching-tabs"]',
+    liveTab: 'button:has-text("Live")',
+    onDemandTab: 'button:has-text("On-Demand")',
+    myCoachingTab: 'button:has-text("My Coaching")',
+    sessionCard: '[data-testid*="session"]',
+    registerButton: 'button:has-text("Register")',
+    cancelButton: 'button:has-text("Cancel")',
+    calendarView: '[data-testid="calendar"]',
+    zoneGate: 'text=/unlock|day 22|locked/i',
+  },
+  
+  // Locker
+  locker: {
+    container: '[data-testid="locker"]',
+    journeyWidget: '[data-testid="journey-widget"]',
+    winsHistory: '[data-testid="wins-history"]',
+    scorecardHistory: '[data-testid="scorecard-history"]',
+    notificationSettings: '[data-testid="notification-settings"]',
+  },
+  
+  // Loading states
+  loading: {
+    spinner: '[data-testid="loading"], .animate-spin, .loading, [class*="loader"]',
+    skeleton: '.animate-pulse, [class*="skeleton"]',
+  },
+  
+  // Common UI
+  ui: {
+    modal: '[role="dialog"], [data-testid*="modal"], [class*="modal"]',
+    toast: '[data-testid="toast"], [class*="toast"], [role="alert"]',
+    saveButton: 'button:has-text("Save")',
+    cancelButton: 'button:has-text("Cancel")',
+    confirmButton: 'button:has-text("Confirm"), button:has-text("Yes")',
+    closeButton: 'button:has-text("Close"), button[aria-label*="close"]',
+  },
+  
+  // Legacy selectors (for backwards compatibility)
   emailInput: '[data-testid="email-input"], input[type="email"], input[name="email"]',
   passwordInput: '[data-testid="password-input"], input[type="password"], input[name="password"]',
   loginButton: '[data-testid="login-button"], button:has-text("Sign In")',
   logoutButton: '[data-testid="logout-button"], button:has-text("Sign Out"), button:has-text("Logout")',
-  
-  // Navigation
   sidebar: '[data-testid="sidebar"], nav',
   dashboardLink: '[data-testid="dashboard-link"], a:has-text("Dashboard")',
   contentLibraryLink: '[data-testid="content-library-link"], a:has-text("Content Library")',
   adminLink: '[data-testid="admin-link"], a:has-text("Admin")',
   profileLink: '[data-testid="profile-link"], a:has-text("Profile")',
-  
-  // Dashboard
   dashboard: '[data-testid="dashboard"], .dashboard',
   welcomeMessage: '[data-testid="welcome"], .welcome',
   streakCounter: '[data-testid="streak-counter"], .streak',
   scorecard: '[data-testid="scorecard"], .scorecard',
-  
-  // Daily Practice
   groundingRep: '[data-testid="grounding-rep"], .grounding-rep',
   winTheDay: '[data-testid="win-the-day"], .win-the-day',
   dailyReps: '[data-testid="daily-reps"], .daily-reps',
   reflection: '[data-testid="reflection"], .reflection',
-  
-  // Content Library
   videoPlayer: '[data-testid="video-player"], video',
   contentCard: '[data-testid="content-card"], .content-card',
   searchInput: '[data-testid="search-input"], input[placeholder*="Search"]',
   filterDropdown: '[data-testid="filter-dropdown"], .filter',
-  
-  // Loading states
   loadingSpinner: '[data-testid="loading"], .animate-spin, .loading',
   skeleton: '.animate-pulse',
 };
 
-// Page URLs
+// Page URLs (relative to base URL)
 export const URLS = {
-  login: '/login',
-  signup: '/signup',
-  dashboard: '/dashboard',
-  contentLibrary: '/content-library',
-  admin: '/admin',
-  profile: '/profile',
-  prepPhase: '/prep',
-  dailyPractice: '/daily',
+  login: '/',
+  signup: '/?signup',
+  dashboard: '/',
+  devPlan: '/',  // Uses screen navigation
+  content: '/',
+  community: '/',
+  coaching: '/',
+  locker: '/',
+  admin: '/',
 };
 
 /**
  * Wait for page to be fully loaded (no loading spinners)
+ * @param {Page} page - Playwright page object
+ * @param {number} timeout - Max time to wait in ms (default 10000)
  */
-export async function waitForPageLoad(page) {
+export async function waitForPageLoad(page, timeout = 10000) {
   // Wait for DOM content loaded (don't use networkidle as Firebase keeps connections open)
   await page.waitForLoadState('load');
   
@@ -79,11 +206,11 @@ export async function waitForPageLoad(page) {
   await page.waitForTimeout(1000);
   
   // Wait for any loading spinners to disappear
-  const spinners = page.locator(SELECTORS.loadingSpinner);
+  const spinners = page.locator(SELECTORS.loading.spinner);
   const spinnerCount = await spinners.count();
   if (spinnerCount > 0) {
     try {
-      await expect(spinners.first()).not.toBeVisible({ timeout: 10000 });
+      await expect(spinners.first()).not.toBeVisible({ timeout });
     } catch {
       // Spinner may have already disappeared
     }
@@ -91,13 +218,40 @@ export async function waitForPageLoad(page) {
 }
 
 /**
+ * Wait for Firestore sync to complete
+ * @param {number} ms - Time to wait in ms (default 2000)
+ */
+export async function waitForFirestoreSync(ms = 2000) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
  * Login to the application
+ * @param {Page} page - Playwright page object
+ * @param {string} email - Optional email (defaults to E2E_ADMIN_EMAIL)
+ * @param {string} password - Optional password (defaults to E2E_ADMIN_PASSWORD)
  */
 export async function login(page, email, password) {
-  await page.goto(URLS.login);
-  await page.locator(SELECTORS.emailInput).fill(email);
-  await page.locator(SELECTORS.passwordInput).fill(password);
-  await page.locator(SELECTORS.loginButton).click();
+  const userEmail = email || process.env.E2E_ADMIN_EMAIL;
+  const userPassword = password || process.env.E2E_ADMIN_PASSWORD;
+  
+  if (!userEmail || !userPassword) {
+    throw new Error('Login credentials not provided. Set E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD');
+  }
+  
+  await page.goto('/');
+  await waitForPageLoad(page);
+  
+  // Check if already logged in
+  const emailInput = page.locator(SELECTORS.auth.emailInput);
+  if (!(await emailInput.isVisible({ timeout: 3000 }).catch(() => false))) {
+    // Already logged in
+    return;
+  }
+  
+  await emailInput.fill(userEmail);
+  await page.locator(SELECTORS.auth.passwordInput).fill(userPassword);
+  await page.locator(SELECTORS.auth.loginButton).click();
   
   // Wait for redirect to dashboard
   await page.waitForURL(/dashboard|prep|daily/, { timeout: 30000 });

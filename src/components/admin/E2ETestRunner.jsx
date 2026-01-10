@@ -1,13 +1,22 @@
 /**
- * E2ETestRunner - Browser-Based E2E Test Runner
+ * E2ETestRunner - World-Class Browser E2E Test Runner
  * 
  * Integrates Playwright E2E tests into the Admin Command Center.
- * Features:
+ * 
+ * FEATURES:
+ * - Journey-based test organization (Prep, Daily Practice, Content, Zones)
+ * - Visual test coverage dashboard
  * - Configure test credentials
  * - Select test suites to run
  * - View live test progress
  * - Detailed failure logs with screenshots
  * - Historical test results
+ * 
+ * TEST COVERAGE: 108+ automated test scenarios covering:
+ * - Prep Phase: 18 tests (onboarding, profile, baseline, actions)
+ * - Daily Practice: 27 tests (AM/PM bookends, scorecard, commitments)
+ * - Content Library: 28 tests (browsing, filtering, viewing)
+ * - Zones: 35 tests (Community, Coaching, Locker)
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -39,7 +48,21 @@ import {
   RotateCcw,
   Smartphone,
   Monitor,
-  Shield
+  Shield,
+  Users,
+  BookOpen,
+  Calendar,
+  Activity,
+  Target,
+  UserCheck,
+  Library,
+  MessageSquare,
+  GraduationCap,
+  Trophy,
+  Map,
+  Layers,
+  PlayCircle,
+  BarChart3
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -49,8 +72,97 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 
-// Test suites available
-const TEST_SUITES = [
+// ═══════════════════════════════════════════════════════════════════════════════
+// JOURNEY-BASED TEST SUITES - Organized by User Experience
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const JOURNEY_SUITES = [
+  {
+    id: 'prep-phase',
+    name: 'Prep Phase Journey',
+    file: 'journeys/prep-phase.spec.js',
+    description: 'New user onboarding: account creation, profile setup, baseline assessment, prep actions',
+    icon: UserCheck,
+    testCount: 18,
+    estimatedTime: '3-4 min',
+    priority: 'Critical',
+    category: 'onboarding',
+    tests: [
+      'Account creation flow',
+      'Email verification',
+      'Prep phase gate',
+      'Leader Profile setup',
+      'Baseline Assessment (4 pages)',
+      'Prep Actions completion',
+      'Prep to Start transition'
+    ]
+  },
+  {
+    id: 'daily-practice',
+    name: 'Daily Practice Journey',
+    file: 'journeys/daily-practice.spec.js',
+    description: 'AM/PM bookends, grounding rep, WIN, scorecard, commitments, streak tracking',
+    icon: Activity,
+    testCount: 27,
+    estimatedTime: '4-5 min',
+    priority: 'Critical',
+    category: 'core',
+    tests: [
+      'Grounding Rep (5 tests)',
+      'Win the Day (5 tests)',
+      'Other Tasks (5 tests)',
+      'PM Reflection (6 tests)',
+      'Scorecard (3 tests)',
+      'Streak Tracking (3 tests)',
+      'Commitment Management (14 tests)'
+    ]
+  },
+  {
+    id: 'content-library',
+    name: 'Content Library Journey',
+    file: 'journeys/content-library.spec.js',
+    description: 'Content browsing, skills, videos, documents, search, filtering, resource viewer',
+    icon: Library,
+    testCount: 28,
+    estimatedTime: '4-5 min',
+    priority: 'High',
+    category: 'content',
+    tests: [
+      'Library Navigation (3 tests)',
+      'Skills Browsing (5 tests)',
+      'Video Content (5 tests)',
+      'Read & Reps (4 tests)',
+      'Tools Section (3 tests)',
+      'Documents (3 tests)',
+      'Search & Filter (7 tests)',
+      'Content Gating (4 tests)'
+    ]
+  },
+  {
+    id: 'zones',
+    name: 'Zones Journey',
+    file: 'journeys/zones.spec.js',
+    description: 'Community (Day 15+), Coaching (Day 22+), 1:1 scheduling, Locker features',
+    icon: Map,
+    testCount: 35,
+    estimatedTime: '5-6 min',
+    priority: 'High',
+    category: 'zones',
+    tests: [
+      'Community Access Gate (4 tests)',
+      'Community Tabs (5 tests)',
+      'Feed Features (6 tests)',
+      'Community Resources (5 tests)',
+      'Coaching Access Gate (4 tests)',
+      'Coaching Tabs (6 tests)',
+      'My Coaching (5 tests)',
+      'Locker Features (10 tests)'
+    ]
+  }
+];
+
+// Legacy test suites for backwards compatibility
+const LEGACY_SUITES = [
   {
     id: 'smoke',
     name: 'Smoke Test',
@@ -59,7 +171,8 @@ const TEST_SUITES = [
     icon: Zap,
     testCount: 20,
     estimatedTime: '2-3 min',
-    priority: 'Critical'
+    priority: 'Critical',
+    category: 'smoke'
   },
   {
     id: 'auth',
@@ -69,32 +182,17 @@ const TEST_SUITES = [
     icon: Shield,
     testCount: 14,
     estimatedTime: '1-2 min',
-    priority: 'High'
-  },
-  {
-    id: 'daily-practice',
-    name: 'Daily Practice',
-    file: 'daily-practice.spec.js',
-    description: 'AM/PM bookends, grounding, wins, reflection',
-    icon: Clock,
-    testCount: 18,
-    estimatedTime: '2-3 min',
-    priority: 'High'
-  },
-  {
-    id: 'admin',
-    name: 'Admin Portal',
-    file: 'admin.spec.js',
-    description: 'Admin features, user management, content',
-    icon: Settings,
-    testCount: 10,
-    estimatedTime: '1-2 min',
-    priority: 'Medium'
+    priority: 'High',
+    category: 'auth'
   }
 ];
 
+// Combine all suites
+const ALL_SUITES = [...JOURNEY_SUITES, ...LEGACY_SUITES];
+
 const ENVIRONMENTS = [
   { id: 'local', name: 'Local Dev', url: 'http://localhost:5173' },
+  { id: 'dev', name: 'Development', url: 'https://leaderreps-pd-platform.web.app' },
   { id: 'test', name: 'Test', url: 'https://leaderreps-test.web.app' },
   { id: 'prod', name: 'Production', url: 'https://leaderreps-prod.web.app' }
 ];
@@ -123,7 +221,7 @@ const E2ETestRunner = () => {
   const [testEmail, setTestEmail] = useState('');
   const [testPassword, setTestPassword] = useState('');
   const [selectedEnv, setSelectedEnv] = useState('test');
-  const [selectedSuites, setSelectedSuites] = useState(['smoke']);
+  const [selectedSuites, setSelectedSuites] = useState(['prep-phase']);
   
   // Results state
   const [currentRun, setCurrentRun] = useState(null);
@@ -195,9 +293,9 @@ const E2ETestRunner = () => {
   
   // Generate CLI command
   const generateCommand = useCallback(() => {
-    const suitesArg = selectedSuites.length === TEST_SUITES.length 
+    const suitesArg = selectedSuites.length === ALL_SUITES.length 
       ? '--suite=all' 
-      : selectedSuites.map(s => `${s}.spec.js`).join(' ');
+      : selectedSuites.map(s => ALL_SUITES.find(suite => suite.id === s)?.file || `${s}.spec.js`).join(' ');
     
     let cmd = `E2E_ENV=${selectedEnv}`;
     if (testEmail) cmd += ` E2E_ADMIN_EMAIL="${testEmail}"`;
@@ -213,9 +311,9 @@ const E2ETestRunner = () => {
     if (testEmail) cmd += ` E2E_ADMIN_EMAIL="${testEmail}"`;
     if (testPassword) cmd += ` E2E_ADMIN_PASSWORD="${testPassword}"`;
     
-    const suitesArg = selectedSuites.length === TEST_SUITES.length 
+    const suitesArg = selectedSuites.length === ALL_SUITES.length 
       ? '' 
-      : selectedSuites.map(s => `${s}.spec.js`).join(' ');
+      : selectedSuites.map(s => ALL_SUITES.find(suite => suite.id === s)?.file || `${s}.spec.js`).join(' ');
     
     cmd += ` npx playwright test ${suitesArg} --project=chromium`;
     
@@ -236,10 +334,10 @@ const E2ETestRunner = () => {
   
   // Toggle all suites
   const toggleAllSuites = () => {
-    if (selectedSuites.length === TEST_SUITES.length) {
-      setSelectedSuites(['smoke']); // Keep at least smoke
+    if (selectedSuites.length === ALL_SUITES.length) {
+      setSelectedSuites(['prep-phase']); // Keep at least one
     } else {
-      setSelectedSuites(TEST_SUITES.map(s => s.id));
+      setSelectedSuites(ALL_SUITES.map(s => s.id));
     }
   };
   
@@ -270,7 +368,7 @@ const E2ETestRunner = () => {
   
   // Calculate totals from selected suites
   const selectedStats = selectedSuites.reduce((acc, suiteId) => {
-    const suite = TEST_SUITES.find(s => s.id === suiteId);
+    const suite = ALL_SUITES.find(s => s.id === suiteId);
     if (suite) {
       acc.tests += suite.testCount;
     }
@@ -279,15 +377,33 @@ const E2ETestRunner = () => {
   
   return (
     <div className="space-y-6">
+      {/* Important Notice Banner */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-bold text-amber-800">For Developers & CI/CD Only</h4>
+            <p className="text-sm text-amber-700 mt-1">
+              These automated browser tests require a development environment to run (Node.js, Playwright). 
+              They're designed for developers and automated pipelines, not manual execution.
+            </p>
+            <p className="text-sm text-amber-700 mt-2">
+              <strong>Looking to test manually?</strong> Use the <strong>"QA Test Scenarios"</strong> tab instead — 
+              it provides step-by-step checklists you can follow without any technical setup.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-corporate-navy font-serif flex items-center gap-2">
             <Terminal className="w-5 h-5 text-corporate-teal" />
-            E2E Browser Tests
+            Automated Browser Tests
           </h3>
           <p className="text-sm text-gray-500 mt-1">
-            Automated Playwright tests for end-to-end validation
+            108+ Playwright tests for automated regression testing
           </p>
         </div>
         
@@ -299,7 +415,7 @@ const E2ETestRunner = () => {
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
         >
           <Settings className="w-4 h-4" />
-          Configure
+          Developer Config
         </button>
       </div>
       
@@ -377,11 +493,11 @@ const E2ETestRunner = () => {
                 onClick={toggleAllSuites}
                 className="text-sm text-corporate-teal hover:underline"
               >
-                {selectedSuites.length === TEST_SUITES.length ? 'Deselect All' : 'Select All'}
+                {selectedSuites.length === ALL_SUITES.length ? 'Deselect All' : 'Select All'}
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              {TEST_SUITES.map(suite => {
+              {ALL_SUITES.map(suite => {
                 const Icon = suite.icon;
                 const isSelected = selectedSuites.includes(suite.id);
                 return (

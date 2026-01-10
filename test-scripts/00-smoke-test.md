@@ -1,7 +1,7 @@
 # 🔥 Critical Path Smoke Test
 
 > **Run before EVERY deployment to TEST or PROD**  
-> *36 Scenarios | ~3-4 Hours | Tests Core User Journey*
+> *34 Scenarios | ~3-4 Hours | Tests Core User Journey*
 
 ---
 
@@ -271,37 +271,37 @@ Before starting, complete ALL items:
 
 ---
 
-### DEV-AM-004: Win the Day - Add First Win
+### DEV-AM-004: Win the Day - Enter First Priority
 
 **Priority:** Critical | **Time:** 3 min | **User:** Day 1+ user
 
 | Step | Action | Expected Result | Pass/Fail | Notes |
 |------|--------|-----------------|-----------|-------|
-| 1 | Locate "Win the Day" widget | Widget displays on dashboard | ☐ | |
-| 2 | Find input field for adding wins | Text input visible | ☐ | |
-| 3 | Type: `Complete project proposal` | Text appears in input | ☐ | |
-| 4 | Press Enter or click Add button | Win is added to list | ☐ | |
-| 5 | Verify win appears in list | "Complete project proposal" shows | ☐ | |
-| 6 | Input field clears | Ready for next win | ☐ | |
-| 7 | Refresh page | Win persists | ☐ | |
+| 1 | Locate "Win the Day" widget | Widget displays with Trophy icon, teal accent | ☐ | |
+| 2 | Verify 3 fixed input slots | Three input fields with placeholders visible | ☐ | |
+| 3 | Click first input field ("Enter Priority #1") | Field becomes active | ☐ | |
+| 4 | Type: `Complete project proposal` | Text appears in field | ☐ | |
+| 5 | Click outside field (blur) | Auto-saves silently | ☐ | |
+| 6 | Verify checkbox enabled | Checkbox no longer grayed out | ☐ | |
+| 7 | Refresh page | Priority text persists in first slot | ☐ | |
 
 **Result:** ☐ PASS ☐ FAIL ☐ BLOCKED
 
 ---
 
-### DEV-AM-005: Win the Day - Add 3 Wins
+### DEV-AM-005: Win the Day - Enter All 3 Priorities
 
 **Priority:** Critical | **Time:** 3 min | **User:** Day 1+ user
 
 | Step | Action | Expected Result | Pass/Fail | Notes |
 |------|--------|-----------------|-----------|-------|
-| 1 | Clear any existing wins (or use fresh day) | Start with 0 wins | ☐ | |
-| 2 | Add Win 1: `Morning meeting` | Win 1 appears in list | ☐ | |
-| 3 | Add Win 2: `Review documents` | Win 2 appears in list | ☐ | |
-| 4 | Add Win 3: `Team check-in` | Win 3 appears in list | ☐ | |
-| 5 | Verify count shows "3/3" or similar | Max wins indicator | ☐ | |
-| 6 | Verify Scorecard updates | Score reflects 3 wins | ☐ | |
-| 7 | Refresh page | All 3 wins persist | ☐ | |
+| 1 | View Win the Day widget | 3 fixed input slots visible | ☐ | |
+| 2 | Enter Priority #1: `Morning meeting` | Text in slot 1 | ☐ | |
+| 3 | Enter Priority #2: `Review documents` | Text in slot 2 | ☐ | |
+| 4 | Enter Priority #3: `Team check-in` | Text in slot 3 | ☐ | |
+| 5 | Click "Save Priorities" button | Brief loading indicator | ☐ | |
+| 6 | Verify all 3 checkboxes enabled | Can mark each complete | ☐ | |
+| 7 | Refresh page | All 3 priorities persist | ☐ | |
 
 **Result:** ☐ PASS ☐ FAIL ☐ BLOCKED
 
@@ -346,11 +346,11 @@ Before starting, complete ALL items:
 | Step | Action | Expected Result | Pass/Fail | Notes |
 |------|--------|-----------------|-----------|-------|
 | 1 | Complete Grounding Rep | ✓ Shows complete | ☐ | |
-| 2 | Add 3 Wins | ✓ 3/3 wins added | ☐ | |
+| 2 | Enter and complete all 3 priorities | ✓ All checkboxes green | ☐ | |
 | 3 | Complete all Daily Reps | ✓ All reps checked | ☐ | |
-| 4 | Verify AM Bookend status | Shows "Complete" or similar | ☐ | |
-| 5 | Verify Scorecard | Reflects all AM items (50%+?) | ☐ | |
-| 6 | Verify UI feedback | Celebration/confirmation | ☐ | |
+| 4 | Verify AM Bookend visual status | Section shows success state | ☐ | |
+| 5 | Verify Scorecard | Reflects all AM items | ☐ | |
+| 6 | Refresh page | All completions persist | ☐ | |
 
 **Result:** ☐ PASS ☐ FAIL ☐ BLOCKED
 
@@ -380,10 +380,10 @@ Before starting, complete ALL items:
 |------|--------|-----------------|-----------|-------|
 | 1 | Start fresh day (0%) | Scorecard shows 0% | ☐ | |
 | 2 | Complete Grounding | % increases proportionally | ☐ | |
-| 3 | Add 1 Win | % increases | ☐ | |
-| 4 | Add 2 more Wins | % increases more | ☐ | |
-| 5 | Complete 1 Rep | % increases | ☐ | |
-| 6 | Complete all items | Should be close to 50% (AM only) | ☐ | |
+| 3 | Complete 1 priority (checkbox) | % increases | ☐ | |
+| 4 | Complete 2 more priorities | % increases more | ☐ | |
+| 5 | Complete 1 Daily Rep | % increases | ☐ | |
+| 6 | Complete all AM items | Should be close to 50% | ☐ | |
 | 7 | Verify math makes sense | No strange jumps or decreases | ☐ | |
 
 **Result:** ☐ PASS ☐ FAIL ☐ BLOCKED
@@ -399,58 +399,44 @@ Before starting, complete ALL items:
 | Step | Action | Expected Result | Pass/Fail | Notes |
 |------|--------|-----------------|-----------|-------|
 | 1 | Complete AM Bookend (or have test user ready) | AM items done | ☐ | |
-| 2 | Scroll to PM Bookend section OR click Reflection | PM Bookend displays | ☐ | |
-| 3 | Verify PM header/title | Shows "PM Bookend" or "Evening Reflection" | ☐ | |
-| 4 | Verify Win Review section visible | Morning wins listed for review | ☐ | |
-| 5 | Verify Reflection section visible | Good/Better/Best form present | ☐ | |
+| 2 | Scroll to PM Bookend section | PM Bookend section visible | ☐ | |
+| 3 | Verify PM header | "PM Bookend: Finish Strong" with moon icon | ☐ | |
+| 4 | Verify PM Reflection widget | Card with "PM Reflection" title, navy accent | ☐ | |
+| 5 | Verify 3 textarea fields visible | What went well?, What needs work?, Closing thought | ☐ | |
 
 **Result:** ☐ PASS ☐ FAIL ☐ BLOCKED
 
 ---
 
-### DEV-PM-002: Win Review Display
+### DEV-PM-002: Priority Completion in AM Bookend
 
-**Priority:** Critical | **Time:** 2 min | **User:** User with morning wins
-
-| Step | Action | Expected Result | Pass/Fail | Notes |
-|------|--------|-----------------|-----------|-------|
-| 1 | Have 3 wins from AM Bookend | Wins exist | ☐ | |
-| 2 | Navigate to PM Bookend | Win Review section loads | ☐ | |
-| 3 | Verify all 3 morning wins displayed | Each win visible with text | ☐ | |
-| 4 | Each win has checkbox | Can mark complete/incomplete | ☐ | |
-| 5 | Wins match what was entered in AM | Text is identical | ☐ | |
-
-**Result:** ☐ PASS ☐ FAIL ☐ BLOCKED
-
----
-
-### DEV-PM-003: Win Review - Mark Complete
-
-**Priority:** Critical | **Time:** 2 min | **User:** User with morning wins
+**Priority:** Critical | **Time:** 2 min | **User:** User with priorities entered
 
 | Step | Action | Expected Result | Pass/Fail | Notes |
 |------|--------|-----------------|-----------|-------|
-| 1 | View Win Review in PM Bookend | Wins displayed | ☐ | |
-| 2 | Click checkbox on first win | Checkbox fills | ☐ | |
-| 3 | Verify visual feedback | Win shows as accomplished | ☐ | |
+| 1 | View Win the Day widget (AM Bookend) | 3 priorities entered | ☐ | |
+| 2 | Click checkbox on Priority #1 | Checkbox fills with green check | ☐ | |
+| 3 | Verify visual change | Row turns green, text gets strikethrough | ☐ | |
 | 4 | Scorecard updates | % increases | ☐ | |
-| 5 | Refresh page | Win still marked complete | ☐ | |
+| 5 | Refresh page | Priority still shows complete | ☐ | |
+
+**Note:** Priority completion is done in the AM Bookend via checkboxes on Win the Day widget. There is no separate "Win Review" in PM Bookend.
 
 **Result:** ☐ PASS ☐ FAIL ☐ BLOCKED
 
 ---
 
-### DEV-PM-008: Reflection Form View
+### DEV-PM-003: PM Reflection Form View
 
 **Priority:** Critical | **Time:** 2 min | **User:** Any Day 1+ user
 
 | Step | Action | Expected Result | Pass/Fail | Notes |
 |------|--------|-----------------|-----------|-------|
-| 1 | Navigate to PM Bookend Reflection | Reflection form visible | ☐ | |
-| 2 | Verify "What went well?" field | Text area with label | ☐ | |
-| 3 | Verify "What could be better?" field | Text area with label | ☐ | |
-| 4 | Verify "What's your focus?" field | Text area with label | ☐ | |
-| 5 | Submit button visible | Can see how to save | ☐ | |
+| 1 | View PM Reflection widget | Card visible with navy accent | ☐ | |
+| 2 | Verify "1. What went well?" field | Text area with "Celebrate a win..." placeholder | ☐ | |
+| 3 | Verify "2. What needs work?" field | Text area with "Identify an improvement..." placeholder | ☐ | |
+| 4 | Verify "3. Closing thought" field | Shorter text area with "What will I do 1% better tomorrow?" placeholder | ☐ | |
+| 5 | Verify "Save Reflection" button | Button visible at bottom | ☐ | |
 
 **Result:** ☐ PASS ☐ FAIL ☐ BLOCKED
 
@@ -462,14 +448,14 @@ Before starting, complete ALL items:
 
 | Step | Action | Expected Result | Pass/Fail | Notes |
 |------|--------|-----------------|-----------|-------|
-| 1 | View Reflection form | Form ready for input | ☐ | |
+| 1 | View PM Reflection widget | Form ready for input | ☐ | |
 | 2 | Enter "What went well?": `Great team collaboration today` | Text accepted | ☐ | |
-| 3 | Enter "What could be better?": `Start meetings on time` | Text accepted | ☐ | |
-| 4 | Enter "Focus for tomorrow": `Prepare presentation` | Text accepted | ☐ | |
-| 5 | Click Submit/Save | Processing indicator | ☐ | |
-| 6 | Verify success message | "Reflection saved" or similar | ☐ | |
+| 3 | Enter "What needs work?": `Start meetings on time` | Text accepted | ☐ | |
+| 4 | Enter "Closing thought": `Prepare presentation` | Text accepted | ☐ | |
+| 5 | Click "Save Reflection" | Loading spinner shows briefly | ☐ | |
+| 6 | Verify success | Button returns to normal state | ☐ | |
 | 7 | Verify Scorecard updates | PM completion reflected | ☐ | |
-| 8 | Refresh page | Reflection data persists | ☐ | |
+| 8 | Refresh page | All 3 fields retain text | ☐ | |
 
 **Result:** ☐ PASS ☐ FAIL ☐ BLOCKED
 
@@ -481,11 +467,11 @@ Before starting, complete ALL items:
 
 | Step | Action | Expected Result | Pass/Fail | Notes |
 |------|--------|-----------------|-----------|-------|
-| 1 | Mark all wins as complete/incomplete | Win review done | ☐ | |
-| 2 | Complete reflection (all 3 fields) | Reflection submitted | ☐ | |
-| 3 | Verify PM Bookend status | Shows "Complete" | ☐ | |
-| 4 | Verify Scorecard | Near 100% for the day | ☐ | |
-| 5 | Verify UI feedback | Celebration or confirmation | ☐ | |
+| 1 | Fill "What went well?" field | Text entered | ☐ | |
+| 2 | Fill "What needs work?" field | Text entered | ☐ | |
+| 3 | Fill "Closing thought" field | Text entered | ☐ | |
+| 4 | Click "Save Reflection" | Saves successfully | ☐ | |
+| 5 | Verify Scorecard | Near 100% for the day | ☐ | |
 
 **Result:** ☐ PASS ☐ FAIL ☐ BLOCKED
 
@@ -657,10 +643,10 @@ Before starting, complete ALL items:
 | Authentication | 6 | | | |
 | Prep Phase | 5 | | | |
 | Day 1 & AM Bookend | 10 | | | |
-| PM Bookend | 7 | | | |
+| PM Bookend | 5 | | | |
 | Content & Plan | 5 | | | |
 | Post Phase | 3 | | | |
-| **TOTAL** | **36** | | | |
+| **TOTAL** | **34** | | | |
 
 **Pass Rate:** ____%
 
