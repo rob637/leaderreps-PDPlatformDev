@@ -350,6 +350,128 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
               };
             }
           }
+        },
+        {
+          id: 'rep-library-catalog',
+          name: 'Rep Library Catalog',
+          description: 'Verify metadata/rep_library catalog exists',
+          critical: false,
+          run: async () => {
+            try {
+              const catalogRef = doc(db, 'metadata', 'rep_library');
+              const catalogSnap = await getDoc(catalogRef);
+              if (!catalogSnap.exists()) {
+                return {
+                  status: TEST_STATUS.WARNING,
+                  message: 'Rep library catalog not found',
+                  details: {}
+                };
+              }
+              const data = catalogSnap.data();
+              const repCount = data.reps?.length || Object.keys(data).length;
+              return {
+                status: TEST_STATUS.PASSED,
+                message: `Rep library has ${repCount} items`,
+                details: { fields: Object.keys(data) }
+              };
+            } catch (error) {
+              return {
+                status: TEST_STATUS.FAILED,
+                message: `Error reading rep library: ${error.message}`,
+                details: { error: error.message }
+              };
+            }
+          }
+        },
+        {
+          id: 'skill-catalog',
+          name: 'Skill Catalog',
+          description: 'Verify metadata/skill_catalog exists',
+          critical: false,
+          run: async () => {
+            try {
+              const catalogRef = doc(db, 'metadata', 'skill_catalog');
+              const catalogSnap = await getDoc(catalogRef);
+              if (!catalogSnap.exists()) {
+                return {
+                  status: TEST_STATUS.WARNING,
+                  message: 'Skill catalog not found',
+                  details: {}
+                };
+              }
+              const data = catalogSnap.data();
+              const skillCount = data.skills?.length || Object.keys(data).length;
+              return {
+                status: TEST_STATUS.PASSED,
+                message: `Skill catalog has ${skillCount} items`,
+                details: { fields: Object.keys(data) }
+              };
+            } catch (error) {
+              return {
+                status: TEST_STATUS.FAILED,
+                message: `Error reading skill catalog: ${error.message}`,
+                details: { error: error.message }
+              };
+            }
+          }
+        },
+        {
+          id: 'system-quotes',
+          name: 'System Quotes',
+          description: 'Verify system_lovs/system_quotes exists for dashboard',
+          critical: false,
+          run: async () => {
+            try {
+              const quotesRef = doc(db, 'system_lovs', 'system_quotes');
+              const quotesSnap = await getDoc(quotesRef);
+              if (!quotesSnap.exists()) {
+                return {
+                  status: TEST_STATUS.WARNING,
+                  message: 'System quotes not found',
+                  details: {}
+                };
+              }
+              const data = quotesSnap.data();
+              const quoteCount = data.quotes?.length || 0;
+              return {
+                status: TEST_STATUS.PASSED,
+                message: `${quoteCount} inspirational quotes loaded`,
+                details: { quoteCount }
+              };
+            } catch (error) {
+              return {
+                status: TEST_STATUS.FAILED,
+                message: `Error reading quotes: ${error.message}`,
+                details: { error: error.message }
+              };
+            }
+          }
+        },
+        {
+          id: 'user-count',
+          name: 'User Population',
+          description: 'Count total registered users',
+          critical: false,
+          run: async () => {
+            try {
+              const q = query(collection(db, 'users'), limit(500));
+              const snap = await getDocs(q);
+              const count = snap.docs.length;
+              const hasMore = count >= 500;
+              
+              return {
+                status: TEST_STATUS.PASSED,
+                message: `${hasMore ? '500+' : count} registered users`,
+                details: { count, hasMore }
+              };
+            } catch (error) {
+              return {
+                status: TEST_STATUS.FAILED,
+                message: `Error counting users: ${error.message}`,
+                details: { error: error.message }
+              };
+            }
+          }
         }
       ]
     },
@@ -1231,7 +1353,7 @@ const TestCenter = () => {
             Test Center
           </h2>
           <p className="text-gray-500 text-sm mt-1">
-            Backend health checks • UI test scenarios • Playwright automation
+            Automated backend checks • Manual QA scenarios • Playwright E2E tests
           </p>
         </div>
       </div>
@@ -1246,8 +1368,9 @@ const TestCenter = () => {
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
         >
           <Database className="w-4 h-4" />
-          System Health
-          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">21</span>
+          Backend Health
+          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">26</span>
+          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">AUTO</span>
         </button>
         <button
           onClick={() => setActiveTab('manual')}
@@ -1269,8 +1392,8 @@ const TestCenter = () => {
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
         >
           <PlayCircle className="w-4 h-4" />
-          Automated Tests
-          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-xs font-bold rounded">DEV</span>
+          E2E Tests
+          <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs font-bold rounded">Playwright</span>
         </button>
       </div>
       
