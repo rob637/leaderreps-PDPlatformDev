@@ -418,7 +418,9 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
               snap.docs.forEach(d => {
                 const data = d.data();
                 if (!data.title) issues.push(`${d.id}: missing title`);
-                if (!data.videoUrl && !data.url && !data.youtubeId) issues.push(`${d.id}: no video URL`);
+                // URL can be in details.videoUrl, details.url, or top-level
+                const hasUrl = data.details?.videoUrl || data.details?.url || data.videoUrl || data.url || data.youtubeId;
+                if (!hasUrl) issues.push(`${d.id}: no video URL`);
               });
               
               if (count === 0) {
@@ -458,7 +460,9 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
               snap.docs.forEach(d => {
                 const data = d.data();
                 if (!data.title) issues.push(`${d.id}: missing title`);
-                if (!data.url && !data.content) issues.push(`${d.id}: no URL or content`);
+                // URL/content can be in details.url, details.content, or top-level
+                const hasContent = data.details?.url || data.details?.content || data.url || data.content;
+                if (!hasContent) issues.push(`${d.id}: no URL or content`);
               });
               
               return {
@@ -766,8 +770,10 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
             }
             
             const today = new Date().toISOString().split('T')[0];
-            // Field is 'lastUpdated' not 'date'
-            const dataDate = dailyPracticeData.lastUpdated;
+            // Field is 'lastUpdated' - can be ISO timestamp or date string
+            const rawDate = dailyPracticeData.lastUpdated;
+            // Extract just the date portion if it's a full timestamp
+            const dataDate = rawDate ? rawDate.split('T')[0] : null;
             
             if (dataDate && dataDate !== today) {
               return {
