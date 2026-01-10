@@ -51,6 +51,7 @@ import {
   getDocs, 
   doc, 
   getDoc, 
+  setDoc,
   query, 
   limit,
   where,
@@ -1129,6 +1130,8 @@ const TestCenter = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [lastRunTime, setLastRunTime] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [testHistory, setTestHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
   const abortControllerRef = useRef(null);
   
   // Initialize test suites
@@ -1144,6 +1147,57 @@ const TestCenter = () => {
       }))
     })));
   }, [db, user, dailyPracticeData, developmentPlanData]);
+  
+  // Load test history from Firestore
+  useEffect(() => {
+    if (!db) return;
+    
+    const loadHistory = async () => {
+      try {
+        const historyDoc = await getDoc(doc(db, 'metadata', 'backend-health-history'));
+        if (historyDoc.exists()) {
+          const data = historyDoc.data();
+          setTestHistory(data.runs || []);
+        }
+      } catch (error) {
+        console.error('Failed to load test history:', error);
+      }
+    };
+    
+    loadHistory();
+  }, [db]);
+  
+  // Save test results to history
+  const saveTestHistory = async (summary) => {
+    if (!db) return;
+    
+    try {
+      const historyDoc = await getDoc(doc(db, 'metadata', 'backend-health-history'));
+      const existingRuns = historyDoc.exists() ? (historyDoc.data().runs || []) : [];
+      
+      const newRun = {
+        timestamp: new Date().toISOString(),
+        passed: summary.passed,
+        failed: summary.failed,
+        warnings: summary.warnings,
+        total: summary.total,
+        environment: window.location.hostname,
+        runBy: user?.email || 'unknown'
+      };
+      
+      // Keep last 20 runs
+      const updatedRuns = [newRun, ...existingRuns].slice(0, 20);
+      
+      await setDoc(doc(db, 'metadata', 'backend-health-history'), {
+        runs: updatedRuns,
+        lastUpdated: new Date().toISOString()
+      });
+      
+      setTestHistory(updatedRuns);
+    } catch (error) {
+      console.error('Failed to save test history:', error);
+    }
+  };
   
   // Auto-refresh functionality - uses ref to avoid dependency cycle
   const runAllTestsRef = useRef(null);
@@ -1242,6 +1296,21 @@ const TestCenter = () => {
     
     setIsRunning(false);
     setLastRunTime(new Date());
+    
+    // Save results to history after all tests complete
+    // Calculate final summary from updated state
+    setTimeout(() => {
+      let passed = 0, failed = 0, warnings = 0, total = 0;
+      testSuites.forEach(suite => {
+        suite.tests.forEach(test => {
+          total++;
+          if (test.status === TEST_STATUS.PASSED) passed++;
+          else if (test.status === TEST_STATUS.FAILED) failed++;
+          else if (test.status === TEST_STATUS.WARNING) warnings++;
+        });
+      });
+      saveTestHistory({ passed, failed, warnings, total });
+    }, 500);
   };
   
   // Update ref when runAllTests changes
@@ -1433,6 +1502,23 @@ const TestCenter = () => {
             Export
           </button>
           
+          {/* History toggle */}
+          {testHistory.length > 0 && (
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className={`px-3 py-2 rounded-lg border text-sm font-medium flex items-center gap-2 transition-colors
+                ${showHistory 
+                  ? 'bg-corporate-teal/10 border-corporate-teal text-corporate-teal' 
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              History
+              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                {testHistory.length}
+              </span>
+            </button>
+          )}
+          
           {/* Main action button */}
           {isRunning ? (
             <button
@@ -1500,6 +1586,80 @@ const TestCenter = () => {
         <div className="text-sm text-gray-500 flex items-center gap-2">
           <Clock className="w-4 h-4" />
           Last run: {lastRunTime.toLocaleTimeString()}
+        </div>
+      )}
+      
+      {/* Test History Panel */}
+      {testHistory.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <BarChart3 className="w-5 h-5 text-corporate-teal" />
+              <span className="font-medium text-corporate-navy">Test History</span>
+              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                {testHistory.length} runs
+              </span>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {showHistory && (
+            <div className="border-t border-gray-200 divide-y divide-gray-100">
+              {testHistory.slice(0, 10).map((run, idx) => {
+                const allPassed = run.failed === 0 && run.warnings === 0;
+                const hasFailed = run.failed > 0;
+                const runDate = new Date(run.timestamp);
+                
+                return (
+                  <div 
+                    key={idx}
+                    className={`px-4 py-3 flex items-center justify-between ${idx === 0 ? 'bg-gray-50' : ''}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        allPassed ? 'bg-green-100' : hasFailed ? 'bg-red-100' : 'bg-amber-100'
+                      }`}>
+                        {allPassed ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        ) : hasFailed ? (
+                          <XCircle className="w-4 h-4 text-red-600" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">
+                          {idx === 0 ? 'Latest Run' : runDate.toLocaleDateString()}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {runDate.toLocaleTimeString()} {run.runBy && `• ${run.runBy}`}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">
+                        {run.passed} ✓
+                      </span>
+                      {run.failed > 0 && (
+                        <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded">
+                          {run.failed} ✗
+                        </span>
+                      )}
+                      {run.warnings > 0 && (
+                        <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded">
+                          {run.warnings} ⚠
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
       

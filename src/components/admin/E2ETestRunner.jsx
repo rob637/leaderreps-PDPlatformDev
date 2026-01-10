@@ -397,19 +397,123 @@ const E2ETestRunner = () => {
   
   return (
     <div className="space-y-6">
-      {/* Important Notice Banner */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-bold text-amber-800">For Developers & CI/CD Only</h4>
-            <p className="text-sm text-amber-700 mt-1">
-              These automated browser tests require a development environment to run (Node.js, Playwright). 
-              They're designed for developers and automated pipelines, not manual execution.
+      {/* Quick Run Commands - Most Important Section */}
+      <div className="bg-gradient-to-r from-corporate-teal/10 to-blue-50 border border-corporate-teal/30 rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-corporate-teal rounded-lg">
+            <PlayCircle className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-corporate-navy text-lg">Quick Run Commands</h3>
+            <p className="text-sm text-gray-600 mt-1 mb-4">
+              Run these in your terminal from the project root. Tests run in headless Chrome.
             </p>
-            <p className="text-sm text-amber-700 mt-2">
-              <strong>Looking to test manually?</strong> Use the <strong>"QA Test Scenarios"</strong> tab instead — 
-              it provides step-by-step checklists you can follow without any technical setup.
+            
+            <div className="grid gap-3">
+              {/* Smoke Test */}
+              <div className="bg-white rounded-lg border border-gray-200 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded">CRITICAL</span>
+                    <span className="font-medium text-sm">Smoke Test (Run before every deploy)</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('npm run e2e:smoke');
+                      setCopiedCommand('smoke');
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-mono flex items-center gap-2"
+                  >
+                    {copiedCommand === 'smoke' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                    npm run e2e:smoke
+                  </button>
+                </div>
+              </div>
+              
+              {/* Auth Test */}
+              <div className="bg-white rounded-lg border border-gray-200 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded">HIGH</span>
+                    <span className="font-medium text-sm">Authentication Tests</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('npm run e2e:auth');
+                      setCopiedCommand('auth');
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-mono flex items-center gap-2"
+                  >
+                    {copiedCommand === 'auth' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                    npm run e2e:auth
+                  </button>
+                </div>
+              </div>
+              
+              {/* All Journey Tests */}
+              <div className="bg-white rounded-lg border border-gray-200 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded">FULL</span>
+                    <span className="font-medium text-sm">All Journey Tests (~15 min)</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('npm run e2e');
+                      setCopiedCommand('all');
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-mono flex items-center gap-2"
+                  >
+                    {copiedCommand === 'all' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                    npm run e2e
+                  </button>
+                </div>
+              </div>
+              
+              {/* UI Mode */}
+              <div className="bg-white rounded-lg border border-gray-200 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded">DEBUG</span>
+                    <span className="font-medium text-sm">Interactive UI Mode (see browser)</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('npm run e2e:ui');
+                      setCopiedCommand('ui');
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-mono flex items-center gap-2"
+                  >
+                    {copiedCommand === 'ui' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                    npm run e2e:ui
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* CI/CD Integration */}
+      <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-bold text-green-800">✅ CI/CD Integration Active</h4>
+            <p className="text-sm text-green-700 mt-1">
+              E2E tests run automatically on every push to main and on pull requests via GitHub Actions.
+              View results at: <a 
+                href="https://github.com/rob637/leaderreps-PDPlatformDev/actions" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline font-medium hover:text-green-900"
+              >
+                GitHub Actions Dashboard →
+              </a>
             </p>
           </div>
         </div>
