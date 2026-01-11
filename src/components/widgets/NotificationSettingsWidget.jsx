@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Input, Select } from '../ui';
-import { Bell, Mail, MessageSquare, Globe, Save, AlertCircle } from 'lucide-react';
+import { Bell, Mail, MessageSquare, Globe, Save, AlertCircle, Check } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 
@@ -23,6 +23,7 @@ const NotificationSettingsWidget = () => {
   const { user, db } = useAppServices();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [settings, setSettings] = useState({
     enabled: false,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
@@ -63,19 +64,29 @@ const NotificationSettingsWidget = () => {
     loadSettings();
   }, [user, db]);
 
-  const handleSave = async () => {
+  const handleSave = async (newSettings = settings) => {
     setSaving(true);
+    setSaved(false);
     try {
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
-        notificationSettings: settings
+        notificationSettings: newSettings
       });
-      // Show success feedback?
+      setSaved(true);
+      // Clear saved indicator after 2 seconds
+      setTimeout(() => setSaved(false), 2000);
     } catch (error) {
       console.error("Error saving settings:", error);
     } finally {
       setSaving(false);
     }
+  };
+
+  // Auto-save when master toggle changes
+  const handleMasterToggle = async (enabled) => {
+    const newSettings = { ...settings, enabled };
+    setSettings(newSettings);
+    await handleSave(newSettings);
   };
 
   const toggleChannel = (channel) => {
@@ -109,15 +120,26 @@ const NotificationSettingsWidget = () => {
             <h4 className="font-medium text-gray-900">Enable Notifications</h4>
             <p className="text-xs text-gray-500">Allow the system to send you reminders</p>
           </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input 
-              type="checkbox" 
-              className="sr-only peer"
-              checked={settings.enabled}
-              onChange={(e) => setSettings({...settings, enabled: e.target.checked})}
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          </label>
+          <div className="flex items-center gap-2">
+            {saved && (
+              <span className="flex items-center gap-1 text-xs text-green-600 animate-fade-in">
+                <Check className="w-3 h-3" /> Saved
+              </span>
+            )}
+            {saving && (
+              <span className="text-xs text-gray-500">Saving...</span>
+            )}
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer"
+                checked={settings.enabled}
+                onChange={(e) => handleMasterToggle(e.target.checked)}
+                disabled={saving}
+              />
+              <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${saving ? 'opacity-50' : ''}`}></div>
+            </label>
+          </div>
         </div>
 
         {settings.enabled && (
