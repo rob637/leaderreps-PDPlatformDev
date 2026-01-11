@@ -9,12 +9,15 @@
  * - Content Library
  * - Post Phase
  * - Authentication
+ * - Zones
  * 
  * Features:
  * - View test scripts inline
  * - Track test progress
  * - Log bugs to GitHub Issues
  * - Export test results
+ * 
+ * NOTE: Test counts come from testSuiteConfig.js - single source of truth
  */
 
 import React, { useState } from 'react';
@@ -35,100 +38,38 @@ import {
   ExternalLink,
   Clock,
   Target,
-  Download
+  Download,
+  Map,
+  Zap
 } from 'lucide-react';
+import {
+  MANUAL_TEST_SCRIPTS,
+  MANUAL_TEST_ORDER,
+  MANUAL_TOTAL_SCENARIOS,
+  MANUAL_CRITICAL_PATH,
+  MANUAL_SUITE_COUNT,
+  E2E_SUITES_TOTAL,
+  E2E_JOURNEYS_TOTAL
+} from './testSuiteConfig';
 
-// Test script metadata
-const TEST_SCRIPTS = [
-  {
-    id: 'smoke-test',
-    name: 'Critical Path Smoke Test',
-    icon: Flame,
-    file: '00-smoke-test.md',
-    scenarios: 35,
-    time: '3-4 hours',
-    priority: 'Critical',
-    description: 'Run before EVERY deployment. Tests core user journey end-to-end.',
-    color: 'red'
-  },
-  {
-    id: 'prep-phase',
-    name: 'Prep Phase Tests',
-    icon: UserPlus,
-    file: '01-prep-phase.md',
-    scenarios: 14,
-    time: '2-3 hours',
-    priority: 'High',
-    description: 'New user registration, prep gate, leader profile, baseline assessment.',
-    color: 'purple'
-  },
-  {
-    id: 'am-bookend',
-    name: 'AM Bookend Tests',
-    icon: Sun,
-    file: '02-dev-am-bookend.md',
-    scenarios: 21,
-    time: '2-3 hours',
-    priority: 'High',
-    description: 'Grounding Rep, Win the Day, Daily Reps, Scorecard.',
-    color: 'amber'
-  },
-  {
-    id: 'pm-bookend',
-    name: 'PM Bookend Tests',
-    icon: Moon,
-    file: '03-dev-pm-bookend.md',
-    scenarios: 13,
-    time: '1-2 hours',
-    priority: 'High',
-    description: 'PM Reflection (What went well/What needs work/Closing thought), Daily completion.',
-    color: 'indigo'
-  },
-  {
-    id: 'content-library',
-    name: 'Content Library Tests',
-    icon: Library,
-    file: '04-content-library.md',
-    scenarios: 22,
-    time: '2-3 hours',
-    priority: 'High',
-    description: 'Video playback, readings, tools, filters, search, content gating.',
-    color: 'blue'
-  },
-  {
-    id: 'post-phase',
-    name: 'Post Phase Tests',
-    icon: GraduationCap,
-    file: '05-post-phase.md',
-    scenarios: 12,
-    time: '1-2 hours',
-    priority: 'Medium',
-    description: 'Day 70→71 transition, full content access, continued practice.',
-    color: 'green'
-  },
-  {
-    id: 'authentication',
-    name: 'Authentication Tests',
-    icon: Shield,
-    file: '06-authentication.md',
-    scenarios: 16,
-    time: '1-2 hours',
-    priority: 'High',
-    description: 'Login, logout, signup, password reset, protected routes.',
-    color: 'gray'
-  },
-  {
-    id: 'zones',
-    name: 'Zones Tests',
-    icon: Target,
-    file: '07-zones.md',
-    scenarios: 35,
-    time: '3-4 hours',
-    priority: 'High',
-    description: 'Community (Day 15+), Coaching (Day 22+), Locker, zone gates.',
-    color: 'teal'
-  }
-];
+// Icon mapping
+const ICON_MAP = {
+  Flame,
+  UserPlus,
+  Sun,
+  Moon,
+  Library,
+  GraduationCap,
+  Shield,
+  Target,
+  Map
+};
+
+// Convert config to array in recommended order
+const TEST_SCRIPTS = MANUAL_TEST_ORDER.map(key => ({
+  ...MANUAL_TEST_SCRIPTS[key],
+  icon: ICON_MAP[MANUAL_TEST_SCRIPTS[key].icon] || Target
+}));
 
 // Priority badge colors
 const getPriorityColor = (priority) => {
@@ -157,9 +98,6 @@ const getColorClasses = (color) => {
 
 const ManualTestScripts = () => {
   const [expandedScript, setExpandedScript] = useState(null);
-  
-  // Calculate totals
-  const totalScenarios = TEST_SCRIPTS.reduce((sum, script) => sum + script.scenarios, 0);
   
   const openTestScript = (filename) => {
     // For now, link to GitHub. In production, could open in-app viewer
@@ -199,21 +137,50 @@ const ManualTestScripts = () => {
       {/* Summary Stats */}
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-corporate-navy">{TEST_SCRIPTS.length}</div>
+          <div className="text-2xl font-bold text-corporate-navy">{MANUAL_SUITE_COUNT}</div>
           <div className="text-sm text-gray-500">Test Suites</div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-corporate-teal">{totalScenarios}</div>
+          <div className="text-2xl font-bold text-corporate-teal">{MANUAL_TOTAL_SCENARIOS}</div>
           <div className="text-sm text-gray-500">Total Scenarios</div>
         </div>
         <div className="bg-red-50 rounded-xl border border-red-200 p-4">
-          <div className="text-2xl font-bold text-red-600">36</div>
+          <div className="text-2xl font-bold text-red-600">{MANUAL_CRITICAL_PATH}</div>
           <div className="text-sm text-red-700">Critical Path</div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="text-2xl font-bold text-gray-600">~16 hrs</div>
           <div className="text-sm text-gray-500">Full Suite Time</div>
         </div>
+      </div>
+      
+      {/* Test Coverage Reconciliation */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+        <h4 className="font-bold text-corporate-navy mb-3 flex items-center gap-2">
+          <Zap className="w-4 h-4 text-blue-600" />
+          Test Coverage Summary
+        </h4>
+        <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="bg-white/80 rounded-lg p-3 border border-blue-100">
+            <div className="font-medium text-gray-700">Manual Scenarios</div>
+            <div className="text-2xl font-bold text-corporate-navy">{MANUAL_TOTAL_SCENARIOS}</div>
+            <div className="text-xs text-gray-500">Human-executed QA</div>
+          </div>
+          <div className="bg-white/80 rounded-lg p-3 border border-blue-100">
+            <div className="font-medium text-gray-700">E2E Suite Tests</div>
+            <div className="text-2xl font-bold text-corporate-teal">{E2E_SUITES_TOTAL}</div>
+            <div className="text-xs text-gray-500">Automated (Playwright)</div>
+          </div>
+          <div className="bg-white/80 rounded-lg p-3 border border-blue-100">
+            <div className="font-medium text-gray-700">E2E Journeys</div>
+            <div className="text-2xl font-bold text-indigo-600">{E2E_JOURNEYS_TOTAL}</div>
+            <div className="text-xs text-gray-500">Extended user flows</div>
+          </div>
+        </div>
+        <p className="text-xs text-gray-600 mt-3">
+          <strong>Journeys</strong> are comprehensive end-to-end user flow tests that expand on the suite tests. 
+          They test complete user journeys (e.g., entire prep phase from signup to Day 1) vs individual scenarios.
+        </p>
       </div>
       
       {/* Quick Start Guide */}
@@ -362,53 +329,61 @@ const ManualTestScripts = () => {
           <span className="px-3 py-1 bg-blue-500 text-white text-sm rounded-full">area/content</span>
           <span className="px-3 py-1 bg-green-500 text-white text-sm rounded-full">area/post</span>
           <span className="px-3 py-1 bg-gray-500 text-white text-sm rounded-full">area/auth</span>
+          <span className="px-3 py-1 bg-teal-500 text-white text-sm rounded-full">area/zones</span>
         </div>
       </div>
       
       {/* Recommended Test Order */}
       <div className="bg-white rounded-xl p-6 border border-gray-200">
         <h3 className="font-bold text-corporate-navy mb-4">Recommended Test Order</h3>
+        <p className="text-sm text-gray-600 mb-4">Execute tests in this order to follow the natural user journey:</p>
         <ol className="space-y-3 text-sm">
           <li className="flex items-start gap-3">
             <span className="w-6 h-6 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold text-xs shrink-0">1</span>
             <div>
-              <strong>Smoke Test</strong> - Always run first to catch critical issues
+              <strong>Smoke Test</strong> - Always run first to catch critical issues ({MANUAL_TEST_SCRIPTS.smoke.scenarios} scenarios)
             </div>
           </li>
           <li className="flex items-start gap-3">
-            <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs shrink-0">2</span>
+            <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center font-bold text-xs shrink-0">2</span>
             <div>
-              <strong>Authentication</strong> - Ensure users can access the system
+              <strong>Authentication</strong> - Ensure users can access the system ({MANUAL_TEST_SCRIPTS.auth.scenarios} scenarios)
             </div>
           </li>
           <li className="flex items-start gap-3">
-            <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0">3</span>
+            <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs shrink-0">3</span>
             <div>
-              <strong>Prep Phase</strong> - Test new user onboarding journey
+              <strong>Prep Phase</strong> - Test new user onboarding journey ({MANUAL_TEST_SCRIPTS.prep.scenarios} scenarios)
             </div>
           </li>
           <li className="flex items-start gap-3">
             <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0">4</span>
             <div>
-              <strong>AM Bookend</strong> - Core morning activities
+              <strong>AM Bookend</strong> - Core morning activities ({MANUAL_TEST_SCRIPTS.am.scenarios} scenarios)
             </div>
           </li>
           <li className="flex items-start gap-3">
-            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">5</span>
+            <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0">5</span>
             <div>
-              <strong>PM Bookend</strong> - Evening wrap-up activities
+              <strong>PM Bookend</strong> - Evening wrap-up activities ({MANUAL_TEST_SCRIPTS.pm.scenarios} scenarios)
             </div>
           </li>
           <li className="flex items-start gap-3">
-            <span className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center font-bold text-xs shrink-0">6</span>
+            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">6</span>
             <div>
-              <strong>Content Library</strong> - Media playback and content access
+              <strong>Content Library</strong> - Media playback and content access ({MANUAL_TEST_SCRIPTS.content.scenarios} scenarios)
             </div>
           </li>
           <li className="flex items-start gap-3">
-            <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs shrink-0">7</span>
+            <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs shrink-0">7</span>
             <div>
-              <strong>Post Phase</strong> - Program completion and ongoing access
+              <strong>Zones</strong> - Community (Day 15+), Coaching (Day 22+), Locker ({MANUAL_TEST_SCRIPTS.zones.scenarios} scenarios)
+            </div>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs shrink-0">8</span>
+            <div>
+              <strong>Post Phase</strong> - Program completion and ongoing access ({MANUAL_TEST_SCRIPTS.post.scenarios} scenarios)
             </div>
           </li>
         </ol>
