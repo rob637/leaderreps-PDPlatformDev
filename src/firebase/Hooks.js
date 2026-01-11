@@ -19,7 +19,7 @@ const getPath = (collection, document, userId, appId) =>
 
 // --- COMMITMENT DEFAULTS (Moved from App.jsx) ---
 const DEFAULT_COMMITMENT_DATA = {
-    lastCommitmentDate: timeService.getISOString().split('T')[0], 
+    lastCommitmentDate: timeService.getTodayStr(), 
     history: [
         { date: '2025-10-10', score: '3/3' },
         { date: '2025-10-16', score: '3/3' },
@@ -129,7 +129,7 @@ export const useCommitmentData = (db, userId, isAuthReady) => {
 
     const needsReset = (data) => {
         if (!data) return false;
-        const today = timeService.getISOString().split('T')[0];
+        const today = timeService.getTodayStr();
         return data.lastCommitmentDate !== today;
     };
 
@@ -150,7 +150,7 @@ export const useCommitmentData = (db, userId, isAuthReady) => {
                 try {
                     const initialData = {
                         ...DEFAULT_COMMITMENT_DATA,
-                        lastCommitmentDate: timeService.getISOString().split('T')[0]
+                        lastCommitmentDate: timeService.getTodayStr()
                     };
                     await setDoc(docRef, initialData);
                     currentData = initialData;
@@ -164,7 +164,7 @@ export const useCommitmentData = (db, userId, isAuthReady) => {
 
             if (needsReset(currentData)) {
                 // --- DAILY RESET LOGIC ---
-                const today = timeService.getISOString().split('T')[0];
+                const today = timeService.getTodayStr();
                 
                 const yesterdayScore = currentData.active_commitments.length > 0
                     ? `${currentData.active_commitments.filter(c => c.status === 'Committed').length}/${currentData.active_commitments.length}`

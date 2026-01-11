@@ -87,42 +87,42 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
     (day.weeklyResources.weeklyTools?.length || 0)
   ) : 0;
   
-  // Special styling for Explore config card
+  // Explore config card - consistent styling with other cards
   if (isExploreConfig) {
     return (
       <div 
         onClick={() => onEdit(day)}
-        className="relative p-6 rounded-xl border-2 cursor-pointer transition-all hover:shadow-lg bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-300 hover:border-purple-500 col-span-full max-w-2xl"
+        className="relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md bg-white border-slate-200 hover:border-purple-400"
       >
-        <div className="flex justify-between items-start mb-3">
-          <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-purple-500 text-white">
-            🔓 Explore Configuration
+        <div className="flex justify-between items-start mb-2">
+          <span className="text-xs font-bold px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+            🔓 Explore
           </span>
         </div>
         
-        <h4 className="font-bold text-xl text-corporate-navy mb-2">
+        <h4 className="font-bold text-corporate-navy mb-1 line-clamp-2 h-10">
           {day.title || 'Explore the App'}
         </h4>
         
-        <p className="text-sm text-slate-600 mb-4">
-          {day.focus || 'Configure the content and widgets users can explore after completing Required Prep'}
-        </p>
-        
-        <div className="flex gap-4 text-sm">
-          <span className="flex items-center gap-2 text-purple-700 bg-purple-100 px-3 py-1.5 rounded-lg">
-            <span className="font-bold">{day.actions?.length || 0}</span> Actions/Content
-          </span>
-          {linkedResourceCount > 0 && (
-            <span className="flex items-center gap-2 text-blue-700 bg-blue-100 px-3 py-1.5 rounded-lg">
-              <Link className="w-4 h-4" />
-              <span className="font-bold">{linkedResourceCount}</span> Linked Resources
-            </span>
+        <div className="space-y-2 mt-3">
+          {day.focus && (
+            <div className="text-xs text-slate-600 bg-slate-50 p-1.5 rounded border border-slate-100">
+              <span className="font-bold text-purple-600">Focus:</span> {day.focus}
+            </div>
           )}
+          
+          <div className="flex gap-2 text-xs text-slate-500">
+            <span className="flex items-center gap-1">
+              <span className="font-bold">{day.actions?.length || 0}</span> Actions
+            </span>
+            {linkedResourceCount > 0 && (
+              <span className="flex items-center gap-1 text-blue-600">
+                <Link className="w-3 h-3" />
+                <span className="font-bold">{linkedResourceCount}</span> Linked
+              </span>
+            )}
+          </div>
         </div>
-        
-        <p className="text-xs text-purple-500 mt-4 italic">
-          Click to configure what users see when they complete Required Prep
-        </p>
       </div>
     );
   }
@@ -779,20 +779,20 @@ const DailyPlanManager = () => {
   const PHASES = {
     prep: { 
       id: 'prep', 
-      name: 'Prep Phase', 
+      name: 'Preparation', 
       emoji: '📋',
-      description: 'Required prep items that unlock app features',
+      description: 'Get ready for your leadership journey (no time limit)',
       weekRange: [-2, 0], // Weeks -2 to 0
       bgColor: 'bg-amber-50',
       textColor: 'text-amber-700',
       borderColor: 'border-amber-300',
       activeColor: 'bg-amber-500',
       dayOffset: 0,
-      isProgressBased: true // NEW: Flag for progress-based phases
+      isProgressBased: true // Progress-based, not time-based
     },
     dev: { 
       id: 'dev', 
-      name: 'Dev Plan', 
+      name: 'Foundation', 
       emoji: '🎯',
       description: '8-Week Core Program (Days 1-56)',
       weekRange: [1, 8], // Weeks 1-8
@@ -804,23 +804,24 @@ const DailyPlanManager = () => {
     },
     post: { 
       id: 'post', 
-      name: 'Post Phase', 
-      emoji: '🔄',
-      description: 'Ongoing development (Days 1-7)',
-      weekRange: [9, 99], // Weeks 9+
-      bgColor: 'bg-slate-50',
-      textColor: 'text-slate-600',
-      borderColor: 'border-slate-300',
-      activeColor: 'bg-slate-500',
-      dayOffset: 70
+      name: 'Ascent', 
+      emoji: '🚀',
+      description: 'Continue your leadership journey (ongoing)',
+      weekRange: [9, 99], // Weeks 9+ (indefinite)
+      bgColor: 'bg-purple-50',
+      textColor: 'text-purple-700',
+      borderColor: 'border-purple-300',
+      activeColor: 'bg-purple-500',
+      dayOffset: 70,
+      isIndefinite: true // Flag for subscription-based indefinite phase
     }
   };
   
-  // Prep Phase section configuration
+  // Preparation Phase section configuration
   const PREP_SECTIONS = {
     required: {
       id: 'required',
-      name: 'Required Prep',
+      name: 'Preparation',
       emoji: '⚡',
       description: 'Required items that must be completed to unlock app features',
       bgColor: 'bg-amber-50',
@@ -832,7 +833,7 @@ const DailyPlanManager = () => {
       id: 'explore',
       name: 'Explore',
       emoji: '🔓',
-      description: 'Optional content unlocked after completing Required Prep',
+      description: 'Optional content unlocked after completing Preparation',
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-700',
       borderColor: 'border-purple-300',
@@ -1022,33 +1023,41 @@ const DailyPlanManager = () => {
         
         {/* Phase Tabs - Primary Navigation */}
         <div className="flex gap-2 mb-4">
-          {Object.values(PHASES).map(phase => (
-            <button
-              key={phase.id}
-              onClick={() => handlePhaseChange(phase.id)}
-              className={`
-                flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all
-                ${selectedPhase === phase.id 
-                  ? `${phase.activeColor} text-white shadow-md` 
-                  : `${phase.bgColor} ${phase.textColor} hover:opacity-80 border ${phase.borderColor}`
-                }
-              `}
-            >
-              <span>{phase.emoji}</span>
-              <span>{phase.name}</span>
-              <span className={`
-                text-xs px-1.5 py-0.5 rounded-full
-                ${selectedPhase === phase.id ? 'bg-white/20' : 'bg-black/5'}
-              `}>
-                {weekNumbers.filter(w => w >= phase.weekRange[0] && w <= phase.weekRange[1]).length} wks
-              </span>
-            </button>
-          ))}
+          {Object.values(PHASES).map(phase => {
+            // Only show week count for Foundation (dev) phase
+            const showWeekCount = phase.id === 'dev';
+            const weekCount = weekNumbers.filter(w => w >= phase.weekRange[0] && w <= phase.weekRange[1]).length;
+            
+            return (
+              <button
+                key={phase.id}
+                onClick={() => handlePhaseChange(phase.id)}
+                className={`
+                  flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all
+                  ${selectedPhase === phase.id 
+                    ? `${phase.activeColor} text-white shadow-md` 
+                    : `${phase.bgColor} ${phase.textColor} hover:opacity-80 border ${phase.borderColor}`
+                  }
+                `}
+              >
+                <span>{phase.emoji}</span>
+                <span>{phase.name}</span>
+                {showWeekCount && (
+                  <span className={`
+                    text-xs px-1.5 py-0.5 rounded-full
+                    ${selectedPhase === phase.id ? 'bg-white/20' : 'bg-black/5'}
+                  `}>
+                    {weekCount} wks
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
         
         {/* Week/Section Selector - Context-aware based on phase */}
         {selectedPhase === 'prep' ? (
-          // PREP PHASE: Section selector (Required Prep vs Explore)
+          // PREPARATION PHASE: Section selector (Preparation vs Explore)
           <div className="flex items-center gap-4">
             <span className="text-xs font-bold text-slate-400 uppercase">SECTION:</span>
             <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
@@ -1066,12 +1075,6 @@ const DailyPlanManager = () => {
                 >
                   <span>{section.emoji}</span>
                   <span>{section.name}</span>
-                  <span className={`
-                    text-xs px-1.5 py-0.5 rounded-full
-                    ${selectedPrepSection === section.id ? 'bg-white/20' : 'bg-black/5'}
-                  `}>
-                    {section.id === 'required' ? requiredPrepDays.length : 1}
-                  </span>
                 </button>
               ))}
             </div>

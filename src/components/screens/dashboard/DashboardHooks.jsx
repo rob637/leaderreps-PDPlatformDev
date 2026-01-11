@@ -371,7 +371,7 @@ export const useDashboard = ({
     try {
       const updates = {
         dailyTargetRepStatus: 'Committed',
-        dailyTargetRepDate: timeService.getISOString().split('T')[0]
+        dailyTargetRepDate: timeService.getTodayStr()
       };
 
       const success = await updateDailyPracticeData(updates);

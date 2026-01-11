@@ -2,6 +2,7 @@
 
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { timeService } from '../../services/timeService';
 import {
   BarChart3, TrendingUp, Target, ShieldCheck, Zap, TrendingDown, Cpu, Star, MessageSquare,
   HeartPulse, Users, Lightbulb, X, CornerRightUp, Activity, Briefcase, Trello, Clock,
@@ -198,7 +199,7 @@ export default function ExecutiveReflection() {
 
     const longitudinalData = useLongitudinalData(dailyPracticeData, developmentPlanData, strategicContentData);
 
-    const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+    const todayStr = useMemo(() => timeService.getTodayStr(), []);
     const targetRepCompletedToday = dailyPracticeData?.dailyTargetRepStatus === 'Committed' && dailyPracticeData?.dailyTargetRepDate === todayStr;
     const additionalCompletedToday = useMemo(() => (dailyPracticeData?.activeCommitments || []).filter(c => c.status === 'Committed').length, [dailyPracticeData]);
     const commitsCompletedToday = (targetRepCompletedToday ? 1 : 0) + additionalCompletedToday;

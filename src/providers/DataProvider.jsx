@@ -175,7 +175,7 @@ const DataProvider = ({
 
   const hasPendingDailyPractice = useMemo(() => {
     const dailyData = dailyPracticeHook.dailyPracticeData;
-    const todayStr = timeService.getISOString().split('T')[0];
+    const todayStr = timeService.getTodayStr();
     const hasPendingTargetRep =
       dailyData?.dailyTargetRepStatus === 'Pending' &&
       dailyData?.dailyTargetRepDate === todayStr &&

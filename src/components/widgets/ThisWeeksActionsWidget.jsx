@@ -336,9 +336,9 @@ const ThisWeeksActionsWidget = () => {
               carriedItems.push({
                 ...action,
                 id: actionId,
-                label: action.label || 'Prep Action',
+                label: action.label || 'Preparation Action',
                 required: true,
-                category: 'Prep Phase',
+                category: 'Preparation',
                 fromDailyPlan: true,
                 dayId: day.id,
                 dayNumber: day.dayNumber,
@@ -783,17 +783,17 @@ const ThisWeeksActionsWidget = () => {
       )}
       <Card title={widgetTitle} icon={CheckCircle} accent="TEAL">
         
-        {/* ========== PREP PHASE: Progress-Based Sections ========== */}
+        {/* ========== PREPARATION PHASE: Progress-Based Sections ========== */}
         {currentPhase?.id === 'pre-start' && (
           <>
-            {/* SECTION 1: Required Prep */}
+            {/* SECTION 1: Preparation */}
             {!prepRequirementsComplete?.allComplete ? (
-              // Required Prep NOT Complete - Show as primary section
+              // Preparation NOT Complete - Show as primary section
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    <span className="text-sm font-bold text-amber-800 uppercase tracking-wider">Required Prep</span>
+                    <span className="text-sm font-bold text-amber-800 uppercase tracking-wider">Preparation</span>
                   </div>
                   <div className="flex-1 h-px bg-amber-200"></div>
                   <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
@@ -810,7 +810,7 @@ const ThisWeeksActionsWidget = () => {
                 </div>
               </div>
             ) : (
-              // Required Prep IS Complete - Show collapsed celebration
+              // Preparation IS Complete - Show collapsed celebration
               <div className="mb-4">
                 <button
                   onClick={() => setPrepExpanded(!prepExpanded)}
@@ -820,7 +820,7 @@ const ThisWeeksActionsWidget = () => {
                     <Trophy className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-bold text-emerald-800">🎉 Required Prep Complete!</p>
+                    <p className="text-sm font-bold text-emerald-800">🎉 Preparation Complete!</p>
                     <p className="text-xs text-emerald-600">
                       All 5 tasks done — Your leadership tools are now unlocked below!
                     </p>

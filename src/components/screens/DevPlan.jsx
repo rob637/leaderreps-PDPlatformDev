@@ -1101,7 +1101,7 @@ if (isLoading || pdpData === undefined) {
     }, [initialScreen, pdpData, generatedPlanData]);
 
 
-    // Prep Phase Widgets - Show on all views except loading
+    // Preparation Phase Widgets - Show on all views except loading
     const PrepPhaseWidgets = () => (
         <div className="space-y-4 mb-6 max-w-4xl mx-auto">
             <LeaderProfileWidget />

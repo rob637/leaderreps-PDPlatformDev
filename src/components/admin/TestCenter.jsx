@@ -1137,7 +1137,13 @@ const TestCenter = () => {
   
   // Scroll to top when component mounts
   useEffect(() => {
+    // Scroll both window and the admin content container
     window.scrollTo(0, 0);
+    // Also scroll the admin-content-area container (used in AdminPortal)
+    const contentArea = document.getElementById('admin-content-area');
+    if (contentArea) {
+      contentArea.scrollTo(0, 0);
+    }
   }, []);
   
   // Initialize test suites

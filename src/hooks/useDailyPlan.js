@@ -48,21 +48,22 @@ export const PREP_REQUIREMENT_IDS = {
 export const PHASES = {
   PRE_START: {
     id: 'pre-start',
-    name: 'Pre-Start',
-    displayName: 'Prep Phase',
+    name: 'Preparation',
+    displayName: 'Preparation',
     // NOTE: dbDayStart/dbDayEnd are for backwards compatibility only
     // Prep Phase identification should use phase === 'pre-start'
     dbDayStart: 1,
     dbDayEnd: 14, // Legacy - actual prep can have any number of days
     weekRange: [-2, -1],
-    trackMissedDays: false, // Users can start anytime
+    trackMissedDays: false, // Users can start anytime - no time constraint
     cumulativeActions: true, // Actions accumulate - Day 1 actions persist through Day 14
-    description: 'Get ready for the program'
+    description: 'Get ready for your leadership journey',
+    isProgressBased: true // Progress-based, not time-based
   },
   START: {
     id: 'start',
-    name: 'Development Plan',  // This IS the Development Plan
-    displayName: 'Development Plan',
+    name: 'Foundation',
+    displayName: 'Foundation',
     dbDayStart: 15,
     dbDayEnd: 70,
     weekRange: [1, 8],
@@ -72,14 +73,15 @@ export const PHASES = {
   },
   POST_START: {
     id: 'post-start',
-    name: 'Post-Start',
-    displayName: 'Next Reps',
+    name: 'Ascent',
+    displayName: 'Ascent',
     dbDayStart: 71,
     dbDayEnd: Infinity,
     weekRange: [9, Infinity],
     trackMissedDays: false, // Ongoing maintenance
     cumulativeActions: false,
-    description: 'Continue your leadership journey'
+    description: 'Continue your leadership journey',
+    isIndefinite: true // Subscription-based indefinite phase
   }
 };
 

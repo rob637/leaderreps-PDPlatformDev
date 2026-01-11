@@ -1,6 +1,6 @@
 // src/components/widgets/DevelopmentJourneyWidget.jsx
 // A comprehensive, visually stunning journey overview widget
-// Shows the ENTIRE journey: Prep Phase, Development Plan (dynamic weeks), and Post Phase
+// Shows the ENTIRE journey: Preparation, Foundation (8 weeks), and Ascent (indefinite)
 // Fully dynamic - adapts to whatever is in the daily plan data
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
@@ -20,7 +20,7 @@ import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 // Phase themes - different visual treatment for each phase
 const PHASE_THEMES = {
   'pre-start': {
-    title: 'Prep Phase',
+    title: 'Preparation',
     subtitle: 'Get Ready',
     icon: Rocket,
     color: 'from-slate-600 to-slate-700',
@@ -31,7 +31,7 @@ const PHASE_THEMES = {
     accentColor: 'slate'
   },
   'start': {
-    title: 'Development',
+    title: 'Foundation',
     subtitle: 'Your Journey',
     icon: Mountain,
     color: 'from-corporate-teal to-emerald-600',
@@ -42,15 +42,15 @@ const PHASE_THEMES = {
     accentColor: 'teal'
   },
   'post-start': {
-    title: 'Next Reps',
+    title: 'Ascent',
     subtitle: 'Continue Growing',
     icon: GraduationCap,
-    color: 'from-corporate-navy to-slate-700',
-    bgColor: 'bg-corporate-navy/5',
-    borderColor: 'border-corporate-navy/20',
-    textColor: 'text-corporate-navy',
-    iconBg: 'bg-corporate-navy/10',
-    accentColor: 'navy'
+    color: 'from-purple-600 to-indigo-700',
+    bgColor: 'bg-purple-50',
+    borderColor: 'border-purple-200',
+    textColor: 'text-purple-700',
+    iconBg: 'bg-purple-100',
+    accentColor: 'purple'
   }
 };
 
@@ -563,7 +563,7 @@ const DevelopmentJourneyWidget = () => {
       id: 'prep',
       type: 'phase',
       phaseId: 'pre-start',
-      label: 'Prep Phase',
+      label: 'Preparation',
       shortLabel: 'Prep',
       theme: PHASE_THEMES['pre-start'],
       actions: requiredPrepActionsWithStatus,
@@ -671,8 +671,8 @@ const DevelopmentJourneyWidget = () => {
         id: 'post',
         type: 'phase',
         phaseId: 'post-start',
-        label: 'Post Phase',
-        shortLabel: 'Post',
+        label: 'Ascent',
+        shortLabel: 'Ascent',
         theme: PHASE_THEMES['post-start'],
         actions: mainPostActions,
         totalActions: mainPostActions.length,
@@ -680,7 +680,8 @@ const DevelopmentJourneyWidget = () => {
         progress: mainPostActions.length > 0 ? Math.round((completedPostCount / mainPostActions.length) * 100) : 0,
         daysCount: postDays.length,
         icon: 'trophy',
-        description: 'Continue growing as a leader'
+        description: 'Continue growing as a leader',
+        isIndefinite: true // Subscription-based indefinite phase
       });
     }
     

@@ -75,7 +75,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
+    { id: 'development-plan', label: 'Foundation', icon: Target, flag: 'enableDevPlan' },
     
     { type: 'section', label: 'Resources' },
     { id: 'community', label: 'Community', icon: CommunityIcon, flag: 'enableCommunity', devModeOnly: true },

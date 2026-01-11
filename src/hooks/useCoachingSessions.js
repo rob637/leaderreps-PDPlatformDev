@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../services/useAppServices';
+import { timeService } from '../services/timeService';
 import { 
   collection, 
   query, 
@@ -201,7 +202,7 @@ export const useCoachingSessions = (options = {}) => {
 
   // Computed: Sessions happening today
   const todaySessions = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = timeService.getTodayStr();
     return sessions.filter(s => s.date?.startsWith(today));
   }, [sessions]);
 

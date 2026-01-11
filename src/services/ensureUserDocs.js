@@ -15,7 +15,7 @@ export const ensureUserDocs = async (db, uidOrUser) => {
         return;
     }
 
-    const todayStr = timeService.getISOString().split('T')[0]; 
+    const todayStr = timeService.getTodayStr(); 
 
     // ==================== USER PROFILE ====================
     const userProfilePath = buildUserProfilePath(uid);
