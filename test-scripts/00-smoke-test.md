@@ -1,7 +1,7 @@
 # 🔥 Critical Path Smoke Test
 
 > **Run before EVERY deployment to TEST or PROD**  
-> *34 Scenarios | ~3-4 Hours | Tests Core User Journey*
+> *35 Scenarios | ~3-4 Hours | Tests Core User Journey*
 
 ---
 
