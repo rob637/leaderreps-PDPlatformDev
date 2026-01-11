@@ -252,7 +252,11 @@ const AdminPortal = () => {
                     return (
                       <button
                         key={item.id}
-                        onClick={() => setActiveTab(item.id)}
+                        onClick={() => {
+                          setActiveTab(item.id);
+                          // Scroll content area to top when switching tabs
+                          document.getElementById('admin-content-area')?.scrollTo(0, 0);
+                        }}
                         className={`
                           w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                           ${isActive 
@@ -272,7 +276,7 @@ const AdminPortal = () => {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
+        <div className="flex-1 overflow-y-auto bg-slate-50 p-6" id="admin-content-area">
           <div className="max-w-6xl mx-auto">
             <BreadcrumbNav 
               items={[

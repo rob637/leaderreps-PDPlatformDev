@@ -160,27 +160,46 @@ const ManualTestScripts = () => {
           <Zap className="w-4 h-4 text-blue-600" />
           Test Coverage Summary
         </h4>
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <div className="bg-white/80 rounded-lg p-3 border border-blue-100">
-            <div className="font-medium text-gray-700">Manual Scenarios</div>
-            <div className="text-2xl font-bold text-corporate-navy">{MANUAL_TOTAL_SCENARIOS}</div>
-            <div className="text-xs text-gray-500">Human-executed QA</div>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          {/* Manual Testing */}
+          <div className="bg-white/80 rounded-lg p-4 border border-blue-100">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-4 h-4 text-amber-600" />
+              <div className="font-bold text-gray-800">Manual Testing</div>
+              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Human QA</span>
+            </div>
+            <div className="text-3xl font-bold text-corporate-navy">{MANUAL_TOTAL_SCENARIOS}</div>
+            <div className="text-xs text-gray-500 mt-1">scenarios in {MANUAL_SUITE_COUNT} test scripts</div>
+            <div className="text-xs text-gray-400 mt-2">test-scripts/*.md</div>
           </div>
-          <div className="bg-white/80 rounded-lg p-3 border border-blue-100">
-            <div className="font-medium text-gray-700">E2E Suite Tests</div>
-            <div className="text-2xl font-bold text-corporate-teal">{E2E_SUITES_TOTAL}</div>
-            <div className="text-xs text-gray-500">Automated (Playwright)</div>
-          </div>
-          <div className="bg-white/80 rounded-lg p-3 border border-blue-100">
-            <div className="font-medium text-gray-700">E2E Journeys</div>
-            <div className="text-2xl font-bold text-indigo-600">{E2E_JOURNEYS_TOTAL}</div>
-            <div className="text-xs text-gray-500">Extended user flows</div>
+          
+          {/* Automated Testing */}
+          <div className="bg-white/80 rounded-lg p-4 border border-blue-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-4 h-4 text-corporate-teal" />
+              <div className="font-bold text-gray-800">E2E Automated</div>
+              <span className="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded">Playwright</span>
+            </div>
+            <div className="flex items-baseline gap-3">
+              <div>
+                <div className="text-3xl font-bold text-corporate-teal">{E2E_SUITES_TOTAL}</div>
+                <div className="text-xs text-gray-500">suite tests</div>
+              </div>
+              <div className="text-gray-300">+</div>
+              <div>
+                <div className="text-3xl font-bold text-indigo-600">{E2E_JOURNEYS_TOTAL}</div>
+                <div className="text-xs text-gray-500">journey tests</div>
+              </div>
+            </div>
+            <div className="text-xs text-gray-400 mt-2">e2e-tests/suites/ & e2e-tests/journeys/</div>
           </div>
         </div>
-        <p className="text-xs text-gray-600 mt-3">
-          <strong>Journeys</strong> are comprehensive end-to-end user flow tests that expand on the suite tests. 
-          They test complete user journeys (e.g., entire prep phase from signup to Day 1) vs individual scenarios.
-        </p>
+        <div className="mt-3 p-3 bg-white/60 rounded-lg border border-blue-100">
+          <p className="text-xs text-gray-600">
+            <strong>Suite Tests</strong> ({E2E_SUITES_TOTAL}) mirror manual scenarios 1:1 for automation.
+            <strong className="ml-2">Journey Tests</strong> ({E2E_JOURNEYS_TOTAL}) are extended multi-step flows that test complete user journeys.
+          </p>
+        </div>
       </div>
       
       {/* Quick Start Guide */}
