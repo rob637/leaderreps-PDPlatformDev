@@ -6,44 +6,67 @@
  * 
  * Update counts here when adding/removing tests. All totals are calculated automatically.
  * 
- * LAST AUDIT: Jan 2026
- * - Manual: grep header lines in test-scripts/*.md
- * - E2E Suites: grep -c "test('" e2e-tests/suites/*.spec.js
- * - E2E Journeys: grep -c "test('" e2e-tests/journeys/*.spec.js
+ * LAST AUDIT: Jan 11, 2026
+ * Counts verified by: grep -cE "^\s+test\(" e2e-tests/*.spec.js e2e-tests/suites/*.spec.js
+ * 
+ * KEY INSIGHT: E2E Suites are 1:1 automations of Manual Test Scripts.
+ * Journeys are ADDITIONAL cross-functional tests (not duplicates).
  */
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MANUAL TEST SCRIPTS (test-scripts/*.md)
-// These are human-executed QA scenarios documented in markdown files
+// TEST AREAS - Each area has Manual tests AND matching E2E automation
 // ═══════════════════════════════════════════════════════════════════════════════
-export const MANUAL_TEST_SCRIPTS = {
+export const TEST_AREAS = {
   smoke: {
-    id: 'smoke-test',
+    id: 'smoke',
     name: 'Critical Path Smoke Test',
-    file: '00-smoke-test.md',
-    scenarios: 34,
+    manualFile: '00-smoke-test.md',
+    e2eFile: 'smoke.spec.js',       // Root level file
+    manual: 34,                      // From manual test script header
+    automated: 17,                   // grep -cE "^\s+test\(" smoke.spec.js
+    gap: 17,                         // 34 - 17 = 17 tests NOT yet automated
     time: '3-4 hours',
     priority: 'Critical',
-    description: 'Run before EVERY deployment. Tests core user journey end-to-end.',
+    description: 'Run before EVERY deployment. Tests core user journey.',
     icon: 'Flame',
     color: 'red'
   },
+  auth: {
+    id: 'auth',
+    name: 'Authentication Tests',
+    manualFile: '06-authentication.md',
+    e2eFile: 'suites/01-authentication.spec.js',
+    manual: 16,
+    automated: 16,                   // ✓ Fully automated
+    gap: 0,
+    time: '1-2 hours',
+    priority: 'High',
+    description: 'Login, logout, signup, password reset, protected routes.',
+    icon: 'Shield',
+    color: 'gray'
+  },
   prep: {
-    id: 'prep-phase',
+    id: 'prep',
     name: 'Prep Phase Tests',
-    file: '01-prep-phase.md',
-    scenarios: 14,
+    manualFile: '01-prep-phase.md',
+    e2eFile: 'suites/02-prep-phase.spec.js',
+    manual: 14,
+    automated: 14,                   // ✓ Fully automated
+    gap: 0,
     time: '2-3 hours',
     priority: 'High',
-    description: 'New user registration, prep gate, leader profile, baseline assessment.',
+    description: 'New user registration, prep gate, leader profile, baseline.',
     icon: 'UserPlus',
     color: 'purple'
   },
   am: {
-    id: 'am-bookend',
+    id: 'am',
     name: 'AM Bookend Tests',
-    file: '02-dev-am-bookend.md',
-    scenarios: 20,
+    manualFile: '02-dev-am-bookend.md',
+    e2eFile: 'suites/03-am-bookend.spec.js',
+    manual: 20,
+    automated: 21,                   // +1 extra E2E test
+    gap: -1,
     time: '2-3 hours',
     priority: 'High',
     description: 'Grounding Rep, Win the Day, Daily Reps, Scorecard.',
@@ -51,82 +74,69 @@ export const MANUAL_TEST_SCRIPTS = {
     color: 'amber'
   },
   pm: {
-    id: 'pm-bookend',
+    id: 'pm',
     name: 'PM Bookend Tests',
-    file: '03-dev-pm-bookend.md',
-    scenarios: 12,
+    manualFile: '03-dev-pm-bookend.md',
+    e2eFile: 'suites/04-pm-bookend.spec.js',
+    manual: 12,
+    automated: 13,                   // +1 extra E2E test
+    gap: -1,
     time: '1.5 hours',
     priority: 'High',
-    description: 'PM Reflection (What went well/What needs work/Closing thought), Daily completion.',
+    description: 'PM Reflection, Daily completion.',
     icon: 'Moon',
     color: 'indigo'
   },
   content: {
-    id: 'content-library',
+    id: 'content',
     name: 'Content Library Tests',
-    file: '04-content-library.md',
-    scenarios: 22,
+    manualFile: '04-content-library.md',
+    e2eFile: 'suites/05-content-library.spec.js',
+    manual: 22,
+    automated: 22,                   // ✓ Fully automated
+    gap: 0,
     time: '2-3 hours',
     priority: 'High',
-    description: 'Video playback, readings, tools, filters, search, content gating.',
+    description: 'Video playback, readings, tools, filters, search.',
     icon: 'Library',
     color: 'blue'
   },
   post: {
-    id: 'post-phase',
+    id: 'post',
     name: 'Post Phase Tests',
-    file: '05-post-phase.md',
-    scenarios: 12,
+    manualFile: '05-post-phase.md',
+    e2eFile: 'suites/06-post-phase.spec.js',
+    manual: 12,
+    automated: 12,                   // ✓ Fully automated
+    gap: 0,
     time: '1-2 hours',
     priority: 'Medium',
-    description: 'Day 70→71 transition, full content access, continued practice.',
+    description: 'Day 70→71 transition, full content access.',
     icon: 'GraduationCap',
     color: 'green'
-  },
-  auth: {
-    id: 'authentication',
-    name: 'Authentication Tests',
-    file: '06-authentication.md',
-    scenarios: 16,
-    time: '1-2 hours',
-    priority: 'High',
-    description: 'Login, logout, signup, password reset, protected routes.',
-    icon: 'Shield',
-    color: 'gray'
   },
   zones: {
     id: 'zones',
     name: 'Zones Tests',
-    file: '07-zones.md',
-    scenarios: 36,
+    manualFile: '07-zones.md',
+    e2eFile: 'suites/07-zones.spec.js',
+    manual: 36,
+    automated: 35,                   // -1 missing
+    gap: 1,
     time: '3-4 hours',
     priority: 'High',
-    description: 'Community (Day 15+), Coaching (Day 22+), Locker, zone gates.',
+    description: 'Community (Day 15+), Coaching (Day 22+), Locker.',
     icon: 'Target',
     color: 'teal'
   }
 };
 
-// Recommended manual test execution order (follows user journey)
-export const MANUAL_TEST_ORDER = ['smoke', 'auth', 'prep', 'am', 'pm', 'content', 'zones', 'post'];
+// Recommended test execution order (follows user journey)
+export const TEST_ORDER = ['smoke', 'auth', 'prep', 'am', 'pm', 'content', 'zones', 'post'];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// E2E AUTOMATED TESTS - SUITES (e2e-tests/suites/*.spec.js)
-// Playwright tests that mirror manual test scripts
-// ═══════════════════════════════════════════════════════════════════════════════
-export const E2E_TEST_SUITES = {
-  auth: { id: 'suite-auth', name: 'Authentication', count: 16, icon: 'Shield', color: 'gray' },
-  prep: { id: 'suite-prep', name: 'Prep Phase', count: 14, icon: 'UserCheck', color: 'purple' },
-  am: { id: 'suite-am', name: 'AM Bookend', count: 21, icon: 'Sun', color: 'amber' },
-  pm: { id: 'suite-pm', name: 'PM Bookend', count: 13, icon: 'Moon', color: 'indigo' },
-  content: { id: 'suite-content', name: 'Content Library', count: 22, icon: 'Library', color: 'blue' },
-  post: { id: 'suite-post', name: 'Post Phase', count: 12, icon: 'GraduationCap', color: 'green' },
-  zones: { id: 'suite-zones', name: 'Zones', count: 35, icon: 'Map', color: 'teal' },
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// E2E AUTOMATED TESTS - JOURNEYS (e2e-tests/journeys/*.spec.js)
-// Comprehensive end-to-end user journey tests (more detailed than suites)
+// E2E JOURNEYS - ADDITIONAL cross-functional tests (NOT 1:1 with manual)
+// These test complete user flows that span multiple areas
 // ═══════════════════════════════════════════════════════════════════════════════
 export const E2E_JOURNEY_TESTS = {
   prep: { id: 'journey-prep', name: 'Prep Journey', count: 18, description: 'Complete new user prep experience' },
@@ -136,10 +146,10 @@ export const E2E_JOURNEY_TESTS = {
   post: { id: 'journey-post', name: 'Post Phase', count: 26, description: 'Day 71+ ongoing access journey' },
 };
 
-// Quick run command counts for E2E
-export const QUICK_COMMAND_COUNTS = {
-  smoke: 16,    // smoke.spec.js - Critical path automated checks
-  auth: 14,     // auth.spec.js - Authentication flow tests
+// Legacy quick commands (separate from suite structure)
+export const QUICK_COMMANDS = {
+  smoke: { file: 'smoke.spec.js', count: 17, description: 'Quick smoke checks' },
+  auth: { file: 'auth.spec.js', count: 14, description: 'Auth flow validation' },
 };
 
 // Environment options for testing
@@ -150,19 +160,69 @@ export const ENVIRONMENTS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CALCULATED TOTALS (auto-calculated from above)
+// CALCULATED TOTALS (auto-calculated from TEST_AREAS)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Manual test totals
-export const MANUAL_TOTAL_SCENARIOS = Object.values(MANUAL_TEST_SCRIPTS).reduce((sum, s) => sum + s.scenarios, 0);
-export const MANUAL_CRITICAL_PATH = MANUAL_TEST_SCRIPTS.smoke.scenarios;
-export const MANUAL_SUITE_COUNT = Object.keys(MANUAL_TEST_SCRIPTS).length;
+// Total manual tests across all areas
+export const MANUAL_TOTAL = Object.values(TEST_AREAS).reduce((sum, a) => sum + a.manual, 0);
 
-// E2E test totals
-export const E2E_SUITES_TOTAL = Object.values(E2E_TEST_SUITES).reduce((sum, s) => sum + s.count, 0);
-export const E2E_JOURNEYS_TOTAL = Object.values(E2E_JOURNEY_TESTS).reduce((sum, s) => sum + s.count, 0);
+// Total automated tests (E2E suites that map to manual tests)
+export const AUTOMATED_TOTAL = Object.values(TEST_AREAS).reduce((sum, a) => sum + a.automated, 0);
 
-// Legacy exports for backward compatibility
+// Gap: How many manual tests are NOT yet automated
+export const AUTOMATION_GAP = MANUAL_TOTAL - AUTOMATED_TOTAL;
+
+// Automation coverage percentage
+export const AUTOMATION_COVERAGE = Math.round((AUTOMATED_TOTAL / MANUAL_TOTAL) * 100);
+
+// Journey tests (additional, not 1:1 with manual)
+export const E2E_JOURNEYS_TOTAL = Object.values(E2E_JOURNEY_TESTS).reduce((sum, j) => sum + j.count, 0);
+
+// Area count
+export const TEST_AREA_COUNT = Object.keys(TEST_AREAS).length;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LEGACY EXPORTS (for backward compatibility with existing components)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Map TEST_AREAS to old MANUAL_TEST_SCRIPTS format
+export const MANUAL_TEST_SCRIPTS = Object.fromEntries(
+  Object.entries(TEST_AREAS).map(([key, area]) => [
+    key,
+    {
+      id: area.id,
+      name: area.name,
+      file: area.manualFile,
+      scenarios: area.manual,
+      time: area.time,
+      priority: area.priority,
+      description: area.description,
+      icon: area.icon,
+      color: area.color
+    }
+  ])
+);
+
+// Map TEST_AREAS to old E2E_TEST_SUITES format
+export const E2E_TEST_SUITES = Object.fromEntries(
+  Object.entries(TEST_AREAS).map(([key, area]) => [
+    key,
+    {
+      id: `suite-${area.id}`,
+      name: area.name,
+      count: area.automated,
+      icon: area.icon,
+      color: area.color
+    }
+  ])
+);
+
+export const MANUAL_TEST_ORDER = TEST_ORDER;
+export const MANUAL_TOTAL_SCENARIOS = MANUAL_TOTAL;
+export const MANUAL_CRITICAL_PATH = TEST_AREAS.smoke.manual;
+export const MANUAL_SUITE_COUNT = TEST_AREA_COUNT;
+export const E2E_SUITES_TOTAL = AUTOMATED_TOTAL;
 export const TEST_SUITES = E2E_TEST_SUITES;
-export const TOTAL_TEST_COUNT = E2E_SUITES_TOTAL;
+export const TOTAL_TEST_COUNT = AUTOMATED_TOTAL;
+export const QUICK_COMMAND_COUNTS = { smoke: QUICK_COMMANDS.smoke.count, auth: QUICK_COMMANDS.auth.count };
 

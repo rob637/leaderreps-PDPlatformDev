@@ -49,7 +49,13 @@ import {
   MANUAL_CRITICAL_PATH,
   MANUAL_SUITE_COUNT,
   E2E_SUITES_TOTAL,
-  E2E_JOURNEYS_TOTAL
+  E2E_JOURNEYS_TOTAL,
+  TEST_AREAS,
+  TEST_ORDER,
+  MANUAL_TOTAL,
+  AUTOMATED_TOTAL,
+  AUTOMATION_GAP,
+  AUTOMATION_COVERAGE
 } from './testSuiteConfig';
 
 // Icon mapping
@@ -160,44 +166,90 @@ const ManualTestScripts = () => {
           <Zap className="w-4 h-4 text-blue-600" />
           Test Coverage Summary
         </h4>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          {/* Manual Testing */}
-          <div className="bg-white/80 rounded-lg p-4 border border-blue-100">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="w-4 h-4 text-amber-600" />
-              <div className="font-bold text-gray-800">Manual Testing</div>
-              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Human QA</span>
-            </div>
-            <div className="text-3xl font-bold text-corporate-navy">{MANUAL_TOTAL_SCENARIOS}</div>
-            <div className="text-xs text-gray-500 mt-1">scenarios in {MANUAL_SUITE_COUNT} test scripts</div>
-            <div className="text-xs text-gray-400 mt-2">test-scripts/*.md</div>
+        
+        {/* Automation Coverage Bar */}
+        <div className="bg-white rounded-lg p-4 border border-blue-100 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">E2E Automation Coverage</span>
+            <span className="text-lg font-bold text-corporate-teal">{AUTOMATION_COVERAGE}%</span>
           </div>
-          
-          {/* Automated Testing */}
-          <div className="bg-white/80 rounded-lg p-4 border border-blue-100">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="w-4 h-4 text-corporate-teal" />
-              <div className="font-bold text-gray-800">E2E Automated</div>
-              <span className="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded">Playwright</span>
-            </div>
-            <div className="flex items-baseline gap-3">
-              <div>
-                <div className="text-3xl font-bold text-corporate-teal">{E2E_SUITES_TOTAL}</div>
-                <div className="text-xs text-gray-500">suite tests</div>
-              </div>
-              <div className="text-gray-300">+</div>
-              <div>
-                <div className="text-3xl font-bold text-indigo-600">{E2E_JOURNEYS_TOTAL}</div>
-                <div className="text-xs text-gray-500">journey tests</div>
-              </div>
-            </div>
-            <div className="text-xs text-gray-400 mt-2">e2e-tests/suites/ & e2e-tests/journeys/</div>
+          <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-corporate-teal to-green-500 rounded-full transition-all"
+              style={{ width: `${AUTOMATION_COVERAGE}%` }}
+            />
+          </div>
+          <div className="flex justify-between mt-2 text-xs text-gray-500">
+            <span>{AUTOMATED_TOTAL} of {MANUAL_TOTAL} manual tests automated</span>
+            <span className="text-amber-600 font-medium">{AUTOMATION_GAP} tests remaining</span>
           </div>
         </div>
+        
+        {/* Per-Area Breakdown */}
+        <div className="bg-white rounded-lg border border-blue-100 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left py-2 px-3 font-medium text-gray-600">Test Area</th>
+                <th className="text-center py-2 px-3 font-medium text-gray-600">Manual</th>
+                <th className="text-center py-2 px-3 font-medium text-gray-600">Automated</th>
+                <th className="text-center py-2 px-3 font-medium text-gray-600">Gap</th>
+                <th className="text-center py-2 px-3 font-medium text-gray-600">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {TEST_ORDER.map(key => {
+                const area = TEST_AREAS[key];
+                const coverage = Math.round((area.automated / area.manual) * 100);
+                return (
+                  <tr key={key} className="hover:bg-gray-50">
+                    <td className="py-2 px-3 font-medium text-gray-800">{area.name}</td>
+                    <td className="py-2 px-3 text-center text-gray-600">{area.manual}</td>
+                    <td className="py-2 px-3 text-center text-corporate-teal font-medium">{area.automated}</td>
+                    <td className="py-2 px-3 text-center">
+                      {area.gap > 0 ? (
+                        <span className="text-amber-600 font-medium">-{area.gap}</span>
+                      ) : area.gap < 0 ? (
+                        <span className="text-blue-600 font-medium">+{Math.abs(area.gap)}</span>
+                      ) : (
+                        <span className="text-gray-400">0</span>
+                      )}
+                    </td>
+                    <td className="py-2 px-3 text-center">
+                      {area.gap === 0 ? (
+                        <span className="inline-flex items-center gap-1 text-green-600">
+                          <CheckCircle2 className="w-4 h-4" /> 100%
+                        </span>
+                      ) : area.gap < 0 ? (
+                        <span className="inline-flex items-center gap-1 text-blue-600">
+                          <CheckCircle2 className="w-4 h-4" /> {coverage}%+
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-amber-600">
+                          <AlertTriangle className="w-4 h-4" /> {coverage}%
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot className="bg-gray-50 font-bold">
+              <tr>
+                <td className="py-2 px-3 text-gray-800">TOTAL</td>
+                <td className="py-2 px-3 text-center text-gray-800">{MANUAL_TOTAL}</td>
+                <td className="py-2 px-3 text-center text-corporate-teal">{AUTOMATED_TOTAL}</td>
+                <td className="py-2 px-3 text-center text-amber-600">{AUTOMATION_GAP > 0 ? `-${AUTOMATION_GAP}` : '0'}</td>
+                <td className="py-2 px-3 text-center text-corporate-teal">{AUTOMATION_COVERAGE}%</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        
+        {/* Journey Tests Note */}
         <div className="mt-3 p-3 bg-white/60 rounded-lg border border-blue-100">
           <p className="text-xs text-gray-600">
-            <strong>Suite Tests</strong> ({E2E_SUITES_TOTAL}) mirror manual scenarios 1:1 for automation.
-            <strong className="ml-2">Journey Tests</strong> ({E2E_JOURNEYS_TOTAL}) are extended multi-step flows that test complete user journeys.
+            <strong className="text-indigo-600">+ {E2E_JOURNEYS_TOTAL} Journey Tests</strong> — Extended multi-step flows that test complete user journeys (additional to suite tests above).
           </p>
         </div>
       </div>
@@ -211,7 +263,7 @@ const ManualTestScripts = () => {
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div className="bg-white/10 rounded-lg p-4">
             <div className="font-bold text-amber-300 mb-2">Before Deployment</div>
-            <p className="opacity-90">Run the Smoke Test (36 scenarios) to validate core functionality before any release.</p>
+            <p className="opacity-90">Run the Smoke Test ({MANUAL_CRITICAL_PATH} scenarios) to validate core functionality before any release.</p>
           </div>
           <div className="bg-white/10 rounded-lg p-4">
             <div className="font-bold text-green-300 mb-2">Full Regression</div>
