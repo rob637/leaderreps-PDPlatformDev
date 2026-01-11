@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "echo '❌ BLOCKED: Use deploy:dev or deploy:test to prevent env mixup' && exit 1",
-    "build:internal": "vite build",
+    "_build:called-by-deploy-script-only": "vite build",
     "visualize": "VISUALIZE=true vite build",
     "build:debug": "vite build --debug",
     "preview": "vite preview --port 4173",

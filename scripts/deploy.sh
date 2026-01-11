@@ -121,7 +121,7 @@ fi
 # Step 2: Build
 echo ""
 echo -e "${BLUE}🏗️  Step 2: Building application...${NC}"
-npm run build:internal
+npm run _build:called-by-deploy-script-only
 
 # Step 3: Verify build has correct project ID
 BUILD_ENV_CHECK=$(grep -o "leaderreps-[a-z-]*" build/assets/*.js 2>/dev/null | head -1 || echo "")
