@@ -20,7 +20,7 @@ import {
   URLS, 
   waitForPageLoad,
   setupConsoleErrorCapture 
-} from './utils/test-helpers.js';
+} from '../utils/test-helpers.js';
 
 test.describe('☀️ AM Bookend Tests', () => {
   

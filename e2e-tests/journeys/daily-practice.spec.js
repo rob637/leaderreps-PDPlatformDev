@@ -21,12 +21,13 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { waitForPageLoad, waitForFirestoreSync, login } from '../utils/test-helpers';
+import { waitForPageLoad, waitForFirestoreSync } from '../utils/test-helpers';
+
+// Note: Auth is handled by storageState from auth setup - no manual login needed
 
 test.describe('🌅 Morning Bookend (AM Practice)', () => {
   
   test.beforeEach(async ({ page }) => {
-    await login(page);
     await page.goto('/');
     await waitForPageLoad(page);
   });
@@ -279,7 +280,6 @@ test.describe('🌅 Morning Bookend (AM Practice)', () => {
 test.describe('🌙 Evening Bookend (PM Practice)', () => {
   
   test.beforeEach(async ({ page }) => {
-    await login(page);
     await page.goto('/');
     await waitForPageLoad(page);
   });
@@ -463,7 +463,8 @@ test.describe('🌙 Evening Bookend (PM Practice)', () => {
 test.describe('📋 Daily Commitment Scorecard', () => {
   
   test.beforeEach(async ({ page }) => {
-    await login(page);
+    await page.goto('/');
+    await waitForPageLoad(page);
   });
   
   test.describe('Section 7: Commitment Management', () => {

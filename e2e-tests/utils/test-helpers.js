@@ -182,6 +182,7 @@ export const SELECTORS = {
 
 // Page URLs (relative to base URL)
 export const URLS = {
+  base: '/',
   login: '/',
   signup: '/?signup',
   dashboard: '/',
@@ -191,6 +192,8 @@ export const URLS = {
   coaching: '/',
   locker: '/',
   admin: '/',
+  invite: '/invite',
+  resetPassword: '/reset-password',
 };
 
 /**

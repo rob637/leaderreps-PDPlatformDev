@@ -65,11 +65,11 @@ export default defineConfig({
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',
     
-    // Screenshot on failure
-    screenshot: 'only-on-failure',
+    // Screenshot on every test (change to 'only-on-failure' to save space)
+    screenshot: 'on',
     
-    // Video on failure (useful for debugging)
-    video: 'retain-on-failure',
+    // Video on every test (change to 'retain-on-failure' to save space)
+    video: 'on',
     
     // Viewport size (responsive design)
     viewport: { width: 1280, height: 720 },

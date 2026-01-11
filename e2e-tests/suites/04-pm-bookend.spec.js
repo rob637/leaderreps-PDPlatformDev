@@ -42,7 +42,7 @@ test.describe('🌙 PM Bookend Test Suite', () => {
         await expect(pmReflection.first()).toBeVisible();
       }
       
-      checkForErrors(consoleCapture);
+      checkForErrors(page);
     });
 
     // DEV-PM-002: PM Reflection - Field 1: What Went Well

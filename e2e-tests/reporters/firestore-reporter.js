@@ -107,14 +107,17 @@ class FirestoreReporter {
       name: test.title,
       status: result.status,
       duration: result.duration,
-      retries: result.retry,
-      error: result.error ? {
-        message: result.error.message,
-        stack: result.error.stack?.slice(0, 500) // Truncate for storage
-      } : null
     };
     
-    suite.tests.push(testResult);
+    // Only store error details for failures (reduces storage significantly)
+    if (result.status === 'failed' || result.status === 'timedOut') {
+      testResult.error = result.error ? {
+        message: result.error.message?.slice(0, 300), // Truncate for storage
+      } : null;
+      // Only add failed tests to the suite
+      suite.tests.push(testResult);
+    }
+    // Don't store passed test details - just count them
     
     // Update counters
     this.results.summary.total++;
@@ -169,21 +172,38 @@ class FirestoreReporter {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       
-      // Save current results (overwrite)
-      await db.collection('metadata').doc('e2e-test-results').set({
-        ...this.results,
+      // Create minimal results object (only summary + failures)
+      const minimalResults = {
+        startTime: this.results.startTime,
+        endTime: this.results.endTime,
+        duration: this.results.duration,
+        environment: this.results.environment,
+        summary: this.results.summary,
+        // Only include suites that have failures
+        failedTests: this.results.suites
+          .filter(s => s.failed > 0)
+          .map(s => ({
+            name: s.name,
+            failed: s.failed,
+            tests: s.tests // Already filtered to only failures
+          })),
         updatedAt: new Date().toISOString()
-      });
+      };
       
-      // Save to history
-      await db.collection('metadata').doc('e2e-test-history')
-        .collection('runs')
-        .doc(timestamp)
-        .set(this.results);
+      // Save current results (overwrite - single document)
+      await db.collection('metadata').doc('e2e-test-results').set(minimalResults);
+      
+      // Only save to history if there were failures (saves storage)
+      if (this.results.summary.failed > 0) {
+        await db.collection('metadata').doc('e2e-test-history')
+          .collection('runs')
+          .doc(timestamp)
+          .set(minimalResults);
+        console.log(`   History: metadata/e2e-test-history/runs/${timestamp}`);
+      }
       
       console.log('\n✅ Results uploaded to Firestore!');
       console.log(`   Latest: metadata/e2e-test-results`);
-      console.log(`   History: metadata/e2e-test-history/runs/${timestamp}`);
       
     } catch (error) {
       console.error('\n❌ Failed to upload results:', error.message);

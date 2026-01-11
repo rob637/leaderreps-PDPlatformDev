@@ -50,7 +50,7 @@ test.describe('🗺️ Zones Test Suite', () => {
         expect(hasGate || onCommunity).toBeTruthy();
       }
       
-      checkForErrors(consoleCapture);
+      checkForErrors(page);
     });
 
     // ZONE-002: Community Access Gate - Day 15+
@@ -151,7 +151,7 @@ test.describe('🗺️ Zones Test Suite', () => {
       }
       
       // Look for members section
-      const members = page.locator('text=/members|cohort|participants/i, [class*="member"]');
+      const members = page.locator('text=/members|cohort|participants/i').or(page.locator('[class*="member"]'));
       
       if (await members.count() > 0) {
         await members.first().click();
@@ -248,7 +248,7 @@ test.describe('🗺️ Zones Test Suite', () => {
       await waitForPageLoad(page);
       
       // Look for resources section
-      const resources = page.locator('text=/resources|documents|files/i, [class*="resource"]');
+      const resources = page.locator('text=/resources|documents|files/i').or(page.locator('[class*="resource"]'));
       
       if (await resources.count() > 0 && await resources.first().isVisible()) {
         await resources.first().click();
@@ -284,11 +284,11 @@ test.describe('🗺️ Zones Test Suite', () => {
         return;
       }
       
-      // Try to access coaching
-      const coachingLink = page.locator('a:has-text("Coaching"), [href*="coaching"], [href*="labs"]');
+      // Try to access coaching - use visible nav links only, not <link> tags
+      const coachingLink = page.locator('a:has-text("Coaching"):visible, nav a[href*="coaching"], button:has-text("Coaching")');
       
       if (await coachingLink.count() > 0) {
-        await coachingLink.first().click();
+        await coachingLink.first().click({ timeout: 5000 });
         await waitForPageLoad(page);
         
         // Should show gate or coaching
@@ -312,11 +312,11 @@ test.describe('🗺️ Zones Test Suite', () => {
         return;
       }
       
-      // Access coaching
-      const coachingLink = page.locator('a:has-text("Coaching"), [href*="coaching"], [href*="labs"]');
+      // Access coaching - use visible nav links only
+      const coachingLink = page.locator('a:has-text("Coaching"):visible, nav a[href*="coaching"], button:has-text("Coaching")');
       
       if (await coachingLink.count() > 0) {
-        await coachingLink.first().click();
+        await coachingLink.first().click({ timeout: 5000 });
         await waitForPageLoad(page);
         
         const coachingContent = page.locator('text=/coaching|1:1|schedule|mentor|sessions/i');
@@ -361,7 +361,7 @@ test.describe('🗺️ Zones Test Suite', () => {
       }
       
       // Look for coaches
-      const coaches = page.locator('text=/coach|mentor|advisor/i, [class*="coach"]');
+      const coaches = page.locator('text=/coach|mentor|advisor/i').or(page.locator('[class*="coach"]'));
       
       if (await coaches.count() > 0) {
         await expect(coaches.first()).toBeVisible();
@@ -458,7 +458,7 @@ test.describe('🗺️ Zones Test Suite', () => {
       await waitForPageLoad(page);
       
       // Look for notes section
-      const notes = page.locator('text=/notes|takeaway|summary/i, textarea');
+      const notes = page.locator('text=/notes|takeaway|summary/i').or(page.locator('textarea'));
       
       const hasNotes = await notes.count() >= 0;
       expect(hasNotes).toBeTruthy();
@@ -476,7 +476,7 @@ test.describe('🗺️ Zones Test Suite', () => {
       }
       
       // Look for coach profile
-      const coachProfile = page.locator('[class*="coach"] [class*="avatar"], text=/bio|about|profile/i');
+      const coachProfile = page.locator('[class*="coach"] [class*="avatar"]').or(page.locator('text=/bio|about|profile/i'));
       
       if (await coachProfile.count() > 0 && await coachProfile.first().isVisible()) {
         await coachProfile.first().click();
@@ -579,7 +579,7 @@ test.describe('🗺️ Zones Test Suite', () => {
       }
       
       // Look for saved items
-      const savedItems = page.locator('text=/saved|favorite|bookmark/i, [class*="saved"]');
+      const savedItems = page.locator('text=/saved|favorite|bookmark/i').or(page.locator('[class*="saved"]'));
       
       if (await savedItems.count() > 0) {
         await expect(savedItems.first()).toBeVisible();
@@ -638,7 +638,7 @@ test.describe('🗺️ Zones Test Suite', () => {
       }
       
       // Look for progress
-      const progress = page.locator('text=/progress|streak|stats|metrics|\\d+%/i, [class*="progress"]');
+      const progress = page.locator('text=/progress|streak|stats|metrics|\\d+%/i').or(page.locator('[class*="progress"]'));
       
       if (await progress.count() > 0) {
         await expect(progress.first()).toBeVisible();
@@ -653,7 +653,7 @@ test.describe('🗺️ Zones Test Suite', () => {
       await waitForPageLoad(page);
       
       // Look for certificates/badges
-      const badges = page.locator('text=/certificate|badge|achievement|award/i, [class*="badge"], [class*="certificate"]');
+      const badges = page.locator('text=/certificate|badge|achievement|award/i').or(page.locator('[class*="badge"]')).or(page.locator('[class*="certificate"]'));
       
       if (await badges.count() > 0 && await badges.first().isVisible()) {
         await expect(badges.first()).toBeVisible();
@@ -680,7 +680,7 @@ test.describe('🗺️ Zones Test Suite', () => {
       await waitForPageLoad(page);
       
       // Look for notes section
-      const notes = page.locator('text=/notes|journal|personal/i, textarea');
+      const notes = page.locator('text=/notes|journal|personal/i').or(page.locator('textarea'));
       
       if (await notes.count() > 0 && await notes.first().isVisible()) {
         await notes.first().click();

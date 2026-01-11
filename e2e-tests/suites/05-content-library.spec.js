@@ -47,7 +47,9 @@ test.describe('📚 Content Library Test Suite', () => {
         expect(onContent || true).toBeTruthy();
       }
       
-      checkForErrors(consoleCapture);
+      // Check for page errors
+      const pageErrors = await checkForErrors(page);
+      expect(pageErrors.length).toBe(0);
     });
 
     // DEV-CON-002: Content Grid Display
@@ -81,9 +83,9 @@ test.describe('📚 Content Library Test Suite', () => {
       }
       
       // Look for content type indicators
-      const videoIndicator = page.locator('text=/video|watch/i, svg[class*="video"], [class*="video"]');
-      const readingIndicator = page.locator('text=/reading|read|article/i, svg[class*="book"], [class*="read"]');
-      const toolIndicator = page.locator('text=/tool|template|worksheet/i, [class*="tool"]');
+      const videoIndicator = page.locator('text=/video|watch/i').or(page.locator('svg[class*="video"]')).or(page.locator('[class*="video"]'));
+      const readingIndicator = page.locator('text=/reading|read|article/i').or(page.locator('svg[class*="book"]')).or(page.locator('[class*="read"]'));
+      const toolIndicator = page.locator('text=/tool|template|worksheet/i').or(page.locator('[class*="tool"]'));
       
       const hasTypes = await videoIndicator.count() > 0 || 
                        await readingIndicator.count() > 0 || 
@@ -156,7 +158,7 @@ test.describe('📚 Content Library Test Suite', () => {
       }
       
       // Look for week filter
-      const weekFilter = page.locator('text=/week \\d|day \\d/i, select, [class*="week"]');
+      const weekFilter = page.locator('text=/week \\d|day \\d/i').or(page.locator('select')).or(page.locator('[class*="week"]'));
       
       if (await weekFilter.count() > 0) {
         await weekFilter.first().click();
@@ -178,7 +180,7 @@ test.describe('📚 Content Library Test Suite', () => {
       }
       
       // Look for skill/category filter
-      const skillFilter = page.locator('text=/skill|category|topic/i, [class*="skill"], [class*="category"]');
+      const skillFilter = page.locator('text=/skill|category|topic/i').or(page.locator('[class*="skill"]')).or(page.locator('[class*="category"]'));
       
       if (await skillFilter.count() > 0 && await skillFilter.first().isVisible()) {
         await skillFilter.first().click();
@@ -194,7 +196,7 @@ test.describe('📚 Content Library Test Suite', () => {
       await waitForPageLoad(page);
       
       // Look for clear/reset option
-      const clearButton = page.locator('button:has-text("Clear"), button:has-text("Reset"), text=/all content/i');
+      const clearButton = page.locator('button:has-text("Clear")').or(page.locator('button:has-text("Reset")')).or(page.locator('text=/all content/i'));
       
       if (await clearButton.count() > 0 && await clearButton.first().isVisible()) {
         await clearButton.first().click();
@@ -358,7 +360,7 @@ test.describe('📚 Content Library Test Suite', () => {
       }
       
       // Find video content
-      const videoItem = page.locator('[class*="video"], text=/video|watch/i').first();
+      const videoItem = page.locator('[class*="video"]').or(page.locator('text=/video|watch/i')).first();
       
       if (await videoItem.count() > 0 && await videoItem.isVisible()) {
         await videoItem.click();
@@ -426,7 +428,7 @@ test.describe('📚 Content Library Test Suite', () => {
       }
       
       // Find reading content
-      const readingItem = page.locator('text=/reading|read|article/i, [class*="reading"]').first();
+      const readingItem = page.locator('text=/reading|read|article/i').or(page.locator('[class*="reading"]')).first();
       
       if (await readingItem.count() > 0 && await readingItem.isVisible()) {
         await readingItem.click();
@@ -467,7 +469,7 @@ test.describe('📚 Content Library Test Suite', () => {
       }
       
       // Find tool content
-      const toolItem = page.locator('text=/tool|template|worksheet/i, [class*="tool"]').first();
+      const toolItem = page.locator('text=/tool|template|worksheet/i').or(page.locator('[class*="tool"]')).first();
       
       if (await toolItem.count() > 0 && await toolItem.isVisible()) {
         await toolItem.click();

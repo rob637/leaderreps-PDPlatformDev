@@ -42,7 +42,9 @@ test.describe('☀️ AM Bookend Test Suite', () => {
         await expect(groundingRep.first()).toBeVisible();
       }
       
-      checkForErrors(consoleCapture);
+      // Check for page errors (not console errors)
+      const pageErrors = await checkForErrors(page);
+      expect(pageErrors.length).toBe(0);
     });
 
     // DEV-AM-002: Grounding Rep Display - No LIS
@@ -77,10 +79,12 @@ test.describe('☀️ AM Bookend Test Suite', () => {
       }
       
       // Look for edit button on grounding rep
-      const editButton = page.locator('text=/edit.*statement|edit.*lis|modify/i, button:has-text("Edit")');
+      const editTextButton = page.locator('text=/edit.*statement|edit.*lis|modify/i');
+      const editButton = page.locator('button:has-text("Edit")');
+      const editLocator = editTextButton.or(editButton);
       
-      if (await editButton.count() > 0) {
-        const btn = editButton.first();
+      if (await editLocator.count() > 0) {
+        const btn = editLocator.first();
         if (await btn.isVisible()) {
           await btn.click();
           await page.waitForTimeout(500);
@@ -405,7 +409,9 @@ test.describe('☀️ AM Bookend Test Suite', () => {
       await waitForPageLoad(page);
       
       // Look for progress indicators
-      const progress = page.locator('text=/\\d+.*of.*\\d+|\\d+%|progress|complete/i, [role="progressbar"]');
+      const progressText = page.locator('text=/\\d+.*of.*\\d+|\\d+%|progress|complete/i');
+      const progressBar = page.locator('[role="progressbar"]');
+      const progress = progressText.or(progressBar);
       
       if (await progress.count() > 0) {
         await expect(progress.first()).toBeVisible();

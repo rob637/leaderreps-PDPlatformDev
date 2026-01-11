@@ -45,6 +45,7 @@ import {
 } from 'lucide-react';
 import ManualTestScripts from './ManualTestScripts';
 import E2ETestRunner from './E2ETestRunner';
+import { TOTAL_TEST_COUNT } from './testSuiteConfig';
 import { useAppServices } from '../../services/useAppServices';
 import { 
   collection, 
@@ -1134,6 +1135,11 @@ const TestCenter = () => {
   const [showHistory, setShowHistory] = useState(false);
   const abortControllerRef = useRef(null);
   
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+  
   // Initialize test suites
   useEffect(() => {
     const suites = createTestSuites(db, user, dailyPracticeData, developmentPlanData);
@@ -1450,7 +1456,7 @@ const TestCenter = () => {
         >
           <ClipboardList className="w-4 h-4" />
           Manual Testing
-          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">168</span>
+          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">{TOTAL_TEST_COUNT}</span>
           <span className="px-1.5 py-0.5 bg-corporate-teal text-white text-xs font-bold rounded">START HERE</span>
         </button>
         <button

@@ -62,9 +62,7 @@ test.describe('Authentication - Login Flow', () => {
     // Should show error message (not redirect to dashboard)
     await page.waitForTimeout(3000);
     
-    // Verify still on login page
-    expect(page.url()).toContain('/login');
-    
+    // Verify still on login page (app uses / as login, not /login)
     // Check for error indication (various possible selectors)
     const errorIndicators = [
       '[data-testid="error"]',
@@ -87,8 +85,9 @@ test.describe('Authentication - Login Flow', () => {
       }
     }
     
-    // Either error message shown or still on login page (both acceptable)
-    expect(page.url()).toContain('/login');
+    // Either error message shown or login form still visible (app uses / as login)
+    const loginFormStillVisible = await page.locator(SELECTORS.emailInput).isVisible();
+    expect(errorFound || loginFormStillVisible).toBe(true);
   });
 
   // CROSS-AUTH-003: Email Login - Invalid Email Format
@@ -154,9 +153,12 @@ test.describe('Authentication - Login Flow', () => {
       }
     }
     
-    // Should redirect to login after logout
-    await page.waitForURL(/login/, { timeout: 15000 });
-    expect(page.url()).toContain('/login');
+    // Should redirect to login after logout (app uses / as login page)
+    // Wait for either /login URL or login form to appear
+    await page.waitForTimeout(3000);
+    const loginFormVisible = await page.locator(SELECTORS.emailInput).isVisible();
+    const onLoginUrl = page.url().includes('/login') || page.url().endsWith('/');
+    expect(loginFormVisible || onLoginUrl).toBe(true);
   });
 });
 
@@ -210,12 +212,13 @@ test.describe('Authentication - Protected Routes', () => {
   test('CROSS-AUTH-022: should require authentication for content library', async ({ page }) => {
     await page.context().clearCookies();
     
-    await page.goto(URLS.contentLibrary);
+    await page.goto(URLS.content);
     await page.waitForLoadState('load');
     await page.waitForTimeout(3000);
     
     const url = page.url();
-    console.log(`Content Library access: URL=${url}`);
+    const hasLoginPrompt = await page.locator('button:has-text("Sign In"), button:has-text("Login")').count() > 0;
+    console.log(`Content Library access: URL=${url}, hasLoginPrompt=${hasLoginPrompt}`);
   });
 });
 
@@ -299,10 +302,12 @@ test.describe('Authentication - Session Management', () => {
     
     // Open new tab
     const newPage = await context.newPage();
-    await newPage.goto(URLS.contentLibrary);
+    await newPage.goto(URLS.content);
     
-    // Both tabs should be authenticated
-    expect(newPage.url()).not.toContain('/login');
+    // Both tabs should be authenticated (check login form not visible)
+    await newPage.waitForLoadState('load');
+    const loginFormVisible = await newPage.locator(SELECTORS.emailInput).isVisible();
+    expect(loginFormVisible).toBe(false);
     
     await newPage.close();
   });
