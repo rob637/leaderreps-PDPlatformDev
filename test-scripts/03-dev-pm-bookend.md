@@ -1,7 +1,7 @@
 # 🌙 Dev Phase - PM Bookend Test Scripts
 
 > **Complete Test Coverage for PM Bookend**  
-> *12 Scenarios | ~1.5 Hours | Tests Evening Activities*
+> *13 Scenarios | ~1.5 Hours | Tests Evening Activities*
 
 ---
 

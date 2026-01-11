@@ -1,7 +1,7 @@
 # ☀️ Dev Phase - AM Bookend Test Scripts
 
 > **Complete Test Coverage for AM Bookend**  
-> *20 Scenarios | ~2-3 Hours | Tests Morning Activities*
+> *21 Scenarios | ~2-3 Hours | Tests Morning Activities*
 
 ---
 
