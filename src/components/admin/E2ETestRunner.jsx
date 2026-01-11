@@ -4,19 +4,14 @@
  * Integrates Playwright E2E tests into the Admin Command Center.
  * 
  * FEATURES:
+ * - Environment selection (Local, Dev, Test)
  * - Journey-based test organization (Prep, Daily Practice, Content, Zones)
  * - Visual test coverage dashboard
  * - Configure test credentials
- * - Select test suites to run
- * - View live test progress
- * - Detailed failure logs with screenshots
- * - Historical test results
+ * - View test results with errors and screenshots
+ * - Real-time results from Firestore
  * 
- * TEST COVERAGE: 108+ automated test scenarios covering:
- * - Prep Phase: 18 tests (onboarding, profile, baseline, actions)
- * - Daily Practice: 27 tests (AM/PM bookends, scorecard, commitments)
- * - Content Library: 28 tests (browsing, filtering, viewing)
- * - Zones: 35 tests (Community, Coaching, Locker)
+ * TEST COVERAGE: 133 automated test scenarios in 7 suites
  */
 
 import React, { useState, useEffect } from 'react';
@@ -25,6 +20,7 @@ import {
   XCircle, 
   AlertTriangle,
   ChevronDown,
+  ChevronRight,
   Copy,
   Check,
   Lock,
@@ -37,14 +33,17 @@ import {
   PlayCircle,
   BarChart3,
   Sun,
-  Moon
+  Moon,
+  Globe,
+  Image,
+  ExternalLink
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
   doc,
   onSnapshot
 } from 'firebase/firestore';
-import { TEST_SUITES, TOTAL_TEST_COUNT, QUICK_COMMAND_COUNTS } from './testSuiteConfig';
+import { TEST_SUITES, TOTAL_TEST_COUNT, QUICK_COMMAND_COUNTS, ENVIRONMENTS } from './testSuiteConfig';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // E2E Test Runner Component
@@ -54,11 +53,13 @@ const E2ETestRunner = () => {
   const { db } = useAppServices();
   
   // Configuration state
-  const [showConfig, setShowConfig] = useState(false);
+  const [showSuites, setShowSuites] = useState(false);
   const [testEmail, setTestEmail] = useState('');
   const [testPassword, setTestPassword] = useState('');
+  const [selectedEnv, setSelectedEnv] = useState('test');
   const [copiedCommand, setCopiedCommand] = useState(false);
   const [firestoreResults, setFirestoreResults] = useState(null);
+  const [expandedFailures, setExpandedFailures] = useState(new Set());
   
   // Load saved configuration
   useEffect(() => {
@@ -67,6 +68,7 @@ const E2ETestRunner = () => {
       try {
         const config = JSON.parse(savedConfig);
         setTestEmail(config.email || '');
+        setSelectedEnv(config.env || 'test');
       } catch (e) {
         console.error('Failed to load saved config:', e);
       }
@@ -76,9 +78,10 @@ const E2ETestRunner = () => {
   // Save configuration when changed
   useEffect(() => {
     localStorage.setItem('e2e-test-config', JSON.stringify({
-      email: testEmail
+      email: testEmail,
+      env: selectedEnv
     }));
-  }, [testEmail]);
+  }, [testEmail, selectedEnv]);
   
   // Load latest test results from Firestore
   useEffect(() => {
@@ -99,18 +102,68 @@ const E2ETestRunner = () => {
     return () => unsubscribe();
   }, [db]);
   
+  // Generate command with selected environment
+  const getCommand = (baseCmd) => {
+    return `E2E_ENV=${selectedEnv} ${baseCmd}`;
+  };
+  
+  // Copy command helper
+  const copyCmd = (cmd, key) => {
+    navigator.clipboard.writeText(getCommand(cmd));
+    setCopiedCommand(key);
+    setTimeout(() => setCopiedCommand(false), 2000);
+  };
+  
+  // Toggle expanded failure
+  const toggleFailure = (idx) => {
+    setExpandedFailures(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        next.add(idx);
+      }
+      return next;
+    });
+  };
+  
   return (
     <div className="space-y-6">
-      {/* Developer Config - FIRST (needed for tests to work) */}
+      {/* Developer Config - Environment & Credentials */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h4 className="font-bold text-corporate-navy flex items-center gap-2">
             <Lock className="w-4 h-4 text-corporate-teal" />
-            Developer Config
+            Test Configuration
           </h4>
-          <span className="text-xs text-gray-500">Required for authenticated tests</span>
         </div>
         
+        {/* Environment Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <Globe className="w-3 h-3 inline mr-1" />
+            Target Environment
+          </label>
+          <div className="flex gap-2">
+            {ENVIRONMENTS.map(env => (
+              <button
+                key={env.id}
+                onClick={() => setSelectedEnv(env.id)}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors
+                  ${selectedEnv === env.id 
+                    ? 'bg-corporate-teal text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                {env.name}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            {ENVIRONMENTS.find(e => e.id === selectedEnv)?.url}
+          </p>
+        </div>
+        
+        {/* Credentials */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Test Email</label>
@@ -136,9 +189,10 @@ const E2ETestRunner = () => {
         
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <p className="text-xs text-blue-700">
-            <strong>Before running tests:</strong> Set these in your terminal:
+            <strong>Before running tests:</strong> Set these environment variables in your terminal:
           </p>
           <code className="block mt-1 text-xs bg-blue-100 p-2 rounded font-mono">
+            export E2E_ENV={selectedEnv}<br/>
             export E2E_ADMIN_EMAIL="{testEmail || 'your-email'}"<br/>
             export E2E_ADMIN_PASSWORD="{testPassword ? '••••••••' : 'your-password'}"
           </code>
@@ -154,7 +208,7 @@ const E2ETestRunner = () => {
           <div className="flex-1">
             <h3 className="font-bold text-corporate-navy text-lg">Quick Run Commands</h3>
             <p className="text-sm text-gray-600 mt-1 mb-4">
-              Copy and run these in your terminal from the project root.
+              Copy and run in terminal. Tests run against <strong>{ENVIRONMENTS.find(e => e.id === selectedEnv)?.name}</strong>.
             </p>
             
             <div className="grid gap-3">
@@ -166,11 +220,7 @@ const E2ETestRunner = () => {
                     <span className="font-medium text-sm">Smoke Test ({QUICK_COMMAND_COUNTS.smoke} tests)</span>
                   </div>
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText('npm run e2e:smoke');
-                      setCopiedCommand('smoke');
-                      setTimeout(() => setCopiedCommand(false), 2000);
-                    }}
+                    onClick={() => copyCmd('npm run e2e:smoke', 'smoke')}
                     className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-mono flex items-center gap-2"
                   >
                     {copiedCommand === 'smoke' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
@@ -187,11 +237,7 @@ const E2ETestRunner = () => {
                     <span className="font-medium text-sm">Authentication Tests ({QUICK_COMMAND_COUNTS.auth} tests)</span>
                   </div>
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText('npm run e2e:auth');
-                      setCopiedCommand('auth');
-                      setTimeout(() => setCopiedCommand(false), 2000);
-                    }}
+                    onClick={() => copyCmd('npm run e2e:auth', 'auth')}
                     className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-mono flex items-center gap-2"
                   >
                     {copiedCommand === 'auth' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
@@ -200,23 +246,19 @@ const E2ETestRunner = () => {
                 </div>
               </div>
               
-              {/* Full Test */}
+              {/* All Suites */}
               <div className="bg-white rounded-lg border border-gray-200 p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded">FULL</span>
-                    <span className="font-medium text-sm">All Tests ({QUICK_COMMAND_COUNTS.full} tests, ~15 min)</span>
+                    <span className="font-medium text-sm">All Test Suites ({QUICK_COMMAND_COUNTS.suites} tests, ~10 min)</span>
                   </div>
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText('npm run e2e');
-                      setCopiedCommand('all');
-                      setTimeout(() => setCopiedCommand(false), 2000);
-                    }}
+                    onClick={() => copyCmd('npx playwright test --project=all-suites', 'all')}
                     className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-mono flex items-center gap-2"
                   >
                     {copiedCommand === 'all' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                    npm run e2e
+                    npx playwright test --project=all-suites
                   </button>
                 </div>
               </div>
@@ -226,14 +268,10 @@ const E2ETestRunner = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded">DEBUG</span>
-                    <span className="font-medium text-sm">Interactive UI Mode (see browser)</span>
+                    <span className="font-medium text-sm">Interactive UI Mode (watch tests)</span>
                   </div>
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText('npm run e2e:ui');
-                      setCopiedCommand('ui');
-                      setTimeout(() => setCopiedCommand(false), 2000);
-                    }}
+                    onClick={() => copyCmd('npm run e2e:ui', 'ui')}
                     className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-mono flex items-center gap-2"
                   >
                     {copiedCommand === 'ui' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
@@ -246,10 +284,10 @@ const E2ETestRunner = () => {
         </div>
       </div>
 
-      {/* Full Test Suites (collapsible) */}
+      {/* Individual Test Suites (collapsible) */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <button 
-          onClick={() => setShowConfig(!showConfig)}
+          onClick={() => setShowSuites(!showSuites)}
           className="w-full flex items-center justify-between"
         >
           <div className="flex items-center gap-2">
@@ -258,18 +296,14 @@ const E2ETestRunner = () => {
               Individual Test Suites ({TOTAL_TEST_COUNT} tests)
             </span>
           </div>
-          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showConfig ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showSuites ? 'rotate-180' : ''}`} />
         </button>
         
-        {showConfig && (
+        {showSuites && (
           <div className="mt-4 grid grid-cols-2 gap-2">
             {/* Auth Suite */}
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(`E2E_ENV=test npx playwright test --project=${TEST_SUITES.auth.id}`);
-                setCopiedCommand(TEST_SUITES.auth.id);
-                setTimeout(() => setCopiedCommand(false), 2000);
-              }}
+              onClick={() => copyCmd(`npx playwright test --project=${TEST_SUITES.auth.id}`, TEST_SUITES.auth.id)}
               className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
             >
               <span className="flex items-center gap-2">
@@ -281,11 +315,7 @@ const E2ETestRunner = () => {
             
             {/* Prep Suite */}
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(`E2E_ENV=test npx playwright test --project=${TEST_SUITES.prep.id}`);
-                setCopiedCommand(TEST_SUITES.prep.id);
-                setTimeout(() => setCopiedCommand(false), 2000);
-              }}
+              onClick={() => copyCmd(`npx playwright test --project=${TEST_SUITES.prep.id}`, TEST_SUITES.prep.id)}
               className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
             >
               <span className="flex items-center gap-2">
@@ -297,11 +327,7 @@ const E2ETestRunner = () => {
             
             {/* AM Suite */}
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(`E2E_ENV=test npx playwright test --project=${TEST_SUITES.am.id}`);
-                setCopiedCommand(TEST_SUITES.am.id);
-                setTimeout(() => setCopiedCommand(false), 2000);
-              }}
+              onClick={() => copyCmd(`npx playwright test --project=${TEST_SUITES.am.id}`, TEST_SUITES.am.id)}
               className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
             >
               <span className="flex items-center gap-2">
@@ -313,11 +339,7 @@ const E2ETestRunner = () => {
             
             {/* PM Suite */}
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(`E2E_ENV=test npx playwright test --project=${TEST_SUITES.pm.id}`);
-                setCopiedCommand(TEST_SUITES.pm.id);
-                setTimeout(() => setCopiedCommand(false), 2000);
-              }}
+              onClick={() => copyCmd(`npx playwright test --project=${TEST_SUITES.pm.id}`, TEST_SUITES.pm.id)}
               className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
             >
               <span className="flex items-center gap-2">
@@ -329,11 +351,7 @@ const E2ETestRunner = () => {
             
             {/* Content Suite */}
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(`E2E_ENV=test npx playwright test --project=${TEST_SUITES.content.id}`);
-                setCopiedCommand(TEST_SUITES.content.id);
-                setTimeout(() => setCopiedCommand(false), 2000);
-              }}
+              onClick={() => copyCmd(`npx playwright test --project=${TEST_SUITES.content.id}`, TEST_SUITES.content.id)}
               className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
             >
               <span className="flex items-center gap-2">
@@ -345,11 +363,7 @@ const E2ETestRunner = () => {
             
             {/* Post Suite */}
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(`E2E_ENV=test npx playwright test --project=${TEST_SUITES.post.id}`);
-                setCopiedCommand(TEST_SUITES.post.id);
-                setTimeout(() => setCopiedCommand(false), 2000);
-              }}
+              onClick={() => copyCmd(`npx playwright test --project=${TEST_SUITES.post.id}`, TEST_SUITES.post.id)}
               className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
             >
               <span className="flex items-center gap-2">
@@ -361,11 +375,7 @@ const E2ETestRunner = () => {
             
             {/* Zones Suite */}
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(`E2E_ENV=test npx playwright test --project=${TEST_SUITES.zones.id}`);
-                setCopiedCommand(TEST_SUITES.zones.id);
-                setTimeout(() => setCopiedCommand(false), 2000);
-              }}
+              onClick={() => copyCmd(`npx playwright test --project=${TEST_SUITES.zones.id}`, TEST_SUITES.zones.id)}
               className="px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border text-xs font-mono flex items-center justify-between gap-2"
             >
               <span className="flex items-center gap-2">
@@ -377,11 +387,7 @@ const E2ETestRunner = () => {
             
             {/* ALL */}
             <button
-              onClick={() => {
-                navigator.clipboard.writeText('E2E_ENV=test npx playwright test --project=all-suites');
-                setCopiedCommand('all-suites');
-                setTimeout(() => setCopiedCommand(false), 2000);
-              }}
+              onClick={() => copyCmd('npx playwright test --project=all-suites', 'all-suites')}
               className="px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 text-xs font-mono flex items-center justify-between gap-2"
             >
               <span className="flex items-center gap-2">
@@ -401,6 +407,11 @@ const E2ETestRunner = () => {
             <h4 className="font-bold text-corporate-navy flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-corporate-teal" />
               Latest Test Results
+              {firestoreResults.environment && (
+                <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                  {firestoreResults.environment}
+                </span>
+              )}
             </h4>
             <span className="text-xs text-gray-500">
               {firestoreResults.updatedAt ? new Date(firestoreResults.updatedAt).toLocaleString() : 'Unknown'}
@@ -426,23 +437,64 @@ const E2ETestRunner = () => {
             </div>
           </div>
           
-          {/* Show failures if any */}
+          {/* Duration info */}
+          {firestoreResults.duration && (
+            <div className="mt-2 text-xs text-gray-500 text-center">
+              Duration: {(firestoreResults.duration / 1000).toFixed(1)}s
+            </div>
+          )}
+          
+          {/* Show failures with expandable details */}
           {firestoreResults.failedTests?.length > 0 && (
-            <div className="mt-3 border border-red-200 rounded-lg overflow-hidden">
+            <div className="mt-4 border border-red-200 rounded-lg overflow-hidden">
               <div className="bg-red-50 px-3 py-2 text-sm font-medium text-red-700 flex items-center gap-2">
                 <XCircle className="w-4 h-4" />
-                Failed Tests
+                Failed Tests ({firestoreResults.summary?.failed || 0})
               </div>
-              <div className="max-h-40 overflow-y-auto">
+              <div className="divide-y divide-red-100">
                 {firestoreResults.failedTests.map((suite, idx) => (
-                  <div key={idx} className="px-3 py-2 border-t border-red-100">
-                    <div className="font-medium text-sm text-red-800">{suite.name}</div>
-                    {suite.tests?.map((test, tidx) => (
-                      <div key={tidx} className="text-xs text-red-600 ml-4 mt-1">
-                        • {test.name}
-                        {test.error?.message && (
-                          <span className="text-red-400 ml-2">— {test.error.message.slice(0, 100)}</span>
+                  <div key={idx} className="bg-white">
+                    <button
+                      onClick={() => toggleFailure(idx)}
+                      className="w-full px-3 py-2 flex items-center justify-between hover:bg-red-50/50"
+                    >
+                      <div className="flex items-center gap-2">
+                        {expandedFailures.has(idx) ? (
+                          <ChevronDown className="w-4 h-4 text-red-400" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-red-400" />
                         )}
+                        <span className="font-medium text-sm text-red-800">{suite.name}</span>
+                        <span className="text-xs text-red-500">({suite.failed} failed)</span>
+                      </div>
+                    </button>
+                    
+                    {expandedFailures.has(idx) && suite.tests?.map((test, tidx) => (
+                      <div key={tidx} className="px-6 py-3 bg-red-50/30 border-t border-red-100">
+                        <div className="flex items-start gap-2">
+                          <XCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-red-800">{test.name}</div>
+                            {test.error?.message && (
+                              <div className="mt-1 p-2 bg-red-100 rounded text-xs text-red-700 font-mono overflow-x-auto">
+                                {test.error.message}
+                              </div>
+                            )}
+                            {/* Screenshot link if available */}
+                            {test.screenshotUrl && (
+                              <a 
+                                href={test.screenshotUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                              >
+                                <Image className="w-3 h-3" />
+                                View Screenshot
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -450,6 +502,26 @@ const E2ETestRunner = () => {
               </div>
             </div>
           )}
+          
+          {/* All passed message */}
+          {firestoreResults.summary?.failed === 0 && firestoreResults.summary?.passed > 0 && (
+            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+              <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-2" />
+              <div className="font-medium text-green-800">All Tests Passed!</div>
+              <div className="text-sm text-green-600">{firestoreResults.summary.passed} tests completed successfully</div>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* No results yet */}
+      {!firestoreResults && (
+        <div className="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-8 text-center">
+          <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <h4 className="font-medium text-gray-700 mb-2">No Test Results Yet</h4>
+          <p className="text-sm text-gray-500">
+            Run tests with the Firestore reporter to see results here.
+          </p>
         </div>
       )}
 
@@ -462,7 +534,8 @@ const E2ETestRunner = () => {
         <ul className="text-sm text-amber-700 space-y-1">
           <li>• Run <code className="bg-amber-100 px-1 rounded">npm run e2e:smoke</code> before every deploy</li>
           <li>• Use <code className="bg-amber-100 px-1 rounded">npm run e2e:ui</code> to debug test failures interactively</li>
-          <li>• Screenshots are auto-captured on failures in <code className="bg-amber-100 px-1 rounded">test-results/</code></li>
+          <li>• Screenshots saved to <code className="bg-amber-100 px-1 rounded">test-results/</code> on failures</li>
+          <li>• View HTML report: <code className="bg-amber-100 px-1 rounded">npx playwright show-report</code></li>
         </ul>
       </div>
     </div>
