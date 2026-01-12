@@ -117,3 +117,6 @@ scripts/private/
 # Firebase Admin SDK Keys
 *-firebase-adminsdk.json
 data-exports/
+
+# Google Cloud SDK cache files
+google-cloud-sdk/**/__pycache__/
