@@ -378,6 +378,13 @@ const UserManagement = () => {
 
   const handleSendInvite = async (e) => {
     e.preventDefault();
+    
+    // Validate: If test mode is enabled, testRecipient is required
+    if (inviteForm.isTest && !inviteForm.testRecipient?.trim()) {
+      alert('Test Mode requires an Override Email address. Please enter the email where test notifications should be sent.');
+      return;
+    }
+    
     setSendingInvite(true);
     
     try {
@@ -413,15 +420,14 @@ const UserManagement = () => {
         token: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
         createdBy: 'admin',
         isTest: inviteForm.isTest || false,
-        testRecipient: inviteForm.isTest ? (inviteForm.testRecipient || user.email) : null
+        testRecipient: inviteForm.isTest ? inviteForm.testRecipient.trim() : null
       };
 
       await addDoc(collection(db, 'invitations'), inviteData);
       
       // Show appropriate message based on test mode
       if (inviteForm.isTest) {
-        const recipient = inviteForm.testRecipient || user.email;
-        alert(`Invitation created for ${inviteForm.email}\n\n🧪 TEST MODE: Email will be sent to ${recipient}`);
+        alert(`Invitation created for ${inviteForm.email}\n\n🧪 TEST MODE: Email will be sent to ${inviteForm.testRecipient}\n\nAll notifications for this test user will also be redirected to this address.`);
       } else {
         alert(`Invitation created for ${inviteForm.email}`);
       }
@@ -1032,16 +1038,20 @@ const UserManagement = () => {
                 
                 {inviteForm.isTest && (
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">Redirect Email To (Optional - defaults to you)</label>
+                    <label className="block text-xs text-slate-500 mb-1">
+                      Override Email <span className="text-red-500">*</span>
+                      <span className="text-slate-400 ml-1">(Required for test invites)</span>
+                    </label>
                     <input
                       type="email"
+                      required
                       value={inviteForm.testRecipient || ''}
                       onChange={e => setInviteForm({...inviteForm, testRecipient: e.target.value})}
                       className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-corporate-teal"
-                      placeholder={user?.email || "your-email@example.com"}
+                      placeholder="Enter the real email to receive notifications"
                     />
                     <p className="text-xs text-amber-600 mt-1">
-                      The invitation will be created for <strong>{inviteForm.email}</strong>, but the email will be sent to the address above.
+                      ⚠️ The invitation email AND all future notifications for <strong>{inviteForm.email || 'this test user'}</strong> will be redirected to this address.
                     </p>
                   </div>
                 )}
