@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { isApprovedColor } from '../setup.js';
 import LeadershipVideosScreen from '../../components/screens/LeadershipVideos.jsx';
+import { NavigationProvider } from '../../providers/NavigationProvider.jsx';
 
 // Mock useAppServices
 const mockNavigate = vi.fn();
@@ -40,6 +41,21 @@ vi.mock('../../services/useAppServices.jsx', () => ({
     useAppServices: () => mockVideoServices
 }));
 
+// Test wrapper with required providers
+const renderWithProviders = (component) => {
+    return render(
+        <NavigationProvider
+            navigate={mockNavigate}
+            canGoBack={true}
+            goBack={vi.fn()}
+            currentScreen="leadership-videos"
+            navParams={{}}
+        >
+            {component}
+        </NavigationProvider>
+    );
+};
+
 describe('Leadership Videos Component', () => {
     beforeEach(() => {
         mockNavigate.mockClear();
@@ -57,7 +73,7 @@ describe('Leadership Videos Component', () => {
 
     describe('Corporate Color Compliance', () => {
         it('should use only approved corporate colors', () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             // Check header elements
             const header = screen.getByRole('banner');
@@ -88,7 +104,7 @@ describe('Leadership Videos Component', () => {
         });
 
         it('should apply corporate colors to search and filter controls', () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             const searchInput = screen.getByPlaceholderText(/search videos/i);
             expect(searchInput).toBeInTheDocument();
@@ -104,7 +120,7 @@ describe('Leadership Videos Component', () => {
 
     describe('Enhanced Video Library Features', () => {
         it('should render search input and filters', () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             expect(screen.getByPlaceholderText(/search videos, speakers, topics/i)).toBeInTheDocument();
             expect(screen.getByDisplayValue(/all categories/i)).toBeInTheDocument();
@@ -112,14 +128,14 @@ describe('Leadership Videos Component', () => {
         });
 
         it('should display video count correctly', () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             // Should show count of videos found
             expect(screen.getByText(/video(s)? found/)).toBeInTheDocument();
         });
 
         it('should filter videos by search term', async () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             const searchInput = screen.getByPlaceholderText(/search videos, speakers, topics/i);
             
@@ -133,7 +149,7 @@ describe('Leadership Videos Component', () => {
         });
 
         it('should filter by category', async () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             const categorySelect = screen.getByDisplayValue(/all categories/i);
             
@@ -146,7 +162,7 @@ describe('Leadership Videos Component', () => {
         });
 
         it('should show clear filters button when filters are active', async () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             const searchInput = screen.getByPlaceholderText(/search videos, speakers, topics/i);
             fireEvent.change(searchInput, { target: { value: 'test' } });
@@ -157,7 +173,7 @@ describe('Leadership Videos Component', () => {
         });
 
         it('should clear all filters when clear button is clicked', async () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             const searchInput = screen.getByPlaceholderText(/search videos, speakers, topics/i);
             fireEvent.change(searchInput, { target: { value: 'test search' } });
@@ -173,7 +189,7 @@ describe('Leadership Videos Component', () => {
 
     describe('Enhanced Video Cards', () => {
         it('should render video cards with enhanced metadata', () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             // Should show video titles from enhanced catalog
             const videoElements = screen.getAllByText(/watch video/i);
@@ -181,7 +197,7 @@ describe('Leadership Videos Component', () => {
         });
 
         it('should show video thumbnails', () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             // Check for YouTube thumbnail images
             const thumbnails = document.querySelectorAll('img[src*="youtube.com/vi"]');
@@ -189,7 +205,7 @@ describe('Leadership Videos Component', () => {
         });
 
         it('should display video ratings and view counts', () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             // Look for rating displays and view counts in enhanced videos
             const ratingElements = document.querySelectorAll('[class*="rating"], [class*="star"]');
@@ -197,7 +213,7 @@ describe('Leadership Videos Component', () => {
         });
 
         it('should handle video click actions', async () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             const watchButtons = screen.getAllByText(/watch video/i);
             if (watchButtons.length > 0) {
@@ -210,14 +226,14 @@ describe('Leadership Videos Component', () => {
 
     describe('Accessibility and UX', () => {
         it('should have proper heading structure', () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             const mainHeading = screen.getByRole('heading', { level: 1 });
             expect(mainHeading).toHaveTextContent(/leadership video library/i);
         });
 
         it('should have accessible form controls', () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             const searchInput = screen.getByPlaceholderText(/search videos, speakers, topics/i);
             expect(searchInput).toHaveAttribute('type', 'text');
@@ -227,7 +243,7 @@ describe('Leadership Videos Component', () => {
         });
 
         it('should provide empty state message when no videos match', async () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             const searchInput = screen.getByPlaceholderText(/search videos, speakers, topics/i);
             fireEvent.change(searchInput, { target: { value: 'nonexistentsearchterm12345' } });
@@ -240,14 +256,14 @@ describe('Leadership Videos Component', () => {
 
     describe('Navigation', () => {
         it('should have back to dashboard navigation', () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             const backButton = screen.getByText(/back to the arena/i);
             expect(backButton).toBeInTheDocument();
         });
 
         it('should navigate back when back button is clicked', () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             const backButton = screen.getByText(/back to the arena/i);
             fireEvent.click(backButton);
@@ -261,14 +277,14 @@ describe('Leadership Videos Component', () => {
             // Override mock to simulate missing data
             vi.mocked(mockVideoServices.VIDEO_CATALOG).items = {};
             
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             // Should still render without crashing
             expect(screen.getByText(/leadership video library/i)).toBeInTheDocument();
         });
 
         it('should scroll to top on mount', () => {
-            render(<LeadershipVideosScreen />);
+            renderWithProviders(<LeadershipVideosScreen />);
             
             expect(window.scrollTo).toHaveBeenCalledWith({ 
   });
