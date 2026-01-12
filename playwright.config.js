@@ -46,8 +46,12 @@ export default defineConfig({
   // Opt out of parallel tests on CI for stability
   workers: process.env.CI ? 1 : undefined,
   
-  // Reporter to use
-  reporter: [
+  // Reporter to use - skip Firestore reporter in CI (no credentials available)
+  reporter: process.env.CI ? [
+    ['html', { outputFolder: 'playwright-report' }],
+    ['json', { outputFile: 'test-results/results.json' }],
+    ['list'],
+  ] : [
     ['html', { outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'test-results/results.json' }],
     ['list'],

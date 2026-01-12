@@ -102,8 +102,10 @@ jobs:
           retention-days: 7
 
       - name: Notify on Failure
-        if: failure()
+        if: failure() && env.EMAIL_USERNAME != ''
         uses: dawidd6/action-send-mail@v3
+        env:
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
         with:
           server_address: smtp.gmail.com
           server_port: 587

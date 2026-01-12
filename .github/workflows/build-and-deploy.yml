@@ -53,8 +53,10 @@ jobs:
         continue-on-error: true
 
       - name: Send failure email
-        if: failure()
+        if: failure() && env.EMAIL_USERNAME != ''
         uses: dawidd6/action-send-mail@v3
+        env:
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
         with:
           server_address: smtp.gmail.com
           server_port: 587
