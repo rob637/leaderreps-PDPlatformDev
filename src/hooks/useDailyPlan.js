@@ -383,10 +383,17 @@ export const useDailyPlan = () => {
             name: data.name,
             description: data.description,
             startDate: data.startDate,
+            timezone: data.timezone, // Load cohort timezone
             facilitator: data.facilitator,
             settings: data.settings
           });
-          console.log('[useDailyPlan] Loaded cohort:', data.name);
+          console.log('[useDailyPlan] Loaded cohort:', data.name, 'timezone:', data.timezone);
+          
+          // Set the global timezone for timeService so all date calculations use cohort timezone
+          if (data.timezone) {
+            const { timeService } = await import('../services/timeService');
+            timeService.setTimezone(data.timezone);
+          }
         } else {
           console.warn('[useDailyPlan] Cohort not found:', cohortId);
         }

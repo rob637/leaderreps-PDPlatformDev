@@ -70,6 +70,12 @@ const getMidnightCrossings = (fromDate, toDate) => {
   return crossings;
 };
 
+// Default timezone for the application
+const DEFAULT_TIMEZONE = 'America/New_York';
+
+// Store the active timezone (can be set per-user or per-cohort)
+let activeTimezone = DEFAULT_TIMEZONE;
+
 export const timeService = {
   /**
    * Get the current "app time" (simulated or real)
@@ -80,11 +86,42 @@ export const timeService = {
   },
 
   /**
-   * Get today's date string in YYYY-MM-DD format based on app time
+   * Set the active timezone for date calculations
+   * This should be called when loading user/cohort data
+   * @param {string} timezone - IANA timezone string (e.g., 'America/New_York')
+   */
+  setTimezone: (timezone) => {
+    if (timezone) {
+      activeTimezone = timezone;
+      console.log('[TimeService] Active timezone set to:', timezone);
+    }
+  },
+
+  /**
+   * Get the current active timezone
    * @returns {string}
    */
-  getTodayStr: () => {
-    return timeService.getNow().toLocaleDateString('en-CA');
+  getTimezone: () => activeTimezone,
+
+  /**
+   * Get today's date string in YYYY-MM-DD format based on app time and active timezone
+   * @param {string} timezone - Optional timezone override (uses activeTimezone if not provided)
+   * @returns {string}
+   */
+  getTodayStr: (timezone) => {
+    const tz = timezone || activeTimezone;
+    const now = timeService.getNow();
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(now);
+    } catch (e) {
+      console.error('[TimeService] Invalid timezone, falling back to local:', tz, e);
+      return now.toLocaleDateString('en-CA');
+    }
   },
 
   /**
