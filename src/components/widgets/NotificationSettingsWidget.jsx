@@ -43,9 +43,16 @@ const NotificationSettingsWidget = () => {
         if (userSnap.exists()) {
           const data = userSnap.data();
           if (data.notificationSettings) {
+            // Derive enabled state: if no explicit 'enabled' field, infer from channels/reminders
+            const ns = data.notificationSettings;
+            const hasChannels = ns.channels?.email || ns.channels?.sms;
+            const hasReminders = ns.reminders && Object.values(ns.reminders).some(r => r.enabled);
+            const inferredEnabled = ns.enabled !== undefined ? ns.enabled : (hasChannels || hasReminders);
+            
             setSettings(prev => ({
               ...prev,
-              ...data.notificationSettings
+              ...ns,
+              enabled: inferredEnabled
             }));
           } else {
             // Initialize with defaults if not present

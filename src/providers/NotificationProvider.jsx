@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { notificationService } from '../services/notificationService';
 import { useAppServices } from '../services/useAppServices';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { getTimeInTimezone, getDateKeyInTimezone, DEFAULT_TIMEZONE } from '../services/dateUtils';
 
 const NotificationContext = createContext();
 
@@ -47,6 +48,7 @@ export const NotificationProvider = ({ children }) => {
   const [reminders, setReminders] = useState(DEFAULT_REMINDERS);
   const [sentLog, setSentLog] = useState({}); // { date_reminderId: timestamp }
   const [isLoaded, setIsLoaded] = useState(false);
+  const [userTimezone, setUserTimezone] = useState(DEFAULT_TIMEZONE);
 
   // Load settings from Firestore
   useEffect(() => {
@@ -67,6 +69,10 @@ export const NotificationProvider = ({ children }) => {
             }));
             if (data.notificationSettings.sentLog) {
               setSentLog(data.notificationSettings.sentLog);
+            }
+            // Load user's preferred timezone for reminder scheduling
+            if (data.notificationSettings.timezone) {
+              setUserTimezone(data.notificationSettings.timezone);
             }
           }
         }
@@ -137,9 +143,10 @@ export const NotificationProvider = ({ children }) => {
 
     const checkReminders = () => {
       const now = new Date();
-      const currentHours = now.getHours();
-      const currentMinutes = now.getMinutes();
-      const todayStr = now.toLocaleDateString(); // e.g., "11/27/2025"
+      // Use user's timezone for time checks - ensures reminders fire at correct local time
+      // regardless of where the user's browser is physically located
+      const { hours: currentHours, minutes: currentMinutes } = getTimeInTimezone(now, userTimezone);
+      const todayStr = getDateKeyInTimezone(now, userTimezone); // e.g., "2025-01-15"
 
       Object.values(reminders).forEach(reminder => {
         if (!reminder.enabled) return;
@@ -193,7 +200,7 @@ export const NotificationProvider = ({ children }) => {
 
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, permission, reminders, sentLog, dailyPracticeData]);
+  }, [isLoaded, permission, reminders, sentLog, dailyPracticeData, userTimezone]);
 
   const value = {
     permission,

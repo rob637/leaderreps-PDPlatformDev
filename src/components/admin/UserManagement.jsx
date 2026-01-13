@@ -12,7 +12,8 @@ import {
   Copy,
   Trash2,
   Clock,
-  Send
+  Send,
+  Globe
 } from 'lucide-react';
 import { 
   collection, 
@@ -32,7 +33,8 @@ import {
 } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { buildModulePath } from '../../services/pathUtils';
-import PrepStatusModal from './PrepStatusModal';
+import { COMMON_TIMEZONES, DEFAULT_TIMEZONE } from '../../services/dateUtils';
+import NotificationSettingsModal from './NotificationSettingsModal';
 
 const UserManagement = () => {
   const { db, user } = useAppServices();
@@ -54,13 +56,14 @@ const UserManagement = () => {
     customMessage: "You're invited to join the LeaderReps Arena!"
   });
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [selectedUserForPrep, setSelectedUserForPrep] = useState(null);
+  const [selectedUserForNotifications, setSelectedUserForNotifications] = useState(null);
   const [sendingInvite, setSendingInvite] = useState(false);
 
   // Cohort Form State
   const [cohortForm, setCohortForm] = useState({
     name: '',
     startDate: '',
+    timezone: DEFAULT_TIMEZONE,
     description: '',
     facilitatorId: '',
     facilitatorTitle: '',
@@ -479,6 +482,7 @@ const UserManagement = () => {
       id: cohort.id,
       name: cohort.name,
       startDate: dateStr,
+      timezone: cohort.timezone || DEFAULT_TIMEZONE,
       description: cohort.description || '',
       facilitatorId: cohort.facilitator?.id || '',
       facilitatorTitle: cohort.facilitator?.title || '',
@@ -518,6 +522,7 @@ const UserManagement = () => {
         name: cohortForm.name,
         description: cohortForm.description || '',
         startDate: Timestamp.fromDate(startDate),
+        timezone: cohortForm.timezone || DEFAULT_TIMEZONE,
         facilitator: facilitatorData,
         settings: {
           maxCapacity: parseInt(cohortForm.maxCapacity) || 25,
@@ -554,7 +559,8 @@ const UserManagement = () => {
         facilitatorLinkedIn: '',
         maxCapacity: 25,
         allowLateJoins: true,
-        lateJoinCutoff: 3
+        lateJoinCutoff: 3,
+        timezone: DEFAULT_TIMEZONE
       });
       fetchData();
     } catch (error) {
@@ -759,10 +765,10 @@ const UserManagement = () => {
                           {user.type === 'user' ? (
                             <>
                               <button
-                                onClick={() => setSelectedUserForPrep(user)}
+                                onClick={() => setSelectedUserForNotifications(user)}
                                 className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"
                               >
-                                Prep Status
+                                Notifications
                               </button>
                               <button
                                 onClick={() => handleToggleUserStatus(user.id, user.disabled)}
@@ -1141,6 +1147,28 @@ const UserManagement = () => {
                 </p>
               </div>
 
+              {/* Cohort Timezone */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-2">
+                  <Globe className="w-4 h-4" /> Cohort Timezone *
+                </label>
+                <select
+                  required
+                  value={cohortForm.timezone}
+                  onChange={e => setCohortForm({...cohortForm, timezone: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 bg-white"
+                >
+                  {COMMON_TIMEZONES.map(tz => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-500 mt-1">
+                  All cohort members will see the same "Day 1", "Day 2", etc. based on this timezone.
+                </p>
+              </div>
+
               {/* Facilitator */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Facilitator</label>
@@ -1309,12 +1337,12 @@ const UserManagement = () => {
         </div>
       )}
 
-      {/* Prep Status Modal */}
-      <PrepStatusModal
-        isOpen={!!selectedUserForPrep}
-        onClose={() => setSelectedUserForPrep(null)}
-        userId={selectedUserForPrep?.id}
-        userName={selectedUserForPrep?.displayName || selectedUserForPrep?.email}
+      {/* Notification Settings Modal */}
+      <NotificationSettingsModal
+        isOpen={!!selectedUserForNotifications}
+        onClose={() => setSelectedUserForNotifications(null)}
+        userId={selectedUserForNotifications?.id}
+        userName={selectedUserForNotifications?.displayName || selectedUserForNotifications?.email}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import { collection, query, orderBy, getDocs, serverTimestamp, doc, getDoc } fro
 import { timeChange$ } from '../services/timeService';
 import { useActionProgress } from './useActionProgress';
 import { useLeaderProfile } from './useLeaderProfile';
+import { getDaysBetweenInTimezone, DEFAULT_TIMEZONE } from '../services/dateUtils';
 
 /**
  * PREP REQUIREMENT ACTION IDS (DEPRECATED - For backwards compatibility only)
@@ -719,27 +720,21 @@ export const useDailyPlan = () => {
     
     if (!start || isNaN(start.getTime())) return 0;
 
-    // Calculate difference in days from cohort start
-    // Normalize both dates to start of day (midnight) for accurate day counting
-    // This ensures "Jan 7 at 11pm" to "Jan 15" counts as 8 days, not 7
-    const startOfToday = new Date(simulatedNow.getFullYear(), simulatedNow.getMonth(), simulatedNow.getDate());
-    const startOfStartDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-    
-    // Negative = before start (Pre-Start phase)
-    // Zero = start day (first day of Foundations)
-    // Positive = after start
-    const diffMs = startOfToday.getTime() - startOfStartDate.getTime();
-    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    // Use cohort timezone for consistent day calculations across global users
+    // This ensures a cohort in "America/New_York" calculates days based on ET midnight
+    const cohortTimezone = cohortData?.timezone || DEFAULT_TIMEZONE;
+    const diffDays = getDaysBetweenInTimezone(start, simulatedNow, cohortTimezone);
 
     console.log('[useDailyPlan] Days From Start:', {
       source: cohortData?.startDate ? 'cohort' : 'user',
       startDate: start.toISOString(),
       now: simulatedNow.toISOString(),
+      timezone: cohortTimezone,
       daysFromStart: diffDays
     });
 
     return diffDays;
-  }, [userState.startDate, cohortData?.startDate, simulatedNow]);
+  }, [userState.startDate, cohortData?.startDate, cohortData?.timezone, simulatedNow]);
 
   // 4. Map to DB Day Number and get Phase Info
   const { dbDayNumber, currentPhase, phaseDayNumber } = useMemo(() => {
