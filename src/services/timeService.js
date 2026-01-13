@@ -111,13 +111,16 @@ export const timeService = {
   getTodayStr: (timezone) => {
     const tz = timezone || activeTimezone;
     const now = timeService.getNow();
+    console.log('[TimeService.getTodayStr] Using timezone:', tz, '| activeTimezone:', activeTimezone);
     try {
-      return new Intl.DateTimeFormat('en-CA', {
+      const result = new Intl.DateTimeFormat('en-CA', {
         timeZone: tz,
         year: 'numeric',
         month: '2-digit',
         day: '2-digit'
       }).format(now);
+      console.log('[TimeService.getTodayStr] Result:', result);
+      return result;
     } catch (e) {
       console.error('[TimeService] Invalid timezone, falling back to local:', tz, e);
       return now.toLocaleDateString('en-CA');

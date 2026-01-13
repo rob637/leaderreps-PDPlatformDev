@@ -2125,10 +2125,10 @@ const WinsHistoryWidget = () => {
     // Normalize date string to avoid duplicates if formats vary slightly
     let dateKey = win.date || 'Unknown Date'; 
     
-    // Try to normalize to YYYY-MM-DD
-    if (dateKey !== 'Unknown Date') {
+    // Try to normalize to YYYY-MM-DD (only if not already in that format)
+    if (dateKey !== 'Unknown Date' && !/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
         try {
-            const d = new Date(dateKey);
+            const d = new Date(dateKey + 'T12:00:00'); // Add noon to avoid timezone day shift
             if (!isNaN(d.getTime())) {
                 // Use en-CA for YYYY-MM-DD format
                 dateKey = d.toLocaleDateString('en-CA');
@@ -2421,12 +2421,16 @@ const ReflectionHistoryWidget = () => {
       if (!entry.date) return;
       
       let dateKey = entry.date;
-      try {
-          const d = new Date(dateKey);
-          if (!isNaN(d.getTime())) {
-              dateKey = d.toLocaleDateString('en-CA');
-          }
-      } catch (e) {}
+      // If already YYYY-MM-DD format, use as-is (don't convert via Date which causes timezone issues)
+      if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(dateKey)) {
+          try {
+              // Only parse non-standard date formats
+              const d = new Date(dateKey + 'T12:00:00'); // Add noon time to avoid timezone day shift
+              if (!isNaN(d.getTime())) {
+                  dateKey = d.toLocaleDateString('en-CA');
+              }
+          } catch (e) {}
+      }
       
       // If duplicate, prefer the one with more content
       if (!normalizedReflectionsMap[dateKey]) {
@@ -2545,12 +2549,15 @@ const RepsHistoryWidget = () => {
       if (!entry.date) return;
       
       let dateKey = entry.date;
-      try {
-          const d = new Date(dateKey);
-          if (!isNaN(d.getTime())) {
-              dateKey = d.toLocaleDateString('en-CA');
-          }
-      } catch (e) {}
+      // Only parse if not already YYYY-MM-DD format to avoid timezone issues
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+          try {
+              const d = new Date(dateKey + 'T12:00:00'); // Add noon to avoid timezone day shift
+              if (!isNaN(d.getTime())) {
+                  dateKey = d.toLocaleDateString('en-CA');
+              }
+          } catch (e) {}
+      }
       
       if (!normalizedHistoryMap[dateKey]) {
           normalizedHistoryMap[dateKey] = { ...entry, date: dateKey };
