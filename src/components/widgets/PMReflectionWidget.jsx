@@ -1,32 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, Check, Loader } from 'lucide-react';
-import { Card } from '../ui';
-
-/**
- * AutoSaveStatus - Small indicator showing save state
- */
-const AutoSaveStatus = ({ status }) => {
-  if (status === 'idle') return null;
-  
-  return (
-    <div className={`flex items-center gap-1.5 text-xs transition-opacity duration-300 ${
-      status === 'saved' ? 'text-green-600' : 'text-slate-400'
-    }`}>
-      {status === 'saving' && (
-        <>
-          <Loader className="w-3 h-3 animate-spin" />
-          <span>Saving...</span>
-        </>
-      )}
-      {status === 'saved' && (
-        <>
-          <Check className="w-3 h-3" />
-          <span>Saved</span>
-        </>
-      )}
-    </div>
-  );
-};
+import React, { useState, useCallback } from 'react';
+import { MessageSquare, Check, Loader, Save } from 'lucide-react';
+import { Card, Button } from '../ui';
 
 const PMReflectionWidget = ({ 
   reflectionGood, 
@@ -37,16 +11,11 @@ const PMReflectionWidget = ({
   setReflectionBest,
   handleSaveEveningBookend
 }) => {
-  // Auto-save status: 'idle' | 'saving' | 'saved'
+  // Save status: 'idle' | 'saving' | 'saved'
   const [saveStatus, setSaveStatus] = useState('idle');
-  const debounceTimerRef = useRef(null);
-  const hideTimerRef = useRef(null);
-  
-  // Track the serialized reflections to detect changes
-  const reflectionsRef = useRef(JSON.stringify({ reflectionGood, reflectionBetter, reflectionBest }));
 
-  // Debounced auto-save function
-  const triggerAutoSave = useCallback(async () => {
+  // Explicit save function
+  const handleSave = useCallback(async () => {
     setSaveStatus('saving');
     
     try {
@@ -56,55 +25,21 @@ const PMReflectionWidget = ({
       setSaveStatus('saved');
       
       // Hide "Saved" after 2 seconds
-      hideTimerRef.current = setTimeout(() => {
+      setTimeout(() => {
         setSaveStatus('idle');
       }, 2000);
     } catch (error) {
-      console.error('[PMReflection] Auto-save failed:', error);
+      console.error('[PMReflection] Save failed:', error);
       setSaveStatus('idle');
     }
   }, [handleSaveEveningBookend]);
 
-  // Effect to detect changes and trigger debounced save
-  useEffect(() => {
-    const currentReflections = JSON.stringify({ reflectionGood, reflectionBetter, reflectionBest });
-    
-    // Skip if no actual change
-    if (currentReflections === reflectionsRef.current) return;
-    
-    reflectionsRef.current = currentReflections;
-    
-    // Clear existing timers
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    
-    // Set up debounced save (800ms after last change)
-    debounceTimerRef.current = setTimeout(() => {
-      triggerAutoSave();
-    }, 800);
-    
-    return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    };
-  }, [reflectionGood, reflectionBetter, reflectionBest, triggerAutoSave]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    };
-  }, []);
-
   return (
     <Card title="PM Reflection" icon={MessageSquare} accent="NAVY">
       <div className="space-y-2">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">
-            Daily Reflection
-          </span>
-          <AutoSaveStatus status={saveStatus} />
-        </div>
+        <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+          Daily Reflection
+        </span>
 
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
@@ -145,9 +80,27 @@ const PMReflectionWidget = ({
           />
         </div>
 
-        <p className="text-xs text-center text-slate-400 mt-3 italic">
-          Changes save automatically • Archives to your locker each night
-        </p>
+        {/* Save Button */}
+        <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100">
+          <p className="text-xs text-slate-400 italic">
+            Archives to your locker each night
+          </p>
+          <Button
+            onClick={handleSave}
+            disabled={saveStatus === 'saving'}
+            size="sm"
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs ${
+              saveStatus === 'saved' 
+                ? 'bg-green-500 hover:bg-green-500' 
+                : 'bg-corporate-navy hover:bg-corporate-navy/90'
+            }`}
+          >
+            {saveStatus === 'saving' && <Loader className="w-3 h-3 animate-spin" />}
+            {saveStatus === 'saved' && <Check className="w-3 h-3" />}
+            {saveStatus === 'idle' && <Save className="w-3 h-3" />}
+            {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : 'Save'}
+          </Button>
+        </div>
       </div>
     </Card>
   );

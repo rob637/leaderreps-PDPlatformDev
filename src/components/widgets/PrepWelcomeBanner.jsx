@@ -252,7 +252,7 @@ const PrepWelcomeBanner = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-white font-medium text-sm group-hover:text-corporate-teal transition-colors">{facilitator.name}</p>
-                  <p className="text-slate-400 text-xs">Your Facilitator • Tap for details</p>
+                  <p className="text-white/70 text-xs">Your Facilitator • Tap for details</p>
                 </div>
                 <Info className="w-4 h-4 text-white/30 group-hover:text-corporate-teal transition-colors" />
               </button>
@@ -282,7 +282,7 @@ const PrepWelcomeBanner = () => {
                 </div>
               )}
             </div>
-            <span className="text-xs text-slate-400 font-medium">until Session One</span>
+            <span className="text-xs text-white/70 font-medium">until Session One</span>
             
             {/* Session One Date - Show actual date from cohort */}
             {cohortStartDate && (
@@ -300,10 +300,7 @@ const PrepWelcomeBanner = () => {
               </div>
             )}
             
-            {/* Prep Status - Simple indicator without login counts */}
-            <span className="text-[10px] text-slate-500">
-              {isPrepComplete ? '✓ Prep Complete' : 'Prep in Progress'}
-            </span>
+
           </div>
 
         </div>

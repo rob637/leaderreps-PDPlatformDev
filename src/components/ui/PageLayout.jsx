@@ -39,6 +39,7 @@ export const PageLayout = ({
   backLabel = 'Back to Dashboard',
   navigate: propNavigate,
   onNavigate, // Alias for navigate (backward compatibility)
+  onBack, // Custom back handler (overrides breadcrumb-based navigation)
   showBack = true,
   breadcrumbs: propBreadcrumbs,
   accentColor = 'teal',
@@ -88,7 +89,8 @@ export const PageLayout = ({
         {nav && (
           <BreadcrumbNav 
             items={effectiveBreadcrumbs} 
-            navigate={nav} 
+            navigate={nav}
+            onBack={onBack}
           />
         )}
 

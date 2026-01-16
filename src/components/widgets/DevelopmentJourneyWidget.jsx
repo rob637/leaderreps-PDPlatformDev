@@ -704,7 +704,8 @@ const DevelopmentJourneyWidget = () => {
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-      setCanScrollLeft(scrollLeft > 0);
+      // Add small threshold (5px) to avoid showing button for tiny scroll amounts
+      setCanScrollLeft(scrollLeft > 5);
       setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
     }
   };
@@ -731,7 +732,12 @@ const DevelopmentJourneyWidget = () => {
             left: Math.max(0, scrollPosition),
             behavior: 'smooth'
           });
+          // Update scroll state after animation
+          setTimeout(() => handleScroll(), 400);
         }, 300);
+      } else {
+        // At beginning - ensure scroll state is correct
+        setTimeout(() => handleScroll(), 100);
       }
     }
   }, [currentSegmentId, journeyData.segments.length]);
@@ -802,19 +808,19 @@ const DevelopmentJourneyWidget = () => {
         {canScrollLeft && (
           <button
             onClick={() => scrollTo('left')}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-slate-100 shadow-md border border-slate-300 flex items-center justify-center hover:bg-slate-200 transition-colors"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white shadow-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 hover:border-corporate-teal transition-colors"
             aria-label="Scroll left"
           >
-            <ChevronLeft className="w-5 h-5 text-corporate-teal" />
+            <ChevronLeft className="w-5 h-5 text-slate-600" />
           </button>
         )}
         {canScrollRight && (
           <button
             onClick={() => scrollTo('right')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-slate-100 shadow-md border border-slate-300 flex items-center justify-center hover:bg-slate-200 transition-colors"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white shadow-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 hover:border-corporate-teal transition-colors"
             aria-label="Scroll right"
           >
-            <ChevronRight className="w-5 h-5 text-corporate-teal" />
+            <ChevronRight className="w-5 h-5 text-slate-600" />
           </button>
         )}
         

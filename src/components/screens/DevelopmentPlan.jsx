@@ -551,12 +551,36 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   // ===== RENDER =====
   const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
   
+  // Dynamic breadcrumbs based on current view
+  const breadcrumbs = useMemo(() => {
+    const base = [
+      { label: 'Home', path: 'dashboard' },
+      { label: 'Development Plan', path: view !== 'dashboard' ? 'development-plan' : null }
+    ];
+    
+    if (view === 'baseline') {
+      return [...base, { label: 'Baseline Assessment', path: null }];
+    }
+    if (view === 'scan') {
+      return [...base, { label: 'Progress Scan', path: null }];
+    }
+    if (view === 'detail') {
+      return [...base, { label: 'Plan Details', path: null }];
+    }
+    if (view === 'timeline') {
+      return [...base, { label: 'Timeline', path: null }];
+    }
+    
+    // Dashboard view - just Home > Development Plan
+    return base;
+  }, [view]);
+  
   return (
     <PageLayout
       title="Development Plan"
       subtitle="Your roadmap to leadership excellence."
       icon={Target}
-      backTo={view === 'dashboard' ? 'dashboard' : null}
+      breadcrumbs={breadcrumbs}
       onBack={view !== 'dashboard' ? () => setView('dashboard') : undefined}
       navigate={navigate}
     >

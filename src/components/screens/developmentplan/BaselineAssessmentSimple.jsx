@@ -68,6 +68,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
   
   const [responses, setResponses] = useState(initialResponses);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const formRef = useRef(null);
 
   // Scroll to top when component mounts
@@ -93,7 +94,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
 
     setIsGenerating(true);
     
-    // Brief delay for UX
+    // Brief delay for UX, then show success before closing
     setTimeout(() => {
       // Only include answers for current questions
       const validAnswers = Object.fromEntries(
@@ -107,9 +108,15 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
         cycle: initialData?.cycle ? initialData.cycle + 1 : 1,
       };
       
-      onComplete(assessment);
+      // Show success state before closing
       setIsGenerating(false);
-    }, 2000);
+      setShowSuccess(true);
+      
+      // Close after showing success message
+      setTimeout(() => {
+        onComplete(assessment);
+      }, 1500);
+    }, 1000);
   };
 
   const isTotalLoading = isLoading || isGenerating;
@@ -124,6 +131,21 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
           </div>
           <h3 className="text-xl font-bold text-corporate-navy mb-2">Saving Assessment...</h3>
           <p className="text-slate-600">Recording your responses.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Success state - shows briefly before closing
+  if (showSuccess) {
+    return (
+      <div className="bg-white rounded-2xl shadow-xl">
+        <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle className="w-10 h-10 text-green-500" />
+          </div>
+          <h3 className="text-xl font-bold text-corporate-navy mb-2">Assessment Saved!</h3>
+          <p className="text-slate-600">Your baseline has been recorded.</p>
         </div>
       </div>
     );
