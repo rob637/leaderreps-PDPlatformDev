@@ -21,6 +21,7 @@ export const useDashboard = ({
   updateDailyPracticeData, // <--- Prop from useAppServices
   // globalMetadata, // <--- Added for Scorecard calculation
   devPlanCurrentWeek, // <--- Added for Scorecard reps from Dev Plan (12/05/25)
+  widgetVisibility, // <--- Added to control which widgets count in scorecard
   // db,
   // userId
 }) => {
@@ -464,41 +465,53 @@ export const useDashboard = ({
   }, [targetRepStatus, isSavingRep]);
 
   // NEW: Scorecard Calculation (Moved from Dashboard4)
+  // Only includes enabled widgets in the tally
   const scorecard = useMemo(() => {
-    // 1. Grounding Rep (Click to reveal LIS)
-    const groundingDone = groundingRepCompleted ? 1 : 0;
-    const groundingTotal = 1;
-    const groundingPct = groundingDone * 100;
+    // Extract widget visibility settings (default to true for backward compatibility)
+    const showGrounding = widgetVisibility?.showGroundingRep ?? true;
+    const showDailyReps = widgetVisibility?.showDailyReps ?? true;
+    const showWinTheDay = widgetVisibility?.showWinTheDay ?? true;
     
-    // 2. Daily Reps Logic
-    // FIXED 12/05/25: Use reps from Development Plan current week, not stale additionalCommitments
+    // 1. Grounding Rep (Click to reveal LIS) - only count if enabled
+    const groundingDone = showGrounding && groundingRepCompleted ? 1 : 0;
+    const groundingTotal = showGrounding ? 1 : 0;
+    const groundingPct = groundingTotal > 0 ? groundingDone * 100 : 0;
+    
+    // 2. Daily Reps Logic - only count if enabled
     let repsTotal = 0;
     let repsDone = 0;
     
-    // Get the reps from the current Dev Plan week
-    const devPlanReps = devPlanCurrentWeek?.dailyReps || devPlanCurrentWeek?.reps || [];
-    
-    if (devPlanReps && devPlanReps.length > 0) {
-      repsTotal = devPlanReps.length;
-      // Check completion status from additionalCommitments (persisted user data)
-      // IMPORTANT: Use same ID extraction logic as the widget (repId || id || rep-${idx})
-      repsDone = devPlanReps.filter((rep, idx) => {
-        // Get the rep ID using same logic as widgetTemplates.js daily-leader-reps widget
-        const repId = rep.repId || rep.id || `rep-${idx}`;
-        // Find matching commitment in user's persisted data
-        const commitment = additionalCommitments?.find(c => c.id === repId);
-        return commitment?.status === 'Committed';
-      }).length;
+    if (showDailyReps) {
+      // Get the reps from the current Dev Plan week
+      const devPlanReps = devPlanCurrentWeek?.dailyReps || devPlanCurrentWeek?.reps || [];
+      
+      if (devPlanReps && devPlanReps.length > 0) {
+        repsTotal = devPlanReps.length;
+        // Check completion status from additionalCommitments (persisted user data)
+        // IMPORTANT: Use same ID extraction logic as the widget (repId || id || rep-${idx})
+        repsDone = devPlanReps.filter((rep, idx) => {
+          // Get the rep ID using same logic as widgetTemplates.js daily-leader-reps widget
+          const repId = rep.repId || rep.id || `rep-${idx}`;
+          // Find matching commitment in user's persisted data
+          const commitment = additionalCommitments?.find(c => c.id === repId);
+          return commitment?.status === 'Committed';
+        }).length;
+      }
     }
     
     const repsPct = repsTotal > 0 ? Math.round((repsDone / repsTotal) * 100) : 0;
 
-    // 3. Win the Day Logic
-    // Components: 3 Daily Priorities (Wins)
-    // We count how many are defined (text exists) and how many are completed
-    const definedWins = morningWins.filter(w => w.text && w.text.trim().length > 0);
-    const winTotal = definedWins.length > 0 ? definedWins.length : 3; // Default to 3 if none defined yet
-    const winDone = definedWins.filter(w => w.completed).length;
+    // 3. Win the Day Logic - only count if enabled
+    let winTotal = 0;
+    let winDone = 0;
+    
+    if (showWinTheDay) {
+      // Components: 3 Daily Priorities (Wins)
+      // We count how many are defined (text exists) and how many are completed
+      const definedWins = morningWins.filter(w => w.text && w.text.trim().length > 0);
+      winTotal = definedWins.length > 0 ? definedWins.length : 3; // Default to 3 if none defined yet
+      winDone = definedWins.filter(w => w.completed).length;
+    }
     
     const winPct = winTotal > 0 ? Math.round((winDone / winTotal) * 100) : 0;
 
@@ -507,7 +520,7 @@ export const useDashboard = ({
       reps: { done: repsDone, total: repsTotal, pct: repsPct },
       win: { done: winDone, total: winTotal, pct: winPct }
     };
-  }, [groundingRepCompleted, additionalCommitments, morningWins, devPlanCurrentWeek]);
+  }, [groundingRepCompleted, additionalCommitments, morningWins, devPlanCurrentWeek, widgetVisibility]);
 
   // === LIVE STREAK CALCULATION ===
   // Calculate what the streak WILL BE after today is processed

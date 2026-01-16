@@ -101,7 +101,8 @@ const FeatureManager = () => {
   } = useDashboard({
     dailyPracticeData,
     updateDailyPracticeData,
-    globalMetadata
+    globalMetadata,
+    widgetVisibility: {} // Admin preview shows all widgets (defaults to true)
   });
 
   // --- DERIVED DATA FOR SCOPE ---

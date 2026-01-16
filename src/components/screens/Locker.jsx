@@ -50,24 +50,28 @@ const Locker = () => {
     // Prep complete but still in pre-start: use explore-config settings (matches Dashboard logic)
     if (currentPhase?.id === 'pre-start' && prepRequirementsComplete?.allComplete) {
       const exploreDash = exploreConfig?.dashboard || {};
+      const showWinTheDay = exploreDash.showWinTheDay ?? exploreDash['win-the-day'] ?? false;
       return {
         showProfile: true,
         showReminders: true,
         // Use explore-config settings, defaulting to false for widgets not explicitly enabled
-        showAMWins: exploreDash.showWinTheDay ?? exploreDash['win-the-day'] ?? false,
+        showAMWins: showWinTheDay,
         showDailyReps: exploreDash.showDailyReps ?? exploreDash['daily-leader-reps'] ?? false,
-        showScorecard: exploreDash.showScorecard ?? exploreDash['scorecard'] ?? false,
+        // Scorecard appears when Win the Day appears (since it tallies wins/reps)
+        showScorecard: showWinTheDay,
         showReflection: exploreDash.showPMReflection ?? exploreDash['pm-bookend'] ?? false
       };
     }
 
     // Post prep-phase: show locker widgets when their dashboard counterpart is visible
+    const showWinTheDay = dashboard.showWinTheDay ?? true;
     return {
       showProfile: true,
       showReminders: true,
-      showAMWins: dashboard.showWinTheDay ?? true,
+      showAMWins: showWinTheDay,
       showDailyReps: dashboard.showDailyReps ?? true,
-      showScorecard: dashboard.showScorecard ?? true,
+      // Scorecard appears when Win the Day appears
+      showScorecard: showWinTheDay,
       showReflection: dashboard.showPMReflection ?? true
     };
   }, [currentDayData, prepRequirementsComplete, exploreConfig]);

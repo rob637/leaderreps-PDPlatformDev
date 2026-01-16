@@ -87,6 +87,43 @@ const Dashboard = () => {
   const exploreConfig = useMemo(() => {
     return dailyPlan?.find(d => d.id === 'explore-config');
   }, [dailyPlan]);
+
+  // Widget visibility for scorecard calculation
+  // This determines which widgets are counted in the scorecard tally
+  const widgetVisibility = useMemo(() => {
+    const dashboard = currentDayData?.dashboard || {};
+    
+    // Helper to check widget visibility (same logic as shouldShow but for scorecard)
+    const checkVisibility = (widgetId, legacyKey, defaultVal = true) => {
+      // During prep phase
+      if (currentPhase?.id === 'pre-start') {
+        if (!prepRequirementsComplete?.allComplete) {
+          return false; // All prep-gated widgets hidden
+        }
+        // Prep complete - use explore-config
+        if (exploreConfig?.dashboard) {
+          if (exploreConfig.dashboard[widgetId] !== undefined) {
+            return exploreConfig.dashboard[widgetId];
+          }
+          if (legacyKey && exploreConfig.dashboard[legacyKey] !== undefined) {
+            return exploreConfig.dashboard[legacyKey];
+          }
+        }
+        return defaultVal;
+      }
+      // Post prep: use day's dashboard config
+      if (dashboard[widgetId] !== undefined) return dashboard[widgetId];
+      if (legacyKey && dashboard[legacyKey] !== undefined) return dashboard[legacyKey];
+      return defaultVal;
+    };
+    
+    return {
+      showGroundingRep: checkVisibility('grounding-rep', 'showGroundingRep', true),
+      showDailyReps: checkVisibility('daily-leader-reps', 'showDailyReps', true),
+      showWinTheDay: checkVisibility('win-the-day', 'showWinTheDay', true)
+    };
+  }, [currentDayData, currentPhase, prepRequirementsComplete, exploreConfig]);
+
   // Adapter for Legacy Dashboard Hooks
   const devPlanCurrentWeek = useMemo(() => {
     if (!currentDayData) return null;
@@ -175,6 +212,7 @@ const Dashboard = () => {
     updateDailyPracticeData,
     globalMetadata, // Pass globalMetadata for scorecard calculation
     devPlanCurrentWeek, // Pass Dev Plan current week for scorecard reps (12/05/25)
+    widgetVisibility, // Pass widget visibility to control scorecard tally
     db,
     userId: user?.uid
   });
