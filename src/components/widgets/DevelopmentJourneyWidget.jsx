@@ -808,7 +808,7 @@ const DevelopmentJourneyWidget = () => {
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto pb-4 pt-6 px-1 scrollbar-hide"
+          className="flex gap-4 overflow-x-auto pb-4 pt-6 px-2 scrollbar-hide"
           style={{ scrollSnapType: 'x mandatory' }}
         >
           {journeyData.segments.map((segment, idx) => {
