@@ -91,10 +91,7 @@ const WinTheDayWidget = ({ scope }) => {
         })}
 
         {/* Save Button */}
-        <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100">
-          <p className="text-xs text-slate-400 italic">
-            Archives to your locker each night
-          </p>
+        <div className="flex items-center justify-start mt-3 pt-2 border-t border-slate-100">
           <Button
             onClick={handleSave}
             disabled={saveStatus === 'saving'}

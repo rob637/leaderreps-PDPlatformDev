@@ -81,10 +81,7 @@ const PMReflectionWidget = ({
         </div>
 
         {/* Save Button */}
-        <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100">
-          <p className="text-xs text-slate-400 italic">
-            Archives to your locker each night
-          </p>
+        <div className="flex items-center justify-start mt-3 pt-2 border-t border-slate-100">
           <Button
             onClick={handleSave}
             disabled={saveStatus === 'saving'}
@@ -92,7 +89,7 @@ const PMReflectionWidget = ({
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs ${
               saveStatus === 'saved' 
                 ? 'bg-green-500 hover:bg-green-500' 
-                : 'bg-corporate-navy hover:bg-corporate-navy/90'
+                : 'bg-corporate-teal hover:bg-corporate-teal/90'
             }`}
           >
             {saveStatus === 'saving' && <Loader className="w-3 h-3 animate-spin" />}
