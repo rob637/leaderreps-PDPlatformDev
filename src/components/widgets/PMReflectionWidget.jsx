@@ -49,7 +49,7 @@ const PMReflectionWidget = ({
             value={reflectionGood}
             onChange={(e) => setReflectionGood(e.target.value)}
             className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
-            rows={2}
+            rows={1}
             placeholder="Celebrate a win..."
           />
         </div>
@@ -62,7 +62,7 @@ const PMReflectionWidget = ({
             value={reflectionBetter}
             onChange={(e) => setReflectionBetter(e.target.value)}
             className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
-            rows={2}
+            rows={1}
             placeholder="Identify an improvement..."
           />
         </div>
