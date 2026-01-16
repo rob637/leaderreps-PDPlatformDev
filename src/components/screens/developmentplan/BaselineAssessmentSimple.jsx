@@ -122,8 +122,8 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
           <div className="w-16 h-16 bg-corporate-teal/10 rounded-full flex items-center justify-center mb-4">
             <Loader className="w-8 h-8 text-corporate-teal animate-spin" />
           </div>
-          <h3 className="text-xl font-bold text-corporate-navy mb-2">Creating Your Plan...</h3>
-          <p className="text-slate-600">Analyzing your responses to personalize your journey.</p>
+          <h3 className="text-xl font-bold text-corporate-navy mb-2">Saving Assessment...</h3>
+          <p className="text-slate-600">Recording your responses.</p>
         </div>
       </div>
     );

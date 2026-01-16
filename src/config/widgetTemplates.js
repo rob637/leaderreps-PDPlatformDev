@@ -2189,7 +2189,7 @@ const WinsHistoryWidget = () => {
                     </td>
                     {slots.map((win, i) => (
                       <td key={i} className="px-4 py-3">
-                        {win ? (
+                        {win && win.text && win.text.trim() ? (
                           <div className="flex items-start gap-2">
                             <div className={\`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 \${
                               win.completed ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'

@@ -835,22 +835,24 @@ export const useDashboard = ({
     }
   }, [morningWins, otherTasks, showLIS, updateDailyPracticeData]);
 
-  const handleSaveEveningBookend = useCallback(async () => {
+  const handleSaveEveningBookend = useCallback(async (options = {}) => {
+    const { silent = false } = options;
     console.log('🌙 [EVENING BOOKEND] Save initiated:', {
       good: reflectionGood,
       better: reflectionBetter,
       best: reflectionBest,
-      habits: habitsCompleted
+      habits: habitsCompleted,
+      silent
     });
     
     // Use the destructured prop directly
     if (!updateDailyPracticeData) {
       console.error('[Dashboard] Cannot save evening bookend - updateDailyPracticeData is not available');
-      alert('Error: Unable to save. Please try again.');
+      if (!silent) alert('Error: Unable to save. Please try again.');
       return;
     }
 
-    setIsSavingBookend(true);
+    if (!silent) setIsSavingBookend(true);
     try {
       // Create reminders from the evening bookend data
       const newReminders = [];
@@ -965,30 +967,32 @@ export const useDashboard = ({
       // Auto-check evening reflection habit
       setHabitsCompleted(prev => ({ ...prev, eveningReflection: true }));
       
-      // FIXED (Issue 5): Clear local state and activate reload guard flag
-      setReflectionGood('');
-      setReflectionBetter('');
-      setReflectionBest('');
-      setShouldSkipReflectionLoad(true); // <-- Set flag to skip next listener update
-      
-      
-      // Always show success message with warm feeling
-      let message = '✅ Evening Reflection Saved Successfully!\n\n';
-      message += '🏆 Your wins have been added to your victory collection\n';
-      message += '📈 Growth insights captured for your leadership journey\n';
-      message += '🎯 Tomorrow\'s focus areas are now clear\n';
-      if (newReminders.length > 0) {
-        message += `\n🔔 ${newReminders.length} smart reminder(s) created for tomorrow based on your insights`;
+      // Only clear fields and show alert for non-silent saves (manual save button)
+      if (!silent) {
+        // FIXED (Issue 5): Clear local state and activate reload guard flag
+        setReflectionGood('');
+        setReflectionBetter('');
+        setReflectionBest('');
+        setShouldSkipReflectionLoad(true); // <-- Set flag to skip next listener update
+        
+        
+        // Always show success message with warm feeling
+        let message = '✅ Evening Reflection Saved Successfully!\n\n';
+        message += '🏆 Your wins have been added to your victory collection\n';
+        message += '📈 Growth insights captured for your leadership journey\n';
+        message += '🎯 Tomorrow\'s focus areas are now clear\n';
+        if (newReminders.length > 0) {
+          message += `\n🔔 ${newReminders.length} smart reminder(s) created for tomorrow based on your insights`;
+        }
+        message += '\n\n🌟 Great work closing out your day with intention!';
+        alert(message);
       }
-      message += '\n\n🌟 Great work closing out your day with intention!';
-      alert(message);
     } catch (error) {
       console.error('[Dashboard] Error saving evening bookend:', error);
-      console.error('[Dashboard] Error details:', {
-  });
-      alert(`Error saving reflection: ${error.message}. Please try again.`);
+      console.error('[Dashboard] Error details:', {});
+      if (!silent) alert(`Error saving reflection: ${error.message}. Please try again.`);
     } finally {
-      setIsSavingBookend(false);
+      if (!silent) setIsSavingBookend(false);
     }
   }, [reflectionGood, reflectionBetter, reflectionBest, habitsCompleted, updateDailyPracticeData, dailyPracticeData, scorecard, winsList]); // Explicitly include prop
 
@@ -1209,15 +1213,17 @@ export const useDashboard = ({
       setMorningWins(newWins);
 
       // === Sync to winsList for Locker History ===
+      // IMPORTANT: Preserve slot positions (0, 1, 2) so Locker displays wins in correct columns
       const todayDate = timeService.getTodayStr();
       const existingWinsList = [...winsList].filter(w => w.date !== todayDate);
+      // Save ALL 3 slots, preserving original positions for proper Locker display
       const todaysWins = newWins
-        .filter(w => w.text && w.text.trim().length > 0)
         .map((w, idx) => ({
           id: `win-${todayDate}-${idx}`,
-          text: w.text,
-          completed: w.completed,
+          text: w.text || '',
+          completed: w.completed || false,
           date: todayDate,
+          slot: idx + 1, // Track which slot (1, 2, or 3) this win belongs to
           timestamp: timeService.getISOString()
         }));
       const updatedWinsList = [...existingWinsList, ...todaysWins];
@@ -1246,7 +1252,8 @@ export const useDashboard = ({
     }
   }, [morningWins, updateDailyPracticeData, dailyPracticeData, otherTasks, winsList]);
 
-  const handleSaveAllWins = useCallback(async () => {
+  const handleSaveAllWins = useCallback(async (options = {}) => {
+    const { silent = false } = options;
     // === NUCLEAR DEBUG: Save All Wins ===
     console.log('%c[WIN-THE-DAY DEBUG] handleSaveAllWins CALLED', 'background: #00ff00; color: black; font-weight: bold; padding: 4px 8px;');
     console.log('[WIN-THE-DAY DEBUG] updateDailyPracticeData exists:', !!updateDailyPracticeData);
@@ -1258,7 +1265,7 @@ export const useDashboard = ({
       return;
     }
     
-    setIsSavingWIN(true);
+    if (!silent) setIsSavingWIN(true);
     try {
       // Mark all as saved
       const newWins = morningWins.map(win => ({ ...win, saved: true }));
@@ -1266,15 +1273,17 @@ export const useDashboard = ({
       setMorningWins(newWins);
 
       // === Sync to winsList for Locker History ===
+      // IMPORTANT: Preserve slot positions (0, 1, 2) so Locker displays wins in correct columns
       const todayDate = timeService.getTodayStr();
       const existingWinsList = [...winsList].filter(w => w.date !== todayDate);
+      // Save ALL 3 slots, preserving original positions for proper Locker display
       const todaysWins = newWins
-        .filter(w => w.text && w.text.trim().length > 0)
         .map((w, idx) => ({
           id: `win-${todayDate}-${idx}`,
-          text: w.text,
-          completed: w.completed,
+          text: w.text || '',
+          completed: w.completed || false,
           date: todayDate,
+          slot: idx + 1, // Track which slot (1, 2, or 3) this win belongs to
           timestamp: timeService.getISOString()
         }));
       const updatedWinsList = [...existingWinsList, ...todaysWins];
@@ -1301,7 +1310,7 @@ export const useDashboard = ({
     } catch (error) {
       console.error('%c[WIN-THE-DAY DEBUG] ERROR saving all wins:', 'color: red; font-weight: bold;', error);
     } finally {
-      setIsSavingWIN(false);
+      if (!silent) setIsSavingWIN(false);
       console.log('%c[WIN-THE-DAY DEBUG] handleSaveAllWins COMPLETE', 'background: #00ff00; color: black; font-weight: bold; padding: 4px 8px;');
     }
   }, [morningWins, updateDailyPracticeData, dailyPracticeData, otherTasks, winsList]);
@@ -1314,15 +1323,17 @@ export const useDashboard = ({
     setMorningWins(newWins);
 
     // === Sync to winsList for Locker History ===
+    // IMPORTANT: Preserve slot positions (0, 1, 2) so Locker displays wins in correct columns
     const todayDate = timeService.getTodayStr();
     const existingWinsList = [...winsList].filter(w => w.date !== todayDate);
+    // Save ALL 3 slots, preserving original positions for proper Locker display
     const todaysWins = newWins
-      .filter(w => w.text && w.text.trim().length > 0)
       .map((w, idx) => ({
         id: `win-${todayDate}-${idx}`,
-        text: w.text,
-        completed: w.completed,
+        text: w.text || '',
+        completed: w.completed || false,
         date: todayDate,
+        slot: idx + 1, // Track which slot (1, 2, or 3) this win belongs to
         timestamp: timeService.getISOString()
       }));
     const updatedWinsList = [...existingWinsList, ...todaysWins];

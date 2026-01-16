@@ -220,7 +220,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
               ) : (
                 <ArrowRight className="w-5 h-5" />
               )}
-              {isTotalLoading ? 'Creating Your Plan...' : (initialData ? 'Update My Plan' : 'Complete & Generate My Plan')}
+              {isTotalLoading ? 'Saving...' : (initialData ? 'Update My Plan' : 'Complete & Generate My Plan')}
             </Button>
             {!isComplete && (
               <p className="text-center text-sm mt-3" style={{ color: 'var(--corporate-teal)' }}>

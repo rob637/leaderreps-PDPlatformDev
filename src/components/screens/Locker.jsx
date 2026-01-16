@@ -8,7 +8,7 @@ import { useNotifications } from '../../providers/NotificationProvider';
 import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
 import LockerProgressWidget from '../widgets/LockerProgressWidget';
 import MyJourneyWidget from '../widgets/MyJourneyWidget';
-import NotificationSettingsWidget from '../widgets/NotificationSettingsWidget';
+import MySettingsWidget from '../widgets/MySettingsWidget';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 const LOCKER_FEATURES = [
@@ -24,28 +24,32 @@ const Locker = () => {
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
   const { currentDayData } = useDailyPlan();
 
-  // Day-based locker visibility from daily plan
+  // Day-based locker visibility - tied to dashboard widget visibility
+  // Locker widgets only show once their corresponding dashboard widget has been shown
   const lockerVisibility = useMemo(() => {
-    // During Prep Phase (progress-based, not time-based), allow all enabled widgets to show
-    // This ensures widgets enabled in Widget Lab appear as expected
+    const dashboard = currentDayData?.dashboard || {};
+    
+    // During Prep Phase, hide all bookend-related locker widgets
+    // (Win the Day, Daily Reps, Reflection are not available during prep)
     if (currentDayData?.phase?.id === 'pre-start') {
       return {
         showProfile: true,
         showReminders: true,
-        showAMWins: true,
-        showDailyReps: true,
-        showScorecard: true,
-        showReflection: true
+        showAMWins: false,      // Win the Day not available during prep
+        showDailyReps: false,   // Daily Reps not available during prep
+        showScorecard: false,   // Scorecard not available during prep
+        showReflection: false   // PM Reflection not available during prep
       };
     }
 
+    // Post prep-phase: show locker widgets only if their dashboard counterpart is visible
     return {
-      showProfile: currentDayData?.locker?.showProfile ?? true,
-      showReminders: currentDayData?.locker?.showReminders ?? true,
-      showAMWins: currentDayData?.locker?.showAMWins ?? true,
-      showDailyReps: currentDayData?.locker?.showDailyReps ?? true,
-      showScorecard: currentDayData?.locker?.showScorecard ?? true,
-      showReflection: currentDayData?.locker?.showReflection ?? true
+      showProfile: true,
+      showReminders: true,
+      showAMWins: dashboard.showWinTheDay ?? false,
+      showDailyReps: dashboard.showDailyReps ?? false,
+      showScorecard: dashboard.showScorecard ?? false,
+      showReflection: dashboard.showPMReflection ?? false
     };
   }, [currentDayData]);
 
@@ -147,11 +151,13 @@ const Locker = () => {
       ]}
       accentColor="teal"
     >
-      {/* My Journey Widget - always show at top */}
+      {/* My Settings Widget - expandable profile & notifications at top */}
+      <MySettingsWidget />
+      
+      {/* My Journey Widget - shows cohort and journey info */}
       <MyJourneyWidget />
       
       <WidgetRenderer widgetId="locker-controller" scope={scope} />
-      <NotificationSettingsWidget />
       
       {sortedFeatures.length > 0 ? (
         <div className="grid grid-cols-1 gap-6">

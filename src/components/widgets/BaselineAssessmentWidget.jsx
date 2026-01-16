@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useAppServices } from '../../services/useAppServices';
-import BaselineAssessment from '../screens/developmentplan/BaselineAssessment';
+import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
 
 /**
  * Baseline Assessment Widget for Dashboard
@@ -188,12 +188,11 @@ const BaselineAssessmentWidget = () => {
             
             {/* Assessment Form */}
             <div className="p-4">
-              <BaselineAssessment 
+              <BaselineAssessmentSimple 
                 onComplete={handleAssessmentComplete}
+                onClose={() => setShowModal(false)}
                 isLoading={saving}
                 initialData={latestAssessment}
-                mode={hasBaseline ? 'edit' : 'create'}
-                isWidget={false}
               />
             </div>
           </div>

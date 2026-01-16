@@ -556,7 +556,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       title="Development Plan"
       subtitle="Your roadmap to leadership excellence."
       icon={Target}
-      backTo={view !== 'dashboard' ? 'dashboard' : null}
+      backTo={view === 'dashboard' ? 'dashboard' : null}
       onBack={view !== 'dashboard' ? () => setView('dashboard') : undefined}
       navigate={navigate}
     >

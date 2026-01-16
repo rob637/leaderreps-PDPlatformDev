@@ -736,6 +736,15 @@ const DevelopmentJourneyWidget = () => {
     }
   }, [currentSegmentId, journeyData.segments.length]);
   
+  // Calculate initial scroll state on mount and when segments change
+  useEffect(() => {
+    // Small delay to ensure layout is complete
+    const timer = setTimeout(() => {
+      handleScroll();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [journeyData.segments.length]);
+  
   // Get selected segment data
   const selectedSegmentData = selectedSegment 
     ? journeyData.segments.find(s => s.id === selectedSegment) 
@@ -789,21 +798,23 @@ const DevelopmentJourneyWidget = () => {
     >
       {/* Journey Timeline */}
       <div className="relative">
-        {/* Scroll Buttons */}
+        {/* Scroll Buttons - Only show when can scroll in that direction */}
         {canScrollLeft && (
           <button
             onClick={() => scrollTo('left')}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white shadow-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-slate-100 shadow-md border border-slate-300 flex items-center justify-center hover:bg-slate-200 transition-colors"
+            aria-label="Scroll left"
           >
-            <ChevronLeft className="w-4 h-4 text-slate-600" />
+            <ChevronLeft className="w-5 h-5 text-corporate-teal" />
           </button>
         )}
         {canScrollRight && (
           <button
             onClick={() => scrollTo('right')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white shadow-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-slate-100 shadow-md border border-slate-300 flex items-center justify-center hover:bg-slate-200 transition-colors"
+            aria-label="Scroll right"
           >
-            <ChevronRight className="w-4 h-4 text-slate-600" />
+            <ChevronRight className="w-5 h-5 text-corporate-teal" />
           </button>
         )}
         

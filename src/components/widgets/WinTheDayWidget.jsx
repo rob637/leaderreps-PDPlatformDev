@@ -1,41 +1,121 @@
-import React, { useState } from 'react';
-import { Trophy, CheckCircle, Save, Loader } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Trophy, CheckCircle, Check, Loader } from 'lucide-react';
 import { Card } from '../ui';
+
+/**
+ * AutoSaveStatus - Small indicator showing save state
+ */
+const AutoSaveStatus = ({ status }) => {
+  if (status === 'idle') return null;
+  
+  return (
+    <div className={`flex items-center gap-1.5 text-xs transition-opacity duration-300 ${
+      status === 'saved' ? 'text-green-600' : 'text-slate-400'
+    }`}>
+      {status === 'saving' && (
+        <>
+          <Loader className="w-3 h-3 animate-spin" />
+          <span>Saving...</span>
+        </>
+      )}
+      {status === 'saved' && (
+        <>
+          <Check className="w-3 h-3" />
+          <span>Saved</span>
+        </>
+      )}
+    </div>
+  );
+};
 
 const WinTheDayWidget = ({ scope }) => {
   const { 
     morningWins, 
     handleUpdateWin, 
     handleToggleWinComplete,
-    handleSaveSingleWin,
     handleSaveAllWins
   } = scope;
 
-  const [isSaving, setIsSaving] = useState(false);
+  // Auto-save status: 'idle' | 'saving' | 'saved'
+  const [saveStatus, setSaveStatus] = useState('idle');
+  const debounceTimerRef = useRef(null);
+  const hideTimerRef = useRef(null);
+  
+  // Track the serialized wins to detect changes
+  const winsRef = useRef(JSON.stringify(morningWins));
 
-  const handleSaveAll = async () => {
-    setIsSaving(true);
-    // Simulate save delay for UX
-    await new Promise(resolve => setTimeout(resolve, 500));
+  // Debounced auto-save function
+  const triggerAutoSave = useCallback(async () => {
+    setSaveStatus('saving');
     
-    // Save all wins
-    if (handleSaveAllWins) {
-      await handleSaveAllWins();
-    } else if (handleSaveSingleWin) {
-      // Fallback
-      morningWins.forEach((_, index) => {
-        handleSaveSingleWin(index);
-      });
+    try {
+      if (handleSaveAllWins) {
+        await handleSaveAllWins({ silent: true });
+      }
+      setSaveStatus('saved');
+      
+      // Hide "Saved" after 2 seconds
+      hideTimerRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2000);
+    } catch (error) {
+      console.error('[WinTheDay] Auto-save failed:', error);
+      setSaveStatus('idle');
     }
-    setIsSaving(false);
-  };
+  }, [handleSaveAllWins]);
+
+  // Effect to detect changes and trigger debounced save
+  useEffect(() => {
+    const currentWins = JSON.stringify(morningWins);
+    
+    // Skip if no actual change
+    if (currentWins === winsRef.current) return;
+    
+    winsRef.current = currentWins;
+    
+    // Clear existing timers
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    
+    // Set up debounced save (800ms after last change)
+    debounceTimerRef.current = setTimeout(() => {
+      triggerAutoSave();
+    }, 800);
+    
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, [morningWins, triggerAutoSave]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+  }, []);
+
+  // Handle checkbox toggle with immediate save
+  const handleToggleWithSave = useCallback((index) => {
+    const win = morningWins[index];
+    const hasText = win.text && win.text.trim().length > 0;
+    
+    if (hasText) {
+      handleToggleWinComplete(index);
+      // Immediate save for checkbox changes
+      setTimeout(() => triggerAutoSave(), 100);
+    }
+  }, [morningWins, handleToggleWinComplete, triggerAutoSave]);
 
   return (
     <Card title="Win the Day" icon={Trophy} accent="TEAL">
       <div className="space-y-1">
-        <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">
-          Identify 3 High-Impact Actions
-        </p>
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+            Identify 3 High-Impact Actions
+          </p>
+          <AutoSaveStatus status={saveStatus} />
+        </div>
         
         {morningWins.map((win, index) => {
           const hasText = win.text && win.text.trim().length > 0;
@@ -48,11 +128,7 @@ const WinTheDayWidget = ({ scope }) => {
               }`}
             >
               <div 
-                onClick={() => {
-                  if (hasText) {
-                    handleToggleWinComplete(index);
-                  }
-                }}
+                onClick={() => handleToggleWithSave(index)}
                 className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                   hasText ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
                 } ${
@@ -69,7 +145,6 @@ const WinTheDayWidget = ({ scope }) => {
                   type="text"
                   value={win.text}
                   onChange={(e) => handleUpdateWin(index, e.target.value)}
-                  onBlur={() => handleSaveSingleWin && handleSaveSingleWin(index)}
                   placeholder={`Enter Priority #${index + 1}`}
                   className={`w-full bg-transparent outline-none text-sm font-bold ${
                     win.completed 
@@ -82,15 +157,9 @@ const WinTheDayWidget = ({ scope }) => {
           );
         })}
 
-        <button 
-          onClick={handleSaveAll}
-          disabled={isSaving}
-          className="w-full mt-2 py-2 bg-corporate-navy text-white rounded-xl font-bold hover:bg-corporate-navy/90 transition-colors flex items-center justify-center gap-2 text-sm"
-        >
-          {isSaving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Save Priorities
-        </button>
-        <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves to your locker each night at 11:59 PM</p>
+        <p className="text-xs text-center text-slate-400 mt-3 italic">
+          Changes save automatically • Archives to your locker each night
+        </p>
       </div>
     </Card>
   );

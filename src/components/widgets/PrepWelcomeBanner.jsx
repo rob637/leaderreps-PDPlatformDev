@@ -192,8 +192,8 @@ const PrepWelcomeBanner = () => {
   return (
     <div className={`relative overflow-hidden rounded-2xl shadow-lg mb-6 ${
       isLaunch 
-        ? 'bg-gradient-to-br from-emerald-600 via-corporate-teal to-corporate-navy' 
-        : 'bg-gradient-to-br from-corporate-navy to-corporate-teal'
+        ? 'bg-gradient-to-br from-corporate-teal via-corporate-teal/90 to-corporate-navy/80' 
+        : 'bg-gradient-to-br from-corporate-teal/95 to-corporate-navy/70'
     }`}>
       {/* Simplified Background Pattern - Clean and minimal */}
       <div className="absolute inset-0 opacity-5">
@@ -207,7 +207,7 @@ const PrepWelcomeBanner = () => {
           <div className="flex-1 space-y-4">
             {/* Phase Badge - Cleaner, simpler */}
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-2 text-corporate-teal font-bold tracking-wider text-xs uppercase">
+              <div className="flex items-center gap-2 text-white/90 font-bold tracking-wider text-xs uppercase">
                 <Target className="w-4 h-4" />
                 <span>Foundation Prep</span>
               </div>
@@ -265,14 +265,6 @@ const PrepWelcomeBanner = () => {
               isOpen={showFacilitatorModal}
               onClose={() => setShowFacilitatorModal(false)}
             />
-
-            {/* Call to Action - Simple and direct */}
-            {hasIncompleteRequiredActions && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-corporate-teal">
-                <ChevronRight className="w-4 h-4" />
-                <span className="font-medium">Complete your {incompleteRequiredActions.length} required action{incompleteRequiredActions.length !== 1 ? 's' : ''} below</span>
-              </div>
-            )}
           </div>
 
           {/* Right Visual - Countdown to Session One with Date - Clean and simple */}
