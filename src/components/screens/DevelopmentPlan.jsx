@@ -207,11 +207,17 @@ export default function DevelopmentPlan(props) {
   const [view, setView] = useState(props.view || 'dashboard');
 
   // Sync view with props (navigation params)
+  // The _t prop is a timestamp that forces re-navigation even when view is the same
   useEffect(() => {
     if (props.view) {
       setView(props.view);
     }
-  }, [props.view]);
+  }, [props.view, props.mode, props._t]);
+
+  // Scroll to top when view changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
 
   const [isSaving, setIsSaving] = useState(false); // Used to detect in-progress save
   const [error, setError] = useState(null);
@@ -228,19 +234,17 @@ export default function DevelopmentPlan(props) {
       return;
     }
     
-    // When plan data exists AND we just completed baseline, switch to tracker
+    // When plan data exists AND we just completed baseline, switch to dashboard
     // Otherwise, let the user navigate freely between views
     if (adaptedDevelopmentPlanData?.currentPlan && justCompletedBaseline) {
-      if (view !== 'dashboard') {
-        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-        if (isDeveloperMode) {
-          if (localStorage.getItem('arena-developer-mode') === 'true') {
-            alert('✅ Plan data received! Switching to tracker view.');
-          }
-        }
-        setJustCompletedBaseline(false); // Clear flag
-        setView('dashboard');
+      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+      if (isDeveloperMode) {
+        alert('✅ Plan data received! Switching to dashboard view.');
       }
+      setJustCompletedBaseline(false); // Clear flag
+      setView('dashboard');
+      // Scroll to top after switching to dashboard
+      setTimeout(() => window.scrollTo(0, 0), 100);
       return;
     }
     

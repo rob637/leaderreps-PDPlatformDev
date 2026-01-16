@@ -2887,14 +2887,14 @@ render(<RepsHistoryWidget />);
   // Navigation handlers
   const handleTakeAssessment = () => {
     if (navigate) {
-      navigate('development-plan', { view: 'baseline' });
+      navigate('development-plan', { view: 'baseline', _t: Date.now() });
     }
   };
   
   const handleViewBaseline = () => {
     if (navigate) {
       // Navigate to view/update the baseline assessment
-      navigate('development-plan', { view: 'baseline', mode: 'view' });
+      navigate('development-plan', { view: 'baseline', mode: 'view', _t: Date.now() });
     }
   };
 
