@@ -806,7 +806,7 @@ const DevelopmentJourneyWidget = () => {
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto pb-4 pt-6 pl-2 pr-4 scrollbar-hide"
+          className="flex gap-4 overflow-x-auto pb-4 pt-2 pl-2 pr-4 scrollbar-hide"
         >
           {journeyData.segments.map((segment, idx) => {
             const segmentState = getSegmentState(segment);

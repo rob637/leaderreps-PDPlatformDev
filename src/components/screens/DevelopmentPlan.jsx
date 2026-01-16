@@ -243,8 +243,10 @@ export default function DevelopmentPlan(props) {
       }
       setJustCompletedBaseline(false); // Clear flag
       setView('dashboard');
-      // Scroll to top after switching to dashboard
-      setTimeout(() => window.scrollTo(0, 0), 100);
+      // Scroll to top after switching to dashboard - use longer delay to ensure render completes
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }, 300);
       return;
     }
     
