@@ -736,8 +736,11 @@ const DevelopmentJourneyWidget = () => {
           setTimeout(() => handleScroll(), 400);
         }, 300);
       } else {
-        // At beginning - ensure scroll state is correct
-        setTimeout(() => handleScroll(), 100);
+        // At beginning - explicitly scroll to start and ensure scroll state is correct
+        setTimeout(() => {
+          scrollContainerRef.current?.scrollTo({ left: 0, behavior: 'auto' });
+          handleScroll();
+        }, 100);
       }
     }
   }, [currentSegmentId, journeyData.segments.length]);
@@ -808,7 +811,7 @@ const DevelopmentJourneyWidget = () => {
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto pb-4 pt-6 px-2 scrollbar-hide"
+          className="flex gap-4 overflow-x-auto pb-4 pt-6 px-4 scrollbar-hide"
           style={{ scrollSnapType: 'x mandatory' }}
         >
           {journeyData.segments.map((segment, idx) => {
