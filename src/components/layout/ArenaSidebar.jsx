@@ -129,7 +129,13 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
       {/* Header / Toggle */}
       <div className="h-20 flex items-center justify-between px-4 border-b border-white/5">
         {isOpen ? (
-          <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
+          <a 
+            href="https://leaderreps.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity cursor-pointer"
+            title="Visit LeaderReps.com"
+          >
             <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl bg-white shadow-lg" />
             <div className="flex flex-col">
               <span className="font-semibold text-lg tracking-tight leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>LeaderReps</span>
@@ -137,11 +143,17 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
                 The Arena
               </span>
             </div>
-          </div>
+          </a>
         ) : (
-          <div className="w-10 mx-auto">
+          <a 
+            href="https://leaderreps.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="w-10 mx-auto hover:opacity-80 transition-opacity cursor-pointer"
+            title="Visit LeaderReps.com"
+          >
              <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl bg-white shadow-lg" />
-          </div>
+          </a>
         )}
       </div>
 
