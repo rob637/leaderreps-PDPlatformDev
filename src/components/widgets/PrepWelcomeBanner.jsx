@@ -187,7 +187,7 @@ const PrepWelcomeBanner = () => {
   const isLaunch = daysUntilStart <= 0;
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl shadow-lg mb-6 ${
+    <div className={`relative overflow-hidden rounded-2xl shadow-lg mb-4 ${
       isLaunch 
         ? 'bg-gradient-to-br from-corporate-teal via-corporate-teal/90 to-corporate-navy/80' 
         : 'bg-gradient-to-br from-corporate-teal/95 to-corporate-navy/70'
