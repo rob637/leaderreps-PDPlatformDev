@@ -42,14 +42,15 @@ const Locker = () => {
       };
     }
 
-    // Post prep-phase: show locker widgets only if their dashboard counterpart is visible
+    // Post prep-phase: show locker widgets when their dashboard counterpart is visible
+    // Default to true (matching Dashboard shouldShow defaults) so widgets appear unless explicitly hidden
     return {
       showProfile: true,
       showReminders: true,
-      showAMWins: dashboard.showWinTheDay ?? false,
-      showDailyReps: dashboard.showDailyReps ?? false,
-      showScorecard: dashboard.showScorecard ?? false,
-      showReflection: dashboard.showPMReflection ?? false
+      showAMWins: dashboard.showWinTheDay ?? true,
+      showDailyReps: dashboard.showDailyReps ?? true,
+      showScorecard: dashboard.showScorecard ?? true,
+      showReflection: dashboard.showPMReflection ?? true
     };
   }, [currentDayData]);
 
