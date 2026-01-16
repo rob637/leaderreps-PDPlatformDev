@@ -388,8 +388,10 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
 
   if (checkingInvite) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-corporate-navy via-[#003a59] to-corporate-navy">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-corporate-navy via-[#003a59] to-corporate-navy gap-4">
+            <img src="/icons/icon-192x192.png" alt="LeaderReps" className="w-16 h-16 rounded-2xl shadow-lg mb-2" />
             <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
+            <p className="text-white/80 text-sm">Validating your invitation...</p>
         </div>
       );
   }
