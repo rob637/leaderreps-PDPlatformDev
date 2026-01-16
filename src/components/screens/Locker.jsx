@@ -22,16 +22,16 @@ const LOCKER_FEATURES = [
 const Locker = () => {
   const { dailyPracticeData, commitmentData, navigate, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
-  const { currentDayData } = useDailyPlan();
+  const { currentDayData, prepRequirementsComplete } = useDailyPlan();
 
   // Day-based locker visibility - tied to dashboard widget visibility
   // Locker widgets only show once their corresponding dashboard widget has been shown
   const lockerVisibility = useMemo(() => {
     const dashboard = currentDayData?.dashboard || {};
     
-    // During Prep Phase, hide all bookend-related locker widgets
-    // (Win the Day, Daily Reps, Reflection are not available during prep)
-    if (currentDayData?.phase?.id === 'pre-start') {
+    // During Prep Phase, hide bookend-related locker widgets UNLESS prep is complete
+    // (matches Dashboard logic - once prep is complete, widgets become available)
+    if (currentDayData?.phase?.id === 'pre-start' && !prepRequirementsComplete?.allComplete) {
       return {
         showProfile: true,
         showReminders: true,
@@ -42,7 +42,7 @@ const Locker = () => {
       };
     }
 
-    // Post prep-phase: show locker widgets when their dashboard counterpart is visible
+    // Post prep-phase OR prep complete: show locker widgets when their dashboard counterpart is visible
     // Default to true (matching Dashboard shouldShow defaults) so widgets appear unless explicitly hidden
     return {
       showProfile: true,
@@ -52,7 +52,7 @@ const Locker = () => {
       showScorecard: dashboard.showScorecard ?? true,
       showReflection: dashboard.showPMReflection ?? true
     };
-  }, [currentDayData]);
+  }, [currentDayData, prepRequirementsComplete]);
 
   // Arena Data
   // Combine history with today's completed wins so they appear immediately
