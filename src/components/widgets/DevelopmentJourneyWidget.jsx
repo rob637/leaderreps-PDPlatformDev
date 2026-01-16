@@ -45,12 +45,12 @@ const PHASE_THEMES = {
     title: 'Ascent',
     subtitle: 'Continue Growing',
     icon: GraduationCap,
-    color: 'from-purple-600 to-indigo-700',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200',
-    textColor: 'text-purple-700',
-    iconBg: 'bg-purple-100',
-    accentColor: 'purple'
+    color: 'from-corporate-navy to-slate-700',
+    bgColor: 'bg-slate-50',
+    borderColor: 'border-corporate-navy/20',
+    textColor: 'text-corporate-navy',
+    iconBg: 'bg-corporate-navy/10',
+    accentColor: 'navy'
   }
 };
 
@@ -804,26 +804,6 @@ const DevelopmentJourneyWidget = () => {
     >
       {/* Journey Timeline */}
       <div className="relative">
-        {/* Scroll Buttons - Only show when can scroll in that direction */}
-        {canScrollLeft && (
-          <button
-            onClick={() => scrollTo('left')}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white shadow-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 hover:border-corporate-teal transition-colors"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-5 h-5 text-slate-600" />
-          </button>
-        )}
-        {canScrollRight && (
-          <button
-            onClick={() => scrollTo('right')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white shadow-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 hover:border-corporate-teal transition-colors"
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-5 h-5 text-slate-600" />
-          </button>
-        )}
-        
         {/* Scrollable Segment Cards */}
         <div
           ref={scrollContainerRef}
