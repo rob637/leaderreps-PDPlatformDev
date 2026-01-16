@@ -1,13 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   User, Building2, CheckCircle, ChevronRight, Save, Loader,
-  AlertCircle, X, Bell, Mail, Phone
+  AlertCircle, X, Bell, Mail, Phone, Globe
 } from 'lucide-react';
 import { Button } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { logActivity, ACTIVITY_TYPES } from '../../services/activityLogger';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../hooks/useAuth';
+
+// Common timezones for the dropdown
+const COMMON_TIMEZONES = [
+  { value: "America/New_York", label: "Eastern Time (New York)" },
+  { value: "America/Chicago", label: "Central Time (Chicago)" },
+  { value: "America/Denver", label: "Mountain Time (Denver)" },
+  { value: "America/Los_Angeles", label: "Pacific Time (Los Angeles)" },
+  { value: "America/Phoenix", label: "Arizona (Phoenix)" },
+  { value: "America/Anchorage", label: "Alaska (Anchorage)" },
+  { value: "America/Honolulu", label: "Hawaii (Honolulu)" },
+  { value: "Europe/London", label: "London (GMT)" },
+  { value: "Europe/Paris", label: "Paris (CET)" },
+  { value: "Asia/Tokyo", label: "Tokyo (JST)" },
+  { value: "Australia/Sydney", label: "Sydney (AEST)" },
+  { value: "UTC", label: "UTC" }
+];
 
 // Company size options
 const COMPANY_SIZES = [
@@ -307,6 +323,35 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
           {!formData.phoneNumber && (
             <p className="text-xs text-slate-400 italic ml-6">Add a phone number to enable SMS</p>
           )}
+
+          {/* Timezone Selector */}
+          <div className="pt-2 border-t border-slate-200 mt-3">
+            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <Globe className="w-4 h-4 text-slate-500" />
+              Your Time Zone
+            </label>
+            <select
+              value={formData.notificationSettings?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York"}
+              onChange={(e) => {
+                const currentSettings = formData.notificationSettings || { channels: { email: true, sms: false } };
+                setFormData(prev => ({
+                  ...prev,
+                  notificationSettings: {
+                    ...currentSettings,
+                    timezone: e.target.value
+                  }
+                }));
+              }}
+              className="w-full px-4 py-2 rounded-xl border-2 border-slate-200 bg-white
+                focus:border-corporate-teal focus:outline-none focus:ring-4 focus:ring-corporate-teal/20
+                transition-all text-sm"
+            >
+              {COMMON_TIMEZONES.map(tz => (
+                <option key={tz.value} value={tz.value}>{tz.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-slate-500 mt-1">Used for scheduling notifications and reminders</p>
+          </div>
         </div>
 
         {/* Company & Role */}

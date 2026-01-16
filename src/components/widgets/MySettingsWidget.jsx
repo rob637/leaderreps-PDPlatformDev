@@ -179,7 +179,7 @@ const MySettingsWidget = () => {
               </button>
             </div>
 
-            {/* Notification Preferences Section - Simple toggle only */}
+            {/* Notification Preferences Section - Simple toggle */}
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               <div className="w-full p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
