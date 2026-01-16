@@ -844,59 +844,32 @@ const ThisWeeksActionsWidget = () => {
               </div>
             )}
             
-            {/* Explore - Admin-configurable content (when prep complete) */}
-            {prepRequirementsComplete?.allComplete && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 px-1">
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm font-bold text-purple-800 uppercase tracking-wider">Explore</span>
-                  </div>
-                  <div className="flex-1 h-px bg-purple-200"></div>
-                  {additionalPrepActions.length > 0 && (
-                    <span className="text-xs font-medium text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
-                      {additionalPrepActions.length} items
-                    </span>
-                  )}
+            {/* Explore items (when prep complete) - shown inline with actions */}
+            {prepRequirementsComplete?.allComplete && additionalPrepActions.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs text-slate-600 px-1">
+                  Explore these tools at your own pace before Session 1:
+                </p>
+                <div className="space-y-1">
+                  {additionalPrepActions.map((item, idx) => (
+                    <ActionItem key={item.id || idx} item={item} idx={idx} />
+                  ))}
                 </div>
-                
-                {/* Congratulations Banner */}
-                <div className="p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 rounded-xl border border-emerald-200 shadow-sm">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-md">
-                      <Trophy className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-base font-bold text-emerald-800 mb-1">🎉 Congratulations on completing Required Prep!</p>
-                      <p className="text-sm text-emerald-700 leading-relaxed">
-                        You're all set! Now it's time to explore the app and get familiar with your leadership development tools.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {additionalPrepActions.length > 0 ? (
-                  <>
-                    <p className="text-xs text-slate-600 px-1">
-                      Explore these tools at your own pace before Session 1:
-                    </p>
-                    <div className="space-y-1 p-3 bg-purple-50/50 rounded-xl border border-purple-200/60">
-                      {additionalPrepActions.map((item, idx) => (
-                        <ActionItem key={item.id || idx} item={item} idx={idx} />
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-xs text-slate-500 px-1 italic">
-                    No additional exploration items configured. Check back soon!
-                  </p>
-                )}
                 
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
                   <p className="text-xs text-slate-600">
                     🚀 <span className="font-semibold">You're all set!</span> Session 1 will build on everything you've learned.
                   </p>
                 </div>
+              </div>
+            )}
+            
+            {/* Just the success message if no explore items */}
+            {prepRequirementsComplete?.allComplete && additionalPrepActions.length === 0 && (
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
+                <p className="text-xs text-slate-600">
+                  🚀 <span className="font-semibold">You're all set!</span> Session 1 will build on everything you've learned.
+                </p>
               </div>
             )}
           </>
