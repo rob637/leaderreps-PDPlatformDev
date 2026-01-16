@@ -88,6 +88,7 @@ const Library = () => {
         bgColor: 'bg-corporate-teal/10'
       },
       */
+      /* Temporarily hidden - not enough data yet
       {
         id: 'skills',
         title: 'Skills',
@@ -97,6 +98,7 @@ const Library = () => {
         color: 'text-corporate-orange',
         bgColor: 'bg-corporate-orange/10'
       },
+      */
       {
         id: 'readings',
         title: 'Read & Reps',
@@ -116,15 +118,6 @@ const Library = () => {
         bgColor: 'bg-corporate-orange/10'
       },
       {
-        id: 'tools',
-        title: 'Tools',
-        description: 'Checklists, templates, and job aids for quick application.',
-        icon: Wrench,
-        screen: 'tools-index',
-        color: 'text-corporate-teal',
-        bgColor: 'bg-corporate-teal/10'
-      },
-      {
         id: 'documents',
         title: 'Documents',
         description: 'Reference materials, guides, and whitepapers.',
@@ -132,6 +125,15 @@ const Library = () => {
         screen: 'documents-index',
         color: 'text-slate-600',
         bgColor: 'bg-slate-100'
+      },
+      {
+        id: 'tools',
+        title: 'Tools',
+        description: 'Checklists, templates, and job aids for quick application.',
+        icon: Wrench,
+        screen: 'tools-index',
+        color: 'text-corporate-teal',
+        bgColor: 'bg-corporate-teal/10'
       }
     ];
 
