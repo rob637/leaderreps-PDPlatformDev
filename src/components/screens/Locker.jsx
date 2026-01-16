@@ -86,19 +86,9 @@ const Locker = () => {
   }, [currentDayData, prepRequirementsComplete, exploreConfig]);
 
   // Arena Data
-  // Combine history with today's completed wins so they appear immediately
-  const historyWins = dailyPracticeData?.winsList || [];
-  const todayWins = dailyPracticeData?.morningBookend?.wins?.filter(w => w.completed && w.text) || [];
-  
-  const todayDate = dailyPracticeData?.date || new Date().toLocaleDateString('en-CA');
-  const formattedTodayWins = todayWins.map(w => ({
-    id: w.id,
-    text: w.text,
-    completed: true,
-    date: todayDate
-  }));
-  
-  const winsList = [...formattedTodayWins, ...historyWins];
+  // winsList already contains today's data (saved via handleSaveAllWins in Dashboard)
+  // No need to combine with morningBookend - that would create duplicates
+  const winsList = dailyPracticeData?.winsList || [];
   
   // Evening Bookend Data
   const eveningBookend = dailyPracticeData?.eveningBookend || {};
