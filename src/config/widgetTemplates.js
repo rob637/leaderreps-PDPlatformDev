@@ -2904,49 +2904,37 @@ render(<RepsHistoryWidget />);
       icon={ClipboardList}
       accent="NAVY"
     >
-      {hasCompletedAssessment ? (
-        <div className="flex gap-3">
-          {/* Completed Status */}
-          <div className="flex-1 flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-green-800 truncate">Assessment Complete</p>
-              <p className="text-xs text-green-600 truncate">on {assessmentDate}</p>
+      <div className="space-y-2">
+        {/* Assessment Row - Similar to My Settings style */}
+        <button
+          onClick={hasCompletedAssessment ? handleViewBaseline : handleTakeAssessment}
+          className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-slate-50 hover:border-corporate-teal/30 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className={\`w-8 h-8 rounded-full flex items-center justify-center \${hasCompletedAssessment ? 'bg-green-100' : 'bg-corporate-orange/10'}\`}>
+              {hasCompletedAssessment ? (
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-corporate-orange" />
+              )}
             </div>
-          </div>
-          
-          {/* View/Update Baseline Link */}
-          <button
-            onClick={handleViewBaseline}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-[#002E47] hover:bg-[#003E5F] text-white text-sm font-bold rounded-lg transition-colors shadow-sm"
-          >
-            <Eye className="w-4 h-4" />
-            View / Update
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {/* Not Completed Notice */}
-          <div className="flex items-start gap-3 p-3 bg-corporate-teal/5 rounded-lg border border-corporate-teal/20">
-            <AlertCircle className="w-5 h-5 text-corporate-teal flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-corporate-navy">Assessment Not Completed</p>
-              <p className="text-xs text-corporate-teal mt-1">
-                Complete your baseline assessment to unlock your personalized leadership development plan.
+            <div className="text-left">
+              <h4 className="font-medium text-corporate-navy text-sm">
+                {hasCompletedAssessment ? 'Assessment Complete' : 'Assessment Required'}
+              </h4>
+              <p className="text-xs text-slate-500">
+                {hasCompletedAssessment 
+                  ? \`Completed \${assessmentDate}\` 
+                  : 'Complete to unlock your plan'}
               </p>
             </div>
           </div>
-          
-          {/* Call to Action */}
-          <button
-            onClick={handleTakeAssessment}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#002E47] hover:bg-[#003E5F] text-white text-sm font-bold rounded-lg transition-colors shadow-sm"
-          >
-            <ArrowRight className="w-4 h-4" />
-            Take the Assessment
-          </button>
-        </div>
-      )}
+          <div className="flex items-center gap-1 text-corporate-teal">
+            <span className="text-xs font-medium">{hasCompletedAssessment ? 'View' : 'Start'}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
+        </button>
+      </div>
     </Card>
   );
 })()
