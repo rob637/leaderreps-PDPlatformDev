@@ -160,15 +160,12 @@ const PrepWelcomeBanner = () => {
 
   // Get the subtext - progress-based messaging
   const getSubtext = () => {
-    // After prep requirements complete, show success message
+    // After prep requirements complete, show success message with explanation of new functionality
     if (isPrepComplete) {
       if (daysUntilStart <= 0) {
         return "Session One begins today! Let's launch your leadership journey.";
       }
-      if (daysUntilStart === 1) {
-        return "Fantastic! You've completed all Required Prep. Explore additional resources below while you wait for Session One tomorrow!";
-      }
-      return `Fantastic! You've completed all Required Prep. Explore additional resources below while you wait for Session One in ${daysUntilStart} days.`;
+      return `Great work! You've unlocked your daily leadership tools. Use Win the Day to set your priorities each morning, explore additional content below, and end your day with a PM Reflection.`;
     }
 
     // Show remaining count

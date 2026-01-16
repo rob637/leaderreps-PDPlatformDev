@@ -148,12 +148,13 @@ const ContentListView = ({
         
         {/* Hero Section */}
         <div className={`rounded-2xl p-8 text-white mb-8 shadow-lg bg-gradient-to-r ${
-          type === 'PROGRAM' ? 'from-indigo-600 to-purple-600' :
-          type === 'WORKOUT' ? 'from-orange-500 to-red-500' :
-          type === 'READ_REP' ? 'from-blue-600 to-cyan-600' :
-          type === 'VIDEO' ? 'from-pink-600 to-rose-600' :
-          type === 'TOOL' ? 'from-teal-500 to-emerald-500' :
-          'from-slate-700 to-slate-900'
+          type === 'PROGRAM' ? 'from-corporate-navy to-slate-700' :
+          type === 'WORKOUT' ? 'from-corporate-orange to-amber-500' :
+          type === 'READ_REP' ? 'from-corporate-navy to-slate-700' :
+          type === 'VIDEO' ? 'from-corporate-orange to-amber-500' :
+          type === 'TOOL' ? 'from-corporate-teal to-emerald-600' :
+          type === 'DOCUMENT' ? 'from-corporate-navy to-slate-700' :
+          'from-corporate-navy to-slate-700'
         }`}>
           <div className="flex items-center gap-4 mb-4">
             <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
@@ -175,7 +176,7 @@ const ContentListView = ({
               placeholder={`Search ${title.toLowerCase()}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-corporate-teal focus:ring-2 focus:ring-corporate-teal/20 outline-none transition-all"
             />
           </div>
           
@@ -183,14 +184,14 @@ const ContentListView = ({
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-colors ${
               showFilters || selectedSkills.length > 0
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                ? 'bg-corporate-teal/10 border-corporate-teal/30 text-corporate-teal'
                 : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
             }`}
           >
             <SlidersHorizontal className="w-5 h-5" />
             <span className="font-medium">Filters</span>
             {selectedSkills.length > 0 && (
-              <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-corporate-teal text-white text-xs font-bold px-2 py-0.5 rounded-full">
                 {selectedSkills.length}
               </span>
             )}

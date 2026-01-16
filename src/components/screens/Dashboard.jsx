@@ -2,7 +2,7 @@
 // Dashboard 4: Fully Modular "The Arena"
 // All sections are controlled by Feature Lab flags.
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
   CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
@@ -226,6 +226,27 @@ const Dashboard = () => {
   // const [showTaskInput, setShowTaskInput] = useState(false);
   const [isWinSaved, setIsWinSaved] = useState(false);
   const [isEditingLIS, setIsEditingLIS] = useState(false);
+
+  // Track previous prep completion state to detect transition
+  const prevPrepComplete = useRef(null);
+  
+  // Scroll to top when prep requirements just become complete
+  useEffect(() => {
+    // Only act during prep phase
+    if (currentPhase?.id !== 'pre-start') return;
+    
+    const isNowComplete = prepRequirementsComplete?.allComplete;
+    const wasComplete = prevPrepComplete.current;
+    
+    // Detect transition from not-complete to complete
+    if (isNowComplete && wasComplete === false) {
+      // Scroll to top so user sees the updated welcome banner and new functionality
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    // Update ref for next render
+    prevPrepComplete.current = isNowComplete;
+  }, [prepRequirementsComplete?.allComplete, currentPhase?.id]);
 
   // --- WRAPPERS FOR AUTO-SAVE ---
   const handleHabitCheck = async (key, value) => {
