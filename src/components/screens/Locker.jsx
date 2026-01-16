@@ -22,16 +22,21 @@ const LOCKER_FEATURES = [
 const Locker = () => {
   const { dailyPracticeData, commitmentData, navigate, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
-  const { currentDayData, prepRequirementsComplete } = useDailyPlan();
+  const { currentDayData, prepRequirementsComplete, dailyPlan } = useDailyPlan();
+
+  // Get explore-config for widget visibility after prep completion (matches Dashboard)
+  const exploreConfig = useMemo(() => {
+    return dailyPlan?.find(d => d.id === 'explore-config');
+  }, [dailyPlan]);
 
   // Day-based locker visibility - tied to dashboard widget visibility
   // Locker widgets only show once their corresponding dashboard widget has been shown
   const lockerVisibility = useMemo(() => {
     const dashboard = currentDayData?.dashboard || {};
+    const currentPhase = currentDayData?.phase;
     
     // During Prep Phase, hide bookend-related locker widgets UNLESS prep is complete
-    // (matches Dashboard logic - once prep is complete, widgets become available)
-    if (currentDayData?.phase?.id === 'pre-start' && !prepRequirementsComplete?.allComplete) {
+    if (currentPhase?.id === 'pre-start' && !prepRequirementsComplete?.allComplete) {
       return {
         showProfile: true,
         showReminders: true,
@@ -42,8 +47,21 @@ const Locker = () => {
       };
     }
 
-    // Post prep-phase OR prep complete: show locker widgets when their dashboard counterpart is visible
-    // Default to true (matching Dashboard shouldShow defaults) so widgets appear unless explicitly hidden
+    // Prep complete but still in pre-start: use explore-config settings (matches Dashboard logic)
+    if (currentPhase?.id === 'pre-start' && prepRequirementsComplete?.allComplete) {
+      const exploreDash = exploreConfig?.dashboard || {};
+      return {
+        showProfile: true,
+        showReminders: true,
+        // Use explore-config settings, defaulting to false for widgets not explicitly enabled
+        showAMWins: exploreDash.showWinTheDay ?? exploreDash['win-the-day'] ?? false,
+        showDailyReps: exploreDash.showDailyReps ?? exploreDash['daily-leader-reps'] ?? false,
+        showScorecard: exploreDash.showScorecard ?? exploreDash['scorecard'] ?? false,
+        showReflection: exploreDash.showPMReflection ?? exploreDash['pm-bookend'] ?? false
+      };
+    }
+
+    // Post prep-phase: show locker widgets when their dashboard counterpart is visible
     return {
       showProfile: true,
       showReminders: true,
@@ -52,7 +70,7 @@ const Locker = () => {
       showScorecard: dashboard.showScorecard ?? true,
       showReflection: dashboard.showPMReflection ?? true
     };
-  }, [currentDayData, prepRequirementsComplete]);
+  }, [currentDayData, prepRequirementsComplete, exploreConfig]);
 
   // Arena Data
   // Combine history with today's completed wins so they appear immediately
