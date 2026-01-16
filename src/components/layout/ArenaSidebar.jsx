@@ -133,12 +133,12 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
             href="https://leaderreps.com" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="flex items-center gap-3 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity cursor-pointer"
+            className="flex items-center gap-3 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity cursor-pointer text-white no-underline"
             title="Visit LeaderReps.com"
           >
             <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl bg-white shadow-lg" />
             <div className="flex flex-col">
-              <span className="font-semibold text-lg tracking-tight leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>LeaderReps</span>
+              <span className="font-semibold text-lg tracking-tight leading-tight text-white" style={{ fontFamily: 'var(--font-heading)' }}>LeaderReps</span>
               <span className="text-[11px] text-corporate-teal/80 font-medium uppercase tracking-widest">
                 The Arena
               </span>
