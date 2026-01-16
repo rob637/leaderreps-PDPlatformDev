@@ -1,6 +1,6 @@
 // src/components/layout/AppContent.jsx 
 
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { signOut, updateProfile } from 'firebase/auth';
 import { LogOut, Loader, Settings, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
@@ -33,6 +33,16 @@ const AppContent = ({
   });
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // Ref for main scrollable content area - used for scroll-to-top on navigation
+  const mainContentRef = useRef(null);
+  
+  // Scroll to top when screen changes
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo(0, 0);
+    }
+  }, [currentScreen]);
 
   // Listen for developer mode changes
   useEffect(() => {
@@ -134,7 +144,7 @@ const AppContent = ({
                 </div>
               )} */}
 
-              <div className="flex-1 overflow-y-auto">
+              <div ref={mainContentRef} className="flex-1 overflow-y-auto">
                 <Suspense
                   fallback={
                     <div className="min-h-full flex items-center justify-center gradient-corporate-hero">
