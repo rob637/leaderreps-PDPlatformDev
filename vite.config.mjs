@@ -31,8 +31,8 @@ export default defineConfig({
       manifest: false, // Use existing manifest.webmanifest
       
       workbox: {
-        // clientsClaim: New SW takes control of open clients on activation
-        clientsClaim: true,
+        // clientsClaim: false - Don't auto-take control, wait for user to update
+        clientsClaim: false,
         // skipWaiting: false - Let the user decide when to update (Google-style)
         // The UpdateNotification component will prompt the user
         skipWaiting: false,

@@ -71,14 +71,13 @@ const UpdateNotification = () => {
     }
   }, [needRefresh, dismissed]);
 
-  // Handle controller change to reload the page when the new SW takes over
+  // Handle controller change - LOG only, don't auto-reload
+  // User should click "Update Now" to reload and get the new version
   useEffect(() => {
-    let refreshing = false;
     const onControllerChange = () => {
-      if (refreshing) return;
-      refreshing = true;
-      console.log('[PWA] New service worker activated, reloading...');
-      window.location.reload();
+      console.log('[PWA] New service worker controller detected');
+      // Don't auto-reload - let user decide via the update notification
+      // The update prompt will appear if needRefresh is true
     };
 
     if (navigator.serviceWorker) {
