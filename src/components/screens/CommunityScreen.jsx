@@ -367,14 +367,14 @@ const CommunityScreen = () => {
 
     const tierMeta = useMemo(() => LEADERSHIP_TIERS || {}, [LEADERSHIP_TIERS]);
 
-    if (isAppLoading) return <LoadingSpinner message="Loading Community Hub..." />;
+    if (isAppLoading) return <LoadingSpinner message="Loading Community..." />;
     if (appError) return <div className="p-4 text-red-500">Error: {appError.message}</div>;
 
     // Zone Gate: Community unlocks at Day 15 (Week 1 of main program)
     if (!zoneVisibility.isCommunityZoneOpen) {
         return (
             <PageLayout
-                title="Community Hub"
+                title="Community"
                 subtitle="Connect, share insights, and grow with fellow leaders."
                 icon={CommunityIcon}
                 navigate={navigate}
@@ -386,7 +386,7 @@ const CommunityScreen = () => {
                         </div>
                         <h2 className="text-xl font-bold text-corporate-navy mb-2">Community Coming Soon</h2>
                         <p className="text-slate-600 mb-4">
-                            The Community Hub unlocks on Day 15 of your program. 
+                            The Community unlocks on Day 15 of your program. 
                             Focus on your prep work and early development activities first!
                         </p>
                         <p className="text-sm text-slate-500">
@@ -400,7 +400,7 @@ const CommunityScreen = () => {
 
     return (
         <PageLayout
-            title="Community Hub"
+            title="Community"
             subtitle="Connect, share insights, and grow with fellow leaders."
             icon={CommunityIcon}
             navigate={navigate}
