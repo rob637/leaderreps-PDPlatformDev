@@ -95,19 +95,9 @@ const MySettingsWidget = () => {
 
   return (
     <>
-      <Card accent="TEAL" className="overflow-hidden">
-        {/* Header */}
-        <div className="p-4 pb-2 flex items-center gap-3">
-          <div className="w-10 h-10 bg-corporate-teal/10 rounded-full flex items-center justify-center">
-            <Settings className="w-5 h-5 text-corporate-teal" />
-          </div>
-          <h3 className="font-semibold text-corporate-navy" style={{ fontFamily: 'var(--font-heading)' }}>
-            My Settings
-          </h3>
-        </div>
-
+      <Card title="My Settings" icon={Settings} accent="TEAL">
         {/* Settings Rows */}
-        <div className="px-4 pb-4 space-y-2">
+        <div className="space-y-2">
           {/* Leader Profile Row - Clickable to edit */}
           <button
             onClick={() => setShowProfileForm(true)}

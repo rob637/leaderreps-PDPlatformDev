@@ -139,7 +139,6 @@ const MyJourneyWidget = () => {
       title="My Journey" 
       icon={Compass} 
       accent="TEAL"
-      className="mb-4"
     >
       <div className="space-y-4">
         {/* Cohort Info */}

@@ -174,10 +174,14 @@ const Locker = () => {
       accentColor="teal"
     >
       {/* My Settings Widget - expandable profile & notifications at top */}
-      <MySettingsWidget />
+      <div className="mb-6">
+        <MySettingsWidget />
+      </div>
       
       {/* My Journey Widget - shows cohort and journey info */}
-      <MyJourneyWidget />
+      <div className="mb-6">
+        <MyJourneyWidget />
+      </div>
       
       <WidgetRenderer widgetId="locker-controller" scope={scope} />
       
