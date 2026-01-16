@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Settings, User, Bell, ChevronDown, ChevronUp, 
-  CheckCircle, Edit2
+  Settings, User, Bell, CheckCircle, Edit2
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
@@ -14,7 +13,6 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
  * Combines Leader Profile and Notification toggle in an expandable panel
  */
 const MySettingsWidget = () => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
   
   // Profile data
@@ -98,124 +96,78 @@ const MySettingsWidget = () => {
   return (
     <>
       <Card accent="TEAL" className="overflow-hidden">
-        {/* Collapsed Header - Always Visible */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-corporate-teal/10 rounded-full flex items-center justify-center">
-              <Settings className="w-5 h-5 text-corporate-teal" />
-            </div>
-            <div className="text-left">
-              <h3 className="font-semibold text-corporate-navy" style={{ fontFamily: 'var(--font-heading)' }}>
-                My Settings
-              </h3>
-              <div className="flex items-center gap-3 text-sm text-slate-500">
-                {/* Profile Status */}
-                <span className="flex items-center gap-1">
-                  <User className="w-3.5 h-3.5" />
-                  {profileComplete ? (
-                    <span className="text-green-600">Profile Complete</span>
-                  ) : (
-                    <span className="text-corporate-orange">{completionPercentage}% Complete</span>
-                  )}
-                </span>
-                <span className="text-slate-300">|</span>
-                {/* Notification Status */}
-                <span className="flex items-center gap-1">
-                  <Bell className="w-3.5 h-3.5" />
-                  {notifSettings.enabled ? (
-                    <span className="text-green-600">Notifications On</span>
-                  ) : (
-                    <span className="text-slate-400">Notifications Off</span>
-                  )}
-                </span>
+        {/* Header */}
+        <div className="p-4 pb-2 flex items-center gap-3">
+          <div className="w-10 h-10 bg-corporate-teal/10 rounded-full flex items-center justify-center">
+            <Settings className="w-5 h-5 text-corporate-teal" />
+          </div>
+          <h3 className="font-semibold text-corporate-navy" style={{ fontFamily: 'var(--font-heading)' }}>
+            My Settings
+          </h3>
+        </div>
+
+        {/* Settings Rows */}
+        <div className="px-4 pb-4 space-y-2">
+          {/* Leader Profile Row - Clickable to edit */}
+          <button
+            onClick={() => setShowProfileForm(true)}
+            className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-slate-50 hover:border-corporate-teal/30 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${profileComplete ? 'bg-green-100' : 'bg-corporate-orange/10'}`}>
+                {profileComplete ? (
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                ) : (
+                  <User className="w-4 h-4 text-corporate-orange" />
+                )}
+              </div>
+              <div className="text-left">
+                <h4 className="font-medium text-corporate-navy text-sm">Leader Profile</h4>
+                <p className="text-xs text-slate-500">
+                  {profileComplete 
+                    ? `Welcome, ${profile?.firstName}!` 
+                    : `${completionPercentage}% complete`}
+                </p>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-slate-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-slate-400" />
-            )}
-          </div>
-        </button>
-
-        {/* Expanded Content */}
-        {isExpanded && (
-          <div className="border-t border-slate-200 p-4 space-y-4 bg-slate-50/50">
-            
-            {/* Leader Profile Section */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <button
-                onClick={() => setShowProfileForm(true)}
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${profileComplete ? 'bg-green-100' : 'bg-corporate-orange/10'}`}>
-                    {profileComplete ? (
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                    ) : (
-                      <User className="w-4 h-4 text-corporate-orange" />
-                    )}
-                  </div>
-                  <div className="text-left">
-                    <h4 className="font-medium text-corporate-navy">Leader Profile</h4>
-                    <p className="text-xs text-slate-500">
-                      {profileComplete 
-                        ? `Welcome, ${profile?.firstName}!` 
-                        : `${completionPercentage}% complete - helps personalize your experience`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-corporate-teal">
-                    {profileComplete ? 'Edit' : 'Complete'}
-                  </span>
-                  <Edit2 className="w-4 h-4 text-corporate-teal" />
-                </div>
-              </button>
+            <div className="flex items-center gap-1 text-corporate-teal">
+              <span className="text-xs font-medium">{profileComplete ? 'Edit' : 'Complete'}</span>
+              <Edit2 className="w-3.5 h-3.5" />
             </div>
+          </button>
 
-            {/* Notification Preferences Section - Simple toggle */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="w-full p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notifSettings.enabled ? 'bg-green-100' : 'bg-slate-100'}`}>
-                    <Bell className={`w-4 h-4 ${notifSettings.enabled ? 'text-green-600' : 'text-slate-400'}`} />
-                  </div>
-                  <div className="text-left">
-                    <h4 className="font-medium text-corporate-navy">Notifications</h4>
-                    <p className="text-xs text-slate-500">
-                      {notifSettings.enabled 
-                        ? `${notifSettings.channels.email ? 'Email' : ''}${notifSettings.channels.email && notifSettings.channels.sms ? ' + ' : ''}${notifSettings.channels.sms ? 'SMS' : ''} enabled`
-                        : 'Notifications disabled'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Quick toggle */}
-                  <div 
-                    onClick={() => handleMasterToggle(!notifSettings.enabled)}
-                  >
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer"
-                        checked={notifSettings.enabled}
-                        onChange={() => {}}
-                        disabled={saving}
-                      />
-                      <div className={`w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-corporate-teal ${saving ? 'opacity-50' : ''}`}></div>
-                    </label>
-                  </div>
-                </div>
+          {/* Notifications Row - Inline toggle */}
+          <div className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notifSettings.enabled ? 'bg-green-100' : 'bg-slate-100'}`}>
+                <Bell className={`w-4 h-4 ${notifSettings.enabled ? 'text-green-600' : 'text-slate-400'}`} />
+              </div>
+              <div className="text-left">
+                <h4 className="font-medium text-corporate-navy text-sm">Notifications</h4>
+                <p className="text-xs text-slate-500">
+                  {notifSettings.enabled 
+                    ? `${notifSettings.channels.email ? 'Email' : ''}${notifSettings.channels.email && notifSettings.channels.sms ? ' + ' : ''}${notifSettings.channels.sms ? 'SMS' : ''} enabled`
+                    : 'Disabled'}
+                </p>
               </div>
             </div>
+            <div 
+              onClick={() => handleMasterToggle(!notifSettings.enabled)}
+              className="cursor-pointer"
+            >
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer"
+                  checked={notifSettings.enabled}
+                  onChange={() => {}}
+                  disabled={saving}
+                />
+                <div className={`w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-corporate-teal ${saving ? 'opacity-50' : ''}`}></div>
+              </label>
+            </div>
           </div>
-        )}
+        </div>
       </Card>
 
       {/* Profile Form Modal */}
