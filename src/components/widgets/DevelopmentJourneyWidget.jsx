@@ -806,8 +806,7 @@ const DevelopmentJourneyWidget = () => {
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto pb-4 pt-6 pl-8 pr-4 scrollbar-hide"
-          style={{ scrollSnapType: 'x mandatory' }}
+          className="flex gap-4 overflow-x-auto pb-4 pt-6 pl-2 pr-4 scrollbar-hide"
         >
           {journeyData.segments.map((segment, idx) => {
             const segmentState = getSegmentState(segment);
@@ -820,7 +819,6 @@ const DevelopmentJourneyWidget = () => {
             return (
               <motion.div 
                 key={segment.id} 
-                style={{ scrollSnapAlign: 'start' }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
