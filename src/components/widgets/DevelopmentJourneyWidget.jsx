@@ -729,30 +729,16 @@ const DevelopmentJourneyWidget = () => {
     }
   };
   
-  // Scroll to current segment on mount
+  // Always start scrolled to the left on mount - user can scroll to see later segments
   useEffect(() => {
-    if (scrollContainerRef.current && currentSegmentId && journeyData.segments.length > 0) {
-      const segmentIndex = journeyData.segments.findIndex(s => s.id === currentSegmentId);
-      if (segmentIndex > 0) {
-        const cardWidth = 156; // 140px width + 16px gap
-        const scrollPosition = (segmentIndex) * cardWidth - 100;
-        setTimeout(() => {
-          scrollContainerRef.current?.scrollTo({
-            left: Math.max(0, scrollPosition),
-            behavior: 'smooth'
-          });
-          // Update scroll state after animation
-          setTimeout(() => handleScroll(), 400);
-        }, 300);
-      } else {
-        // At beginning - explicitly scroll to start and ensure scroll state is correct
-        setTimeout(() => {
-          scrollContainerRef.current?.scrollTo({ left: 0, behavior: 'auto' });
-          handleScroll();
-        }, 100);
-      }
+    if (scrollContainerRef.current && journeyData.segments.length > 0) {
+      // Explicitly scroll to start
+      setTimeout(() => {
+        scrollContainerRef.current?.scrollTo({ left: 0, behavior: 'auto' });
+        handleScroll();
+      }, 100);
     }
-  }, [currentSegmentId, journeyData.segments.length]);
+  }, [journeyData.segments.length]);
   
   // Calculate initial scroll state on mount and when segments change
   useEffect(() => {
@@ -820,7 +806,7 @@ const DevelopmentJourneyWidget = () => {
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto pb-4 pt-6 pl-6 pr-4 scrollbar-hide"
+          className="flex gap-4 overflow-x-auto pb-4 pt-6 pl-8 pr-4 scrollbar-hide"
           style={{ scrollSnapType: 'x mandatory' }}
         >
           {journeyData.segments.map((segment, idx) => {
