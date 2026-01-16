@@ -635,7 +635,7 @@ const CoachingHub = () => {
             </div>
             <h2 className="text-xl font-bold text-corporate-navy mb-2">Coaching Coming Soon</h2>
             <p className="text-slate-600 mb-4">
-              The Coaching Hub unlocks on Day 22 of your program.
+              The Coaching zone unlocks on Day 22 of your program.
               {zoneVisibility.isCoaching1on1Window && (
                 <span className="block mt-2 text-corporate-teal font-medium">
                   1:1 Coaching scheduling is available Days 23-35.
