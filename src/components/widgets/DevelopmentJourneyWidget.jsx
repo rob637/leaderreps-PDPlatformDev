@@ -468,12 +468,21 @@ const DevelopmentJourneyWidget = () => {
     return null;
   }, [currentPhase, phaseDayNumber]);
   
-  // Set initial selected segment to current
+  // Track if user has manually selected a segment
+  const hasUserSelected = useRef(false);
+  
+  // Set initial selected segment to current - only on mount or when no selection
   useEffect(() => {
-    if (selectedSegment === null && currentSegmentId) {
+    if (currentSegmentId && !hasUserSelected.current) {
       setSelectedSegment(currentSegmentId);
     }
-  }, [currentSegmentId, selectedSegment]);
+  }, [currentSegmentId]);
+  
+  // Wrapper to track user selections
+  const handleSelectSegment = (segmentId) => {
+    hasUserSelected.current = true;
+    setSelectedSegment(segmentId);
+  };
   
   // Get completed items set
   const completedItems = useMemo(() => {
@@ -831,7 +840,7 @@ const DevelopmentJourneyWidget = () => {
                 transition={{ delay: idx * 0.05 }}
               >
                 <div
-                  onClick={() => isClickable && setSelectedSegment(segment.id)}
+                  onClick={() => isClickable && handleSelectSegment(segment.id)}
                   className={`
                     relative w-[140px] flex-shrink-0 rounded-2xl p-4 cursor-pointer transition-all duration-300
                     ${segment.id === selectedSegment ? 'ring-2 ring-corporate-teal ring-offset-2' : ''}
