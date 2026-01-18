@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { serverTimestamp } from '../../../services/firebaseUtils';
 import { useAppServices } from '../../../hooks/useAppServices';
 import { timeService } from '../../../services/timeService';
+import { calculateRepStreak, getStreakMilestone, isExcludedDate } from '../../../utils/streakCalculator';
 
 // Helper function to check if developer mode is enabled
 // const isDeveloperMode = () => localStorage.getItem('arena-developer-mode') === 'true';
@@ -546,6 +547,41 @@ export const useDashboard = ({
     // If no activity yet, show the base streak (maintained or reset by nightly rollover)
     return baseStreak;
   }, [dailyPracticeData?.streakCount, groundingRepCompleted, morningWins, additionalCommitments]);
+
+  // === REP STREAK CALCULATION ===
+  // Calculate streak specifically for Daily Rep completion (excludes weekends & holidays)
+  const repStreak = useMemo(() => {
+    const repsHistory = dailyPracticeData?.repsHistory || [];
+    const todayStr = timeService.getTodayStr();
+    
+    // Check if user has completed at least one rep TODAY
+    const hasCompletedRepToday = additionalCommitments.some(c => c.status === 'Committed');
+    
+    // Calculate streak using the dedicated calculator
+    const { currentStreak, longestStreak, lastActiveDate } = calculateRepStreak(
+      repsHistory,
+      todayStr,
+      hasCompletedRepToday
+    );
+    
+    // Get milestone info
+    const milestone = getStreakMilestone(currentStreak);
+    const longestMilestone = getStreakMilestone(longestStreak);
+    
+    // Is today an excluded day (weekend/holiday)?
+    const isTodayExcluded = isExcludedDate(todayStr);
+    
+    return {
+      currentStreak,
+      longestStreak,
+      lastActiveDate,
+      milestone,
+      longestMilestone,
+      hasCompletedRepToday,
+      isTodayExcluded,
+      isNewPersonalBest: currentStreak > 0 && currentStreak === longestStreak && hasCompletedRepToday
+    };
+  }, [dailyPracticeData?.repsHistory, additionalCommitments]);
 
   /* =========================================================
      MIDNIGHT ROLLOVER LOGIC (Time Traveler Feature)
@@ -1550,6 +1586,9 @@ export const useDashboard = ({
     // Streak - use liveStreakCount for real-time feedback
     streakCount: liveStreakCount,
     streakCoins,
+    
+    // Rep Streak - Daily Rep specific streak (excludes weekends/holidays)
+    repStreak,
     
     // Additional Reps
     additionalCommitments,

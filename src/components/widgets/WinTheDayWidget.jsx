@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Trophy, CheckCircle, Check, Loader, Save } from 'lucide-react';
 import { Card, Button } from '../ui';
 
-const WinTheDayWidget = ({ scope }) => {
+const WinTheDayWidget = ({ scope, helpText }) => {
   const { 
     morningWins, 
     handleUpdateWin, 
@@ -44,7 +44,7 @@ const WinTheDayWidget = ({ scope }) => {
   }, [morningWins, handleToggleWinComplete]);
 
   return (
-    <Card title="Win the Day" icon={Trophy} accent="TEAL">
+    <Card title="Win the Day" icon={Trophy} accent="TEAL" helpText={helpText}>
       <div className="space-y-1">
         <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">
           Identify 3 High-Impact Actions

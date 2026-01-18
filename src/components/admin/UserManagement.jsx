@@ -382,6 +382,12 @@ const UserManagement = () => {
   const handleSendInvite = async (e) => {
     e.preventDefault();
     
+    // Validate: Cohort is required
+    if (!inviteForm.cohortId) {
+      alert('Please select a Cohort. All users must be assigned to a cohort.');
+      return;
+    }
+    
     // Validate: If test mode is enabled, testRecipient is required
     if (inviteForm.isTest && !inviteForm.testRecipient?.trim()) {
       alert('Test Mode requires an Override Email address. Please enter the email where test notifications should be sent.');
@@ -1006,13 +1012,14 @@ const UserManagement = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Cohort</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Cohort *</label>
                   <select
+                    required
                     value={inviteForm.cohortId}
                     onChange={e => setInviteForm({...inviteForm, cohortId: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 ${!inviteForm.cohortId ? 'border-amber-300 bg-amber-50' : 'border-slate-300'}`}
                   >
-                    <option value="">No Cohort</option>
+                    <option value="">-- Select Cohort --</option>
                     {cohorts.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}

@@ -43,7 +43,7 @@ const generateCalendarUrl = (calendarEvent) => {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 };
 
-const ThisWeeksActionsWidget = () => {
+const ThisWeeksActionsWidget = ({ helpText }) => {
   const { db, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const [viewingResource, setViewingResource] = useState(null);
   const [loadingResource, setLoadingResource] = useState(false);
@@ -781,7 +781,7 @@ const ThisWeeksActionsWidget = () => {
           onClose={() => setViewingResource(null)} 
         />
       )}
-      <Card title={widgetTitle} icon={CheckCircle} accent="TEAL">
+      <Card title={widgetTitle} icon={CheckCircle} accent="TEAL" helpText={helpText}>
         
         {/* ========== PREPARATION PHASE: Progress-Based Sections ========== */}
         {currentPhase?.id === 'pre-start' && (
@@ -922,14 +922,6 @@ const ThisWeeksActionsWidget = () => {
               )}
             </div>
 
-            {/* Week Completion Celebration */}
-            {progressPercent === 100 && totalRequiredCount > 0 && (
-              <div className="mt-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 text-center">
-                <div className="text-2xl mb-1">🎉</div>
-                <p className="text-sm font-semibold text-emerald-800">Week {currentWeekNumber} Complete!</p>
-                <p className="text-xs text-emerald-600 mt-1">Great work! You've completed all required actions for this week.</p>
-              </div>
-            )}
           </>
         )}
       </Card>

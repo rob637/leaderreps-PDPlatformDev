@@ -123,7 +123,7 @@ export const WIDGET_TEMPLATES = {
 })()
     `,
     'lis-maker': `
-<Card title="LIS Maker" icon={PenTool} accent="NAVY">
+<Card title="LIS Maker" icon={PenTool} accent="NAVY" helpText={widgetHelpText}>
   <div className="space-y-2">
     <div className="bg-teal-50 p-3 rounded-xl border border-teal-100">
       <h4 className="font-bold text-teal-900 mb-1">Build Your Identity</h4>
@@ -204,7 +204,7 @@ export const WIDGET_TEMPLATES = {
 
   if (isEditing) {
     return (
-      <Card title="LIS Maker" icon={PenTool} accent="NAVY">
+      <Card title="LIS Maker" icon={PenTool} accent="NAVY" helpText={widgetHelpText}>
         <div className="space-y-2">
           <div className="bg-teal-50 p-2 rounded-xl border border-teal-100">
             <h4 className="font-bold text-teal-900 mb-0 text-sm">Build Your Identity</h4>
@@ -255,7 +255,7 @@ export const WIDGET_TEMPLATES = {
   // Only show if actively revealed (not just because it's done today - user can close it)
   if (isRevealed) {
     return (
-      <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
+      <Card title="Grounding Rep" icon={Zap} accent="ORANGE" helpText={widgetHelpText}>
         <div className="text-center relative overflow-hidden pt-0">
           {showConfetti && (
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -298,7 +298,7 @@ export const WIDGET_TEMPLATES = {
   // Completed today but closed - show completion badge with option to view again
   if (groundingRepDone) {
     return (
-      <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
+      <Card title="Grounding Rep" icon={Zap} accent="ORANGE" helpText={widgetHelpText}>
         <div className="text-center py-0">
           <div className="flex items-center justify-center gap-2 mb-0">
             <CheckCircle className="w-4 h-4 text-green-500" />
@@ -317,7 +317,7 @@ export const WIDGET_TEMPLATES = {
 
   // Default state - click to reveal
   return (
-    <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
+    <Card title="Grounding Rep" icon={Zap} accent="ORANGE" helpText={widgetHelpText}>
       {hasLIS ? (
         <div className="text-center py-0">
           <button
@@ -408,7 +408,6 @@ export const WIDGET_TEMPLATES = {
           {isSavingWIN ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Priorities
         </button>
-        <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves to your locker each night at 11:59 PM</p>
       </div>
     </Card>
   );
@@ -598,7 +597,7 @@ const DailyLeaderRepsWidget = () => {
   };
   
   return (
-    <Card title="Daily Reps" icon={Dumbbell} accent="NAVY">
+    <Card title="Daily Reps" icon={Dumbbell} accent="NAVY" helpText={widgetHelpText}>
       <div className="space-y-2">
         {reps.length === 0 && (
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
@@ -666,11 +665,39 @@ const DailyLeaderRepsWidget = () => {
             </div>
           );
         })}
-
+        
         {reps.length > 0 && (
           <p className="text-xs text-center text-slate-400 mt-3 italic">Autosaves to your locker each night at 11:59 PM</p>
         )}
       </div>
+      
+      {/* Streak Recognition - only show when there's a streak */}
+      {(() => {
+        const safeRepStreak = typeof repStreak !== 'undefined' ? repStreak : { currentStreak: 0, longestStreak: 0 };
+        const currentStreak = safeRepStreak.currentStreak || 0;
+        const longestStreak = safeRepStreak.longestStreak || 0;
+        const hasCompletedToday = safeRepStreak.hasCompletedRepToday || false;
+        const isNewBest = safeRepStreak.isNewPersonalBest || false;
+        
+        if (currentStreak === 0 && longestStreak === 0) return null;
+        
+        return (
+          <div className="mt-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <Flame className={\`w-4 h-4 \${currentStreak > 0 ? 'text-orange-500' : 'text-slate-300'}\`} />
+                <span className="text-slate-600">
+                  <span className="font-semibold text-[#002E47]">{currentStreak}</span> day streak
+                </span>
+                {isNewBest && <span className="text-xs text-amber-600 font-medium">Personal best!</span>}
+              </div>
+              {longestStreak > currentStreak && (
+                <span className="text-xs text-slate-400">Best: {longestStreak}</span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
     </Card>
   );
@@ -803,7 +830,7 @@ const NotificationsWidget = () => {
   const hasData = newUnlocks.length > 0;
 
   return (
-    <Card title="Notifications" icon={Bell} accent="GRAY">
+    <Card title="Notifications" icon={Bell} accent="GRAY" helpText={widgetHelpText}>
       <div className="space-y-3">
         {!hasData && (
           <div className="flex gap-3 items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
@@ -961,7 +988,7 @@ render(<NotificationsWidget />);
 </Card>
     `,
     'pm-bookend': `
-<Card title="PM Reflection" icon={MessageSquare} accent="NAVY">
+<Card title="PM Reflection" icon={MessageSquare} accent="NAVY" helpText={widgetHelpText}>
   <div className="space-y-2">
     <div>
       <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
@@ -1010,7 +1037,6 @@ render(<NotificationsWidget />);
       {isSavingBookend ? <Loader className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
       Save Reflection
     </button>
-    <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves to your locker each night at 11:59 PM</p>
   </div>
 
 </Card>
@@ -1019,9 +1045,14 @@ render(<NotificationsWidget />);
 (() => {
   const safeScorecard = typeof scorecard !== 'undefined' ? scorecard : { grounding: { done: 0, total: 1, pct: 0 }, reps: { done: 0, total: 0, pct: 0 }, win: { done: 0, total: 0, pct: 0 } };
   const safeIsSaving = typeof isSavingScorecard !== 'undefined' ? isSavingScorecard : false;
-  const safeStreak = typeof streakCount !== 'undefined' ? streakCount : 0;
-  const safeHandleSave = typeof handleSaveScorecard !== 'undefined' ? handleSaveScorecard : () => {};
   const weekNum = typeof currentWeekNumber !== 'undefined' ? currentWeekNumber : 1;
+  
+  // Rep Streak data (Daily Rep specific, excludes weekends/holidays)
+  const safeRepStreak = typeof repStreak !== 'undefined' ? repStreak : { currentStreak: 0, longestStreak: 0, milestone: null };
+  const currentStreak = safeRepStreak.currentStreak || 0;
+  const longestStreak = safeRepStreak.longestStreak || 0;
+  const milestone = safeRepStreak.milestone;
+  const isNewPersonalBest = safeRepStreak.isNewPersonalBest || false;
   
   // Get grounding rep status - either from scorecard or from dedicated state
   const groundingDone = safeScorecard.grounding?.done || (typeof groundingRepCompleted !== 'undefined' && groundingRepCompleted ? 1 : 0);
@@ -1029,7 +1060,7 @@ render(<NotificationsWidget />);
   const groundingPct = groundingTotal > 0 ? Math.round((groundingDone / groundingTotal) * 100) : 0;
 
   return (
-<Card title="Today's Scorecard" icon={Trophy} accent="ORANGE">
+<Card title="Today's Scorecard" icon={Trophy} accent="ORANGE" helpText={widgetHelpText}>
     <div className="space-y-2">
       {/* Grounding Rep - Only show from Week 2 onwards */}
       {weekNum > 1 && (
@@ -1073,16 +1104,42 @@ render(<NotificationsWidget />);
       </div>
     </div>
 
-    <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
-      <div className="flex items-center gap-2">
-        <Flame className="w-5 h-5 text-orange-500" />
-        <span className="font-bold text-xl text-[#002E47]">{safeStreak}</span>
-        <span className="text-xs text-slate-400 uppercase tracking-wider">Day Streak</span>
+    {/* Rep Streak Section */}
+    <div className="mt-4 pt-4 border-t border-slate-100">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={\`w-10 h-10 rounded-lg flex items-center justify-center \${currentStreak > 0 ? 'bg-gradient-to-br from-orange-400 to-amber-500' : 'bg-slate-100'}\`}>
+            <Flame className={\`w-5 h-5 \${currentStreak > 0 ? 'text-white' : 'text-slate-400'}\`} />
+          </div>
+          <div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-bold text-2xl text-[#002E47]">{currentStreak}</span>
+              <span className="text-sm text-slate-500">day streak</span>
+            </div>
+            {milestone && (
+              <p className="text-xs text-slate-500 mt-0.5">{milestone.message}</p>
+            )}
+          </div>
+        </div>
+        
+        {/* Longest Streak */}
+        {longestStreak > 0 && (
+          <div className="text-right">
+            <p className="text-xs text-slate-400 uppercase tracking-wide">Best</p>
+            <p className={\`text-lg font-semibold \${isNewPersonalBest ? 'text-amber-600' : 'text-slate-600'}\`}>
+              {longestStreak}
+              {isNewPersonalBest && <span className="text-xs ml-1">★</span>}
+            </p>
+          </div>
+        )}
       </div>
-      <div className="text-xs text-slate-400 italic flex items-center gap-1">
-        <CheckCircle className="w-3 h-3" />
-        Auto-saves at 11:59 PM
-      </div>
+      
+      {/* Weekend/Holiday note */}
+      {safeRepStreak.isTodayExcluded && (
+        <p className="text-xs text-slate-400 mt-2 text-center italic">
+          Weekends & holidays don't affect your streak
+        </p>
+      )}
     </div>
 
 </Card>
@@ -1090,7 +1147,7 @@ render(<NotificationsWidget />);
 })()
     `,
     'course-library': `
-<Card title="Course Library" icon={BookOpen} accent="TEAL">
+<Card title="Course Library" icon={BookOpen} accent="TEAL" helpText={widgetHelpText}>
   <div className="text-center py-6">
     <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
       <BookOpen className="w-6 h-6 text-slate-400" />
@@ -1101,7 +1158,7 @@ render(<NotificationsWidget />);
 </Card>
     `,
     'reading-hub': `
-<Card title="Reading Hub" icon={Book} accent="ORANGE">
+<Card title="Reading Hub" icon={Book} accent="ORANGE" helpText={widgetHelpText}>
   <div className="flex gap-3 overflow-x-auto pb-2">
     <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
       <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
@@ -1120,7 +1177,7 @@ render(<NotificationsWidget />);
 </Card>
     `,
     'leadership-videos': `
-<Card title="Featured Talk" icon={Video} accent="ORANGE">
+<Card title="Featured Talk" icon={Video} accent="ORANGE" helpText={widgetHelpText}>
   <div className="relative w-full aspect-video bg-gray-800 rounded-lg flex items-center justify-center mb-3 group cursor-pointer">
     <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
       <Play className="w-6 h-6 text-white fill-current" />
@@ -1132,7 +1189,7 @@ render(<NotificationsWidget />);
 </Card>
     `,
     'strat-templates': `
-<Card title="Templates" icon={FileText} accent="NAVY">
+<Card title="Templates" icon={FileText} accent="NAVY" helpText={widgetHelpText}>
   <div className="grid grid-cols-2 gap-2">
     <button className="p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors">
       <FileText className="w-5 h-5 text-blue-600 mb-2" />
@@ -1155,7 +1212,7 @@ render(<NotificationsWidget />);
 </Card>
     `,
     'community-feed': `
-<Card title="Community Feed" icon={MessageSquare} accent="NAVY">
+<Card title="Community Feed" icon={MessageSquare} accent="NAVY" helpText={widgetHelpText}>
   <div className="space-y-4">
     <div className="flex gap-3">
       <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0"></div>
@@ -1180,7 +1237,7 @@ render(<NotificationsWidget />);
 </Card>
     `,
     'my-discussions': `
-<Card title="My Discussions" icon={MessageCircle} accent="NAVY">
+<Card title="My Discussions" icon={MessageCircle} accent="NAVY" helpText={widgetHelpText}>
   <div className="space-y-2">
     <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors flex justify-between items-center">
       <span className="text-sm font-medium text-gray-700">Q3 Planning Thread</span>
@@ -1199,7 +1256,7 @@ render(<NotificationsWidget />);
 </Card>
     `,
     'mastermind': `
-<Card title="Mastermind Groups" icon={Users} accent="NAVY">
+<Card title="Mastermind Groups" icon={Users} accent="NAVY" helpText={widgetHelpText}>
   <p className="text-gray-600 text-sm mb-4">Join a peer group of leaders at your level to share challenges and grow together.</p>
   <button className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors">
     Find a Group
@@ -1208,7 +1265,7 @@ render(<NotificationsWidget />);
 </Card>
     `,
     'mentor-match': `
-<Card title="Mentor Match" icon={UserPlus} accent="TEAL">
+<Card title="Mentor Match" icon={UserPlus} accent="TEAL" helpText={widgetHelpText}>
   <div className="flex items-center gap-3 mb-3">
     <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
     <div>
@@ -2179,8 +2236,15 @@ const WinsHistoryWidget = () => {
             {visibleDates.length > 0 ? (
               visibleDates.map((date) => {
                 const wins = groupedWins[date];
-                // Ensure we have 3 slots, fill with empty if needed
-                const slots = [wins[0], wins[1], wins[2]];
+                // Use slot property to place wins in correct columns (1, 2, 3)
+                // If no slot property, fall back to array position
+                const slots = [null, null, null];
+                wins.forEach((win, idx) => {
+                  const slotIdx = win.slot ? win.slot - 1 : idx;
+                  if (slotIdx >= 0 && slotIdx < 3) {
+                    slots[slotIdx] = win;
+                  }
+                });
                 
                 return (
                   <tr key={date} className="hover:bg-slate-50/50 transition-colors">
@@ -2249,6 +2313,7 @@ render(<WinsHistoryWidget />);
     'locker-scorecard-history': `
 const ScorecardHistoryWidget = () => {
   const safeHistory = typeof commitmentHistory !== 'undefined' ? commitmentHistory : [];
+  const safeLiveScorecard = typeof liveScorecard !== 'undefined' ? liveScorecard : null;
   const [visibleCount, setVisibleCount] = React.useState(3);
   
   // Get today's date for comparison (respects time travel) - USE LOCAL DATE
@@ -2281,11 +2346,14 @@ const ScorecardHistoryWidget = () => {
   };
   
   // Deduplicate entries by normalized date (keep most recent/highest score)
+  // EXCLUDE today's entry from history - we'll show the live one instead
   const deduplicatedHistory = (() => {
     const byDate = {};
     safeHistory.forEach(entry => {
       const normalized = normalizeDate(entry.date);
       if (!normalized) return;
+      // Skip today's entry from history - live scorecard takes precedence
+      if (normalized === todayStr) return;
       // Keep the entry with the higher score or the first one encountered
       if (!byDate[normalized]) {
         byDate[normalized] = { ...entry, normalizedDate: normalized };
@@ -2302,11 +2370,24 @@ const ScorecardHistoryWidget = () => {
   })();
   
   // Sort by date descending (latest first)
-  const sortedHistory = [...deduplicatedHistory].sort((a, b) => {
+  const sortedPastHistory = [...deduplicatedHistory].sort((a, b) => {
     if (!a.normalizedDate) return 1;
     if (!b.normalizedDate) return -1;
     return b.normalizedDate.localeCompare(a.normalizedDate);
   });
+  
+  // Create live "Today" entry from liveScorecard
+  const liveTodayEntry = safeLiveScorecard ? {
+    date: todayStr,
+    normalizedDate: todayStr,
+    score: safeLiveScorecard.score,
+    isLive: true // Flag to identify this as real-time data
+  } : null;
+  
+  // Combine: Today (live) first, then past history
+  const sortedHistory = liveTodayEntry 
+    ? [liveTodayEntry, ...sortedPastHistory]
+    : sortedPastHistory;
   
   const visibleHistory = sortedHistory.slice(0, visibleCount);
   const hasMore = sortedHistory.length > visibleCount;
@@ -3073,8 +3154,8 @@ export const FEATURE_METADATA = {
     name: 'Scorecard History',
     description: 'Scorecard History',
     purpose: 'History of daily scores.',
-    extendedDescription: 'Displays a spreadsheet-style history of daily scorecard results.',
-    inputs: ['scorecardHistory'],
+    extendedDescription: 'Displays a spreadsheet-style history of daily scorecard results. Shows a live "Today" row that updates in real-time as you complete wins and reps.',
+    inputs: ['scorecardHistory', 'liveScorecard'],
     outputs: [],
   },
   'locker-progress': {

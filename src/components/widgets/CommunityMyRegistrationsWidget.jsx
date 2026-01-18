@@ -85,7 +85,7 @@ const RegisteredSessionCard = ({ session, onCancel }) => {
   );
 };
 
-const CommunityMyRegistrationsWidget = () => {
+const CommunityMyRegistrationsWidget = ({ helpText }) => {
   const { upcomingRegistrations, cancelRegistration, loading } = useCommunityRegistrations();
   const { sessions } = useCommunitySessions();
 
@@ -107,7 +107,7 @@ const CommunityMyRegistrationsWidget = () => {
 
   if (loading) {
     return (
-      <Card title="My Community Sessions" icon={Calendar}>
+      <Card title="My Community Sessions" icon={Calendar} helpText={helpText}>
         <div className="animate-pulse space-y-4">
           <div className="h-24 bg-slate-100 rounded-xl"></div>
           <div className="h-24 bg-slate-100 rounded-xl"></div>
@@ -117,7 +117,7 @@ const CommunityMyRegistrationsWidget = () => {
   }
 
   return (
-    <Card title="My Community Sessions" icon={Calendar}>
+    <Card title="My Community Sessions" icon={Calendar} helpText={helpText}>
       <div className="space-y-4">
         {mySessions.length === 0 ? (
           <div className="text-center py-8 text-slate-500">

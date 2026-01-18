@@ -26,34 +26,40 @@ import DailyPlanWidget from '../widgets/DailyPlanWidget';
  * All widget customization is done in code (widgetTemplates.js), not via DB.
  */
 const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
-  const { features } = useFeatures();
+  const { features, getWidgetHelpText } = useFeatures();
   
   const feature = features[widgetId];
+  
+  // Get help text for this widget (if admin has configured it)
+  const helpText = getWidgetHelpText(widgetId);
   
   // Check if feature is explicitly disabled
   if (feature && (feature.enabled === false || feature.enabled === 'false')) {
     return null;
   }
 
+  // Enhanced scope with helpText
+  const enhancedScope = { ...scope, widgetHelpText: helpText };
+
   // Hardcoded React components for complex widgets that need proper React state/inputs
   if (widgetId === 'win-the-day') {
-    return <WinTheDayWidget scope={scope} />;
+    return <WinTheDayWidget scope={enhancedScope} helpText={helpText} />;
   }
 
   if (widgetId === 'development-plan') {
-    return <DevelopmentPlanWidget scope={scope} />;
+    return <DevelopmentPlanWidget scope={enhancedScope} helpText={helpText} />;
   }
 
   if (widgetId === 'this-weeks-actions') {
-    return <ThisWeeksActionsWidget scope={scope} />;
+    return <ThisWeeksActionsWidget scope={enhancedScope} helpText={helpText} />;
   }
 
   if (widgetId === 'prep-welcome-banner') {
-    return <PrepWelcomeBanner />;
+    return <PrepWelcomeBanner helpText={helpText} />;
   }
 
   if (widgetId === 'daily-plan') {
-    return <DailyPlanWidget scope={scope} />;
+    return <DailyPlanWidget scope={enhancedScope} helpText={helpText} />;
   }
 
   if (widgetId === 'admin-access-viewer') {
@@ -62,24 +68,24 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
 
   // Coaching widgets
   if (widgetId === 'coaching-upcoming-sessions') {
-    return <CoachingUpcomingSessionsWidget scope={scope} />;
+    return <CoachingUpcomingSessionsWidget scope={enhancedScope} helpText={helpText} />;
   }
 
   if (widgetId === 'coaching-on-demand') {
-    return <CoachingOnDemandWidget scope={scope} />;
+    return <CoachingOnDemandWidget scope={enhancedScope} helpText={helpText} />;
   }
 
   if (widgetId === 'coaching-my-sessions') {
-    return <CoachingMySessionsWidget scope={scope} />;
+    return <CoachingMySessionsWidget scope={enhancedScope} helpText={helpText} />;
   }
 
   // Community widgets
   if (widgetId === 'community-upcoming-sessions') {
-    return <CommunityUpcomingSessionsWidget scope={scope} />;
+    return <CommunityUpcomingSessionsWidget scope={enhancedScope} helpText={helpText} />;
   }
 
   if (widgetId === 'community-my-registrations') {
-    return <CommunityMyRegistrationsWidget scope={scope} />;
+    return <CommunityMyRegistrationsWidget scope={enhancedScope} helpText={helpText} />;
   }
 
   if (widgetId === 'pm-bookend') {
@@ -93,6 +99,7 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
         setReflectionBest={scope.setReflectionBest}
         handleSaveEveningBookend={scope.handleSaveEveningBookend}
         isSavingBookend={scope.isSavingBookend}
+        helpText={helpText}
       />
     );
   }
@@ -103,7 +110,7 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   if (templateCode && templateCode.trim().length > 0) {
     return (
       <div id={`widget-${widgetId}`}>
-        <DynamicWidgetRenderer code={templateCode} scope={scope} />
+        <DynamicWidgetRenderer code={templateCode} scope={enhancedScope} />
       </div>
     );
   }

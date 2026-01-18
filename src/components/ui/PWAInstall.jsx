@@ -116,7 +116,7 @@ const PWAInstall = ({ collapsed = false }) => {
       {/* Install Button */}
       <button
         onClick={handleInstallClick}
-        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 animate-pulse ${collapsed ? 'w-full' : ''}`}
+        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 ${collapsed ? 'w-full' : ''}`}
         style={{
           backgroundColor: '#47A88D',
           color: 'white',

@@ -8,7 +8,7 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 
-const DevelopmentPlanWidget = () => {
+const DevelopmentPlanWidget = ({ helpText }) => {
   const { db } = useAppServices();
   const [viewingResource, setViewingResource] = useState(null);
   const [loadingResource, setLoadingResource] = useState(false);
@@ -198,7 +198,7 @@ const DevelopmentPlanWidget = () => {
           onClose={() => setViewingResource(null)} 
         />
       )}
-      <Card title={weekData.title} subtitle={`Week ${weekData.weekNumber}`} icon={BookOpen} accent="BLUE">
+      <Card title={weekData.title} subtitle={`Week ${weekData.weekNumber}`} icon={BookOpen} accent="BLUE" helpText={helpText}>
         <div className="space-y-4">
           {/* Header Info */}
           <div>

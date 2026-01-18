@@ -104,7 +104,7 @@ const PastSessionCard = ({ session }) => {
   );
 };
 
-const CoachingMySessionsWidget = ({ scope = {} }) => {
+const CoachingMySessionsWidget = ({ scope = {}, helpText }) => {
   const { 
     registeredSessions = [],
     pastSessions = [],
@@ -117,7 +117,7 @@ const CoachingMySessionsWidget = ({ scope = {} }) => {
   
   if (!hasUpcoming && !hasPast) {
     return (
-      <Card title="My Coaching" icon={User} accent="TEAL">
+      <Card title="My Coaching" icon={User} accent="TEAL" helpText={helpText}>
         <div className="text-center py-8">
           <User className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <h3 className="font-bold text-slate-600 mb-1">No Sessions Yet</h3>
@@ -134,7 +134,7 @@ const CoachingMySessionsWidget = ({ scope = {} }) => {
   }
   
   return (
-    <Card title="My Coaching" icon={User} accent="TEAL">
+    <Card title="My Coaching" icon={User} accent="TEAL" helpText={helpText}>
       {/* Upcoming Registrations */}
       {hasUpcoming && (
         <div className="mb-4">

@@ -9,7 +9,8 @@ const PMReflectionWidget = ({
   setReflectionBetter, 
   reflectionBest,
   setReflectionBest,
-  handleSaveEveningBookend
+  handleSaveEveningBookend,
+  helpText
 }) => {
   // Save status: 'idle' | 'saving' | 'saved'
   const [saveStatus, setSaveStatus] = useState('idle');
@@ -35,7 +36,7 @@ const PMReflectionWidget = ({
   }, [handleSaveEveningBookend]);
 
   return (
-    <Card title="PM Reflection" icon={MessageSquare} accent="NAVY">
+    <Card title="PM Reflection" icon={MessageSquare} accent="NAVY" helpText={helpText}>
       <div className="space-y-2">
         <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">
           Daily Reflection

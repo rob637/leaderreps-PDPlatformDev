@@ -6,13 +6,12 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { useNotifications } from '../../providers/NotificationProvider';
 import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
-import LockerProgressWidget from '../widgets/LockerProgressWidget';
 import MyJourneyWidget from '../widgets/MyJourneyWidget';
 import MySettingsWidget from '../widgets/MySettingsWidget';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useDevPlan } from '../../hooks/useDevPlan';
 
 const LOCKER_FEATURES = [
-  'locker-progress',
   'locker-wins-history',
   'locker-scorecard-history',
   'locker-latest-reflection',
@@ -23,6 +22,7 @@ const Locker = () => {
   const { dailyPracticeData, commitmentData, navigate, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
   const { currentDayData, prepRequirementsComplete, dailyPlan } = useDailyPlan();
+  const { currentWeek: devPlanCurrentWeek } = useDevPlan();
 
   // Get explore-config for widget visibility after prep completion (matches Dashboard)
   const exploreConfig = useMemo(() => {
@@ -47,25 +47,26 @@ const Locker = () => {
       };
     }
 
+    // Helper to check visibility - matches Dashboard checkVisibility logic
+    // Checks both widget ID (new system) and legacy key (old system) for compatibility
+    const checkVisibility = (dashboardObj, widgetId, legacyKey, defaultVal = true) => {
+      if (dashboardObj[widgetId] !== undefined) return dashboardObj[widgetId];
+      if (legacyKey && dashboardObj[legacyKey] !== undefined) return dashboardObj[legacyKey];
+      return defaultVal;
+    };
+
     // Prep complete but still in pre-start: use explore-config settings (matches Dashboard logic)
     if (currentPhase?.id === 'pre-start' && prepRequirementsComplete?.allComplete) {
       const exploreDash = exploreConfig?.dashboard || {};
       
-      // Helper to check visibility - matches Dashboard checkVisibility logic
-      const checkVisibility = (widgetId, legacyKey, defaultVal = true) => {
-        if (exploreDash[widgetId] !== undefined) return exploreDash[widgetId];
-        if (legacyKey && exploreDash[legacyKey] !== undefined) return exploreDash[legacyKey];
-        return defaultVal;
-      };
-      
-      const showWinTheDay = checkVisibility('win-the-day', 'showWinTheDay', true);
-      const showPMReflection = checkVisibility('pm-bookend', 'showPMReflection', true);
+      const showWinTheDay = checkVisibility(exploreDash, 'win-the-day', 'showWinTheDay', true);
+      const showPMReflection = checkVisibility(exploreDash, 'pm-bookend', 'showPMReflection', true);
       
       return {
         showProfile: true,
         showReminders: true,
         showAMWins: showWinTheDay,
-        showDailyReps: checkVisibility('daily-leader-reps', 'showDailyReps', true),
+        showDailyReps: checkVisibility(exploreDash, 'daily-leader-reps', 'showDailyReps', true),
         // Scorecard appears when Win the Day appears (since it tallies wins/reps)
         showScorecard: showWinTheDay,
         showReflection: showPMReflection
@@ -73,15 +74,18 @@ const Locker = () => {
     }
 
     // Post prep-phase: show locker widgets when their dashboard counterpart is visible
-    const showWinTheDay = dashboard.showWinTheDay ?? true;
+    // Check both widget ID (new system) and legacy key (old system) for compatibility
+    const showWinTheDay = checkVisibility(dashboard, 'win-the-day', 'showWinTheDay', true);
+    const showPMReflection = checkVisibility(dashboard, 'pm-bookend', 'showPMReflection', true);
+    
     return {
       showProfile: true,
       showReminders: true,
       showAMWins: showWinTheDay,
-      showDailyReps: dashboard.showDailyReps ?? true,
+      showDailyReps: checkVisibility(dashboard, 'daily-leader-reps', 'showDailyReps', true),
       // Scorecard appears when Win the Day appears
       showScorecard: showWinTheDay,
-      showReflection: dashboard.showPMReflection ?? true
+      showReflection: showPMReflection
     };
   }, [currentDayData, prepRequirementsComplete, exploreConfig]);
 
@@ -103,12 +107,51 @@ const Locker = () => {
   // Reflection History Data - read directly from dailyPracticeData
   const reflectionHistory = dailyPracticeData?.reflectionHistory || [];
 
+  // === LIVE SCORECARD CALCULATION ===
+  // Calculate today's scorecard in real-time from current state
+  // This ensures the Locker shows up-to-date data even before PM save/rollover
+  const liveScorecard = useMemo(() => {
+    // Get morning wins from daily practice data
+    const morningWins = dailyPracticeData?.morningBookend?.wins || [];
+    const definedWins = morningWins.filter(w => w.text && w.text.trim().length > 0);
+    const winTotal = definedWins.length > 0 ? definedWins.length : 3;
+    const winDone = definedWins.filter(w => w.completed).length;
+
+    // Get reps from dev plan and check completion status
+    const devPlanReps = devPlanCurrentWeek?.dailyReps || devPlanCurrentWeek?.reps || [];
+    const additionalCommitments = dailyPracticeData?.active_commitments || [];
+    
+    let repsTotal = 0;
+    let repsDone = 0;
+    
+    if (devPlanReps && devPlanReps.length > 0) {
+      repsTotal = devPlanReps.length;
+      repsDone = devPlanReps.filter((rep, idx) => {
+        const repId = rep.repId || rep.id || `rep-${idx}`;
+        const commitment = additionalCommitments.find(c => c.id === repId);
+        return commitment?.status === 'Committed';
+      }).length;
+    }
+
+    const totalDone = winDone + repsDone;
+    const totalPossible = winTotal + repsTotal;
+    
+    return {
+      score: `${totalDone}/${totalPossible}`,
+      winsDone: winDone,
+      winsTotal: winTotal,
+      repsDone: repsDone,
+      repsTotal: repsTotal
+    };
+  }, [dailyPracticeData?.morningBookend?.wins, dailyPracticeData?.active_commitments, devPlanCurrentWeek]);
+
   const scope = {
     winsList,
     eveningBookend,
     commitmentHistory,
     reflectionHistory,
     repsHistory,
+    liveScorecard, // Add live scorecard for real-time "Today" display
     Card,
     Trophy,
     CheckCircle,
@@ -155,9 +198,6 @@ const Locker = () => {
 
   // Custom renderer for special widgets
   const renderFeature = (featureId) => {
-    if (featureId === 'locker-progress') {
-      return <LockerProgressWidget key={featureId} />;
-    }
     return <WidgetRenderer key={featureId} widgetId={featureId} scope={scope} />;
   };
 
@@ -178,9 +218,9 @@ const Locker = () => {
         <MySettingsWidget />
       </div>
       
-      {/* My Journey Widget - shows cohort and journey info */}
+      {/* My Journey Widget - shows cohort and journey info, hide prep progress (shown on Dashboard) */}
       <div className="mb-6">
-        <MyJourneyWidget />
+        <MyJourneyWidget showPrepProgress={false} />
       </div>
       
       <WidgetRenderer widgetId="locker-controller" scope={scope} />

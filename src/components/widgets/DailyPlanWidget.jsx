@@ -7,7 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { UNIFIED_COLLECTION } from '../../services/unifiedContentService';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 
-const DailyPlanWidget = () => {
+const DailyPlanWidget = ({ helpText }) => {
   const { currentDayData } = useDailyPlan();
   const { db, navigate } = useAppServices();
   const [selectedResource, setSelectedResource] = useState(null);
@@ -62,7 +62,7 @@ const DailyPlanWidget = () => {
 
   return (
     <>
-      <Card title="Today's Plan" icon={Calendar} accent="TEAL">
+      <Card title="Today's Plan" icon={Calendar} accent="TEAL" helpText={helpText}>
         <div className="space-y-3">
           {!hasItems && (
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">

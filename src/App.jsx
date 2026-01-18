@@ -48,6 +48,15 @@ import SkipLinks from './components/accessibility/SkipLinks.jsx';
 /* =========================================================
    MAIN APP COMPONENT
 ========================================================= */
+
+// Admin-only screens that shouldn't be restored for regular users
+const ADMIN_ONLY_SCREENS = [
+  'admin-portal', 'admin-functions', 'admin-data-maintenance', 
+  'admin-content-home', 'admin-content-manager', 'admin-wrapper-document',
+  'admin-wrapper-video', 'admin-wrapper-course', 'admin-wrapper-readrep',
+  'admin-wrapper-book', 'admin-wrapper-interactive', 'test-center'
+];
+
 function App() {
   const [firebaseConfig, setFirebaseConfig] = useState(null);
   const [firebaseServices, setFirebaseServices] = useState(null);
@@ -55,7 +64,14 @@ function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [currentScreen, setCurrentScreen] = useState(() => {
     // Restore last screen from localStorage or default to 'dashboard'
-    return localStorage.getItem('lastScreen') || 'dashboard';
+    const savedScreen = localStorage.getItem('lastScreen') || 'dashboard';
+    // Don't restore admin screens on initial load - user may have changed
+    // Admin screens will be properly navigated to if user is admin
+    if (ADMIN_ONLY_SCREENS.includes(savedScreen)) {
+      localStorage.removeItem('lastScreen');
+      return 'dashboard';
+    }
+    return savedScreen;
   });
   const [navParams, setNavParams] = useState(() => {
     try {
@@ -88,6 +104,9 @@ function App() {
     }
   }, []);
 
+  // Track previous user to detect user changes
+  const prevUserUidRef = React.useRef(null);
+
   useEffect(() => {
     if (!firebaseServices) return;
     const unsubscribe = onAuthStateChanged(firebaseServices.auth, (user) => {
@@ -113,11 +132,32 @@ function App() {
         return;
       }
 
+      // Detect user change (new login or different user)
+      // Reset to dashboard if we're on an admin screen - new user may not be admin
+      const previousUid = prevUserUidRef.current;
+      const currentUid = user?.uid || null;
+      if (currentUid && currentUid !== previousUid) {
+        // User changed - check if we need to reset screen
+        setCurrentScreen(prev => {
+          if (ADMIN_ONLY_SCREENS.includes(prev)) {
+            console.log('🔒 User changed, resetting from admin screen to dashboard');
+            localStorage.removeItem('lastScreen');
+            return 'dashboard';
+          }
+          return prev;
+        });
+      }
+      prevUserUidRef.current = currentUid;
+
       setUser(user);
       setIsAuthReady(true);
       if (user) {
-        // Pass full user object to save profile data (email, displayName, etc.)
-        ensureUserDocs(firebaseServices.db, user);
+        // Small delay to allow AuthPanel to finish writing cohortId for new users
+        // This prevents a race condition where ensureUserDocs creates profile before
+        // AuthPanel has a chance to write the cohortId from the invite
+        setTimeout(() => {
+          ensureUserDocs(firebaseServices.db, user);
+        }, 500);
       }
     });
     return () => unsubscribe();

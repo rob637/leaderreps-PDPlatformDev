@@ -1183,14 +1183,23 @@ async function sendEmailNotification(email, subject, message) {
   const appDomain = projectId === 'leaderreps-test' 
     ? 'leaderreps-test.web.app' 
     : 'leaderreps-pd-platform.web.app';
+  const appUrl = `https://${appDomain}`;
+
+  // Build HTML with action phrases as hyperlinks
+  // Look for action patterns like "Complete your...", "Do your...", "Finish your...", "Start your..."
+  const actionPattern = /(Complete your [^.!?]+|Do your [^.!?]+|Finish your [^.!?]+|Start your [^.!?]+|Log your [^.!?]+|Review your [^.!?]+|Check your [^.!?]+)/gi;
+  
+  const htmlMessage = message.replace(actionPattern, (match) => {
+    return `<a href="${appUrl}" style="color: #0066cc; text-decoration: underline; font-weight: 500;">${match}</a>`;
+  });
 
   try {
     await transporter.sendMail({
       from: `"LeaderReps" <${emailUser}>`,
       to: email,
       subject: `🔔 ${subject}`,
-      text: message,
-      html: `<p>${message}</p><p><a href="https://${appDomain}">Open LeaderReps</a></p>`
+      text: `${message} - ${appUrl}`,
+      html: `<p>${htmlMessage}</p>`
     });
     logger.info(`Notification email sent to ${email}`);
   } catch (e) {

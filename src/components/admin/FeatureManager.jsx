@@ -783,6 +783,13 @@ const FeatureManager = () => {
     await saveFeature(widgetId, { ...currentFeature, options: newOptions });
   };
 
+  const handleSaveHelpText = async (widgetId, helpText) => {
+    const currentFeature = features[widgetId];
+    if (!currentFeature) return;
+
+    await saveFeature(widgetId, { ...currentFeature, helpText: helpText || '' });
+  };
+
   const handleToggleAll = async () => {
     const currentGroupWidgets = groups[activeGroup];
     if (!currentGroupWidgets || currentGroupWidgets.length === 0) return;
@@ -995,6 +1002,30 @@ const FeatureManager = () => {
                   <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                     <Settings className="w-4 h-4" /> Widget Options
                   </h4>
+
+                  {/* User-Facing Help Text */}
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Lightbulb className="w-4 h-4 text-blue-600" />
+                      <label className="text-sm font-bold text-blue-800">Widget Help Text</label>
+                    </div>
+                    <p className="text-xs text-blue-600 mb-2">
+                      This text will appear when users click the info icon (ℹ) on the widget. 
+                      Helps users understand what the widget does.
+                    </p>
+                    <textarea 
+                      value={feature.helpText || ''}
+                      onChange={(e) => handleSaveHelpText(feature.id, e.target.value)}
+                      placeholder="Enter a helpful description for users, e.g., 'Track your daily leadership actions and mark them complete as you go.'"
+                      className="w-full p-2 text-sm border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 outline-none resize-y min-h-[60px]"
+                      rows={2}
+                    />
+                    {feature.helpText && (
+                      <p className="text-[10px] text-blue-500 mt-1">
+                        ✓ Help text will show when users click the info icon
+                      </p>
+                    )}
+                  </div>
 
                   {/* Predefined Options (Schema Based) */}
                   {WIDGET_CONFIG_SCHEMA[feature.id] && (

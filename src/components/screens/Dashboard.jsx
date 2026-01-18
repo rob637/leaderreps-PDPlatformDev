@@ -26,6 +26,7 @@ import { serverTimestamp } from '../../services/firebaseUtils';
 import { FadeIn, Stagger } from '../motion';
 import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import ProgramStatusWidget from '../widgets/ProgramStatusWidget';
+import PrepCompleteModal from '../modals/PrepCompleteModal';
 // NOTE: LeaderProfileWidget and BaselineAssessmentWidget removed - now handled as 
 // INTERACTIVE content items in ThisWeeksActionsWidget
 
@@ -189,6 +190,7 @@ const Dashboard = () => {
     
     // Streak
     streakCount,
+    repStreak, // Daily Rep specific streak (excludes weekends/holidays)
     
     // Additional Reps
     additionalCommitments,
@@ -229,24 +231,44 @@ const Dashboard = () => {
 
   // Track previous prep completion state to detect transition
   const prevPrepComplete = useRef(null);
+  const [showPrepCompleteModal, setShowPrepCompleteModal] = useState(false);
   
-  // Scroll to top when prep requirements just become complete
+  // Check if user has already dismissed the prep complete modal
+  const hasSeenPrepCompleteModal = useRef(
+    localStorage.getItem('prepCompleteModalSeen') === 'true'
+  );
+  
+  // Scroll to top and show modal when prep requirements just become complete
   useEffect(() => {
     // Only act during prep phase
     if (currentPhase?.id !== 'pre-start') return;
+    
+    // Don't show if user has already seen and dismissed
+    if (hasSeenPrepCompleteModal.current) return;
     
     const isNowComplete = prepRequirementsComplete?.allComplete;
     const wasComplete = prevPrepComplete.current;
     
     // Detect transition from not-complete to complete
-    if (isNowComplete && wasComplete === false) {
+    // wasComplete === false catches explicit false (had items incomplete, now complete)
+    // wasComplete === null && isNowComplete catches users who joined with everything already complete
+    if (isNowComplete && (wasComplete === false || wasComplete === null)) {
       // Scroll to top so user sees the updated welcome banner and new functionality
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      // Show congratulatory modal
+      setShowPrepCompleteModal(true);
     }
     
     // Update ref for next render
     prevPrepComplete.current = isNowComplete;
   }, [prepRequirementsComplete?.allComplete, currentPhase?.id]);
+  
+  // Handle modal dismissal - persist that user has seen it
+  const handlePrepCompleteModalClose = () => {
+    setShowPrepCompleteModal(false);
+    localStorage.setItem('prepCompleteModalSeen', 'true');
+    hasSeenPrepCompleteModal.current = true;
+  };
 
   // --- WRAPPERS FOR AUTO-SAVE ---
   const handleHabitCheck = async (key, value) => {
@@ -458,6 +480,7 @@ const Dashboard = () => {
     handleSaveScorecard,
     isSavingScorecard,
     streakCount,
+    repStreak, // Daily Rep specific streak data
     reflectionGood,
     reflectionBetter,
     reflectionBest,
@@ -679,6 +702,11 @@ const Dashboard = () => {
         onClose={() => setIsCatchUpModalOpen(false)}
         missedDays={missedDays}
         onToggleAction={toggleItemComplete}
+      />
+
+      <PrepCompleteModal 
+        isOpen={showPrepCompleteModal}
+        onClose={handlePrepCompleteModalClose}
       />
         </>
       </div>

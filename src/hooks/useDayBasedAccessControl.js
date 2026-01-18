@@ -153,17 +153,24 @@ export const useDayBasedAccessControl = () => {
   const zoneVisibility = useMemo(() => {
     const dashboard = currentDayData?.dashboard || {};
     
+    // Helper to check visibility - checks both widget ID (new system) and legacy key (old system)
+    const checkVisibility = (widgetId, legacyKey, defaultVal = true) => {
+      if (dashboard[widgetId] !== undefined) return dashboard[widgetId];
+      if (legacyKey && dashboard[legacyKey] !== undefined) return dashboard[legacyKey];
+      return defaultVal;
+    };
+    
     return {
-      // Dashboard Widgets
-      showWeeklyFocus: dashboard.showWeeklyFocus ?? true,
-      showLISBuilder: dashboard.showLISBuilder ?? false,
-      showGroundingRep: dashboard.showGroundingRep ?? false,
-      showWinTheDay: dashboard.showWinTheDay ?? true,
-      showDailyReps: dashboard.showDailyReps ?? true,
-      showNotifications: dashboard.showNotifications ?? false,
-      showPMBookendHeader: dashboard.showPMBookendHeader ?? false,  // PM Bookend Header (separate from Reflection)
-      showPMReflection: dashboard.showPMReflection ?? false,
-      showScorecard: dashboard.showScorecard ?? false,  // Scorecard (separate widget)
+      // Dashboard Widgets - check both widget ID and legacy key for compatibility
+      showWeeklyFocus: checkVisibility('weekly-focus', 'showWeeklyFocus', true),
+      showLISBuilder: checkVisibility('lis-maker', 'showLISBuilder', false),
+      showGroundingRep: checkVisibility('grounding-rep', 'showGroundingRep', false),
+      showWinTheDay: checkVisibility('win-the-day', 'showWinTheDay', true),
+      showDailyReps: checkVisibility('daily-leader-reps', 'showDailyReps', true),
+      showNotifications: checkVisibility('notifications', 'showNotifications', false),
+      showPMBookendHeader: checkVisibility('pm-bookend-header', 'showPMBookendHeader', false),
+      showPMReflection: checkVisibility('pm-bookend', 'showPMReflection', false),
+      showScorecard: checkVisibility('scorecard', 'showScorecard', false),
       
       // Zone Access (derived from CSV structure)
       // Community is available after Day 15 (Week 1)

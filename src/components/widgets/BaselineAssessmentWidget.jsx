@@ -36,6 +36,11 @@ const BaselineAssessmentWidget = () => {
         currentAssessment: assessment
       });
       setShowModal(false);
+      
+      // Scroll to top after modal closes
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }, 100);
     } catch (err) {
       console.error('[BaselineAssessmentWidget] Error saving assessment:', err);
     } finally {

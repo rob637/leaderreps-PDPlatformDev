@@ -16,7 +16,10 @@ const MySettingsWidget = () => {
   const [showProfileForm, setShowProfileForm] = useState(false);
   
   // Profile data
-  const { profile, loading: profileLoading, isComplete: profileComplete, completionPercentage } = useLeaderProfile();
+  const { profile, loading: profileLoading, isComplete: profileComplete } = useLeaderProfile();
+  
+  // Use stored isComplete flag - profile is complete once user saves it
+  const isProfileComplete = profileComplete;
   
   // Notification settings
   const { user, db } = useAppServices();
@@ -104,8 +107,8 @@ const MySettingsWidget = () => {
             className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-slate-50 hover:border-corporate-teal/30 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${profileComplete ? 'bg-green-100' : 'bg-corporate-orange/10'}`}>
-                {profileComplete ? (
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isProfileComplete ? 'bg-green-100' : 'bg-corporate-orange/10'}`}>
+                {isProfileComplete ? (
                   <CheckCircle className="w-4 h-4 text-green-600" />
                 ) : (
                   <User className="w-4 h-4 text-corporate-orange" />
@@ -114,14 +117,14 @@ const MySettingsWidget = () => {
               <div className="text-left">
                 <h4 className="font-medium text-corporate-navy text-sm">Leader Profile</h4>
                 <p className="text-xs text-slate-500">
-                  {profileComplete 
+                  {isProfileComplete 
                     ? `Welcome, ${profile?.firstName}!` 
-                    : `${completionPercentage}% complete`}
+                    : 'Tell us about yourself'}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-1 text-corporate-teal">
-              <span className="text-xs font-medium">{profileComplete ? 'Edit' : 'Complete'}</span>
+              <span className="text-xs font-medium">{isProfileComplete ? 'Edit' : 'Complete'}</span>
               <Edit2 className="w-3.5 h-3.5" />
             </div>
           </button>

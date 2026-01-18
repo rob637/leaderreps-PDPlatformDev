@@ -1,5 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '../../lib/utils';
+import { Info, X } from 'lucide-react';
+
+// --- INFO TOOLTIP COMPONENT ---
+const InfoTooltip = ({ text, onClose }) => (
+  <div className="absolute top-full left-0 right-0 mt-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className="bg-slate-800 text-white text-sm rounded-xl p-4 shadow-xl mx-2 relative">
+      <button 
+        onClick={onClose}
+        className="absolute top-2 right-2 p-1 hover:bg-white/10 rounded-full transition-colors"
+        aria-label="Close"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+      <p className="pr-6 leading-relaxed">{text}</p>
+    </div>
+  </div>
+);
 
 // --- COMPOSABLE COMPONENTS ---
 const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
@@ -53,10 +70,12 @@ const Card = React.forwardRef(({
   accent = 'none',
   title,
   icon: Icon,
+  helpText, // New: Optional help text for info icon
   children,
   onClick,
   ...props 
 }, ref) => {
+  const [showHelp, setShowHelp] = useState(false);
   
   // Premium variants with softer shadows and no hard borders
   const variants = {
@@ -159,15 +178,27 @@ const Card = React.forwardRef(({
     >
       {isSmartMode ? (
         <>
-          <div className={cn("p-5 sm:p-6", hasContent ? "pb-3" : "")}>
+          <div className={cn("p-5 sm:p-6 relative", hasContent ? "pb-3" : "")}>
             <div className="flex items-center gap-3">
               {Icon && <Icon className={cn("w-5 h-5 flex-shrink-0", iconColors[accent])} />}
               {title && (
-                <h3 className="text-lg font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h3 className="text-lg font-semibold text-corporate-navy tracking-tight flex-1" style={{ fontFamily: 'var(--font-heading)' }}>
                   {title}
                 </h3>
               )}
+              {helpText && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowHelp(!showHelp); }}
+                  className="p-1.5 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0"
+                  aria-label="Widget information"
+                >
+                  <Info className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                </button>
+              )}
             </div>
+            {showHelp && helpText && (
+              <InfoTooltip text={helpText} onClose={() => setShowHelp(false)} />
+            )}
           </div>
           {hasContent && (
             <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-0">

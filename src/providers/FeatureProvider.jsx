@@ -120,6 +120,15 @@ export const FeatureProvider = ({ children, db }) => {
     return 999;
   };
 
+  // Get widget help text (user-facing description)
+  const getWidgetHelpText = (featureId) => {
+    const feature = features[featureId];
+    if (typeof feature === 'object' && feature !== null) {
+      return feature.helpText || null;
+    }
+    return null;
+  };
+
   return (
     <FeatureContext.Provider value={{ 
       features, 
@@ -128,7 +137,8 @@ export const FeatureProvider = ({ children, db }) => {
       saveFeature,
       deleteFeature,
       isFeatureEnabled, 
-      getFeatureOrder, 
+      getFeatureOrder,
+      getWidgetHelpText,
       loading 
     }}>
       {children}

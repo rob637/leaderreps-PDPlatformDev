@@ -101,7 +101,7 @@ const QuickPracticeButton = ({ category, onClick }) => {
   );
 };
 
-const CoachingOnDemandWidget = ({ scope = {} }) => {
+const CoachingOnDemandWidget = ({ scope = {}, helpText }) => {
   const { 
     scenarios = [],
     navigate,
@@ -155,7 +155,7 @@ const CoachingOnDemandWidget = ({ scope = {} }) => {
   };
   
   return (
-    <Card title="On-Demand Practice" icon={BrainCircuit} accent="PURPLE">
+    <Card title="On-Demand Practice" icon={BrainCircuit} accent="PURPLE" helpText={helpText}>
       {/* Quick Start Grid */}
       <div className="mb-4">
         <p className="text-xs font-medium text-slate-500 uppercase mb-2">Quick Start</p>

@@ -92,7 +92,7 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
   );
 };
 
-const CommunityUpcomingSessionsWidget = () => {
+const CommunityUpcomingSessionsWidget = ({ helpText }) => {
   const { upcomingSessions, loading: sessionsLoading } = useCommunitySessions();
   const { isRegistered, registerForSession, cancelRegistration } = useCommunityRegistrations();
   // const [viewMode, setViewMode] = useState('list'); // 'list', 'calendar'
@@ -118,7 +118,7 @@ const CommunityUpcomingSessionsWidget = () => {
 
   if (sessionsLoading) {
     return (
-      <Card title="Upcoming Community Sessions" icon={Users}>
+      <Card title="Upcoming Community Sessions" icon={Users} helpText={helpText}>
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map(i => (
             <div key={i} className="h-32 bg-slate-100 rounded-xl"></div>
@@ -132,6 +132,7 @@ const CommunityUpcomingSessionsWidget = () => {
     <Card 
       title="Upcoming Community Sessions" 
       icon={Users}
+      helpText={helpText}
       action={
         <div className="flex gap-2">
           <select

@@ -146,7 +146,7 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
   );
 };
 
-const CoachingUpcomingSessionsWidget = ({ scope = {} }) => {
+const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
   const { 
     sessions = [], 
     upcomingSessions = [],
@@ -226,7 +226,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {} }) => {
   
   if (displaySessions.length === 0) {
     return (
-      <Card title="Live Sessions" icon={Calendar} accent="ORANGE">
+      <Card title="Live Sessions" icon={Calendar} accent="ORANGE" helpText={helpText}>
         <div className="text-center py-8">
           <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <h3 className="font-bold text-slate-600 mb-1">No Upcoming Sessions</h3>
@@ -241,6 +241,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {} }) => {
       title="Live Sessions" 
       icon={Calendar} 
       accent="ORANGE"
+      helpText={helpText}
     >
       {activeViewMode === 'calendar' ? (
         <div className="bg-white rounded-lg">

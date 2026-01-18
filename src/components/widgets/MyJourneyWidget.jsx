@@ -18,8 +18,10 @@ import FacilitatorProfileModal from './FacilitatorProfileModal';
  * - Facilitator info
  * - Days until/since program start
  * - Current phase (Prep, Development Plan, Post)
+ * 
+ * @param {boolean} showPrepProgress - Whether to show prep progress section (default true)
  */
-const MyJourneyWidget = () => {
+const MyJourneyWidget = ({ showPrepProgress = true }) => {
   const { 
     cohortData, 
     currentPhase, 
@@ -211,7 +213,7 @@ const MyJourneyWidget = () => {
         )}
 
         {/* Prep Progress (only in Prep Phase) - COMPLETION-BASED */}
-        {currentPhase?.id === 'pre-start' && prepRequirementsComplete && (
+        {showPrepProgress && currentPhase?.id === 'pre-start' && prepRequirementsComplete && (
           <div className="bg-white rounded-xl p-4 border border-slate-200">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">

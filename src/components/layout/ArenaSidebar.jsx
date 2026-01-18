@@ -20,12 +20,15 @@ import {
 import { CommunityIcon } from '../icons';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
-// import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user }) => {
   const { identityStatement, habitAnchor, whyStatement, globalMetadata, isAdmin } = useAppServices();
-  // const { zoneVisibility } = useDayBasedAccessControl();
+  const { prepRequirementsComplete } = useDailyPlan();
   const [showAnchors, setShowAnchors] = useState(false);
+  
+  // Content is unlocked after prep is complete
+  const isPrepComplete = prepRequirementsComplete?.allComplete === true;
 
   // Developer Mode State
   const [isDeveloperMode, setIsDeveloperMode] = useState(() => {
@@ -56,19 +59,21 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     });
   }, [user?.email, isAdmin, globalMetadata?.adminemails]);
 
-  // Feature Flags (Mock for now, should come from context/service)
-  const MOCK_FEATURE_FLAGS = { 
+  // Feature Flags - Content unlocks after prep is complete
+  const FEATURE_FLAGS = { 
     // V1 CORE FEATURES (ENABLED)
     enableDevPlan: true,
     enableDailyPractice: true,
     enableMembershipModule: true,
     
+    // CONTENT - Unlocks after prep completion
+    enableReadings: isPrepComplete,
+    enableCourses: isPrepComplete,
+    enableVideos: isPrepComplete,
+    
     // FUTURE SCOPE FEATURES (DISABLED)
-    enableReadings: false,
-    enableCourses: false,
     enableLabs: false,
     enablePlanningHub: false,
-    enableVideos: false,
     enableCommunity: false,
     enableRoiReport: false,
   };
@@ -103,7 +108,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     }
 
     // 3. FEATURE FLAG CHECK: Filter out items where the flag is off
-    if (item.flag && MOCK_FEATURE_FLAGS[item.flag] !== true) {
+    if (item.flag && FEATURE_FLAGS[item.flag] !== true) {
       return false;
     }
 

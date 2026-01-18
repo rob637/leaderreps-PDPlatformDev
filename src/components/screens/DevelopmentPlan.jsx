@@ -434,6 +434,9 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       // Set flag to prevent returning to baseline view
       setJustCompletedBaseline(true);
       
+      // Scroll to top immediately after baseline completion
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      
       // FINAL FIX (Issue 4): Set the target rep
       await findAndSetTargetRep(newPlan, globalMetadata, updateDailyPracticeWriter);
       

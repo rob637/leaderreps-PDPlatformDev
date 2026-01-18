@@ -9,7 +9,7 @@ import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
  * Shows during Prep Phase to encourage profile completion
  */
 const LeaderProfileWidget = () => {
-  const { profile, loading, isComplete, completionPercentage } = useLeaderProfile();
+  const { profile, loading, isComplete } = useLeaderProfile();
   const [showForm, setShowForm] = useState(false);
 
   if (loading) {
@@ -82,23 +82,7 @@ const LeaderProfileWidget = () => {
                 Help us personalize your Foundation journey. Takes about 2 minutes.
               </p>
 
-              {/* Progress indicator */}
-              {completionPercentage > 0 && (
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs text-slate-500 mb-1">
-                    <span>Progress</span>
-                    <span>{completionPercentage}% complete</span>
-                  </div>
-                  <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-corporate-orange transition-all duration-500 rounded-full"
-                      style={{ width: `${completionPercentage}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Benefits */}
+              {/* Benefits */}}
               <div className="flex flex-wrap gap-2 mb-4">
                 <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
                   <Sparkles className="w-3 h-3 text-corporate-orange" />
@@ -123,7 +107,7 @@ const LeaderProfileWidget = () => {
                   transition-all text-sm"
                 style={{ fontFamily: 'var(--font-heading)' }}
               >
-                {completionPercentage > 0 ? 'Continue Profile' : 'Start Profile'}
+                Start Profile
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
