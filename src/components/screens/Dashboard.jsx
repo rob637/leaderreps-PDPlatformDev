@@ -240,6 +240,17 @@ const Dashboard = () => {
   
   // Scroll to top and show modal when prep requirements just become complete
   useEffect(() => {
+    // Debug logging
+    console.log('[PrepCompleteModal] Check:', {
+      phase: currentPhase?.id,
+      allComplete: prepRequirementsComplete?.allComplete,
+      completedCount: prepRequirementsComplete?.completedCount,
+      totalCount: prepRequirementsComplete?.totalCount,
+      prevComplete: prevPrepComplete.current,
+      hasSeen: hasSeenPrepCompleteModal.current,
+      items: prepRequirementsComplete?.items?.map(i => `${i.label}: ${i.complete}`)
+    });
+    
     // Only act during prep phase
     if (currentPhase?.id !== 'pre-start') return;
     
@@ -253,6 +264,7 @@ const Dashboard = () => {
     // wasComplete === false catches explicit false (had items incomplete, now complete)
     // wasComplete === null && isNowComplete catches users who joined with everything already complete
     if (isNowComplete && (wasComplete === false || wasComplete === null)) {
+      console.log('[PrepCompleteModal] 🎉 Showing modal! Transition detected.');
       // Scroll to top so user sees the updated welcome banner and new functionality
       window.scrollTo({ top: 0, behavior: 'instant' });
       // Show congratulatory modal
@@ -261,7 +273,7 @@ const Dashboard = () => {
     
     // Update ref for next render
     prevPrepComplete.current = isNowComplete;
-  }, [prepRequirementsComplete?.allComplete, currentPhase?.id]);
+  }, [prepRequirementsComplete?.allComplete, prepRequirementsComplete?.completedCount, currentPhase?.id]);
   
   // Handle modal dismissal - persist that user has seen it
   const handlePrepCompleteModalClose = () => {
