@@ -240,7 +240,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                         const devPlanPath = buildModulePath(userCredential.user.uid, 'development_plan', 'current');
                         console.log("[AuthPanel] Creating dev plan at:", devPlanPath);
                         
-                        // Create the plan with the start date AND default fields
+                        // Create the plan with the start date, cohortId, AND default fields
                         await setDoc(doc(db, devPlanPath), {
                             currentCycle: 1,
                             createdAt: serverTimestamp(),
@@ -248,9 +248,10 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                             assessmentHistory: [], 
                             planHistory: [],
                             currentPlan: null,
-                            startDate: cohortData.startDate
+                            startDate: cohortData.startDate,
+                            cohortId: inviteData.cohortId
                         });
-                        console.log("[AuthPanel] Dev plan created with cohort start date");
+                        console.log("[AuthPanel] Dev plan created with cohort start date and cohortId:", inviteData.cohortId);
                     } else {
                         console.warn("[AuthPanel] Cohort document not found:", inviteData.cohortId);
                     }

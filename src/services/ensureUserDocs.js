@@ -23,6 +23,7 @@ export const ensureUserDocs = async (db, uidOrUser) => {
     
     if (!userProfileSnap.exists()) {
         // Create new profile with user info from Firebase Auth
+        // Use merge:true to preserve any data already written by AuthPanel (e.g., cohortId, role)
         await setDocEx(db, userProfilePath, {
             userId: uid,
             email: user?.email || null,
@@ -31,7 +32,7 @@ export const ensureUserDocs = async (db, uidOrUser) => {
             createdAt: timeService.getISOString(),
             arenaEntryDate: serverTimestamp(), // When user first entered the arena
             _createdAt: serverTimestamp()
-        });
+        }, true); // merge: true to preserve cohortId/role from AuthPanel
     } else {
         // Update existing profile with latest user info (in case name/email changed)
         const existingData = userProfileSnap.data();
