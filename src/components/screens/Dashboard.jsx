@@ -229,57 +229,43 @@ const Dashboard = () => {
   const [isWinSaved, setIsWinSaved] = useState(false);
   const [isEditingLIS, setIsEditingLIS] = useState(false);
 
-  // Track previous prep completion state to detect transition
-  const prevPrepComplete = useRef(null);
+  // State for prep complete modal
   const [showPrepCompleteModal, setShowPrepCompleteModal] = useState(false);
+  const hasShownModalThisSession = useRef(false);
   
-  // Check if user has already dismissed the prep complete modal
-  const hasSeenPrepCompleteModal = useRef(
-    localStorage.getItem('prepCompleteModalSeen') === 'true'
-  );
-  
-  // Scroll to top and show modal when prep requirements just become complete
+  // Show modal when prep is complete (triggered once per session, persisted in localStorage)
   useEffect(() => {
-    // Debug logging
+    // Only act during prep phase
+    if (currentPhase?.id !== 'pre-start') return;
+    
+    // Check if already shown this session or previously dismissed
+    const hasSeenBefore = localStorage.getItem('prepCompleteModalSeen') === 'true';
+    
     console.log('[PrepCompleteModal] Check:', {
       phase: currentPhase?.id,
       allComplete: prepRequirementsComplete?.allComplete,
       completedCount: prepRequirementsComplete?.completedCount,
       totalCount: prepRequirementsComplete?.totalCount,
-      prevComplete: prevPrepComplete.current,
-      hasSeen: hasSeenPrepCompleteModal.current,
+      hasSeenBefore,
+      hasShownThisSession: hasShownModalThisSession.current,
       items: prepRequirementsComplete?.items?.map(i => `${i.label}: ${i.complete}`)
     });
     
-    // Only act during prep phase
-    if (currentPhase?.id !== 'pre-start') return;
-    
-    // Don't show if user has already seen and dismissed
-    if (hasSeenPrepCompleteModal.current) return;
-    
-    const isNowComplete = prepRequirementsComplete?.allComplete;
-    const wasComplete = prevPrepComplete.current;
-    
-    // Detect transition from not-complete to complete
-    // wasComplete === false catches explicit false (had items incomplete, now complete)
-    // wasComplete === null && isNowComplete catches users who joined with everything already complete
-    if (isNowComplete && (wasComplete === false || wasComplete === null)) {
-      console.log('[PrepCompleteModal] 🎉 Showing modal! Transition detected.');
+    // Show modal when all prep is complete and user hasn't seen it
+    if (prepRequirementsComplete?.allComplete && !hasSeenBefore && !hasShownModalThisSession.current) {
+      console.log('[PrepCompleteModal] 🎉 Showing modal! All prep complete.');
+      hasShownModalThisSession.current = true;
       // Scroll to top so user sees the updated welcome banner and new functionality
       window.scrollTo({ top: 0, behavior: 'instant' });
       // Show congratulatory modal
       setShowPrepCompleteModal(true);
     }
-    
-    // Update ref for next render
-    prevPrepComplete.current = isNowComplete;
   }, [prepRequirementsComplete?.allComplete, prepRequirementsComplete?.completedCount, currentPhase?.id]);
   
   // Handle modal dismissal - persist that user has seen it
   const handlePrepCompleteModalClose = () => {
     setShowPrepCompleteModal(false);
     localStorage.setItem('prepCompleteModalSeen', 'true');
-    hasSeenPrepCompleteModal.current = true;
   };
 
   // --- WRAPPERS FOR AUTO-SAVE ---
