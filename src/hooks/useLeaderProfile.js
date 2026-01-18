@@ -118,12 +118,16 @@ export const useLeaderProfile = () => {
         const userRef = doc(db, 'users', user.uid);
         
         // Build complete notification settings object that matches NotificationSettingsWidget format
+        const emailEnabled = profileData.notificationSettings?.channels?.email ?? true;
+        const smsEnabled = profileData.notificationSettings?.channels?.sms ?? false;
+        const hasAnyChannelEnabled = emailEnabled || smsEnabled;
+        
         const notificationSettings = {
-          enabled: true, // If they're setting preferences, enable notifications
+          enabled: hasAnyChannelEnabled, // Only enabled if at least one channel is on
           timezone: profileData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
           channels: {
-            email: profileData.notificationSettings?.channels?.email ?? true,
-            sms: profileData.notificationSettings?.channels?.sms ?? false
+            email: emailEnabled,
+            sms: smsEnabled
           },
           phoneNumber: profileData.phoneNumber || ''
         };
