@@ -238,8 +238,13 @@ const Dashboard = () => {
     // Only act during prep phase
     if (currentPhase?.id !== 'pre-start') return;
     
-    // Check if already shown this session or previously dismissed
-    const hasSeenBefore = localStorage.getItem('prepCompleteModalSeen') === 'true';
+    // Need user ID to make localStorage key user-specific
+    const userId = user?.uid;
+    if (!userId) return;
+    
+    // Check if already shown this session or previously dismissed (user-specific key)
+    const storageKey = `prepCompleteModalSeen_${userId}`;
+    const hasSeenBefore = localStorage.getItem(storageKey) === 'true';
     
     console.log('[PrepCompleteModal] Check:', {
       phase: currentPhase?.id,
@@ -260,12 +265,15 @@ const Dashboard = () => {
       // Show congratulatory modal
       setShowPrepCompleteModal(true);
     }
-  }, [prepRequirementsComplete?.allComplete, prepRequirementsComplete?.completedCount, currentPhase?.id]);
+  }, [prepRequirementsComplete?.allComplete, prepRequirementsComplete?.completedCount, currentPhase?.id, user?.uid]);
   
-  // Handle modal dismissal - persist that user has seen it
+  // Handle modal dismissal - persist that user has seen it (user-specific key)
   const handlePrepCompleteModalClose = () => {
     setShowPrepCompleteModal(false);
-    localStorage.setItem('prepCompleteModalSeen', 'true');
+    const userId = user?.uid;
+    if (userId) {
+      localStorage.setItem(`prepCompleteModalSeen_${userId}`, 'true');
+    }
   };
 
   // --- WRAPPERS FOR AUTO-SAVE ---
