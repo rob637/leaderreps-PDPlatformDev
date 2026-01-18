@@ -8,10 +8,10 @@ const InfoTooltip = ({ text, onClose }) => (
     <div className="bg-slate-800 text-white text-sm rounded-xl p-4 shadow-xl mx-2 relative">
       <button 
         onClick={onClose}
-        className="absolute top-2 right-2 p-1 hover:bg-white/10 rounded-full transition-colors"
+        className="absolute top-2 right-2 p-1 hover:bg-white/10 rounded-full transition-colors bg-transparent"
         aria-label="Close"
       >
-        <X className="w-3.5 h-3.5" />
+        <X className="w-3.5 h-3.5 text-white" />
       </button>
       <p className="pr-6 leading-relaxed">{text}</p>
     </div>
