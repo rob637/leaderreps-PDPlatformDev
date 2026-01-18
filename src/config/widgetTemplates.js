@@ -665,10 +665,6 @@ const DailyLeaderRepsWidget = () => {
             </div>
           );
         })}
-        
-        {reps.length > 0 && (
-          <p className="text-xs text-center text-slate-400 mt-3 italic">Autosaves to your locker each night at 11:59 PM</p>
-        )}
       </div>
       
       {/* Streak Recognition - only show when there's a streak */}
