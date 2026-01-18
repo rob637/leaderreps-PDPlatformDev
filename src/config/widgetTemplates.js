@@ -2397,13 +2397,13 @@ const ScorecardHistoryWidget = () => {
   };
 
   return (
-    <Card title="Scorecard History" icon={Calendar} accent="TEAL">
+    <Card title="Win the Day Scorecard" icon={Calendar} accent="TEAL">
       <div className="overflow-x-auto rounded-xl border border-slate-200/60">
         <table className="min-w-full text-sm">
           <thead>
             <tr className="bg-gradient-to-r from-slate-50 to-slate-100/50">
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Score</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Wins</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
             </tr>
           </thead>
@@ -3147,10 +3147,10 @@ export const FEATURE_METADATA = {
   'locker-scorecard-history': {
     core: true,
     category: 'Locker',
-    name: 'Scorecard History',
-    description: 'Scorecard History',
-    purpose: 'History of daily scores.',
-    extendedDescription: 'Displays a spreadsheet-style history of daily scorecard results. Shows a live "Today" row that updates in real-time as you complete wins and reps.',
+    name: 'Win the Day Scorecard',
+    description: 'Win the Day Scorecard History',
+    purpose: 'History of daily Win the Day completions.',
+    extendedDescription: 'Displays a spreadsheet-style history of Win the Day results (morning wins only). Shows a live "Today" row that updates in real-time as you complete your wins.',
     inputs: ['scorecardHistory', 'liveScorecard'],
     outputs: [],
   },

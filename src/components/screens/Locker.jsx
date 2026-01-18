@@ -109,41 +109,20 @@ const Locker = () => {
 
   // === LIVE SCORECARD CALCULATION ===
   // Calculate today's scorecard in real-time from current state
-  // This ensures the Locker shows up-to-date data even before PM save/rollover
+  // Scorecard only tracks Win the Day items (not Daily Reps - those have their own widget)
   const liveScorecard = useMemo(() => {
     // Get morning wins from daily practice data
     const morningWins = dailyPracticeData?.morningBookend?.wins || [];
     const definedWins = morningWins.filter(w => w.text && w.text.trim().length > 0);
     const winTotal = definedWins.length > 0 ? definedWins.length : 3;
     const winDone = definedWins.filter(w => w.completed).length;
-
-    // Get reps from dev plan and check completion status
-    const devPlanReps = devPlanCurrentWeek?.dailyReps || devPlanCurrentWeek?.reps || [];
-    const additionalCommitments = dailyPracticeData?.active_commitments || [];
-    
-    let repsTotal = 0;
-    let repsDone = 0;
-    
-    if (devPlanReps && devPlanReps.length > 0) {
-      repsTotal = devPlanReps.length;
-      repsDone = devPlanReps.filter((rep, idx) => {
-        const repId = rep.repId || rep.id || `rep-${idx}`;
-        const commitment = additionalCommitments.find(c => c.id === repId);
-        return commitment?.status === 'Committed';
-      }).length;
-    }
-
-    const totalDone = winDone + repsDone;
-    const totalPossible = winTotal + repsTotal;
     
     return {
-      score: `${totalDone}/${totalPossible}`,
+      score: `${winDone}/${winTotal}`,
       winsDone: winDone,
-      winsTotal: winTotal,
-      repsDone: repsDone,
-      repsTotal: repsTotal
+      winsTotal: winTotal
     };
-  }, [dailyPracticeData?.morningBookend?.wins, dailyPracticeData?.active_commitments, devPlanCurrentWeek]);
+  }, [dailyPracticeData?.morningBookend?.wins]);
 
   const scope = {
     winsList,
