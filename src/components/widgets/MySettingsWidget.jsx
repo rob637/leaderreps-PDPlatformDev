@@ -6,11 +6,15 @@ import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { useAppServices } from '../../services/useAppServices';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
 
 /**
  * MySettingsWidget - Unified settings widget for the Locker
  * Combines Leader Profile and Notification toggle in an expandable panel
+ * 
+ * Notification settings are stored in TWO places and must be synced:
+ * 1. users/{uid}.notificationSettings - used by cloud functions for sending
+ * 2. user_data/{uid}/leader_profile/current.notificationSettings - user preferences
  */
 const MySettingsWidget = () => {
   const [showProfileForm, setShowProfileForm] = useState(false);
@@ -35,28 +39,43 @@ const MySettingsWidget = () => {
     phoneNumber: ''
   });
 
-  // Load notification settings
+  // Load notification settings from BOTH sources and merge
   useEffect(() => {
     const loadSettings = async () => {
       if (!user || !db) return;
       try {
+        // Load from main user doc
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          if (data.notificationSettings) {
-            const ns = data.notificationSettings;
-            const hasChannels = ns.channels?.email || ns.channels?.sms;
-            const hasReminders = ns.reminders && Object.values(ns.reminders).some(r => r.enabled);
-            const inferredEnabled = ns.enabled !== undefined ? ns.enabled : (hasChannels || hasReminders);
-            
-            setNotifSettings(prev => ({
-              ...prev,
-              ...ns,
-              enabled: inferredEnabled
-            }));
-          }
+        let userSettings = null;
+        if (userSnap.exists() && userSnap.data().notificationSettings) {
+          userSettings = userSnap.data().notificationSettings;
         }
+        
+        // Load from leader profile
+        const profileRef = doc(db, `user_data/${user.uid}/leader_profile/current`);
+        const profileSnap = await getDoc(profileRef);
+        let profileSettings = null;
+        if (profileSnap.exists() && profileSnap.data().notificationSettings) {
+          profileSettings = profileSnap.data().notificationSettings;
+        }
+        
+        // Merge: prefer user doc for enabled state, merge channels from both
+        const mergedChannels = {
+          email: profileSettings?.channels?.email ?? userSettings?.channels?.email ?? true,
+          sms: profileSettings?.channels?.sms ?? userSettings?.channels?.sms ?? false
+        };
+        
+        const hasAnyEnabled = mergedChannels.email || mergedChannels.sms;
+        const enabled = userSettings?.enabled ?? hasAnyEnabled;
+        
+        setNotifSettings({
+          enabled,
+          timezone: profileSettings?.timezone || userSettings?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
+          channels: mergedChannels,
+          phoneNumber: userSettings?.phoneNumber || profileSnap.data()?.phoneNumber || ''
+        });
+        
       } catch (error) {
         console.error("Error loading notification settings:", error);
       } finally {
@@ -66,24 +85,57 @@ const MySettingsWidget = () => {
     loadSettings();
   }, [user, db]);
 
-  const handleSaveNotifications = async (newSettings = notifSettings) => {
-    setSaving(true);
+  // Sync notification settings to BOTH locations
+  const syncNotificationSettings = async (newSettings) => {
+    if (!user || !db) return;
+    
     try {
+      // 1. Update main user doc (used by cloud functions)
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
         notificationSettings: newSettings
       });
+      
+      // 2. Update leader profile (user preferences)
+      const profileRef = doc(db, `user_data/${user.uid}/leader_profile/current`);
+      const profileSnap = await getDoc(profileRef);
+      
+      if (profileSnap.exists()) {
+        await updateDoc(profileRef, {
+          'notificationSettings.channels.email': newSettings.channels.email,
+          'notificationSettings.channels.sms': newSettings.channels.sms,
+          'notificationSettings.timezone': newSettings.timezone
+        });
+      }
+      
+      console.log('[MySettingsWidget] Synced notification settings to both locations');
     } catch (error) {
-      console.error("Error saving settings:", error);
-    } finally {
-      setSaving(false);
+      console.error("Error syncing notification settings:", error);
     }
   };
 
   const handleMasterToggle = async (enabled) => {
-    const newSettings = { ...notifSettings, enabled };
+    setSaving(true);
+    
+    // When ENABLING: restore user's channel preferences (or default to email if none)
+    // When DISABLING: turn off all channels
+    const newChannels = enabled 
+      ? {
+          // If both were off, default to email on
+          email: (notifSettings.channels.email || notifSettings.channels.sms) ? notifSettings.channels.email : true,
+          sms: notifSettings.channels.sms
+        }
+      : { email: false, sms: false };
+    
+    const newSettings = { 
+      ...notifSettings, 
+      enabled,
+      channels: newChannels
+    };
+    
     setNotifSettings(newSettings);
-    await handleSaveNotifications(newSettings);
+    await syncNotificationSettings(newSettings);
+    setSaving(false);
   };
 
   const loading = profileLoading || notifLoading;
@@ -139,13 +191,18 @@ const MySettingsWidget = () => {
                 <h4 className="font-medium text-corporate-navy text-sm">Notifications</h4>
                 <p className="text-xs text-slate-500">
                   {notifSettings.enabled 
-                    ? `${notifSettings.channels.email ? 'Email' : ''}${notifSettings.channels.email && notifSettings.channels.sms ? ' + ' : ''}${notifSettings.channels.sms ? 'SMS' : ''} enabled`
+                    ? (() => {
+                        const channels = [];
+                        if (notifSettings.channels.email) channels.push('Email');
+                        if (notifSettings.channels.sms) channels.push('SMS');
+                        return channels.length > 0 ? channels.join(' + ') : 'Enabled';
+                      })()
                     : 'Disabled'}
                 </p>
               </div>
             </div>
             <div 
-              onClick={() => handleMasterToggle(!notifSettings.enabled)}
+              onClick={() => !saving && handleMasterToggle(!notifSettings.enabled)}
               className="cursor-pointer"
             >
               <label className="relative inline-flex items-center cursor-pointer">
