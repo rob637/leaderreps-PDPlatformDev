@@ -4,48 +4,72 @@ import {
   CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings, Lightbulb, Zap, Crosshair, Flag, Circle, PenTool, CheckCircle, Edit3
 } from 'lucide-react';
 
-// Debounced textarea component for help text input
+// Debounced textarea component for help text input with manual save button
 const DebouncedTextarea = ({ value: externalValue, onSave, placeholder, className, rows }) => {
   const [localValue, setLocalValue] = useState(externalValue || '');
-  const debounceRef = useRef(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   
   // Sync with external value when it changes (e.g., initial load)
   useEffect(() => {
     setLocalValue(externalValue || '');
+    setHasChanges(false);
   }, [externalValue]);
   
-  const handleChange = useCallback((e) => {
+  const handleChange = (e) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
-    
-    // Clear existing timeout
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-    
-    // Debounce save by 500ms
-    debounceRef.current = setTimeout(() => {
-      onSave(newValue);
-    }, 500);
-  }, [onSave]);
+    setHasChanges(newValue !== (externalValue || ''));
+  };
   
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, []);
+  const handleSave = async () => {
+    if (!hasChanges) return;
+    setIsSaving(true);
+    try {
+      await onSave(localValue);
+      setHasChanges(false);
+    } catch (err) {
+      console.error('Error saving help text:', err);
+      alert('Failed to save. Check console for details.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
   
   return (
-    <textarea
-      value={localValue}
-      onChange={handleChange}
-      placeholder={placeholder}
-      className={className}
-      rows={rows}
-    />
+    <div className="space-y-2">
+      <textarea
+        value={localValue}
+        onChange={handleChange}
+        placeholder={placeholder}
+        className={className}
+        rows={rows}
+      />
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleSave}
+          disabled={!hasChanges || isSaving}
+          className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors ${
+            hasChanges 
+              ? 'bg-blue-600 text-white hover:bg-blue-700' 
+              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          {isSaving ? (
+            <>
+              <Loader className="w-3 h-3 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="w-3 h-3" />
+              Save Help Text
+            </>
+          )}
+        </button>
+        {hasChanges && <span className="text-xs text-amber-600">Unsaved changes</span>}
+      </div>
+    </div>
   );
 };
 import { useFeatures } from '../../providers/FeatureProvider';
@@ -829,10 +853,20 @@ const FeatureManager = () => {
   };
 
   const handleSaveHelpText = async (widgetId, helpText) => {
+    console.log('[handleSaveHelpText] Saving:', { widgetId, helpText });
     const currentFeature = features[widgetId];
-    if (!currentFeature) return;
+    if (!currentFeature) {
+      console.error('[handleSaveHelpText] No feature found for:', widgetId);
+      return;
+    }
 
-    await saveFeature(widgetId, { ...currentFeature, helpText: helpText || '' });
+    try {
+      await saveFeature(widgetId, { ...currentFeature, helpText: helpText || '' });
+      console.log('[handleSaveHelpText] Saved successfully');
+    } catch (err) {
+      console.error('[handleSaveHelpText] Error saving:', err);
+      throw err; // Re-throw so the UI can show the error
+    }
   };
 
   const handleToggleAll = async () => {
