@@ -1,8 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Plus, Trash2, RefreshCw, Save, Flame, Bell, Target, Calendar, Moon, BookOpen, Play, Book, Video, FileText, Users, MessageSquare, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp,
   CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings, Lightbulb, Zap, Crosshair, Flag, Circle, PenTool, CheckCircle, Edit3
 } from 'lucide-react';
+
+// Debounced textarea component for help text input
+const DebouncedTextarea = ({ value: externalValue, onSave, placeholder, className, rows }) => {
+  const [localValue, setLocalValue] = useState(externalValue || '');
+  const debounceRef = useRef(null);
+  
+  // Sync with external value when it changes (e.g., initial load)
+  useEffect(() => {
+    setLocalValue(externalValue || '');
+  }, [externalValue]);
+  
+  const handleChange = useCallback((e) => {
+    const newValue = e.target.value;
+    setLocalValue(newValue);
+    
+    // Clear existing timeout
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    
+    // Debounce save by 500ms
+    debounceRef.current = setTimeout(() => {
+      onSave(newValue);
+    }, 500);
+  }, [onSave]);
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+  
+  return (
+    <textarea
+      value={localValue}
+      onChange={handleChange}
+      placeholder={placeholder}
+      className={className}
+      rows={rows}
+    />
+  );
+};
 import { useFeatures } from '../../providers/FeatureProvider';
 import { WIDGET_TEMPLATES, FEATURE_METADATA } from '../../config/widgetTemplates';
 import { useAppServices } from '../../services/useAppServices';
@@ -1013,9 +1058,9 @@ const FeatureManager = () => {
                       This text will appear when users click the info icon (ℹ) on the widget. 
                       Helps users understand what the widget does.
                     </p>
-                    <textarea 
+                    <DebouncedTextarea 
                       value={feature.helpText || ''}
-                      onChange={(e) => handleSaveHelpText(feature.id, e.target.value)}
+                      onSave={(text) => handleSaveHelpText(feature.id, text)}
                       placeholder="Enter a helpful description for users, e.g., 'Track your daily leadership actions and mark them complete as you go.'"
                       className="w-full p-2 text-sm border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 outline-none resize-y min-h-[60px]"
                       rows={2}
