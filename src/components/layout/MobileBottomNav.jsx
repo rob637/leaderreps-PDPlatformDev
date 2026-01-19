@@ -1,6 +1,6 @@
 // src/components/layout/MobileBottomNav.jsx
 import React from 'react';
-import { Home, BookOpen, Megaphone, Archive } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Megaphone, Archive } from 'lucide-react';
 import { CommunityIcon } from '../icons';
 import { useAppServices } from '../../services/useAppServices.jsx';
 // import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
@@ -13,8 +13,8 @@ const MobileBottomNav = ({ currentScreen }) => {
   const navItems = [
     {
       id: 'dashboard',
-      label: 'Home',
-      icon: Home,
+      label: 'Dashboard',
+      icon: LayoutDashboard,
       screen: 'dashboard'
     },
     {
@@ -46,6 +46,8 @@ const MobileBottomNav = ({ currentScreen }) => {
   const handleNavClick = (item) => {
     if (navigate && typeof navigate === 'function') {
       navigate(item.screen);
+      // Scroll to top on navigation
+      window.scrollTo(0, 0);
     }
   };
 
@@ -100,8 +102,8 @@ const MobileBottomNav = ({ currentScreen }) => {
         })}
       </div>
       
-      {/* Safe area padding for devices with home indicator */}
-      <div style={{ paddingBottom: 'max(4px, env(safe-area-inset-bottom))' }} />
+      {/* Safe area padding for devices with home indicator AND browser UI */}
+      <div style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }} />
     </div>
   );
 };

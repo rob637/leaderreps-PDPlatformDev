@@ -97,10 +97,17 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
         } else {
           console.warn("AuthPanel: Invite status not valid for signup:", data.status);
           setStatusMessage('This invitation has already been used or expired.');
+          // Clear the token from URL so user can log in normally without being signed out
+          window.history.replaceState({}, document.title, window.location.pathname);
+          // Also ensure sessionStorage is cleared
+          sessionStorage.removeItem('pendingInviteToken');
         }
       } catch (error) {
         console.error("Error checking invite:", error);
         setStatusMessage(`Error validating invitation: ${error.message}`);
+        // Clear the token from URL on error too, so user can log in
+        window.history.replaceState({}, document.title, window.location.pathname);
+        sessionStorage.removeItem('pendingInviteToken');
       } finally {
         setCheckingInvite(false);
       }
@@ -117,6 +124,9 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
 
       if (mode === 'login') {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        // Clear lastScreen so user always starts at dashboard on fresh login
+        localStorage.removeItem('lastScreen');
+        localStorage.removeItem('lastNavParams');
         // Update lastLogin timestamp in user document
         try {
           const userRef = doc(db, 'users', userCredential.user.uid);

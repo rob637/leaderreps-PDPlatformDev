@@ -13,7 +13,10 @@ import {
   Trash2,
   Clock,
   Send,
-  Globe
+  Globe,
+  FileText,
+  Save,
+  Eye
 } from 'lucide-react';
 import { 
   collection, 
@@ -79,6 +82,18 @@ const UserManagement = () => {
   const [savingCohort, setSavingCohort] = useState(false);
   const [facilitators, setFacilitators] = useState([]);
   const [fetchError, setFetchError] = useState(null);
+
+  // Email Template State
+  const [emailTemplate, setEmailTemplate] = useState({
+    subject: "You're invited to LeaderReps PD Platform",
+    headline: "Welcome to LeaderReps!",
+    bodyText: "You have been invited to join the LeaderReps Professional Development Platform.",
+    buttonText: "Accept Invitation",
+    expiryText: "This invitation will expire in 7 days.",
+    footerText: "If you did not expect this invitation, please ignore this email."
+  });
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [showTemplatePreview, setShowTemplatePreview] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -192,6 +207,19 @@ const UserManagement = () => {
           ...doc.data()
         }));
         setCohorts(cohortsList);
+      } else if (activeTab === 'templates') {
+        // Fetch email templates
+        try {
+          const templateDoc = await getDoc(doc(db, 'metadata', 'email_templates'));
+          if (templateDoc.exists()) {
+            const templates = templateDoc.data();
+            if (templates.invite) {
+              setEmailTemplate(prev => ({ ...prev, ...templates.invite }));
+            }
+          }
+        } catch (e) {
+          console.error('[UserManagement] Error fetching email templates:', e);
+        }
       }
       console.log('[UserManagement] fetchData complete', { usersCount: users.length });
     } catch (error) {
@@ -460,6 +488,23 @@ const UserManagement = () => {
     }
   };
 
+  const handleSaveEmailTemplate = async () => {
+    setSavingTemplate(true);
+    try {
+      await setDoc(doc(db, 'metadata', 'email_templates'), {
+        invite: emailTemplate,
+        updatedAt: serverTimestamp(),
+        updatedBy: user?.email
+      }, { merge: true });
+      alert('Email template saved successfully!');
+    } catch (error) {
+      console.error('Error saving email template:', error);
+      alert('Failed to save email template');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
   const handleDeleteCohort = async (cohortId) => {
     if (!window.confirm("Are you sure you want to delete this cohort? This action cannot be undone.")) return;
     try {
@@ -656,10 +701,23 @@ const UserManagement = () => {
         >
           Invitations
         </button>
+        <button
+          onClick={() => setActiveTab('templates')}
+          className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+            activeTab === 'templates'
+              ? 'border-corporate-teal text-corporate-teal'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <FileText className="w-4 h-4" />
+            Email Templates
+          </span>
+        </button>
       </div>
 
       {/* Search Bar */}
-      {activeTab !== 'cohorts' && (
+      {activeTab !== 'cohorts' && activeTab !== 'templates' && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
@@ -944,6 +1002,148 @@ const UserManagement = () => {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Email Templates Section */}
+      {activeTab === 'templates' && (
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="p-6 border-b border-slate-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-lg text-slate-800">Invitation Email Template</h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  Customize the email sent when inviting new users. Use variables like <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{firstName}}'}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{lastName}}'}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{email}}'}</code>.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowTemplatePreview(!showTemplatePreview)}
+                className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  showTemplatePreview 
+                    ? 'bg-corporate-teal text-white' 
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Eye className="w-4 h-4" />
+                {showTemplatePreview ? 'Hide Preview' : 'Show Preview'}
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Email Subject</label>
+                <input
+                  type="text"
+                  value={emailTemplate.subject}
+                  onChange={e => setEmailTemplate({...emailTemplate, subject: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  placeholder="You're invited to LeaderReps PD Platform"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Headline</label>
+                <input
+                  type="text"
+                  value={emailTemplate.headline}
+                  onChange={e => setEmailTemplate({...emailTemplate, headline: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  placeholder="Welcome to LeaderReps!"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Body Text <span className="text-slate-400 text-xs">(Can be overridden per-invite with Custom Message)</span>
+              </label>
+              <textarea
+                rows="3"
+                value={emailTemplate.bodyText}
+                onChange={e => setEmailTemplate({...emailTemplate, bodyText: e.target.value})}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                placeholder="You have been invited to join the LeaderReps Professional Development Platform."
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Button Text</label>
+                <input
+                  type="text"
+                  value={emailTemplate.buttonText}
+                  onChange={e => setEmailTemplate({...emailTemplate, buttonText: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  placeholder="Accept Invitation"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Expiry Text</label>
+                <input
+                  type="text"
+                  value={emailTemplate.expiryText}
+                  onChange={e => setEmailTemplate({...emailTemplate, expiryText: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  placeholder="This invitation will expire in 7 days."
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Footer Text</label>
+              <input
+                type="text"
+                value={emailTemplate.footerText}
+                onChange={e => setEmailTemplate({...emailTemplate, footerText: e.target.value})}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                placeholder="If you did not expect this invitation, please ignore this email."
+              />
+            </div>
+            
+            {/* Preview */}
+            {showTemplatePreview && (
+              <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <h4 className="text-sm font-medium text-slate-700 mb-3">Email Preview</h4>
+                <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
+                  <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: '600px', margin: '0 auto' }}>
+                    <h2 style={{ color: '#0f172a', marginBottom: '16px' }}>{emailTemplate.headline || 'Welcome to LeaderReps!'}</h2>
+                    <p style={{ color: '#475569', marginBottom: '16px' }}>{emailTemplate.bodyText || 'You have been invited...'}</p>
+                    <p style={{ color: '#475569', marginBottom: '24px' }}>Click the button below to accept your invitation and set up your account:</p>
+                    <div style={{ textAlign: 'center', margin: '24px 0' }}>
+                      <span style={{ backgroundColor: '#0f766e', color: 'white', padding: '12px 24px', borderRadius: '6px', fontWeight: 'bold', display: 'inline-block' }}>
+                        {emailTemplate.buttonText || 'Accept Invitation'}
+                      </span>
+                    </div>
+                    <p style={{ color: '#475569', marginTop: '24px' }}>{emailTemplate.expiryText || 'This invitation will expire in 7 days.'}</p>
+                    <hr style={{ border: '1px solid #e2e8f0', margin: '24px 0' }} />
+                    <p style={{ color: '#64748b', fontSize: '12px' }}>{emailTemplate.footerText || 'If you did not expect this invitation...'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Save Button */}
+            <div className="pt-4 flex justify-end">
+              <button
+                onClick={handleSaveEmailTemplate}
+                disabled={savingTemplate}
+                className="flex items-center gap-2 px-5 py-2.5 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 font-medium disabled:opacity-50 transition-colors"
+              >
+                {savingTemplate ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Template
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

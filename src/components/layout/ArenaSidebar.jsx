@@ -49,16 +49,6 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     };
   }, []);
 
-  // isAdmin is now provided by DataProvider via useAppServices
-  // Debug logging for admin status
-  React.useEffect(() => {
-    console.log('[ArenaSidebar] Admin check:', {
-      userEmail: user?.email,
-      isAdmin,
-      adminEmails: globalMetadata?.adminemails
-    });
-  }, [user?.email, isAdmin, globalMetadata?.adminemails]);
-
   // Feature Flags - Content unlocks after prep is complete
   const FEATURE_FLAGS = { 
     // V1 CORE FEATURES (ENABLED)

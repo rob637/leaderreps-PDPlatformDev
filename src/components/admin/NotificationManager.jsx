@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { Card, Button, Input, Select, Badge } from '../ui';
-import { Trash2, Edit2, Plus, Bell, Clock, AlertCircle, Send, Mail, MessageSquare } from 'lucide-react';
+import { Trash2, Edit2, Plus, Bell, Clock, AlertCircle, Send, Mail, MessageSquare, Link2, ExternalLink } from 'lucide-react';
 
 const CRITERIA_OPTIONS = [
   { value: 'am_bookend_incomplete', label: 'AM Bookend Not Done' },
@@ -31,8 +31,13 @@ const NotificationManager = () => {
     time: '09:00',
     criteria: 'am_bookend_incomplete',
     message: '',
+    linkText: '', // The text within the message to make a hyperlink
+    linkUrl: '',  // The URL/path to link to (e.g., /dashboard, /bookends)
     enabled: true
   });
+  
+  // Ref for the message textarea to track selection
+  const messageInputRef = useRef(null);
 
   useEffect(() => {
     fetchRules();
@@ -89,6 +94,8 @@ const NotificationManager = () => {
       time: rule.time,
       criteria: rule.criteria,
       message: rule.message,
+      linkText: rule.linkText || '',
+      linkUrl: rule.linkUrl || '',
       enabled: rule.enabled
     });
     setIsEditing(true);
@@ -145,8 +152,40 @@ const NotificationManager = () => {
       time: '09:00',
       criteria: 'am_bookend_incomplete',
       message: '',
+      linkText: '',
+      linkUrl: '',
       enabled: true
     });
+  };
+  
+  // Handle text selection from message to set as link text
+  const handleSetLinkText = () => {
+    const input = messageInputRef.current;
+    if (input && input.selectionStart !== input.selectionEnd) {
+      const selectedText = formData.message.substring(input.selectionStart, input.selectionEnd);
+      setFormData({ ...formData, linkText: selectedText });
+    }
+  };
+  
+  // Render message preview with hyperlink highlighted
+  const renderMessagePreview = () => {
+    if (!formData.message) return null;
+    
+    if (formData.linkText && formData.message.includes(formData.linkText)) {
+      const parts = formData.message.split(formData.linkText);
+      return (
+        <div className="text-sm text-gray-600 mt-2 p-2 bg-gray-100 rounded">
+          <span className="text-xs text-gray-400 block mb-1">Preview:</span>
+          {parts[0]}
+          <span className="text-blue-600 underline font-medium">{formData.linkText}</span>
+          {parts.slice(1).join(formData.linkText)}
+          {formData.linkUrl && (
+            <span className="text-xs text-gray-400 ml-2">→ {formData.linkUrl}</span>
+          )}
+        </div>
+      );
+    }
+    return null;
   };
 
   if (loading) return <div>Loading...</div>;
@@ -266,10 +305,62 @@ const NotificationManager = () => {
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Notification Message</label>
               <Input 
+                ref={messageInputRef}
                 value={formData.message} 
                 onChange={(e) => setFormData({...formData, message: e.target.value})}
                 placeholder="Message to send to user..."
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Select text above, then click "Set as Link" to make it a hyperlink.
+              </p>
+            </div>
+            
+            {/* Hyperlink Configuration */}
+            <div className="md:col-span-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                <Link2 className="w-4 h-4" /> Hyperlink Settings
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-1">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Link Text</label>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={formData.linkText} 
+                      onChange={(e) => setFormData({...formData, linkText: e.target.value})}
+                      placeholder="Text to hyperlink"
+                      className="flex-1"
+                    />
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSetLinkText}
+                      title="Select text in message, then click this"
+                    >
+                      Set
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    The exact text in the message to make clickable
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Link Destination (URL or Path)</label>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      value={formData.linkUrl} 
+                      onChange={(e) => setFormData({...formData, linkUrl: e.target.value})}
+                      placeholder="/dashboard, /bookends, or full URL"
+                      className="flex-1"
+                    />
+                    <ExternalLink className="w-4 h-4 text-gray-400" />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    App paths like /dashboard, /bookends, or full URLs like https://...
+                  </p>
+                </div>
+              </div>
+              {renderMessagePreview()}
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">
@@ -295,7 +386,24 @@ const NotificationManager = () => {
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {rule.time}</span>
                   <span className="flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {CRITERIA_OPTIONS.find(c => c.value === rule.criteria)?.label || rule.criteria}</span>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">"{rule.message}"</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {/* Render message with hyperlink text highlighted */}
+                  {rule.linkText && rule.message.includes(rule.linkText) ? (
+                    <>
+                      "{rule.message.split(rule.linkText)[0]}
+                      <span className="text-blue-600 underline">{rule.linkText}</span>
+                      {rule.message.split(rule.linkText).slice(1).join(rule.linkText)}"
+                    </>
+                  ) : (
+                    `"${rule.message}"`
+                  )}
+                </p>
+                {rule.linkText && rule.linkUrl && (
+                  <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
+                    <Link2 className="w-3 h-3" />
+                    <span>"{rule.linkText}" → {rule.linkUrl}</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex gap-2">

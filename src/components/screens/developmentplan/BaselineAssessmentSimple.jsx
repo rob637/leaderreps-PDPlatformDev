@@ -152,7 +152,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
   }
 
   return (
-    <div ref={formRef} className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div ref={formRef} className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-6rem)] md:max-h-[85vh]">
       {/* Header - Fixed */}
       <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-5 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
@@ -189,8 +189,45 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
         </div>
       </div>
 
+      {/* Action Bar - Fixed at top for mobile accessibility */}
+      <div className="px-5 py-3 bg-slate-50 border-b border-slate-200 flex-shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium"
+            >
+              Cancel
+            </button>
+          )}
+          <div className="flex-1 text-center">
+            {!isComplete && (
+              <p className="text-xs text-slate-500">
+                {totalQuestions - completedCount} more to go
+              </p>
+            )}
+          </div>
+          <Button
+            onClick={handleComplete}
+            disabled={!isComplete || isTotalLoading}
+            className={`flex items-center justify-center gap-2 px-5 py-2.5 ${
+              isComplete 
+                ? 'bg-corporate-teal hover:bg-corporate-teal/90' 
+                : 'bg-slate-300 cursor-not-allowed'
+            }`}
+          >
+            {isTotalLoading ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <CheckCircle className="w-4 h-4" />
+            )}
+            {isTotalLoading ? 'Saving...' : (initialData ? 'Update' : 'Complete')}
+          </Button>
+        </div>
+      </div>
+
       {/* Rating Scale Legend - Fixed */}
-      <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 flex-shrink-0">
+      <div className="bg-white px-5 py-3 border-b border-slate-200 flex-shrink-0">
         <div className="flex flex-wrap justify-center gap-2 text-xs">
           {RATING_OPTIONS.map(option => (
             <span key={option.value} className={`px-2 py-1 rounded border ${option.color.split(' hover:')[0]}`}>
@@ -201,7 +238,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
       </div>
 
       {/* Questions - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+      <div className="flex-1 overflow-y-auto p-5 pb-32 space-y-4">
         {ASSESSMENT_QUESTIONS.map((question, idx) => (
           <div 
             key={question.id}
@@ -245,43 +282,6 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Footer - Fixed */}
-      <div className="p-4 bg-slate-50 border-t border-slate-200 flex-shrink-0">
-        <div className="flex items-center justify-between gap-3">
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors text-sm"
-            >
-              Cancel
-            </button>
-          )}
-          <div className="flex-1 text-center">
-            {!isComplete && (
-              <p className="text-xs text-slate-500">
-                {totalQuestions - completedCount} more to go
-              </p>
-            )}
-          </div>
-          <Button
-            onClick={handleComplete}
-            disabled={!isComplete || isTotalLoading}
-            className={`flex items-center justify-center gap-2 px-5 py-2.5 ${
-              isComplete 
-                ? 'bg-corporate-teal hover:bg-corporate-teal/90' 
-                : 'bg-slate-300 cursor-not-allowed'
-            }`}
-          >
-            {isTotalLoading ? (
-              <Loader className="w-4 h-4 animate-spin" />
-            ) : (
-              <CheckCircle className="w-4 h-4" />
-            )}
-            {isTotalLoading ? 'Saving...' : (initialData ? 'Update' : 'Complete')}
-          </Button>
-        </div>
       </div>
     </div>
   );

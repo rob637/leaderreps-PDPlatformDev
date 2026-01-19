@@ -240,10 +240,51 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
     logger.info(`🧪 Test Mode: Redirecting email for ${email} to ${recipientEmail}`);
   }
 
+  // Fetch email template from Firestore (with fallback defaults)
+  let emailTemplate = {
+    subject: "You're invited to LeaderReps PD Platform",
+    headline: "Welcome to LeaderReps!",
+    bodyText: "You have been invited to join the LeaderReps Professional Development Platform.",
+    buttonText: "Accept Invitation",
+    expiryText: "This invitation will expire in 7 days.",
+    footerText: "If you did not expect this invitation, please ignore this email."
+  };
+  
+  try {
+    const templateDoc = await admin.firestore().collection('metadata').doc('email_templates').get();
+    if (templateDoc.exists) {
+      const templates = templateDoc.data();
+      if (templates.invite) {
+        emailTemplate = { ...emailTemplate, ...templates.invite };
+      }
+    }
+  } catch (err) {
+    logger.warn("Could not fetch email template, using defaults:", err.message);
+  }
+
+  // Use customMessage from invitation if provided, otherwise use template bodyText
+  const bodyText = invitation.customMessage && invitation.customMessage.trim() 
+    ? invitation.customMessage 
+    : emailTemplate.bodyText;
+  
+  // Variable substitution - replace {{variables}} in text
+  const firstName = invitation.firstName || '';
+  const lastName = invitation.lastName || '';
+  const fullName = `${firstName} ${lastName}`.trim() || 'there';
+  
+  const substituteVars = (text) => {
+    return (text || '')
+      .replace(/\{\{firstName\}\}/g, firstName)
+      .replace(/\{\{lastName\}\}/g, lastName)
+      .replace(/\{\{fullName\}\}/g, fullName)
+      .replace(/\{\{email\}\}/g, email)
+      .replace(/\{\{inviteLink\}\}/g, inviteLink);
+  };
+
   const mailOptions = {
     from: `"LeaderReps Platform" <${emailUser}>`,
     to: recipientEmail,
-    subject: `${subjectPrefix}You're invited to LeaderReps PD Platform`,
+    subject: `${subjectPrefix}${substituteVars(emailTemplate.subject)}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         ${invitation.isTest ? `
@@ -253,17 +294,17 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
             But sent to you for testing purposes.
           </div>
         ` : ''}
-        <h2 style="color: #0f172a;">Welcome to LeaderReps!</h2>
-        <p>You have been invited to join the LeaderReps Professional Development Platform.</p>
+        <h2 style="color: #0f172a;">${substituteVars(emailTemplate.headline)}</h2>
+        <p>${substituteVars(bodyText)}</p>
         <p>Click the button below to accept your invitation and set up your account:</p>
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${inviteLink}" style="background-color: #0f766e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Accept Invitation</a>
+          <a href="${inviteLink}" style="background-color: #0f766e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">${substituteVars(emailTemplate.buttonText)}</a>
         </div>
         <p>Or copy and paste this link into your browser:</p>
         <p><a href="${inviteLink}">${inviteLink}</a></p>
-        <p>This invitation will expire in 7 days.</p>
+        <p>${substituteVars(emailTemplate.expiryText)}</p>
         <hr style="border: 1px solid #e2e8f0; margin: 30px 0;" />
-        <p style="color: #64748b; font-size: 12px;">If you did not expect this invitation, please ignore this email.</p>
+        <p style="color: #64748b; font-size: 12px;">${substituteVars(emailTemplate.footerText)}</p>
       </div>
     `,
   };
@@ -1108,6 +1149,12 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
       // Handle test users - redirect notifications to override email
       const isTestUser = user.isTestUser === true;
       const overrideEmail = user.testNotificationRecipient;
+      
+      // Hyperlink options from the rule configuration
+      const linkOptions = {
+        linkText: rule.linkText || null,
+        linkUrl: rule.linkUrl || null
+      };
 
       // Email
       if (settings.channels?.email && user.email) {
@@ -1116,20 +1163,21 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
         if (isTestUser) {
           if (overrideEmail) {
             const subjectPrefix = `[TEST for ${user.email}] `;
-            await sendEmailNotification(overrideEmail, `${subjectPrefix}${rule.name}`, rule.message);
+            await sendEmailNotification(overrideEmail, `${subjectPrefix}${rule.name}`, rule.message, linkOptions);
             logger.info(`🧪 Test user notification redirected: ${user.email} -> ${overrideEmail}`);
           } else {
             logger.info(`🧪 Test user ${user.email} has no override email, skipping notification`);
           }
         } else {
           // Regular user - send to their email
-          await sendEmailNotification(user.email, rule.name, rule.message);
+          await sendEmailNotification(user.email, rule.name, rule.message, linkOptions);
         }
       }
 
       // SMS via Twilio - Skip for test users (don't send test SMS)
+      // SMS includes a shortened link at the end
       if (settings.channels?.sms && settings.phoneNumber && !isTestUser) {
-        await sendSmsNotification(settings.phoneNumber, rule.message);
+        await sendSmsNotification(settings.phoneNumber, rule.message, linkOptions);
       } else if (settings.channels?.sms && isTestUser) {
         logger.info(`🧪 SMS skipped for test user ${user.email}`);
       }
@@ -1143,7 +1191,8 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
 });
 
 // Helper to send SMS via Twilio
-async function sendSmsNotification(phoneNumber, message) {
+// Options can include: { linkText, linkUrl } to append a link to the message
+async function sendSmsNotification(phoneNumber, message, options = {}) {
   const twilioSid = process.env.TWILIO_ACCOUNT_SID;
   const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
   const twilioFrom = process.env.TWILIO_PHONE_NUMBER;
@@ -1153,10 +1202,25 @@ async function sendSmsNotification(phoneNumber, message) {
     return;
   }
 
+  // Dynamically determine the app URL based on the Firebase project
+  const projectId = process.env.GCLOUD_PROJECT || process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId;
+  const appDomain = projectId === 'leaderreps-test' 
+    ? 'leaderreps-test.web.app' 
+    : 'leaderreps-pd-platform.web.app';
+  const appUrl = `https://${appDomain}`;
+
+  // Determine the link to include
+  let linkToInclude = appUrl;
+  if (options.linkUrl) {
+    linkToInclude = options.linkUrl.startsWith('http') 
+      ? options.linkUrl 
+      : `${appUrl}${options.linkUrl.startsWith('/') ? '' : '/'}${options.linkUrl}`;
+  }
+
   try {
     const client = twilio(twilioSid, twilioAuth);
     const result = await client.messages.create({
-      body: `LeaderReps: ${message}`,
+      body: `LeaderReps: ${message} ${linkToInclude}`,
       from: twilioFrom,
       to: phoneNumber
     });
@@ -1167,7 +1231,8 @@ async function sendSmsNotification(phoneNumber, message) {
 }
 
 // Helper to send email
-async function sendEmailNotification(email, subject, message) {
+// Options can include: { linkText, linkUrl } to specify custom hyperlink
+async function sendEmailNotification(email, subject, message, options = {}) {
   const emailUser = process.env.EMAIL_USER || (require("firebase-functions").config().email?.user);
   const emailPass = process.env.EMAIL_PASS || (require("firebase-functions").config().email?.pass);
 
@@ -1185,20 +1250,38 @@ async function sendEmailNotification(email, subject, message) {
     : 'leaderreps-pd-platform.web.app';
   const appUrl = `https://${appDomain}`;
 
-  // Build HTML with action phrases as hyperlinks
-  // Look for action patterns like "Complete your...", "Do your...", "Finish your...", "Start your..."
-  const actionPattern = /(Complete your [^.!?]+|Do your [^.!?]+|Finish your [^.!?]+|Start your [^.!?]+|Log your [^.!?]+|Review your [^.!?]+|Check your [^.!?]+)/gi;
+  let htmlMessage = message;
+  let linkDestination = appUrl; // Default link
   
-  const htmlMessage = message.replace(actionPattern, (match) => {
-    return `<a href="${appUrl}" style="color: #0066cc; text-decoration: underline; font-weight: 500;">${match}</a>`;
-  });
+  // If admin configured a specific linkText and linkUrl, use those
+  if (options.linkText && options.linkUrl && message.includes(options.linkText)) {
+    // Determine full URL - if it starts with /, prepend appUrl
+    linkDestination = options.linkUrl.startsWith('http') 
+      ? options.linkUrl 
+      : `${appUrl}${options.linkUrl.startsWith('/') ? '' : '/'}${options.linkUrl}`;
+    
+    // Replace the linkText with a hyperlink
+    htmlMessage = message.replace(
+      options.linkText,
+      `<a href="${linkDestination}" style="color: #0066cc; text-decoration: underline; font-weight: 500;">${options.linkText}</a>`
+    );
+    logger.info(`Configured hyperlink: "${options.linkText}" -> ${linkDestination}`);
+  } else {
+    // Fallback: Build HTML with action phrases as hyperlinks
+    // Look for action patterns like "Complete your...", "Do your...", "Finish your...", "Start your..."
+    const actionPattern = /(Complete your [^.!?]+|Do your [^.!?]+|Finish your [^.!?]+|Start your [^.!?]+|Log your [^.!?]+|Review your [^.!?]+|Check your [^.!?]+)/gi;
+    
+    htmlMessage = message.replace(actionPattern, (match) => {
+      return `<a href="${appUrl}" style="color: #0066cc; text-decoration: underline; font-weight: 500;">${match}</a>`;
+    });
+  }
 
   try {
     await transporter.sendMail({
       from: `"LeaderReps" <${emailUser}>`,
       to: email,
       subject: `🔔 ${subject}`,
-      text: `${message} - ${appUrl}`,
+      text: `${message} - ${linkDestination}`,
       html: `<p>${htmlMessage}</p>`
     });
     logger.info(`Notification email sent to ${email}`);

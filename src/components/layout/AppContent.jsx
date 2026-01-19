@@ -144,7 +144,7 @@ const AppContent = ({
                 </div>
               )} */}
 
-              <div ref={mainContentRef} className="flex-1 overflow-y-auto">
+              <div ref={mainContentRef} className="flex-1 overflow-y-auto pb-20 md:pb-0">
                 <Suspense
                   fallback={
                     <div className="min-h-full flex items-center justify-center gradient-corporate-hero">
@@ -171,7 +171,7 @@ const AppContent = ({
               </Suspense>
             </div>
 
-            <footer className="w-full text-center mt-auto border-t bg-white/60 backdrop-blur-sm border-slate-100 p-5">
+            <footer className="w-full text-center mt-auto border-t bg-white/60 backdrop-blur-sm border-slate-100 p-5 pb-24 md:pb-5">
               {/* Sync Status Indicator */}
               <div className="flex justify-center mb-3">
                 <SyncIndicator variant="badge" showWhenSynced={false} />

@@ -203,7 +203,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
   }
 
   return (
-    <div ref={formRef} className={`${isModal ? 'bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]' : ''}`}>
+    <div ref={formRef} className={`${isModal ? 'bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-6rem)] md:max-h-[85vh]' : ''}`}>
       {/* Header - Fixed */}
       <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-4 relative flex-shrink-0">
         {isModal && onClose && (
@@ -226,8 +226,29 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
         </div>
       </div>
 
+      {/* Action Bar - Fixed at top for mobile accessibility */}
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200 flex-shrink-0">
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors font-medium"
+          >
+            Cancel
+          </button>
+        )}
+        <div className="flex-1" />
+        <Button
+          onClick={handleSubmit}
+          disabled={saving}
+          className="flex items-center gap-2 bg-corporate-teal hover:bg-corporate-teal/90"
+        >
+          {saving ? <Loader className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+          {profileAlreadyComplete ? 'Update Profile' : 'Complete Profile'}
+        </Button>
+      </div>
+
       {/* Form - Scrollable */}
-      <div className="p-4 space-y-4 overflow-y-auto flex-1">
+      <div className="p-4 pb-32 space-y-4 overflow-y-auto flex-1">
         {/* Name Row */}
         <div className="grid grid-cols-2 gap-4">
           <InputField field="firstName" label="First Name" required placeholder="John" value={formData.firstName} onChange={handleChange} error={errors.firstName} />
@@ -381,27 +402,6 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
               resize-none transition-all"
           />
         </div>
-      </div>
-
-      {/* Footer - Fixed */}
-      <div className="flex items-center justify-between p-3 bg-slate-50 border-t border-slate-200 flex-shrink-0">
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
-          >
-            Cancel
-          </button>
-        )}
-        <div className="flex-1" />
-        <Button
-          onClick={handleSubmit}
-          disabled={saving}
-          className="flex items-center gap-2 bg-corporate-teal hover:bg-corporate-teal/90"
-        >
-          {saving ? <Loader className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-          {profileAlreadyComplete ? 'Update Profile' : 'Complete Profile'}
-        </Button>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
-import { X, Save, RefreshCw, Bell, Mail, MessageSquare, Globe, CheckCircle, AlertTriangle } from 'lucide-react';
+import { X, Save, RefreshCw, Bell, Mail, MessageSquare, Globe, CheckCircle, AlertTriangle, AtSign, TestTube } from 'lucide-react';
 
 const COMMON_TIMEZONES = [
   "America/New_York",
@@ -23,6 +23,9 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [userEmail, setUserEmail] = useState('');
+  const [isTestUser, setIsTestUser] = useState(false);
+  const [testNotificationRecipient, setTestNotificationRecipient] = useState('');
   const [settings, setSettings] = useState({
     enabled: false,
     timezone: "America/New_York",
@@ -42,6 +45,12 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
       
       if (userSnap.exists()) {
         const data = userSnap.data();
+        
+        // Get user email and test user status
+        setUserEmail(data.email || '');
+        setIsTestUser(data.isTestUser === true);
+        setTestNotificationRecipient(data.testNotificationRecipient || '');
+        
         if (data.notificationSettings) {
           // Derive enabled state: if no explicit 'enabled' field, infer from channels/reminders
           const ns = data.notificationSettings;
@@ -75,9 +84,16 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
     setError(null);
     try {
       const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, {
+      const updateData = {
         notificationSettings: settings
-      });
+      };
+      
+      // If test user, also update the notification recipient
+      if (isTestUser) {
+        updateData.testNotificationRecipient = testNotificationRecipient;
+      }
+      
+      await updateDoc(userRef, updateData);
       onClose();
     } catch (err) {
       console.error("Error saving notification settings:", err);
@@ -123,6 +139,43 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
                 <p className="text-sm text-blue-800">
                   Managing notifications for <span className="font-bold">{userName}</span>
                 </p>
+              </div>
+
+              {/* Notification Email Section */}
+              <div className={`p-4 rounded-lg border ${isTestUser ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  {isTestUser ? (
+                    <TestTube className="w-4 h-4 text-amber-600" />
+                  ) : (
+                    <AtSign className="w-4 h-4 text-slate-600" />
+                  )}
+                  <label className="text-sm font-medium text-slate-700">
+                    {isTestUser ? 'Test User - Override Email' : 'Notification Email'}
+                  </label>
+                  {isTestUser && (
+                    <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">TEST</span>
+                  )}
+                </div>
+                
+                {isTestUser ? (
+                  <>
+                    <input
+                      type="email"
+                      value={testNotificationRecipient}
+                      onChange={(e) => setTestNotificationRecipient(e.target.value)}
+                      placeholder="Enter override email address"
+                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-sm bg-white"
+                    />
+                    <p className="text-xs text-amber-700 mt-2">
+                      ⚠️ This is a test user. All notifications will be redirected to the email above instead of <span className="font-medium">{userEmail}</span>.
+                    </p>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg">
+                    <Mail className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-700">{userEmail || 'No email set'}</span>
+                  </div>
+                )}
               </div>
 
               {error && (
@@ -238,12 +291,21 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
                   </span>
                 </div>
                 {settings.enabled && (
-                  <p className="text-xs text-emerald-700 mt-1">
-                    {[
-                      settings.channels.email && 'Email',
-                      settings.channels.sms && 'SMS'
-                    ].filter(Boolean).join(' & ') || 'No channels selected'} • {settings.timezone.replace(/_/g, ' ')}
-                  </p>
+                  <>
+                    <p className="text-xs text-emerald-700 mt-1">
+                      {[
+                        settings.channels.email && 'Email',
+                        settings.channels.sms && 'SMS'
+                      ].filter(Boolean).join(' & ') || 'No channels selected'} • {settings.timezone.replace(/_/g, ' ')}
+                    </p>
+                    {settings.channels.email && (
+                      <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                        <Mail className="w-3 h-3" />
+                        Sending to: <span className="font-medium">{isTestUser ? (testNotificationRecipient || 'No override set') : userEmail}</span>
+                        {isTestUser && <span className="text-amber-600">(override)</span>}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 

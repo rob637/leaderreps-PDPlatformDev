@@ -571,7 +571,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-200 flex-shrink-0">
+      <div className="flex items-center justify-between p-4 pb-6 md:pb-4 bg-slate-50 border-t border-slate-200 flex-shrink-0">
         <button
           onClick={currentStep === 0 ? onClose : handlePrevious}
           className="flex items-center gap-1 px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"

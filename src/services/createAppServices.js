@@ -1,5 +1,5 @@
 // src/services/createAppServices.js
-import { onSnapshotEx, setDocEx } from './firestoreUtils';
+import { onSnapshotEx, setDocEx, getDocEx } from './firestoreUtils';
 import { buildModulePath } from './pathUtils';
 import { Timestamp } from 'firebase/firestore';
 import { 
@@ -110,36 +110,16 @@ export const createAppServices = (db, userId) => {
     // LEGACY PLAN - Commented out 12/18/25
     const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
     const unsubDev = onSnapshotEx(db, devPlanPath, (snap) => {
-      console.log('%c[DEV_PLAN SNAPSHOT] Received!', 'background: #8b5cf6; color: white; font-weight: bold; padding: 4px 8px;');
-      console.log('[DEV_PLAN SNAPSHOT] snap.exists():', snap.exists());
-      console.log('[DEV_PLAN SNAPSHOT] path:', devPlanPath);
-      
       const rawData = snap.exists() ? snap.data() : MOCK_DEVELOPMENT_PLAN_DATA;
-      console.log('[DEV_PLAN SNAPSHOT] rawData:', rawData);
-      console.log('[DEV_PLAN SNAPSHOT] rawData.startDate:', rawData?.startDate);
-      console.log('[DEV_PLAN SNAPSHOT] typeof rawData.startDate:', typeof rawData?.startDate);
-      
       stores.developmentPlanData = stripSentinels(sanitizeTimestamps(rawData));
-      console.log('[DEV_PLAN SNAPSHOT] After sanitize:', stores.developmentPlanData);
-      console.log('[DEV_PLAN SNAPSHOT] startDate after sanitize:', stores.developmentPlanData?.startDate);
-      
       notifyChange();
     });
     stores.listeners.push(unsubDev);
 
     const dailyPath = buildModulePath(userId, 'daily_practice', 'current');
     const unsubDaily = onSnapshotEx(db, dailyPath, (snap) => {
-      // === NUCLEAR DEBUG: Firestore Snapshot Received ===
-      console.log('%c[FIRESTORE SNAPSHOT] daily_practice snapshot received!', 'background: #00ffff; color: black; font-weight: bold; padding: 4px 8px;');
-      console.log('[FIRESTORE SNAPSHOT] snap.exists():', snap.exists());
-      
       const rawData = snap.exists() ? snap.data() : MOCK_DAILY_PRACTICE_DATA;
-      console.log('[FIRESTORE SNAPSHOT] Raw data from Firestore:', JSON.stringify(rawData, null, 2));
-      console.log('[FIRESTORE SNAPSHOT] morningBookend specifically:', rawData?.morningBookend);
-      console.log('[FIRESTORE SNAPSHOT] morningBookend.wins:', rawData?.morningBookend?.wins);
-      
       stores.dailyPracticeData = stripSentinels(sanitizeTimestamps(rawData));
-      console.log('[FIRESTORE SNAPSHOT] After sanitize/strip:', JSON.stringify(stores.dailyPracticeData, null, 2));
       
       // Check for Rollover (Lazy Evaluation)
       if (snap.exists() && stores.dailyPracticeData) {
@@ -155,15 +135,11 @@ export const createAppServices = (db, userId) => {
     // Schedule rollover to run at 11:59:59 PM if app is open
     const scheduleMidnightRollover = () => {
       const msUntil = getMsUntilMidnight();
-      console.log(`[MIDNIGHT ROLLOVER] Scheduling rollover in ${Math.round(msUntil / 1000 / 60)} minutes`);
       
       stores.midnightTimer = setTimeout(async () => {
-        console.log('%c[MIDNIGHT ROLLOVER] 11:59:59 PM reached - triggering auto-rollover!', 'background: #ff6600; color: white; font-weight: bold; padding: 4px 8px;');
-        
         if (stores.dailyPracticeData) {
           try {
             await checkAndPerformRollover(db, userId, stores.dailyPracticeData);
-            console.log('[MIDNIGHT ROLLOVER] Rollover completed successfully');
           } catch (err) {
             console.error('[MIDNIGHT ROLLOVER] Rollover error:', err);
           }
@@ -177,13 +153,17 @@ export const createAppServices = (db, userId) => {
     // Start the midnight rollover scheduler
     scheduleMidnightRollover();
 
-    const strategicPath = buildModulePath(userId, 'strategic_content', 'vision_mission');
-    const unsubStrategic = onSnapshotEx(db, strategicPath, (snap) => {
-      const rawData = snap.exists() ? snap.data() : MOCK_STRATEGIC_CONTENT_DATA;
-      stores.strategicContentData = stripSentinels(sanitizeTimestamps(rawData));
-      notifyChange();
-    });
-    stores.listeners.push(unsubStrategic);
+    // === DISABLED: strategicContentData listener ===
+    // PlanningHub (enablePlanningHub: false) and ExecutiveReflection (enableRoiReport: false)
+    // are both disabled. Re-enable this listener when those features launch.
+    // const strategicPath = buildModulePath(userId, 'strategic_content', 'vision_mission');
+    // const unsubStrategic = onSnapshotEx(db, strategicPath, (snap) => {
+    //   const rawData = snap.exists() ? snap.data() : MOCK_STRATEGIC_CONTENT_DATA;
+    //   stores.strategicContentData = stripSentinels(sanitizeTimestamps(rawData));
+    //   notifyChange();
+    // });
+    // stores.listeners.push(unsubStrategic);
+    stores.strategicContentData = MOCK_STRATEGIC_CONTENT_DATA; // Use mock data for now
     
     const membershipPath = buildModulePath(userId, 'membership', 'current');
     const unsubMembership = onSnapshotEx(db, membershipPath, (snap) => {
@@ -209,6 +189,11 @@ export const createAppServices = (db, userId) => {
     });
     stores.listeners.push(unsubMeta);
     
+    // === PERFORMANCE OPTIMIZATION ===
+    // Catalogs are static data that rarely changes. Instead of 14+ real-time listeners,
+    // we fetch them ONCE at startup. This reduces Firebase connections from ~20 to ~6.
+    // If catalog data needs to be updated, user can refresh the app.
+    
     const catalogNames = [
       'rep_library', 'exercise_library', 'workout_library', 'course_library',
       'skill_catalog', 'identity_anchor_catalog', 'habit_anchor_catalog',
@@ -216,112 +201,93 @@ export const createAppServices = (db, userId) => {
       'membership_plans'
     ];
     
-    catalogNames.forEach(catalogName => {
-      const catalogPath = `metadata/config/catalog/${catalogName}`;
-      // console.log(`[createAppServices] Listening to catalog: ${catalogPath}`);
-      const unsubCatalog = onSnapshotEx(db, catalogPath, (snap) => {
+    // One-time fetch for all catalogs (runs in parallel)
+    const fetchCatalogs = async () => {
+      const catalogPromises = catalogNames.map(async (catalogName) => {
+        const catalogPath = `metadata/config/catalog/${catalogName}`;
+        try {
+          const snap = await getDocEx(db, catalogPath);
+          if (snap.exists()) {
+            const keyName = catalogName.toUpperCase();
+            return { key: keyName, data: stripSentinels(sanitizeTimestamps(snap.data())) };
+          }
+        } catch (err) {
+          console.warn(`[createAppServices] Failed to fetch catalog ${catalogName}:`, err.message);
+        }
+        return null;
+      });
+      
+      // Also fetch reading_catalog, system_quotes, and leadership_tiers
+      const readingPromise = getDocEx(db, 'metadata/reading_catalog').then(snap => {
         if (snap.exists()) {
-          const keyName = catalogName.toUpperCase();
+          return { key: 'READING_CATALOG', data: stripSentinels(sanitizeTimestamps(snap.data())) };
+        }
+        return null;
+      }).catch(err => {
+        console.warn('[createAppServices] Failed to fetch reading_catalog:', err.message);
+        return null;
+      });
+      
+      const quotesPromise = getDocEx(db, 'system_lovs/system_quotes').then(snap => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.items && Array.isArray(data.items)) {
+            return { key: 'SYSTEM_QUOTES', data: data.items };
+          }
+        }
+        return null;
+      }).catch(err => {
+        console.warn('[createAppServices] Failed to fetch system_quotes:', err.message);
+        return null;
+      });
+      
+      const tiersPromise = getDocEx(db, 'system_lovs/leadership_tiers').then(snap => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.values && Array.isArray(data.values)) {
+            const tiersMap = {};
+            data.values.forEach(t => {
+              if (t.isActive !== false) {
+                tiersMap[t.code] = { 
+                  name: t.label, 
+                  hex: t.color, 
+                  color: t.color,
+                  ...t 
+                };
+              }
+            });
+            if (!tiersMap['All']) tiersMap['All'] = { name: 'All Tiers', hex: '#47A88D', color: 'teal-500' };
+            if (!tiersMap['System']) tiersMap['System'] = { name: 'System Info', hex: '#47A88D', color: 'gray-500' };
+            return { key: 'LEADERSHIP_TIERS', data: tiersMap };
+          }
+        }
+        return null;
+      }).catch(err => {
+        console.warn('[createAppServices] Failed to fetch leadership_tiers:', err.message);
+        return null;
+      });
+      
+      // Wait for all fetches to complete
+      const results = await Promise.all([...catalogPromises, readingPromise, quotesPromise, tiersPromise]);
+      
+      // Merge all results into globalMetadata
+      results.forEach(result => {
+        if (result) {
           stores.globalMetadata = {
             ...(stores.globalMetadata || {}),
-            [keyName]: stripSentinels(sanitizeTimestamps(snap.data()))
+            [result.key]: result.data
           };
-        } else if (!stores.globalMetadata) {
-          stores.globalMetadata = {};
         }
-        
-        notifyChange();
       });
-      stores.listeners.push(unsubCatalog);
+      
+      notifyChange();
+    };
+    
+    // Fetch catalogs asynchronously (don't block app startup)
+    fetchCatalogs().catch(err => {
+      console.error('[createAppServices] Catalog fetch error:', err);
     });
     
-    // Special listener for reading_catalog at metadata/reading_catalog
-    const readingCatalogPath = 'metadata/reading_catalog';
-    const unsubReadingCatalog = onSnapshotEx(db, readingCatalogPath, (snap) => {
-      console.log('📚 [createAppServices] Reading catalog snapshot:', {
-        exists: snap.exists(),
-        path: readingCatalogPath
-      });
-      
-      if (snap.exists()) {
-        const rawData = snap.data();
-        console.log('📚 [createAppServices] Reading catalog raw data:', {
-          hasItems: !!rawData?.items,
-          itemsType: typeof rawData?.items,
-          itemsKeys: rawData?.items ? Object.keys(rawData.items) : [],
-          itemsLength: rawData?.items ? Object.keys(rawData.items).length : 0
-        });
-        stores.globalMetadata = {
-          ...(stores.globalMetadata || {}),
-          READING_CATALOG: stripSentinels(sanitizeTimestamps(rawData))
-        };
-        console.log('📚 [createAppServices] READING_CATALOG set in globalMetadata:', {
-          hasItems: !!stores.globalMetadata.READING_CATALOG?.items,
-          itemsKeys: stores.globalMetadata.READING_CATALOG?.items ? Object.keys(stores.globalMetadata.READING_CATALOG.items) : []
-        });
-      } else {
-        console.warn('⚠️ [createAppServices] Reading catalog document does NOT exist at:', readingCatalogPath);
-        if (!stores.globalMetadata) {
-          stores.globalMetadata = {};
-        }
-      }
-      
-      notifyChange();
-    });
-    stores.listeners.push(unsubReadingCatalog);
-
-    // Listener for System Quotes
-    const quotesPath = 'system_lovs/system_quotes';
-    const unsubQuotes = onSnapshotEx(db, quotesPath, (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.items && Array.isArray(data.items)) {
-          stores.globalMetadata = {
-            ...(stores.globalMetadata || {}),
-            SYSTEM_QUOTES: data.items
-          };
-          console.log('✅ [createAppServices] Loaded SYSTEM_QUOTES from system_lovs');
-        }
-      } else if (!stores.globalMetadata) {
-        stores.globalMetadata = {};
-      }
-      notifyChange();
-    });
-    stores.listeners.push(unsubQuotes);
-
-    // Listener for System LOVs (Leadership Tiers)
-    const lovTiersPath = 'system_lovs/leadership_tiers';
-    const unsubLovTiers = onSnapshotEx(db, lovTiersPath, (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.values && Array.isArray(data.values)) {
-          const tiersMap = {};
-          data.values.forEach(t => {
-            if (t.isActive !== false) {
-                tiersMap[t.code] = { 
-                    name: t.label, 
-                    hex: t.color, 
-                    color: t.color, // Fallback
-                    ...t 
-                };
-            }
-          });
-          // Ensure 'All' and 'System' exist if not in DB
-          if (!tiersMap['All']) tiersMap['All'] = { name: 'All Tiers', hex: '#47A88D', color: 'teal-500' };
-          if (!tiersMap['System']) tiersMap['System'] = { name: 'System Info', hex: '#47A88D', color: 'gray-500' };
-          
-          stores.globalMetadata = {
-            ...(stores.globalMetadata || {}),
-            LEADERSHIP_TIERS: tiersMap
-          };
-          console.log('✅ [createAppServices] Loaded LEADERSHIP_TIERS from system_lovs');
-        }
-      } else if (!stores.globalMetadata) {
-        stores.globalMetadata = {};
-      }
-      notifyChange();
-    });
-    stores.listeners.push(unsubLovTiers);
   } else {
     console.warn('[createAppServices] No db or userId provided, using mock data');
     stores.developmentPlanData = MOCK_DEVELOPMENT_PLAN_DATA;
@@ -351,25 +317,11 @@ export const createAppServices = (db, userId) => {
   }
 
   const updateDevelopmentPlanData = async (updates, { merge = true } = {}) => {
-    console.log('%c[DEV_PLAN UPDATE] updateDevelopmentPlanData CALLED', 'background: #8b5cf6; color: white; font-weight: bold; padding: 4px 8px;');
-    console.log('[DEV_PLAN UPDATE] db exists:', !!db);
-    console.log('[DEV_PLAN UPDATE] userId:', userId);
-    console.log('[DEV_PLAN UPDATE] updates:', updates);
-    console.log('[DEV_PLAN UPDATE] updates.startDate:', updates?.startDate);
-    console.log('[DEV_PLAN UPDATE] typeof updates.startDate:', typeof updates?.startDate);
-    
-    if (!db || !userId) {
-      console.log('%c[DEV_PLAN UPDATE] ABORT: db or userId missing!', 'color: red; font-weight: bold;');
-      return false;
-    }
+    if (!db || !userId) return false;
     
     // Convert Date objects to Firestore Timestamps
     const convertedUpdates = convertDatesToTimestamps(updates);
-    console.log('[DEV_PLAN UPDATE] After conversion:', convertedUpdates);
-    console.log('[DEV_PLAN UPDATE] startDate after conversion:', convertedUpdates?.startDate);
-    
     const path = buildModulePath(userId, 'development_plan', 'current');
-    console.log('[DEV_PLAN UPDATE] Firestore path:', path);
     
     // Optimistic Update: Update local store immediately
     if (stores.developmentPlanData) {
@@ -378,33 +330,18 @@ export const createAppServices = (db, userId) => {
     }
 
     const result = await setDocEx(db, path, convertedUpdates, merge);
-    console.log('[DEV_PLAN UPDATE] setDocEx result:', result);
     return result;
   };
 
   const updateDailyPracticeData = async (updates) => {
-    // === NUCLEAR DEBUG: updateDailyPracticeData ===
-    console.log('%c[FIRESTORE DEBUG] updateDailyPracticeData CALLED', 'background: #ff00ff; color: white; font-weight: bold; padding: 4px 8px;');
-    console.log('[FIRESTORE DEBUG] db exists:', !!db);
-    console.log('[FIRESTORE DEBUG] userId:', userId);
-    console.log('[FIRESTORE DEBUG] updates payload:', JSON.stringify(updates, null, 2));
-    console.log('[FIRESTORE DEBUG] BEFORE - stores.dailyPracticeData:', JSON.stringify(stores.dailyPracticeData, null, 2));
-    
-    if (!db || !userId) {
-      console.log('%c[FIRESTORE DEBUG] ABORT: db or userId missing!', 'color: red; font-weight: bold;');
-      return false;
-    }
+    if (!db || !userId) return false;
     const path = buildModulePath(userId, 'daily_practice', 'current');
-    console.log('[FIRESTORE DEBUG] Firestore path:', path);
     
     const ok = await setDocEx(db, path, updates, true);
-    console.log('%c[FIRESTORE DEBUG] setDocEx result:', ok ? 'color: green; font-weight: bold;' : 'color: red; font-weight: bold;', ok);
     
     if (ok) {
       stores.dailyPracticeData = applyPatchDeleteAware(stores.dailyPracticeData || {}, updates);
-      console.log('[FIRESTORE DEBUG] AFTER - stores.dailyPracticeData:', JSON.stringify(stores.dailyPracticeData, null, 2));
       notifyChange();
-      console.log('[FIRESTORE DEBUG] notifyChange() called');
     }
     return ok;
   };

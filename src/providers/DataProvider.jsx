@@ -35,7 +35,6 @@ const DataProvider = ({
       return;
     }
 
-    console.log('[DataProvider] Initializing services for userId:', userId);
     setIsLoadingServices(true);
     let createdServices = null;
     try {
@@ -160,17 +159,11 @@ const DataProvider = ({
     const adminEmails = resolvedMetadata.adminemails || [];
     const userEmail = user?.email?.toLowerCase();
     // Case-insensitive check against dynamic adminemails from Firestore
-    const result = (
+    return (
       !!userEmail && 
       Array.isArray(adminEmails) && 
       adminEmails.some(email => email.toLowerCase() === userEmail)
     );
-    console.log('[DataProvider] isAdmin calculation:', {
-      userEmail,
-      adminEmails,
-      isAdmin: result
-    });
-    return result;
   }, [user, resolvedMetadata]);
 
   const hasPendingDailyPractice = useMemo(() => {
@@ -318,18 +311,7 @@ const DataProvider = ({
       // Catalogs (from resolvedMetadata)
       SKILL_CATALOG: resolvedMetadata.SKILL_CATALOG || EMPTY_ARRAY_CATALOG,
       COURSE_LIBRARY: resolvedMetadata.COURSE_LIBRARY || EMPTY_ARRAY_CATALOG,
-      READING_CATALOG: (() => {
-        const catalog = resolvedMetadata.READING_CATALOG || EMPTY_OBJECT_CATALOG;
-        console.log('📚 [DataProvider] READING_CATALOG being provided to components:', {
-          hasCatalog: !!resolvedMetadata.READING_CATALOG,
-          hasItems: !!catalog.items,
-          itemsType: typeof catalog.items,
-          itemsKeys: catalog.items && typeof catalog.items === 'object' ? Object.keys(catalog.items) : [],
-          itemsLength: catalog.items && typeof catalog.items === 'object' ? Object.keys(catalog.items).length : 0,
-          fullCatalog: catalog
-        });
-        return catalog;
-      })(),
+      READING_CATALOG: resolvedMetadata.READING_CATALOG || EMPTY_OBJECT_CATALOG,
       RESOURCE_LIBRARY: resolvedMetadata.RESOURCE_LIBRARY || EMPTY_OBJECT,
       VIDEO_CATALOG: resolvedMetadata.VIDEO_CATALOG || EMPTY_ARRAY_CATALOG,
       SCENARIO_CATALOG: resolvedMetadata.SCENARIO_CATALOG || EMPTY_ARRAY_CATALOG,

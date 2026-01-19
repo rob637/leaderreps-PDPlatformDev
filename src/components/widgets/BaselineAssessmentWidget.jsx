@@ -81,35 +81,14 @@ const BaselineAssessmentWidget = () => {
 
         {/* Modal for viewing/updating */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-              {/* Header */}
-              <div className="sticky top-0 bg-white border-b border-slate-200 p-4 flex justify-between items-center z-10">
-                <div>
-                  <h2 className="text-xl font-bold text-corporate-navy">Baseline Assessment</h2>
-                  <p className="text-sm text-slate-500">View or update your assessment and goals</p>
-                </div>
-                <button 
-                  onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                >
-                  <span className="sr-only">Close</span>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              {/* Assessment Form */}
-              <div className="p-4">
-                <BaselineAssessment 
-                  onComplete={handleAssessmentComplete}
-                  isLoading={saving}
-                  initialData={latestAssessment}
-                  mode="edit"
-                  isWidget={false}
-                />
-              </div>
+          <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+            <div className="relative max-w-3xl w-full my-auto">
+              <BaselineAssessmentSimple 
+                onComplete={handleAssessmentComplete}
+                onClose={() => setShowModal(false)}
+                isLoading={saving}
+                initialData={latestAssessment}
+              />
             </div>
           </div>
         )}
@@ -172,34 +151,14 @@ const BaselineAssessmentWidget = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-slate-200 p-4 flex justify-between items-center z-10">
-              <div>
-                <h2 className="text-xl font-bold text-corporate-navy">Baseline Assessment</h2>
-                <p className="text-sm text-slate-500">Rate your current skills and set your goals</p>
-              </div>
-              <button 
-                onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-              >
-                <span className="sr-only">Close</span>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            {/* Assessment Form */}
-            <div className="p-4">
-              <BaselineAssessmentSimple 
-                onComplete={handleAssessmentComplete}
-                onClose={() => setShowModal(false)}
-                isLoading={saving}
-                initialData={latestAssessment}
-              />
-            </div>
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="relative max-w-3xl w-full my-auto">
+            <BaselineAssessmentSimple 
+              onComplete={handleAssessmentComplete}
+              onClose={() => setShowModal(false)}
+              isLoading={saving}
+              initialData={null}
+            />
           </div>
         </div>
       )}

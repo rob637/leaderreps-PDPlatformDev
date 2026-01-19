@@ -207,7 +207,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
           </div>
 
           {/* The "One Banana" - Complete Button */}
-          <div className="pt-8">
+          <div className="pt-8 pb-20 md:pb-8">
             <Button
               onClick={handleComplete}
               variant="primary"
