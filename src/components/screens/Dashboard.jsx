@@ -216,7 +216,8 @@ const Dashboard = () => {
     devPlanCurrentWeek, // Pass Dev Plan current week for scorecard reps (12/05/25)
     widgetVisibility, // Pass widget visibility to control scorecard tally
     db,
-    userId: user?.uid
+    userId: user?.uid,
+    userEmail: user?.email
   });
 
   // --- LOCAL STATE ---

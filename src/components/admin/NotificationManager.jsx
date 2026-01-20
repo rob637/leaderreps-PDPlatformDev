@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { auth } from '../../lib/firebase';
 import { Card, Button, Input, Select, Badge } from '../ui';
 import { Trash2, Edit2, Plus, Bell, Clock, AlertCircle, Send, Mail, MessageSquare, Link2, ExternalLink } from 'lucide-react';
 
@@ -111,13 +112,23 @@ const NotificationManager = () => {
     setTestResult(null);
     
     try {
-      // Dynamically determine function URL based on environment
+      const user = auth.currentUser;
+      if (!user) {
+        setTestResult({ success: false, message: 'You must be logged in to send test notifications.' });
+        setTestingNotification(false);
+        return;
+      }
+
+      const idToken = await user.getIdToken();
       const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
-      const functionUrl = `https://us-central1-${projectId}.cloudfunctions.net/sendTestEmailSms`;
-      
+      const functionUrl = `https://us-central1-${projectId}.cloudfunctions.net/sendTestEmailSmsHttp`;
+
       const response = await fetch(functionUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
         body: JSON.stringify({
           email: testEmail || null,
           phone: testPhone || null,
@@ -125,22 +136,24 @@ const NotificationManager = () => {
           type: 'both'
         })
       });
-      
+
       const data = await response.json();
-      
-      if (data.success) {
+
+      if (response.ok && data.success) {
         const messages = [];
         if (data.results?.email?.success) messages.push(`Email sent to ${testEmail}`);
         if (data.results?.email?.success === false) messages.push(`Email failed: ${data.results.email.error}`);
         if (data.results?.sms?.success) messages.push(`SMS sent to ${testPhone}`);
         if (data.results?.sms?.success === false) messages.push(`SMS failed: ${data.results.sms.error}`);
-        
+
         setTestResult({ success: true, message: messages.join(' | ') || 'Test completed' });
       } else {
         setTestResult({ success: false, message: data.error || 'Test failed' });
       }
     } catch (error) {
-      setTestResult({ success: false, message: error.message });
+      const errorMessage = error.message || 'Unknown error occurred';
+      console.error('Test notification error:', error);
+      setTestResult({ success: false, message: errorMessage });
     } finally {
       setTestingNotification(false);
     }

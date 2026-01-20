@@ -9,6 +9,7 @@ import { serverTimestamp } from '../../../services/firebaseUtils';
 import { useAppServices } from '../../../hooks/useAppServices';
 import { timeService } from '../../../services/timeService';
 import { calculateRepStreak, getStreakMilestone, isExcludedDate } from '../../../utils/streakCalculator';
+import { logActivity, ACTIVITY_TYPES } from '../../../services/activityLogger';
 
 // Helper function to check if developer mode is enabled
 // const isDeveloperMode = () => localStorage.getItem('arena-developer-mode') === 'true';
@@ -23,8 +24,9 @@ export const useDashboard = ({
   // globalMetadata, // <--- Added for Scorecard calculation
   devPlanCurrentWeek, // <--- Added for Scorecard reps from Dev Plan (12/05/25)
   widgetVisibility, // <--- Added to control which widgets count in scorecard
-  // db,
-  // userId
+  db,
+  userId,
+  userEmail // for activity logging
 }) => {
   
   // === ARENA MODE STATE ===
@@ -381,6 +383,16 @@ export const useDashboard = ({
         setTargetRepStatus('Committed');
         // Update habits
         setHabitsCompleted(prev => ({ ...prev, completedDailyRep: true }));
+        
+        // Log activity for admin visibility
+        if (db && userId) {
+          logActivity(db, ACTIVITY_TYPES.CONTENT_COMPLETE, {
+            userId,
+            userEmail,
+            action: 'Completed Daily Rep',
+            details: 'Target rep marked as committed'
+          }).catch(() => {}); // silent fail
+        }
       }
         } catch (error) {
       console.error('Error completing rep:', error);
@@ -391,7 +403,7 @@ export const useDashboard = ({
     } finally {
       setIsSavingRep(false);
     }
-  }, [updateDailyPracticeData, isSavingRep]); // Explicitly include prop
+  }, [updateDailyPracticeData, isSavingRep, db, userId, userEmail]); // Explicitly include prop
 
   /* =========================================================
      IDENTITY & HABIT HANDLERS (Dependency on updateDailyPracticeData)
@@ -871,6 +883,17 @@ export const useDashboard = ({
       const success = await updateDailyPracticeData(updates);
       console.log('☀️ [MORNING BOOKEND] Save result:', success);
       if (!success) throw new Error('Update failed');
+      
+      // Log activity for admin visibility
+      if (db && userId) {
+        logActivity(db, ACTIVITY_TYPES.CONTENT_COMPLETE, {
+          userId,
+          userEmail,
+          action: 'Completed Morning Bookend',
+          details: `${morningWins.filter(w => w.text?.trim()).length} wins planned`
+        }).catch(() => {}); // silent fail
+      }
+      
       // Always show success message with warm feeling
       const message = '✅ Morning Plan Saved Successfully!\n\n' +
                      '🎯 Your 3 Wins are locked in for today\n' +
@@ -882,7 +905,7 @@ export const useDashboard = ({
     } finally {
       setIsSavingBookend(false);
     }
-  }, [morningWins, otherTasks, showLIS, updateDailyPracticeData]);
+  }, [morningWins, otherTasks, showLIS, updateDailyPracticeData, db, userId, userEmail]);
 
   const handleSaveEveningBookend = useCallback(async (options = {}) => {
     const { silent = false } = options;
@@ -1013,6 +1036,16 @@ export const useDashboard = ({
       
       if (!success) throw new Error('Update failed');
 
+      // Log activity for admin visibility (only for non-silent manual saves)
+      if (!silent && db && userId) {
+        logActivity(db, ACTIVITY_TYPES.CONTENT_COMPLETE, {
+          userId,
+          userEmail,
+          action: 'Completed Evening Bookend',
+          details: `Score: ${scorecard.reps.done + scorecard.win.done}/${scorecard.reps.total + scorecard.win.total}`
+        }).catch(() => {}); // silent fail
+      }
+
       // Auto-check evening reflection habit
       setHabitsCompleted(prev => ({ ...prev, eveningReflection: true }));
       
@@ -1043,7 +1076,7 @@ export const useDashboard = ({
     } finally {
       if (!silent) setIsSavingBookend(false);
     }
-  }, [reflectionGood, reflectionBetter, reflectionBest, habitsCompleted, updateDailyPracticeData, dailyPracticeData, scorecard, winsList]); // Explicitly include prop
+  }, [reflectionGood, reflectionBetter, reflectionBest, habitsCompleted, updateDailyPracticeData, dailyPracticeData, scorecard, winsList, db, userId, userEmail]); // Explicitly include prop
 
   const handleAddTask = useCallback((taskText) => {
     // Developer mode check removed for now

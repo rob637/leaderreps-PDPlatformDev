@@ -6,6 +6,7 @@ import {
 import { Card } from '../ui';
 import { useAppServices } from '../../services/useAppServices';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
+import { logActivity, ACTIVITY_TYPES } from '../../services/activityLogger';
 
 /**
  * Baseline Assessment Widget for Dashboard
@@ -13,7 +14,7 @@ import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessm
  * Leverages existing BaselineAssessment component
  */
 const BaselineAssessmentWidget = () => {
-  const { developmentPlanData, updateDevelopmentPlanData } = useAppServices();
+  const { developmentPlanData, updateDevelopmentPlanData, db, user } = useAppServices();
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -35,6 +36,17 @@ const BaselineAssessmentWidget = () => {
         assessmentHistory: newHistory,
         currentAssessment: assessment
       });
+      
+      // Log activity for admin visibility
+      if (db && user) {
+        logActivity(db, ACTIVITY_TYPES.ASSESSMENT_COMPLETE, {
+          userId: user.uid,
+          userEmail: user.email,
+          action: 'Completed Baseline Assessment',
+          details: `Cycle ${assessment.cycle || 1}`
+        }).catch(() => {}); // silent fail
+      }
+      
       setShowModal(false);
       
       // Scroll to top after modal closes

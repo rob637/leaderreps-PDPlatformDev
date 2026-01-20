@@ -11,6 +11,7 @@
 // const { setGlobalOptions } = require("firebase-functions");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https"); 
+const cors = require("cors")({ origin: true });
 // const functions = require("firebase-functions"); 
 const functionsV1 = require("firebase-functions/v1"); 
 const logger = require("firebase-functions/logger");
@@ -1000,47 +1001,81 @@ exports.sendTestNotification = onRequest(
 );
 
 /**
- * SEND TEST EMAIL/SMS NOTIFICATION
- * Admin endpoint to test email and SMS notifications.
- * Usage: POST /sendTestEmailSms with body: { email, phone, message }
+ * SEND TEST EMAIL/SMS NOTIFICATION (Callable - Gen 2)
+ * Kept for backward compatibility (dev works). Still requires Firebase Auth.
  */
-exports.sendTestEmailSms = onRequest(
-  {
-    cors: true,
-  },
-  async (req, res) => {
-    const { email, phone, message, type } = req.body;
-    const testMessage = message || "This is a test notification from LeaderReps!";
-    const results = { email: null, sms: null };
-
-    try {
-      // Send Email
-      if (email && (!type || type === 'email' || type === 'both')) {
-        try {
-          await sendEmailNotification(email, "Test Notification", testMessage);
-          results.email = { success: true, sentTo: email };
-        } catch (e) {
-          results.email = { success: false, error: e.message };
-        }
-      }
-
-      // Send SMS
-      if (phone && (!type || type === 'sms' || type === 'both')) {
-        try {
-          await sendSmsNotification(phone, testMessage);
-          results.sms = { success: true, sentTo: phone };
-        } catch (e) {
-          results.sms = { success: false, error: e.message };
-        }
-      }
-
-      res.json({ success: true, results });
-    } catch (error) {
-      logger.error("Test email/sms error:", error);
-      res.status(500).json({ error: error.message });
+exports.sendTestEmailSms = onCall({ region: "us-central1", invoker: "public" }, async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
     }
+    const { email, phone, message, type } = request.data;
+    return await handleTestEmailSms(email, phone, message, type);
   }
 );
+
+/**
+ * SEND TEST EMAIL/SMS NOTIFICATION (HTTP with CORS)
+ * Explicit CORS handling to satisfy browsers (esp. test env).
+ */
+exports.sendTestEmailSmsHttp = onRequest({ region: "us-central1", invoker: "public" }, (req, res) => {
+  cors(req, res, async () => {
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('');
+      return;
+    }
+
+    try {
+      // Verify Firebase ID token
+      const authHeader = req.headers.authorization || '';
+      const idToken = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+      if (!idToken) {
+        res.status(401).json({ success: false, error: 'unauthenticated' });
+        return;
+      }
+
+      const decoded = await admin.auth().verifyIdToken(idToken);
+      if (!decoded) {
+        res.status(401).json({ success: false, error: 'unauthenticated' });
+        return;
+      }
+
+      const { email, phone, message, type } = req.body || {};
+      const result = await handleTestEmailSms(email, phone, message, type);
+      res.json(result);
+    } catch (error) {
+      logger.error('Test email/sms HTTP error:', error);
+      res.status(500).json({ success: false, error: error.message || 'internal error' });
+    }
+  });
+});
+
+// Shared handler for test email/SMS notifications
+async function handleTestEmailSms(email, phone, message, type) {
+  const testMessage = message || "This is a test notification from LeaderReps!";
+  const results = { email: null, sms: null };
+
+  // Send Email
+  if (email && (!type || type === 'email' || type === 'both')) {
+    try {
+      await sendEmailNotification(email, "Test Notification", testMessage);
+      results.email = { success: true, sentTo: email };
+    } catch (e) {
+      results.email = { success: false, error: e.message };
+    }
+  }
+
+  // Send SMS (not implemented yet)
+  if (phone && (!type || type === 'sms' || type === 'both')) {
+    try {
+      await sendSmsNotification(phone, testMessage);
+      results.sms = { success: false, error: "SMS not implemented" };
+    } catch (e) {
+      results.sms = { success: false, error: e.message };
+    }
+  }
+
+  return { success: true, results };
+}
 
 /**
  * SCHEDULED NOTIFICATION CHECK

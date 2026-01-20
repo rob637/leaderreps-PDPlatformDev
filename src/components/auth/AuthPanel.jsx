@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   setPersistence,
-  browserSessionPersistence,
+  browserLocalPersistence,
+  indexedDBLocalPersistence,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   createUserWithEmailAndPassword,
@@ -120,7 +121,14 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
     setIsLoading(true);
     setStatusMessage('');
     try {
-      await setPersistence(auth, browserSessionPersistence);
+      // Use indexedDBLocalPersistence for better PWA support, fallback to browserLocalPersistence
+      // This keeps users logged in across browser sessions and app restarts
+      try {
+        await setPersistence(auth, indexedDBLocalPersistence);
+      } catch {
+        // Fallback for browsers that don't support IndexedDB
+        await setPersistence(auth, browserLocalPersistence);
+      }
 
       if (mode === 'login') {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -322,7 +330,12 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
     setIsLoading(true);
     setStatusMessage('');
     try {
-      await setPersistence(auth, browserSessionPersistence);
+      // Use indexedDBLocalPersistence for better PWA support
+      try {
+        await setPersistence(auth, indexedDBLocalPersistence);
+      } catch {
+        await setPersistence(auth, browserLocalPersistence);
+      }
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       
