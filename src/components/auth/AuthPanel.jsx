@@ -14,17 +14,12 @@ import {
 } from 'firebase/auth';
 import { httpsCallable } from 'firebase/functions';
 import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
   doc, 
   updateDoc, 
   setDoc, 
   serverTimestamp,
   getDoc,
-  increment,
-  addDoc
+  increment
 } from 'firebase/firestore';
 import { Loader } from 'lucide-react';
 import { buildModulePath } from '../../services/pathUtils';
