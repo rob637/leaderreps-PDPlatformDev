@@ -391,7 +391,7 @@ export const useDashboard = ({
             userEmail,
             action: 'Completed Daily Rep',
             details: 'Target rep marked as committed'
-          }).catch(() => {}); // silent fail
+          }).catch(err => console.warn('[ActivityLog] Failed to log daily rep:', err));
         }
       }
         } catch (error) {
@@ -891,7 +891,7 @@ export const useDashboard = ({
           userEmail,
           action: 'Completed Morning Bookend',
           details: `${morningWins.filter(w => w.text?.trim()).length} wins planned`
-        }).catch(() => {}); // silent fail
+        }).catch(err => console.warn('[ActivityLog] Failed to log morning bookend:', err));
       }
       
       // Always show success message with warm feeling
@@ -1043,7 +1043,7 @@ export const useDashboard = ({
           userEmail,
           action: 'Completed Evening Bookend',
           details: `Score: ${scorecard.reps.done + scorecard.win.done}/${scorecard.reps.total + scorecard.win.total}`
-        }).catch(() => {}); // silent fail
+        }).catch(err => console.warn('[ActivityLog] Failed to log evening bookend:', err));
       }
 
       // Auto-check evening reflection habit

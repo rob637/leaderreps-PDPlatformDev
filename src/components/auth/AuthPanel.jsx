@@ -140,12 +140,12 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
           console.warn('Could not update lastLogin:', e);
         }
         // Log login activity
-        logActivity(db, ACTIVITY_TYPES.USER_LOGIN, {
+        await logActivity(db, ACTIVITY_TYPES.USER_LOGIN, {
           action: 'User Login',
           userEmail: userCredential.user.email,
           userId: userCredential.user.uid,
           details: 'Successful login'
-        });
+        }).catch(err => console.warn('Activity log failed:', err));
         onSuccess();
       } else if (mode === 'reset') {
         if (!email) throw new Error('Email is required for password reset.');
@@ -185,13 +185,13 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
             try {
                 console.log("[AuthPanel] Processing invite acceptance, inviteData:", inviteData);
                 
-                // Log signup activity
-                logActivity(db, ACTIVITY_TYPES.USER_SIGNUP, {
+                // Log signup activity (await to ensure it completes)
+                await logActivity(db, ACTIVITY_TYPES.USER_SIGNUP, {
                   action: 'New User Sign-up',
                   userEmail: userCredential.user.email,
                   userId: userCredential.user.uid,
-                  details: inviteData.cohortId ? `Cohort: ${inviteData.cohortId}` : 'Direct signup'
-                });
+                  details: inviteData.cohortId ? `Cohort: ${inviteData.cohortId}` : 'Invite signup'
+                }).catch(err => console.warn('Activity log failed:', err));
                 
                 let cloudFunctionSucceeded = false;
                 
@@ -287,13 +287,13 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                 // Don't block login if this fails, but log it
             }
         } else if (db) {
-            // Log signup for non-invite users
-            logActivity(db, ACTIVITY_TYPES.USER_SIGNUP, {
+            // Log signup for non-invite users (await to ensure it completes)
+            await logActivity(db, ACTIVITY_TYPES.USER_SIGNUP, {
               action: 'New User Sign-up',
               userEmail: userCredential.user.email,
               userId: userCredential.user.uid,
               details: 'Direct signup with secret code'
-            });
+            }).catch(err => console.warn('Activity log failed:', err));
         }
 
         onSuccess();
