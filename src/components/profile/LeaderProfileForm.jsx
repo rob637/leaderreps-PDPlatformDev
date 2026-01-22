@@ -110,6 +110,15 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
     return digitsOnly.length >= 10;
   };
 
+  // Validate phone on blur (when user tabs out of field)
+  const validatePhoneOnBlur = () => {
+    if (formData.phoneNumber && !isValidPhoneNumber(formData.phoneNumber)) {
+      setErrors(prev => ({ ...prev, phoneNumber: 'Please enter a valid phone number (at least 10 digits)' }));
+    } else {
+      setErrors(prev => ({ ...prev, phoneNumber: null }));
+    }
+  };
+
   // Validate current step
   const validateStep = () => {
     const newErrors = {};
@@ -183,7 +192,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
   };
 
   // Render input field
-  const renderInput = (field, label, type = 'text', required = false, placeholder = '', helpText = '') => (
+  const renderInput = (field, label, type = 'text', required = false, placeholder = '', helpText = '', onBlur = null) => (
     <div className="space-y-1">
       <label className="block text-sm font-medium text-slate-700">
         {label} {required && <span className="text-red-500">*</span>}
@@ -192,6 +201,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
         type={type}
         value={formData[field] || ''}
         onChange={e => handleChange(field, e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         className={`w-full px-4 py-3 rounded-xl border-2 transition-all
           ${errors[field] 
@@ -317,7 +327,8 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
             </div>
             {renderInput('email', 'Email Address', 'email', true, 'john@company.com')}
             {renderInput('phoneNumber', 'Phone Number', 'tel', false, '+1 (555) 123-4567',
-              'By providing your phone number, you consent to receive text messages including habit reminders and notifications of upcoming event dates and times.'
+              'By providing your phone number, you consent to receive text messages including habit reminders and notifications of upcoming event dates and times.',
+              validatePhoneOnBlur
             )}
             
             <div className="bg-slate-50 p-4 rounded-xl space-y-3 border border-slate-200">

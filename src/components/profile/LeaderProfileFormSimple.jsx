@@ -147,6 +147,15 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
     return digitsOnly.length >= 10;
   };
 
+  // Validate phone on blur (when user tabs out of field)
+  const validatePhoneOnBlur = () => {
+    if (formData.phoneNumber && !isValidPhoneNumber(formData.phoneNumber)) {
+      setErrors(prev => ({ ...prev, phoneNumber: 'Please enter a valid phone number (at least 10 digits)' }));
+    } else {
+      setErrors(prev => ({ ...prev, phoneNumber: null }));
+    }
+  };
+
   const validate = () => {
     const newErrors = {};
     if (!formData.firstName?.trim()) newErrors.firstName = 'First name is required';
@@ -276,6 +285,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
             type="tel"
             value={formData.phoneNumber || ''}
             onChange={e => handleChange('phoneNumber', e.target.value)}
+            onBlur={validatePhoneOnBlur}
             placeholder="+1 (555) 123-4567"
             className={`w-full px-4 py-3 rounded-xl border-2 transition-all
               ${errors.phoneNumber 

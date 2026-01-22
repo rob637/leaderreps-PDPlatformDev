@@ -2711,46 +2711,57 @@ const RepsHistoryWidget = () => {
 
   return (
     <Card title="Daily Reps History" icon={Dumbbell} accent="NAVY">
-      <div className="space-y-4">
-        {visibleHistory.length > 0 ? (
-          visibleHistory.map((entry, dateIndex) => (
-            <div key={dateIndex} className="rounded-xl border border-slate-200/60 overflow-hidden">
-              {/* Date Header */}
-              <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 px-4 py-3 flex items-center justify-between">
-                <span className="font-semibold text-slate-700">{formatDisplayDate(entry.date)}</span>
-                <span className="text-sm text-slate-500">
-                  <span className="font-bold text-corporate-teal">{entry.completedCount || (entry.items?.length || 0)}</span> reps completed
-                </span>
-              </div>
-              
-              {/* Reps List */}
-              <div className="bg-white divide-y divide-slate-100">
-                {entry.items && entry.items.length > 0 ? (
-                  entry.items.map((rep, repIndex) => (
-                    <div key={repIndex} className="px-4 py-3 flex items-start gap-3 hover:bg-slate-50/50 transition-colors">
-                      <div className="mt-0.5 w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                        <CheckCircle className="w-3.5 h-3.5" />
+      <div className="overflow-x-auto rounded-xl border border-slate-200/60">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="bg-gradient-to-r from-slate-50 to-slate-100/50">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-32">Date</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Reps Completed</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider w-24">Count</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {visibleHistory.length > 0 ? (
+              visibleHistory.map((entry, dateIndex) => (
+                <tr key={dateIndex} className="hover:bg-slate-50/50 transition-colors align-top">
+                  <td className="px-4 py-3 whitespace-nowrap font-semibold text-slate-700">
+                    {formatDisplayDate(entry.date)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {entry.items && entry.items.length > 0 ? (
+                      <div className="space-y-1">
+                        {entry.items.map((rep, repIndex) => (
+                          <div key={repIndex} className="flex items-start gap-2">
+                            <div className="mt-0.5 w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-sm text-slate-700">{rep.text || rep.label || 'Completed rep'}</span>
+                          </div>
+                        ))}
                       </div>
-                      <span className="text-sm text-slate-700">{rep.text || rep.label || 'Completed rep'}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="px-4 py-3 text-sm text-slate-400">
-                    No rep details recorded
+                    ) : (
+                      <span className="text-slate-400 text-sm">No rep details recorded</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <span className="font-bold text-corporate-teal">{entry.completedCount || (entry.items?.length || 0)}</span>
+                    <span className="text-slate-400 text-xs ml-1">reps</span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" className="px-4 py-12 text-center text-slate-400">
+                  <div className="flex flex-col items-center gap-2">
+                    <Dumbbell className="w-8 h-8 text-slate-300" />
+                    <p>No reps history available yet</p>
+                    <p className="text-xs text-slate-400">Complete your daily reps to start building your history!</p>
                   </div>
-                )}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="text-center py-12 text-slate-400 rounded-xl border border-slate-200/60 bg-slate-50/50">
-            <div className="flex flex-col items-center gap-2">
-              <Dumbbell className="w-8 h-8 text-slate-300" />
-              <p>No reps history available yet</p>
-              <p className="text-xs text-slate-400">Complete your daily reps to start building your history!</p>
-            </div>
-          </div>
-        )}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
       {sortedHistory.length > 3 && (
         <div className="flex justify-center gap-3 mt-4 pt-4 border-t border-slate-100">

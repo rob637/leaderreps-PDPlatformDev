@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   CheckCircle, Circle, Play, BookOpen, Users, Video, FileText, Zap, 
   ExternalLink, Loader, Layers, MessageSquare, 
@@ -60,6 +60,10 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // This Week and Prior Week expanded states (default collapsed when all done)
   const [thisWeekExpanded, setThisWeekExpanded] = useState(false);
   const [priorWeekExpanded, setPriorWeekExpanded] = useState(false);
+  
+  // Preserve carried over items even after completion (ref to avoid re-render loops)
+  const preservedCarriedOverRef = useRef([]);
+  const [preservedCarriedOver, setPreservedCarriedOver] = useState([]);
 
   // Use Daily Plan Hook (New Architecture)
   const { 
@@ -359,6 +363,22 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
     return carriedItems;
   }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, leaderProfileComplete, baselineAssessmentComplete, dailyPlan, userState?.dailyProgress]);
+
+  // Preserve carried over items - merge new items but keep completed ones
+  useEffect(() => {
+    if (carriedOverItems.length > 0) {
+      // Add any new items to the preserved list
+      const existingIds = new Set(preservedCarriedOverRef.current.map(i => i.id));
+      const newItems = carriedOverItems.filter(item => !existingIds.has(item.id));
+      if (newItems.length > 0) {
+        preservedCarriedOverRef.current = [...preservedCarriedOverRef.current, ...newItems];
+        setPreservedCarriedOver([...preservedCarriedOverRef.current]);
+      }
+    }
+  }, [carriedOverItems]);
+  
+  // Use preserved items if available, otherwise use current carriedOverItems
+  const displayedCarriedOverItems = preservedCarriedOver.length > 0 ? preservedCarriedOver : carriedOverItems;
 
   // Calculate progress
   const completedItems = useMemo(() => {
@@ -894,12 +914,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         {currentPhase?.id !== 'pre-start' && (
           <>
             {/* Carried Over Items - Show even when all complete */}
-            {carriedOverItems.length > 0 && (() => {
-              const completedCarriedOver = carriedOverItems.filter(item => {
+            {displayedCarriedOverItems.length > 0 && (() => {
+              const completedCarriedOver = displayedCarriedOverItems.filter(item => {
                 const progress = getItemProgress(item.id);
                 return progress.status === 'completed' || completedItems.includes(item.id);
               });
-              const allCarriedOverComplete = completedCarriedOver.length === carriedOverItems.length;
+              const allCarriedOverComplete = completedCarriedOver.length === displayedCarriedOverItems.length;
               
               return allCarriedOverComplete ? (
                 // All Prior Week items complete - Show collapsed celebration
@@ -914,7 +934,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     <div className="flex-1 text-left">
                       <p className="text-sm font-bold text-emerald-800">✅ Prior Week Complete!</p>
                       <p className="text-xs text-emerald-600">
-                        All {carriedOverItems.length} carried-over {carriedOverItems.length === 1 ? 'task' : 'tasks'} finished
+                        All {displayedCarriedOverItems.length} carried-over {displayedCarriedOverItems.length === 1 ? 'task' : 'tasks'} finished
                       </p>
                     </div>
                     <div className="flex-shrink-0 p-2 text-emerald-600 group-hover:text-emerald-800 transition-colors">
@@ -923,13 +943,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   </button>
                   
                   {priorWeekExpanded && (
-                    <div className="mt-2 p-3 bg-white/80 rounded-xl border border-slate-200/60 space-y-2">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Completed Prior Week Items</p>
-                      {carriedOverItems.map((item) => (
-                        <div key={item.id} className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                          <span className="text-emerald-700">{item.label}</span>
-                        </div>
+                    <div className="mt-2 space-y-1">
+                      {displayedCarriedOverItems.map((item, idx) => (
+                        <ActionItem key={item.id || `carried-${idx}`} item={item} idx={idx} isCarriedOver={true} />
                       ))}
                     </div>
                   )}
@@ -944,17 +960,17 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     </div>
                     <div className="flex-1 h-px bg-amber-200"></div>
                     <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                      {completedCarriedOver.length}/{carriedOverItems.length} complete
+                      {completedCarriedOver.length}/{displayedCarriedOverItems.length} complete
                     </span>
                   </div>
                   <div className="space-y-1 p-3 bg-amber-50/50 rounded-xl border border-amber-200/60">
-                    {carriedOverItems.map((item, idx) => (
+                    {displayedCarriedOverItems.map((item, idx) => (
                       <ActionItem key={item.id || `carried-${idx}`} item={item} idx={idx} isCarriedOver={true} />
                     ))}
                   </div>
                 </div>
               );
-            })()}
+            })()}}
 
             {/* Current Week Items */}
             {allActions.length > 0 && (() => {
@@ -986,13 +1002,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   </button>
                   
                   {thisWeekExpanded && (
-                    <div className="mt-2 p-3 bg-white/80 rounded-xl border border-slate-200/60 space-y-2">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Completed This Week</p>
-                      {allActions.map((item) => (
-                        <div key={item.id} className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                          <span className="text-emerald-700">{item.label}</span>
-                        </div>
+                    <div className="mt-2 space-y-1">
+                      {allActions.map((item, idx) => (
+                        <ActionItem key={item.id || idx} item={item} idx={idx} />
                       ))}
                     </div>
                   )}
@@ -1020,7 +1032,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             })()}
 
             {/* Empty state */}
-            {allActions.length === 0 && carriedOverItems.length === 0 && (
+            {allActions.length === 0 && displayedCarriedOverItems.length === 0 && (
               <div className="p-4 text-center text-slate-500 text-sm italic">No actions scheduled for this week.</div>
             )}
 
