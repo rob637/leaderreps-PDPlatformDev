@@ -38,7 +38,6 @@ const YEARS_OPTIONS = [
 
 // Direct reports options
 const DIRECT_REPORTS_OPTIONS = [
-  { value: '0', label: 'None yet!' },
   { value: '1-2', label: '1-2' },
   { value: '3-5', label: '3-5' },
   { value: '6-10', label: '6-10' },
@@ -104,6 +103,13 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
     }
   };
 
+  // Validate phone number - must have at least 10 digits
+  const isValidPhoneNumber = (phone) => {
+    if (!phone) return true; // Optional field
+    const digitsOnly = phone.replace(/\D/g, '');
+    return digitsOnly.length >= 10;
+  };
+
   // Validate current step
   const validateStep = () => {
     const newErrors = {};
@@ -114,6 +120,9 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
       if (!formData.email?.trim()) newErrors.email = 'Email is required';
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         newErrors.email = 'Please enter a valid email';
+      }
+      if (formData.phoneNumber && !isValidPhoneNumber(formData.phoneNumber)) {
+        newErrors.phoneNumber = 'Please enter a valid phone number (at least 10 digits)';
       }
     }
     

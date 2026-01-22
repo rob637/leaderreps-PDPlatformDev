@@ -99,6 +99,7 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
         setReflectionBest={scope.setReflectionBest}
         handleSaveEveningBookend={scope.handleSaveEveningBookend}
         isSavingBookend={scope.isSavingBookend}
+        dailyPracticeData={scope.dailyPracticeData}
         helpText={helpText}
       />
     );

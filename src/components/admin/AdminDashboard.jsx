@@ -273,17 +273,20 @@ const AdminDashboard = () => {
           .map(doc => {
             const data = doc.data();
             
-            // Helper function to format Firestore timestamps
+            // Helper function to format Firestore timestamps (MM/DD/YYYY)
             const formatDate = (field) => {
               if (!field) return null;
+              let d;
               if (typeof field.toDate === 'function') {
-                return field.toDate().toLocaleDateString();
+                d = field.toDate();
+              } else if (typeof field === 'string' || typeof field === 'number') {
+                d = new Date(field);
               }
-              if (typeof field === 'string' || typeof field === 'number') {
-                const d = new Date(field);
-                return isNaN(d.getTime()) ? null : d.toLocaleDateString();
-              }
-              return null;
+              if (!d || isNaN(d.getTime())) return null;
+              const month = String(d.getMonth() + 1).padStart(2, '0');
+              const day = String(d.getDate()).padStart(2, '0');
+              const year = d.getFullYear();
+              return `${month}/${day}/${year}`;
             };
             
             // Try multiple fields for joined date

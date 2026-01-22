@@ -196,7 +196,10 @@ const DetailedPlanView = ({
             <Card title="Leadership Profile Snapshot" icon={BarChart3} accent="TEAL">
               <p className="text-sm text-gray-600 mb-4">
                 {latestAssessment 
-                  ? `Latest assessment scores (as of ${new Date(latestAssessment.date).toLocaleDateString()})`
+                  ? `Latest assessment scores (as of ${(() => {
+                      const d = new Date(latestAssessment.date);
+                      return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
+                    })()})`
                   : 'Complete an assessment to see your profile'
                 }
               </p>

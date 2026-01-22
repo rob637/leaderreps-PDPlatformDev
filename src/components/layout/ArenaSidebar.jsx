@@ -5,7 +5,7 @@ import {
   BookOpen, 
   Megaphone, 
   User, 
-  Archive,
+  Lock,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -78,7 +78,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     { id: 'coaching-hub', label: 'Coaching', icon: Megaphone, flag: 'enableLabs', devModeOnly: true },
     
     { type: 'section', label: 'Personal' },
-    { id: 'locker', label: 'Your Locker', icon: Archive },
+    { id: 'locker', label: 'Your Locker', icon: Lock },
   ];
 
   // Filter Menu Items
@@ -156,15 +156,17 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
       <div className="flex justify-center py-3 border-b border-white/5">
         <button 
           onClick={toggle}
-          className="p-2 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all duration-200 hover:scale-105"
+          aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          aria-expanded={isOpen}
+          className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 focus:ring-offset-corporate-navy touch-manipulation"
         >
-          {isOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+          {isOpen ? <ChevronLeft className="w-5 h-5" aria-hidden="true" /> : <ChevronRight className="w-5 h-5" aria-hidden="true" />}
         </button>
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 py-5 px-3 overflow-y-auto overflow-x-hidden">
-        <ul className="space-y-1">
+      <nav className="flex-1 py-5 px-3 overflow-y-auto overflow-x-hidden" aria-label="Sidebar navigation">
+        <ul className="space-y-1" role="list">
           {filteredMenuItems.map((item, index) => {
             if (item.type === 'section') {
                return (
@@ -187,8 +189,11 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
                     navigate(item.id);
                     if (isOpen) toggle();
                   }}
+                  aria-label={isOpen ? undefined : item.label}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`
-                    w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-200 relative border-none rounded-xl group
+                    w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] transition-all duration-200 relative border-none rounded-xl group
+                    focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 focus:ring-offset-corporate-navy touch-manipulation
                     ${isActive 
                       ? 'bg-corporate-teal text-white shadow-lg shadow-corporate-teal/30 font-medium' 
                       : 'bg-teal-500/20 text-teal-200 hover:bg-teal-500/30 hover:text-white'
@@ -196,7 +201,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
                   `}
                   title={!isOpen ? item.label : ''}
                 >
-                  <div className={`p-1.5 rounded-lg transition-colors ${isActive ? 'bg-white/20' : 'bg-teal-400/10 group-hover:bg-teal-400/20'}`}>
+                  <div className={`p-1.5 rounded-lg transition-colors ${isActive ? 'bg-white/20' : 'bg-teal-400/10 group-hover:bg-teal-400/20'}`} aria-hidden="true">
                     <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-white' : 'text-teal-300 group-hover:text-white'}`} />
                   </div>
                   <span className={`whitespace-nowrap text-sm transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>

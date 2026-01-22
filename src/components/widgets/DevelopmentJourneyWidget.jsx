@@ -624,10 +624,15 @@ const DevelopmentJourneyWidget = () => {
         });
         
         const mainActions = actions.filter(a => a.type !== 'daily_rep');
-        const completedCount = mainActions.filter(a => {
+        
+        // Check completion status for each action and store it
+        const mainActionsWithStatus = mainActions.map(a => {
           const progress = getItemProgress(a.id);
-          return progress.status === 'completed' || completedItems.has(a.id);
-        }).length;
+          const isCompleted = progress.status === 'completed' || completedItems.has(a.id);
+          return { ...a, isCompleted };
+        });
+        
+        const completedCount = mainActionsWithStatus.filter(a => a.isCompleted).length;
         
         // Get theme from cycle (loops if more than 8 weeks)
         const themeIndex = (week - 1) % WEEK_THEME_CYCLE.length;
@@ -641,10 +646,10 @@ const DevelopmentJourneyWidget = () => {
           label: `Week ${week}`,
           shortLabel: `W${week}`,
           theme: PHASE_THEMES[themeKey] || PHASE_THEMES.start,
-          actions: mainActions,
-          totalActions: mainActions.length,
+          actions: mainActionsWithStatus,
+          totalActions: mainActionsWithStatus.length,
           completedActions: completedCount,
-          progress: mainActions.length > 0 ? Math.round((completedCount / mainActions.length) * 100) : 0,
+          progress: mainActionsWithStatus.length > 0 ? Math.round((completedCount / mainActionsWithStatus.length) * 100) : 0,
           daysCount: weekDays.length,
           icon: 'calendar',
           description: `Week ${week} of your development journey`
@@ -671,10 +676,15 @@ const DevelopmentJourneyWidget = () => {
       });
       
       const mainPostActions = postActions.filter(a => a.type !== 'daily_rep');
-      const completedPostCount = mainPostActions.filter(a => {
+      
+      // Check completion status for each action and store it
+      const mainPostActionsWithStatus = mainPostActions.map(a => {
         const progress = getItemProgress(a.id);
-        return progress.status === 'completed' || completedItems.has(a.id);
-      }).length;
+        const isCompleted = progress.status === 'completed' || completedItems.has(a.id);
+        return { ...a, isCompleted };
+      });
+      
+      const completedPostCount = mainPostActionsWithStatus.filter(a => a.isCompleted).length;
       
       segments.push({
         id: 'post',
@@ -683,10 +693,10 @@ const DevelopmentJourneyWidget = () => {
         label: 'Ascent',
         shortLabel: 'Ascent',
         theme: PHASE_THEMES['post-start'],
-        actions: mainPostActions,
-        totalActions: mainPostActions.length,
+        actions: mainPostActionsWithStatus,
+        totalActions: mainPostActionsWithStatus.length,
         completedActions: completedPostCount,
-        progress: mainPostActions.length > 0 ? Math.round((completedPostCount / mainPostActions.length) * 100) : 0,
+        progress: mainPostActionsWithStatus.length > 0 ? Math.round((completedPostCount / mainPostActionsWithStatus.length) * 100) : 0,
         daysCount: postDays.length,
         icon: 'trophy',
         description: 'Continue growing as a leader',
@@ -939,23 +949,28 @@ const DevelopmentJourneyWidget = () => {
         )}
       </AnimatePresence>
       
-      {/* Journey Stats */}
+      {/* Journey Stats - Following methodology: Preparation → Foundation (8 weeks) → Ascent */}
       <div className="mt-6 grid grid-cols-3 gap-4">
+        {/* Current Phase */}
         <div className="text-center p-4 bg-slate-50 rounded-xl">
-          <div className="text-2xl font-bold text-corporate-navy">
-            {journeyData.segments.find(s => s.id === currentSegmentId)?.type === 'week'
-              ? journeyData.segments.find(s => s.id === currentSegmentId)?.weekNumber || '-'
-              : journeyData.segments.find(s => s.id === currentSegmentId)?.shortLabel || '-'
+          <div className="text-lg font-bold text-corporate-navy">
+            {currentPhase?.id === 'pre-start' ? 'Preparation' 
+              : currentPhase?.id === 'start' ? 'Foundation'
+              : currentPhase?.id === 'post-start' ? 'Ascent'
+              : '-'
             }
           </div>
-          <div className="text-xs text-slate-500 mt-1">Current Stage</div>
+          <div className="text-xs text-slate-500 mt-1">Current Phase</div>
         </div>
+        {/* Foundation Progress */}
         <div className="text-center p-4 bg-emerald-50 rounded-xl">
           <div className="text-2xl font-bold text-emerald-600">
-            {journeyData.segments.filter(s => s.progress === 100).length}
+            {journeyData.segments.filter(s => s.type === 'week' && s.progress === 100).length}
+            <span className="text-sm font-normal text-slate-500"> of {journeyData.totalWeeks || 8}</span>
           </div>
-          <div className="text-xs text-slate-500 mt-1">Stages Complete</div>
+          <div className="text-xs text-slate-500 mt-1">Foundation Weeks</div>
         </div>
+        {/* Actions Done */}
         <div className="text-center p-4 bg-corporate-teal/10 rounded-xl">
           <div className="text-2xl font-bold text-corporate-teal">
             {journeyData.segments.reduce((sum, s) => sum + s.completedActions, 0)}

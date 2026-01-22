@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Trophy, CheckCircle, Check, Loader, Save } from 'lucide-react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Trophy, CheckCircle, Check, Loader, Save, RefreshCw } from 'lucide-react';
 import { Card, Button } from '../ui';
 
 const WinTheDayWidget = ({ scope, helpText }) => {
@@ -13,8 +13,23 @@ const WinTheDayWidget = ({ scope, helpText }) => {
   // Save status: 'idle' | 'saving' | 'saved'
   const [saveStatus, setSaveStatus] = useState('idle');
 
+  // Check if any wins have text entered
+  const hasAnyContent = useMemo(() => {
+    return morningWins.some(win => win.text && win.text.trim().length > 0);
+  }, [morningWins]);
+
+  // Check if wins have been saved today (any win has saved: true)
+  const hasSavedToday = useMemo(() => {
+    return morningWins.some(win => win.saved === true);
+  }, [morningWins]);
+
   // Explicit save function
   const handleSave = useCallback(async () => {
+    // Don't save if nothing entered
+    if (!hasAnyContent) {
+      return;
+    }
+
     setSaveStatus('saving');
     
     try {
@@ -31,7 +46,7 @@ const WinTheDayWidget = ({ scope, helpText }) => {
       console.error('[WinTheDay] Save failed:', error);
       setSaveStatus('idle');
     }
-  }, [handleSaveAllWins]);
+  }, [handleSaveAllWins, hasAnyContent]);
 
   // Handle checkbox toggle (still saves immediately for completion)
   const handleToggleWithSave = useCallback((index) => {
@@ -42,6 +57,22 @@ const WinTheDayWidget = ({ scope, helpText }) => {
       handleToggleWinComplete(index);
     }
   }, [morningWins, handleToggleWinComplete]);
+
+  // Determine button text
+  const getButtonText = () => {
+    if (saveStatus === 'saving') return 'Saving...';
+    if (saveStatus === 'saved') return 'Saved!';
+    if (hasSavedToday) return 'Update';
+    return 'Save';
+  };
+
+  // Determine button icon
+  const getButtonIcon = () => {
+    if (saveStatus === 'saving') return <Loader className="w-3 h-3 animate-spin" />;
+    if (saveStatus === 'saved') return <Check className="w-3 h-3" />;
+    if (hasSavedToday) return <RefreshCw className="w-3 h-3" />;
+    return <Save className="w-3 h-3" />;
+  };
 
   return (
     <Card title="Win the Day" icon={Trophy} accent="TEAL" helpText={helpText}>
@@ -94,18 +125,18 @@ const WinTheDayWidget = ({ scope, helpText }) => {
         <div className="flex items-center justify-start mt-3 pt-2 border-t border-slate-100">
           <Button
             onClick={handleSave}
-            disabled={saveStatus === 'saving'}
+            disabled={saveStatus === 'saving' || !hasAnyContent}
             size="sm"
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs ${
               saveStatus === 'saved' 
                 ? 'bg-green-500 hover:bg-green-500' 
-                : 'bg-corporate-teal hover:bg-corporate-teal/90'
+                : !hasAnyContent
+                  ? 'bg-slate-300 cursor-not-allowed'
+                  : 'bg-corporate-teal hover:bg-corporate-teal/90'
             }`}
           >
-            {saveStatus === 'saving' && <Loader className="w-3 h-3 animate-spin" />}
-            {saveStatus === 'saved' && <Check className="w-3 h-3" />}
-            {saveStatus === 'idle' && <Save className="w-3 h-3" />}
-            {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : 'Save'}
+            {getButtonIcon()}
+            {getButtonText()}
           </Button>
         </div>
       </div>

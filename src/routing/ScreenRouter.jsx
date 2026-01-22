@@ -155,6 +155,9 @@ const ScreenMap = {
   'contact-us': lazy(() =>
     import('../components/screens/legal/ContactUs.jsx')
   ),
+  'help-center': lazy(() =>
+    import('../components/screens/legal/HelpCenter.jsx')
+  ),
 };
 
 const NotFoundScreen = () => (

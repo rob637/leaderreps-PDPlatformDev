@@ -187,14 +187,14 @@ const PrepWelcomeBanner = () => {
   const isLaunch = daysUntilStart <= 0;
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl shadow-lg ${
+    <div className={`relative overflow-hidden rounded-2xl shadow-md border ${
       isLaunch 
-        ? 'bg-gradient-to-br from-corporate-teal via-corporate-teal/90 to-corporate-navy/80' 
-        : 'bg-gradient-to-br from-corporate-teal/95 to-corporate-navy/70'
+        ? 'bg-white border-corporate-teal/30' 
+        : 'bg-white border-slate-200'
     }`}>
       {/* Simplified Background Pattern - Clean and minimal */}
       <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-corporate-teal rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
       </div>
 
       <div className="relative p-6 sm:p-8">
@@ -204,29 +204,29 @@ const PrepWelcomeBanner = () => {
           <div className="flex-1 space-y-4">
             {/* Phase Badge - Cleaner, simpler */}
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-2 text-white/90 font-bold tracking-wider text-xs uppercase">
+              <div className="flex items-center gap-2 text-corporate-teal font-bold tracking-wider text-xs uppercase">
                 <Target className="w-4 h-4" />
                 <span>Foundation Prep</span>
               </div>
               {cohortName && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 flex items-center gap-1">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 flex items-center gap-1">
                   <Users className="w-3 h-3" />
                   {cohortName}
                 </span>
               )}
               {isPrepComplete && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-400 font-bold">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600 font-bold">
                   ✓ READY
                 </span>
               )}
             </div>
             
             {/* Dynamic Headline - Clean and direct */}
-            <h2 className="text-2xl sm:text-3xl font-bold text-white font-heading leading-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold text-corporate-navy font-heading leading-tight">
               {getPersonalizedHeadline()}
             </h2>
             
-            <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
+            <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl">
               {getSubtext()}
             </p>
 
@@ -234,7 +234,7 @@ const PrepWelcomeBanner = () => {
             {facilitator && (
               <button
                 onClick={() => setShowFacilitatorModal(true)}
-                className="flex items-center gap-3 bg-white/5 hover:bg-white/10 rounded-lg px-4 py-3 border border-white/10 hover:border-white/20 transition-all group text-left"
+                className="flex items-center gap-3 bg-slate-50 hover:bg-slate-100 rounded-lg px-4 py-3 border border-slate-200 hover:border-slate-300 transition-all group text-left"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-corporate-teal to-corporate-navy flex items-center justify-center text-white font-bold text-sm overflow-hidden">
                   {facilitator.photoUrl ? (
@@ -248,10 +248,10 @@ const PrepWelcomeBanner = () => {
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="text-white font-medium text-sm group-hover:text-corporate-teal transition-colors">{facilitator.name}</p>
-                  <p className="text-white/70 text-xs">Your Facilitator • Tap for details</p>
+                  <p className="text-corporate-navy font-medium text-sm group-hover:text-corporate-teal transition-colors">{facilitator.name}</p>
+                  <p className="text-slate-500 text-xs">Your Facilitator • Tap for details</p>
                 </div>
-                <Info className="w-4 h-4 text-white/30 group-hover:text-corporate-teal transition-colors" />
+                <Info className="w-4 h-4 text-slate-400 group-hover:text-corporate-teal transition-colors" />
               </button>
             )}
 
@@ -267,7 +267,7 @@ const PrepWelcomeBanner = () => {
           {/* Right Visual - Countdown to Session One with Date - Clean and simple */}
           <div className="hidden lg:flex flex-col items-center gap-3">
             {/* Countdown Circle - Simplified */}
-            <div className="relative w-24 h-24 rounded-full flex items-center justify-center shadow-lg bg-gradient-to-br from-corporate-teal to-emerald-600 shadow-corporate-teal/20">
+            <div className="relative w-24 h-24 rounded-full flex items-center justify-center shadow-md bg-gradient-to-br from-corporate-teal to-emerald-600 shadow-corporate-teal/20">
               {isLaunch ? (
                 <Rocket className="w-10 h-10 text-white" />
               ) : (
@@ -279,12 +279,12 @@ const PrepWelcomeBanner = () => {
                 </div>
               )}
             </div>
-            <span className="text-xs text-white/70 font-medium">until Session One</span>
+            <span className="text-xs text-slate-500 font-medium">until Session One</span>
             
             {/* Session One Date - Show actual date from cohort */}
             {cohortStartDate && (
-              <div className="text-center bg-white/5 rounded-lg px-3 py-2 border border-white/10">
-                <div className="flex items-center gap-1.5 text-white/90">
+              <div className="text-center bg-slate-50 rounded-lg px-3 py-2 border border-slate-200">
+                <div className="flex items-center gap-1.5 text-slate-600">
                   <Calendar className="w-3.5 h-3.5" />
                   <span className="text-xs font-medium">
                     {new Date(cohortStartDate).toLocaleDateString('en-US', { 

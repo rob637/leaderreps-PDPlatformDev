@@ -46,7 +46,7 @@ export const createWidgetSDK = ({
 
     // --- Formatting ---
     format: {
-      date: (d) => new Date(d).toLocaleDateString(),
+      date: (d) => new Date(d).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
       currency: (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
     }
   };

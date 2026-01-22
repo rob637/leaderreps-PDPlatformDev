@@ -226,6 +226,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // Corporate Prospects (Sales Enablement)
+    // Only admins can access prospects for sales pipeline management
+    match /corporate_prospects/{document} {
+      allow read, write: if isAdmin();
+    }
     
     // Deny all other access
     match /{document=**} {

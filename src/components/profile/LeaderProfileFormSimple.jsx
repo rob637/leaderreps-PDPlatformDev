@@ -35,7 +35,6 @@ const COMPANY_SIZES = [
 
 // Direct reports options
 const DIRECT_REPORTS_OPTIONS = [
-  { value: '0', label: 'None yet' },
   { value: '1-3', label: '1-3 people' },
   { value: '4-7', label: '4-7 people' },
   { value: '8+', label: '8+ people' }
@@ -141,6 +140,13 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
     }
   };
 
+  // Validate phone number - must have at least 10 digits
+  const isValidPhoneNumber = (phone) => {
+    if (!phone) return true; // Optional field
+    const digitsOnly = phone.replace(/\D/g, '');
+    return digitsOnly.length >= 10;
+  };
+
   const validate = () => {
     const newErrors = {};
     if (!formData.firstName?.trim()) newErrors.firstName = 'First name is required';
@@ -149,6 +155,9 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
+    }
+    if (formData.phoneNumber && !isValidPhoneNumber(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Please enter a valid phone number (at least 10 digits)';
     }
     if (!formData.companyName?.trim()) newErrors.companyName = 'Company name is required';
     if (!formData.jobTitle?.trim()) newErrors.jobTitle = 'Job title is required';
@@ -268,13 +277,22 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
             value={formData.phoneNumber || ''}
             onChange={e => handleChange('phoneNumber', e.target.value)}
             placeholder="+1 (555) 123-4567"
-            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white
-              focus:border-corporate-teal focus:outline-none focus:ring-4 focus:ring-corporate-teal/20
-              transition-all"
+            className={`w-full px-4 py-3 rounded-xl border-2 transition-all
+              ${errors.phoneNumber 
+                ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200' 
+                : 'border-slate-200 bg-white focus:border-corporate-teal focus:ring-corporate-teal/20'
+              }
+              focus:outline-none focus:ring-4`}
           />
-          <p className="text-xs text-slate-500">
-            By providing your phone number, you consent to receive text messages including habit reminders and event notifications.
-          </p>
+          {errors.phoneNumber ? (
+            <p className="text-xs text-red-500 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" /> {errors.phoneNumber}
+            </p>
+          ) : (
+            <p className="text-xs text-slate-500">
+              By providing your phone number, you consent to receive text messages including habit reminders and event notifications.
+            </p>
+          )}
         </div>
 
         {/* Notification Preferences - Right after phone number */}

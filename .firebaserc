@@ -3,5 +3,15 @@
     "default": "leaderreps-pd-platform",
     "dev": "leaderreps-pd-platform",
     "test": "leaderreps-test"
-  }
+  },
+  "targets": {
+    "leaderreps-test": {
+      "hosting": {
+        "corporate": [
+          "leaderrepscorp"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

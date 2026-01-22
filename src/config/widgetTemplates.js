@@ -2141,7 +2141,10 @@ const TimeTravelerWidget = () => {
         <div className="border-t border-slate-200 pt-3 mt-3">
            <div className="font-medium text-slate-700 text-sm mb-2">Plan Debug:</div>
            <div className="text-xs text-slate-500 mb-2">
-             Start Date: {startDate ? startDate.toLocaleDateString() : 'Not Set'}
+             Start Date: {startDate ? (() => {
+               const d = startDate;
+               return \`\${String(d.getMonth() + 1).padStart(2, '0')}/\${String(d.getDate()).padStart(2, '0')}/\${d.getFullYear()}\`;
+             })() : 'Not Set'}
            </div>
            <div className="text-xs text-slate-400 italic">
              Start Date is now managed by Cohort settings.
@@ -2206,13 +2209,24 @@ const WinsHistoryWidget = () => {
   const hasMore = sortedDates.length > visibleCount;
   const canShowLess = visibleCount > 3;
 
-  // Helper to format date for display (YYYY-MM-DD)
+  // Helper to format date for display (MM/DD/YYYY)
   const formatDisplayDate = (dateStr) => {
     if (!dateStr) return '';
-    // Already YYYY-MM-DD, return as-is
+    // Parse YYYY-MM-DD and convert to MM/DD/YYYY
     if (/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(dateStr)) {
-        return dateStr;
+        const [year, month, day] = dateStr.split('-');
+        return \`\${month}/\${day}/\${year}\`;
     }
+    // Try to parse and format other date formats
+    try {
+      const d = new Date(dateStr + 'T12:00:00');
+      if (!isNaN(d.getTime())) {
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const year = d.getFullYear();
+        return \`\${month}/\${day}/\${year}\`;
+      }
+    } catch (e) {}
     return dateStr;
   };
 
@@ -2293,7 +2307,7 @@ const WinsHistoryWidget = () => {
           )}
           {hasMore && (
             <button 
-              onClick={() => setVisibleCount(prev => prev + 3)}
+              onClick={() => setVisibleCount(visibleCount + 3)}
               className="px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-corporate-orange to-orange-500 hover:from-orange-600 hover:to-orange-500 rounded-xl shadow-sm hover:shadow transition-all duration-200"
             >
               Show More ({sortedDates.length - visibleCount} remaining)
@@ -2389,11 +2403,13 @@ const ScorecardHistoryWidget = () => {
   const hasMore = sortedHistory.length > visibleCount;
   const canShowLess = visibleCount > 3;
   
-  // Format date for display (YYYY-MM-DD)
+  // Format date for display (MM/DD/YYYY)
   const formatDisplayDate = (dateStr) => {
     const normalized = normalizeDate(dateStr);
     if (!normalized) return dateStr;
-    return normalized;
+    // Convert YYYY-MM-DD to MM/DD/YYYY
+    const [year, month, day] = normalized.split('-');
+    return \`\${month}/\${day}/\${year}\`;
   };
 
   return (
@@ -2473,7 +2489,7 @@ const ScorecardHistoryWidget = () => {
           )}
           {hasMore && (
             <button 
-              onClick={() => setVisibleCount(prev => prev + 3)}
+              onClick={() => setVisibleCount(visibleCount + 3)}
               className="px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-corporate-teal to-teal-500 hover:from-teal-600 hover:to-teal-500 rounded-xl shadow-sm hover:shadow transition-all duration-200"
             >
               Show More ({sortedHistory.length - visibleCount} remaining)
@@ -2536,13 +2552,24 @@ const ReflectionHistoryWidget = () => {
   const hasMore = sortedReflections.length > visibleCount;
   const canShowLess = visibleCount > 3;
 
-  // Helper to format date for display (YYYY-MM-DD)
+  // Helper to format date for display (MM/DD/YYYY)
   const formatDisplayDate = (dateStr) => {
     if (!dateStr) return '';
-    // Already YYYY-MM-DD, return as-is
+    // Parse YYYY-MM-DD and convert to MM/DD/YYYY
     if (/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(dateStr)) {
-        return dateStr;
+        const [year, month, day] = dateStr.split('-');
+        return \`\${month}/\${day}/\${year}\`;
     }
+    // Try to parse and format other date formats
+    try {
+      const d = new Date(dateStr + 'T12:00:00');
+      if (!isNaN(d.getTime())) {
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const year = d.getFullYear();
+        return \`\${month}/\${day}/\${year}\`;
+      }
+    } catch (e) {}
     return dateStr;
   };
 
@@ -2555,7 +2582,7 @@ const ReflectionHistoryWidget = () => {
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">What Went Well</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">What Needs Work</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tomorrow's Focus</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tomorrow's Improvement</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -2601,7 +2628,7 @@ const ReflectionHistoryWidget = () => {
           )}
           {hasMore && (
             <button 
-              onClick={() => setVisibleCount(prev => prev + 3)}
+              onClick={() => setVisibleCount(visibleCount + 3)}
               className="px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-corporate-navy to-slate-700 hover:from-slate-700 hover:to-slate-600 rounded-xl shadow-sm hover:shadow transition-all duration-200"
             >
               Show More ({sortedReflections.length - visibleCount} remaining)
@@ -2661,13 +2688,24 @@ const RepsHistoryWidget = () => {
   const hasMore = sortedHistory.length > visibleCount;
   const canShowLess = visibleCount > 3;
 
-  // Helper to format date for display (YYYY-MM-DD)
+  // Helper to format date for display (MM/DD/YYYY)
   const formatDisplayDate = (dateStr) => {
     if (!dateStr) return '';
-    // Already YYYY-MM-DD, return as-is
+    // Parse YYYY-MM-DD and convert to MM/DD/YYYY
     if (/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(dateStr)) {
-        return dateStr;
+        const [year, month, day] = dateStr.split('-');
+        return \`\${month}/\${day}/\${year}\`;
     }
+    // Try to parse and format other date formats
+    try {
+      const d = new Date(dateStr + 'T12:00:00');
+      if (!isNaN(d.getTime())) {
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const year = d.getFullYear();
+        return \`\${month}/\${day}/\${year}\`;
+      }
+    } catch (e) {}
     return dateStr;
   };
 
@@ -2726,7 +2764,7 @@ const RepsHistoryWidget = () => {
           )}
           {hasMore && (
             <button 
-              onClick={() => setVisibleCount(prev => prev + 3)}
+              onClick={() => setVisibleCount(visibleCount + 3)}
               className="px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-corporate-navy to-slate-700 hover:from-slate-700 hover:to-slate-600 rounded-xl shadow-sm hover:shadow transition-all duration-200"
             >
               Show More ({sortedHistory.length - visibleCount} remaining)

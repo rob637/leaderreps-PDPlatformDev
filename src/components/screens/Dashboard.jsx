@@ -302,7 +302,7 @@ const Dashboard = () => {
   // 1. Greeting & Quote - prefer leader profile firstName over displayName
   const { profile: leaderProfile } = useLeaderProfile();
   const firstName = leaderProfile?.firstName || user?.displayName?.split(' ')[0] || 'Leader';
-  const greeting = `Hey, ${firstName}.`;
+  const greeting = `Hi ${firstName}!`;
   const dailyQuote = useMemo(() => {
     const quotes = globalMetadata?.SYSTEM_QUOTES || [];
     if (quotes.length === 0) return "Leadership is a practice, not a position.";

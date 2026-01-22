@@ -1,0 +1,42 @@
+{
+  "name": "LeaderReps Command Center",
+  "short_name": "LeaderReps",
+  "description": "Corporate Command Center for LeaderReps - Sales Pipeline, Demos, Proposals, and Analytics",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#14b8a6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/leaderreps-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "New Prospect",
+      "url": "/sales/prospects?action=new",
+      "description": "Add a new prospect to the pipeline"
+    },
+    {
+      "name": "View Analytics",
+      "url": "/analytics",
+      "description": "View analytics dashboard"
+    },
+    {
+      "name": "Proposals",
+      "url": "/sales/proposals",
+      "description": "Manage proposals and ROI"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { MessageSquare, Check, Loader, Save } from 'lucide-react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { MessageSquare, Check, Loader, Save, RefreshCw } from 'lucide-react';
 import { Card, Button } from '../ui';
 
 const PMReflectionWidget = ({ 
@@ -10,13 +10,35 @@ const PMReflectionWidget = ({
   reflectionBest,
   setReflectionBest,
   handleSaveEveningBookend,
+  dailyPracticeData,
   helpText
 }) => {
   // Save status: 'idle' | 'saving' | 'saved'
   const [saveStatus, setSaveStatus] = useState('idle');
 
+  // Check if any reflection fields have content
+  const hasAnyContent = useMemo(() => {
+    return (reflectionGood && reflectionGood.trim().length > 0) ||
+           (reflectionBetter && reflectionBetter.trim().length > 0) ||
+           (reflectionBest && reflectionBest.trim().length > 0);
+  }, [reflectionGood, reflectionBetter, reflectionBest]);
+
+  // Check if reflection has been saved today (eveningBookend has completedAt)
+  const hasSavedToday = useMemo(() => {
+    const eb = dailyPracticeData?.eveningBookend;
+    return eb?.completedAt != null || 
+           (eb?.good && eb.good.trim().length > 0) ||
+           (eb?.better && eb.better.trim().length > 0) ||
+           (eb?.best && eb.best.trim().length > 0);
+  }, [dailyPracticeData?.eveningBookend]);
+
   // Explicit save function
   const handleSave = useCallback(async () => {
+    // Don't save if nothing entered
+    if (!hasAnyContent) {
+      return;
+    }
+
     setSaveStatus('saving');
     
     try {
@@ -33,7 +55,23 @@ const PMReflectionWidget = ({
       console.error('[PMReflection] Save failed:', error);
       setSaveStatus('idle');
     }
-  }, [handleSaveEveningBookend]);
+  }, [handleSaveEveningBookend, hasAnyContent]);
+
+  // Determine button text
+  const getButtonText = () => {
+    if (saveStatus === 'saving') return 'Saving...';
+    if (saveStatus === 'saved') return 'Saved!';
+    if (hasSavedToday) return 'Update';
+    return 'Save';
+  };
+
+  // Determine button icon
+  const getButtonIcon = () => {
+    if (saveStatus === 'saving') return <Loader className="w-3 h-3 animate-spin" />;
+    if (saveStatus === 'saved') return <Check className="w-3 h-3" />;
+    if (hasSavedToday) return <RefreshCw className="w-3 h-3" />;
+    return <Save className="w-3 h-3" />;
+  };
 
   return (
     <Card title="PM Reflection" icon={MessageSquare} accent="NAVY" helpText={helpText}>
@@ -85,18 +123,18 @@ const PMReflectionWidget = ({
         <div className="flex items-center justify-start mt-3 pt-2 border-t border-slate-100">
           <Button
             onClick={handleSave}
-            disabled={saveStatus === 'saving'}
+            disabled={saveStatus === 'saving' || !hasAnyContent}
             size="sm"
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs ${
               saveStatus === 'saved' 
                 ? 'bg-green-500 hover:bg-green-500' 
-                : 'bg-corporate-teal hover:bg-corporate-teal/90'
+                : !hasAnyContent
+                  ? 'bg-slate-300 cursor-not-allowed'
+                  : 'bg-corporate-teal hover:bg-corporate-teal/90'
             }`}
           >
-            {saveStatus === 'saving' && <Loader className="w-3 h-3 animate-spin" />}
-            {saveStatus === 'saved' && <Check className="w-3 h-3" />}
-            {saveStatus === 'idle' && <Save className="w-3 h-3" />}
-            {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : 'Save'}
+            {getButtonIcon()}
+            {getButtonText()}
           </Button>
         </div>
       </div>

@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f8fafc;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* =========================================
+   MOBILE RESPONSIVE UTILITIES
+   ========================================= */
+
+/* Responsive container padding */
+@layer utilities {
+  .mobile-padding {
+    @apply px-4 md:px-6 lg:px-8;
+  }
+  
+  .mobile-stack {
+    @apply flex flex-col md:flex-row;
+  }
+  
+  .mobile-hide {
+    @apply hidden md:block;
+  }
+  
+  .mobile-show {
+    @apply block md:hidden;
+  }
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 768px) {
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  .grid-cols-12 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  
+  .col-span-8, .col-span-4, .col-span-9, .col-span-3 {
+    grid-column: span 12 / span 12;
+  }
+}
+
+/* Touch-friendly button sizes on mobile */
+@media (max-width: 768px) {
+  button, .btn {
+    min-height: 44px;
+  }
+  
+  input, select, textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Command Bar mobile positioning */
+@media (max-width: 768px) {
+  .command-bar-modal {
+    top: 10% !important;
+    max-height: 80vh;
+  }
+}
+
+/* =========================================
+   PRINT STYLES (for PDF export)
+   ========================================= */
+
+@media print {
+  /* Hide navigation and non-essential UI */
+  nav, .sidebar, .no-print, button:not(.print-include) {
+    display: none !important;
+  }
+  
+  /* Reset backgrounds for cleaner printing */
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* Force page breaks */
+  .page-break {
+    page-break-before: always;
+  }
+  
+  /* Ensure colors print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Full width for print content */
+  .print-full-width {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+/* =========================================
+   ANIMATION UTILITIES
+   ========================================= */
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.2s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.15s ease-out;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* Smooth transitions for interactive elements */
+.transition-smooth {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =========================================
+   NOTIFICATION BADGE
+   ========================================= */
+
+.notification-badge {
+  @apply absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center;
+}
+
+/* =========================================
+   KANBAN BOARD DRAG STYLES
+   ========================================= */
+
+.kanban-card-dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+}
+
+.kanban-column-drop-target {
+  background-color: rgba(20, 184, 166, 0.1);
+  border: 2px dashed #14b8a6;
+}

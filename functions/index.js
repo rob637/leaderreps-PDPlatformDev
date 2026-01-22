@@ -1324,3 +1324,185 @@ async function sendEmailNotification(email, subject, message, options = {}) {
     logger.error(`Failed to send email to ${email}`, e);
   }
 }
+
+/**
+ * APOLLO SEARCH PROXY (Callable - Gen 2)
+ * Proxies Apollo.io API calls to avoid CORS issues in the browser.
+ * Only admins can use this function.
+ */
+exports.apolloSearchProxy = onCall({ cors: true, region: "us-central1" }, async (request) => {
+  // Check authentication
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be authenticated to use Apollo search.');
+  }
+
+  // Check if user is admin
+  const userEmail = request.auth.token.email?.toLowerCase();
+  const hardcodedAdmins = ['rob@sagecg.com', 'admin@leaderreps.com', 'ryan@leaderreps.com'];
+  
+  let isAdmin = hardcodedAdmins.includes(userEmail);
+  
+  if (!isAdmin) {
+    // Check dynamic admin list
+    try {
+      const configDoc = await db.collection('metadata').doc('config').get();
+      if (configDoc.exists) {
+        const adminEmails = configDoc.data().adminemails || [];
+        isAdmin = adminEmails.map(e => e.toLowerCase()).includes(userEmail);
+      }
+    } catch (err) {
+      logger.error('Error checking admin status', err);
+    }
+  }
+
+  if (!isAdmin) {
+    throw new HttpsError('permission-denied', 'Only admins can use Apollo search.');
+  }
+
+  const { apiKey, searchParams, mode = 'people', entityId } = request.data;
+
+  if (!apiKey) {
+    throw new HttpsError('invalid-argument', 'Apollo API key is required.');
+  }
+
+  // Determine endpoint based on mode
+  let endpoint = 'https://api.apollo.io/v1/mixed_people/api_search';
+  let body = searchParams;
+
+  if (mode === 'organizations') {
+      endpoint = 'https://api.apollo.io/v1/organizations/search';
+  } else if (mode === 'enrich') {
+      // Enrichment Endpoint
+      // Note: This endpoint consumes credits!
+      endpoint = 'https://api.apollo.io/v1/people/match';
+      // For match, Apollo expects { id: "..." } or { email: "..." } inside query
+      body = {
+        api_key: apiKey,
+        reveal_personal_emails: true,
+        // reveal_phone_number: true, // Requires webhook_url, disabling for sync requests
+        id: entityId // if entityId is passed, use it.
+      };
+      
+      // Merge extra search params if needed, though 'id' is usually enough
+      if (searchParams) {
+          body = { ...body, ...searchParams };
+      }
+  }
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'X-Api-Key': apiKey,
+      },
+      // For enrich mode, api_key is often in body. For search it can be in header or body.
+      // We'll put it in both or rely on header if supported, but Apollo Match usually likes it in body.
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      logger.error('Apollo API error', { status: response.status, data });
+      throw new HttpsError('internal', data.error || 'Apollo API request failed.');
+    }
+
+    logger.info('Apollo search successful', { resultCount: data.people?.length || 0 });
+    return data;
+  } catch (error) {
+    logger.error('Apollo proxy error', error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError('internal', error.message || 'Failed to search Apollo.');
+  }
+});
+
+/**
+ * SEND OUTREACH EMAIL (Callable)
+ * Sends an email via Nodemailer for the Outreach module.
+ * Can be used for live campaigns or test emails.
+ */
+exports.sendOutreachEmail = onCall({ cors: true, region: "us-central1" }, async (request) => {
+    // Check authentication
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    }
+
+    const { to, subject, html, text, isTest } = request.data;
+    const senderEmail = request.auth.token.email; // The authenticated user's email
+    
+    // Log intent
+    logger.info("sendOutreachEmail called", { to, subject, isTest, user: request.auth.uid });
+
+    // 0. Check Unsubscribe Blocklist (unless it's a test email to self)
+    if (!isTest) {
+        try {
+            const unsubSnap = await db.collection('unsubscribes').where('email', '==', to).limit(1).get();
+            if (!unsubSnap.empty) {
+                logger.warn(`Blocked email to unsubscribed recipient: ${to}`);
+                return { success: false, blocked: true, message: "Recipient has unsubscribed." };
+            }
+        } catch (e) {
+            logger.error("Error checking unsubscribe list", e);
+            // Proceed with caution or fail? Let's proceed but log it.
+        }
+    }
+
+    // 1. Configure Transporter
+    const emailUser = process.env.EMAIL_USER || (functionsV1.config().email && functionsV1.config().email.user);
+    const emailPass = process.env.EMAIL_PASS || (functionsV1.config().email && functionsV1.config().email.pass);
+
+    if (!emailUser || !emailPass) {
+        logger.error("Email credentials not configured.");
+        return { success: true, simulated: true, message: "Email simulation: Credentials not set." };
+    }
+
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: emailUser,
+            pass: emailPass,
+        },
+    });
+
+    // 2. Prepare Footer & Link
+    // Dynamically determine the app URL based on the Firebase project
+    const projectId = process.env.GCLOUD_PROJECT || process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId;
+    const appDomain = projectId === 'leaderreps-test' 
+        ? 'leaderreps-test.web.app' 
+        : 'leaderrepscorp.web.app'; // Default to corporate domain
+    
+    const unsubLink = `https://${appDomain}/unsubscribe?email=${encodeURIComponent(to)}`;
+    
+    const footerHtml = `
+        <br/><br/>
+        <div style="font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; font-family: sans-serif;">
+            <p>LeaderReps Corporate • 123 Leadership Way • Chicago, IL</p>
+            <p>Don't want these emails? <a href="${unsubLink}" style="color: #64748b; text-decoration: underline;">Unsubscribe here</a>.</p>
+        </div>
+    `;
+
+    // 3. Prepare Email
+    const mailOptions = {
+        from: `"LeaderReps Corporate" <${emailUser}>`,
+        replyTo: senderEmail, // Critical: Replies go to the Rep, not the system!
+        to: to,
+        subject: isTest ? `[TEST] ${subject}` : subject,
+        text: (text || "Enable HTML to view this message.") + `\n\nUnsubscribe: ${unsubLink}`,
+        html: html + footerHtml
+    };
+
+    // 4. Send
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        logger.info("Email sent", { messageId: info.messageId });
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        logger.error("Error sending email", error);
+        throw new HttpsError('internal', "Failed to send email: " + error.message);
+    }
+});
+

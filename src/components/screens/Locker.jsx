@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { Card, PageLayout, NoWidgetsEnabled } from '../ui';
-import { Archive, CheckCircle, Calendar, Trophy, BookOpen, Dumbbell } from 'lucide-react';
+import { Lock, CheckCircle, Calendar, Trophy, BookOpen, Dumbbell } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { useNotifications } from '../../providers/NotificationProvider';
@@ -184,7 +184,7 @@ const Locker = () => {
     <PageLayout
       title="The Locker"
       subtitle="Your repository of completed reps, wins, and reflections."
-      icon={Archive}
+      icon={Lock}
       navigate={navigate}
       breadcrumbs={[
         { label: 'Home', path: 'dashboard' },

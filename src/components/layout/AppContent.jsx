@@ -12,6 +12,7 @@ import { NavigationProvider } from '../../providers/NavigationProvider.jsx';
 import TimeTravelBanner from '../admin/TimeTravelBanner.jsx';
 import { PageTransition } from '../motion';
 import { SyncIndicator } from '../offline';
+import SkipLinks from '../accessibility/SkipLinks';
 
 const AppContent = ({
   currentScreen,
@@ -108,6 +109,14 @@ const AppContent = ({
       currentScreen={currentScreen}
       navParams={navParams}
     >
+      {/* Skip Links for keyboard accessibility */}
+      <SkipLinks 
+        links={[
+          { id: 'main-content', label: 'Skip to main content' },
+          { id: 'main-nav', label: 'Skip to navigation' }
+        ]} 
+      />
+      
       {/* Time Travel Banner - visible to admins when active */}
       <TimeTravelBanner isAdmin={isAdmin} />
       
@@ -117,20 +126,22 @@ const AppContent = ({
         <div className={`flex w-full ${isFullWidthScreen ? 'max-w-full' : 'max-w-[1000px]'} h-screen relative`}>
           
           {/* New Sidebar */}
-          <ArenaSidebar 
-            isOpen={isSidebarOpen} 
-            toggle={() => setIsSidebarOpen(!isSidebarOpen)}
-            currentScreen={currentScreen}
-            navigate={navigate}
-            onSignOut={handleSignOut}
-            user={user}
-            membershipData={membershipData}
-          />
+          <nav id="main-nav" aria-label="Main navigation">
+            <ArenaSidebar 
+              isOpen={isSidebarOpen} 
+              toggle={() => setIsSidebarOpen(!isSidebarOpen)}
+              currentScreen={currentScreen}
+              navigate={navigate}
+              onSignOut={handleSignOut}
+              user={user}
+              membershipData={membershipData}
+            />
+          </nav>
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300 bg-[#FAFBFC] md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2">
+          <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300 bg-[#FAFBFC] md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2" role="main">
             
-            <main className="flex-1 flex flex-col overflow-hidden relative md:rounded-3xl">
+            <main className="flex-1 flex flex-col overflow-hidden relative md:rounded-3xl" aria-label="Page content">
               {/* Global Back Button Header - REMOVED to save whitespace */}
               {/* {canGoBack && (
                 <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center shadow-sm z-10 shrink-0">
@@ -179,35 +190,39 @@ const AppContent = ({
               <p className="text-slate-400 text-sm" style={{ fontFamily: 'var(--font-body)' }}>
                 © {currentYear} LeaderReps. All rights reserved.
               </p>
-              <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs text-slate-400">
+              <nav className="mt-3 flex flex-wrap justify-center gap-2 text-xs text-slate-500" aria-label="Footer navigation">
                 <button
                   onClick={() => navigate('privacy-policy')}
-                  className="hover:text-corporate-teal transition-colors duration-200 text-slate-400 bg-transparent border-none cursor-pointer p-0"
+                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  aria-label="View privacy policy"
                 >
                   Privacy Policy
                 </button>
-                <span className="text-slate-300">·</span>
+                <span className="text-slate-300 self-center" aria-hidden="true">·</span>
                 <button
                   onClick={() => navigate('terms-of-service')}
-                  className="hover:text-corporate-teal transition-colors duration-200 text-slate-400 bg-transparent border-none cursor-pointer p-0"
+                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  aria-label="View terms and conditions"
                 >
-                  Terms of Service
+                  Terms & Conditions
                 </button>
-                <span className="text-slate-300">·</span>
-                <button
-                  onClick={() => navigate('cookie-policy')}
-                  className="hover:text-corporate-teal transition-colors duration-200 text-slate-400 bg-transparent border-none cursor-pointer p-0"
-                >
-                  Cookie Policy
-                </button>
-                <span className="text-slate-300">·</span>
+                <span className="text-slate-300 self-center" aria-hidden="true">·</span>
                 <button
                   onClick={() => navigate('contact-us')}
-                  className="hover:text-corporate-teal transition-colors duration-200 text-slate-400 bg-transparent border-none cursor-pointer p-0"
+                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  aria-label="Contact us"
                 >
                   Contact Us
                 </button>
-              </div>
+                <span className="text-slate-300 self-center" aria-hidden="true">·</span>
+                <button
+                  onClick={() => navigate('help-center')}
+                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  aria-label="Visit help center"
+                >
+                  Help Center
+                </button>
+              </nav>
             </footer>
             
             {/* Mobile Bottom Navigation - Only show on small screens */}

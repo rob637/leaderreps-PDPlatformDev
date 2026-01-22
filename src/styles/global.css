@@ -30,8 +30,8 @@
   --corporate-teal-5: rgba(71, 168, 141, 0.05);
 
   /* === PREMIUM TYPOGRAPHY === */
-  --font-heading: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-family-primary: var(--font-body);
   
   --font-weight-light: 300;
@@ -804,4 +804,79 @@ body {
     a:hover { color: #747bff; }
     button { background-color: #f9f9f9; }
   }
+}
+
+/* =========================================
+   ACCESSIBILITY ENHANCEMENTS
+   ========================================= */
+
+/* Reduced Motion Support - Disable all animations/transitions */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High Contrast Support */
+@media (prefers-contrast: more) {
+  :root {
+    --corporate-navy: #000000;
+    --corporate-teal: #006644;
+    --color-text-muted: #333333;
+    --color-border: rgba(0, 0, 0, 0.3);
+  }
+  
+  button, a {
+    text-decoration: underline !important;
+  }
+}
+
+/* Focus Visible Enhancement - Clear focus indicators */
+:focus-visible {
+  outline: 3px solid var(--corporate-teal) !important;
+  outline-offset: 2px !important;
+}
+
+/* Ensure minimum touch target size for interactive elements */
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"],
+  select,
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus visible but not sr-only (for skip links) */
+.sr-only-focusable:focus,
+.sr-only-focusable:focus-visible {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
 }

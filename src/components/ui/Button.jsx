@@ -49,9 +49,12 @@ const Button = React.forwardRef(({
       )}
       style={{ fontFamily: 'var(--font-body)' }}
       disabled={disabled || isLoading}
+      aria-busy={isLoading}
+      aria-disabled={disabled || isLoading}
       {...props}
     >
-      {isLoading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+      {isLoading && <Loader className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+      {isLoading && <span className="sr-only">Loading...</span>}
       {children}
     </button>
   );
