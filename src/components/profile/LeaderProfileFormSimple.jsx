@@ -147,10 +147,27 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
     return digitsOnly.length >= 10;
   };
 
-  // Validate phone on blur (when user tabs out of field)
+  // Format phone number to (xxx) xxx-xxxx
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return '';
+    const digitsOnly = phone.replace(/\D/g, '');
+    if (digitsOnly.length < 10) return phone; // Return as-is if not enough digits
+    // Take last 10 digits (in case country code is included)
+    const last10 = digitsOnly.slice(-10);
+    return `(${last10.slice(0, 3)}) ${last10.slice(3, 6)}-${last10.slice(6, 10)}`;
+  };
+
+  // Validate and format phone on blur (when user tabs out of field)
   const validatePhoneOnBlur = () => {
-    if (formData.phoneNumber && !isValidPhoneNumber(formData.phoneNumber)) {
-      setErrors(prev => ({ ...prev, phoneNumber: 'Please enter a valid phone number (at least 10 digits)' }));
+    if (formData.phoneNumber) {
+      if (!isValidPhoneNumber(formData.phoneNumber)) {
+        setErrors(prev => ({ ...prev, phoneNumber: 'Please enter a valid phone number (at least 10 digits)' }));
+      } else {
+        // Format the phone number and clear any error
+        const formatted = formatPhoneNumber(formData.phoneNumber);
+        setFormData(prev => ({ ...prev, phoneNumber: formatted }));
+        setErrors(prev => ({ ...prev, phoneNumber: null }));
+      }
     } else {
       setErrors(prev => ({ ...prev, phoneNumber: null }));
     }
