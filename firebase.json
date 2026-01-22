@@ -1,6 +1,7 @@
 {
   "hosting": [
     {
+      "site": "leaderreps-pd-platform",
       "public": "build",
       "ignore": [
         "firebase.json",
