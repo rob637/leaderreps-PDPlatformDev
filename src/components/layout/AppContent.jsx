@@ -145,7 +145,7 @@ const AppContent = ({
           </nav>
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300 bg-[#FAFBFC] md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2" role="main">
+          <div className="flex-1 flex flex-col h-screen md:h-[calc(100vh-16px)] overflow-hidden relative transition-all duration-300 bg-[#FAFBFC] md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2" role="main">
             
             <main className="flex-1 flex flex-col overflow-hidden relative md:rounded-3xl" aria-label="Page content">
               {/* Global Back Button Header - REMOVED to save whitespace */}
