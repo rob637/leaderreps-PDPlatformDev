@@ -2182,7 +2182,7 @@ const WinsHistoryWidget = () => {
     let dateKey = win.date || 'Unknown Date'; 
     
     // Try to normalize to YYYY-MM-DD (only if not already in that format)
-    if (dateKey !== 'Unknown Date' && !/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+    if (dateKey !== 'Unknown Date' && !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(dateKey)) {
         try {
             const d = new Date(dateKey + 'T12:00:00'); // Add noon to avoid timezone day shift
             if (!isNaN(d.getTime())) {
@@ -2654,7 +2654,7 @@ const RepsHistoryWidget = () => {
       
       let dateKey = entry.date;
       // Only parse if not already YYYY-MM-DD format to avoid timezone issues
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+      if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(dateKey)) {
           try {
               const d = new Date(dateKey + 'T12:00:00'); // Add noon to avoid timezone day shift
               if (!isNaN(d.getTime())) {
