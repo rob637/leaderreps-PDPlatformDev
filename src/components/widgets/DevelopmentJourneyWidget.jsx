@@ -16,6 +16,7 @@ import { Card } from '../ui';
 import { useDailyPlan, PHASES } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
+import { useAppServices } from '../../services/useAppServices';
 
 // Phase themes - different visual treatment for each phase
 const PHASE_THEMES = {
@@ -440,6 +441,7 @@ const DevelopmentJourneyWidget = () => {
   const [canScrollRight, setCanScrollRight] = useState(true);
   
   // Get data from hooks
+  const { developmentPlanData } = useAppServices();
   const { 
     dailyPlan, 
     currentPhase, 
@@ -451,11 +453,11 @@ const DevelopmentJourneyWidget = () => {
   const { getItemProgress } = useActionProgress();
   const { isComplete: leaderProfileComplete } = useLeaderProfile();
   
-  // Check baseline assessment completion
+  // Check baseline assessment completion - use developmentPlanData directly for real-time updates
   const baselineAssessmentComplete = useMemo(() => {
-    if (!userState?.assessmentHistory || userState.assessmentHistory.length === 0) return false;
-    return userState.assessmentHistory.length > 0;
-  }, [userState?.assessmentHistory]);
+    if (!developmentPlanData?.assessmentHistory || developmentPlanData.assessmentHistory.length === 0) return false;
+    return developmentPlanData.assessmentHistory.length > 0;
+  }, [developmentPlanData?.assessmentHistory]);
   
   // Determine current segment
   const currentSegmentId = useMemo(() => {

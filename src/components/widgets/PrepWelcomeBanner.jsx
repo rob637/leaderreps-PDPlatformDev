@@ -20,17 +20,17 @@ import FacilitatorProfileModal from './FacilitatorProfileModal';
  * Includes cohort name and facilitator info if available.
  */
 const PrepWelcomeBanner = () => {
-  const { user } = useAppServices();
+  const { user, developmentPlanData } = useAppServices();
   const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay, currentDayData, userState, prepRequirementsComplete } = useDailyPlan();
   const { getItemProgress } = useActionProgress();
   const { isComplete: leaderProfileComplete, profile: leaderProfile } = useLeaderProfile();
   const [showFacilitatorModal, setShowFacilitatorModal] = useState(false);
 
-  // Baseline Assessment completion tracking
+  // Baseline Assessment completion tracking - use developmentPlanData directly for real-time updates
   const baselineAssessmentComplete = useMemo(() => {
-    const assessmentHistory = userState?.assessmentHistory;
+    const assessmentHistory = developmentPlanData?.assessmentHistory;
     return assessmentHistory && assessmentHistory.length > 0;
-  }, [userState?.assessmentHistory]);
+  }, [developmentPlanData?.assessmentHistory]);
 
   // Normalize daily plan actions to match ThisWeeksActionsWidget IDs
   // This ensures we check the exact same IDs that are being saved

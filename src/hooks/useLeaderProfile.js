@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { useAppServices } from '../services/useAppServices';
 
 /**
@@ -55,38 +55,36 @@ export const useLeaderProfile = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load profile
+  // Load profile with real-time subscription
   useEffect(() => {
-    const loadProfile = async () => {
-      if (!db || !user?.uid) {
-        setLoading(false);
-        return;
-      }
+    if (!db || !user?.uid) {
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const profileRef = doc(db, `user_data/${user.uid}/leader_profile/current`);
-        const snap = await getDoc(profileRef);
-        
-        if (snap.exists()) {
-          setProfile({ ...DEFAULT_LEADER_PROFILE, ...snap.data() });
-        } else {
-          // Pre-fill from user auth if available
-          setProfile({
-            ...DEFAULT_LEADER_PROFILE,
-            firstName: user.displayName?.split(' ')[0] || '',
-            lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
-            email: user.email || ''
-          });
-        }
-      } catch (err) {
-        console.error('[useLeaderProfile] Error loading profile:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+    const profileRef = doc(db, `user_data/${user.uid}/leader_profile/current`);
+    
+    // Use onSnapshot for real-time updates across all hook instances
+    const unsubscribe = onSnapshot(profileRef, (snap) => {
+      if (snap.exists()) {
+        setProfile({ ...DEFAULT_LEADER_PROFILE, ...snap.data() });
+      } else {
+        // Pre-fill from user auth if available
+        setProfile({
+          ...DEFAULT_LEADER_PROFILE,
+          firstName: user.displayName?.split(' ')[0] || '',
+          lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+          email: user.email || ''
+        });
       }
-    };
+      setLoading(false);
+    }, (err) => {
+      console.error('[useLeaderProfile] Error loading profile:', err);
+      setError(err.message);
+      setLoading(false);
+    });
 
-    loadProfile();
+    return () => unsubscribe();
   }, [db, user]);
 
   // Save profile

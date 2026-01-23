@@ -301,9 +301,10 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
     } catch (e) {
       console.error('Auth action failed:', e);
       
-      // World-class Error Handling
+      // User-friendly Error Handling
       let message = e.message || 'An unexpected error occurred.';
       
+      // Firebase Auth error codes - make them human-readable
       if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
         message = "Incorrect email or password. If you previously signed in with Google, please try that button instead.";
       } else if (e.code === 'auth/email-already-in-use') {
@@ -312,6 +313,19 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
         message = "Password should be at least 6 characters.";
       } else if (e.code === 'auth/too-many-requests') {
         message = "Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password or try again later.";
+      } else if (e.code === 'auth/missing-password') {
+        message = "Please enter a password.";
+      } else if (e.code === 'auth/missing-email' || e.code === 'auth/invalid-email') {
+        message = "Please enter a valid email address.";
+      } else if (e.code === 'auth/network-request-failed') {
+        message = "Network error. Please check your internet connection and try again.";
+      } else if (e.code === 'auth/user-disabled') {
+        message = "This account has been disabled. Please contact support for assistance.";
+      } else if (e.code === 'auth/operation-not-allowed') {
+        message = "This sign-in method is not enabled. Please contact support.";
+      } else if (e.message?.includes('Firebase:')) {
+        // Catch any other Firebase errors and clean up the message
+        message = e.message.replace(/Firebase:\s*/, '').replace(/\s*\(auth\/[^)]+\)\.?/, '').trim() || "Something went wrong. Please try again.";
       }
 
       setStatusMessage(message);

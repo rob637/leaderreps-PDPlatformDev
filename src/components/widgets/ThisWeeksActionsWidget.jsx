@@ -83,11 +83,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Leader Profile completion tracking (for auto-check in Pre-Start)
   const { isComplete: leaderProfileComplete } = useLeaderProfile();
   
-  // Baseline Assessment completion tracking
+  // Baseline Assessment completion tracking - use developmentPlanData directly for real-time updates
   const baselineAssessmentComplete = useMemo(() => {
-    const assessmentHistory = userState?.assessmentHistory;
+    const assessmentHistory = developmentPlanData?.assessmentHistory;
     return assessmentHistory && assessmentHistory.length > 0;
-  }, [userState?.assessmentHistory]);
+  }, [developmentPlanData?.assessmentHistory]);
   
   // Progress tracking
   const { 
