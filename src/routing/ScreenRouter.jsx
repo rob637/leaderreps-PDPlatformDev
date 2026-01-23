@@ -3,6 +3,10 @@
 import React, { lazy, Suspense } from 'react';
 
 const ScreenMap = {
+  // Rep AI Coach (new)
+  'rep': lazy(() => import('../components/screens/RepCoach.jsx')),
+  'rep-coach': lazy(() => import('../components/screens/RepCoach.jsx')),
+  
   'roadmap-tracker': lazy(() =>
     import('../components/screens/RoadmapTracker.jsx')
   ),

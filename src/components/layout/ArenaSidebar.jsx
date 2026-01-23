@@ -16,7 +16,8 @@ import {
   Dumbbell,
   Zap,
   Wrench,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles
 } from 'lucide-react';
 import { CommunityIcon } from '../icons';
 import PWAInstall from '../ui/PWAInstall.jsx';
@@ -71,6 +72,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
   };
 
   const menuItems = [
+    { id: 'rep', label: 'Rep Coach', icon: Sparkles, highlight: true }, // AI Coach - always visible
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
     
@@ -183,6 +185,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
 
             const Icon = item.icon;
             const isActive = currentScreen === item.id;
+            const isHighlighted = item.highlight && !isActive;
             
             return (
               <li key={item.id}>
@@ -198,17 +201,36 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
                     focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 focus:ring-offset-white touch-manipulation
                     ${isActive 
                       ? 'bg-corporate-teal text-white shadow-lg shadow-corporate-teal/30 font-medium' 
-                      : 'bg-corporate-teal/10 text-corporate-navy hover:bg-corporate-teal/20 hover:text-corporate-navy'
+                      : isHighlighted
+                        ? 'bg-gradient-to-r from-corporate-teal/20 to-corporate-orange/20 text-corporate-navy hover:from-corporate-teal/30 hover:to-corporate-orange/30 border border-corporate-teal/30'
+                        : 'bg-corporate-teal/10 text-corporate-navy hover:bg-corporate-teal/20 hover:text-corporate-navy'
                     }
                   `}
                   title={!isOpen ? item.label : ''}
                 >
-                  <div className={`p-1.5 rounded-lg transition-colors ${isActive ? 'bg-white/20' : 'bg-corporate-teal/10 group-hover:bg-corporate-teal/20'}`} aria-hidden="true">
-                    <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-white' : 'text-corporate-teal group-hover:text-corporate-teal'}`} />
+                  <div className={`p-1.5 rounded-lg transition-colors ${
+                    isActive 
+                      ? 'bg-white/20' 
+                      : isHighlighted 
+                        ? 'bg-gradient-to-br from-corporate-teal/30 to-corporate-orange/30'
+                        : 'bg-corporate-teal/10 group-hover:bg-corporate-teal/20'
+                  }`} aria-hidden="true">
+                    <Icon className={`w-[18px] h-[18px] ${
+                      isActive 
+                        ? 'text-white' 
+                        : isHighlighted 
+                          ? 'text-corporate-teal'
+                          : 'text-corporate-teal group-hover:text-corporate-teal'
+                    }`} />
                   </div>
                   <span className={`whitespace-nowrap text-sm transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
                     {item.label}
                   </span>
+                  {isHighlighted && isOpen && (
+                    <span className="ml-auto text-[10px] font-bold text-corporate-orange bg-corporate-orange/10 px-2 py-0.5 rounded-full">
+                      NEW
+                    </span>
+                  )}
                 </button>
               </li>
             );

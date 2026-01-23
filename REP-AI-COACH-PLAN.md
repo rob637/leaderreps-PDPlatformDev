@@ -6,13 +6,15 @@
 
 ## Table of Contents
 1. [Executive Summary](#executive-summary)
-2. [Core Principles](#core-principles)
-3. [Architecture Overview](#architecture-overview)
-4. [Phase 1: Foundation (MVP)](#phase-1-foundation-mvp)
-5. [Phase 2: Intelligence](#phase-2-intelligence)
-6. [Phase 3: Full Integration](#phase-3-full-integration)
-7. [Technical Requirements](#technical-requirements)
-8. [UI/UX Design Direction](#uiux-design-direction)
+2. [The Three Pillars](#the-three-pillars)
+3. [Core Principles](#core-principles)
+4. [Architecture Overview](#architecture-overview)
+5. [Community Integration](#community-integration)
+6. [Phase 1: Foundation (MVP)](#phase-1-foundation-mvp)
+7. [Phase 2: Intelligence](#phase-2-intelligence)
+8. [Phase 3: Full Integration](#phase-3-full-integration)
+9. [Technical Requirements](#technical-requirements)
+10. [UI/UX Design Direction](#uiux-design-direction)
 9. [Data Model](#data-model)
 10. [Content Requirements](#content-requirements)
 11. [Risk Mitigation](#risk-mitigation)
@@ -41,6 +43,59 @@ Rep is an AI Leadership Coach that **leads** users through their daily developme
 - **Shared data**: Rep reads/writes to the same Firestore collections
 - **Incremental rollout**: Start with opt-in, prove value, then expand
 - **No mock data**: Use placeholders where content is missing
+
+---
+
+## The Three Pillars
+
+LeaderReps is built on three interconnected pillars. Rep must weave all three together:
+
+```
+              ┌─────────────────────────────────────┐
+              │              REP                     │
+              │    (The Intelligent Bridge)         │
+              └───────────┬─────────────────────────┘
+                          │
+          ┌───────────────┼───────────────┐
+          │               │               │
+          ▼               ▼               ▼
+    ┌───────────┐   ┌───────────┐   ┌───────────┐
+    │ COMMUNITY │◄─►│  CONTENT  │◄─►│ COACHING  │
+    │           │   │           │   │           │
+    │ • Cohorts │   │ • Videos  │   │ • Rep AI  │
+    │ • Peers   │   │ • Readings│   │ • Human   │
+    │ • Wins    │   │ • Reps    │   │   Coach   │
+    │ • Events  │   │ • Library │   │ • Self    │
+    └───────────┘   └───────────┘   └───────────┘
+```
+
+### Pillar 1: Community
+Leaders don't develop in isolation. After COVID, people are yearning for connection. Rep creates belonging:
+- **Cohort awareness**: "4 leaders in your cohort already did today's rep"
+- **Shared struggles**: "You're not alone—73% of your cohort is working on delegation"
+- **Collective wisdom**: Surface anonymized insights from peers
+- **Peer connections**: Facilitate introductions between leaders with shared goals
+- **Events integration**: Connect daily work to live community experiences
+
+### Pillar 2: Content
+The curriculum and content library are the foundation. Rep adapts as content grows:
+- **Dynamic curriculum**: As new content is added, Rep incorporates it
+- **Content matching**: Rep suggests content based on user's current struggles
+- **Variety**: Videos, readings, reflections, assessments—never monotonous
+- **Depth over breadth**: Go deep on what matters to this user
+
+### Pillar 3: Coaching
+Rep IS the coach, augmented by human coaching when needed:
+- **AI-first**: Daily touchpoints are Rep-led
+- **Human escalation**: "This feels bigger than our daily work. Want to talk to your coach?"
+- **Self-coaching**: Rep teaches users to coach themselves
+- **Accountability**: Rep remembers commitments and follows up
+
+### The Integration Principle
+**No pillar stands alone.** Every Rep interaction should touch at least two pillars:
+- Content + Coaching: "Watch this video, then tell me your reflection"
+- Community + Content: "Here's what leaders who mastered this concept recommend"
+- Coaching + Community: "You and Sarah both struggle with this. Want to connect?"
 
 ---
 
@@ -102,6 +157,80 @@ Rep is NOT a chat box. It's a rich, visual experience that uses the full power o
 │  └───────────┘ └───────────┘ └───────────┘ └─────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Community Integration
+
+Community is not an afterthought—it's woven into every Rep interaction. Here's how:
+
+### Community Touchpoints in Daily Sessions
+
+| Session Moment | Community Integration |
+|----------------|----------------------|
+| **Morning Greeting** | "Good morning! 4 leaders in your cohort have already started today. Ready to join them?" |
+| **Before Content** | "Leaders who found this video most valuable were working on similar challenges to yours." |
+| **During Reflection** | "What insight would you share with other leaders facing this?" |
+| **After Completion** | "Nice work! Your cohort is now 67% complete for today." |
+| **Weekly Summary** | "This week your cohort collectively logged 47 wins. Here are 3 that stood out..." |
+
+### Community Features Rep Orchestrates
+
+#### 1. Cohort Pulse
+Real-time awareness of your peer group:
+```
+"Your Cohort This Week"
+├── 12/15 leaders active
+├── Top focus area: Delegation (40%)
+├── Collective wins: 23
+└── Next live event: Thursday 2pm
+```
+
+#### 2. Anonymous Wisdom Surfacing
+Rep shares relevant insights from other leaders (with permission):
+- "A leader in Week 8 said this about delegation: 'The breakthrough came when I realized...'"
+- "73% of leaders who completed this assessment scored lowest on 'Letting Go'"
+- Never identifies individuals without consent
+
+#### 3. Peer Connection Facilitation
+Rep identifies connection opportunities:
+- "You and Marcus both marked 'executive presence' as a focus area. Want me to suggest a peer chat?"
+- "Three leaders in your cohort are working on the same skill. Want to start a study group?"
+
+#### 4. Collective Wins Celebration
+Wins become community property:
+- "Beautiful win! Mind if I share this (anonymously) with leaders working on the same skill?"
+- Weekly "Wins Digest" curated by Rep
+- Cohort leaderboard (opt-in, focused on completion not competition)
+
+#### 5. Live Event Integration
+Rep connects daily work to synchronous experiences:
+- "There's a community call Thursday on exactly what you're working on. Reminder set?"
+- "In yesterday's call, a leader shared something relevant to your reflection..."
+- Post-event: "What's one thing from the call you want to apply this week?"
+
+#### 6. Accountability Partners
+Rep facilitates 1:1 peer accountability:
+- "Want an accountability partner for this 30-day challenge?"
+- Weekly check-ins: "How did your call with Sarah go?"
+- Rep can prompt both partners with shared reflections
+
+### Community Data Rep Needs
+
+| Data | Source | Privacy Level |
+|------|--------|---------------|
+| Cohort membership | `users/{id}` | Private |
+| Completion status | `dailyPlanProgress` | Aggregated only |
+| Wins | `users/{id}/wins` | Shared with permission |
+| Reflections | `users/{id}/reflections` | Never shared (except opt-in quotes) |
+| Focus areas | Assessment + progress | Aggregated only |
+| Availability | User preferences | For peer matching |
+
+### Privacy Principles
+1. **Aggregate by default**: "73% of leaders" not "John, Sarah, and Mike"
+2. **Opt-in sharing**: Users choose what to share
+3. **No surveillance**: Rep doesn't report to managers/admins
+4. **Psychological safety**: Struggles are normalized, not exposed
 
 ---
 
