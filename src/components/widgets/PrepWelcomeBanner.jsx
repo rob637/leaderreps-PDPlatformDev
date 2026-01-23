@@ -189,11 +189,11 @@ const PrepWelcomeBanner = () => {
   return (
     <div className={`relative overflow-hidden rounded-2xl shadow-md border ${
       isLaunch 
-        ? 'bg-white border-corporate-teal/30' 
-        : 'bg-white border-slate-200'
+        ? 'bg-corporate-light-gray border-corporate-teal/40' 
+        : 'bg-corporate-light-gray border-corporate-teal/20'
     }`}>
       {/* Simplified Background Pattern - Clean and minimal */}
-      <div className="absolute inset-0 opacity-5">
+      <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 right-0 w-64 h-64 bg-corporate-teal rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
       </div>
 

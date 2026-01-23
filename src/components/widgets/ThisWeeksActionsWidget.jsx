@@ -970,7 +970,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   </div>
                 </div>
               );
-            })()}}
+            })()}
 
             {/* Current Week Items */}
             {allActions.length > 0 && (() => {

@@ -1,12 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Settings, User, Bell, CheckCircle, Edit2
+  Settings, User, Bell, CheckCircle, Edit2, Zap, Mail, Smartphone, VolumeX, Shield,
+  Download, LogOut, AlertTriangle
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { useAppServices } from '../../services/useAppServices';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
+import NotificationPreferencesWidget from './NotificationPreferencesWidget';
+import PWAInstall from '../ui/PWAInstall';
 import { doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
+
+// Strategy display names and icons
+const STRATEGY_DISPLAY = {
+  smart_escalation: { name: 'Smart Escalation', icon: Zap, color: 'text-corporate-teal' },
+  push_only: { name: 'Push Only', icon: Smartphone, color: 'text-blue-500' },
+  email_only: { name: 'Email Only', icon: Mail, color: 'text-amber-500' },
+  full_accountability: { name: 'Full Accountability', icon: Shield, color: 'text-green-500' },
+  disabled: { name: 'Off', icon: VolumeX, color: 'text-slate-400' }
+};
 
 /**
  * MySettingsWidget - Unified settings widget for the Locker
@@ -18,6 +30,8 @@ import { doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
  */
 const MySettingsWidget = () => {
   const [showProfileForm, setShowProfileForm] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   
   // Profile data
   const { profile, loading: profileLoading, isComplete: profileComplete } = useLeaderProfile();
@@ -26,13 +40,14 @@ const MySettingsWidget = () => {
   const isProfileComplete = profileComplete;
   
   // Notification settings
-  const { user, db } = useAppServices();
+  const { user, db, signOut } = useAppServices();
   const [notifLoading, setNotifLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [notifSettings, setNotifSettings] = useState({
-    enabled: false,
+    enabled: true,
+    strategy: 'smart_escalation',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
     channels: {
+      push: true,
       email: true,
       sms: false
     },
@@ -60,18 +75,26 @@ const MySettingsWidget = () => {
           profileSettings = profileSnap.data().notificationSettings;
         }
         
-        // Merge: prefer user doc for enabled state, merge channels from both
+        // Merge settings, prefer user doc
         const mergedChannels = {
-          email: profileSettings?.channels?.email ?? userSettings?.channels?.email ?? true,
-          sms: profileSettings?.channels?.sms ?? userSettings?.channels?.sms ?? false
+          push: userSettings?.channels?.push ?? true,
+          email: userSettings?.channels?.email ?? profileSettings?.channels?.email ?? true,
+          sms: userSettings?.channels?.sms ?? profileSettings?.channels?.sms ?? false
         };
         
-        const hasAnyEnabled = mergedChannels.email || mergedChannels.sms;
-        const enabled = userSettings?.enabled ?? hasAnyEnabled;
+        // Determine strategy - default to smart_escalation
+        let strategy = userSettings?.strategy || profileSettings?.strategy || 'smart_escalation';
+        const enabled = userSettings?.enabled ?? true;
+        
+        // If disabled, set strategy accordingly
+        if (!enabled) {
+          strategy = 'disabled';
+        }
         
         setNotifSettings({
           enabled,
-          timezone: profileSettings?.timezone || userSettings?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
+          strategy,
+          timezone: userSettings?.timezone || profileSettings?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
           channels: mergedChannels,
           phoneNumber: userSettings?.phoneNumber || profileSnap.data()?.phoneNumber || ''
         });
@@ -83,60 +106,7 @@ const MySettingsWidget = () => {
       }
     };
     loadSettings();
-  }, [user, db]);
-
-  // Sync notification settings to BOTH locations
-  const syncNotificationSettings = async (newSettings) => {
-    if (!user || !db) return;
-    
-    try {
-      // 1. Update main user doc (used by cloud functions)
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        notificationSettings: newSettings
-      });
-      
-      // 2. Update leader profile (user preferences)
-      const profileRef = doc(db, `user_data/${user.uid}/leader_profile/current`);
-      const profileSnap = await getDoc(profileRef);
-      
-      if (profileSnap.exists()) {
-        await updateDoc(profileRef, {
-          'notificationSettings.channels.email': newSettings.channels.email,
-          'notificationSettings.channels.sms': newSettings.channels.sms,
-          'notificationSettings.timezone': newSettings.timezone
-        });
-      }
-      
-      console.log('[MySettingsWidget] Synced notification settings to both locations');
-    } catch (error) {
-      console.error("Error syncing notification settings:", error);
-    }
-  };
-
-  const handleMasterToggle = async (enabled) => {
-    setSaving(true);
-    
-    // When ENABLING: restore user's channel preferences (or default to email if none)
-    // When DISABLING: turn off all channels
-    const newChannels = enabled 
-      ? {
-          // If both were off, default to email on
-          email: (notifSettings.channels.email || notifSettings.channels.sms) ? notifSettings.channels.email : true,
-          sms: notifSettings.channels.sms
-        }
-      : { email: false, sms: false };
-    
-    const newSettings = { 
-      ...notifSettings, 
-      enabled,
-      channels: newChannels
-    };
-    
-    setNotifSettings(newSettings);
-    await syncNotificationSettings(newSettings);
-    setSaving(false);
-  };
+  }, [user, db, showNotificationSettings]); // Re-load when settings modal closes
 
   const loading = profileLoading || notifLoading;
 
@@ -181,42 +151,61 @@ const MySettingsWidget = () => {
             </div>
           </button>
 
-          {/* Notifications Row - Inline toggle */}
-          <div className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
+          {/* Notifications Row - Clickable to open settings */}
+          <button
+            onClick={() => setShowNotificationSettings(true)}
+            className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-slate-50 hover:border-corporate-teal/30 transition-colors"
+          >
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notifSettings.enabled ? 'bg-green-100' : 'bg-slate-100'}`}>
-                <Bell className={`w-4 h-4 ${notifSettings.enabled ? 'text-green-600' : 'text-slate-400'}`} />
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notifSettings.strategy !== 'disabled' ? 'bg-green-100' : 'bg-slate-100'}`}>
+                {(() => {
+                  const strategyInfo = STRATEGY_DISPLAY[notifSettings.strategy] || STRATEGY_DISPLAY.smart_escalation;
+                  const Icon = strategyInfo.icon;
+                  return <Icon className={`w-4 h-4 ${notifSettings.strategy !== 'disabled' ? 'text-green-600' : 'text-slate-400'}`} />;
+                })()}
               </div>
               <div className="text-left">
                 <h4 className="font-medium text-corporate-navy text-sm">Notifications</h4>
                 <p className="text-xs text-slate-500">
-                  {notifSettings.enabled 
-                    ? (() => {
-                        const channels = [];
-                        if (notifSettings.channels.email) channels.push('Email');
-                        if (notifSettings.channels.sms) channels.push('SMS');
-                        return channels.length > 0 ? channels.join(' + ') : 'Enabled';
-                      })()
-                    : 'Disabled'}
+                  {STRATEGY_DISPLAY[notifSettings.strategy]?.name || 'Smart Escalation'}
                 </p>
               </div>
             </div>
-            <div 
-              onClick={() => !saving && handleMasterToggle(!notifSettings.enabled)}
-              className="cursor-pointer"
-            >
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer"
-                  checked={notifSettings.enabled}
-                  onChange={() => {}}
-                  disabled={saving}
-                />
-                <div className={`w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-corporate-teal ${saving ? 'opacity-50' : ''}`}></div>
-              </label>
+            <div className="flex items-center gap-1 text-corporate-teal">
+              <span className="text-xs font-medium">Edit</span>
+              <Edit2 className="w-3.5 h-3.5" />
             </div>
+          </button>
+
+          {/* Install App Row - Uses PWAInstall component (only shows if not installed) */}
+          <div className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-corporate-teal/10">
+                <Download className="w-4 h-4 text-corporate-teal" />
+              </div>
+              <div className="text-left">
+                <h4 className="font-medium text-corporate-navy text-sm">Install App</h4>
+                <p className="text-xs text-slate-500">Add to home screen</p>
+              </div>
+            </div>
+            <PWAInstall collapsed={true} />
           </div>
+
+          {/* Sign Out Row */}
+          <button
+            onClick={() => setShowSignOutConfirm(true)}
+            className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-red-50 hover:border-red-200 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
+                <LogOut className="w-4 h-4 text-slate-500" />
+              </div>
+              <div className="text-left">
+                <h4 className="font-medium text-corporate-navy text-sm">Sign Out</h4>
+                <p className="text-xs text-slate-500">Exit the app</p>
+              </div>
+            </div>
+          </button>
         </div>
       </Card>
 
@@ -230,6 +219,63 @@ const MySettingsWidget = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* Notification Settings Modal */}
+      {showNotificationSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <NotificationPreferencesWidget 
+              onClose={() => setShowNotificationSettings(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Sign Out Confirmation Dialog */}
+      {showSignOutConfirm && (
+        <>
+          <div 
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999]" 
+            onClick={() => setShowSignOutConfirm(false)} 
+          />
+          <div className="fixed inset-0 flex items-center justify-center z-[10000] p-4">
+            <div 
+              className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-slate-100"
+              style={{ fontFamily: 'var(--font-body)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-amber-100 rounded-full">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                </div>
+                <h3 className="font-semibold text-lg text-slate-800" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Sign Out?
+                </h3>
+              </div>
+              <p className="text-slate-600 text-sm mb-6">
+                Are you sure you want to sign out of LeaderReps?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowSignOutConfirm(false)}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSignOutConfirm(false);
+                    if (signOut) signOut();
+                  }}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-corporate-navy hover:bg-corporate-navy/90 rounded-lg transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </>
   );

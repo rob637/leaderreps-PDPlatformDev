@@ -39,13 +39,15 @@ const SkipLinks = ({
           onFocus={() => setFocusedIndex(index)}
           onBlur={() => setFocusedIndex(-1)}
           className={`
-            fixed top-0 left-0 z-[9999]
-            px-4 py-2 m-2
+            fixed z-[9999]
+            px-4 py-2
             bg-corporate-navy text-white
             font-medium rounded-lg
-            transform transition-transform duration-200
+            transition-all duration-200
             focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2
-            ${focusedIndex === index ? 'translate-y-0' : '-translate-y-full'}
+            ${focusedIndex === index 
+              ? 'top-2 left-2 opacity-100' 
+              : 'top-0 left-0 -translate-y-full opacity-0 pointer-events-none'}
           `}
         >
           {link.label}

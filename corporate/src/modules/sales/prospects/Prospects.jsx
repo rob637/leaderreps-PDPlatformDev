@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Building2, User, Mail, Phone, Linkedin, Edit2, Trash2, UserPlus, Sparkles, Globe, MapPin, Users, Target, X, ChevronDown, ExternalLink, HelpCircle, Download, FileText, TrendingUp, BookOpen, Send, Lock, Unlock, LayoutGrid, List, GripVertical, DollarSign } from 'lucide-react';
+import { Plus, Search, Filter, Building2, User, Mail, Phone, Linkedin, Edit2, Trash2, UserPlus, Sparkles, Globe, MapPin, Users, Target, X, ChevronDown, ExternalLink, HelpCircle, Download, FileText, TrendingUp, BookOpen, Send, Lock, Unlock, LayoutGrid, List, GripVertical, DollarSign, Play, Calendar, Clock, AlertTriangle, CheckCircle, Eye, ChevronRight } from 'lucide-react';
 import { collection, addDoc, getDocs, getDoc, setDoc, deleteDoc, doc, updateDoc, query, orderBy, where } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getAuth } from 'firebase/auth';
@@ -18,7 +18,7 @@ const Prospects = () => {
   const [activeTab, setActiveTab] = useState('saved'); // 'saved' or 'search'
   const [searchMode, setSearchMode] = useState('people'); // 'people' or 'companies'
   
-  // Search criteria state
+  // Search criteria state - Enhanced to match Apollo's full capabilities
   const [searchCriteria, setSearchCriteria] = useState({
     titles: '',
     companies: '',
@@ -26,7 +26,19 @@ const Prospects = () => {
     locations: '',
     companySize: '',
     keywords: '',
+    // NEW: Advanced filters
+    seniorities: [], // C-Suite, VP, Director, Manager, etc.
+    departments: [], // Sales, Marketing, HR, Engineering, etc.
+    revenueMin: '',
+    revenueMax: '',
+    fundingStages: [], // Seed, Series A, B, C, etc.
+    technologies: '', // Tech stack used by company
+    emailStatus: 'any', // 'any', 'verified', 'likely'
+    excludeTitles: '', // Exclude certain titles
+    yearsInPosition: '', // Min years in current role
+    companyHeadquarters: '', // HQ location only
   });
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [profile, setProfile] = useState({}); // Stores user profile for credit usage tracking
   const [searching, setSearching] = useState(false);
@@ -38,6 +50,120 @@ const Prospects = () => {
   const [showStrategyGuide, setShowStrategyGuide] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'kanban' for the Saved tab
   const [draggedProspect, setDraggedProspect] = useState(null);  // For Kanban drag-and-drop
+
+  // Sequence Launcher Modal State
+  const [showSequenceLauncher, setShowSequenceLauncher] = useState(false);
+  const [sequenceProspect, setSequenceProspect] = useState(null);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [sequenceStartDate, setSequenceStartDate] = useState('');
+  const [previewStep, setPreviewStep] = useState(0);
+  const [launchConfirmed, setLaunchConfirmed] = useState(false);
+  const [launching, setLaunching] = useState(false);
+  const [selectedSender, setSelectedSender] = useState(''); // Who replies go to
+
+  // Team members who can be assigned as senders (replies go to their inbox)
+  const TEAM_SENDERS = [
+    { email: 'ryan@leaderreps.com', name: 'Ryan' },
+    { email: 'jeff@leaderreps.com', name: 'Jeff' },
+    { email: 'cristina@leaderreps.com', name: 'Cristina' },
+    { email: 'rob@leaderreps.com', name: 'Rob' },
+  ];
+
+  // Available Campaigns/Sequences
+  const CAMPAIGNS = {
+    'c1': {
+      id: 'c1',
+      name: 'The "Trojan Horse" Workshop',
+      description: 'Invite HR/Sales leaders to a free "Leader Circle" session to demonstrate value before selling.',
+      color: 'teal',
+      steps: [
+        { 
+          day: 0, 
+          type: 'email', 
+          name: 'Private Invite: Leader Circle',
+          subject: "Invitation: Private Leader Circle for [Company]",
+          template: "Hi [First Name],\n\nI'm hosting a private 'Leader Circle' session on [Date] focusing on [Topic]. \n\nWe're curating a small group of 5-6 leaders from similar sized companies to share what's actually working in 2024. No pitch, just peer learning.\n\nI'd love to have your perspective from [Company] in the room.\n\nOpen to it?",
+          psychology: "The 'No Ask' Invitation - frames this as peer-learning rather than sales."
+        },
+        { 
+          day: 3, 
+          type: 'linkedin', 
+          name: 'Connect + Mention Invite',
+          template: "Hi [First Name], sent you an invite to the Leader Circle earlier. Would love to connect here regardless.",
+          psychology: "Omnichannel nudge increases familiarity."
+        },
+        { 
+          day: 7, 
+          type: 'email', 
+          name: 'Send "Culture Audit" PDF',
+          subject: "Thought you might like this (Culture Audit)",
+          template: "Hi [First Name],\n\nSince you're busy, I thought I'd send over the 'Culture Audit' framework we'll be discussing.\n\nIt takes about 3 minutes to run through and usually highlights the #1 gap in retention strategies.\n\n[Link]\n\nHope it's helpful.",
+          psychology: "Law of Reciprocity - giving value creates psychological debt."
+        },
+        { 
+          day: 12, 
+          type: 'call', 
+          name: 'Brief 5-min intro call',
+          script: "Hi [First Name], just calling to see if that Culture Audit was useful. No worries if not, just wanted to close the loop.",
+          psychology: "'Close the Loop' Call - follow-up on value, not cold outreach."
+        }
+      ]
+    },
+    'c2': {
+      id: 'c2',
+      name: 'Founder-to-Founder',
+      description: 'Direct high-level outreach from Rob to other CEOs/Founders. Personal and authentic.',
+      color: 'indigo',
+      steps: [
+        { day: 0, type: 'linkedin', name: 'Founder Connection Request', template: "Hi [First Name], fellow founder here. Love what you're building at [Company]. Would love to connect.", psychology: "Peer-to-peer credibility." },
+        { day: 2, type: 'email', name: 'Quick Question Email', subject: "Quick question, [First Name]", template: "Hi [First Name],\n\nI know you're slammed, so I'll keep this brief.\n\nHow are you handling leadership development for your team at [Company]? It's something we've been solving at LeaderReps and I'd love to get your take.\n\n30 seconds of your thoughts would be invaluable.", psychology: "Brevity + genuine curiosity." },
+        { day: 5, type: 'video', name: '30s Personal Loom Video', template: "Record a 30-second Loom: 'Hey [First Name], Rob from LeaderReps. Wanted to put a face to the name...'", psychology: "Video creates personal connection and stands out." }
+      ]
+    },
+    'c3': {
+      id: 'c3',
+      name: 'Strategic Partnership',
+      description: 'Initiate high-level partnership discussions with complementary businesses.',
+      color: 'amber',
+      steps: [
+        {
+          day: 0,
+          type: 'email',
+          name: 'Partnership Inquiry',
+          subject: "Partnership idea: LeaderReps + [Company]",
+          template: "Hi [First Name],\n\nI've been following [Company] and love what you're doing in [Industry].\n\nI think there's a strong alignment between our audiences. I have an idea for a collaboration that could drive significant value for both sides without much lift.\n\nOpen to a 10-min chat to explore?",
+          psychology: "'Better Together' Framing - focuses on mutual value and low effort."
+        },
+        {
+          day: 4,
+          type: 'linkedin',
+          name: 'LinkedIn Connect',
+          template: "Hi [First Name], sent a note about a potential partnership. Let's connect.",
+          psychology: "Professional multi-channel follow-up."
+        },
+        {
+          day: 8,
+          type: 'email',
+          name: 'Value Proposition Follow-up',
+          subject: "Re: Partnership idea",
+          template: "Hi [First Name],\n\nWanted to circle back on my partnership note. I've put together a quick one-pager on what this could look like.\n\n[Link to Doc]\n\nNo pressure - just wanted to give you something concrete to react to.",
+          psychology: "Providing concrete value reduces mental effort to respond."
+        }
+      ]
+    },
+    'c4': {
+      id: 'c4',
+      name: 'Direct Sales Outreach',
+      description: 'Traditional sales sequence for qualified prospects. More direct approach.',
+      color: 'red',
+      steps: [
+        { day: 0, type: 'email', name: 'Introduction Email', subject: "Helping [Company] develop leaders", template: "Hi [First Name],\n\nI work with companies like [Company] to build stronger leadership pipelines.\n\nGiven your role as [Title], I thought you might be interested in how we're helping similar organizations reduce manager turnover by 30%.\n\nWorth a quick call?", psychology: "Direct value proposition with social proof." },
+        { day: 3, type: 'call', name: 'Discovery Call Attempt', script: "Hi [First Name], this is Rob from LeaderReps. I sent you an email about leadership development - do you have 2 minutes?", psychology: "Phone creates urgency and personal connection." },
+        { day: 5, type: 'email', name: 'Case Study Follow-up', subject: "How [Similar Company] reduced turnover 30%", template: "Hi [First Name],\n\nQuick follow-up with a case study that might resonate.\n\n[Link]\n\nHappy to walk you through how they did it if helpful.", psychology: "Social proof with similar companies." },
+        { day: 10, type: 'email', name: 'Breakup Email', subject: "Should I close your file?", template: "Hi [First Name],\n\nI've reached out a few times and haven't heard back. Totally understand if the timing isn't right.\n\nI'll assume this isn't a priority and close your file for now. If things change, I'm here.\n\nBest,\nRob", psychology: "'Breakup' email often triggers response due to loss aversion." }
+      ]
+    }
+  };
 
   // Form state
   const [formData, setFormData] = useState({
@@ -52,20 +178,86 @@ const Prospects = () => {
   });
 
   const PRESETS = [
-    { label: "Tech Executives", titles: "CTO, VP Engineering, CIO", industries: "Technology, Software" },
-    { label: "Sales Leaders", titles: "VP Sales, CRO, Director of Sales", industries: "SaaS, Technology" },
-    { label: "HR Decision Makers", titles: "CHRO, VP People, HR Director", companySize: "51-200" },
-    { label: "Small Biz Owners", titles: "Owner, Founder, CEO", companySize: "1-10" },
+    { label: "Tech Executives", titles: "CTO, VP Engineering, CIO", industries: "Technology, Software", seniorities: ['vp', 'c_suite'] },
+    { label: "Sales Leaders", titles: "VP Sales, CRO, Director of Sales", industries: "SaaS, Technology", departments: ['sales'] },
+    { label: "HR Decision Makers", titles: "CHRO, VP People, HR Director", companySize: "51-200", departments: ['human_resources'] },
+    { label: "Small Biz Owners", titles: "Owner, Founder, CEO", companySize: "1-10", seniorities: ['owner', 'founder'] },
+    { label: "Marketing Leaders", titles: "CMO, VP Marketing, Head of Marketing", industries: "Technology, SaaS", departments: ['marketing'] },
+    { label: "Funded Startups", titles: "CEO, Founder, COO", fundingStages: ['seed', 'series_a', 'series_b'], companySize: "11-50" },
+  ];
+
+  // Seniority levels (Apollo API values)
+  const SENIORITY_OPTIONS = [
+    { value: 'owner', label: 'Owner' },
+    { value: 'founder', label: 'Founder' },
+    { value: 'c_suite', label: 'C-Suite' },
+    { value: 'partner', label: 'Partner' },
+    { value: 'vp', label: 'VP' },
+    { value: 'head', label: 'Head' },
+    { value: 'director', label: 'Director' },
+    { value: 'manager', label: 'Manager' },
+    { value: 'senior', label: 'Senior IC' },
+    { value: 'entry', label: 'Entry Level' },
+  ];
+
+  // Department/Function filters (Apollo API values)
+  const DEPARTMENT_OPTIONS = [
+    { value: 'sales', label: 'Sales' },
+    { value: 'marketing', label: 'Marketing' },
+    { value: 'engineering', label: 'Engineering' },
+    { value: 'product_management', label: 'Product' },
+    { value: 'human_resources', label: 'HR / People' },
+    { value: 'finance', label: 'Finance' },
+    { value: 'operations', label: 'Operations' },
+    { value: 'it', label: 'IT' },
+    { value: 'legal', label: 'Legal' },
+    { value: 'consulting', label: 'Consulting' },
+    { value: 'education', label: 'Education/Training' },
+    { value: 'customer_service', label: 'Customer Success' },
+  ];
+
+  // Funding stage filters
+  const FUNDING_OPTIONS = [
+    { value: 'seed', label: 'Seed' },
+    { value: 'series_a', label: 'Series A' },
+    { value: 'series_b', label: 'Series B' },
+    { value: 'series_c', label: 'Series C' },
+    { value: 'series_d', label: 'Series D+' },
+    { value: 'private_equity', label: 'Private Equity' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  // Revenue ranges
+  const REVENUE_OPTIONS = [
+    { value: '', label: 'Any' },
+    { value: '0', label: '$0' },
+    { value: '1000000', label: '$1M' },
+    { value: '10000000', label: '$10M' },
+    { value: '50000000', label: '$50M' },
+    { value: '100000000', label: '$100M' },
+    { value: '500000000', label: '$500M' },
+    { value: '1000000000', label: '$1B+' },
+  ];
+
+  // Industry categories (common ones)
+  const INDUSTRY_OPTIONS = [
+    'Technology', 'Software', 'SaaS', 'Healthcare', 'Finance', 'Manufacturing',
+    'Retail', 'Education', 'Professional Services', 'Real Estate', 'Media',
+    'Telecommunications', 'Transportation', 'Energy', 'Agriculture', 'Hospitality'
   ];
 
   const applyPreset = (preset) => {
     setSearchCriteria({
+      ...searchCriteria,
       titles: preset.titles || '',
       companies: '',
       industries: preset.industries || '',
       locations: '',
       companySize: preset.companySize || '',
       keywords: '',
+      seniorities: preset.seniorities || [],
+      departments: preset.departments || [],
+      fundingStages: preset.fundingStages || [],
     });
   };
 
@@ -246,23 +438,56 @@ const Prospects = () => {
         // Use provided params (e.g. for "Find Decision Makers" drill-down)
         Object.assign(body, overrideParams);
       } else {
-        // Build from state
+        // Build from state - Enhanced with all Apollo filters
         if (currentMode === 'people') {
+             // Basic filters
              if (searchCriteria.titles) body.person_titles = searchCriteria.titles.split(',').map(t => t.trim());
              if (searchCriteria.locations) body.person_locations = searchCriteria.locations.split(',').map(l => l.trim());
              if (searchCriteria.industries) body.organization_industry_tag_ids = searchCriteria.industries.split(',').map(i => i.trim());
              if (searchCriteria.companies) body.organization_names = searchCriteria.companies.split(',').map(c => c.trim());
-             
-             // Smart Filter: "Growth Mode" (Simulated by keywords if user types them or we can add a preset)
              if (searchCriteria.keywords) body.q_keywords = searchCriteria.keywords;
+             
+             // NEW: Seniority filter (Apollo's person_seniorities)
+             if (searchCriteria.seniorities?.length > 0) {
+               body.person_seniorities = searchCriteria.seniorities;
+             }
+             
+             // NEW: Department/Function filter (Apollo's person_departments)  
+             if (searchCriteria.departments?.length > 0) {
+               body.person_departments = searchCriteria.departments;
+             }
+             
+             // NEW: Email status filter
+             if (searchCriteria.emailStatus === 'verified') {
+               body.contact_email_status = ['verified'];
+             } else if (searchCriteria.emailStatus === 'likely') {
+               body.contact_email_status = ['verified', 'likely_to_engage'];
+             }
+             
+             // NEW: Exclude titles
+             if (searchCriteria.excludeTitles) {
+               body.person_not_titles = searchCriteria.excludeTitles.split(',').map(t => t.trim());
+             }
+             
+             // NEW: Company headquarters location
+             if (searchCriteria.companyHeadquarters) {
+               body.organization_hq_location_ids = searchCriteria.companyHeadquarters.split(',').map(l => l.trim());
+             }
+             
         } else {
              // Company Search
              if (searchCriteria.companies) body.q_organization_name = searchCriteria.companies;
              if (searchCriteria.locations) body.organization_locations = searchCriteria.locations.split(',').map(l => l.trim());
              if (searchCriteria.industries) body.organization_industry_tag_ids = searchCriteria.industries.split(',').map(i => i.trim());
              if (searchCriteria.keywords) body.q_organization_keyword_tags = searchCriteria.keywords.split(',').map(k => k.trim());
+             
+             // NEW: Technologies filter for companies
+             if (searchCriteria.technologies) {
+               body.organization_technologies = searchCriteria.technologies.split(',').map(t => t.trim());
+             }
         }
 
+        // Company size filter (both modes)
         if (searchCriteria.companySize) {
           const sizeMap = {
             '1-10': ['1', '10'],
@@ -273,13 +498,20 @@ const Prospects = () => {
             '1000+': ['1001', '10000'],
           };
           if (sizeMap[searchCriteria.companySize]) {
-             if (currentMode === 'people') {
-                body.organization_num_employees_ranges = [sizeMap[searchCriteria.companySize].join(',')];
-             } else {
-                // Apollo Org Search uses slightly different param sometimes, but let's try the standard one
-                body.organization_num_employees_ranges = [sizeMap[searchCriteria.companySize].join(',')];
-             }
+            body.organization_num_employees_ranges = [sizeMap[searchCriteria.companySize].join(',')];
           }
+        }
+        
+        // NEW: Revenue range filter
+        if (searchCriteria.revenueMin || searchCriteria.revenueMax) {
+          const revMin = searchCriteria.revenueMin ? parseInt(searchCriteria.revenueMin) : 0;
+          const revMax = searchCriteria.revenueMax ? parseInt(searchCriteria.revenueMax) : 1000000000000;
+          body.organization_estimated_revenue_range = { min: revMin, max: revMax };
+        }
+        
+        // NEW: Funding stage filter
+        if (searchCriteria.fundingStages?.length > 0) {
+          body.organization_latest_funding_stage_cd = searchCriteria.fundingStages;
         }
       }
 
@@ -595,21 +827,98 @@ const Prospects = () => {
     p.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const addToSequence = async (prospect) => {
-    // In a real app, this would open a modal to select the campaign
-    // For this demo, we'll assign to "Trojan Horse"
-    try {
-        await updateDoc(doc(db, 'corporate_prospects', prospect.id), {
-            status: 'sequence_active',
-            campaignId: 'c1', // Trojan Horse
-            nextTaskDate: new Date().toISOString(),
-            nextTaskType: 'email'
-        });
-        alert(`Added ${prospect.name} to 'Trojan Horse' sequence. Check the Outreach tab.`);
-        loadProspects();
-    } catch (e) {
-        console.error("Error adding to sequence", e);
+  // Helper to fill merge fields in templates
+  const fillMergeFields = (text, prospect, startDate = null) => {
+    if (!text) return '';
+    const firstName = prospect.name ? prospect.name.split(' ')[0] : '';
+    const lastName = prospect.name ? prospect.name.split(' ').slice(1).join(' ') : '';
+    
+    // Calculate date for [Date] placeholder
+    const eventDate = startDate ? new Date(startDate) : new Date();
+    eventDate.setDate(eventDate.getDate() + 7); // Default event 1 week from start
+    const formattedDate = eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    
+    return text
+      .replace(/\[First Name\]/g, firstName || '[First Name]')
+      .replace(/\[Last Name\]/g, lastName || '[Last Name]')
+      .replace(/\[Full Name\]/g, prospect.name || '[Full Name]')
+      .replace(/\[Company\]/g, prospect.company || '[Company]')
+      .replace(/\[Their Company\]/g, prospect.company || '[Their Company]')
+      .replace(/\[Title\]/g, prospect.title || '[Title]')
+      .replace(/\[Industry\]/g, prospect.industry || 'your industry')
+      .replace(/\[Date\]/g, formattedDate)
+      .replace(/\[Topic\]/g, 'Leadership Development')
+      .replace(/\[Link\]/g, '[Link will be inserted]');
+  };
+
+  // Calculate actual date for each step
+  const getStepDate = (stepDay, startDate) => {
+    const date = startDate ? new Date(startDate) : new Date();
+    date.setDate(date.getDate() + stepDay);
+    // Skip weekends
+    while (date.getDay() === 0 || date.getDay() === 6) {
+      date.setDate(date.getDate() + 1);
     }
+    return date;
+  };
+
+  // Open sequence launcher modal
+  const openSequenceLauncher = (prospect) => {
+    setSequenceProspect(prospect);
+    setSelectedCampaign(null);
+    setSequenceStartDate(new Date().toISOString().split('T')[0]); // Today
+    setPreviewStep(0);
+    setLaunchConfirmed(false);
+    setSelectedSender(''); // No default - require user to choose who gets replies
+    setShowSequenceLauncher(true);
+  };
+
+  // Launch the sequence
+  const launchSequence = async () => {
+    if (!sequenceProspect || !selectedCampaign || !launchConfirmed || !selectedSender) return;
+    
+    setLaunching(true);
+    try {
+      const campaign = CAMPAIGNS[selectedCampaign];
+      const startDate = sequenceStartDate ? new Date(sequenceStartDate) : new Date();
+      const senderInfo = TEAM_SENDERS.find(s => s.email === selectedSender);
+      
+      // Calculate first task date based on first step
+      const firstStep = campaign.steps[0];
+      const firstTaskDate = getStepDate(firstStep.day, startDate);
+      
+      await updateDoc(doc(db, 'corporate_prospects', sequenceProspect.id), {
+        status: 'sequence_active',
+        campaignId: selectedCampaign,
+        campaignName: campaign.name,
+        sequenceStartDate: startDate.toISOString(),
+        currentStepIndex: 0,
+        nextTaskDate: firstTaskDate.toISOString(),
+        nextTaskType: firstStep.type,
+        sequenceLaunchedAt: new Date().toISOString(),
+        sequenceLaunchedBy: currentUser?.email || 'unknown',
+        // Sender configuration - who replies go to
+        assignedSenderEmail: selectedSender,
+        assignedSenderName: senderInfo?.name || selectedSender,
+        assignedSenderTitle: senderInfo?.title || '',
+      });
+      
+      setShowSequenceLauncher(false);
+      loadProspects();
+      
+      // Show success with details
+      alert(`✅ Sequence launched!\n\n${sequenceProspect.name} is now on "${campaign.name}"\n\nFirst touch: ${firstStep.name} on ${firstTaskDate.toLocaleDateString()}\n\nReplies will go to: ${senderInfo?.name || selectedSender}`);
+    } catch (e) {
+      console.error("Error launching sequence", e);
+      alert("Failed to launch sequence. Please try again.");
+    } finally {
+      setLaunching(false);
+    }
+  };
+
+  // Legacy function - now opens the modal
+  const addToSequence = (prospect) => {
+    openSequenceLauncher(prospect);
   };
 
   const statusColors = {
@@ -828,10 +1137,22 @@ const Prospects = () => {
 
           {/* Search Criteria Form */}
           <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
-            <h2 className="font-semibold text-corporate-navy mb-4 flex items-center gap-2">
-              <Target size={18} />
-              {searchMode === 'people' ? 'Define Ideal Person' : 'Define Target Accounts'}
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-corporate-navy flex items-center gap-2">
+                <Target size={18} />
+                {searchMode === 'people' ? 'Define Ideal Person' : 'Define Target Accounts'}
+              </h2>
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="text-sm text-corporate-teal hover:text-corporate-teal/80 flex items-center gap-1"
+              >
+                <Filter size={14} />
+                {showAdvancedFilters ? 'Hide' : 'Show'} Advanced Filters
+                <ChevronDown size={14} className={`transform transition ${showAdvancedFilters ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+            
+            {/* BASIC FILTERS */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               {searchMode === 'people' ? (
               <div>
@@ -906,31 +1227,337 @@ const Prospects = () => {
                   placeholder="Technology, Healthcare, Finance..."
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
                 />
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {INDUSTRY_OPTIONS.slice(0, 8).map(ind => (
+                    <button
+                      key={ind}
+                      onClick={() => {
+                        const current = searchCriteria.industries ? searchCriteria.industries.split(',').map(i => i.trim()) : [];
+                        if (current.includes(ind)) {
+                          setSearchCriteria({ ...searchCriteria, industries: current.filter(i => i !== ind).join(', ') });
+                        } else {
+                          setSearchCriteria({ ...searchCriteria, industries: [...current, ind].join(', ') });
+                        }
+                      }}
+                      className={`text-xs px-2 py-1 rounded-full transition ${
+                        searchCriteria.industries?.includes(ind)
+                          ? 'bg-corporate-teal text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {ind}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-            <button
-              onClick={() => searchApollo()}
-              disabled={searching}
-              className="bg-corporate-teal hover:bg-corporate-teal/90 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {searching ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Searching...
-                </>
-              ) : (
-                <>
-                  <Search size={18} />
-                  Find Prospects
-                </>
-              )}
-            </button>
+            
+            {/* PEOPLE-SPECIFIC FILTERS: Seniority & Department */}
+            {searchMode === 'people' && (
+              <div className="grid grid-cols-2 gap-4 mb-4 pt-4 border-t border-slate-100">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Seniority Level</label>
+                  <div className="flex flex-wrap gap-2">
+                    {SENIORITY_OPTIONS.map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          const current = searchCriteria.seniorities || [];
+                          if (current.includes(option.value)) {
+                            setSearchCriteria({ ...searchCriteria, seniorities: current.filter(s => s !== option.value) });
+                          } else {
+                            setSearchCriteria({ ...searchCriteria, seniorities: [...current, option.value] });
+                          }
+                        }}
+                        className={`text-xs px-3 py-1.5 rounded-full transition border ${
+                          searchCriteria.seniorities?.includes(option.value)
+                            ? 'bg-corporate-teal text-white border-corporate-teal'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-corporate-teal'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Department / Function</label>
+                  <div className="flex flex-wrap gap-2">
+                    {DEPARTMENT_OPTIONS.map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          const current = searchCriteria.departments || [];
+                          if (current.includes(option.value)) {
+                            setSearchCriteria({ ...searchCriteria, departments: current.filter(d => d !== option.value) });
+                          } else {
+                            setSearchCriteria({ ...searchCriteria, departments: [...current, option.value] });
+                          }
+                        }}
+                        className={`text-xs px-3 py-1.5 rounded-full transition border ${
+                          searchCriteria.departments?.includes(option.value)
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-400'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* ADVANCED FILTERS (Collapsible) */}
+            {showAdvancedFilters && (
+              <div className="pt-4 border-t border-slate-200 mt-4">
+                <h3 className="text-sm font-semibold text-slate-600 mb-4 flex items-center gap-2">
+                  <Sparkles size={14} className="text-corporate-teal" />
+                  Advanced Filters
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Revenue Range */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Revenue Range</label>
+                    <div className="flex gap-2 items-center">
+                      <select
+                        value={searchCriteria.revenueMin}
+                        onChange={(e) => setSearchCriteria({ ...searchCriteria, revenueMin: e.target.value })}
+                        className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+                      >
+                        <option value="">Min</option>
+                        {REVENUE_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                      <span className="text-slate-400">to</span>
+                      <select
+                        value={searchCriteria.revenueMax}
+                        onChange={(e) => setSearchCriteria({ ...searchCriteria, revenueMax: e.target.value })}
+                        className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+                      >
+                        <option value="">Max</option>
+                        {REVENUE_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Funding Stage */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Funding Stage</label>
+                    <div className="flex flex-wrap gap-1">
+                      {FUNDING_OPTIONS.map(option => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            const current = searchCriteria.fundingStages || [];
+                            if (current.includes(option.value)) {
+                              setSearchCriteria({ ...searchCriteria, fundingStages: current.filter(f => f !== option.value) });
+                            } else {
+                              setSearchCriteria({ ...searchCriteria, fundingStages: [...current, option.value] });
+                            }
+                          }}
+                          className={`text-xs px-2 py-1 rounded transition ${
+                            searchCriteria.fundingStages?.includes(option.value)
+                              ? 'bg-green-600 text-white'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Email Status (People mode only) */}
+                  {searchMode === 'people' && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Email Status</label>
+                      <select
+                        value={searchCriteria.emailStatus}
+                        onChange={(e) => setSearchCriteria({ ...searchCriteria, emailStatus: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+                      >
+                        <option value="any">Any (show all)</option>
+                        <option value="verified">✓ Verified emails only</option>
+                        <option value="likely">Verified + Likely</option>
+                      </select>
+                    </div>
+                  )}
+                  
+                  {/* Technologies (Company mode) */}
+                  {searchMode === 'companies' && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Technologies Used</label>
+                      <input
+                        type="text"
+                        value={searchCriteria.technologies}
+                        onChange={(e) => setSearchCriteria({ ...searchCriteria, technologies: e.target.value })}
+                        placeholder="Salesforce, HubSpot, AWS..."
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Exclude Titles (People mode) */}
+                  {searchMode === 'people' && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Exclude Titles</label>
+                      <input
+                        type="text"
+                        value={searchCriteria.excludeTitles}
+                        onChange={(e) => setSearchCriteria({ ...searchCriteria, excludeTitles: e.target.value })}
+                        placeholder="Intern, Assistant, Contractor..."
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Company HQ Location */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Company HQ Location</label>
+                    <input
+                      type="text"
+                      value={searchCriteria.companyHeadquarters}
+                      onChange={(e) => setSearchCriteria({ ...searchCriteria, companyHeadquarters: e.target.value })}
+                      placeholder="San Francisco, New York..."
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">HQ only (not remote workers)</p>
+                  </div>
+                </div>
+                
+                {/* Active Filters Summary */}
+                {(searchCriteria.seniorities?.length > 0 || searchCriteria.departments?.length > 0 || searchCriteria.fundingStages?.length > 0 || searchCriteria.revenueMin || searchCriteria.revenueMax) && (
+                  <div className="mt-4 p-3 bg-slate-50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-600">Active Filters:</span>
+                      <button
+                        onClick={() => setSearchCriteria({
+                          ...searchCriteria,
+                          seniorities: [],
+                          departments: [],
+                          fundingStages: [],
+                          revenueMin: '',
+                          revenueMax: '',
+                          emailStatus: 'any',
+                          excludeTitles: '',
+                          technologies: '',
+                          companyHeadquarters: '',
+                        })}
+                        className="text-xs text-red-500 hover:text-red-700"
+                      >
+                        Clear Advanced
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {searchCriteria.seniorities?.map(s => (
+                        <span key={s} className="text-xs bg-corporate-teal/10 text-corporate-teal px-2 py-0.5 rounded">
+                          {SENIORITY_OPTIONS.find(o => o.value === s)?.label}
+                        </span>
+                      ))}
+                      {searchCriteria.departments?.map(d => (
+                        <span key={d} className="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded">
+                          {DEPARTMENT_OPTIONS.find(o => o.value === d)?.label}
+                        </span>
+                      ))}
+                      {searchCriteria.fundingStages?.map(f => (
+                        <span key={f} className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded">
+                          {FUNDING_OPTIONS.find(o => o.value === f)?.label}
+                        </span>
+                      ))}
+                      {(searchCriteria.revenueMin || searchCriteria.revenueMax) && (
+                        <span className="text-xs bg-amber-100 text-amber-600 px-2 py-0.5 rounded">
+                          Revenue: {REVENUE_OPTIONS.find(o => o.value === searchCriteria.revenueMin)?.label || '$0'} - {REVENUE_OPTIONS.find(o => o.value === searchCriteria.revenueMax)?.label || 'Any'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Search Actions */}
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-4">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => searchApollo()}
+                  disabled={searching}
+                  className="bg-corporate-teal hover:bg-corporate-teal/90 text-white px-6 py-2.5 rounded-lg flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {searching ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search size={18} />
+                      Find Prospects
+                    </>
+                  )}
+                </button>
+                
+                {/* Active filter count badge */}
+                {(() => {
+                  const filterCount = [
+                    searchCriteria.titles,
+                    searchCriteria.companies,
+                    searchCriteria.locations,
+                    searchCriteria.industries,
+                    searchCriteria.companySize,
+                    searchCriteria.keywords,
+                    searchCriteria.seniorities?.length > 0,
+                    searchCriteria.departments?.length > 0,
+                    searchCriteria.fundingStages?.length > 0,
+                    searchCriteria.revenueMin || searchCriteria.revenueMax,
+                    searchCriteria.emailStatus !== 'any',
+                    searchCriteria.excludeTitles,
+                    searchCriteria.technologies,
+                    searchCriteria.companyHeadquarters,
+                  ].filter(Boolean).length;
+                  
+                  return filterCount > 0 ? (
+                    <span className="text-sm text-slate-500">
+                      {filterCount} filter{filterCount !== 1 ? 's' : ''} active
+                    </span>
+                  ) : null;
+                })()}
+              </div>
+              
+              <button
+                onClick={() => setSearchCriteria({
+                  titles: '',
+                  companies: '',
+                  industries: '',
+                  locations: '',
+                  companySize: '',
+                  keywords: '',
+                  seniorities: [],
+                  departments: [],
+                  revenueMin: '',
+                  revenueMax: '',
+                  fundingStages: [],
+                  technologies: '',
+                  emailStatus: 'any',
+                  excludeTitles: '',
+                  yearsInPosition: '',
+                  companyHeadquarters: '',
+                })}
+                className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1"
+              >
+                <X size={14} />
+                Clear All Filters
+              </button>
+            </div>
           </div>
 
           {/* Search Results */}
           {searchResults.length > 0 && (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="p-4 bg-yellow-50 text-xs font-mono overflow-auto max-h-40 border-b border-yellow-100">
+              <div className="p-4 bg-yellow-50 text-xs font-mono overflow-auto max-h-40 border-b border-yellow-100 hidden">
                  <strong>DEBUG: First Result Raw Data</strong>
                  <pre>{JSON.stringify(searchResults[0].original, null, 2)}</pre>
               </div>
@@ -1521,6 +2148,382 @@ const Prospects = () => {
                >
                   Let's Go Hunt
                </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== SEQUENCE LAUNCHER MODAL ========== */}
+      {showSequenceLauncher && sequenceProspect && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-corporate-navy to-corporate-navy/90">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <Play size={20} />
+                    Launch Outreach Sequence
+                  </h2>
+                  <p className="text-white/70 mt-1">
+                    For: <span className="font-semibold text-white">{sequenceProspect.name}</span> at {sequenceProspect.company}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSequenceLauncher(false)}
+                  className="text-white/70 hover:text-white p-2 rounded-lg hover:bg-white/10 transition"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Step 1: Select Campaign */}
+              <div className="mb-8">
+                <h3 className="font-semibold text-corporate-navy mb-4 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-corporate-teal text-white text-xs flex items-center justify-center">1</span>
+                  Choose Sequence Path
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {Object.values(CAMPAIGNS).map(campaign => (
+                    <button
+                      key={campaign.id}
+                      onClick={() => { setSelectedCampaign(campaign.id); setPreviewStep(0); }}
+                      className={`p-4 rounded-xl border-2 text-left transition ${
+                        selectedCampaign === campaign.id
+                          ? 'border-corporate-teal bg-teal-50'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-semibold text-corporate-navy">{campaign.name}</h4>
+                          <p className="text-sm text-slate-500 mt-1">{campaign.description}</p>
+                        </div>
+                        {selectedCampaign === campaign.id && (
+                          <CheckCircle size={20} className="text-corporate-teal flex-shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-3 text-xs text-slate-400">
+                        <span className="flex items-center gap-1">
+                          <Mail size={12} /> {campaign.steps.filter(s => s.type === 'email').length} emails
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Phone size={12} /> {campaign.steps.filter(s => s.type === 'call').length} calls
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Linkedin size={12} /> {campaign.steps.filter(s => s.type === 'linkedin').length} LinkedIn
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock size={12} /> {campaign.steps[campaign.steps.length - 1]?.day || 0} days
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Step 2: Select Sender (Reply-To) */}
+              {selectedCampaign && (
+                <div className="mb-8">
+                  <h3 className="font-semibold text-corporate-navy mb-4 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-corporate-teal text-white text-xs flex items-center justify-center">2</span>
+                    Who Should Replies Go To?
+                  </h3>
+                  <p className="text-sm text-slate-500 mb-3">
+                    Emails will be sent from the system, but replies will go directly to this person's inbox.
+                  </p>
+                  <select
+                    value={selectedSender}
+                    onChange={(e) => setSelectedSender(e.target.value)}
+                    className="w-full max-w-md px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20 focus:border-corporate-teal bg-white text-corporate-navy"
+                  >
+                    <option value="">-- Select who receives replies --</option>
+                    {TEAM_SENDERS.map(sender => (
+                      <option key={sender.email} value={sender.email}>
+                        {sender.name} ({sender.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Step 3: Set Start Date */}
+              {selectedCampaign && selectedSender && (
+                <div className="mb-8">
+                  <h3 className="font-semibold text-corporate-navy mb-4 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-corporate-teal text-white text-xs flex items-center justify-center">3</span>
+                    Set Start Date
+                  </h3>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <input
+                        type="date"
+                        value={sequenceStartDate}
+                        onChange={(e) => setSequenceStartDate(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+                      />
+                    </div>
+                    <button
+                      onClick={() => setSequenceStartDate(new Date().toISOString().split('T')[0])}
+                      className="px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-600 transition"
+                    >
+                      Start Today
+                    </button>
+                    <button
+                      onClick={() => {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        setSequenceStartDate(tomorrow.toISOString().split('T')[0]);
+                      }}
+                      className="px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-600 transition"
+                    >
+                      Tomorrow
+                    </button>
+                    <button
+                      onClick={() => {
+                        const nextWeek = new Date();
+                        nextWeek.setDate(nextWeek.getDate() + 7);
+                        setSequenceStartDate(nextWeek.toISOString().split('T')[0]);
+                      }}
+                      className="px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-600 transition"
+                    >
+                      Next Week
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Preview Sequence Timeline */}
+              {selectedCampaign && selectedSender && sequenceStartDate && (
+                <div className="mb-8">
+                  <h3 className="font-semibold text-corporate-navy mb-4 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-corporate-teal text-white text-xs flex items-center justify-center">4</span>
+                    Preview Sequence
+                    <span className="text-sm font-normal text-slate-500 ml-2">(Click steps to preview content)</span>
+                  </h3>
+                  
+                  {/* Timeline */}
+                  <div className="bg-slate-50 rounded-xl p-4 mb-4">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                      {CAMPAIGNS[selectedCampaign].steps.map((step, idx) => {
+                        const stepDate = getStepDate(step.day, sequenceStartDate);
+                        const isActive = previewStep === idx;
+                        const typeColors = {
+                          email: 'bg-blue-500',
+                          call: 'bg-green-500',
+                          linkedin: 'bg-indigo-500',
+                          video: 'bg-pink-500',
+                        };
+                        const typeIcons = {
+                          email: <Mail size={14} />,
+                          call: <Phone size={14} />,
+                          linkedin: <Linkedin size={14} />,
+                          video: <Eye size={14} />,
+                        };
+                        
+                        return (
+                          <React.Fragment key={idx}>
+                            <button
+                              onClick={() => setPreviewStep(idx)}
+                              className={`flex-shrink-0 p-3 rounded-lg border-2 transition min-w-[140px] ${
+                                isActive 
+                                  ? 'border-corporate-teal bg-white shadow-md' 
+                                  : 'border-transparent bg-white hover:border-slate-200'
+                              }`}
+                            >
+                              <div className={`w-8 h-8 rounded-full ${typeColors[step.type]} text-white flex items-center justify-center mx-auto mb-2`}>
+                                {typeIcons[step.type]}
+                              </div>
+                              <div className="text-xs font-medium text-corporate-navy text-center">{step.name}</div>
+                              <div className="text-xs text-slate-400 text-center mt-1">
+                                {stepDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </div>
+                              <div className="text-xs text-slate-400 text-center">
+                                Day {step.day}
+                              </div>
+                            </button>
+                            {idx < CAMPAIGNS[selectedCampaign].steps.length - 1 && (
+                              <ChevronRight size={16} className="text-slate-300 flex-shrink-0" />
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  {/* Preview Content */}
+                  {CAMPAIGNS[selectedCampaign].steps[previewStep] && (
+                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                      <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded text-xs font-medium text-white ${
+                            CAMPAIGNS[selectedCampaign].steps[previewStep].type === 'email' ? 'bg-blue-500' :
+                            CAMPAIGNS[selectedCampaign].steps[previewStep].type === 'call' ? 'bg-green-500' :
+                            CAMPAIGNS[selectedCampaign].steps[previewStep].type === 'linkedin' ? 'bg-indigo-500' :
+                            'bg-pink-500'
+                          }`}>
+                            {CAMPAIGNS[selectedCampaign].steps[previewStep].type.toUpperCase()}
+                          </span>
+                          <span className="font-medium text-corporate-navy">
+                            {CAMPAIGNS[selectedCampaign].steps[previewStep].name}
+                          </span>
+                        </div>
+                        <span className="text-sm text-slate-500">
+                          {getStepDate(CAMPAIGNS[selectedCampaign].steps[previewStep].day, sequenceStartDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                        </span>
+                      </div>
+                      
+                      <div className="p-4">
+                        {/* Email Preview */}
+                        {CAMPAIGNS[selectedCampaign].steps[previewStep].type === 'email' && (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-xs font-medium text-slate-500 uppercase">To</label>
+                              <div className="text-sm text-corporate-navy">{sequenceProspect.email || <span className="text-red-500">⚠️ No email on file</span>}</div>
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-slate-500 uppercase">Subject</label>
+                              <div className="text-sm text-corporate-navy font-medium">
+                                {fillMergeFields(CAMPAIGNS[selectedCampaign].steps[previewStep].subject, sequenceProspect, sequenceStartDate)}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-slate-500 uppercase">Body</label>
+                              <div className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 p-3 rounded-lg mt-1 border">
+                                {fillMergeFields(CAMPAIGNS[selectedCampaign].steps[previewStep].template, sequenceProspect, sequenceStartDate)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* LinkedIn Preview */}
+                        {CAMPAIGNS[selectedCampaign].steps[previewStep].type === 'linkedin' && (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-xs font-medium text-slate-500 uppercase">LinkedIn Profile</label>
+                              <div className="text-sm text-corporate-navy">{sequenceProspect.linkedin || <span className="text-amber-500">⚠️ No LinkedIn URL - will need manual lookup</span>}</div>
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-slate-500 uppercase">Message</label>
+                              <div className="text-sm text-slate-700 whitespace-pre-wrap bg-blue-50 p-3 rounded-lg mt-1 border border-blue-100">
+                                {fillMergeFields(CAMPAIGNS[selectedCampaign].steps[previewStep].template, sequenceProspect, sequenceStartDate)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Call Preview */}
+                        {CAMPAIGNS[selectedCampaign].steps[previewStep].type === 'call' && (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-xs font-medium text-slate-500 uppercase">Phone Number</label>
+                              <div className="text-sm text-corporate-navy">{sequenceProspect.phone || <span className="text-amber-500">⚠️ No phone on file</span>}</div>
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-slate-500 uppercase">Call Script</label>
+                              <div className="text-sm text-slate-700 whitespace-pre-wrap bg-green-50 p-3 rounded-lg mt-1 border border-green-100">
+                                {fillMergeFields(CAMPAIGNS[selectedCampaign].steps[previewStep].script || CAMPAIGNS[selectedCampaign].steps[previewStep].template, sequenceProspect, sequenceStartDate)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Video Preview */}
+                        {CAMPAIGNS[selectedCampaign].steps[previewStep].type === 'video' && (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-xs font-medium text-slate-500 uppercase">Video Instructions</label>
+                              <div className="text-sm text-slate-700 whitespace-pre-wrap bg-pink-50 p-3 rounded-lg mt-1 border border-pink-100">
+                                {fillMergeFields(CAMPAIGNS[selectedCampaign].steps[previewStep].template, sequenceProspect, sequenceStartDate)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Psychology Note */}
+                        {CAMPAIGNS[selectedCampaign].steps[previewStep].psychology && (
+                          <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <Sparkles size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <div className="text-xs font-semibold text-amber-700 uppercase">Why This Works</div>
+                                <div className="text-sm text-amber-800 mt-1">
+                                  {CAMPAIGNS[selectedCampaign].steps[previewStep].psychology}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Missing Info Warning */}
+              {selectedCampaign && (!sequenceProspect.email || !sequenceProspect.name) && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-red-800">Missing Required Information</h4>
+                      <ul className="mt-2 space-y-1 text-sm text-red-700">
+                        {!sequenceProspect.email && <li>• No email address on file for this prospect</li>}
+                        {!sequenceProspect.name && <li>• No name on file for this prospect</li>}
+                      </ul>
+                      <p className="mt-2 text-sm text-red-600">Please update the prospect before launching a sequence.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer with Confirmation */}
+            <div className="p-6 border-t border-slate-200 bg-slate-50">
+              {selectedCampaign && selectedSender && sequenceStartDate && (
+                <div className="mb-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={launchConfirmed}
+                      onChange={(e) => setLaunchConfirmed(e.target.checked)}
+                      className="w-5 h-5 rounded border-slate-300 text-corporate-teal focus:ring-corporate-teal"
+                    />
+                    <span className="text-sm text-slate-700">
+                      I have reviewed the sequence and confirm I want to start outreach to <strong>{sequenceProspect.name}</strong> using the <strong>"{CAMPAIGNS[selectedCampaign]?.name}"</strong> sequence starting <strong>{new Date(sequenceStartDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong>. Replies will go to <strong>{TEAM_SENDERS.find(s => s.email === selectedSender)?.name || selectedSender}</strong>.
+                    </span>
+                  </label>
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setShowSequenceLauncher(false)}
+                  className="px-4 py-2 text-slate-600 hover:text-slate-800 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={launchSequence}
+                  disabled={!selectedCampaign || !selectedSender || !sequenceStartDate || !launchConfirmed || launching || !sequenceProspect.email}
+                  className="px-6 py-3 bg-corporate-teal hover:bg-corporate-teal/90 text-white rounded-lg font-semibold flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {launching ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Launching...
+                    </>
+                  ) : (
+                    <>
+                      <Play size={18} />
+                      Launch Sequence
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

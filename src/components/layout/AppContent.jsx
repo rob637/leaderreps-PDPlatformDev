@@ -13,6 +13,7 @@ import TimeTravelBanner from '../admin/TimeTravelBanner.jsx';
 import { PageTransition } from '../motion';
 import { SyncIndicator } from '../offline';
 import SkipLinks from '../accessibility/SkipLinks';
+import MobilePWABanner from '../ui/MobilePWABanner.jsx';
 
 const AppContent = ({
   currentScreen,
@@ -231,6 +232,9 @@ const AppContent = ({
                 currentScreen={currentScreen} 
               />
             </div>
+
+            {/* Mobile PWA Install Banner */}
+            <MobilePWABanner />
           </main>
         </div>
       </div>

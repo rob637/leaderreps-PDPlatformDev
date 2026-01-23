@@ -4,7 +4,8 @@ import {
   AlertCircle, ChevronRight, Play, Pause, MoreHorizontal, 
   Mail, Linkedin, Ticket, ArrowRight, BarChart2, Users, X,
   Lightbulb, Shield, Zap, AlertTriangle, Plus, Eye, Edit2, 
-  ChevronDown, ChevronUp, Check, FileText, RefreshCw, Sparkles, Wand2
+  ChevronDown, ChevronUp, Check, FileText, RefreshCw, Sparkles, Wand2,
+  MessageCircle, SkipForward, Inbox
 } from 'lucide-react';
 import { collection, query, where, getDocs, updateDoc, doc, addDoc, getDoc, setDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -12,7 +13,7 @@ import { getAuth } from 'firebase/auth';
 import app, { db } from '../../../firebase';
 
 const Outreach = () => {
-  const [activeTab, setActiveTab] = useState('tasks');
+  const [activeTab, setActiveTab] = useState('review-queue');
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null); // For the modal
@@ -193,12 +194,23 @@ const Outreach = () => {
                 stepIndex: stepIndex,
                 stepData: step,
                 due: dueStatus,
+                dueDate: taskDate, // Actual date object for sorting
+                dueDiffDays: diffDays, // Days until due (negative = overdue)
+                nextTaskDate: data.nextTaskDate,
                 status: 'pending',
                 email: data.email,
                 phone: data.phone,
                 linkedin: data.linkedin,
                 ownerId: data.ownerId,
-                ownerName: data.ownerName
+                ownerName: data.ownerName,
+                history: data.history || [],
+                // Email tracking
+                emailOpens: data.emailOpens || [],
+                lastEmailOpened: data.lastEmailOpened,
+                // Assigned sender for Reply-To
+                assignedSenderEmail: data.assignedSenderEmail,
+                assignedSenderName: data.assignedSenderName,
+                assignedSenderTitle: data.assignedSenderTitle
             };
         });
         
@@ -268,7 +280,20 @@ const Outreach = () => {
       };
     });
     
+    // Sort by due date (overdue first, then today, then future)
+    queue.sort((a, b) => (a.dueDiffDays || 0) - (b.dueDiffDays || 0));
+    
     setEmailQueue(queue);
+  };
+
+  // Group emails by date category for Review Queue
+  const getGroupedEmails = () => {
+    const overdue = emailQueue.filter(e => e.dueDiffDays < 0);
+    const today = emailQueue.filter(e => e.dueDiffDays === 0);
+    const tomorrow = emailQueue.filter(e => e.dueDiffDays === 1);
+    const future = emailQueue.filter(e => e.dueDiffDays > 1);
+    
+    return { overdue, today, tomorrow, future };
   };
 
   const detectMergeFields = (text) => {
@@ -472,6 +497,54 @@ BODY:
     setShowComposer(true);
   };
 
+  // Mark prospect as replied - pauses sequence
+  const markAsReplied = async (task) => {
+    if (!confirm(`Mark ${task.prospect} as replied? This will pause their sequence.`)) return;
+    
+    try {
+      await updateDoc(doc(db, 'corporate_prospects', task.id), {
+        status: 'replied',
+        repliedAt: new Date().toISOString(),
+        history: [
+          ...(task.history || []),
+          { date: new Date().toISOString(), action: 'Prospect replied - sequence paused' }
+        ]
+      });
+      
+      // Remove from local lists
+      setTasks(prev => prev.filter(t => t.id !== task.id));
+      setEmailQueue(prev => prev.filter(e => e.id !== task.id));
+      
+      alert(`${task.prospect} marked as replied. Sequence paused.`);
+    } catch (e) {
+      console.error('Error marking as replied', e);
+      alert('Error updating prospect status.');
+    }
+  };
+
+  // Skip/delay a task by 1 day
+  const skipTask = async (task) => {
+    try {
+      const currentDate = task.nextTaskDate ? new Date(task.nextTaskDate) : new Date();
+      const newDate = new Date(currentDate);
+      newDate.setDate(newDate.getDate() + 1);
+      
+      await updateDoc(doc(db, 'corporate_prospects', task.id), {
+        nextTaskDate: newDate.toISOString(),
+        history: [
+          ...(task.history || []),
+          { date: new Date().toISOString(), action: `Step ${task.stepIndex + 1} delayed by 1 day` }
+        ]
+      });
+      
+      // Reload to refresh the queue
+      loadCampaignsAndTasks();
+    } catch (e) {
+      console.error('Error skipping task', e);
+      alert('Error delaying task.');
+    }
+  };
+
   const sendEmail = async (task, isTest = false) => {
       setSending(true);
       try {
@@ -504,7 +577,12 @@ BODY:
               subject: subject,
               text: body,
               html: body.replace(/\n/g, '<br>'), // Simple text-to-html
-              isTest: isTest
+              isTest: isTest,
+              // Pass the assigned sender for Reply-To header
+              replyTo: task.assignedSenderEmail,
+              senderName: task.assignedSenderName ? `${task.assignedSenderName} from LeaderReps` : 'LeaderReps Corporate',
+              // Pass prospect ID for open tracking
+              prospectId: task.id
           });
 
           if (response.data.success) {
@@ -594,28 +672,29 @@ BODY:
       <div className="border-b border-slate-200 mb-6">
         <div className="flex gap-6">
           <button
+            onClick={() => setActiveTab('review-queue')}
+            className={`pb-3 text-sm font-medium border-b-2 transition flex items-center gap-2 ${
+              activeTab === 'review-queue' ? 'border-corporate-teal text-corporate-teal' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Inbox size={16} />
+            Review Queue
+            {emailQueue.length > 0 && (
+              <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
+                emailQueue.filter(e => e.dueDiffDays <= 0).length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+              }`}>
+                {emailQueue.filter(e => e.dueDiffDays <= 0).length} due
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab('tasks')}
             className={`pb-3 text-sm font-medium border-b-2 transition ${
               activeTab === 'tasks' ? 'border-corporate-teal text-corporate-teal' : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            Daily Tasks 
-            {tasks.length > 0 && <span className="ml-2 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs">{tasks.length}</span>}
-          </button>
-          <button
-            onClick={() => setActiveTab('email-queue')}
-            className={`pb-3 text-sm font-medium border-b-2 transition ${
-              activeTab === 'email-queue' ? 'border-corporate-teal text-corporate-teal' : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            📧 Email Queue
-            {emailQueue.length > 0 && (
-              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                emailQueue.some(e => !e.isReady) ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
-              }`}>
-                {emailQueue.filter(e => e.isReady).length}/{emailQueue.length} ready
-              </span>
-            )}
+            All Tasks 
+            {tasks.length > 0 && <span className="ml-2 bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">{tasks.length}</span>}
           </button>
           <button
             onClick={() => setActiveTab('campaigns')}
@@ -623,7 +702,7 @@ BODY:
               activeTab === 'campaigns' ? 'border-corporate-teal text-corporate-teal' : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            Review Strategy
+            Strategy
           </button>
         </div>
       </div>
@@ -689,7 +768,185 @@ BODY:
         </div>
       )}
 
-      {/* EMAIL QUEUE VIEW */}
+      {/* REVIEW QUEUE VIEW - The main daily workflow */}
+      {activeTab === 'review-queue' && (
+        <div className="space-y-6">
+          {/* Queue Header */}
+          <div className="bg-white border border-slate-200 rounded-xl p-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <h3 className="font-semibold text-corporate-navy text-lg">📬 Review Queue</h3>
+                <span className="text-sm text-slate-500">
+                  Review and send emails at your pace
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => buildEmailQueue(tasks, campaigns)}
+                  className="text-slate-500 hover:text-slate-700 text-sm flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50"
+                >
+                  <RefreshCw size={14} /> Refresh
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex gap-4 text-xs text-slate-500">
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-green-500" /> Ready to send
+            </span>
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-amber-500" /> Missing fields
+            </span>
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-red-500" /> Missing email
+            </span>
+            <span className="flex items-center gap-1">
+              <MessageCircle size={12} className="text-blue-500" /> They replied
+            </span>
+            <span className="flex items-center gap-1">
+              <SkipForward size={12} className="text-slate-400" /> Skip 1 day
+            </span>
+          </div>
+
+          {emailQueue.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
+              <CheckCircle size={48} className="mx-auto text-green-400 mb-4" />
+              <h3 className="text-lg font-bold text-corporate-navy mb-2">Queue Empty!</h3>
+              <p className="text-slate-500">No emails in your outreach pipeline. Add prospects to sequences to get started.</p>
+            </div>
+          ) : (
+            <>
+              {/* OVERDUE SECTION */}
+              {getGroupedEmails().overdue.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <h4 className="font-semibold text-red-700">Overdue</h4>
+                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                      {getGroupedEmails().overdue.length} email{getGroupedEmails().overdue.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {getGroupedEmails().overdue.map(email => (
+                      <ReviewQueueCard 
+                        key={email.id} 
+                        email={email} 
+                        campaigns={campaigns}
+                        expandedEmails={expandedEmails}
+                        toggleEmailExpand={toggleEmailExpand}
+                        updateEmailContent={updateEmailContent}
+                        sendEmail={sendEmail}
+                        markAsReplied={markAsReplied}
+                        skipTask={skipTask}
+                        sending={sending}
+                        aiPersonalizing={aiPersonalizing}
+                        aiPersonalizeEmail={aiPersonalizeEmail}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TODAY SECTION */}
+              {getGroupedEmails().today.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-3 h-3 rounded-full bg-amber-500" />
+                    <h4 className="font-semibold text-amber-700">Due Today</h4>
+                    <span className="text-xs bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full">
+                      {getGroupedEmails().today.length} email{getGroupedEmails().today.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {getGroupedEmails().today.map(email => (
+                      <ReviewQueueCard 
+                        key={email.id} 
+                        email={email} 
+                        campaigns={campaigns}
+                        expandedEmails={expandedEmails}
+                        toggleEmailExpand={toggleEmailExpand}
+                        updateEmailContent={updateEmailContent}
+                        sendEmail={sendEmail}
+                        markAsReplied={markAsReplied}
+                        skipTask={skipTask}
+                        sending={sending}
+                        aiPersonalizing={aiPersonalizing}
+                        aiPersonalizeEmail={aiPersonalizeEmail}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TOMORROW SECTION */}
+              {getGroupedEmails().tomorrow.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-3 h-3 rounded-full bg-blue-400" />
+                    <h4 className="font-semibold text-blue-700">Tomorrow</h4>
+                    <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                      {getGroupedEmails().tomorrow.length} email{getGroupedEmails().tomorrow.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {getGroupedEmails().tomorrow.map(email => (
+                      <ReviewQueueCard 
+                        key={email.id} 
+                        email={email} 
+                        campaigns={campaigns}
+                        expandedEmails={expandedEmails}
+                        toggleEmailExpand={toggleEmailExpand}
+                        updateEmailContent={updateEmailContent}
+                        sendEmail={sendEmail}
+                        markAsReplied={markAsReplied}
+                        skipTask={skipTask}
+                        sending={sending}
+                        aiPersonalizing={aiPersonalizing}
+                        aiPersonalizeEmail={aiPersonalizeEmail}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* FUTURE SECTION */}
+              {getGroupedEmails().future.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-3 h-3 rounded-full bg-slate-300" />
+                    <h4 className="font-semibold text-slate-600">Coming Up</h4>
+                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                      {getGroupedEmails().future.length} email{getGroupedEmails().future.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {getGroupedEmails().future.map(email => (
+                      <ReviewQueueCard 
+                        key={email.id} 
+                        email={email} 
+                        campaigns={campaigns}
+                        expandedEmails={expandedEmails}
+                        toggleEmailExpand={toggleEmailExpand}
+                        updateEmailContent={updateEmailContent}
+                        sendEmail={sendEmail}
+                        markAsReplied={markAsReplied}
+                        skipTask={skipTask}
+                        sending={sending}
+                        aiPersonalizing={aiPersonalizing}
+                        aiPersonalizeEmail={aiPersonalizeEmail}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* EMAIL QUEUE VIEW (legacy) */}
       {activeTab === 'email-queue' && (
         <div className="space-y-4">
           {/* Queue Header */}
@@ -1176,6 +1433,21 @@ BODY:
                     </div>
                     
                     <div className="flex-1 p-6 overflow-y-auto">
+                        {/* Replies-To Indicator */}
+                        {selectedTask.assignedSenderEmail && (
+                            <div className="mb-4 p-3 bg-teal-50 border border-teal-200 rounded-lg flex items-center gap-3">
+                                <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                    {selectedTask.assignedSenderName?.charAt(0) || 'R'}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-xs text-teal-600 font-medium">Replies will go to:</p>
+                                    <p className="text-sm font-bold text-teal-800">
+                                        {selectedTask.assignedSenderName} ({selectedTask.assignedSenderEmail})
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        
                         <div className="mb-4">
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Subject</label>
                             <input 
@@ -1299,6 +1571,279 @@ BODY:
                     </div>
                 </div>
             </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Review Queue Card Component
+const ReviewQueueCard = ({ 
+  email, 
+  campaigns, 
+  expandedEmails, 
+  toggleEmailExpand, 
+  updateEmailContent, 
+  sendEmail, 
+  markAsReplied, 
+  skipTask, 
+  sending, 
+  aiPersonalizing, 
+  aiPersonalizeEmail 
+}) => {
+  const isExpanded = expandedEmails[email.id];
+  
+  return (
+    <div 
+      className={`bg-white border rounded-xl overflow-hidden transition-all ${
+        isExpanded ? 'shadow-lg border-corporate-teal' : 'border-slate-200 hover:border-slate-300'
+      }`}
+    >
+      {/* Header Row */}
+      <div 
+        className="p-4 flex items-center gap-4 cursor-pointer"
+        onClick={() => toggleEmailExpand(email.id)}
+      >
+        {/* Status Indicator */}
+        <div className={`w-3 h-3 rounded-full shrink-0 ${
+          !email.email ? 'bg-red-500' :
+          email.missingFields.length > 0 ? 'bg-amber-500' :
+          'bg-green-500'
+        }`} />
+        
+        {/* Recipient Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="font-semibold text-corporate-navy">{email.prospect}</span>
+            <span className="text-slate-400 text-sm">• {email.company}</span>
+            {/* Opened indicator */}
+            {email.emailOpens?.length > 0 && (
+              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full flex items-center gap-1" title={`Opened ${email.emailOpens.length} time(s)`}>
+                <Eye size={10} /> Opened
+              </span>
+            )}
+            <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">
+              {campaigns[email.campaignId]?.name || 'Campaign'}
+            </span>
+            <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+              Step {email.stepIndex + 1}
+            </span>
+            {email.assignedSenderName && (
+              <span className="text-xs bg-teal-50 text-teal-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                → {email.assignedSenderName}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-slate-600 truncate">
+            <span className="font-medium">Subject:</span> {email.customSubject || email.filledSubject}
+          </p>
+        </div>
+        
+        {/* Quick Actions */}
+        <div className="flex items-center gap-2">
+          {/* Mark as Replied */}
+          <button 
+            onClick={(e) => { e.stopPropagation(); markAsReplied(email); }}
+            className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"
+            title="They replied - pause sequence"
+          >
+            <MessageCircle size={18} />
+          </button>
+          
+          {/* Skip/Delay */}
+          <button 
+            onClick={(e) => { e.stopPropagation(); skipTask(email); }}
+            className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition"
+            title="Skip - delay 1 day"
+          >
+            <SkipForward size={18} />
+          </button>
+          
+          {/* Status Badge */}
+          {!email.email && (
+            <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">
+              No email
+            </span>
+          )}
+          {email.missingFields.length > 0 && (
+            <span className="text-xs bg-amber-100 text-amber-600 px-2 py-1 rounded-full font-medium">
+              {email.missingFields.length} field{email.missingFields.length > 1 ? 's' : ''}
+            </span>
+          )}
+          {email.isReady && (
+            <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full font-medium flex items-center gap-1">
+              <Check size={12} /> Ready
+            </span>
+          )}
+          
+          <ChevronDown 
+            size={20} 
+            className={`text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+          />
+        </div>
+      </div>
+      
+      {/* Expanded Content */}
+      {isExpanded && (
+        <div className="border-t border-slate-200">
+          <div className="grid grid-cols-3 gap-0">
+            {/* Email Editor */}
+            <div className="col-span-2 p-4 bg-slate-50">
+              {/* Replies-To Banner */}
+              {email.assignedSenderEmail && (
+                <div className="mb-4 p-3 bg-teal-50 border border-teal-200 rounded-lg flex items-center gap-3">
+                  <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    {email.assignedSenderName?.charAt(0) || 'R'}
+                  </div>
+                  <div>
+                    <p className="text-xs text-teal-600 font-medium">Replies will go to:</p>
+                    <p className="text-sm font-bold text-teal-800">{email.assignedSenderName} ({email.assignedSenderEmail})</p>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">
+                  To: {email.email || <span className="text-red-500">Missing email</span>}
+                </label>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Subject</label>
+                <input 
+                  type="text"
+                  value={email.customSubject !== null ? email.customSubject : email.filledSubject}
+                  onChange={(e) => updateEmailContent(email.id, 'customSubject', e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-transparent outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Message</label>
+                <textarea 
+                  value={email.customBody !== null ? email.customBody : email.filledBody}
+                  onChange={(e) => updateEmailContent(email.id, 'customBody', e.target.value)}
+                  rows={8}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-transparent outline-none font-sans leading-relaxed resize-none"
+                />
+              </div>
+              
+              {/* Actions */}
+              <div className="mt-4 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      updateEmailContent(email.id, 'customSubject', null);
+                      updateEmailContent(email.id, 'customBody', null);
+                    }}
+                    className="text-slate-500 hover:text-slate-700 text-sm"
+                  >
+                    Reset
+                  </button>
+                  {email.aiPersonalized && (
+                    <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Sparkles size={10} /> AI Enhanced
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {/* AI Personalize */}
+                  <button 
+                    onClick={() => aiPersonalizeEmail(email)}
+                    disabled={aiPersonalizing[email.id]}
+                    className="text-purple-600 hover:bg-purple-100 text-sm font-medium px-3 py-2 border border-purple-200 rounded-lg bg-purple-50 flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {aiPersonalizing[email.id] ? (
+                      <div className="w-3 h-3 border-2 border-purple-300 border-t-purple-600 rounded-full animate-spin" />
+                    ) : (
+                      <Wand2 size={14} />
+                    )}
+                    AI
+                  </button>
+                  
+                  {/* Send Test */}
+                  <button 
+                    onClick={() => sendEmail({
+                      ...email,
+                      stepData: {
+                        ...email.stepData,
+                        subject: email.customSubject || email.filledSubject,
+                        template: email.customBody || email.filledBody
+                      }
+                    }, true)}
+                    disabled={sending}
+                    className="text-slate-600 hover:text-slate-800 text-sm font-medium px-3 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
+                  >
+                    Test
+                  </button>
+                  
+                  {/* Send & Advance */}
+                  <button 
+                    onClick={() => sendEmail({
+                      ...email,
+                      stepData: {
+                        ...email.stepData,
+                        subject: email.customSubject || email.filledSubject,
+                        template: email.customBody || email.filledBody
+                      }
+                    }, false)}
+                    disabled={sending || !email.isReady}
+                    className="bg-corporate-teal text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send size={14} /> Send
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Sidebar */}
+            <div className="border-l border-slate-200 p-4 bg-white">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Due</h4>
+              <p className={`text-sm font-medium mb-4 ${
+                email.dueDiffDays < 0 ? 'text-red-600' :
+                email.dueDiffDays === 0 ? 'text-amber-600' :
+                'text-slate-600'
+              }`}>
+                {email.due}
+                {email.dueDate && (
+                  <span className="text-xs text-slate-400 block mt-1">
+                    {email.dueDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </span>
+                )}
+              </p>
+              
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Merge Fields</h4>
+              {email.mergeFields.length === 0 ? (
+                <p className="text-sm text-slate-400 mb-4">None</p>
+              ) : (
+                <div className="space-y-1 mb-4">
+                  {email.mergeFields.map((field, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs">
+                      <code className="bg-slate-100 px-1.5 py-0.5 rounded">{field}</code>
+                      {email.missingFields.includes(field) ? (
+                        <AlertCircle size={12} className="text-amber-500" />
+                      ) : (
+                        <Check size={12} className="text-green-500" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Psychology */}
+              {email.stepData.psychology && (
+                <div className="pt-3 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-amber-600 uppercase tracking-wide mb-1 flex items-center gap-1">
+                    <Lightbulb size={10} /> Strategy
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    <strong>{email.stepData.psychology.principle || email.stepData.psychology}:</strong>{' '}
+                    {email.stepData.psychology.why || ''}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

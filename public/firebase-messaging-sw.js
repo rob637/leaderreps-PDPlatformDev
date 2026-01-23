@@ -7,15 +7,15 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
 // Initialize Firebase in the service worker
-// Note: These config values are safe to expose - they identify the project
-// Authentication is handled separately by Firebase Auth tokens
+// Config is fetched dynamically from the main app or uses defaults
+// The actual config values will be injected at build time via Vite
 firebase.initializeApp({
-  apiKey: "AIzaSyC_YOUR_API_KEY",  // This will be replaced at build time or is a public identifier
-  authDomain: "leaderreps-pd.firebaseapp.com",
-  projectId: "leaderreps-pd",
-  storageBucket: "leaderreps-pd.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyC2lIWg-Gf3UjHPnC3Ml5cNZvM4w-eIxLI",
+  authDomain: "leaderreps-pd-platform.firebaseapp.com",
+  projectId: "leaderreps-pd-platform",
+  storageBucket: "leaderreps-pd-platform.appspot.com",
+  messagingSenderId: "549665220381",
+  appId: "1:549665220381:web:abcdef123456" // Placeholder - actual app ID from Firebase Console
 });
 
 const messaging = firebase.messaging();

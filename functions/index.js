@@ -282,10 +282,19 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
       .replace(/\{\{inviteLink\}\}/g, inviteLink);
   };
 
+  const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps Platform';
+  const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
+
   const mailOptions = {
-    from: `"LeaderReps Platform" <${emailUser}>`,
+    from: `"${emailFromName}" <${emailUser}>`,
+    replyTo: emailReplyTo,
     to: recipientEmail,
     subject: `${subjectPrefix}${substituteVars(emailTemplate.subject)}`,
+    headers: {
+      'X-Priority': '1',
+      'X-Mailer': 'LeaderReps Platform',
+      'Precedence': 'bulk',
+    },
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         ${invitation.isTest ? `
@@ -796,6 +805,22 @@ exports.scheduledDailyRollover = onSchedule(
 
           await currentRef.set(newState);
 
+          // === RESET ESCALATION IF USER COMPLETED THEIR WORK ===
+          // If user did any activity today, reset their missed days counter
+          if (didActivity) {
+            try {
+              const userRef = db.collection('users').doc(userId);
+              await userRef.update({
+                'notificationSettings.escalation.missedDays': 0,
+                'notificationSettings.escalation.lastCompletedDate': dataDate
+              });
+              logger.info(`✅ User ${userId}: Reset escalation counter (completed work)`);
+            } catch (escErr) {
+              // Non-critical, just log
+              logger.warn(`Could not reset escalation for ${userId}: ${escErr.message}`);
+            }
+          }
+
           processedCount++;
           logger.info(`✅ User ${userId}: Rolled over from ${dataDate} to ${tomorrow}`);
         } catch (userError) {
@@ -1093,7 +1118,8 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
     }
     const rules = rulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // 2. Get all users with notifications enabled
+    // 2. Get all users with notifications enabled (including those with strategy set)
+    // We query for enabled=true OR strategy exists (not disabled)
     const usersSnap = await db.collection('users').where('notificationSettings.enabled', '==', true).get();
     if (usersSnap.empty) {
       logger.info("No users with notifications enabled.");
@@ -1108,6 +1134,12 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
       const userId = userDoc.id;
       const settings = userData.notificationSettings;
       const timezone = settings.timezone || 'UTC';
+      const strategy = settings.strategy || 'smart_escalation'; // Default to smart escalation
+      
+      // Skip if strategy is disabled
+      if (strategy === 'disabled') {
+        continue;
+      }
 
       // Get User's Local Time
       const now = new Date();
@@ -1168,17 +1200,19 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
           if (shouldSend) {
             notificationsToSend.push({
               user: userData,
+              userId: userId,
               rule: rule,
-              localDateId
+              localDateId,
+              strategy
             });
           }
         }
       }
     }
 
-    // 4. Send Notifications
+    // 4. Send Notifications with Smart Escalation
     for (const item of notificationsToSend) {
-      const { user, rule } = item;
+      const { user, userId, rule, localDateId, strategy } = item;
       const settings = user.notificationSettings;
       
       // Handle test users - redirect notifications to override email
@@ -1191,8 +1225,68 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
         linkUrl: rule.linkUrl || null
       };
 
+      // Determine channels based on strategy and escalation
+      let sendPush = false;
+      let sendEmail = false;
+      let sendSms = false;
+      
+      // Get escalation data for smart escalation
+      const escalation = settings.escalation || { missedDays: 0 };
+      const missedDays = escalation.missedDays || 0;
+      
+      switch (strategy) {
+        case 'smart_escalation':
+          // Level 0 (Day 1): Push only
+          // Level 1 (Day 2): Push + Email
+          // Level 2 (Day 3+): Push + Email + SMS
+          sendPush = settings.channels?.push !== false;
+          sendEmail = missedDays >= 1 && settings.channels?.email !== false;
+          sendSms = missedDays >= 2 && settings.channels?.sms !== false && settings.phoneNumber;
+          logger.info(`Smart escalation for ${user.email}: missedDays=${missedDays}, push=${sendPush}, email=${sendEmail}, sms=${sendSms}`);
+          break;
+          
+        case 'push_only':
+          sendPush = true;
+          break;
+          
+        case 'email_only':
+          sendEmail = true;
+          break;
+          
+        case 'full_accountability':
+          sendPush = settings.channels?.push !== false;
+          sendEmail = settings.channels?.email !== false;
+          sendSms = settings.channels?.sms !== false && settings.phoneNumber;
+          break;
+          
+        default:
+          // Fallback to old behavior using channel settings directly
+          sendEmail = settings.channels?.email === true;
+          sendSms = settings.channels?.sms === true;
+      }
+
+      // Send Push Notification (if supported and enabled)
+      if (sendPush && user.fcmToken) {
+        try {
+          await admin.messaging().send({
+            token: user.fcmToken,
+            notification: {
+              title: rule.name,
+              body: rule.message
+            },
+            data: {
+              url: linkOptions.linkUrl || '/dashboard',
+              ruleId: rule.id || ''
+            }
+          });
+          logger.info(`Push notification sent to ${user.email}`);
+        } catch (pushErr) {
+          logger.warn(`Push notification failed for ${user.email}: ${pushErr.message}`);
+        }
+      }
+
       // Email
-      if (settings.channels?.email && user.email) {
+      if (sendEmail && user.email) {
         // For test users, ALWAYS use override email or skip
         // Never send to actual test email addresses (e.g., ryan2@test.com)
         if (isTestUser) {
@@ -1211,10 +1305,23 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
 
       // SMS via Twilio - Skip for test users (don't send test SMS)
       // SMS includes a shortened link at the end
-      if (settings.channels?.sms && settings.phoneNumber && !isTestUser) {
+      if (sendSms && settings.phoneNumber && !isTestUser) {
         await sendSmsNotification(settings.phoneNumber, rule.message, linkOptions);
-      } else if (settings.channels?.sms && isTestUser) {
+      } else if (sendSms && isTestUser) {
         logger.info(`🧪 SMS skipped for test user ${user.email}`);
+      }
+      
+      // Update escalation tracking for smart escalation strategy
+      if (strategy === 'smart_escalation') {
+        try {
+          const userRef = db.collection('users').doc(userId);
+          await userRef.update({
+            'notificationSettings.escalation.missedDays': admin.firestore.FieldValue.increment(1),
+            'notificationSettings.escalation.lastNotificationDate': localDateId
+          });
+        } catch (escErr) {
+          logger.warn(`Could not update escalation for ${user.email}: ${escErr.message}`);
+        }
       }
     }
 
@@ -1311,11 +1418,20 @@ async function sendEmailNotification(email, subject, message, options = {}) {
     });
   }
 
+  const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps';
+  const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
+
   try {
     await transporter.sendMail({
-      from: `"LeaderReps" <${emailUser}>`,
+      from: `"${emailFromName}" <${emailUser}>`,
+      replyTo: emailReplyTo,
       to: email,
       subject: `🔔 ${subject}`,
+      headers: {
+        'X-Priority': '1',
+        'X-Mailer': 'LeaderReps Platform',
+        'Precedence': 'bulk',
+      },
       text: `${message} - ${linkDestination}`,
       html: `<p>${htmlMessage}</p>`
     });
@@ -1402,7 +1518,23 @@ exports.apolloSearchProxy = onCall({ cors: true, region: "us-central1" }, async 
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    // Get response as text first to handle non-JSON error responses
+    const responseText = await response.text();
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      // Apollo returned non-JSON response (likely an error message)
+      logger.error('Apollo API returned non-JSON response', { 
+        status: response.status, 
+        responseText: responseText.substring(0, 200) 
+      });
+      throw new HttpsError('invalid-argument', 
+        responseText.includes('Invalid') ? 'Invalid Apollo API key. Please update your API key in Settings.' :
+        `Apollo API error: ${responseText.substring(0, 100)}`
+      );
+    }
 
     if (!response.ok) {
       logger.error('Apollo API error', { status: response.status, data });
@@ -1431,11 +1563,13 @@ exports.sendOutreachEmail = onCall({ cors: true, region: "us-central1" }, async 
         throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
     }
 
-    const { to, subject, html, text, isTest } = request.data;
-    const senderEmail = request.auth.token.email; // The authenticated user's email
+    const { to, subject, html, text, isTest, replyTo: customReplyTo, senderName, prospectId } = request.data;
+    // Use custom replyTo if provided (assigned sender), otherwise fall back to authenticated user
+    const replyToEmail = customReplyTo || request.auth.token.email;
+    const displayName = senderName || 'LeaderReps Corporate';
     
     // Log intent
-    logger.info("sendOutreachEmail called", { to, subject, isTest, user: request.auth.uid });
+    logger.info("sendOutreachEmail called", { to, subject, isTest, replyTo: replyToEmail, user: request.auth.uid });
 
     // 0. Check Unsubscribe Blocklist (unless it's a test email to self)
     if (!isTest) {
@@ -1477,20 +1611,34 @@ exports.sendOutreachEmail = onCall({ cors: true, region: "us-central1" }, async 
     
     const unsubLink = `https://${appDomain}/unsubscribe?email=${encodeURIComponent(to)}`;
     
+    // Generate tracking pixel URL (only for non-test emails with prospectId)
+    const trackingId = prospectId ? `${prospectId}_${Date.now()}` : null;
+    const trackingPixel = trackingId && !isTest
+        ? `<img src="https://us-central1-${projectId}.cloudfunctions.net/trackEmailOpen?id=${trackingId}" width="1" height="1" style="display:none;" alt="" />`
+        : '';
+    
     const footerHtml = `
         <br/><br/>
         <div style="font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; font-family: sans-serif;">
             <p>LeaderReps Corporate • 123 Leadership Way • Chicago, IL</p>
             <p>Don't want these emails? <a href="${unsubLink}" style="color: #64748b; text-decoration: underline;">Unsubscribe here</a>.</p>
         </div>
+        ${trackingPixel}
     `;
 
     // 3. Prepare Email
     const mailOptions = {
-        from: `"LeaderReps Corporate" <${emailUser}>`,
-        replyTo: senderEmail, // Critical: Replies go to the Rep, not the system!
+        from: `"${displayName}" <${emailUser}>`,
+        replyTo: replyToEmail, // Uses assigned sender if provided, otherwise authenticated user
         to: to,
         subject: isTest ? `[TEST] ${subject}` : subject,
+        headers: {
+            'List-Unsubscribe': `<${unsubLink}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            'X-Priority': '3',
+            'X-Mailer': 'LeaderReps Corporate',
+            'Precedence': 'bulk',
+        },
         text: (text || "Enable HTML to view this message.") + `\n\nUnsubscribe: ${unsubLink}`,
         html: html + footerHtml
     };
@@ -1504,5 +1652,63 @@ exports.sendOutreachEmail = onCall({ cors: true, region: "us-central1" }, async 
         logger.error("Error sending email", error);
         throw new HttpsError('internal', "Failed to send email: " + error.message);
     }
+});
+
+// Email Open Tracking Endpoint
+// Returns a 1x1 transparent GIF and records the open
+exports.trackEmailOpen = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+    const { id } = req.query;
+    
+    if (id) {
+        try {
+            // Parse tracking ID (format: prospectId_timestamp)
+            const [prospectId] = id.split('_');
+            
+            if (prospectId) {
+                // Record the open in the prospect's history
+                const prospectRef = db.collection('corporate_prospects').doc(prospectId);
+                const prospectSnap = await prospectRef.get();
+                
+                if (prospectSnap.exists) {
+                    const data = prospectSnap.data();
+                    const history = data.history || [];
+                    const emailOpens = data.emailOpens || [];
+                    
+                    // Avoid duplicate opens within 1 minute
+                    const now = new Date();
+                    const recentOpen = emailOpens.find(o => 
+                        now - new Date(o.timestamp) < 60000
+                    );
+                    
+                    if (!recentOpen) {
+                        await prospectRef.update({
+                            emailOpens: [...emailOpens, { 
+                                timestamp: now.toISOString(),
+                                trackingId: id,
+                                userAgent: req.headers['user-agent'] || 'unknown'
+                            }],
+                            lastEmailOpened: now.toISOString(),
+                            history: [...history, { 
+                                date: now.toISOString(), 
+                                action: 'Email opened' 
+                            }]
+                        });
+                        logger.info("Email open tracked", { prospectId, trackingId: id });
+                    }
+                }
+            }
+        } catch (e) {
+            logger.error("Error tracking email open", e);
+            // Don't fail the request - still return the pixel
+        }
+    }
+    
+    // Return a 1x1 transparent GIF
+    const transparentGif = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+    res.set('Content-Type', 'image/gif');
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.send(transparentGif);
 });
 
