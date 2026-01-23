@@ -306,7 +306,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
       
       // Firebase Auth error codes - make them human-readable
       if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
-        message = "Incorrect email or password. If you previously signed in with Google, please try that button instead.";
+        message = "Incorrect email or password. Please check your credentials and try again.";
       } else if (e.code === 'auth/email-already-in-use') {
         message = "This email is already registered. Please log in instead.";
       } else if (e.code === 'auth/weak-password') {
