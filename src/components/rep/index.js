@@ -6,3 +6,4 @@ export { default as RepMessage } from './RepMessage';
 export { default as RepCohortPulse } from './RepCohortPulse';
 export { default as RepBookendWidget } from './RepBookendWidget';
 export { default as RepSessionComplete } from './RepSessionComplete';
+export { default as RepFloatingButton } from './RepFloatingButton';

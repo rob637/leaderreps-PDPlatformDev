@@ -14,6 +14,7 @@ import { PageTransition } from '../motion';
 import { SyncIndicator } from '../offline';
 import SkipLinks from '../accessibility/SkipLinks';
 import MobilePWABanner from '../ui/MobilePWABanner.jsx';
+import RepFloatingButton from '../rep/RepFloatingButton.jsx';
 
 const AppContent = ({
   currentScreen,
@@ -235,6 +236,9 @@ const AppContent = ({
 
             {/* Mobile PWA Install Banner */}
             <MobilePWABanner />
+            
+            {/* Rep Coach Floating Button - Admin only, both mobile and desktop */}
+            <RepFloatingButton />
           </main>
         </div>
       </div>
