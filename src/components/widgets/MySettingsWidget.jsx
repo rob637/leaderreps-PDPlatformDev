@@ -40,7 +40,7 @@ const MySettingsWidget = () => {
   const isProfileComplete = profileComplete;
   
   // Notification settings
-  const { user, db, signOut } = useAppServices();
+  const { user, db, logout } = useAppServices();
   const [notifLoading, setNotifLoading] = useState(true);
   const [notifSettings, setNotifSettings] = useState({
     enabled: true,
@@ -269,7 +269,7 @@ const MySettingsWidget = () => {
                 <button
                   onClick={() => {
                     setShowSignOutConfirm(false);
-                    if (signOut) signOut();
+                    if (logout) logout();
                   }}
                   className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-corporate-navy hover:bg-corporate-navy/90 rounded-lg transition-colors"
                 >

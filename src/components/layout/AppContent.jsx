@@ -188,7 +188,8 @@ const AppContent = ({
               </Suspense>
             </div>
 
-            <footer className="w-full text-center mt-auto border-t bg-white/60 backdrop-blur-sm border-slate-100 p-5 pb-24 md:pb-5">
+            {/* Footer - Hidden on mobile to save space, visible on desktop */}
+            <footer className="hidden md:block w-full text-center mt-auto border-t bg-white/60 backdrop-blur-sm border-slate-100 p-5">
               {/* Sync Status Indicator */}
               <div className="flex justify-center mb-3">
                 <SyncIndicator variant="badge" showWhenSynced={false} />

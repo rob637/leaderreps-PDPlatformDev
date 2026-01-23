@@ -81,14 +81,15 @@ const RepFloatingButton = () => {
 
   return (
     <>
-      {/* Floating AI Coach Button - Bottom right, above mobile nav on mobile */}
+      {/* Floating AI Coach Button - Desktop only (hidden on mobile) */}
       <button
         onClick={handleButtonClick}
         className="
           fixed z-40 
-          bottom-24 md:bottom-8
-          right-4 md:right-8
-          flex items-center gap-2 
+          hidden md:flex
+          bottom-8
+          right-8
+          items-center gap-2 
           px-4 py-3 
           rounded-full 
           shadow-lg hover:shadow-xl
