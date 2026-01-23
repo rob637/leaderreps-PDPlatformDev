@@ -668,9 +668,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Action Item Renderer
   const ActionItem = ({ item, isCarriedOver = false }) => {
     const progress = getItemProgress(item.id);
-    // Interactive items use autoComplete (derived from hooks), others use progress tracking
+    // Interactive items: check live hook values, not stale autoComplete property
+    // This ensures real-time updates when Leader Profile or Assessment is completed
     const isCompleted = item.isInteractive 
-      ? item.autoComplete 
+      ? (item.handlerType === 'leader-profile' ? leaderProfileComplete : 
+         item.handlerType === 'baseline-assessment' ? baselineAssessmentComplete : 
+         item.autoComplete)
       : (progress.status === 'completed' || completedItems.includes(item.id));
     const isSkipped = progress.status === 'skipped';
     const Icon = item.isInteractive 
@@ -916,6 +919,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             {/* Carried Over Items - Show even when all complete */}
             {displayedCarriedOverItems.length > 0 && (() => {
               const completedCarriedOver = displayedCarriedOverItems.filter(item => {
+                // For interactive items, use live hook values
+                if (item.isInteractive) {
+                  if (item.handlerType === 'leader-profile') return leaderProfileComplete;
+                  if (item.handlerType === 'baseline-assessment') return baselineAssessmentComplete;
+                }
                 const progress = getItemProgress(item.id);
                 return progress.status === 'completed' || completedItems.includes(item.id);
               });
