@@ -560,8 +560,8 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   // ===== RENDER =====
   const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
   
-  // Dynamic breadcrumbs based on current view
-  const breadcrumbs = useMemo(() => {
+  // Dynamic breadcrumbs based on current view (simple calculation, no memoization needed)
+  const getBreadcrumbs = () => {
     const base = [
       { label: 'Home', path: 'dashboard' },
       { label: 'Development Plan', path: view !== 'dashboard' ? 'development-plan' : null }
@@ -582,7 +582,8 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     
     // Dashboard view - just Home > Development Plan
     return base;
-  }, [view]);
+  };
+  const breadcrumbs = getBreadcrumbs();
   
   return (
     <PageLayout

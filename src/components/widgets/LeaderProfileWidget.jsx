@@ -82,7 +82,7 @@ const LeaderProfileWidget = () => {
                 Help us personalize your Foundation journey. Takes about 2 minutes.
               </p>
 
-              {/* Benefits */}}
+              {/* Benefits */}
               <div className="flex flex-wrap gap-2 mb-4">
                 <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
                   <Sparkles className="w-3 h-3 text-corporate-orange" />
