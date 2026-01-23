@@ -116,18 +116,23 @@ export const useLeaderProfile = () => {
         const userRef = doc(db, 'users', user.uid);
         
         // Build complete notification settings object that matches NotificationSettingsWidget format
+        const strategy = profileData.notificationSettings?.strategy || 'smart_escalation';
+        const pushEnabled = profileData.notificationSettings?.channels?.push ?? true;
         const emailEnabled = profileData.notificationSettings?.channels?.email ?? true;
         const smsEnabled = profileData.notificationSettings?.channels?.sms ?? false;
-        const hasAnyChannelEnabled = emailEnabled || smsEnabled;
+        const isDisabled = strategy === 'disabled';
         
         const notificationSettings = {
-          enabled: hasAnyChannelEnabled, // Only enabled if at least one channel is on
-          timezone: profileData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
+          enabled: !isDisabled, // Disabled strategy means notifications are off
+          strategy: strategy,
+          timezone: profileData.notificationSettings?.timezone || profileData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
           channels: {
+            push: pushEnabled,
             email: emailEnabled,
             sms: smsEnabled
           },
-          phoneNumber: profileData.phoneNumber || ''
+          phoneNumber: profileData.phoneNumber || '',
+          updatedAt: new Date().toISOString()
         };
 
         await updateDoc(userRef, { notificationSettings }).catch(err => console.warn("Failed to sync user settings", err));
