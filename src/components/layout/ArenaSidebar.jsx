@@ -72,7 +72,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
   };
 
   const menuItems = [
-    { id: 'rep', label: 'Rep Coach', icon: Sparkles, highlight: true }, // AI Coach - always visible
+    // Rep Coach removed from sidebar - access via floating AI Coach button (password protected)
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
     
