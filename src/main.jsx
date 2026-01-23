@@ -5,6 +5,21 @@ import ErrorBoundary from './components/system/ErrorBoundary';
 import ConfigGate from './components/system/ConfigGate';
 import { onCLS, onINP, onLCP, onFCP, onTTFB } from 'web-vitals';
 
+// === CAPTURE PWA INSTALL PROMPT EARLY ===
+// This must happen before React mounts to catch the event
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.deferredPWAPrompt = e;
+  // Dispatch custom event so mounted components can react
+  window.dispatchEvent(new CustomEvent('pwa-prompt-available'));
+});
+
+window.addEventListener('appinstalled', () => {
+  window.deferredPWAPrompt = null;
+  window.dispatchEvent(new CustomEvent('pwa-installed'));
+});
+// === END PWA INSTALL PROMPT CAPTURE ===
+
 // === CORE WEB VITALS MONITORING ===
 const reportWebVitals = (metric) => {
   // Log to console in development

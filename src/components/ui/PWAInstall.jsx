@@ -15,41 +15,54 @@ const PWAInstall = ({ collapsed = false }) => {
                          window.navigator.standalone === true;
     setIsInstalled(isStandalone);
 
-    // Listen for beforeinstallprompt event
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      // setIsInstallable(true);
+    // Check if prompt was already captured globally (before component mounted)
+    if (window.deferredPWAPrompt) {
+      setDeferredPrompt(window.deferredPWAPrompt);
+    }
+
+    // Listen for prompt becoming available (if it fires after mount)
+    const handlePromptAvailable = () => {
+      if (window.deferredPWAPrompt) {
+        setDeferredPrompt(window.deferredPWAPrompt);
+      }
     };
 
     // Listen for successful install
     const handleAppInstalled = () => {
       setIsInstalled(true);
-      // setIsInstallable(false);
       setDeferredPrompt(null);
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('pwa-prompt-available', handlePromptAvailable);
+    window.addEventListener('pwa-installed', handleAppInstalled);
+    // Also keep the original listeners as fallback
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('pwa-prompt-available', handlePromptAvailable);
+      window.removeEventListener('pwa-installed', handleAppInstalled);
     };
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
+    // Try to get prompt from local state or global storage
+    const prompt = deferredPrompt || window.deferredPWAPrompt;
+    
+    if (!prompt) {
       setShowInstructions(true);
       return;
     }
 
     try {
       // Show the install prompt
-      deferredPrompt.prompt();
+      prompt.prompt();
       
       // Wait for the user's response
-      const { outcome } = await deferredPrompt.userChoice;
+      const { outcome } = await prompt.userChoice;
       
       if (outcome === 'accepted') {
         console.log('PWA Install accepted');
@@ -57,9 +70,9 @@ const PWAInstall = ({ collapsed = false }) => {
         setShowInstructions(true);
       }
       
-      // Clear the deferredPrompt
+      // Clear the deferredPrompt both locally and globally
       setDeferredPrompt(null);
-      // setIsInstallable(false);
+      window.deferredPWAPrompt = null;
     } catch (error) {
       console.error('Install failed:', error);
       setShowInstructions(true);
