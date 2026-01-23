@@ -118,7 +118,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
   return (
     <div 
       className={`
-        relative z-40 bg-corporate-light-gray text-corporate-navy transition-all duration-300 ease-in-out flex-col hidden md:flex border-r border-slate-200 rounded-2xl overflow-hidden md:my-2 md:ml-2 h-screen md:h-[calc(100vh-1rem)]
+        relative z-40 bg-corporate-light-gray text-corporate-navy transition-all duration-300 ease-in-out flex-col hidden md:flex border-slate-200 rounded-2xl overflow-hidden md:my-2 md:ml-2 h-screen md:h-[calc(100vh-16px)]
         ${isOpen ? 'w-64' : 'w-20'}
       `}
       style={{ fontFamily: 'var(--font-body)' }}
