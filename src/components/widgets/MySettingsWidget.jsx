@@ -177,35 +177,38 @@ const MySettingsWidget = () => {
             </div>
           </button>
 
-          {/* Install App Row - Uses PWAInstall component (only shows if not installed) */}
-          <div className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-corporate-teal/10">
-                <Download className="w-4 h-4 text-corporate-teal" />
+          {/* Install App & Sign Out - Mobile Only (hidden on desktop since they're in the sidebar) */}
+          <div className="md:hidden space-y-2">
+            {/* Install App Row - Uses PWAInstall component (only shows if not installed) */}
+            <div className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-corporate-teal/10">
+                  <Download className="w-4 h-4 text-corporate-teal" />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-medium text-corporate-navy text-sm">Install App</h4>
+                  <p className="text-xs text-slate-500">Add to home screen</p>
+                </div>
               </div>
-              <div className="text-left">
-                <h4 className="font-medium text-corporate-navy text-sm">Install App</h4>
-                <p className="text-xs text-slate-500">Add to home screen</p>
-              </div>
+              <PWAInstall collapsed={true} />
             </div>
-            <PWAInstall collapsed={true} />
-          </div>
 
-          {/* Sign Out Row */}
-          <button
-            onClick={() => setShowSignOutConfirm(true)}
-            className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-red-50 hover:border-red-200 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
-                <LogOut className="w-4 h-4 text-slate-500" />
+            {/* Sign Out Row */}
+            <button
+              onClick={() => setShowSignOutConfirm(true)}
+              className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-red-50 hover:border-red-200 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
+                  <LogOut className="w-4 h-4 text-slate-500" />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-medium text-corporate-navy text-sm">Sign Out</h4>
+                  <p className="text-xs text-slate-500">Exit the app</p>
+                </div>
               </div>
-              <div className="text-left">
-                <h4 className="font-medium text-corporate-navy text-sm">Sign Out</h4>
-                <p className="text-xs text-slate-500">Exit the app</p>
-              </div>
-            </div>
-          </button>
+            </button>
+          </div>
         </div>
       </Card>
 
