@@ -1,67 +1,51 @@
 // src/components/screens/RepCoach.jsx
-// Main Rep AI Coach screen - orchestrates the coaching experience
-// UPDATED: Now integrates with real useDailyPlan data and time-aware flow
+// Rep AI Coach - Intelligent overlay that guides users through their dashboard
+// V4: Simplified - guides to dashboard instead of duplicating widgets
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { ArrowLeft, MoreVertical, Sparkles, Sun, Moon, CheckCircle2, Coffee, Book, MessageCircle } from 'lucide-react';
+import { 
+  ArrowLeft, MoreVertical, Sparkles, Sun, Moon, Coffee, 
+  MessageCircle, ExternalLink, CheckCircle2
+} from 'lucide-react';
 import RepAvatar from '../rep/RepAvatar';
 import RepMessage from '../rep/RepMessage';
 import RepCohortPulse from '../rep/RepCohortPulse';
-import RepBookendWidget from '../rep/RepBookendWidget';
 import RepSessionComplete from '../rep/RepSessionComplete';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 /**
- * RepCoach - The AI Leadership Coach experience
+ * RepCoach - The AI Leadership Coach experience (V4 - Simplified)
  * 
- * REAL DATA INTEGRATION (v2):
- * - Uses useDailyPlan hook for actual curriculum data
- * - Time-aware: AM Bookend (morning), Daily Reps (midday), PM Bookend (evening)
- * - Shows what's actually due today
- * - Coaches on user responses after completion
- * - Leadership questions phase before releasing to app
+ * Rep is an INTELLIGENT OVERLAY that:
+ * - Greets users with context (time of day, phase, progress)
+ * - Shows cohort pulse (community awareness)  
+ * - Guides users on WHAT to do next
+ * - NAVIGATES them to Dashboard to complete items
+ * - Offers coaching reflections and Q&A
  * 
- * SESSION FLOW:
- * 1. Greeting (time-aware)
- * 2. Cohort pulse (community awareness)
- * 3. Guide through what's due:
- *    - Morning (5am-11am): AM Bookend focus
- *    - Midday (11am-5pm): Daily Reps focus  
- *    - Evening (5pm-11pm): PM Bookend focus
- * 4. Coaching reflection after completion
- * 5. Leadership questions opportunity
- * 6. Release to explore app
+ * Rep does NOT duplicate dashboard widgets - it guides TO them.
  */
 const RepCoach = () => {
-  const { user, navigate } = useAppServices();
+  const { user, navigate, dailyPracticeData } = useAppServices();
   
-  // Real data from useDailyPlan
   const {
     loading: dailyPlanLoading,
     currentDayData,
     currentPhase,
     phaseDayNumber,
     prepRequirementsComplete,
-    toggleItemComplete,
     cohortData
   } = useDailyPlan();
 
   // Session flow states
-  // intro -> cohort -> guidance -> am_bookend -> daily_reps -> pm_bookend -> coaching -> questions -> complete
   const [sessionState, setSessionState] = useState('intro');
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [userInput, setUserInput] = useState('');
   const [sessionStartTime] = useState(new Date());
   const messagesEndRef = useRef(null);
-  
-  // Track what's been completed in this session
-  const [sessionCompletions, setSessionCompletions] = useState({
-    amBookend: false,
-    dailyReps: false,
-    pmBookend: false
-  });
+  const hasInitialized = useRef(false);
 
   const firstName = user?.displayName?.split(' ')[0] || 'Leader';
   
@@ -71,7 +55,7 @@ const RepCoach = () => {
     if (hour >= 5 && hour < 11) return 'morning';
     if (hour >= 11 && hour < 17) return 'midday';
     if (hour >= 17 && hour < 23) return 'evening';
-    return 'night'; // 11pm-5am
+    return 'night';
   }, []);
   
   const greeting = useMemo(() => {
@@ -82,49 +66,54 @@ const RepCoach = () => {
       default: return "Hey there, night owl";
     }
   }, [timeOfDay]);
+
+  // Phase info
+  const isPrep = currentPhase?.id === 'pre-start';
+  const prepComplete = prepRequirementsComplete?.allComplete;
   
-  // Determine what's most relevant based on time (for future use)
-  // const currentFocus = useMemo(() => {
-  //   if (timeOfDay === 'morning') return 'am_bookend';
-  //   if (timeOfDay === 'midday') return 'daily_reps';
-  //   if (timeOfDay === 'evening') return 'pm_bookend';
-  //   return 'daily_reps'; // Default for night owls
-  // }, [timeOfDay]);
+  // Get incomplete items count
+  const allActions = currentDayData?.actions || [];
+  const incompleteCount = allActions.filter(a => !a.isCompleted).length;
+  const dailyReps = allActions.filter(a => a.type === 'daily_rep');
+  const incompleteDailyReps = dailyReps.filter(r => !r.isCompleted).length;
+
+  // Check bookend completion
+  const amBookendComplete = useMemo(() => {
+    const mb = dailyPracticeData?.morningBookend;
+    return mb?.wins?.some(w => w.text?.trim() && w.saved);
+  }, [dailyPracticeData]);
+
+  const pmBookendComplete = useMemo(() => {
+    const eb = dailyPracticeData?.eveningBookend;
+    return !!(eb?.completedAt && (eb?.good || eb?.better || eb?.best));
+  }, [dailyPracticeData]);
   
-  // Get daily reps from currentDayData
-  const dailyReps = useMemo(() => {
-    if (!currentDayData?.actions) return [];
-    return currentDayData.actions.filter(a => a.type === 'daily_rep');
-  }, [currentDayData]);
-  
-  // Phase display info
+  // Phase display
   const phaseDisplay = useMemo(() => {
     if (!currentPhase) return { name: 'Loading...', day: '' };
     
-    if (currentPhase.id === 'pre-start') {
-      const complete = prepRequirementsComplete?.allComplete;
+    if (isPrep) {
       return {
         name: 'Preparation Phase',
-        day: complete ? 'Ready to Start!' : `${prepRequirementsComplete?.completedCount || 0}/${prepRequirementsComplete?.totalCount || 0} Complete`,
-        isPrep: true,
-        prepComplete: complete
+        day: prepComplete 
+          ? 'Ready to Start!' 
+          : `${prepRequirementsComplete?.completedCount || 0}/${prepRequirementsComplete?.totalCount || 0} Complete`
       };
     }
     
     return {
       name: currentPhase.displayName || currentPhase.name,
-      day: `Day ${phaseDayNumber}`,
-      isPrep: false
+      day: `Day ${phaseDayNumber}`
     };
-  }, [currentPhase, phaseDayNumber, prepRequirementsComplete]);
+  }, [currentPhase, phaseDayNumber, prepRequirementsComplete, isPrep, prepComplete]);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Simulate Rep typing delay
-  const addRepMessage = useCallback((content, delay = 1000, widget = null) => {
+  // Add Rep message with typing delay
+  const addRepMessage = useCallback((content, delay = 1000, widget = null, data = null) => {
     setIsTyping(true);
     setTimeout(() => {
       setIsTyping(false);
@@ -132,47 +121,88 @@ const RepCoach = () => {
         sender: 'rep', 
         content,
         widget,
+        data,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
     }, delay);
   }, []);
 
-  // Get coaching message based on what was just completed
-  const getCoachingMessage = useCallback((completedItem) => {
-    const messages = {
-      am_bookend: [
-        `Powerful intentions, ${firstName}! 🌟 Setting your focus for the day is what separates reactive managers from proactive leaders.`,
-        `I love those morning wins you've set. Remember: small daily commitments compound into transformational change.`,
-        `Great start to your day! These intentional moments of clarity are building your leadership muscle.`
-      ],
-      daily_reps: [
-        `Excellent work on your reps today! Each one is strengthening your leadership capacity.`,
-        `Those daily reps might seem small, but they're rewiring how you show up as a leader.`,
-        `Nice! Consistency with your reps is what builds lasting leadership habits.`
-      ],
-      pm_bookend: [
-        `What a thoughtful reflection. Learning from each day is how leaders evolve.`,
-        `Capturing those insights is gold. You're building a leadership journal that will be invaluable.`,
-        `Beautiful way to close your day. Rest well - you've earned it.`
-      ]
-    };
-    
-    const options = messages[completedItem] || messages.daily_reps;
-    return options[Math.floor(Math.random() * options.length)];
-  }, [firstName]);
+  // Build the "what to do" message based on state
+  const getNextStepMessage = useCallback(() => {
+    if (isPrep && !prepComplete) {
+      const remaining = prepRequirementsComplete?.remaining?.length || 0;
+      return {
+        message: `You have **${remaining} prep item${remaining !== 1 ? 's' : ''}** to complete before your cohort begins.\n\nHead to your Dashboard to complete your **Leader Profile** and **Baseline Assessment**.`,
+        cta: 'Go to Dashboard'
+      };
+    }
 
-  // Initialize conversation based on time of day and current state
-  useEffect(() => {
-    if (dailyPlanLoading) return;
-    
-    // Time-aware greeting with context
-    let contextMessage = "";
-    if (currentPhase?.id === 'pre-start') {
-      if (prepRequirementsComplete?.allComplete) {
-        contextMessage = `You've completed all your prep work! While you wait for your cohort to begin, let's keep building those leadership habits.`;
-      } else {
-        contextMessage = `You're in the preparation phase. Let's get you ready for your leadership journey!`;
+    // Foundation phase - time-based guidance
+    if (timeOfDay === 'morning') {
+      if (!amBookendComplete) {
+        return {
+          message: `Perfect time to set your intentions! Complete your **AM Bookend** in the Dashboard - it takes about 2 minutes and sets your leadership focus for the day.`,
+          cta: 'Complete AM Bookend'
+        };
       }
+      if (incompleteDailyReps > 0) {
+        return {
+          message: `Great job on your morning intentions! You have **${incompleteDailyReps} daily rep${incompleteDailyReps !== 1 ? 's' : ''}** to complete. Head to your Dashboard to check them off.`,
+          cta: 'View Daily Reps'
+        };
+      }
+    }
+
+    if (timeOfDay === 'midday') {
+      if (incompleteDailyReps > 0) {
+        return {
+          message: `Good afternoon check-in! You have **${incompleteDailyReps} daily rep${incompleteDailyReps !== 1 ? 's' : ''}** remaining. Your Dashboard has all your action items ready.`,
+          cta: 'View Dashboard'
+        };
+      }
+      if (incompleteCount > 0) {
+        return {
+          message: `You're making great progress! **${incompleteCount} action${incompleteCount !== 1 ? 's' : ''}** remaining for this week. Check your Dashboard to keep the momentum going.`,
+          cta: 'View Actions'
+        };
+      }
+    }
+
+    if (timeOfDay === 'evening' || timeOfDay === 'night') {
+      if (!pmBookendComplete) {
+        return {
+          message: `Evening is perfect for reflection. Complete your **PM Bookend** in the Dashboard to capture what went well, what could be better, and your best moment.`,
+          cta: 'Complete PM Bookend'
+        };
+      }
+    }
+
+    // All done!
+    if (incompleteCount === 0 && amBookendComplete && (timeOfDay !== 'evening' || pmBookendComplete)) {
+      return {
+        message: `Amazing work, ${firstName}! 🎉 You've completed all your items for today. Your Dashboard shows your full progress.`,
+        cta: 'View Dashboard',
+        allDone: true
+      };
+    }
+
+    // Default
+    return {
+      message: `Your Dashboard has everything you need for today's leadership development. Check your **This Week's Actions** to see what's up next.`,
+      cta: 'Go to Dashboard'
+    };
+  }, [isPrep, prepComplete, prepRequirementsComplete, timeOfDay, amBookendComplete, pmBookendComplete, incompleteDailyReps, incompleteCount, firstName]);
+
+  // Initialize conversation
+  useEffect(() => {
+    if (dailyPlanLoading || hasInitialized.current) return;
+    hasInitialized.current = true;
+    
+    let contextMessage = "";
+    if (isPrep) {
+      contextMessage = prepComplete
+        ? `You've completed all your prep work! 🎉 While you wait for your cohort to begin, keep exploring your Dashboard.`
+        : `You're in the preparation phase. Let's get you ready for your leadership journey!`;
     } else {
       contextMessage = `It's ${phaseDisplay.day} of your ${phaseDisplay.name} journey.`;
     }
@@ -180,126 +210,41 @@ const RepCoach = () => {
     setTimeout(() => {
       setMessages([{
         sender: 'rep',
-        content: `${greeting}, ${firstName}! 👋\n\n${contextMessage}\n\nReady for today's session?`,
+        content: `${greeting}, ${firstName}! 👋\n\n${contextMessage}\n\nReady for today's check-in?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
     }, 500);
 
-    // Follow-up with cohort info after delay
     setTimeout(() => {
       addRepMessage(
-        "Before we dive in, here's how your cohort is doing. You're part of a community of leaders growing together!",
+        "Here's how your community is doing. You're part of a team of leaders growing together!",
         1500,
         'cohort-pulse'
       );
       setSessionState('cohort');
     }, 2500);
-  }, [dailyPlanLoading, firstName, greeting, phaseDisplay, currentPhase, prepRequirementsComplete, addRepMessage]);
+  }, [dailyPlanLoading, firstName, greeting, phaseDisplay, isPrep, prepComplete, addRepMessage]);
 
-  // Proceed to leadership questions phase
-  const proceedToQuestions = useCallback(() => {
+  // Handle cohort continue - show next step guidance
+  const handleCohortContinue = useCallback(() => {
+    const nextStep = getNextStepMessage();
+    addRepMessage(nextStep.message, 1000, 'next-step', { cta: nextStep.cta, allDone: nextStep.allDone });
+    setSessionState('guidance');
+  }, [getNextStepMessage, addRepMessage]);
+
+  // Handle going to dashboard
+  const handleGoToDashboard = useCallback(() => {
+    navigate('dashboard');
+  }, [navigate]);
+
+  // Handle "stay and chat" after guidance
+  const handleStayAndChat = useCallback(() => {
     setSessionState('questions');
     addRepMessage(
-      `Great progress, ${firstName}! 🙌\n\nBefore I let you go, do you have any leadership questions or challenges you're facing? I'm here to help.`,
-      1500
+      `Happy to chat! Do you have any leadership questions or challenges you're working through?\n\nI can help with delegation, feedback, time management, team motivation, and more.\n\nOr say "done" when you're ready to go.`,
+      1000
     );
-  }, [firstName, addRepMessage]);
-
-  // Handle widget completion and guide to next item
-  const handleCohortContinue = useCallback(() => {
-    // Determine what to guide them to based on time of day
-    let nextWidget = null;
-    let message = "";
-    
-    if (timeOfDay === 'morning') {
-      message = "Perfect time to set your intentions for the day. Let's do your AM Bookend - this takes about 2 minutes.";
-      nextWidget = 'morning-bookend';
-      setSessionState('am_bookend');
-    } else if (timeOfDay === 'midday') {
-      if (dailyReps.length > 0) {
-        const incompleteReps = dailyReps.filter(r => !r.isCompleted);
-        if (incompleteReps.length > 0) {
-          message = `Let's check in on your daily reps. You have ${incompleteReps.length} rep${incompleteReps.length > 1 ? 's' : ''} to complete today.`;
-          nextWidget = 'daily-reps';
-          setSessionState('daily_reps');
-        } else {
-          message = "Amazing - you've already completed your daily reps! 🎉 Let's see if there's anything else to work on.";
-          setSessionState('coaching');
-          setTimeout(() => proceedToQuestions(), 2000);
-        }
-      } else {
-        message = "No specific reps scheduled for today. Let's check on your bookends instead.";
-        nextWidget = 'morning-bookend';
-        setSessionState('am_bookend');
-      }
-    } else if (timeOfDay === 'evening') {
-      message = "Evening is perfect for reflection. Let's capture your wins and learnings from today.";
-      nextWidget = 'evening-bookend';
-      setSessionState('pm_bookend');
-    } else {
-      // Night owl - offer both options
-      message = "Night owl session! Let's make sure your day is properly closed out.";
-      nextWidget = 'evening-bookend';
-      setSessionState('pm_bookend');
-    }
-    
-    addRepMessage(message, 1000, nextWidget);
-  }, [timeOfDay, dailyReps, addRepMessage, proceedToQuestions]);
-
-  const handleBookendComplete = useCallback(() => {
-    const isAM = sessionState === 'am_bookend';
-    
-    // Mark completion in session
-    setSessionCompletions(prev => ({
-      ...prev,
-      [isAM ? 'amBookend' : 'pmBookend']: true
-    }));
-    
-    // Get coaching message
-    const coachingMsg = getCoachingMessage(isAM ? 'am_bookend' : 'pm_bookend');
-    addRepMessage(coachingMsg, 1500);
-
-    // Proceed to next stage
-    setTimeout(() => {
-      if (isAM && dailyReps.length > 0 && timeOfDay !== 'morning') {
-        // After AM bookend, suggest daily reps if it's past morning
-        const incompleteReps = dailyReps.filter(r => !r.isCompleted);
-        if (incompleteReps.length > 0) {
-          addRepMessage(
-            `Now let's tackle your daily reps. You have ${incompleteReps.length} to complete.`,
-            2000,
-            'daily-reps'
-          );
-          setSessionState('daily_reps');
-        } else {
-          proceedToQuestions();
-        }
-      } else {
-        proceedToQuestions();
-      }
-    }, 3000);
-  }, [sessionState, dailyReps, timeOfDay, getCoachingMessage, addRepMessage, proceedToQuestions]);
-
-  const handleDailyRepsComplete = useCallback(() => {
-    setSessionCompletions(prev => ({ ...prev, dailyReps: true }));
-    
-    const coachingMsg = getCoachingMessage('daily_reps');
-    addRepMessage(coachingMsg, 1500);
-    
-    setTimeout(() => {
-      // If evening, suggest PM bookend
-      if (timeOfDay === 'evening' && !sessionCompletions.pmBookend) {
-        addRepMessage(
-          "Since it's evening, let's also do your daily reflection.",
-          2000,
-          'evening-bookend'
-        );
-        setSessionState('pm_bookend');
-      } else {
-        proceedToQuestions();
-      }
-    }, 3000);
-  }, [timeOfDay, sessionCompletions.pmBookend, getCoachingMessage, addRepMessage, proceedToQuestions]);
+  }, [addRepMessage]);
 
   // Handle user text input
   const handleSendMessage = useCallback(() => {
@@ -314,76 +259,36 @@ const RepCoach = () => {
     const input = userInput.toLowerCase();
     setUserInput('');
 
-    // Context-aware responses
     if (sessionState === 'questions') {
-      // Leadership question handling
       if (input.includes('delegation') || input.includes('delegate')) {
-        addRepMessage(
-          `Great question about delegation! Here's a quick framework:\n\n1. **What** - Be crystal clear on the outcome\n2. **Who** - Match task to person's strengths\n3. **Why** - Share context, not just tasks\n4. **When** - Set clear deadlines\n5. **How** - Agree on check-in points\n\nWant me to add a delegation rep to your practice?`,
-          2000
-        );
+        addRepMessage(`Great question about delegation! Here's a quick framework:\n\n1. **What** - Be crystal clear on the outcome\n2. **Who** - Match task to person's strengths\n3. **Why** - Share context, not just tasks\n4. **When** - Set clear deadlines\n5. **How** - Agree on check-in points\n\nWhat specific delegation challenge are you facing?`, 2000);
       } else if (input.includes('feedback') || input.includes('difficult conversation')) {
-        addRepMessage(
-          `Difficult conversations are a core leadership skill. Try the SBI model:\n\n• **Situation** - "In yesterday's meeting..."\n• **Behavior** - "I noticed you interrupted twice"\n• **Impact** - "This made the team hesitant to share"\n\nWould you like to practice this before a real conversation?`,
-          2000
-        );
+        addRepMessage(`Difficult conversations are a core leadership skill. Try the SBI model:\n\n• **Situation** - "In yesterday's meeting..."\n• **Behavior** - "I noticed you interrupted twice"\n• **Impact** - "This made the team hesitant to share"\n\nWould you like to practice with a specific scenario?`, 2000);
       } else if (input.includes('time') || input.includes('busy') || input.includes('overwhelmed')) {
-        addRepMessage(
-          `Feeling overwhelmed is common for leaders. Remember:\n\n• Your calendar reflects your priorities\n• "No" to one thing means "Yes" to another\n• Leadership isn't about doing more, it's about doing what matters\n\nWhat's one thing you could delegate or eliminate this week?`,
-          2000
-        );
-      } else if (input.includes('skip') || input.includes('not today') || input.includes('no')) {
-        addRepMessage(
-          `No problem at all. Your app is ready whenever you want to explore more.\n\nRemember: even small daily actions compound into big results. I'll be here when you need me!`,
-          1500
-        );
-        setTimeout(() => setSessionState('complete'), 3000);
-      } else if (input.includes('done') || input.includes('finish') || input.includes('go') || input.includes('explore')) {
-        addRepMessage(
-          `Perfect! Your dashboard is all set. Go explore, complete your reps, and I'll check in later.\n\nRemember: you've got this! 💪`,
-          1500
-        );
+        addRepMessage(`Feeling overwhelmed is common for leaders. Remember:\n\n• Your calendar reflects your priorities\n• "No" to one thing means "Yes" to another\n• Leadership isn't about doing more, it's about doing what matters\n\nWhat's taking up most of your time right now?`, 2000);
+      } else if (input.includes('done') || input.includes('finish') || input.includes('go') || input.includes('dashboard')) {
+        addRepMessage(`Perfect! Head to your Dashboard to continue your leadership development.\n\nI'll be here whenever you need coaching! 💪`, 1500);
         setTimeout(() => setSessionState('complete'), 3000);
       } else if (input.length > 10) {
-        // Longer question - give thoughtful response
-        addRepMessage(
-          `That's a thoughtful question. Here's what I'd suggest:\n\n1. Start with curiosity, not judgment\n2. Focus on behaviors you can observe\n3. Remember that most people want to do good work\n\nWould you like to dive deeper into this topic, or are you ready to explore your dashboard?`,
-          2000
-        );
+        addRepMessage(`That's a thoughtful question. Here's what I'd suggest:\n\n1. Start with curiosity, not judgment\n2. Focus on behaviors you can observe\n3. Remember that most people want to do good work\n\nWant to explore this more, or head to your Dashboard?`, 2000);
       } else {
-        // Short or unclear input
-        addRepMessage(
-          `I'm here to help with any leadership challenges. You can ask about:\n\n• Delegation & empowerment\n• Difficult conversations\n• Time management\n• Team motivation\n• Or just say "I'm done" to explore your app!`,
-          1500
-        );
+        addRepMessage(`I'm here to help with leadership challenges. Try asking about delegation, feedback, time management, or team motivation.\n\nOr say "done" to go to your Dashboard.`, 1500);
       }
     } else {
-      // Non-questions state - simple acknowledgments
-      if (input.includes('help') || input.includes('confused')) {
-        addRepMessage(
-          "I'm here to guide you through your daily leadership development. Let me know if anything is unclear!",
-          1500
-        );
-      } else if (input.includes('thank')) {
-        addRepMessage(
-          `You're welcome, ${firstName}! That's what I'm here for. 💪`,
-          1000
-        );
+      if (input.includes('dashboard') || input.includes('go')) {
+        navigate('dashboard');
       } else {
-        addRepMessage(
-          "I hear you. Let's keep going - you're making great progress!",
-          1200
-        );
+        addRepMessage("Let me know if you have questions, or head to your Dashboard to continue!", 1000);
       }
     }
-  }, [userInput, sessionState, firstName, addRepMessage]);
+  }, [userInput, sessionState, addRepMessage, navigate]);
 
-  // Calculate session duration
+  // Session duration
   const getSessionMinutes = useCallback(() => {
     return Math.round((new Date() - sessionStartTime) / 60000) || 1;
   }, [sessionStartTime]);
 
-  // Loading state
+  // Loading
   if (dailyPlanLoading) {
     return (
       <div className="min-h-screen bg-rep-warm-white flex items-center justify-center">
@@ -395,18 +300,16 @@ const RepCoach = () => {
     );
   }
 
-  // Show completion screen
+  // Complete screen
   if (sessionState === 'complete') {
     return (
       <div className="min-h-screen bg-rep-warm-white">
         <RepSessionComplete
           userName={firstName}
-          streak={7} // TODO: Get from user data via useDashboard
+          streak={7}
           sessionMinutes={getSessionMinutes()}
-          cohortPosition={cohortData ? "You're part of an active cohort!" : "Solo journey - building strong habits!"}
-          nextSessionPreview={phaseDisplay.isPrep 
-            ? "Complete your prep items to unlock the full program" 
-            : `Tomorrow: ${phaseDisplay.name} continues`}
+          cohortPosition={cohortData ? "You're part of an active cohort!" : "Building strong habits!"}
+          nextSessionPreview={`Continue on your Dashboard`}
           onContinue={() => navigate('dashboard')}
           onViewApp={() => navigate('dashboard')}
         />
@@ -414,7 +317,6 @@ const RepCoach = () => {
     );
   }
 
-  // Get time-of-day icon
   const TimeIcon = timeOfDay === 'morning' ? Sun : timeOfDay === 'evening' ? Moon : Coffee;
 
   return (
@@ -443,10 +345,10 @@ const RepCoach = () => {
         </div>
       </header>
 
-      {/* Messages Area */}
+      {/* Messages */}
       <main className="flex-1 overflow-y-auto p-4 pb-24">
         <div className="max-w-2xl mx-auto">
-          {/* System message with real day info */}
+          {/* System message */}
           <RepMessage 
             sender="system" 
             content={
@@ -465,7 +367,7 @@ const RepCoach = () => {
               content={msg.content}
               timestamp={msg.timestamp}
             >
-              {/* Embedded Widgets */}
+              {/* Cohort Pulse */}
               {msg.widget === 'cohort-pulse' && (
                 <div className="mt-3">
                   <RepCohortPulse
@@ -474,7 +376,7 @@ const RepCoach = () => {
                     totalLeaders={cohortData?.memberCount || 15}
                     todayCompletions={5}
                     weeklyWins={23}
-                    topFocus={currentPhase?.id === 'pre-start' ? "Preparation" : "Leadership Foundations"}
+                    topFocus={isPrep ? "Preparation" : "Leadership Foundations"}
                     nextEvent={cohortData?.nextSession || "Community learning ongoing"}
                   />
                   <button
@@ -483,73 +385,41 @@ const RepCoach = () => {
                                hover:bg-corporate-teal-dark transition-colors flex items-center justify-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" />
-                    Let's Get Started
+                    What Should I Do Today?
                   </button>
                 </div>
               )}
 
-              {msg.widget === 'morning-bookend' && (
-                <div className="mt-3">
-                  <RepBookendWidget
-                    type="morning"
-                    userName={firstName}
-                    onComplete={handleBookendComplete}
-                  />
-                </div>
-              )}
-
-              {msg.widget === 'evening-bookend' && (
-                <div className="mt-3">
-                  <RepBookendWidget
-                    type="evening"
-                    userName={firstName}
-                    onComplete={handleBookendComplete}
-                  />
-                </div>
-              )}
-
-              {msg.widget === 'daily-reps' && (
+              {/* Next Step Guidance - Navigate to Dashboard */}
+              {msg.widget === 'next-step' && (
                 <div className="mt-3 space-y-2">
-                  <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-                    <h4 className="font-medium text-rep-text-primary mb-3 flex items-center gap-2">
-                      <Book className="w-4 h-4 text-corporate-teal" />
-                      Today's Leadership Reps
-                    </h4>
-                    {dailyReps.length > 0 ? (
-                      <div className="space-y-2">
-                        {dailyReps.map((rep) => (
-                          <div 
-                            key={rep.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                              rep.isCompleted 
-                                ? 'bg-green-50 text-green-700' 
-                                : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
-                            }`}
-                            onClick={() => !rep.isCompleted && toggleItemComplete(rep.id)}
-                          >
-                            <CheckCircle2 className={`w-5 h-5 ${
-                              rep.isCompleted ? 'text-green-500' : 'text-gray-300'
-                            }`} />
-                            <span className={rep.isCompleted ? 'line-through opacity-75' : ''}>
-                              {rep.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-rep-text-secondary text-sm">
-                        No specific reps for today. Focus on your bookends!
-                      </p>
-                    )}
+                  <button
+                    onClick={handleGoToDashboard}
+                    className="w-full py-3 bg-corporate-teal text-white rounded-lg font-medium text-sm
+                               hover:bg-corporate-teal-dark transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    {msg.data?.cta || 'Go to Dashboard'}
+                  </button>
+                  {!msg.data?.allDone && (
                     <button
-                      onClick={handleDailyRepsComplete}
-                      className="mt-4 w-full py-2.5 bg-corporate-teal text-white rounded-lg font-medium text-sm
-                                 hover:bg-corporate-teal-dark transition-colors flex items-center justify-center gap-2"
+                      onClick={handleStayAndChat}
+                      className="w-full py-2.5 bg-gray-100 text-rep-text-primary rounded-lg font-medium text-sm
+                                 hover:bg-gray-200 transition-colors"
                     >
-                      <CheckCircle2 className="w-4 h-4" />
-                      Continue
+                      Ask Rep a Question Instead
                     </button>
-                  </div>
+                  )}
+                  {msg.data?.allDone && (
+                    <button
+                      onClick={handleStayAndChat}
+                      className="w-full py-2.5 bg-gray-100 text-rep-text-primary rounded-lg font-medium text-sm
+                                 hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      Chat About Leadership
+                    </button>
+                  )}
                 </div>
               )}
             </RepMessage>
@@ -564,7 +434,7 @@ const RepCoach = () => {
         </div>
       </main>
 
-      {/* Input Area */}
+      {/* Input */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-2">
@@ -574,7 +444,7 @@ const RepCoach = () => {
               onChange={(e) => setUserInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
               placeholder={sessionState === 'questions' 
-                ? "Ask a leadership question or say 'done' to explore..." 
+                ? "Ask a leadership question..." 
                 : "Type a message to Rep..."}
               className="flex-1 px-4 py-3 bg-gray-100 rounded-xl text-sm placeholder:text-gray-400
                          focus:outline-none focus:ring-2 focus:ring-corporate-teal/30 focus:bg-white
@@ -589,17 +459,11 @@ const RepCoach = () => {
                   : 'bg-gray-200 text-gray-400'
               }`}
             >
-              {sessionState === 'questions' ? (
-                <MessageCircle className="w-5 h-5" />
-              ) : (
-                <Sparkles className="w-5 h-5" />
-              )}
+              <MessageCircle className="w-5 h-5" />
             </button>
           </div>
           <p className="text-xs text-center text-rep-text-secondary mt-2">
-            {sessionState === 'questions' 
-              ? "Ask about delegation, feedback, time management, or any leadership challenge"
-              : "Rep is here to guide your leadership journey"}
+            Rep guides you to your Dashboard curriculum
           </p>
         </div>
       </footer>

@@ -86,6 +86,10 @@ const AppContent = ({
       localStorage.removeItem('lastNavParams');
       localStorage.removeItem('arena-developer-mode');
       
+      // Clear AI Coach session authentication
+      sessionStorage.removeItem('ai-coach-authenticated');
+      window.dispatchEvent(new CustomEvent('ai-coach-logout'));
+      
       if (logout) {
         await logout();
       } else if (auth) {

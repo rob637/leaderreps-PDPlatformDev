@@ -17,6 +17,7 @@ const functionsV1 = require("firebase-functions/v1");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Anthropic = require("@anthropic-ai/sdk");
 const nodemailer = require("nodemailer");
 const twilio = require("twilio");
 
@@ -1712,3 +1713,129 @@ exports.trackEmailOpen = onRequest({ cors: true, region: "us-central1" }, async 
     res.send(transparentGif);
 });
 
+
+/**
+ * REPPY COACHING - AI-powered leadership coaching conversations
+ * Uses Claude to provide personalized, interactive coaching
+ */
+exports.reppyCoach = onCall(
+    { 
+        secrets: ["ANTHROPIC_API_KEY"],
+        cors: true,
+        maxInstances: 20,
+    },
+    async (request) => {
+        logger.info("reppyCoach called", { 
+            hasAuth: !!request.auth,
+            messageCount: request.data?.messages?.length 
+        });
+
+        // Verify authentication
+        if (!request.auth) {
+            throw new HttpsError('unauthenticated', 'User must be authenticated');
+        }
+
+        const { messages, context } = request.data;
+        
+        if (!messages || !Array.isArray(messages)) {
+            throw new HttpsError('invalid-argument', 'Messages array is required');
+        }
+
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) {
+            logger.error("ANTHROPIC_API_KEY not configured");
+            throw new HttpsError('internal', 'AI service not configured');
+        }
+
+        try {
+            const anthropic = new Anthropic({ apiKey });
+
+            // Build the system prompt based on context
+            const systemPrompt = buildReppySystemPrompt(context);
+
+            // Convert messages to Anthropic format
+            const anthropicMessages = messages.map(msg => ({
+                role: msg.role === 'user' ? 'user' : 'assistant',
+                content: msg.content
+            }));
+
+            const response = await anthropic.messages.create({
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 1024,
+                system: systemPrompt,
+                messages: anthropicMessages,
+            });
+
+            const assistantMessage = response.content[0]?.text || "I'm here to help. Could you tell me more?";
+
+            logger.info("reppyCoach response generated", { 
+                inputTokens: response.usage?.input_tokens,
+                outputTokens: response.usage?.output_tokens 
+            });
+
+            return { 
+                message: assistantMessage,
+                usage: response.usage
+            };
+
+        } catch (error) {
+            logger.error("Error in reppyCoach", error);
+            throw new HttpsError('internal', 'Failed to generate coaching response');
+        }
+    }
+);
+
+/**
+ * Build the system prompt for Reppy based on user context
+ */
+function buildReppySystemPrompt(context = {}) {
+    const { 
+        userName = 'there',
+        userRole = 'leader',
+        userChallenge = '',
+        userGoal = '',
+        sessionType = 'reflection',
+        sessionTheme = 'leadership',
+        sessionTitle = '',
+        sessionContent = '',
+        currentPhase = 'foundation'
+    } = context;
+
+    return `You are Reppy, an AI leadership coach created by LeaderReps. You help leaders grow through personalized, conversational coaching.
+
+YOUR PERSONALITY:
+- Warm, encouraging, and genuinely curious about the person you're coaching
+- Direct but kind - you challenge thinking without being harsh
+- Practical - you focus on actionable insights, not just theory
+- You use the leader's name (${userName}) naturally in conversation
+- You keep responses concise (2-4 paragraphs max) - this is a conversation, not a lecture
+- You ask follow-up questions to deepen reflection
+
+ABOUT THIS LEADER:
+- Name: ${userName}
+- Role: ${userRole}
+- Current Challenge: ${userChallenge || 'Not specified'}
+- Leadership Goal: ${userGoal || 'Growing as a leader'}
+- Growth Phase: ${currentPhase}
+
+CURRENT SESSION:
+- Type: ${sessionType}
+- Theme: ${sessionTheme}
+- Title: ${sessionTitle}
+${sessionContent ? `- Content/Context: ${sessionContent}` : ''}
+
+YOUR COACHING APPROACH:
+1. If the user's response is vague or unclear, gently ask for specifics ("Tell me more about that..." or "What specifically happened?")
+2. If they share a challenge, acknowledge it first, then help them explore solutions
+3. If they share a win, celebrate it and help them extract the learning
+4. Connect their responses back to their stated goals and challenges when relevant
+5. End most responses with a thoughtful question to keep the conversation going
+6. If they seem stuck, offer a perspective or framework, but always bring it back to their situation
+
+IMPORTANT:
+- Never lecture or give long theoretical explanations
+- Don't overwhelm with multiple questions - ask one good question at a time
+- If they say something doesn't make sense or seems off, acknowledge it and ask for clarification
+- Be authentically curious - you're learning about them as you coach them
+- Use their actual words back to them to show you're listening`;
+}

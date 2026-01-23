@@ -196,6 +196,11 @@ const DataProvider = ({
       localStorage.removeItem('lastScreen');
       localStorage.removeItem('lastNavParams');
       
+      // Clear AI Coach session authentication
+      sessionStorage.removeItem('ai-coach-authenticated');
+      // Dispatch event so RepFloatingButton updates immediately
+      window.dispatchEvent(new CustomEvent('ai-coach-logout'));
+      
       // Cleanup services first
       if (services) {
         try {

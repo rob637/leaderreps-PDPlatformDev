@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/lr_logo_mark_teal__1_.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#47A88D" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="LeaderReps Reppy" />
+    <link rel="apple-touch-icon" href="/reppy-icon-192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Preload fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    
+    <title>LeaderReps Reppy - Leadership Growth</title>
+    
+    <meta name="description" content="Your daily leadership coach from LeaderReps. Build leadership skills through personalized micro-sessions." />
+    
+    <style>
+      /* Critical CSS for initial load */
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { 
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: #FFFAF8;
+        min-height: 100vh;
+      }
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .loading-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #FFFAF8 0%, #E5F5F0 100%);
+      }
+      .loading-logo {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 24px;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      .loading-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .loading-text {
+        color: #002E47;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.8; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="loading-screen">
+        <div class="loading-logo">
+          <img src="/lr_logo_mark_teal__1_.png" alt="LeaderReps" />
+        </div>
+        <p class="loading-text">Loading Reppy...</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

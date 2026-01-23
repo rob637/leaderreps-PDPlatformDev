@@ -3,9 +3,11 @@
 import React, { lazy, Suspense } from 'react';
 
 const ScreenMap = {
-  // Rep AI Coach (new)
+  // AI Coach Screens
+  'ai-coach': lazy(() => import('../components/screens/AICoachSelector.jsx')),
   'rep': lazy(() => import('../components/screens/RepCoach.jsx')),
   'rep-coach': lazy(() => import('../components/screens/RepCoach.jsx')),
+  // Note: Reppy is now a separate PWA at leaderreps-reppy.web.app
   
   'roadmap-tracker': lazy(() =>
     import('../components/screens/RoadmapTracker.jsx')

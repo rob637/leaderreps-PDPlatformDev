@@ -11,6 +11,13 @@
           "leaderrepscorp"
         ]
       }
+    },
+    "leaderreps-pd-platform": {
+      "hosting": {
+        "reppy": [
+          "leaderreps-reppy"
+        ]
+      }
     }
   },
   "etags": {}
