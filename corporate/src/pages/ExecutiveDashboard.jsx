@@ -4,11 +4,18 @@ import {
   Users, Target, ArrowRight, Activity, Zap, BarChart3, 
   Calendar, DollarSign, TrendingUp, TrendingDown, Clock,
   CheckCircle, AlertCircle, Eye, Mail, FileText, Bell,
-  ChevronRight, Plus, RefreshCw, Filter, MoreHorizontal
+  ChevronRight, Plus, RefreshCw, Filter, MoreHorizontal,
+  LayoutGrid, Sparkles
 } from 'lucide-react';
 import { collection, query, getDocs, orderBy, where, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+
+// Dripify-inspired components
+import QuickStartWizard from '../components/QuickStartWizard';
+import UseCaseCards from '../components/UseCaseCards';
+import WorkflowTemplates from '../components/WorkflowTemplates';
+import IntegrationPreview from '../components/IntegrationPreview';
 
 /**
  * Executive Dashboard - Command Center Home Screen
@@ -24,6 +31,8 @@ import { useAuth } from '../contexts/AuthContext';
 const ExecutiveDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('dashboard'); // 'dashboard' | 'features' | 'workflows'
+  const [showQuickStart, setShowQuickStart] = useState(true);
   const [metrics, setMetrics] = useState({
     totalPipelineValue: 0,
     dealsClosingThisWeek: 0,
@@ -180,7 +189,7 @@ const ExecutiveDashboard = () => {
   return (
     <div className="p-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8 flex justify-between items-end">
+      <div className="mb-6 flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-bold text-corporate-navy">
             {getGreeting()}, {user?.displayName?.split(' ')[0] || 'there'}
@@ -189,7 +198,41 @@ const ExecutiveDashboard = () => {
             {todayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
+          {/* View Mode Tabs - Dripify-inspired */}
+          <div className="bg-white border border-slate-200 rounded-lg p-1 flex gap-1">
+            <button
+              onClick={() => setViewMode('dashboard')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                viewMode === 'dashboard' 
+                  ? 'bg-corporate-navy text-white' 
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Dashboard
+            </button>
+            <button
+              onClick={() => setViewMode('features')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-1 ${
+                viewMode === 'features' 
+                  ? 'bg-corporate-navy text-white' 
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <LayoutGrid size={14} /> Features
+            </button>
+            <button
+              onClick={() => setViewMode('workflows')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-1 ${
+                viewMode === 'workflows' 
+                  ? 'bg-corporate-navy text-white' 
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Sparkles size={14} /> Templates
+            </button>
+          </div>
+          
           <button 
             onClick={fetchDashboardData}
             className="bg-white border border-slate-200 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center gap-2 text-sm"
@@ -205,7 +248,39 @@ const ExecutiveDashboard = () => {
         </div>
       </div>
 
-      {/* Primary KPIs */}
+      {/* Quick Start Wizard - Dripify-inspired onboarding */}
+      {showQuickStart && viewMode === 'dashboard' && (
+        <QuickStartWizard onDismiss={() => setShowQuickStart(false)} />
+      )}
+
+      {/* Integration Status Bar - Compact version */}
+      {viewMode === 'dashboard' && (
+        <div className="mb-6 flex justify-between items-center">
+          <IntegrationPreview compact />
+        </div>
+      )}
+
+      {/* Conditional View Rendering */}
+      {viewMode === 'features' ? (
+        <div className="space-y-8">
+          <UseCaseCards />
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <h2 className="text-xl font-bold text-corporate-navy mb-6">All Features</h2>
+            {/* Import FeatureDiscovery dynamically to avoid circular dependencies */}
+            <React.Suspense fallback={<div className="animate-pulse bg-slate-100 h-64 rounded-xl" />}>
+              {React.lazy(() => import('../components/FeatureDiscovery')).then ? (
+                <FeatureDiscoveryWrapper />
+              ) : null}
+            </React.Suspense>
+          </div>
+        </div>
+      ) : viewMode === 'workflows' ? (
+        <div className="space-y-8">
+          <WorkflowTemplates showAll />
+        </div>
+      ) : (
+        <>
+          {/* Primary KPIs */}
       <div className="grid grid-cols-4 gap-4 mb-8">
         <div className="bg-gradient-to-br from-corporate-navy to-slate-800 text-white p-5 rounded-xl shadow-lg">
           <div className="flex justify-between items-start mb-3">
@@ -469,8 +544,28 @@ const ExecutiveDashboard = () => {
           </Link>
         </div>
       </div>
+
+      {/* Workflow Templates Section - Dripify-inspired */}
+      <div className="mt-8">
+        <WorkflowTemplates />
+      </div>
+
+      {/* Full Integration Preview */}
+      <div className="mt-8">
+        <IntegrationPreview />
+      </div>
+        </>
+      )}
     </div>
   );
 };
+
+// Wrapper for lazy-loaded FeatureDiscovery
+const FeatureDiscovery = React.lazy(() => import('../components/FeatureDiscovery'));
+const FeatureDiscoveryWrapper = () => (
+  <React.Suspense fallback={<div className="animate-pulse bg-slate-100 h-64 rounded-xl" />}>
+    <FeatureDiscovery />
+  </React.Suspense>
+);
 
 export default ExecutiveDashboard;
