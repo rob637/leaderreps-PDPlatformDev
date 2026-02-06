@@ -8,6 +8,7 @@ import { useNotifications } from '../../providers/NotificationProvider';
 import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
 import MyJourneyWidget from '../widgets/MyJourneyWidget';
 import MySettingsWidget from '../widgets/MySettingsWidget';
+import ConditioningHistoryWidget from '../widgets/ConditioningHistoryWidget';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useDevPlan } from '../../hooks/useDevPlan';
 
@@ -15,12 +16,12 @@ const LOCKER_FEATURES = [
   'locker-wins-history',
   'locker-scorecard-history',
   'locker-latest-reflection',
-  'locker-reps-history'
+  'locker-conditioning-history'  // Replaced locker-reps-history with weekly conditioning history
 ];
 
 const Locker = () => {
   const { dailyPracticeData, commitmentData, navigate, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
-  const { isFeatureEnabled, getFeatureOrder } = useFeatures();
+  const { isFeatureEnabled, getFeatureOrder, getWidgetHelpText } = useFeatures();
   const { currentDayData, prepRequirementsComplete, dailyPlan } = useDailyPlan();
   const { currentWeek: devPlanCurrentWeek } = useDevPlan();
 
@@ -161,8 +162,8 @@ const Locker = () => {
             return lockerVisibility.showScorecard;
           case 'locker-latest-reflection':
             return lockerVisibility.showReflection;
-          case 'locker-reps-history':
-            return lockerVisibility.showDailyReps;
+          case 'locker-conditioning-history':
+            return lockerVisibility.showDailyReps; // Uses same visibility as old reps widget
           default:
             return true;
         }
@@ -177,6 +178,10 @@ const Locker = () => {
 
   // Custom renderer for special widgets
   const renderFeature = (featureId) => {
+    // Special handling for conditioning history (React component, not template)
+    if (featureId === 'locker-conditioning-history') {
+      return <ConditioningHistoryWidget key={featureId} helpText={getWidgetHelpText(featureId)} />;
+    }
     return <WidgetRenderer key={featureId} widgetId={featureId} scope={scope} />;
   };
 

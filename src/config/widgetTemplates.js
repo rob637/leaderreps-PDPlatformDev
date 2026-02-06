@@ -3339,14 +3339,25 @@ export const FEATURE_METADATA = {
     outputs: [],
   },
   'locker-reps-history': {
-    core: true,
+    core: false, // DEPRECATED - replaced by locker-conditioning-history
     category: 'Locker',
-    name: 'Reps History',
+    name: 'Reps History (Deprecated)',
     description: 'Reps History',
     purpose: 'History of daily reps.',
-    extendedDescription: 'Displays a spreadsheet-style history of daily reps completion.',
+    extendedDescription: 'DEPRECATED: Use locker-conditioning-history instead. Displays a spreadsheet-style history of daily reps completion.',
     inputs: ['repsHistory'],
     outputs: [],
+  },
+  'locker-conditioning-history': {
+    core: true,
+    category: 'Locker',
+    name: 'Conditioning History',
+    description: 'Weekly conditioning rep history',
+    purpose: 'Track your weekly leadership conditioning reps.',
+    extendedDescription: 'Displays your conditioning rep history grouped by week. Shows completed and canceled reps with details about the person, rep type, and completion status.',
+    inputs: ['conditioningReps'],
+    outputs: [],
+    componentPath: 'src/components/widgets/ConditioningHistoryWidget.jsx',
   },
   'am-bookend-header': {
     core: true,
