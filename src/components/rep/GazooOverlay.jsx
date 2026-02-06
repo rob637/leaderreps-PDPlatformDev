@@ -380,7 +380,7 @@ Help them with their question. Be practical and actionable.`;
         <GazooSpotlight
           isOpen={showSpotlight}
           onClose={() => setShowSpotlight(false)}
-          screenContext={screenKey}
+          screenContext="dashboard"
           onComplete={() => setShowSpotlight(false)}
         />
       </>
@@ -664,8 +664,9 @@ Help them with their question. Be practical and actionable.`;
                 // Navigate to dashboard if not already there
                 if (screenKey !== 'dashboard') {
                   navigate('dashboard');
-                  // Wait for navigation, then start spotlight
-                  setTimeout(() => setShowSpotlight(true), 300);
+                  // Wait for navigation and page render, then start spotlight
+                  // 600ms gives time for: navigation + dashboard mount + element render
+                  setTimeout(() => setShowSpotlight(true), 600);
                 } else {
                   // Already on dashboard - start spotlight immediately
                   setShowSpotlight(true);
@@ -682,14 +683,14 @@ Help them with their question. Be practical and actionable.`;
         )}
       </div>
 
-      {/* Spotlight Tour */}
+      {/* Spotlight Tour - always uses 'dashboard' context since tour is dashboard-focused */}
       <GazooSpotlight
         isOpen={showSpotlight}
         onClose={() => {
           setShowSpotlight(false);
           // Gazoo stays open, just goes back to normal position
         }}
-        screenContext={screenKey}
+        screenContext="dashboard"
         onComplete={() => {
           setShowSpotlight(false);
           // Gazoo stays open after tour completes
