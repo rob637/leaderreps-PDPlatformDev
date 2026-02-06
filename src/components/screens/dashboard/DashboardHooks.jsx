@@ -201,7 +201,7 @@ export const useDashboard = ({
     setGroundingRepRevealed(false);
   }, []);
 
-  const handleToggleAdditionalRep = useCallback(async (commitmentId, currentStatus, text = '') => {
+  const handleToggleAdditionalRep = useCallback(async (commitmentId, currentStatus, text = '', debriefData = null) => {
     const newStatus = currentStatus === 'Committed' ? 'Pending' : 'Committed';
     
     let updatedCommitments;
@@ -209,7 +209,16 @@ export const useDashboard = ({
     
     if (exists) {
       updatedCommitments = additionalCommitments.map(c => 
-        c.id === commitmentId ? { ...c, status: newStatus } : c
+        c.id === commitmentId ? { 
+          ...c, 
+          status: newStatus,
+          // Add debrief data if provided and completing
+          ...(newStatus === 'Committed' && debriefData ? {
+            debriefNotes: debriefData.debriefNotes || '',
+            debriefRating: debriefData.debriefRating || null,
+            debriefedAt: debriefData.debriefedAt || timeService.getISOString()
+          } : {})
+        } : c
       );
     } else {
       // Add new commitment if it doesn't exist
@@ -217,7 +226,13 @@ export const useDashboard = ({
         id: commitmentId,
         status: newStatus,
         text: text,
-        createdAt: timeService.getISOString()
+        createdAt: timeService.getISOString(),
+        // Add debrief data if provided and completing
+        ...(newStatus === 'Committed' && debriefData ? {
+          debriefNotes: debriefData.debriefNotes || '',
+          debriefRating: debriefData.debriefRating || null,
+          debriefedAt: debriefData.debriefedAt || timeService.getISOString()
+        } : {})
       }];
     }
     
@@ -231,7 +246,12 @@ export const useDashboard = ({
         date: todayDate,
         completedCount: completedReps.length,
         totalCount: updatedCommitments.length,
-        items: completedReps.map(r => ({ id: r.id, text: r.text || r.label })),
+        items: completedReps.map(r => ({ 
+          id: r.id, 
+          text: r.text || r.label,
+          debriefNotes: r.debriefNotes || '',
+          debriefRating: r.debriefRating || null
+        })),
         timestamp: timeService.getISOString()
     };
 
@@ -248,7 +268,7 @@ export const useDashboard = ({
           repsHistory: updatedHistory,
           date: timeService.getTodayStr()
         });
-        console.log('[Daily Reps] Saved commitment toggle:', commitmentId, newStatus);
+        console.log('[Daily Reps] Saved commitment toggle:', commitmentId, newStatus, debriefData ? 'with debrief' : '');
       } catch (error) {
         console.error('Error toggling commitment:', error);
         // Revert

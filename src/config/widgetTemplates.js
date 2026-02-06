@@ -583,12 +583,57 @@ const DailyLeaderRepsWidget = () => {
   const safeIsSaving = typeof isSavingReps !== 'undefined' ? isSavingReps : false;
   const [expandedRep, setExpandedRep] = useState(null);
   
-  // Toggle completion handler
-  const handleToggle = (e, repId, currentStatus, label) => {
+  // Debrief modal state
+  const [debriefRep, setDebriefRep] = useState(null);
+  const [debriefNotes, setDebriefNotes] = useState('');
+  const [debriefRating, setDebriefRating] = useState(null);
+  
+  // Toggle completion handler - now opens debrief modal instead of immediate toggle
+  const handleToggle = (e, rep, currentStatus) => {
     e.stopPropagation();
-    if (handleToggleAdditionalRep) {
-      handleToggleAdditionalRep(repId, currentStatus, label);
+    
+    // If already completed, uncomplete immediately
+    if (currentStatus === 'Committed') {
+      if (handleToggleAdditionalRep) {
+        handleToggleAdditionalRep(rep.id, 'Committed', rep.label);
+      }
+    } else {
+      // If not completed, open debrief modal
+      setDebriefRep(rep);
+      setDebriefNotes('');
+      setDebriefRating(null);
     }
+  };
+  
+  // Submit debrief and complete rep
+  const handleDebriefSubmit = () => {
+    if (!debriefRep) return;
+    
+    if (handleToggleAdditionalRep) {
+      // Pass the debrief data along with the toggle
+      handleToggleAdditionalRep(debriefRep.id, 'Pending', debriefRep.label, {
+        debriefNotes: debriefNotes,
+        debriefRating: debriefRating,
+        debriefedAt: new Date().toISOString()
+      });
+    }
+    
+    setDebriefRep(null);
+    setDebriefNotes('');
+    setDebriefRating(null);
+  };
+  
+  // Skip debrief but still complete
+  const handleDebriefSkip = () => {
+    if (!debriefRep) return;
+    
+    if (handleToggleAdditionalRep) {
+      handleToggleAdditionalRep(debriefRep.id, 'Pending', debriefRep.label);
+    }
+    
+    setDebriefRep(null);
+    setDebriefNotes('');
+    setDebriefRating(null);
   };
   
   // Toggle description expansion
@@ -627,7 +672,7 @@ const DailyLeaderRepsWidget = () => {
               >
                 <div className="flex items-center gap-3 flex-1">
                   <div 
-                    onClick={(e) => handleToggle(e, rep.id, isCompleted ? 'Committed' : 'Pending', rep.label)}
+                    onClick={(e) => handleToggle(e, rep, isCompleted ? 'Committed' : 'Pending')}
                     className={\`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer hover:scale-110 \${
                       isCompleted 
                         ? 'bg-green-500 border-green-500' 
@@ -666,6 +711,90 @@ const DailyLeaderRepsWidget = () => {
           );
         })}
       </div>
+      
+      {/* Debrief Modal */}
+      {debriefRep && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-4 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <Dumbbell className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Quick Debrief</h3>
+                  <p className="text-sm text-white/80">How did "{debriefRep.label}" go?</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-4 space-y-4">
+              {/* Rating */}
+              <div>
+                <label className="text-sm font-semibold text-slate-700 block mb-2">How'd it go?</label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'great', emoji: '🎯', label: 'Nailed it' },
+                    { value: 'good', emoji: '👍', label: 'Good' },
+                    { value: 'ok', emoji: '👌', label: 'OK' },
+                    { value: 'struggled', emoji: '💪', label: 'Struggled' }
+                  ].map(option => (
+                    <button
+                      key={option.value}
+                      onClick={() => setDebriefRating(option.value)}
+                      className={\`flex-1 py-2 px-1 rounded-lg border-2 text-center transition-all \${
+                        debriefRating === option.value
+                          ? 'border-emerald-500 bg-emerald-50'
+                          : 'border-slate-200 hover:border-emerald-300'
+                      }\`}
+                    >
+                      <div className="text-xl mb-0.5">{option.emoji}</div>
+                      <div className="text-xs text-slate-600">{option.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Notes */}
+              <div>
+                <label className="text-sm font-semibold text-slate-700 block mb-2">
+                  What did you learn? <span className="font-normal text-slate-400">(optional)</span>
+                </label>
+                <textarea
+                  value={debriefNotes}
+                  onChange={(e) => setDebriefNotes(e.target.value)}
+                  placeholder="Share a quick insight or takeaway..."
+                  className="w-full h-20 p-3 border border-slate-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+              <button
+                onClick={handleDebriefSkip}
+                className="flex-1 py-2.5 px-4 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                Skip Debrief
+              </button>
+              <button
+                onClick={handleDebriefSubmit}
+                disabled={!debriefRating}
+                className={\`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 \${
+                  debriefRating
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:opacity-90'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                }\`}
+              >
+                <CheckCircle className="w-4 h-4" />
+                Complete Rep
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Streak Recognition - only show when there's a streak */}
       {(() => {
