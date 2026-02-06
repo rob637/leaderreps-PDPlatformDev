@@ -1,0 +1,1 @@
+{"hosting":{"site":"leaderreps-reppy","public":"dist","rewrites":[{"source":"**","destination":"/index.html"}]}}

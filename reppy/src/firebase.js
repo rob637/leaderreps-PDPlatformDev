@@ -2,6 +2,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
+import { getAnalytics, logEvent as firebaseLogEvent } from 'firebase/analytics';
 
 // Parse config from environment variable or use defaults
 const parseConfig = () => {
@@ -31,5 +33,29 @@ const firebaseConfig = parseConfig();
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const functions = getFunctions(app, 'us-central1');
+
+// Initialize Analytics (only in browser environment)
+let analytics = null;
+if (typeof window !== 'undefined') {
+  try {
+    analytics = getAnalytics(app);
+  } catch (e) {
+    // Analytics may fail in some environments (e.g., ad blockers)
+    console.warn('Analytics initialization failed:', e.message);
+  }
+}
+export { analytics };
+
+// Helper to log events safely
+export const logEvent = (eventName, params = {}) => {
+  if (analytics) {
+    try {
+      firebaseLogEvent(analytics, eventName, params);
+    } catch (e) {
+      // Silently fail if analytics is blocked
+    }
+  }
+};
 
 export default app;

@@ -1,0 +1,179 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+:root {
+  --color-primary: #3b82f6;
+  --color-primary-dark: #2563eb;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400;
+}
+
+/* Focus styles */
+*:focus-visible {
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+}
+
+/* Button base */
+.btn {
+  @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium 
+         transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-primary {
+  @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+}
+
+.btn-secondary {
+  @apply btn bg-slate-100 text-slate-700 hover:bg-slate-200 focus:ring-slate-500;
+}
+
+.btn-success {
+  @apply btn bg-accent-600 text-white hover:bg-accent-700 focus:ring-accent-500;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden;
+}
+
+.card-header {
+  @apply px-4 py-3 border-b border-slate-100;
+}
+
+.card-body {
+  @apply p-4;
+}
+
+/* Progress bar */
+.progress-bar {
+  @apply h-2 bg-slate-200 rounded-full overflow-hidden;
+}
+
+.progress-bar-fill {
+  @apply h-full bg-primary-500 transition-all duration-300;
+}
+
+/* Input styles */
+.input {
+  @apply w-full px-3 py-2 border border-slate-300 rounded-lg 
+         focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+         placeholder:text-slate-400;
+}
+
+/* MCQ Styles */
+.mcq-option {
+  @apply p-4 border-2 border-slate-200 rounded-lg cursor-pointer
+         transition-all duration-200 hover:border-primary-300 hover:bg-primary-50;
+}
+
+.mcq-option.selected {
+  @apply border-primary-500 bg-primary-50;
+}
+
+.mcq-option.correct {
+  @apply border-accent-500 bg-accent-50;
+}
+
+.mcq-option.incorrect {
+  @apply border-danger-500 bg-red-50;
+}
+/* Prose styles for lesson content */
+.prose {
+  @apply text-slate-700 leading-relaxed;
+}
+
+.prose h2 {
+  @apply text-xl font-bold text-slate-900 mt-8 mb-4;
+}
+
+.prose h3 {
+  @apply text-lg font-semibold text-slate-900 mt-6 mb-3;
+}
+
+.prose p {
+  @apply mb-4;
+}
+
+.prose ul, .prose ol {
+  @apply mb-4 pl-6;
+}
+
+.prose ul {
+  @apply list-disc;
+}
+
+.prose ol {
+  @apply list-decimal;
+}
+
+.prose li {
+  @apply mb-2;
+}
+
+.prose strong {
+  @apply font-semibold text-slate-900;
+}
+
+.prose table {
+  @apply w-full border-collapse mb-4;
+}
+
+.prose th, .prose td {
+  @apply border border-slate-300 px-3 py-2 text-left;
+}
+
+.prose th {
+  @apply bg-slate-100 font-semibold;
+}
+
+/* Callouts */
+.callout {
+  @apply p-4 rounded-xl mb-4;
+}
+
+.callout-tip {
+  @apply bg-primary-50 border border-primary-200 text-primary-800;
+}
+
+.callout-important {
+  @apply bg-amber-50 border border-amber-200 text-amber-800;
+}
+
+.callout-example {
+  @apply bg-slate-100 border border-slate-300 text-slate-800;
+}
+
+.formula {
+  @apply bg-slate-100 p-4 rounded-lg text-center font-mono mb-4;
+}
+
+/* Card footer */
+.card-footer {
+  @apply px-4 py-3 bg-slate-50 border-t border-slate-100;
+}

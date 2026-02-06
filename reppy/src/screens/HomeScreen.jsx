@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProgress, useAuth, useTheme } from '../App';
 import { getCurrentSession, getFocusProgress } from '../data/focuses';
-import { getDailyStatus, getNextAction } from '../data/dailyTouchpoints';
+import { getDailyStatus } from '../data/dailyTouchpoints';
+import { getThemeClasses, SVG_COLORS, BADGES, BUTTON_PRIMARY, PROGRESS } from '../theme';
+import AskReppyModal from '../components/AskReppyModal';
+import AdminMagicButton from '../components/AdminMagicButton';
 
 // Admin emails
 const ADMIN_EMAILS = ['rob@sagecg.com', 'rob@leaderreps.com'];
@@ -11,6 +15,7 @@ export default function HomeScreen() {
   const { progress } = useProgress();
   const { user } = useAuth();
   const { isDark } = useTheme();
+  const [showAskReppy, setShowAskReppy] = useState(false);
   
   const completedSessions = progress?.completedSessions?.length || 0;
   const streakCount = progress?.streakCount || 0;
@@ -24,7 +29,6 @@ export default function HomeScreen() {
   
   // Get daily touchpoint status
   const dailyStatus = getDailyStatus(progress);
-  const nextAction = getNextAction(progress);
   
   // Time-based greeting
   const hour = new Date().getHours();
@@ -34,26 +38,24 @@ export default function HomeScreen() {
     navigate(`/session?type=${type}`);
   };
 
-  // Theme colors - consistent blue accent
-  const bg = isDark ? 'bg-gray-900' : 'bg-white';
-  const cardBg = isDark ? 'bg-gray-800' : 'bg-gray-50';
-  const textPrimary = isDark ? 'text-white' : 'text-gray-900';
-  const textSecondary = isDark ? 'text-gray-400' : 'text-gray-600';
-  const border = isDark ? 'border-gray-700' : 'border-gray-200';
+  // Theme classes from centralized theme
+  const theme = getThemeClasses(isDark);
 
   return (
-    <div className={`min-h-full ${bg}`}>
+    <div className={`min-h-full page-enter-subtle ${theme.bg}`}>
       {/* Content - adjusted padding for bottom nav (needs ~140px for nav + safe area) */}
-      <div className="relative z-10 px-5 pt-10 pb-40 safe-area-top">
+      <div className="relative z-10 px-5 pt-4 pb-40">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className={`text-sm font-medium ${textSecondary}`}>{greeting}</p>
-            <h1 className={`text-2xl font-bold ${textPrimary}`}>{name}</h1>
+            <p className={`text-sm font-medium ${theme.textSecondary}`}>{greeting}</p>
+            <h1 className={`text-2xl font-bold ${theme.textPrimary}`}>{name}</h1>
           </div>
           <button
+            type="button"
             onClick={() => navigate('/profile')}
-            className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center"
+            aria-label="Go to profile"
+            className={`w-12 h-12 rounded-full ${BUTTON_PRIMARY} flex items-center justify-center`}
           >
             <span className="text-xl font-bold text-white">
               {name?.[0]?.toUpperCase() || 'L'}
@@ -64,7 +66,7 @@ export default function HomeScreen() {
         {/* Streak Badge */}
         {streakCount > 0 && (
           <div className="flex justify-center mb-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-semibold bg-orange-100 text-orange-700">
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-semibold ${BADGES.warning}`}>
               <span>🔥</span>
               <span>{streakCount} Day Streak</span>
             </div>
@@ -80,7 +82,7 @@ export default function HomeScreen() {
                 cy="56"
                 r="48"
                 fill="none"
-                stroke={isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"}
+                stroke={SVG_COLORS.track(isDark)}
                 strokeWidth="6"
               />
               <circle
@@ -88,22 +90,22 @@ export default function HomeScreen() {
                 cy="56"
                 r="48"
                 fill="none"
-                stroke="#2563eb"
+                stroke={SVG_COLORS.primary}
                 strokeWidth="6"
                 strokeLinecap="round"
                 strokeDasharray={`${(dailyStatus.completedCount / 3) * 302} 302`}
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className={`text-2xl font-bold ${textPrimary}`}>{dailyStatus.completedCount}/3</span>
-              <span className={`text-xs ${textSecondary}`}>Today</span>
+              <span className={`text-2xl font-bold ${theme.textPrimary}`}>{dailyStatus.completedCount}/3</span>
+              <span className={`text-xs ${theme.textSecondary}`}>Today</span>
             </div>
           </div>
         </div>
 
         {/* Daily Journey - Clean Cards */}
         <div className="space-y-3 mb-6">
-          <h3 className={`text-xs uppercase tracking-wider font-semibold ${textSecondary}`}>Today's Journey</h3>
+          <h3 className={`text-xs uppercase tracking-wider font-semibold ${theme.textSecondary}`}>Today's Journey</h3>
           
           {/* Morning */}
           <TouchpointCard
@@ -139,27 +141,28 @@ export default function HomeScreen() {
             onClick={() => startSession('evening')}
             completedTime={dailyStatus.data.evening?.completedAt}
             locked={!dailyStatus.available.evening}
+            lockedMessage="Available after 6pm"
             isDark={isDark}
           />
         </div>
 
         {/* Current Focus - Simple */}
-        <div className={`rounded-xl p-4 ${cardBg} border ${border}`}>
+        <div className={`rounded-xl p-4 ${theme.card} border ${theme.border}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-2xl">{focus.icon}</span>
               <div>
-                <h4 className={`font-semibold ${textPrimary}`}>{focus.title}</h4>
-                <p className={`text-sm ${textSecondary}`}>Session {sessionInFocus} of {focus.sessions.length}</p>
+                <h4 className={`font-semibold ${theme.textPrimary}`}>{focus.title}</h4>
+                <p className={`text-sm ${theme.textSecondary}`}>Session {sessionInFocus} of {focus.sessions.length}</p>
               </div>
             </div>
-            <div className={`text-sm font-medium ${textSecondary}`}>
+            <div className={`text-sm font-medium ${theme.textSecondary}`}>
               {focusProgress.percentage}%
             </div>
           </div>
-          <div className={`mt-3 h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+          <div className={`mt-3 h-1.5 rounded-full overflow-hidden ${PROGRESS.track(isDark)}`}>
             <div 
-              className="h-full bg-blue-600 rounded-full transition-all"
+              className={`h-full ${PROGRESS.fill} rounded-full transition-all`}
               style={{ width: `${focusProgress.percentage}%` }}
             />
           </div>
@@ -167,127 +170,85 @@ export default function HomeScreen() {
 
         {/* All Done */}
         {dailyStatus.allDone && (
-          <div className={`mt-4 rounded-xl p-4 text-center ${cardBg} border ${border}`}>
+          <div className={`mt-4 rounded-xl p-4 text-center ${theme.card} border ${theme.border}`}>
             <span className="text-2xl">🎉</span>
-            <span className={`font-semibold ml-2 ${textPrimary}`}>You're all done! See you tomorrow.</span>
+            <span className={`font-semibold ml-2 ${theme.textPrimary}`}>You're all done! See you tomorrow.</span>
           </div>
+        )}
+        
+        {/* Bad Day Option - show when nothing completed yet */}
+        {dailyStatus.completedCount === 0 && (
+          <button
+            type="button"
+            onClick={() => setShowAskReppy(true)}
+            className={`mt-4 w-full py-3 px-4 rounded-xl text-sm transition-all ${
+              isDark 
+                ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300' 
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-600'
+            }`}
+          >
+            😓 Not feeling it today? Tap to talk to Reppy
+          </button>
         )}
       </div>
 
-      {/* Bottom Navigation - Fixed */}
-      <div className={`fixed bottom-0 left-0 right-0 z-50 safe-area-bottom ${bg} border-t ${border}`}>
-        <div className="md:max-w-[430px] md:mx-auto">
-          {/* Action Button - only show if there's something available to do */}
-          {!dailyStatus.allDone && nextAction.type !== 'wait' && nextAction.type !== 'done' && (
-            <div className="px-4 pt-3">
-              <button
-                onClick={() => {
-                  if (nextAction.type === 'morning') startSession('morning');
-                  else if (nextAction.type === 'growth') startSession('growth');
-                  else if (nextAction.type === 'evening') startSession('evening');
-                }}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
-              >
-                <span>
-                  {nextAction.type === 'morning' && '☀️'}
-                  {nextAction.type === 'growth' && '📚'}
-                  {nextAction.type === 'evening' && '🌙'}
-                </span>
-                <span>{nextAction.message}</span>
-              </button>
-            </div>
-          )}
-          
-          {/* Nav Icons */}
-          <div className="flex items-center justify-around py-3">
-            <button className="flex flex-col items-center gap-1 text-blue-600">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-              </svg>
-              <span className="text-xs font-medium">Home</span>
-            </button>
-            
-            <button 
-              onClick={() => navigate('/community')}
-              className={`flex flex-col items-center gap-1 ${textSecondary}`}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span className="text-xs">Community</span>
-            </button>
-            
-            <button 
-              onClick={() => navigate('/progress')}
-              className={`flex flex-col items-center gap-1 ${textSecondary}`}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <span className="text-xs">Progress</span>
-            </button>
-            
-            {isAdmin && (
-              <button 
-                onClick={() => navigate('/admin')}
-                className="flex flex-col items-center gap-1 text-orange-500"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className="text-xs">Admin</span>
-              </button>
-            )}
-            
-            <button 
-              onClick={() => navigate('/profile')}
-              className={`flex flex-col items-center gap-1 ${textSecondary}`}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <span className="text-xs">Profile</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Floating Ask Reppy Button */}
+      <button
+        type="button"
+        onClick={() => setShowAskReppy(true)}
+        className={`fixed bottom-24 right-4 z-40 w-14 h-14 ${BUTTON_PRIMARY} rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95`}
+        aria-label="Ask Reppy for help"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+      </button>
+
+      {/* Ask Reppy Modal */}
+      <AskReppyModal 
+        isOpen={showAskReppy} 
+        onClose={() => setShowAskReppy(false)} 
+        isDark={isDark}
+      />
+      
+      {/* Admin Magic Button (only visible to admins) */}
+      <AdminMagicButton />
     </div>
   );
 }
 
 // Clean Touchpoint Card
-function TouchpointCard({ icon, title, subtitle, completed, available, onClick, completedTime, locked, isDark }) {
+function TouchpointCard({ icon, title, subtitle, completed, available, onClick, completedTime, locked, lockedMessage, isDark }) {
   const formatTime = (isoString) => {
     if (!isoString) return '';
     return new Date(isoString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   };
 
-  const cardBg = isDark ? 'bg-gray-800' : 'bg-gray-50';
+  const theme = getThemeClasses(isDark);
   const completedBg = isDark ? 'bg-blue-900/30' : 'bg-blue-50';
-  const textPrimary = isDark ? 'text-white' : 'text-gray-900';
-  const textSecondary = isDark ? 'text-gray-400' : 'text-gray-600';
 
   // Not clickable if completed or locked
   const isClickable = available && !locked && !completed;
   
   return (
     <button
+      type="button"
       onClick={isClickable ? onClick : undefined}
       disabled={!isClickable}
+      aria-label={`${title}: ${subtitle}${completed ? ' - completed' : locked ? ' - locked' : ''}`}
       className={`w-full p-4 rounded-xl text-left transition-all border ${
         completed 
           ? `${completedBg} border-blue-500`
           : locked
-            ? `${cardBg} border-gray-300 opacity-50`
+            ? `${theme.card} ${theme.border} opacity-50`
             : available
-              ? `${cardBg} border-gray-200 hover:border-blue-400`
-              : `${cardBg} border-gray-200 opacity-60`
+              ? `${theme.card} ${theme.border} hover:border-blue-400`
+              : `${theme.card} ${theme.border} opacity-60`
       }`}
     >
       <div className="flex items-center gap-3">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-          completed ? 'bg-blue-600' : isDark ? 'bg-gray-700' : 'bg-white border border-gray-200'
+          completed ? 'bg-blue-600' : isDark ? 'bg-gray-700' : `bg-white border ${theme.border}`
         }`}>
           {completed ? (
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,14 +260,22 @@ function TouchpointCard({ icon, title, subtitle, completed, available, onClick, 
         </div>
         
         <div className="flex-1 min-w-0">
-          <h4 className={`font-medium ${completed ? 'text-blue-600' : textPrimary}`}>
+          <h4 className={`font-medium ${completed ? 'text-blue-600' : theme.textPrimary}`}>
             {title}
           </h4>
-          <p className={`text-sm ${textSecondary}`}>{subtitle}</p>
+          <p className={`text-sm ${theme.textSecondary}`}>
+            {locked && lockedMessage ? lockedMessage : subtitle}
+          </p>
         </div>
         
         {completed && completedTime && (
           <span className="text-xs text-blue-600 font-medium">{formatTime(completedTime)}</span>
+        )}
+        
+        {locked && !completed && (
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
         )}
       </div>
     </button>

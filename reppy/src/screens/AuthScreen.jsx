@@ -25,19 +25,32 @@ export default function AuthScreen() {
         setResetSent(true);
       }
     } catch (err) {
-      console.error('Auth error:', err);
+      console.error('Auth error:', err.code, err.message);
+      
+      // Handle different error codes
       if (err.code === 'auth/invalid-email') {
         setError('Please enter a valid email address.');
       } else if (err.code === 'auth/user-not-found') {
-        setError('No account found with this email.');
+        setError('No account found with this email. Try signing up instead.');
       } else if (err.code === 'auth/wrong-password') {
         setError('Incorrect password.');
+      } else if (err.code === 'auth/invalid-credential') {
+        // Firebase's email enumeration protection returns this for both wrong password and user not found
+        if (mode === 'signin') {
+          setError('Invalid email or password. If you don\'t have an account, try signing up.');
+        } else {
+          setError('Unable to create account. Please check your details and try again.');
+        }
       } else if (err.code === 'auth/email-already-in-use') {
-        setError('An account already exists with this email.');
+        setError('An account already exists with this email. Try signing in instead.');
       } else if (err.code === 'auth/weak-password') {
         setError('Password should be at least 6 characters.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please wait a few minutes and try again.');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your connection.');
       } else {
-        setError('Something went wrong. Please try again.');
+        setError(`Something went wrong. Please try again. (${err.code || 'unknown'})`);
       }
     } finally {
       setLoading(false);
@@ -57,15 +70,15 @@ export default function AuthScreen() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative z-10">
         {/* Logo */}
         <div className="mb-10 text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-indigo-500/30">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-2xl shadow-teal-500/30">
             <img 
-              src="/lr_logo_teal__1_.png" 
+              src="/icon-192x192.png" 
               alt="LeaderReps" 
-              className="h-10 brightness-0 invert"
+              className="h-16 w-16 rounded-xl"
             />
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">Reppy</h1>
-          <p className="text-white/60 text-lg">Your Leadership Coach</p>
+          <p className="text-gray-400 text-lg">Your Leadership Coach</p>
         </div>
 
         {/* Auth Card */}
@@ -78,7 +91,7 @@ export default function AuthScreen() {
                 </svg>
               </div>
               <h2 className="text-xl font-semibold text-white mb-3">Check your email</h2>
-              <p className="text-white/60 text-sm mb-6">
+              <p className="text-gray-400 text-sm mb-6">
                 We sent password reset instructions to {email}
               </p>
               <button
@@ -93,7 +106,7 @@ export default function AuthScreen() {
               <h2 className="text-2xl font-bold text-white mb-2 text-center">
                 {mode === 'signin' ? 'Welcome back' : mode === 'signup' ? 'Create account' : 'Reset password'}
               </h2>
-              <p className="text-white/50 text-sm mb-8 text-center">
+              <p className="text-gray-400 text-sm mb-8 text-center">
                 {mode === 'signin' ? 'Continue your leadership journey' : 
                  mode === 'signup' ? 'Start your leadership journey' : 
                  'Enter your email to reset'}
@@ -154,14 +167,16 @@ export default function AuthScreen() {
                 {mode === 'signin' && (
                   <>
                     <button
+                      type="button"
                       onClick={() => setMode('reset')}
-                      className="text-white/40 text-sm hover:text-white/60 transition-colors"
+                      className="text-gray-500 text-sm hover:text-gray-400 transition-colors"
                     >
                       Forgot password?
                     </button>
-                    <p className="text-white/40 text-sm">
+                    <p className="text-gray-500 text-sm">
                       Don't have an account?{' '}
                       <button
+                        type="button"
                         onClick={() => setMode('signup')}
                         className="text-indigo-400 font-medium hover:text-indigo-300 transition-colors"
                       >
@@ -171,7 +186,7 @@ export default function AuthScreen() {
                   </>
                 )}
                 {mode === 'signup' && (
-                  <p className="text-white/40 text-sm">
+                  <p className="text-gray-500 text-sm">
                     Already have an account?{' '}
                     <button
                       onClick={() => setMode('signin')}
@@ -195,7 +210,7 @@ export default function AuthScreen() {
         </div>
 
         {/* Footer */}
-        <p className="mt-8 text-white/30 text-xs text-center">
+        <p className="mt-8 text-gray-600 text-xs text-center">
           By LeaderReps • Leadership development made simple
         </p>
       </div>

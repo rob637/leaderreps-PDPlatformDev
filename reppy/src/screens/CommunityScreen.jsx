@@ -1,27 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProgress, useAuth, useTheme } from '../App';
+import { useProgress, useTheme } from '../App';
 import { 
   CIRCLE_DISCUSSION_GUIDES, 
   COACHING_TOPICS, 
   COMMUNITY_CHALLENGES,
   ACCOUNTABILITY_PROMPTS,
   getCurrentCircleGuide,
-  getRandomSharingPrompt,
 } from '../data/communityContent';
 
 export default function CommunityScreen() {
   const navigate = useNavigate();
-  const { progress, updateProgress } = useProgress();
-  const { user } = useAuth();
+  const { progress } = useProgress();
   const { isDark } = useTheme();
   
   const [activeTab, setActiveTab] = useState('circles');
   const [showCircleDetail, setShowCircleDetail] = useState(null);
   const [showCoachingSession, setShowCoachingSession] = useState(null);
   const [showChallenge, setShowChallenge] = useState(null);
-  const [partnerReflection, setPartnerReflection] = useState('');
-  const [showShareModal, setShowShareModal] = useState(false);
   
   const profile = progress?.profile || {};
   const name = profile.name || 'Leader';
@@ -585,19 +581,10 @@ export default function CommunityScreen() {
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-950' : 'bg-gray-50'} safe-area-top safe-area-bottom`}>
-      {/* Header */}
-      <div className={`sticky top-0 z-40 px-5 py-4 ${isDark ? 'bg-gray-950/90 backdrop-blur-xl border-b border-white/10' : 'bg-white/90 backdrop-blur-xl border-b border-gray-200'}`}>
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => navigate('/')}
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? 'bg-white/10' : 'bg-gray-100'}`}
-          >
-            <svg className={`w-5 h-5 ${isDark ? 'text-white/70' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Community</h1>
-          <div className="w-10" /> {/* Spacer */}
+      {/* Header with Tabs */}
+      <div className={`px-5 py-4 ${isDark ? 'border-b border-white/10' : 'border-b border-gray-200'}`}>
+        <div className="mb-4">
+          <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} text-center`}>Community</h1>
         </div>
         
         {/* Tabs */}
@@ -610,7 +597,7 @@ export default function CommunityScreen() {
       </div>
 
       {/* Content */}
-      <div className="px-5 py-6">
+      <div className="px-5 py-6 pb-24">
         {activeTab === 'circles' && renderCirclesTab()}
         {activeTab === 'coaching' && renderCoachingTab()}
         {activeTab === 'accountability' && renderAccountabilityTab()}

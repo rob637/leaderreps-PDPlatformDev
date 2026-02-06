@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { useProgress } from '../App';
+import { useProgress, useTheme } from '../App';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getThemeClasses } from '../theme';
 
 const ONBOARDING_STEPS = [
   {
     id: 'welcome',
     type: 'info',
-    title: 'Welcome to Reppy',
-    subtitle: 'Your Leadership Coach',
-    content: "Grow as a leader, one conversation at a time. No courses. No overwhelm. Just meaningful daily moments that compound into real growth.",
+    title: "Hey, I'm Reppy",
+    subtitle: 'Your Personal Leadership Coach',
+    content: "I'm not a course or a chatbot with generic advice. I learn how you think, remember your journey, and coach you the way *you* learn best.\n\nEvery day: 3 quick touchpoints, real conversations, lasting growth.",
     showLogo: true,
   },
   {
@@ -50,6 +51,13 @@ const ONBOARDING_STEPS = [
     ],
   },
   {
+    id: 'coachingStyle',
+    type: 'coaching-style',
+    title: "How should I coach you?",
+    subtitle: "You can change this anytime",
+    field: 'coachingStyle',
+  },
+  {
     id: 'goal',
     type: 'coached-input',
     title: "What kind of leader do you want to become?",
@@ -83,6 +91,9 @@ const ONBOARDING_STEPS = [
 
 export default function OnboardingScreen() {
   const { progress, updateProgress } = useProgress();
+  const { isDark } = useTheme();
+  const theme = getThemeClasses(isDark);
+  
   const [currentStep, setCurrentStep] = useState(0);
   const [profile, setProfile] = useState(progress?.profile || {});
   const [inputValue, setInputValue] = useState('');
@@ -199,13 +210,14 @@ Keep response under 100 words. Be warm but honest - don't accept garbage.`;
     if (step.type === 'input') return inputValue.trim().length > 0;
     if (step.type === 'coached-input') return inputValue.trim().length > 0 && goalApproved;
     if (step.type === 'choice') return !!profile[step.field];
+    if (step.type === 'coaching-style') return !!profile[step.field];
     return false;
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col safe-area-top safe-area-bottom">
+    <div className={`fixed inset-0 ${theme.bg} flex flex-col safe-area-top safe-area-bottom`}>
       {/* Progress bar - fixed at top */}
-      <div className="px-6 pt-6 pb-4 bg-gray-900">
+      <div className={`px-6 pt-6 pb-4 ${theme.bg} flex-shrink-0`}>
         <div className="flex gap-1.5">
           {ONBOARDING_STEPS.map((_, i) => (
             <div
@@ -213,7 +225,7 @@ Keep response under 100 words. Be warm but honest - don't accept garbage.`;
               className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
                 i < currentStep ? 'bg-blue-600' :
                 i === currentStep ? 'bg-blue-400' :
-                'bg-gray-700'
+                isDark ? 'bg-gray-700' : 'bg-gray-200'
               }`}
             />
           ))}
@@ -226,11 +238,11 @@ Keep response under 100 words. Be warm but honest - don't accept garbage.`;
           {/* Logo for welcome step */}
           {step.showLogo && (
             <div className="flex justify-center mb-8">
-              <div className="w-20 h-20 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg">
+              <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-xl">
                 <img 
-                  src="/lr_logo_teal__1_.png" 
-                  alt="LeaderReps" 
-                  className="h-10 brightness-0 invert"
+                  src="/reppy-icon-192.png" 
+                  alt="Reppy" 
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>
@@ -246,17 +258,17 @@ Keep response under 100 words. Be warm but honest - don't accept garbage.`;
           )}
 
           {/* Title */}
-          <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-2">
+          <h1 className={`text-2xl md:text-3xl font-bold ${theme.textPrimary} text-center mb-2`}>
             {step.title}
           </h1>
-          <p className="text-gray-400 text-center mb-8 text-base">
+          <p className={`${theme.textMuted} text-center mb-8 text-base`}>
             {step.subtitle}
           </p>
 
           {/* Content based on step type */}
           {step.type === 'info' && (
-            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-8">
-              <p className="text-gray-200 text-center leading-relaxed text-base">
+            <div className={`${theme.card} rounded-xl ${theme.border} border p-6 mb-8`}>
+              <p className={`${theme.textSecondary} text-center leading-relaxed text-base`}>
                 {step.content}
               </p>
             </div>
@@ -270,7 +282,7 @@ Keep response under 100 words. Be warm but honest - don't accept garbage.`;
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder={step.placeholder}
                   rows={4}
-                  className="w-full bg-gray-800 border-2 border-gray-600 rounded-xl px-4 py-3 text-white text-base placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all resize-none"
+                  className={`w-full ${theme.input} border-2 rounded-xl px-4 py-3 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all resize-none`}
                   autoFocus
                 />
               ) : (
@@ -279,7 +291,7 @@ Keep response under 100 words. Be warm but honest - don't accept garbage.`;
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder={step.placeholder}
-                  className="w-full bg-gray-800 border-2 border-gray-600 rounded-xl px-4 py-4 text-white text-lg text-center placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+                  className={`w-full ${theme.input} border-2 rounded-xl px-4 py-4 text-lg text-center focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all`}
                   autoFocus
                 />
               )}
@@ -298,7 +310,7 @@ Keep response under 100 words. Be warm but honest - don't accept garbage.`;
                 }}
                 placeholder={step.placeholder}
                 rows={4}
-                className="w-full bg-gray-800 border-2 border-gray-600 rounded-xl px-4 py-3 text-white text-base placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all resize-none"
+                className={`w-full ${theme.input} border-2 rounded-xl px-4 py-3 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all resize-none`}
                 autoFocus
               />
               
@@ -306,22 +318,22 @@ Keep response under 100 words. Be warm but honest - don't accept garbage.`;
               {coachFeedback && (
                 <div className={`mt-4 p-4 rounded-xl ${
                   goalApproved 
-                    ? 'bg-green-900/30 border border-green-600' 
-                    : 'bg-yellow-900/30 border border-yellow-600'
+                    ? 'bg-green-100 border border-green-500 dark:bg-green-900/30 dark:border-green-600' 
+                    : 'bg-yellow-100 border border-yellow-500 dark:bg-yellow-900/30 dark:border-yellow-600'
                 }`}>
                   <div className="flex items-start gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                       goalApproved ? 'bg-green-600' : 'bg-yellow-600'
                     }`}>
-                      <span className="text-sm">{goalApproved ? '✓' : '💭'}</span>
+                      <span className="text-sm text-white">{goalApproved ? '✓' : '💭'}</span>
                     </div>
                     <div>
                       <p className={`text-sm font-medium mb-1 ${
-                        goalApproved ? 'text-green-400' : 'text-yellow-400'
+                        goalApproved ? 'text-green-700 dark:text-green-400' : 'text-yellow-700 dark:text-yellow-400'
                       }`}>
                         {goalApproved ? 'Great goal!' : 'Let me help...'}
                       </p>
-                      <p className="text-gray-300 text-sm leading-relaxed">
+                      <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                         {coachFeedback}
                       </p>
                     </div>
@@ -331,12 +343,12 @@ Keep response under 100 words. Be warm but honest - don't accept garbage.`;
               
               {/* Loading state */}
               {isCoaching && (
-                <div className="mt-4 p-4 rounded-xl bg-gray-700 border border-gray-600">
+                <div className={`mt-4 p-4 rounded-xl ${theme.card} ${theme.border} border`}>
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center animate-pulse">
                       <span className="text-sm">🤔</span>
                     </div>
-                    <p className="text-gray-400 text-sm">Reppy is thinking...</p>
+                    <p className={`${theme.textMuted} text-sm`}>Reppy is thinking...</p>
                   </div>
                 </div>
               )}
@@ -351,14 +363,14 @@ Keep response under 100 words. Be warm but honest - don't accept garbage.`;
                   onClick={() => handleChoice(option.value)}
                   className={`w-full p-4 rounded-xl border-2 transition-all text-left flex items-center gap-4 ${
                     profile[step.field] === option.value
-                      ? 'bg-blue-600/20 border-blue-500 text-white'
-                      : 'bg-gray-800 border-gray-600 text-gray-200 hover:border-gray-500 hover:bg-gray-750'
+                      ? 'bg-blue-600/20 border-blue-500'
+                      : `${theme.card} ${theme.border} ${theme.textSecondary} hover:border-blue-300`
                   }`}
                 >
                   <span className="text-2xl">{option.icon}</span>
-                  <span className="font-medium text-base">{option.label}</span>
+                  <span className={`font-medium text-base ${profile[step.field] === option.value ? 'text-blue-600' : theme.textPrimary}`}>{option.label}</span>
                   {profile[step.field] === option.value && (
-                    <svg className="w-5 h-5 ml-auto text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 ml-auto text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   )}
@@ -366,17 +378,123 @@ Keep response under 100 words. Be warm but honest - don't accept garbage.`;
               ))}
             </div>
           )}
+
+          {/* Coaching Style Selection */}
+          {step.type === 'coaching-style' && (
+            <div className="space-y-4 mb-8">
+              {/* Guide Me */}
+              <button
+                onClick={() => handleChoice('guide')}
+                className={`w-full p-5 rounded-xl border-2 transition-all text-left ${
+                  profile.coachingStyle === 'guide'
+                    ? 'bg-blue-600/20 border-blue-500'
+                    : `${theme.card} ${theme.border} hover:border-blue-300`
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-green-600/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-2xl">🧭</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className={`font-semibold ${theme.textPrimary}`}>Guide Me</h4>
+                      {profile.coachingStyle === 'guide' && (
+                        <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <p className={`${theme.textMuted} text-sm mt-1`}>
+                      I'll share ideas and examples upfront, then help you apply them to your situation.
+                    </p>
+                    <p className={`${theme.textFaint} text-xs mt-2 italic`}>
+                      Best for: Quick answers, when you're new to a topic
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Coach Me */}
+              <button
+                onClick={() => handleChoice('coach')}
+                className={`w-full p-5 rounded-xl border-2 transition-all text-left ${
+                  profile.coachingStyle === 'coach'
+                    ? 'bg-blue-600/20 border-blue-500'
+                    : `${theme.card} ${theme.border} hover:border-blue-300`
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-2xl">💬</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className={`font-semibold ${theme.textPrimary}`}>Coach Me</h4>
+                      <span className="text-xs px-2 py-0.5 bg-blue-600 text-white rounded-full">Recommended</span>
+                      {profile.coachingStyle === 'coach' && (
+                        <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <p className={`${theme.textMuted} text-sm mt-1`}>
+                      I'll ask questions first, then offer guidance when you need it. A balanced approach.
+                    </p>
+                    <p className={`${theme.textFaint} text-xs mt-2 italic`}>
+                      Best for: Building skills while getting support
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Challenge Me */}
+              <button
+                onClick={() => handleChoice('challenge')}
+                className={`w-full p-5 rounded-xl border-2 transition-all text-left ${
+                  profile.coachingStyle === 'challenge'
+                    ? 'bg-blue-600/20 border-blue-500'
+                    : `${theme.card} ${theme.border} hover:border-blue-300`
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-orange-600/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-2xl">🔥</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className={`font-semibold ${theme.textPrimary}`}>Challenge Me</h4>
+                      {profile.coachingStyle === 'challenge' && (
+                        <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <p className={`${theme.textMuted} text-sm mt-1`}>
+                      I'll push you to think deeply. Expect questions, not answers. Maximum growth.
+                    </p>
+                    <p className={`${theme.textFaint} text-xs mt-2 italic`}>
+                      Best for: Deep learning, when you want to be stretched
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <p className={`${theme.textFaint} text-xs text-center mt-4`}>
+                💡 Research shows we learn more when challenged—but there's no wrong choice!
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Fixed Bottom Button Area - ALWAYS VISIBLE */}
-      <div className="flex-shrink-0 bg-gray-900 border-t border-gray-800 px-6 py-4 safe-area-bottom">
+      <div className={`flex-shrink-0 ${theme.bg} border-t ${theme.border} px-6 py-4 safe-area-bottom`}>
         <div className="max-w-md mx-auto">
           {/* Back button row */}
           {currentStep > 0 && (
             <button
               onClick={() => setCurrentStep(prev => prev - 1)}
-              className="flex items-center gap-2 text-gray-400 hover:text-white mb-3 transition-colors"
+              className={`flex items-center gap-2 ${theme.textMuted} hover:${theme.textPrimary} mb-3 transition-colors`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -417,7 +535,7 @@ Keep response under 100 words. Be warm but honest - don't accept garbage.`;
               )}
               
               {coachFeedback && !goalApproved && (
-                <p className="text-gray-500 text-xs text-center">
+                <p className={`${theme.textFaint} text-xs text-center`}>
                   Update your answer above and submit again
                 </p>
               )}

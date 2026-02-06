@@ -1,17 +1,35 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useProgress, useAuth } from '../App';
+import { useProgress, useTheme } from '../App';
 import { getCurrentSession, SESSION_TYPES } from '../data/focuses';
 import { getMorningSession, getEveningSession, getTodayKey } from '../data/dailyTouchpoints';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getThemeClasses } from '../theme';
+
+// Haptic feedback utility (works on Android, no-op on iOS/desktop)
+const triggerHaptic = (pattern = 'success') => {
+  if ('vibrate' in navigator) {
+    switch (pattern) {
+      case 'success':
+        navigator.vibrate([10, 50, 10]); // Double tap feel
+        break;
+      case 'light':
+        navigator.vibrate(10); // Light tap
+        break;
+      default:
+        navigator.vibrate(10);
+    }
+  }
+};
 
 export default function SessionScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sessionType = searchParams.get('type') || 'growth'; // morning, growth, evening
   
-  const { progress, updateProgress, completeSession } = useProgress();
-  const { user } = useAuth();
+  const { progress, updateProgress } = useProgress();
+  const { isDark } = useTheme();
+  const theme = getThemeClasses(isDark);
   
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -28,6 +46,40 @@ export default function SessionScreen() {
   const completedSessions = progress?.completedSessions?.length || 0;
   const profile = progress?.profile || {};
   const name = profile.name || 'Leader';
+  const coachingStyle = profile.coachingStyle || 'challenge'; // Default to challenge (original behavior)
+  
+  // Get coaching style instructions for AI
+  const getCoachingStyleInstructions = () => {
+    switch (coachingStyle) {
+      case 'guide':
+        return `=== COACHING STYLE: GUIDE ME ===
+The user prefers a SUPPORTIVE approach. They want ideas and examples quickly.
+- Lead with suggestions, frameworks, or examples
+- Give them concrete options to choose from
+- Ask questions AFTER providing guidance
+- Be helpful and direct - they want to learn efficiently
+- It's okay to give answers, then ask how they'd apply them`;
+      
+      case 'coach':
+        return `=== COACHING STYLE: COACH ME ===
+The user prefers a BALANCED approach. Questions first, then guidance.
+- Start with 1-2 thoughtful questions
+- If they seem stuck, offer a nudge or example
+- Balance exploration with practical help
+- Provide frameworks after they've shared their thinking
+- Support AND stretch them`;
+      
+      case 'challenge':
+      default:
+        return `=== COACHING STYLE: CHALLENGE ME ===
+The user wants to be PUSHED to think deeply. Maximum growth mode.
+- Ask probing questions, rarely give direct answers
+- When they answer, go deeper: "Why?" "What else?" "And if that doesn't work?"
+- Don't rescue them too quickly when they struggle
+- Only offer suggestions after they've really wrestled with the question
+- Trust them to find their own insights`;
+    }
+  };
   
   // Get session content based on type
   const { focus, session: growthSession, sessionInFocus } = getCurrentSession(completedSessions);
@@ -111,7 +163,10 @@ export default function SessionScreen() {
       setMinSessionReached(true);
       // Auto-show completion if cheat code was used
       if (usedCheatCode) {
-        setTimeout(() => setShowCompletion(true), 500);
+        setTimeout(() => {
+          triggerHaptic('success');
+          setShowCompletion(true);
+        }, 500);
       }
     }
   }, [messages, MIN_EXCHANGES]);
@@ -121,6 +176,13 @@ export default function SessionScreen() {
     const opening = buildOpeningMessage();
     setMessages([{ role: 'assistant', content: opening }]);
   }, [sessionType]);
+
+  // Get today's morning data for evening callback
+  const getTodayMorningData = () => {
+    const todayKey = getTodayKey();
+    const today = progress?.dailyTouchpoints?.[todayKey];
+    return today?.morning?.responses || null;
+  };
 
   // Build opening message based on session type
   const buildOpeningMessage = () => {
@@ -133,11 +195,22 @@ export default function SessionScreen() {
     }
     
     if (isEvening) {
-      return `Good evening, ${name}! 🌙\n\n` +
+      const morningData = getTodayMorningData();
+      let eveningOpening = `Good evening, ${name}! 🌙\n\n` +
         `**${currentSession.title}**\n` +
-        `*${currentSession.subtitle}*\n\n` +
-        `Time to close out the day with intention. Just 5 minutes.\n\n` +
-        `${prompts[0].question}`;
+        `*${currentSession.subtitle}*\n\n`;
+      
+      // Connect to morning intention if available
+      if (morningData) {
+        const intention = morningData['one-thing'] || morningData['priority'] || morningData['focus'];
+        if (intention) {
+          eveningOpening += `This morning you set out to focus on: *"${intention.substring(0, 150)}${intention.length > 150 ? '...' : ''}"*\n\n`;
+          eveningOpening += `Let's see how it went.\n\n`;
+        }
+      }
+      
+      eveningOpening += `${prompts[0].question}`;
+      return eveningOpening;
     }
     
     // Growth session - use the focus content
@@ -150,6 +223,15 @@ export default function SessionScreen() {
     const type = session.type;
     
     let opening = `Hey ${name}! 📚\n\n`;
+    
+    // Milestone check-in: Every 10 sessions, reference their goal
+    const isMilestone = completedSessions > 0 && completedSessions % 10 === 0;
+    if (isMilestone && profile.goal) {
+      opening += `🎯 **Milestone Check-in:** You've completed ${completedSessions} sessions!\n\n`;
+      opening += `Remember, you're working toward becoming: *"${profile.goal.substring(0, 150)}${profile.goal.length > 150 ? '...' : ''}"*\n\n`;
+      opening += `Let's keep building on that vision.\n\n---\n\n`;
+    }
+    
     opening += `*${focus.title}: Session ${sessionInFocus} of ${focus.sessions.length}*\n\n`;
     opening += `This should take about 5-10 minutes. Take your time—I'm here to coach you through it.\n\n`;
     
@@ -190,7 +272,7 @@ export default function SessionScreen() {
         opening += `Put yourself in this situation. What would you do, and why?`;
         break;
         
-      case SESSION_TYPES.BOOK:
+      case SESSION_TYPES.BOOK: {
         const book = c.book || c;
         opening += `**Book Bite: ${book.title}**\n`;
         opening += `*by ${book.author}*\n\n`;
@@ -199,6 +281,7 @@ export default function SessionScreen() {
         if (book.leadershipConnection) opening += `*For Leaders:* ${book.leadershipConnection}\n\n`;
         opening += `How does this connect to your leadership experience?`;
         break;
+      }
         
       case SESSION_TYPES.REFLECTION:
         opening += `**Reflection: ${session.title}**\n\n`;
@@ -217,6 +300,40 @@ export default function SessionScreen() {
         }
         if (c.why) opening += `*Why this matters:* ${c.why}\n\n`;
         opening += `What's your first reaction? Does this feel doable?`;
+        break;
+      
+      case SESSION_TYPES.VIDEO:
+        opening += `**🎬 Watch: ${session.title}**\n\n`;
+        if (c.description) opening += `${c.description}\n\n`;
+        opening += `📺 **Video:** [${c.videoTitle || 'Watch Now'}](${c.videoUrl})\n`;
+        if (c.duration) opening += `*${c.duration}*\n\n`;
+        if (c.watchFor) opening += `**Watch for:** ${c.watchFor}\n\n`;
+        opening += `Watch the video, then come back and share: ${c.discussionPrompt || 'What stood out to you?'}`;
+        break;
+      
+      case SESSION_TYPES.MISSION:
+        opening += `**🎯 Real-World Mission: ${session.title}**\n\n`;
+        opening += `Today's not about reading—it's about *doing*.\n\n`;
+        if (c.mission) opening += `**Your mission:** ${c.mission}\n\n`;
+        if (c.context) opening += `*${c.context}*\n\n`;
+        if (c.tips) {
+          opening += `**Tips:**\n`;
+          c.tips.forEach(tip => opening += `• ${tip}\n`);
+          opening += `\n`;
+        }
+        if (c.timeframe) opening += `⏰ *${c.timeframe}*\n\n`;
+        opening += `When you've completed your mission, come back and tell me how it went. For now—what's your plan? Who will you do this with?`;
+        break;
+      
+      case SESSION_TYPES.ROLEPLAY:
+        opening += `**🎭 Let's Practice: ${session.title}**\n\n`;
+        if (c.setup) opening += `${c.setup}\n\n`;
+        opening += `**The situation:** ${c.situation}\n\n`;
+        if (c.yourRole) opening += `**You are:** ${c.yourRole}\n`;
+        if (c.myRole) opening += `**I'll play:** ${c.myRole}\n\n`;
+        if (c.goal) opening += `**Your goal:** ${c.goal}\n\n`;
+        opening += `When you're ready, start the conversation as you would in real life. I'll respond as ${c.myRole || 'the other person'}.\n\n`;
+        opening += `*Remember: There's no perfect script. Try something, and we'll work through it together.*`;
         break;
         
       default:
@@ -262,12 +379,18 @@ export default function SessionScreen() {
           role: 'assistant', 
           content: `${randomResponse}\n\n${currentSession.closing}` 
         }]);
-        setTimeout(() => setShowCompletion(true), 1000);
+        setTimeout(() => {
+          triggerHaptic('success');
+          setShowCompletion(true);
+        }, 1000);
       } else {
         // Growth session - respond and show completion immediately
         setMessages(prev => [...prev, { role: 'assistant', content: randomResponse }]);
         setMinSessionReached(true);
-        setTimeout(() => setShowCompletion(true), 500);
+        setTimeout(() => {
+          triggerHaptic('success');
+          setShowCompletion(true);
+        }, 500);
       }
       return;
     }
@@ -325,22 +448,55 @@ Keep it reflective and calm. Evening energy.`
         // Build journey context for personalization
         const journeyContext = buildJourneyContext();
         
-        coachingContext = `This is a GROWTH coaching session on "${focus.title}".
+        // Get coaching style instructions
+        const styleInstructions = getCoachingStyleInstructions();
+        
+        // Special handling for ROLEPLAY sessions
+        if (growthSession.type === SESSION_TYPES.ROLEPLAY) {
+          const c = growthSession.content || {};
+          coachingContext = `This is a ROLEPLAY practice session. You are playing the role of: ${c.myRole || 'the other person in the scenario'}.
+
+=== THE SCENARIO ===
+${c.situation || 'A leadership conversation'}
+${c.context || ''}
+
+=== YOUR ROLE ===
+${c.myRoleDescription || `Play ${c.myRole} realistically. Don't make it too easy. Be a real person with real reactions.`}
+
+=== COACHING NOTES ===
+${c.coachingNotes || 'After 3-4 exchanges in character, you can step out of the roleplay to offer coaching feedback on how they did. Use phrases like "Stepping out of the roleplay for a moment..." to signal the shift.'}
+
+${userMsgCount < 3 
+  ? `Stay in character. Respond as ${c.myRole || 'the other person'} would. Be realistic—don't make it too easy.`
+  : userMsgCount < 5
+    ? `Continue the roleplay. You can start to show some progress if they're doing well, or continue to push back realistically if they're struggling.`
+    : `After this exchange, step out of the roleplay. Give them specific feedback: What worked? What could be stronger? Offer to practice again or wrap up with key takeaways.`
+}`;
+        } else {
+          // Standard growth session
+          coachingContext = `This is a GROWTH coaching session on "${focus.title}".
 Session: "${growthSession.title}"
 User has exchanged ${userMsgCount} messages.
+
+${styleInstructions}
 
 === PERSONALIZED COACHING CONTEXT ===
 ${journeyContext}
 
-=== COACHING APPROACH ===
+=== SESSION PROGRESS ===
 ${userMsgCount < 3 
-  ? `Ask follow-up questions to go deeper. Explore their thinking. Challenge gently. Reference their past insights when relevant.`
+  ? coachingStyle === 'guide'
+    ? `Share a key insight or framework, then ask how they might apply it. Reference their past experiences when relevant.`
+    : coachingStyle === 'coach'
+      ? `Ask 1-2 thoughtful questions. If they struggle, offer a nudge. Reference their past insights when relevant.`
+      : `Ask follow-up questions to go deeper. Explore their thinking. Challenge gently. Reference their past insights when relevant.`
   : userMsgCount < 5
-    ? `Good depth achieved. You can ask one more follow-up OR begin wrapping up with a key takeaway. Connect to their stated goals.`
+    ? `Good depth achieved. ${coachingStyle === 'guide' ? 'Offer a practical tip or framework to apply.' : coachingStyle === 'coach' ? 'You can offer guidance OR ask one more follow-up.' : 'Ask one more probing question OR'} Begin wrapping up with a key takeaway. Connect to their stated goals.`
     : `Wrap up the session. Summarize the key insight and give them something actionable to try today. Tie it back to their leadership development journey.`
 }
 
 IMPORTANT: You are their personal coach who KNOWS them. Reference their past progress, challenges, and goals naturally. Make this feel like a relationship, not a generic conversation.`;
+        }
       }
       
       const context = {
@@ -369,7 +525,10 @@ IMPORTANT: You are their personal coach who KNOWS them. Reference their past pro
       
       // Check if session should auto-complete for morning/evening
       if ((isMorning || isEvening) && currentPromptIndex >= prompts.length - 1) {
-        setTimeout(() => setShowCompletion(true), 2000);
+        setTimeout(() => {
+          triggerHaptic('success');
+          setShowCompletion(true);
+        }, 2000);
       }
       
     } catch (error) {
@@ -465,7 +624,7 @@ IMPORTANT: You are their personal coach who KNOWS them. Reference their past pro
   const formatMessage = (text) => {
     return text.split('\n').map((line, i) => {
       line = line.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>');
-      line = line.replace(/\*(.+?)\*/g, '<em class="text-white/80 italic">$1</em>');
+      line = line.replace(/\*(.+?)\*/g, '<em class="text-gray-300 italic">$1</em>');
       
       if (!line.trim()) return <div key={i} className="h-3" />;
       return <p key={i} className="mb-1" dangerouslySetInnerHTML={{ __html: line }} />;
@@ -483,42 +642,50 @@ IMPORTANT: You are their personal coach who KNOWS them. Reference their past pro
   const sessionTitle = isMorning ? 'Win the Day' : isEvening ? 'Evening Reflection' : focus?.title;
 
   return (
-    <div className="h-full flex flex-col gradient-focus safe-area-top safe-area-bottom">
+    <div className={`h-full flex flex-col ${theme.bg} safe-area-top safe-area-bottom page-enter`}>
       {/* Ambient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className={`absolute top-10 -right-10 w-40 h-40 rounded-full blur-3xl bg-gradient-to-br ${sessionGradient} opacity-30`} />
-        <div className={`absolute bottom-20 -left-10 w-32 h-32 rounded-full blur-2xl bg-gradient-to-br ${sessionGradient} opacity-20`} />
+        <div className={`absolute top-10 -right-10 w-40 h-40 rounded-full blur-3xl bg-gradient-to-br ${sessionGradient} ${isDark ? 'opacity-30' : 'opacity-20'}`} />
+        <div className={`absolute bottom-20 -left-10 w-32 h-32 rounded-full blur-2xl bg-gradient-to-br ${sessionGradient} ${isDark ? 'opacity-20' : 'opacity-10'}`} />
       </div>
       
       {/* Header */}
-      <div className="relative z-10 px-5 py-4 flex items-center justify-between border-b border-white/10">
+      <div className={`relative z-10 px-5 py-4 flex items-center justify-between border-b ${theme.border}`}>
         <button
+          type="button"
           onClick={() => navigate('/')}
-          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
+          aria-label="Close session"
+          className={`w-10 h-10 rounded-full ${theme.cardBg} flex items-center justify-center ${theme.cardHover} transition-colors`}
         >
-          <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className={`w-5 h-5 ${theme.textSecondary}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
         
         <div className="flex items-center gap-2">
           <span className="text-lg">{sessionIcon}</span>
-          <span className="text-white/60 text-sm font-medium">{sessionTitle}</span>
+          <span className={`${theme.textSecondary} text-sm font-medium`}>{sessionTitle}</span>
           {isGrowth && (
             <>
-              <span className="text-white/40 text-sm">•</span>
-              <span className="text-white text-sm font-medium">{sessionInFocus}/{focus.sessions.length}</span>
+              <span className={`${theme.textMuted} text-sm`}>•</span>
+              <span className={`${theme.textPrimary} text-sm font-medium`}>{sessionInFocus}/{focus.sessions.length}</span>
             </>
           )}
         </div>
         
         <button
-          onClick={() => minSessionReached ? setShowCompletion(true) : null}
+          type="button"
+          onClick={() => {
+            if (minSessionReached) {
+              triggerHaptic('success');
+              setShowCompletion(true);
+            }
+          }}
           disabled={!minSessionReached}
-          className={`px-4 py-2 rounded-full text-sm font-medium ${
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             minSessionReached 
-              ? 'bg-white/10 text-white/80' 
-              : 'bg-white/5 text-white/30'
+              ? `${theme.cardBg} ${theme.textPrimary} ${theme.cardHover}` 
+              : `${isDark ? 'bg-gray-800 text-gray-500' : 'bg-gray-200 text-gray-400'} cursor-not-allowed`
           }`}
         >
           Done
@@ -527,7 +694,7 @@ IMPORTANT: You are their personal coach who KNOWS them. Reference their past pro
 
       {/* Progress indicator for morning/evening */}
       {(isMorning || isEvening) && prompts && (
-        <div className="px-5 py-2 border-b border-white/5">
+        <div className={`px-5 py-2 border-b ${theme.border}`}>
           <div className="flex gap-1">
             {prompts.map((_, i) => (
               <div 
@@ -535,7 +702,7 @@ IMPORTANT: You are their personal coach who KNOWS them. Reference their past pro
                 className={`h-1 flex-1 rounded-full transition-all ${
                   i < currentPromptIndex ? 'bg-emerald-500' :
                   i === currentPromptIndex ? `bg-gradient-to-r ${sessionGradient}` :
-                  'bg-white/10'
+                  isDark ? 'bg-gray-700' : 'bg-gray-200'
                 }`}
               />
             ))}
@@ -555,15 +722,15 @@ IMPORTANT: You are their personal coach who KNOWS them. Reference their past pro
                 className={`max-w-[88%] rounded-2xl px-4 py-3 ${
                   message.role === 'user'
                     ? `bg-gradient-to-r ${sessionGradient} text-white`
-                    : 'glass-card-subtle text-white/90'
+                    : `${theme.card} border ${theme.border} ${theme.textPrimary}`
                 }`}
               >
                 {message.role === 'assistant' && (
-                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
+                  <div className={`flex items-center gap-2 mb-2 pb-2 border-b ${theme.border}`}>
                     <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${sessionGradient} flex items-center justify-center`}>
                       <span className="text-xs text-white font-bold">R</span>
                     </div>
-                    <span className="text-xs font-medium text-white/50">Reppy</span>
+                    <span className={`text-xs font-medium ${theme.textMuted}`}>Reppy</span>
                   </div>
                 )}
                 <div className="text-sm leading-relaxed">
@@ -575,15 +742,15 @@ IMPORTANT: You are their personal coach who KNOWS them. Reference their past pro
           
           {isLoading && (
             <div className="flex justify-start animate-fade-in">
-              <div className="glass-card-subtle rounded-2xl px-4 py-3">
+              <div className={`${theme.card} border ${theme.border} rounded-2xl px-4 py-3`}>
                 <div className="flex items-center gap-3">
                   <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${sessionGradient} flex items-center justify-center`}>
                     <span className="text-xs text-white font-bold">R</span>
                   </div>
                   <div className="flex gap-1.5">
-                    <span className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className={`w-2 h-2 ${isDark ? 'bg-gray-400' : 'bg-gray-500'} rounded-full animate-bounce`} style={{ animationDelay: '0ms' }} />
+                    <span className={`w-2 h-2 ${isDark ? 'bg-gray-400' : 'bg-gray-500'} rounded-full animate-bounce`} style={{ animationDelay: '150ms' }} />
+                    <span className={`w-2 h-2 ${isDark ? 'bg-gray-400' : 'bg-gray-500'} rounded-full animate-bounce`} style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </div>
@@ -595,7 +762,7 @@ IMPORTANT: You are their personal coach who KNOWS them. Reference their past pro
       </div>
 
       {/* Input */}
-      <div className="relative z-10 px-4 py-4 border-t border-white/10 bg-black/20 backdrop-blur-lg safe-area-bottom">
+      <div className={`relative z-10 px-4 py-4 border-t ${theme.border} ${isDark ? 'bg-gray-900/90' : 'bg-white/90'} backdrop-blur-lg safe-area-bottom`}>
         <div className="flex items-end gap-3">
           <textarea
             ref={inputRef}
@@ -604,7 +771,7 @@ IMPORTANT: You are their personal coach who KNOWS them. Reference their past pro
             onKeyPress={handleKeyPress}
             placeholder="Share your thoughts..."
             rows={1}
-            className="flex-1 input-glass rounded-2xl resize-none text-sm"
+            className={`flex-1 ${theme.input} border-2 rounded-2xl resize-none text-sm px-4 py-4 focus:border-blue-500 focus:outline-none transition-colors`}
             style={{ maxHeight: '100px' }}
             onInput={(e) => {
               e.target.style.height = 'auto';
@@ -612,18 +779,20 @@ IMPORTANT: You are their personal coach who KNOWS them. Reference their past pro
             }}
           />
           <button
+            type="button"
             onClick={sendMessage}
             disabled={!inputValue.trim() || isLoading}
+            aria-label="Send message"
             className={`w-12 h-12 rounded-2xl bg-gradient-to-r ${sessionGradient} text-white flex items-center justify-center disabled:opacity-40 transition-opacity`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </button>
         </div>
         
         {!minSessionReached && (
-          <p className="text-center text-white/30 text-xs mt-2">
+          <p className={`text-center ${theme.textMuted} text-xs mt-2`}>
             {MIN_EXCHANGES - messages.filter(m => m.role === 'user').length} more exchanges to complete
           </p>
         )}
@@ -632,42 +801,91 @@ IMPORTANT: You are their personal coach who KNOWS them. Reference their past pro
       {/* Completion Modal */}
       {showCompletion && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-6 animate-fade-in">
-          <div className="glass-card p-8 max-w-sm w-full animate-scale-in">
-            <div className="text-center mb-8">
-              <div className={`w-20 h-20 mx-auto mb-4 rounded-3xl bg-gradient-to-br ${sessionGradient} flex items-center justify-center`}>
+          {/* Confetti effect */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute animate-confetti"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 0.5}s`,
+                  animationDuration: `${2 + Math.random() * 2}s`,
+                }}
+              >
+                <span className="text-2xl">{['🎉', '✨', '💪', '🌟', '🔥'][Math.floor(Math.random() * 5)]}</span>
+              </div>
+            ))}
+          </div>
+          
+          <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-3xl p-8 max-w-sm w-full animate-scale-in relative z-10`}>
+            <div className="text-center mb-6">
+              <div className={`w-20 h-20 mx-auto mb-4 rounded-3xl bg-gradient-to-br ${sessionGradient} flex items-center justify-center shadow-lg animate-pulse`}>
                 <span className="text-4xl">
-                  {isMorning ? '☀️' : isEvening ? '🌙' : '✨'}
+                  {isMorning ? '☀️' : isEvening ? '🌙' : '🎉'}
                 </span>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">
-                {isMorning ? 'Ready to Win!' : isEvening ? 'Day Complete!' : 'Session Complete!'}
+              <h2 className={`text-2xl font-bold ${theme.textPrimary} mb-2`}>
+                {isMorning ? 'Ready to Win!' : isEvening ? 'Day Complete!' : 'Great Work!'}
               </h2>
-              <p className="text-white/60">
+              <p className={`${theme.textMuted} text-sm`}>
                 {isMorning 
                   ? "You've set your intention. Now go make it happen!"
                   : isEvening
                     ? "Great reflection. Rest well!"
-                    : `${focus.title} • Session ${sessionInFocus}`
+                    : `${focus.title} • Session ${sessionInFocus} of ${focus.sessions.length}`
                 }
               </p>
-              {progress?.streakCount > 0 && (
-                <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-medium">
+            </div>
+            
+            {/* Key insight captured - show last user message excerpt */}
+            {!isMorning && !isEvening && messages.filter(m => m.role === 'user').length > 0 && (
+              <div className={`mb-6 p-4 rounded-xl ${theme.card} border ${theme.border}`}>
+                <p className={`text-xs ${theme.textMuted} mb-1`}>💡 Your insight:</p>
+                <p className={`text-sm ${theme.textSecondary} italic leading-relaxed`}>
+                  "{messages.filter(m => m.role === 'user').slice(-1)[0]?.content.substring(0, 120)}
+                  {messages.filter(m => m.role === 'user').slice(-1)[0]?.content.length > 120 ? '...' : ''}"
+                </p>
+              </div>
+            )}
+            
+            {/* Streak badge */}
+            {progress?.streakCount > 0 && (
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-medium shadow-lg">
                   <span>🔥</span>
                   <span>{progress.streakCount} Day Streak</span>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+            
+            {/* What's next preview for growth sessions */}
+            {isGrowth && sessionInFocus < focus.sessions.length && (
+              <div className="mb-6 text-center">
+                <p className={`text-xs ${theme.textMuted} mb-1`}>Up next:</p>
+                <p className={`text-sm ${theme.textSecondary}`}>{focus.sessions[sessionInFocus]?.title || 'Continue your journey'}</p>
+              </div>
+            )}
+            
+            {/* Focus complete celebration */}
+            {isGrowth && sessionInFocus >= focus.sessions.length && (
+              <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
+                <p className="text-center text-emerald-600 dark:text-emerald-300 font-medium">
+                  🏆 Focus Complete: {focus.title}
+                </p>
+              </div>
+            )}
             
             <div className="space-y-3">
               <button
                 onClick={handleComplete}
                 className="w-full btn-primary"
               >
-                {isMorning ? "Let's Go!" : isEvening ? 'Goodnight!' : 'Complete'}
+                {isMorning ? "Let's Go!" : isEvening ? 'Goodnight!' : 'Done'}
               </button>
               <button
                 onClick={() => setShowCompletion(false)}
-                className="w-full btn-glass"
+                className={`w-full py-3 px-4 rounded-xl font-medium ${theme.card} ${theme.border} border ${theme.textPrimary} ${theme.cardHover} transition-colors`}
               >
                 Keep Chatting
               </button>

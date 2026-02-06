@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
-import { useAuth, useTheme } from '../App';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../firebase';
+import { useAuth, useTheme, useProgress } from '../App';
 import { FOCUSES } from '../data/focuses';
 import { DETAILED_FOCUSES, SESSION_TYPES } from '../data/curriculumDetailed';
 import { getTodayKey } from '../data/dailyTouchpoints';
 
-// Admin emails that can access
-const ADMIN_EMAILS = ['rob@sagecg.com', 'rob@leaderreps.com'];
+// Seed admin emails (can bootstrap first admin, then use toggle for others)
+const SEED_ADMIN_EMAILS = ['rob@sagecg.com', 'rob@leaderreps.com'];
 
 export default function AdminScreen() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isDark } = useTheme();
+  const { progress } = useProgress();
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +29,7 @@ export default function AdminScreen() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
+  const [inviteIsAdmin, setInviteIsAdmin] = useState(false);
   const [sendingInvite, setSendingInvite] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState(null);
   
@@ -37,7 +40,8 @@ export default function AdminScreen() {
   const [customCurriculum, setCustomCurriculum] = useState(null);
   const [savingCurriculum, setSavingCurriculum] = useState(false);
   
-  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+  // Check admin status - seed emails OR profile.isAdmin flag
+  const isAdmin = (user?.email && SEED_ADMIN_EMAILS.includes(user.email.toLowerCase())) || progress?.profile?.isAdmin === true;
 
   // Redirect non-admins
   useEffect(() => {
@@ -147,7 +151,7 @@ export default function AdminScreen() {
       const todayKey = getTodayKey();
       
       // Remove today's touchpoints so they can start fresh
-      const { [todayKey]: removed, ...remainingTouchpoints } = userData.dailyTouchpoints || {};
+      const { [todayKey]: _removed, ...remainingTouchpoints } = userData.dailyTouchpoints || {};
       
       await setDoc(userRef, {
         ...userData,
@@ -216,7 +220,41 @@ export default function AdminScreen() {
     }
   };
 
-  // Send invite to new user
+  // Toggle admin status for a user
+  const toggleAdminStatus = async (userId, currentIsAdmin) => {
+    const newIsAdmin = !currentIsAdmin;
+    const action = newIsAdmin ? 'grant admin access to' : 'remove admin access from';
+    
+    if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+    
+    try {
+      const userRef = doc(db, 'reppy_users', userId);
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) return;
+      
+      const userData = userDoc.data();
+      
+      await setDoc(userRef, {
+        ...userData,
+        profile: {
+          ...(userData.profile || {}),
+          isAdmin: newIsAdmin,
+          adminChangedAt: new Date().toISOString(),
+          adminChangedBy: user.email,
+        }
+      });
+      
+      await loadUsers();
+      alert(newIsAdmin 
+        ? '✅ Admin access granted! User can now access admin features.' 
+        : '✅ Admin access removed. User is now a regular user.');
+    } catch (error) {
+      console.error('Error toggling admin status:', error);
+      alert('Error: ' + error.message);
+    }
+  };
+
+  // Send invite to new user via Cloud Function (sends email)
   const sendInvite = async () => {
     if (!inviteEmail.trim()) {
       alert('Please enter an email address');
@@ -227,32 +265,28 @@ export default function AdminScreen() {
     setInviteSuccess(null);
     
     try {
-      // Store invitation in Firestore
-      const inviteRef = doc(db, 'reppy_invitations', inviteEmail.toLowerCase());
-      await setDoc(inviteRef, {
-        email: inviteEmail.toLowerCase(),
+      // Call the Cloud Function to create invite and send email
+      const sendReppyInvite = httpsCallable(functions, 'sendReppyInvite');
+      const result = await sendReppyInvite({
+        email: inviteEmail.trim(),
         name: inviteName.trim() || null,
-        invitedBy: user.email,
-        invitedAt: new Date().toISOString(),
-        status: 'pending',
+        isAdmin: inviteIsAdmin
       });
       
-      // Generate invite link
-      const inviteLink = `https://leaderreps-reppy.web.app?invite=${encodeURIComponent(inviteEmail.toLowerCase())}`;
-      
-      // Copy to clipboard
-      await navigator.clipboard.writeText(inviteLink);
-      
-      setInviteSuccess({
-        email: inviteEmail,
-        link: inviteLink,
-      });
-      
-      setInviteEmail('');
-      setInviteName('');
+      if (result.data.success) {
+        setInviteSuccess({
+          email: inviteEmail,
+          emailSent: result.data.emailSent,
+          message: result.data.message
+        });
+        
+        setInviteEmail('');
+        setInviteName('');
+        setInviteIsAdmin(false);
+      }
     } catch (error) {
       console.error('Error creating invite:', error);
-      alert('Error: ' + error.message);
+      alert('Error: ' + (error.message || 'Failed to send invite'));
     } finally {
       setSendingInvite(false);
     }
@@ -331,24 +365,16 @@ export default function AdminScreen() {
   return (
     <div className={`min-h-screen safe-area-top safe-area-bottom ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
-      <div className="relative z-10 px-6 pt-6 pb-4">
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => navigate('/')}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}
-          >
-            <svg className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+      <div className="relative z-10 px-6 pt-4 pb-4">
+        <div className="flex items-center justify-center gap-2 mb-4">
           <h1 className={`text-xl font-bold ${textPrimary} flex items-center gap-2`}>
             <span>🛠️</span> Admin
           </h1>
           <button
             onClick={loadUsers}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}
           >
-            <svg className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           </button>
@@ -469,15 +495,24 @@ export default function AdminScreen() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                              u.profile?.isAdmin ? 'bg-red-600' : 'bg-blue-600'
+                            }`}>
                               <span className="text-xl text-white font-bold">
                                 {u.profile?.name?.[0]?.toUpperCase() || '?'}
                               </span>
                             </div>
                             <div className="min-w-0">
-                              <h3 className={`font-semibold ${textPrimary} truncate`}>
-                                {u.profile?.name || 'Unknown'}
-                              </h3>
+                              <div className="flex items-center gap-2">
+                                <h3 className={`font-semibold ${textPrimary} truncate`}>
+                                  {u.profile?.name || 'Unknown'}
+                                </h3>
+                                {u.profile?.isAdmin && (
+                                  <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded">
+                                    ADMIN
+                                  </span>
+                                )}
+                              </div>
                               <p className={`text-sm ${textMuted} truncate`}>
                                 {u.profile?.role ? u.profile.role.replace('_', ' ') : 'No role set'}
                               </p>
@@ -634,6 +669,18 @@ export default function AdminScreen() {
                             }`}
                           >
                             {u.testMode ? '✅ Test Mode ON - Click to Disable' : '🧪 Enable Test Mode (No Time Limits)'}
+                          </button>
+                          
+                          {/* Admin Role Toggle */}
+                          <button
+                            onClick={() => toggleAdminStatus(u.id, u.profile?.isAdmin)}
+                            className={`w-full p-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
+                              u.profile?.isAdmin 
+                                ? 'bg-red-100 border border-red-300 text-red-700 hover:bg-red-200'
+                                : 'bg-gray-100 border border-gray-300 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            {u.profile?.isAdmin ? '🛡️ ADMIN - Click to Remove' : '👤 Make Admin'}
                           </button>
                         </div>
                       )}
@@ -883,6 +930,7 @@ export default function AdminScreen() {
                   setInviteSuccess(null);
                   setInviteEmail('');
                   setInviteName('');
+                  setInviteIsAdmin(false);
                 }}
                 className={`p-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'}`}
               >
@@ -896,35 +944,21 @@ export default function AdminScreen() {
               <div className="space-y-4">
                 <div className={`p-4 rounded-xl ${isDark ? 'bg-green-900/30 border border-green-700' : 'bg-green-50 border border-green-200'}`}>
                   <p className={`font-semibold ${isDark ? 'text-green-400' : 'text-green-700'} mb-2`}>
-                    ✓ Invite Created!
+                    ✓ Invitation Sent!
                   </p>
                   <p className={`text-sm ${textSecondary}`}>
-                    Invite link for <strong>{inviteSuccess.email}</strong> has been copied to your clipboard.
+                    {inviteSuccess.emailSent 
+                      ? `An email invitation has been sent to ${inviteSuccess.email}`
+                      : `Invitation created for ${inviteSuccess.email} (email not configured)`
+                    }
                   </p>
                 </div>
-                
-                <div>
-                  <p className={`text-sm font-medium ${textMuted} mb-2`}>Share this link:</p>
-                  <div className={`p-3 rounded-lg text-sm break-all ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
-                    {inviteSuccess.link}
-                  </div>
-                </div>
-                
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(inviteSuccess.link);
-                    alert('Link copied to clipboard!');
-                  }}
-                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors"
-                >
-                  Copy Link Again
-                </button>
                 
                 <button
                   onClick={() => {
                     setInviteSuccess(null);
                   }}
-                  className={`w-full py-3 px-4 rounded-xl font-semibold transition-colors ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors"
                 >
                   Invite Another User
                 </button>
@@ -957,9 +991,45 @@ export default function AdminScreen() {
                   />
                 </div>
                 
+                {/* User/Admin Role Toggle */}
+                <div>
+                  <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
+                    Role
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setInviteIsAdmin(false)}
+                      className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                        !inviteIsAdmin
+                          ? 'bg-blue-600 text-white'
+                          : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      👤 User
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInviteIsAdmin(true)}
+                      className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                        inviteIsAdmin
+                          ? 'bg-red-600 text-white'
+                          : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      🛠️ Admin
+                    </button>
+                  </div>
+                  {inviteIsAdmin && (
+                    <p className={`text-xs mt-2 ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+                      ⚠️ Admin users can manage other users and access admin features
+                    </p>
+                  )}
+                </div>
+                
                 <div className={`p-4 rounded-xl ${isDark ? 'bg-blue-900/20 border border-blue-800' : 'bg-blue-50 border border-blue-100'}`}>
                   <p className={`text-sm ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
-                    💡 An invite link will be generated and copied to your clipboard. Share it with the user to let them sign up.
+                    📧 An invitation email will be sent to this address with a link to sign up.
                   </p>
                 </div>
                 
@@ -971,14 +1041,14 @@ export default function AdminScreen() {
                   {sendingInvite ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Creating Invite...
+                      Sending Invite...
                     </>
                   ) : (
                     <>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
-                      Create Invite Link
+                      Send Invitation Email
                     </>
                   )}
                 </button>

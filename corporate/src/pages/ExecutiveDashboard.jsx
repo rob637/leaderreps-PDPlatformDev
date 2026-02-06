@@ -199,6 +199,20 @@ const ExecutiveDashboard = () => {
           </p>
         </div>
         <div className="flex gap-3 items-center">
+          {/* Quick Start Toggle Button */}
+          <button
+            onClick={() => setShowQuickStart(!showQuickStart)}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${
+              showQuickStart 
+                ? 'bg-corporate-teal/10 border-corporate-teal text-corporate-teal' 
+                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+            title={showQuickStart ? 'Hide Quick Start' : 'Show Quick Start'}
+          >
+            <Sparkles size={14} />
+            Quick Start
+          </button>
+
           {/* View Mode Tabs - Dripify-inspired */}
           <div className="bg-white border border-slate-200 rounded-lg p-1 flex gap-1">
             <button
@@ -249,8 +263,11 @@ const ExecutiveDashboard = () => {
       </div>
 
       {/* Quick Start Wizard - Dripify-inspired onboarding */}
-      {showQuickStart && viewMode === 'dashboard' && (
-        <QuickStartWizard onDismiss={() => setShowQuickStart(false)} />
+      {viewMode === 'dashboard' && (
+        <QuickStartWizard 
+          visible={showQuickStart} 
+          onToggle={() => setShowQuickStart(!showQuickStart)} 
+        />
       )}
 
       {/* Integration Status Bar - Compact version */}

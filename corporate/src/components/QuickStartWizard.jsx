@@ -60,19 +60,14 @@ const QUICK_START_STEPS = [
   }
 ];
 
-const QuickStartWizard = ({ onDismiss }) => {
+const QuickStartWizard = ({ visible = true, onToggle }) => {
   const [completedSteps, setCompletedSteps] = useState([]);
-  const [dismissed, setDismissed] = useState(false);
   
   // Load completed steps from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('quickstart_completed');
     if (saved) {
       setCompletedSteps(JSON.parse(saved));
-    }
-    const wasDismissed = localStorage.getItem('quickstart_dismissed');
-    if (wasDismissed === 'true') {
-      setDismissed(true);
     }
   }, []);
 
@@ -82,29 +77,11 @@ const QuickStartWizard = ({ onDismiss }) => {
     localStorage.setItem('quickstart_completed', JSON.stringify(updated));
   };
 
-  const handleDismiss = () => {
-    localStorage.setItem('quickstart_dismissed', 'true');
-    setDismissed(true);
-    onDismiss?.();
-  };
-
   const progress = Math.round((completedSteps.length / QUICK_START_STEPS.length) * 100);
 
-  if (dismissed && progress < 100) {
-    // Show minimized version
-    return (
-      <div 
-        onClick={() => setDismissed(false)}
-        className="fixed bottom-6 right-6 bg-corporate-teal text-white px-4 py-3 rounded-xl shadow-lg cursor-pointer hover:shadow-xl transition-shadow flex items-center gap-3 z-50"
-      >
-        <Sparkles className="w-5 h-5" />
-        <span className="font-medium">Continue Setup ({progress}%)</span>
-      </div>
-    );
-  }
-
-  if (progress === 100) {
-    return null; // All done!
+  // If not visible, don't render anything
+  if (!visible) {
+    return null;
   }
 
   const colorMap = {
@@ -128,12 +105,15 @@ const QuickStartWizard = ({ onDismiss }) => {
             <p className="text-sm text-slate-500">Complete these steps to unlock your sales potential</p>
           </div>
         </div>
-        <button 
-          onClick={handleDismiss}
-          className="text-slate-400 hover:text-slate-600 p-1"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {onToggle && (
+          <button 
+            onClick={onToggle}
+            className="text-slate-400 hover:text-slate-600 p-1"
+            title="Hide Quick Start"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Progress Bar */}

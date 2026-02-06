@@ -118,7 +118,7 @@ const MobilePWABanner = () => {
             {/* Dismiss button */}
             <button
               onClick={handleDismiss}
-              className="flex-shrink-0 p-1.5 -mt-1 -mr-1 text-white/50 hover:text-white/80 transition-colors"
+              className="flex-shrink-0 p-1.5 -mt-1 -mr-1 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
               aria-label="Dismiss"
             >
               <X className="w-4 h-4" />

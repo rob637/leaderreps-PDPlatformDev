@@ -1,9 +1,11 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth, db } from './firebase';
+import { auth, db, logEvent } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import ErrorBoundary from './components/ErrorBoundary';
+import OfflineBanner from './components/OfflineBanner';
 
 import AuthScreen from './screens/AuthScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
@@ -13,6 +15,8 @@ import ProgressScreen from './screens/ProgressScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import AdminScreen from './screens/AdminScreen';
 import CommunityScreen from './screens/CommunityScreen';
+import JournalScreen from './screens/JournalScreen';
+import Layout from './components/Layout';
 
 // Auth Context
 const AuthContext = createContext(null);
@@ -123,6 +127,13 @@ function App() {
       totalMinutes: (progress?.totalMinutes || 0) + (data.duration || 5),
     };
     
+    // Log analytics event
+    logEvent('session_complete', {
+      session_number: sessionNumber,
+      session_type: data.touchpointType || 'growth',
+      streak_count: updates.streakCount,
+    });
+    
     await updateProgress(updates);
   };
 
@@ -131,11 +142,11 @@ function App() {
       <div className="min-h-screen bg-slate-900 md:flex md:items-start md:justify-center md:py-4">
         <div className="min-h-screen md:min-h-0 md:h-[calc(100vh-2rem)] md:w-[430px] md:rounded-3xl md:shadow-2xl gradient-focus flex items-center justify-center overflow-hidden">
           <div className="text-center">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl overflow-hidden animate-pulse-soft">
               <img 
-                src="/lr_logo_mark_teal__1_.png" 
-                alt="LeaderReps" 
-                className="w-12 h-12 object-contain invert animate-pulse-soft"
+                src="/reppy-icon-192.png" 
+                alt="Reppy" 
+                className="w-full h-full object-cover"
               />
             </div>
             <p className="text-white/60 text-sm">Loading...</p>
@@ -146,13 +157,16 @@ function App() {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
-      <ProgressContext.Provider value={{ progress, updateProgress, completeSession, loadProgress }}>
-        <ThemeProvider preference={progress?.settings?.theme || 'auto'}>
-          <AppContent progress={progress} user={user} />
-        </ThemeProvider>
-      </ProgressContext.Provider>
-    </AuthContext.Provider>
+    <ErrorBoundary>
+      <AuthContext.Provider value={{ user, loading }}>
+        <ProgressContext.Provider value={{ progress, updateProgress, completeSession, loadProgress }}>
+          <ThemeProvider preference={progress?.settings?.theme || 'auto'}>
+            <OfflineBanner />
+            <AppContent progress={progress} user={user} />
+          </ThemeProvider>
+        </ProgressContext.Provider>
+      </AuthContext.Provider>
+    </ErrorBoundary>
   );
 }
 
@@ -176,13 +190,7 @@ function AppContent({ progress, user }) {
                 user ? <Navigate to="/" replace /> : <AuthScreen />
               } />
               
-              {/* Protected routes */}
-              <Route path="/" element={
-                !user ? <Navigate to="/auth" replace /> :
-                !progress?.onboardingComplete ? <Navigate to="/onboarding" replace /> :
-                <HomeScreen />
-              } />
-              
+              {/* Full screen routes (no nav) */}
               <Route path="/onboarding" element={
                 !user ? <Navigate to="/auth" replace /> :
                 progress?.onboardingComplete ? <Navigate to="/" replace /> :
@@ -194,30 +202,45 @@ function AppContent({ progress, user }) {
                 !progress?.onboardingComplete ? <Navigate to="/onboarding" replace /> :
                 <SessionScreen />
               } />
-              
-              <Route path="/progress" element={
-                !user ? <Navigate to="/auth" replace /> :
-                !progress?.onboardingComplete ? <Navigate to="/onboarding" replace /> :
-                <ProgressScreen />
-              } />
-              
-              <Route path="/profile" element={
-                !user ? <Navigate to="/auth" replace /> :
-                !progress?.onboardingComplete ? <Navigate to="/onboarding" replace /> :
-                <ProfileScreen />
-              } />
-              
-              <Route path="/community" element={
-                !user ? <Navigate to="/auth" replace /> :
-                !progress?.onboardingComplete ? <Navigate to="/onboarding" replace /> :
-                <CommunityScreen />
-              } />
-              
-              <Route path="/admin" element={
-                !user ? <Navigate to="/auth" replace /> :
-                !progress?.onboardingComplete ? <Navigate to="/onboarding" replace /> :
-                <AdminScreen />
-              } />
+
+              {/* Protected routes with Navigation */}
+              <Route element={<Layout />}>
+                <Route path="/" element={
+                  !user ? <Navigate to="/auth" replace /> :
+                  !progress?.onboardingComplete ? <Navigate to="/onboarding" replace /> :
+                  <HomeScreen />
+                } />
+                
+                <Route path="/progress" element={
+                  !user ? <Navigate to="/auth" replace /> :
+                  !progress?.onboardingComplete ? <Navigate to="/onboarding" replace /> :
+                  <ProgressScreen />
+                } />
+                
+                <Route path="/profile" element={
+                  !user ? <Navigate to="/auth" replace /> :
+                  !progress?.onboardingComplete ? <Navigate to="/onboarding" replace /> :
+                  <ProfileScreen />
+                } />
+                
+                <Route path="/community" element={
+                  !user ? <Navigate to="/auth" replace /> :
+                  !progress?.onboardingComplete ? <Navigate to="/onboarding" replace /> :
+                  <CommunityScreen />
+                } />
+                
+                <Route path="/journal" element={
+                  !user ? <Navigate to="/auth" replace /> :
+                  !progress?.onboardingComplete ? <Navigate to="/onboarding" replace /> :
+                  <JournalScreen />
+                } />
+                
+                <Route path="/admin" element={
+                  !user ? <Navigate to="/auth" replace /> :
+                  !progress?.onboardingComplete ? <Navigate to="/onboarding" replace /> :
+                  <AdminScreen />
+                } />
+              </Route>
               
               {/* Catch all */}
               <Route path="*" element={<Navigate to="/" replace />} />

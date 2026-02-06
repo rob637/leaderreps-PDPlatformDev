@@ -25,8 +25,8 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user }) => {
-  const { identityStatement, habitAnchor, whyStatement, globalMetadata, isAdmin, userProfile } = useAppServices();
-  const { prepRequirementsComplete } = useDailyPlan();
+  const { identityStatement, habitAnchor, whyStatement, globalMetadata, isAdmin, userProfile, developmentPlanData } = useAppServices();
+  const { prepRequirementsComplete, cohortData } = useDailyPlan();
   const [showAnchors, setShowAnchors] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   
@@ -103,7 +103,9 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     }
 
     // 3. COHORT CHECK: Filter out items that require a cohort if user doesn't have one
-    if (item.requiresCohort && !userProfile?.cohortId) {
+    // Check both developmentPlanData.cohortId and cohortData from useDailyPlan
+    const hasCohort = developmentPlanData?.cohortId || cohortData?.id || userProfile?.cohortId;
+    if (item.requiresCohort && !hasCohort) {
       return false;
     }
 

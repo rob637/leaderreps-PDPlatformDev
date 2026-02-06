@@ -1715,6 +1715,159 @@ exports.trackEmailOpen = onRequest({ cors: true, region: "us-central1" }, async 
 
 
 /**
+ * SEND REPPY INVITE - Send email invitation to join Reppy app
+ * Creates an invitation record and sends a welcome email
+ */
+exports.sendReppyInvite = onCall({ cors: true, region: "us-central1" }, async (request) => {
+    // Require authentication
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Must be logged in to send invites.');
+    }
+
+    const { email, name, isAdmin } = request.data;
+    
+    if (!email) {
+        throw new HttpsError('invalid-argument', 'Email is required.');
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        throw new HttpsError('invalid-argument', 'Invalid email format.');
+    }
+
+    try {
+        // Generate a unique invite token
+        const token = require('crypto').randomBytes(32).toString('hex');
+        
+        // Check if user already exists in reppy_users
+        const existingUserQuery = await db.collection('reppy_users')
+            .where('email', '==', email.toLowerCase())
+            .limit(1)
+            .get();
+        
+        if (!existingUserQuery.empty) {
+            throw new HttpsError('already-exists', 'A user with this email already exists.');
+        }
+
+        // Check if invite already sent (pending)
+        const existingInviteQuery = await db.collection('reppy_invitations')
+            .where('email', '==', email.toLowerCase())
+            .where('status', '==', 'pending')
+            .limit(1)
+            .get();
+        
+        if (!existingInviteQuery.empty) {
+            throw new HttpsError('already-exists', 'An invitation has already been sent to this email.');
+        }
+
+        // Create invitation record
+        const inviteRef = db.collection('reppy_invitations').doc();
+        const inviteData = {
+            email: email.toLowerCase(),
+            name: name || '',
+            isAdmin: isAdmin === true,
+            token: token,
+            status: 'pending',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdBy: request.auth.uid,
+            createdByEmail: request.auth.token.email || 'unknown'
+        };
+        
+        await inviteRef.set(inviteData);
+        logger.info(`Reppy invitation created for ${email}`, { inviteId: inviteRef.id });
+
+        // Send invitation email
+        const emailUser = process.env.EMAIL_USER || (require("firebase-functions").config().email?.user);
+        const emailPass = process.env.EMAIL_PASS || (require("firebase-functions").config().email?.pass);
+
+        if (!emailUser || !emailPass) {
+            logger.warn("Email credentials not configured - invitation created but email not sent");
+            return { 
+                success: true, 
+                inviteId: inviteRef.id,
+                emailSent: false,
+                message: 'Invitation created but email could not be sent (no email credentials configured)'
+            };
+        }
+
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: { user: emailUser, pass: emailPass },
+        });
+
+        // Build the invite link - Reppy app URL
+        const inviteLink = `https://leaderreps-reppy.web.app/auth?invite=${token}`;
+        
+        const firstName = name ? name.split(' ')[0] : 'there';
+        const roleText = isAdmin ? 'as an Admin' : '';
+
+        const mailOptions = {
+            from: `"LeaderReps Reppy" <${emailUser}>`,
+            to: email,
+            subject: `🎯 You're invited to join Reppy - Your AI Leadership Coach`,
+            html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <img src="https://leaderreps-reppy.web.app/logo-full.png" alt="LeaderReps" style="height: 40px;">
+                    </div>
+                    
+                    <h1 style="color: #1f2937; font-size: 24px; margin-bottom: 16px;">
+                        Hey ${firstName}! 👋
+                    </h1>
+                    
+                    <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+                        You've been invited to join <strong>Reppy</strong> ${roleText} – your personal AI leadership coach that helps you grow as a leader through daily micro-sessions, personalized coaching conversations, and real-time guidance.
+                    </p>
+                    
+                    <div style="background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
+                        <p style="color: white; font-size: 14px; margin-bottom: 16px; opacity: 0.9;">
+                            Click below to create your account and start your leadership journey:
+                        </p>
+                        <a href="${inviteLink}" style="display: inline-block; background: white; color: #0d9488; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                            Accept Invitation →
+                        </a>
+                    </div>
+                    
+                    <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 24px 0;">
+                        <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                            <strong>What you'll get:</strong><br>
+                            ✅ Daily 5-minute leadership sessions<br>
+                            ✅ AI coaching that knows your context<br>
+                            ✅ Track your growth over time<br>
+                            ✅ Practice tough conversations safely
+                        </p>
+                    </div>
+                    
+                    <p style="color: #9ca3af; font-size: 12px; margin-top: 32px; text-align: center;">
+                        If you didn't expect this invitation, you can safely ignore this email.
+                    </p>
+                </div>
+            `,
+            text: `Hey ${firstName}! You've been invited to join Reppy ${roleText} – your personal AI leadership coach. Click here to accept: ${inviteLink}`
+        };
+
+        await transporter.sendMail(mailOptions);
+        logger.info(`Reppy invitation email sent to ${email}`);
+
+        return { 
+            success: true, 
+            inviteId: inviteRef.id,
+            emailSent: true,
+            message: `Invitation sent to ${email}`
+        };
+
+    } catch (error) {
+        logger.error("Error in sendReppyInvite", error);
+        if (error.code) {
+            throw error;
+        }
+        throw new HttpsError('internal', error.message || 'Failed to send invitation');
+    }
+});
+
+
+/**
  * REPPY COACHING - AI-powered leadership coaching conversations
  * Uses Claude to provide personalized, interactive coaching
  */

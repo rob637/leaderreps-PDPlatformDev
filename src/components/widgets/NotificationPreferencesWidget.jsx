@@ -91,6 +91,28 @@ const NotificationPreferencesWidget = ({ onClose }) => {
   const [saved, setSaved] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [pushPermission, setPushPermission] = useState('default');
+  const [phoneError, setPhoneError] = useState(null);
+
+  // Check if selected strategy requires SMS
+  const strategyRequiresSMS = (strategy) => {
+    return strategy === 'smart_escalation' || strategy === 'full_accountability';
+  };
+
+  // Validate phone number - must have at least 10 digits
+  const isValidPhoneNumber = (phone) => {
+    if (!phone) return false;
+    const digitsOnly = phone.replace(/\D/g, '');
+    return digitsOnly.length >= 10;
+  };
+
+  // Format phone number to (xxx) xxx-xxxx
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return '';
+    const digitsOnly = phone.replace(/\D/g, '');
+    if (digitsOnly.length < 10) return phone;
+    const last10 = digitsOnly.slice(-10);
+    return `(${last10.slice(0, 3)}) ${last10.slice(3, 6)}-${last10.slice(6, 10)}`;
+  };
   
   const [settings, setSettings] = useState({
     enabled: true,
@@ -169,10 +191,31 @@ const NotificationPreferencesWidget = ({ onClose }) => {
   }, [user, db]);
 
   // Request push notification permission
-  const requestPushPermission = async () => {
+  const requestPushPermission = async (silent = false) => {
     if (!('Notification' in window)) {
-      alert('Push notifications are not supported in this browser.');
-      return;
+      if (!silent) {
+        alert('Push notifications are not supported in this browser.');
+      }
+      return 'unsupported';
+    }
+    
+    // If already denied, don't re-request (browser won't show dialog anyway)
+    if (Notification.permission === 'denied') {
+      setPushPermission('denied');
+      return 'denied';
+    }
+    
+    // If already granted, just ensure token is saved
+    if (Notification.permission === 'granted') {
+      setPushPermission('granted');
+      if (user && db) {
+        try {
+          await requestNotificationPermission(db, user.uid);
+        } catch (e) {
+          console.warn('Could not save FCM token:', e);
+        }
+      }
+      return 'granted';
     }
     
     try {
@@ -184,13 +227,20 @@ const NotificationPreferencesWidget = ({ onClose }) => {
         await requestNotificationPermission(db, user.uid);
         console.log('Push notification permission granted and token saved');
       }
+      return permission;
     } catch (error) {
       console.error('Error requesting push permission:', error);
+      return 'error';
     }
   };
 
+  // Check if strategy uses push notifications
+  const strategyUsesPush = (strategyId) => {
+    return strategyId !== 'disabled' && strategyId !== 'email_only';
+  };
+
   // Handle strategy change
-  const handleStrategyChange = (strategyId) => {
+  const handleStrategyChange = async (strategyId) => {
     let newChannels = { push: true, email: true, sms: false };
     let enabled = true;
     
@@ -214,6 +264,11 @@ const NotificationPreferencesWidget = ({ onClose }) => {
         break;
     }
     
+    // Clear phone error when switching strategies
+    if (!strategyRequiresSMS(strategyId)) {
+      setPhoneError(null);
+    }
+    
     setSettings(prev => ({
       ...prev,
       enabled,
@@ -224,12 +279,33 @@ const NotificationPreferencesWidget = ({ onClose }) => {
         enabled: strategyId === 'smart_escalation'
       }
     }));
+    
+    // Auto-request push permission if selecting a push-enabled strategy
+    if (strategyUsesPush(strategyId) && pushPermission === 'default') {
+      // Small delay so user sees the selection first
+      setTimeout(() => {
+        requestPushPermission();
+      }, 300);
+    }
   };
 
   // Save settings
   const handleSave = async () => {
     if (!user || !db) return;
     
+    // Validate phone number if SMS strategy is selected
+    if (strategyRequiresSMS(settings.strategy)) {
+      if (!settings.phoneNumber?.trim()) {
+        setPhoneError('Phone number is required for SMS reminders. Add one or choose "Push Only" or "Email Only".');
+        return;
+      }
+      if (!isValidPhoneNumber(settings.phoneNumber)) {
+        setPhoneError('Please enter a valid phone number (at least 10 digits)');
+        return;
+      }
+    }
+    
+    setPhoneError(null);
     setSaving(true);
     setSaved(false);
     
@@ -357,7 +433,7 @@ const NotificationPreferencesWidget = ({ onClose }) => {
         })}
       </div>
 
-      {/* Push Notification Permission */}
+      {/* Push Notification Permission Status */}
       {settings.strategy !== 'disabled' && settings.channels.push && (
         <div className={`p-4 rounded-xl border mb-4 ${
           pushPermission === 'granted' 
@@ -384,15 +460,15 @@ const NotificationPreferencesWidget = ({ onClose }) => {
                   {pushPermission === 'granted'
                     ? 'You\'ll receive notifications on this device'
                     : pushPermission === 'denied'
-                    ? 'Check your browser settings to enable'
-                    : 'Get gentle reminders right on your device'}
+                    ? 'You\'ll need to enable notifications in your browser settings'
+                    : 'Click to allow notifications on this device'}
                 </p>
               </div>
             </div>
             {pushPermission === 'default' && (
               <Button 
                 size="sm" 
-                onClick={requestPushPermission}
+                onClick={() => requestPushPermission()}
                 className="bg-corporate-teal hover:bg-corporate-teal/90"
               >
                 Enable
@@ -402,6 +478,60 @@ const NotificationPreferencesWidget = ({ onClose }) => {
               <Check className="w-5 h-5 text-green-600" />
             )}
           </div>
+          
+          {/* Detailed instructions when permission is denied */}
+          {pushPermission === 'denied' && (
+            <div className="mt-3 pt-3 border-t border-red-200">
+              <p className="text-sm font-medium text-red-800 mb-2">How to enable notifications:</p>
+              <ol className="text-xs text-red-700 space-y-1.5 ml-4 list-decimal">
+                <li>Click the <strong>lock icon</strong> (or site settings icon) in your browser's address bar</li>
+                <li>Find <strong>"Notifications"</strong> in the permissions list</li>
+                <li>Change it from "Block" to <strong>"Allow"</strong></li>
+                <li>Refresh this page to apply the change</li>
+              </ol>
+              <p className="text-xs text-red-600 mt-2 italic">
+                Or choose "Email Only" above if you prefer not to receive push notifications.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Phone Number - Show prominently when SMS strategy is selected */}
+      {strategyRequiresSMS(settings.strategy) && (
+        <div className={`p-4 rounded-xl border mb-4 ${phoneError ? 'border-red-300 bg-red-50' : 'border-amber-200 bg-amber-50'}`}>
+          <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" /> 
+            Mobile Number for SMS
+            <span className="text-red-500">*</span>
+          </label>
+          <Input 
+            type="tel" 
+            placeholder="+1 (555) 000-0000"
+            value={settings.phoneNumber}
+            onChange={(e) => {
+              setSettings({...settings, phoneNumber: e.target.value});
+              if (phoneError) setPhoneError(null);
+            }}
+            onBlur={() => {
+              if (settings.phoneNumber && isValidPhoneNumber(settings.phoneNumber)) {
+                setSettings({...settings, phoneNumber: formatPhoneNumber(settings.phoneNumber)});
+              }
+            }}
+            className={phoneError ? 'border-red-300' : ''}
+          />
+          {phoneError ? (
+            <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" /> {phoneError}
+            </p>
+          ) : (
+            <p className="text-xs text-amber-700 mt-2 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {settings.strategy === 'smart_escalation' 
+                ? 'Required for Day 3+ escalation. SMS only sent if you miss multiple days.'
+                : 'Required for Full Accountability mode. Standard messaging rates may apply.'}
+            </p>
+          )}
         </div>
       )}
 
@@ -432,26 +562,6 @@ const NotificationPreferencesWidget = ({ onClose }) => {
             <p className="text-xs text-slate-500 mt-1">Notifications will be timed to your local time.</p>
           </div>
 
-          {/* Phone Number for SMS */}
-          {(settings.strategy === 'full_accountability' || settings.strategy === 'smart_escalation') && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" /> Mobile Number (for SMS)
-              </label>
-              <Input 
-                type="tel" 
-                placeholder="+1 (555) 000-0000"
-                value={settings.phoneNumber}
-                onChange={(e) => setSettings({...settings, phoneNumber: e.target.value})}
-              />
-              <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                {settings.strategy === 'smart_escalation' 
-                  ? 'SMS only sent after 3+ missed days'
-                  : 'Standard messaging rates may apply'}
-              </p>
-            </div>
-          )}
         </div>
       )}
 
