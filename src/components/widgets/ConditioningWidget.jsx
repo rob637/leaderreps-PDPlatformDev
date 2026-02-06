@@ -67,7 +67,7 @@ const ConditioningPanel = ({ isOpen, onClose }) => {
 // ============================================
 // CONDITIONING WIDGET
 // ============================================
-const ConditioningWidget = () => {
+const ConditioningWidget = ({ helpText }) => {
   const { user, db, developmentPlanData, userProfile } = useAppServices();
   const { cohortData } = useDailyPlan();
   const userId = user?.uid;
@@ -127,6 +127,7 @@ const ConditioningWidget = () => {
         title="Conditioning" 
         icon={Dumbbell} 
         accent="TEAL"
+        helpText={helpText}
         data-gazoo-step="conditioning"
       >
         <div className="text-center py-2">
@@ -151,6 +152,7 @@ const ConditioningWidget = () => {
         title="Conditioning" 
         icon={Dumbbell} 
         accent="TEAL"
+        helpText={helpText}
         data-gazoo-step="conditioning"
         variant="interactive"
         onClick={() => setIsPanelOpen(true)}

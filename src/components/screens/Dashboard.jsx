@@ -65,7 +65,7 @@ const Dashboard = () => {
     db // <--- Added db here
   } = useAppServices();
 
-  const { isFeatureEnabled, getFeatureOrder } = useFeatures();
+  const { isFeatureEnabled, getFeatureOrder, getWidgetHelpText } = useFeatures();
   
   // Day-based Access Control (includes Prep Gate)
   const { 
@@ -629,7 +629,7 @@ const Dashboard = () => {
     'grounding-rep': () => shouldShow('grounding-rep', false) ? <WidgetRenderer widgetId="grounding-rep" scope={scope} /> : null,
     'win-the-day': () => shouldShow('win-the-day', true) ? <div data-gazoo-step="win-the-day"><WidgetRenderer widgetId="win-the-day" scope={scope} /></div> : null,
     'daily-plan': () => currentDayNumber >= 1 ? <WidgetRenderer widgetId="daily-plan" scope={scope} /> : null,
-    'conditioning': () => <ConditioningWidget />,  // NEW: Conditioning with slide-in panel
+    'conditioning': () => <ConditioningWidget helpText={getWidgetHelpText('conditioning')} />,  // NEW: Conditioning with slide-in panel
     'daily-leader-reps': () => null,  // DISABLED - replaced by conditioning widget
     'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <div data-gazoo-step="this-weeks-actions"><WidgetRenderer widgetId="this-weeks-actions" scope={scope} /></div> : null,
     'notifications': () => shouldShow('notifications', false) ? <WidgetRenderer widgetId="notifications" scope={scope} /> : null,
