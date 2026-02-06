@@ -8,7 +8,7 @@ import {
 import { Card } from '../ui';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
-import { useCoachingRegistrations } from '../../hooks/useCoachingRegistrations';
+// useCoachingRegistrations available if needed
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import CoachingActionItem from '../coaching/CoachingActionItem';
@@ -494,7 +494,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
   // Progress percentage based only on required items (per Ryan's feedback)
   const totalRequiredCount = requiredActions.length;
-  const progressPercent = totalRequiredCount > 0 ? Math.round((completedRequiredCount / totalRequiredCount) * 100) : 0;
+  const _progressPercent = totalRequiredCount > 0 ? Math.round((completedRequiredCount / totalRequiredCount) * 100) : 0;
 
   // Dynamic title
   const widgetTitle = currentPhase?.id === 'pre-start' 

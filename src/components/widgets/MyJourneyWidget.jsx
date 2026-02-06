@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useDailyPlan, PHASES } from '../../hooks/useDailyPlan';
-import { useAppServices } from '../../services/useAppServices';
 import { timeService } from '../../services/timeService';
 import FacilitatorProfileModal from './FacilitatorProfileModal';
 
@@ -26,11 +25,11 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
     cohortData, 
     currentPhase, 
     phaseDayNumber, 
-    journeyDay,
+    // journeyDay - available if needed
     daysFromStart,
     prepRequirementsComplete
   } = useDailyPlan();
-  const { updateDevelopmentPlanData } = useAppServices();
+  // useAppServices - available if needed
 
   const [showFacilitatorModal, setShowFacilitatorModal] = useState(false);
   

@@ -8,7 +8,7 @@ import {
   X, ChevronRight, ChevronLeft, Sparkles, 
   Target, Play, Zap, Award
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 // Step definitions for the guided tour
 // Each step targets an element with data-gazoo-step="stepId"
@@ -89,7 +89,7 @@ const GazooSpotlight = ({
   const [elementRect, setElementRect] = useState(null);
   const [panelPosition, setPanelPosition] = useState({ top: 100, left: 100 });
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [completedSteps, setCompletedSteps] = useState(new Set());
+  const [_completedSteps, setCompletedSteps] = useState(new Set());
   
   const steps = useMemo(() => TOUR_STEPS[screenContext] || [], [screenContext]);
   const currentStep = steps[currentStepIndex];
@@ -247,10 +247,27 @@ const GazooSpotlight = ({
             )}
           </motion.div>
           
-          {/* Clickable backdrop to close */}
+          {/* Clickable backdrop to close - but NOT when clicking inside the highlighted element */}
           <div 
             className="fixed inset-0 z-[9998]" 
-            onClick={handleSkip}
+            onClick={(e) => {
+              // Check if click is inside the highlighted element area
+              if (elementRect) {
+                const clickX = e.clientX;
+                const clickY = e.clientY;
+                const isInsideHighlight = 
+                  clickX >= elementRect.left - 8 && 
+                  clickX <= elementRect.left + elementRect.width + 8 &&
+                  clickY >= elementRect.top - 8 && 
+                  clickY <= elementRect.top + elementRect.height + 8;
+                
+                if (isInsideHighlight) {
+                  // Don't close - user is interacting with the highlighted element
+                  return;
+                }
+              }
+              handleSkip();
+            }}
             style={{ 
               pointerEvents: 'auto',
               background: 'transparent'

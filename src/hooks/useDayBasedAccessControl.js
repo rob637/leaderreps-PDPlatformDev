@@ -25,7 +25,7 @@ export const useDayBasedAccessControl = () => {
     loading,
     unlockedContentIds,
     prepRequirementsComplete,
-    currentPhase
+    // currentPhase - available if needed
   } = useDailyPlan();
   const { isComplete: leaderProfileIsComplete } = useLeaderProfile();
 

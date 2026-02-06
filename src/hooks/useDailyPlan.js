@@ -318,8 +318,8 @@ export const useDailyPlan = () => {
   
   // Initialize from cache if available
   const [dailyPlan, setDailyPlan] = useState(() => _dailyPlanCache || []);
-  // Track if we're actively fetching (not just waiting for data)
-  const [isFetching, setIsFetching] = useState(false);
+  // Track if we're actively fetching (not just waiting for data) - available if needed
+  const [_isFetching, setIsFetching] = useState(false);
   const [cohortData, setCohortData] = useState(null);
   const [timeOffset, setTimeOffset] = useState(() => {
     return parseInt(localStorage.getItem('time_travel_offset') || '0', 10);

@@ -24,7 +24,7 @@ import { LayoutToggle } from '../ui/LayoutToggle';
 import PMReflectionWidget from '../widgets/PMReflectionWidget';
 import { serverTimestamp } from '../../services/firebaseUtils';
 import { FadeIn, Stagger } from '../motion';
-import { useAccessControlContext } from '../../providers/AccessControlProvider';
+// useAccessControlContext available if needed
 import ProgramStatusWidget from '../widgets/ProgramStatusWidget';
 import ConditioningWidget from '../widgets/ConditioningWidget';
 import PrepCompleteModal from '../modals/PrepCompleteModal';
@@ -67,10 +67,7 @@ const Dashboard = () => {
 
   const { isFeatureEnabled, getFeatureOrder, getWidgetHelpText } = useFeatures();
   
-  // Day-based Access Control (includes Prep Gate)
-  const { 
-    isPrepComplete
-  } = useAccessControlContext();
+  // Day-based Access Control hook - useAccessControlContext() available if needed
 
   // 2. Daily Plan (New Architecture - Three Phase System)
   const { 

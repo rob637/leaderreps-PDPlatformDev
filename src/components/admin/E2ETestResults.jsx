@@ -508,7 +508,7 @@ export default function E2ETestResults() {
       
       {view === 'history' && (
         <div className="space-y-2">
-          {history.map((run, idx) => (
+          {history.map((run) => (
             <div 
               key={run.id}
               className="flex items-center justify-between p-3 bg-white border rounded-lg hover:bg-gray-50"

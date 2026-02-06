@@ -1,6 +1,6 @@
 // src/services/globalMetadata.js
 import { useState, useEffect } from 'react';
-import { getDocEx } from './firestoreUtils'; // Assuming firestoreUtils.js exists
+// getDocEx available from firestoreUtils if needed
 import { collection, getDocs, doc, onSnapshot } from 'firebase/firestore';
 import { UNIFIED_COLLECTION, CONTENT_TYPES } from './unifiedContentService';
 import { 

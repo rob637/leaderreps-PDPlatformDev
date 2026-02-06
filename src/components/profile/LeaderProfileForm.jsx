@@ -285,8 +285,8 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
     </div>
   );
 
-  // Render option cards (for single select visual options)
-  const renderOptionCards = (field, options) => (
+  // Render option cards (for single select visual options) - available if needed
+  const _renderOptionCards = (field, options) => (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
       {options.map(opt => (
         <button

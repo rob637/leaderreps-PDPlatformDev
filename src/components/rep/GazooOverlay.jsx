@@ -9,7 +9,7 @@ import {
   ClipboardCheck, MessageSquare, Award, HelpCircle,
   AlertCircle
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+// motion import available if needed for animations
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
@@ -254,7 +254,7 @@ const GazooOverlay = ({ onClose }) => {
   const [coachResponse, setCoachResponse] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
-  const [aiError, setAiError] = useState(null);
+  const [_aiError, setAiError] = useState(null);
   const inputRef = useRef(null);
 
   const firstName = user?.displayName?.split(' ')[0] || 'Leader';

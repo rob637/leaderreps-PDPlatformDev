@@ -5,14 +5,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Brain, X, Sparkles } from 'lucide-react';
-import { useAppServices } from '../../services/useAppServices';
 import GazooOverlay from './GazooOverlay';
 
 // Session storage key for AI Coach authentication
 const AI_COACH_AUTH_KEY = 'ai-coach-authenticated';
 
 const RepFloatingButton = () => {
-  const { currentScreen } = useAppServices();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showGazoo, setShowGazoo] = useState(false);
   const [password, setPassword] = useState('');

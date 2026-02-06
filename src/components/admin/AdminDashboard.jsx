@@ -27,7 +27,7 @@ import {
   Zap
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
-import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, setDoc, arrayUnion, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore';
 import { ACTIVITY_TYPES, getActivityMeta, logActivity as logActivityService, getTodaysSummary, cleanupOldLogs } from '../../services/activityLogger';
 
 const AdminDashboard = () => {

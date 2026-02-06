@@ -841,7 +841,7 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
             // Check for actual field names used in the data model
             const hasWeekIndex = developmentPlanData.currentWeekIndex !== undefined;
             const hasStartDate = !!developmentPlanData.startDate;
-            const hasVersion = !!developmentPlanData.version;
+            // hasVersion available if needed
             const hasCohort = !!developmentPlanData.cohortId;
             
             const fields = Object.keys(developmentPlanData);
@@ -936,8 +936,7 @@ const createTestSuites = (db, user, dailyPracticeData, developmentPlanData) => {
             
             // Check for actual fields used in current data model
             const fields = Object.keys(dailyPracticeData);
-            const hasAnchors = dailyPracticeData.identityAnchor || dailyPracticeData.habitAnchor;
-            const hasBookends = dailyPracticeData.morningBookend || dailyPracticeData.eveningBookend;
+            // hasAnchors and hasBookends available if needed
             
             return {
               status: TEST_STATUS.PASSED,

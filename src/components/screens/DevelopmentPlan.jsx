@@ -111,9 +111,9 @@ export default function DevelopmentPlan(props) {
   const { daysFromStart } = useDailyPlan();
   const { profile } = useLeaderProfile();
   
-  const isStartPhase = daysFromStart >= 0;
+  const _isStartPhase = daysFromStart >= 0;
   // Check profile completion (safely)
-  const isLeaderProfileComplete = profile?.isComplete;
+  const _isLeaderProfileComplete = profile?.isComplete;
   
   // Width debugging - AGGRESSIVE LOGGING
   React.useEffect(() => {
@@ -222,7 +222,7 @@ export default function DevelopmentPlan(props) {
   const [isSaving, setIsSaving] = useState(false); // Used to detect in-progress save
   const [error, setError] = useState(null);
   const [justCompletedBaseline, setJustCompletedBaseline] = useState(false); // Prevent returning to baseline after save
-  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [_showProfileModal, _setShowProfileModal] = useState(false);
 
   // ===== MOVED HOOKS (Fix Conditional Hooks) =====
   // (Removed unused hooks)

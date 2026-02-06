@@ -4,7 +4,7 @@
 // Fully dynamic - adapts to whatever is in the daily plan data
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { 
   Map, ChevronLeft, ChevronRight, CheckCircle, Circle, Lock,
   Target, Trophy, Star, Zap, Calendar, Clock, BookOpen,
@@ -71,8 +71,8 @@ const WEEK_THEME_CYCLE = [
   { icon: Compass, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
 ];
 
-// Helper to get theme for a week (cycles through colors)
-const getWeekTheme = (weekIndex, weekData) => {
+// Helper to get theme for a week (cycles through colors) - available if needed
+const _getWeekTheme = (weekIndex, weekData) => {
   const cycleTheme = WEEK_THEME_CYCLE[weekIndex % WEEK_THEME_CYCLE.length];
   return {
     ...cycleTheme,
@@ -131,7 +131,7 @@ const WeekCard = ({
   onClick,
   totalActions,
   completedActions,
-  daysInWeek
+  // daysInWeek - available if needed
 }) => {
   const Icon = theme.icon;
   const isLocked = isFutureWeek;
@@ -285,8 +285,8 @@ const WeekDetailPanel = ({
   const displayLabel = segmentLabel || (weekNumber ? `Week ${weekNumber}` : 'Journey Stage');
   const isPhaseSegment = segmentType === 'phase';
   
-  // Group actions by type
-  const actionsByType = useMemo(() => {
+  // Group actions by type - available if needed
+  const _actionsByType = useMemo(() => {
     const groups = {};
     actions.forEach(action => {
       const type = action.type || action.resourceType || 'content';
@@ -437,8 +437,8 @@ const WeekDetailPanel = ({
 const DevelopmentJourneyWidget = () => {
   const scrollContainerRef = useRef(null);
   const [selectedSegment, setSelectedSegment] = useState(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [_canScrollLeft, setCanScrollLeft] = useState(false);
+  const [_canScrollRight, setCanScrollRight] = useState(true);
   
   // Get data from hooks
   const { developmentPlanData } = useAppServices();
@@ -507,8 +507,8 @@ const DevelopmentJourneyWidget = () => {
     
     // Get the actual day range from the data
     const dayNumbers = dailyPlan.map(d => d.dayNumber).filter(Boolean);
-    const minDay = Math.min(...dayNumbers);
-    const maxDay = Math.max(...dayNumbers);
+    const _minDay = Math.min(...dayNumbers);
+    const _maxDay = Math.max(...dayNumbers);
     
     // =================== PREP PHASE ===================
     // Get all prep phase days from daily plan (phase-based, not time-based)
@@ -731,7 +731,7 @@ const DevelopmentJourneyWidget = () => {
     }
   };
   
-  const scrollTo = (direction) => {
+  const _scrollTo = (direction) => {
     if (scrollContainerRef.current) {
       const scrollAmount = 300;
       scrollContainerRef.current.scrollBy({

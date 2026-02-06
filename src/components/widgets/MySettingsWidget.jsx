@@ -9,7 +9,7 @@ import { useAppServices } from '../../services/useAppServices';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
 import PWAInstall from '../ui/PWAInstall';
-import { doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 // Strategy display names and icons
 const STRATEGY_DISPLAY = {

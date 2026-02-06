@@ -23,8 +23,8 @@ import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 
-const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user }) => {
-  const { identityStatement, habitAnchor, whyStatement, globalMetadata, isAdmin, userProfile, developmentPlanData } = useAppServices();
+const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) => {
+  const { identityStatement, habitAnchor, whyStatement, isAdmin, userProfile, developmentPlanData } = useAppServices();
   const { prepRequirementsComplete, cohortData } = useDailyPlan();
   const [showAnchors, setShowAnchors] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { useAppServices } from '../services/useAppServices';
 
 /**

@@ -23,7 +23,7 @@ const Locker = () => {
   const { dailyPracticeData, commitmentData, navigate, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const { isFeatureEnabled, getFeatureOrder, getWidgetHelpText } = useFeatures();
   const { currentDayData, prepRequirementsComplete, dailyPlan } = useDailyPlan();
-  const { currentWeek: devPlanCurrentWeek } = useDevPlan();
+  const { currentWeek: _devPlanCurrentWeek } = useDevPlan();
 
   // Get explore-config for widget visibility after prep completion (matches Dashboard)
   const exploreConfig = useMemo(() => {

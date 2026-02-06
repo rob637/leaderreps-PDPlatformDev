@@ -21,7 +21,7 @@ import FacilitatorProfileModal from './FacilitatorProfileModal';
  */
 const PrepWelcomeBanner = () => {
   const { user, developmentPlanData } = useAppServices();
-  const { prepPhaseInfo, phaseDayNumber, currentPhase, journeyDay, currentDayData, userState, prepRequirementsComplete } = useDailyPlan();
+  const { prepPhaseInfo, currentPhase, currentDayData, userState, prepRequirementsComplete } = useDailyPlan();
   const { getItemProgress } = useActionProgress();
   const { isComplete: leaderProfileComplete, profile: leaderProfile } = useLeaderProfile();
   const [showFacilitatorModal, setShowFacilitatorModal] = useState(false);
@@ -130,7 +130,7 @@ const PrepWelcomeBanner = () => {
     return !isCompleted;
   });
 
-  const hasIncompleteRequiredActions = incompleteRequiredActions.length > 0;
+  const _hasIncompleteRequiredActions = incompleteRequiredActions.length > 0;
   
   // Determine if prep is complete using the completion-based flag
   // Progress-based: not day or time dependent
