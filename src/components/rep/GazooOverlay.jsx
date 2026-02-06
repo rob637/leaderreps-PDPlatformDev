@@ -376,18 +376,12 @@ Help them with their question. Be practical and actionable.`;
           </span>
         </motion.button>
         
-        {/* Spotlight Tour - must be rendered even when minimized */}
+        {/* Spotlight Tour - can still run even when minimized */}
         <GazooSpotlight
           isOpen={showSpotlight}
-          onClose={() => {
-            setShowSpotlight(false);
-            setIsMinimized(false);
-          }}
+          onClose={() => setShowSpotlight(false)}
           screenContext={screenKey}
-          onComplete={() => {
-            setShowSpotlight(false);
-            setIsMinimized(false);
-          }}
+          onComplete={() => setShowSpotlight(false)}
         />
       </>
     );
@@ -398,7 +392,11 @@ Help them with their question. Be practical and actionable.`;
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
-      className="fixed bottom-6 right-6 z-[90] w-96 max-w-[calc(100vw-3rem)]"
+      className={`fixed z-[90] w-96 max-w-[calc(100vw-3rem)] ${
+        showSpotlight 
+          ? 'top-6 right-6' // Move to top when spotlight is active
+          : 'bottom-6 right-6' // Normal position
+      }`}
     >
       <div className="bg-white rounded-2xl shadow-2xl border-2 border-lime-500/20 overflow-hidden">
         
@@ -663,13 +661,16 @@ Help them with their question. Be practical and actionable.`;
             </button>
             <button
               onClick={() => {
-                // Launch spotlight tour on dashboard
-                if (screenKey === 'dashboard') {
-                  setShowSpotlight(true);
-                  setIsMinimized(true); // Minimize Gazoo while spotlight is active
-                } else {
+                // Navigate to dashboard if not already there
+                if (screenKey !== 'dashboard') {
                   navigate('dashboard');
+                  // Wait for navigation, then start spotlight
+                  setTimeout(() => setShowSpotlight(true), 300);
+                } else {
+                  // Already on dashboard - start spotlight immediately
+                  setShowSpotlight(true);
                 }
+                // DON'T minimize - Gazoo stays visible during guide
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-lime-500 to-emerald-600 
                          text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
@@ -686,12 +687,12 @@ Help them with their question. Be practical and actionable.`;
         isOpen={showSpotlight}
         onClose={() => {
           setShowSpotlight(false);
-          setIsMinimized(false);
+          // Gazoo stays open, just goes back to normal position
         }}
         screenContext={screenKey}
         onComplete={() => {
           setShowSpotlight(false);
-          setIsMinimized(false);
+          // Gazoo stays open after tour completes
         }}
       />
     </motion.div>

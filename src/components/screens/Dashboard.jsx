@@ -211,7 +211,10 @@ const Dashboard = () => {
     groundingRepRevealed,
     groundingRepConfetti,
     handleGroundingRepComplete,
-    handleGroundingRepClose
+    handleGroundingRepClose,
+    
+    // Conditioning Status (weekly tracking)
+    conditioningStatus
   } = useDashboard({
     dailyPracticeData,
     updateDailyPracticeData,
@@ -504,6 +507,9 @@ const Dashboard = () => {
     groundingRepConfetti,
     handleGroundingRepComplete,
     handleGroundingRepClose,
+    
+    // Conditioning Status (weekly tracking)
+    conditioningStatus,
     
     // Identity & Anchors State
     identityStatement,

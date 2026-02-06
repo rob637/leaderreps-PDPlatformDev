@@ -1179,29 +1179,14 @@ render(<NotificationsWidget />);
   const milestone = safeRepStreak.milestone;
   const isNewPersonalBest = safeRepStreak.isNewPersonalBest || false;
   
-  // Get grounding rep status - either from scorecard or from dedicated state
-  const groundingDone = safeScorecard.grounding?.done || (typeof groundingRepCompleted !== 'undefined' && groundingRepCompleted ? 1 : 0);
-  const groundingTotal = safeScorecard.grounding?.total || 1;
-  const groundingPct = groundingTotal > 0 ? Math.round((groundingDone / groundingTotal) * 100) : 0;
+  // Get conditioning status - weekly tracking
+  const safeConditioningStatus = typeof conditioningStatus !== 'undefined' ? conditioningStatus : { requiredRepCompleted: false, totalCompleted: 0 };
+  const conditioningMet = safeConditioningStatus.requiredRepCompleted;
+  const conditioningTotal = safeConditioningStatus.totalCompleted || 0;
 
   return (
 <Card title="Today's Scorecard" icon={Trophy} accent="ORANGE" helpText={widgetHelpText}>
     <div className="space-y-2">
-      {/* Grounding Rep - Only show from Week 2 onwards */}
-      {weekNum > 1 && (
-      <div className={\`flex items-center justify-between p-2 rounded-lg border \${groundingDone > 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-blue-50 border-blue-100'}\`}>
-        <div className="flex items-center gap-2">
-          <Zap className={\`w-4 h-4 \${groundingDone > 0 ? 'text-emerald-600' : 'text-blue-600'}\`} />
-          <span className="font-medium text-slate-700">Grounding Rep</span>
-        </div>
-        <div className="text-right flex items-center gap-2">
-          <span className="font-bold text-lg text-[#002E47]">{groundingDone}</span>
-          <span className="text-slate-400 text-sm">/ {groundingTotal}</span>
-          {groundingPct === 100 && <CheckCircle className="w-4 h-4 text-emerald-500" />}
-        </div>
-      </div>
-      )}
-
       {/* Win the Day */}
       <div className={\`flex items-center justify-between p-2 rounded-lg border \${safeScorecard.win.done > 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-blue-50 border-blue-100'}\`}>
         <div className="flex items-center gap-2">
@@ -1215,16 +1200,17 @@ render(<NotificationsWidget />);
         </div>
       </div>
 
-      {/* Daily Reps */}
-      <div className={\`flex items-center justify-between p-2 rounded-lg border \${safeScorecard.reps.done > 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-blue-50 border-blue-100'}\`}>
+      {/* Conditioning - Weekly */}
+      <div className={\`flex items-center justify-between p-2 rounded-lg border \${conditioningMet ? 'bg-emerald-50 border-emerald-100' : 'bg-blue-50 border-blue-100'}\`}>
         <div className="flex items-center gap-2">
-          <Dumbbell className={\`w-4 h-4 \${safeScorecard.reps.done > 0 ? 'text-emerald-600' : 'text-blue-600'}\`} />
-          <span className="font-medium text-slate-700">Daily Reps</span>
+          <Dumbbell className={\`w-4 h-4 \${conditioningMet ? 'text-emerald-600' : 'text-blue-600'}\`} />
+          <span className="font-medium text-slate-700">Conditioning</span>
+          <span className="text-xs text-slate-400">(weekly)</span>
         </div>
         <div className="text-right flex items-center gap-2">
-          <span className="font-bold text-lg text-[#002E47]">{safeScorecard.reps.done}</span>
-          <span className="text-slate-400 text-sm">/ {safeScorecard.reps.total}</span>
-          {safeScorecard.reps.pct === 100 && <CheckCircle className="w-4 h-4 text-emerald-500" />}
+          <span className="font-bold text-lg text-[#002E47]">{conditioningTotal}</span>
+          <span className="text-slate-400 text-sm">/ 1</span>
+          {conditioningMet && <CheckCircle className="w-4 h-4 text-emerald-500" />}
         </div>
       </div>
     </div>

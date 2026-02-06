@@ -10,6 +10,7 @@ import { useAppServices } from '../../../hooks/useAppServices';
 import { timeService } from '../../../services/timeService';
 import { calculateRepStreak, getStreakMilestone, isExcludedDate } from '../../../utils/streakCalculator';
 import { logActivity, ACTIVITY_TYPES } from '../../../services/activityLogger';
+import conditioningService from '../../../services/conditioningService';
 
 // Helper function to check if developer mode is enabled
 // const isDeveloperMode = () => localStorage.getItem('arena-developer-mode') === 'true';
@@ -80,6 +81,13 @@ export const useDashboard = ({
   const [groundingRepCompleted, setGroundingRepCompleted] = useState(false);
   const [groundingRepRevealed, setGroundingRepRevealed] = useState(false);
   const [groundingRepConfetti, setGroundingRepConfetti] = useState(false);
+
+  // === CONDITIONING STATUS (weekly tracking for scorecard) ===
+  const [conditioningStatus, setConditioningStatus] = useState({
+    requiredRepCompleted: false,
+    totalCompleted: 0,
+    isLoading: true
+  });
 
   /* =========================================================
      LOAD DATA FROM FIRESTORE (Dependency on dailyPracticeData)
@@ -199,6 +207,39 @@ export const useDashboard = ({
   const handleGroundingRepClose = useCallback(() => {
     setGroundingRepRevealed(false);
   }, []);
+
+  // Load Conditioning Status (weekly tracking)
+  useEffect(() => {
+    const loadConditioningStatus = async () => {
+      if (!db || !userId) {
+        setConditioningStatus(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+      
+      try {
+        // Get cohortId from user's development plan
+        const devPlanDoc = await db.collection('users').doc(userId).collection('developmentPlan').doc('current').get();
+        const cohortId = devPlanDoc.exists ? devPlanDoc.data()?.cohortId : null;
+        
+        if (!cohortId) {
+          setConditioningStatus({ requiredRepCompleted: false, totalCompleted: 0, isLoading: false });
+          return;
+        }
+        
+        const status = await conditioningService.getWeeklyStatus(db, userId, null, cohortId);
+        setConditioningStatus({
+          requiredRepCompleted: status?.requiredRepCompleted || false,
+          totalCompleted: status?.totalCompleted || 0,
+          isLoading: false
+        });
+      } catch (error) {
+        console.error('[DashboardHooks] Error loading conditioning status:', error);
+        setConditioningStatus({ requiredRepCompleted: false, totalCompleted: 0, isLoading: false });
+      }
+    };
+    
+    loadConditioningStatus();
+  }, [db, userId]);
 
   const handleToggleAdditionalRep = useCallback(async (commitmentId, currentStatus, text = '', debriefData = null) => {
     const newStatus = currentStatus === 'Committed' ? 'Pending' : 'Committed';
@@ -1634,6 +1675,9 @@ export const useDashboard = ({
     groundingRepConfetti,
     handleGroundingRepComplete,
     handleGroundingRepClose,
+
+    // Conditioning Status (weekly tracking)
+    conditioningStatus,
 
     // Streak - use liveStreakCount for real-time feedback
     streakCount: liveStreakCount,

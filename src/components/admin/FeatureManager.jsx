@@ -726,6 +726,7 @@ const FeatureManager = () => {
       order: dbData?.order ?? 999,
       code: dbData?.code || templateCode,
       options: dbData?.options || {},
+      helpText: dbData?.helpText || '', // User-facing help text for info icon
       isUnsaved: !dbData, // Flag to indicate it's using default/template
       originalIndex: index // Tie-breaker for stable sorting
     };
