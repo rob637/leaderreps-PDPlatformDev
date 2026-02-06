@@ -95,12 +95,12 @@ const RepFloatingButton = () => {
           shadow-lg hover:shadow-xl
           transition-all duration-200 
           active:scale-95 hover:scale-105
-          bg-gradient-to-r from-corporate-teal to-purple-600 text-white
+          bg-gradient-to-r from-lime-500 to-emerald-600 text-white
         "
-        aria-label="Open AI Leadership Coach"
+        aria-label="The Great Gazoo"
       >
         <Brain className="w-5 h-5" />
-        <span className="text-sm font-semibold">AI Coach</span>
+        <span className="text-sm font-semibold">The Great Gazoo</span>
         <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">NEW</span>
       </button>
 
@@ -110,11 +110,11 @@ const RepFloatingButton = () => {
           <div className="bg-white rounded-2xl p-6 mx-4 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-corporate-teal to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <div className="w-12 h-12 bg-gradient-to-br from-lime-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
                   <Brain className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-corporate-navy text-lg">AI Leadership Coach</h3>
+                  <h3 className="font-bold text-corporate-navy text-lg">The Great Gazoo</h3>
                   <p className="text-sm text-slate-500">Enter access code</p>
                 </div>
               </div>
@@ -151,7 +151,7 @@ const RepFloatingButton = () => {
                 focus:outline-none
                 ${passwordError 
                   ? 'border-red-500 bg-red-50 focus:border-red-500' 
-                  : 'border-slate-200 focus:border-corporate-teal'
+                  : 'border-slate-200 focus:border-lime-500'
                 }
               `}
               autoFocus
@@ -165,14 +165,14 @@ const RepFloatingButton = () => {
             
             <button
               onClick={handlePasswordSubmit}
-              className="w-full py-3.5 bg-gradient-to-r from-corporate-teal to-purple-600 text-white rounded-xl font-semibold
+              className="w-full py-3.5 bg-gradient-to-r from-lime-500 to-emerald-600 text-white rounded-xl font-semibold
                          hover:opacity-90 transition-opacity shadow-lg"
             >
-              Access AI Coach
+              Summon Gazoo
             </button>
             
             <p className="text-xs text-slate-400 text-center mt-4">
-              AI-powered leadership coaching • Admin preview
+              AI-powered leadership coaching • Dum-dums
             </p>
           </div>
         </div>
