@@ -13,7 +13,8 @@ import { Card, Button } from '../ui';
 import { 
   EvidenceCaptureModal,
   QualityAssessmentCard,
-  PracticeRetryCard
+  PracticeRetryCard,
+  TrainerNudgeNotification
 } from '../conditioning';
 import { 
   Plus, Check, X, AlertTriangle, Clock, User, 
@@ -732,6 +733,9 @@ const Conditioning = () => {
         
         {/* Week Status Header */}
         <WeekStatusHeader weeklyStatus={weeklyStatus} nudgeStatus={nudgeStatus} />
+        
+        {/* Trainer Nudge Notifications */}
+        <TrainerNudgeNotification db={db} userId={userId} />
         
         {/* Missed Reps Section */}
         <MissedRepsSection 

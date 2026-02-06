@@ -4,13 +4,15 @@ import {
   getDoc, 
   setDoc, 
   updateDoc, 
+  addDoc,
   onSnapshot,
   serverTimestamp,
   query,
   where,
   orderBy,
   getDocs,
-  Timestamp
+  Timestamp,
+  limit as firestoreLimit
 } from 'firebase/firestore';
 import { timeService } from './timeService';
 
@@ -812,7 +814,7 @@ export const conditioningService = {
    * Assess the quality of submitted evidence
    * Returns dimension scores and overall assessment
    */
-  assessQuality: (evidence, rep) => {
+  assessQuality: (evidence, _rep) => {
     const responses = evidence.responses || {};
     const dimensions = {};
     let passedCount = 0;
@@ -1053,6 +1055,209 @@ export const conditioningService = {
       usersNeedingAttention: summaries.filter(s => s.needsAttention).length,
       userSummaries: summaries
     };
+  },
+  
+  // ============================================
+  // PHASE 3: TRAINER PUSH INTEGRATION
+  // ============================================
+  
+  /**
+   * Nudge types for trainer push
+   */
+  NUDGE_TYPES: {
+    REMINDER: 'reminder',     // Gentle reminder to commit/complete
+    ENCOURAGEMENT: 'encouragement', // Positive reinforcement
+    CHECK_IN: 'check_in',     // Direct check-in from trainer
+    ESCALATION: 'escalation'  // Formal escalation notice
+  },
+  
+  /**
+   * Send a nudge from trainer to a specific leader
+   */
+  sendTrainerNudge: async (db, trainerId, targetUserId, cohortId, nudgeType, message) => {
+    const nudgesRef = collection(db, 'conditioning_nudges');
+    
+    const nudge = {
+      trainerId,
+      targetUserId,
+      cohortId,
+      type: nudgeType,
+      message: message || conditioningService.getDefaultNudgeMessage(nudgeType),
+      sentAt: serverTimestamp(),
+      readAt: null,
+      weekId: getCurrentWeekId()
+    };
+    
+    const docRef = await addDoc(nudgesRef, nudge);
+    
+    // Also add to user's notification queue (for in-app display)
+    const userNotifRef = collection(db, 'users', targetUserId, 'conditioning_notifications');
+    await addDoc(userNotifRef, {
+      ...nudge,
+      nudgeId: docRef.id,
+      status: 'unread'
+    });
+    
+    return docRef.id;
+  },
+  
+  /**
+   * Get default message templates for nudge types
+   */
+  getDefaultNudgeMessage: (nudgeType) => {
+    const messages = {
+      reminder: "Just a friendly reminder to commit to your leadership rep this week. Small steps lead to big growth!",
+      encouragement: "I see you're making progress - keep up the great work on your leadership reps!",
+      check_in: "Checking in on your leadership journey. How can I support you this week?",
+      escalation: "I noticed you've missed a few weeks of reps. let's connect to discuss how we can get you back on track."
+    };
+    return messages[nudgeType] || messages.reminder;
+  },
+  
+  /**
+   * Send bulk nudges to multiple leaders
+   */
+  sendBulkNudges: async (db, trainerId, targetUserIds, cohortId, nudgeType, message) => {
+    const results = await Promise.all(
+      targetUserIds.map(userId => 
+        conditioningService.sendTrainerNudge(db, trainerId, userId, cohortId, nudgeType, message)
+          .then(id => ({ userId, nudgeId: id, success: true }))
+          .catch(err => ({ userId, error: err.message, success: false }))
+      )
+    );
+    
+    return {
+      total: results.length,
+      successful: results.filter(r => r.success).length,
+      failed: results.filter(r => !r.success),
+      nudgeIds: results.filter(r => r.success).map(r => r.nudgeId)
+    };
+  },
+  
+  /**
+   * Get nudge history for a cohort (trainer view)
+   */
+  getCohortNudgeHistory: async (db, cohortId, limit = 50) => {
+    const nudgesRef = collection(db, 'conditioning_nudges');
+    const q = query(
+      nudgesRef, 
+      where('cohortId', '==', cohortId),
+      orderBy('sentAt', 'desc'),
+      firestoreLimit(limit)
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  },
+  
+  /**
+   * Get nudges sent to a specific user (for user's view)
+   */
+  getUserNudges: async (db, userId, unreadOnly = false) => {
+    const notifsRef = collection(db, 'users', userId, 'conditioning_notifications');
+    let q;
+    
+    if (unreadOnly) {
+      q = query(notifsRef, where('status', '==', 'unread'), orderBy('sentAt', 'desc'));
+    } else {
+      q = query(notifsRef, orderBy('sentAt', 'desc'), firestoreLimit(20));
+    }
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  },
+  
+  /**
+   * Mark a nudge as read by the user
+   */
+  markNudgeAsRead: async (db, userId, notificationId) => {
+    const notifRef = doc(db, 'users', userId, 'conditioning_notifications', notificationId);
+    await updateDoc(notifRef, {
+      status: 'read',
+      readAt: serverTimestamp()
+    });
+    
+    return true;
+  },
+  
+  /**
+   * Get leaders who need nudging (no commitment or no completion this week)
+   */
+  getLeadersNeedingNudge: async (db, cohortId, userIds) => {
+    const weekId = getCurrentWeekId();
+    const results = [];
+    
+    for (const userId of userIds) {
+      const status = await conditioningService.getWeeklyStatus(db, userId, weekId, cohortId);
+      const consecutiveMissed = await conditioningService.getConsecutiveMissedWeeks(db, userId, cohortId);
+      
+      if (!status.requiredRepCompleted) {
+        results.push({
+          userId,
+          hasActiveRep: status.totalActive > 0,
+          hasCommitted: status.totalActive > 0 || status.totalCompleted > 0,
+          consecutiveMissedWeeks: consecutiveMissed,
+          suggestedNudgeType: consecutiveMissed >= 2 
+            ? 'escalation' 
+            : (status.totalActive > 0 ? 'encouragement' : 'reminder')
+        });
+      }
+    }
+    
+    return results;
+  },
+  
+  /**
+   * Record an escalation event
+   */
+  recordEscalation: async (db, trainerId, targetUserId, cohortId, reason, notes) => {
+    const escalationsRef = collection(db, 'conditioning_escalations');
+    
+    const escalation = {
+      trainerId,
+      targetUserId,
+      cohortId,
+      reason,
+      notes: notes || null,
+      weekId: getCurrentWeekId(),
+      createdAt: serverTimestamp(),
+      status: 'open',
+      resolvedAt: null,
+      resolution: null
+    };
+    
+    const docRef = await addDoc(escalationsRef, escalation);
+    return docRef.id;
+  },
+  
+  /**
+   * Get open escalations for a cohort
+   */
+  getOpenEscalations: async (db, cohortId) => {
+    const escalationsRef = collection(db, 'conditioning_escalations');
+    const q = query(
+      escalationsRef,
+      where('cohortId', '==', cohortId),
+      where('status', '==', 'open'),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  },
+  
+  /**
+   * Resolve an escalation
+   */
+  resolveEscalation: async (db, escalationId, resolution) => {
+    const escalationRef = doc(db, 'conditioning_escalations', escalationId);
+    await updateDoc(escalationRef, {
+      status: 'resolved',
+      resolution,
+      resolvedAt: serverTimestamp()
+    });
+    
+    return true;
   }
 };
 

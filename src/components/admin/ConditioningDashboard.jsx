@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import conditioningService, { REP_STATUS, getCurrentWeekId, QUALITY_DIMENSIONS } from '../../services/conditioningService';
 import { Card } from '../ui';
+import { TrainerNudgePanel } from '../conditioning';
 import { 
   Users, CheckCircle, AlertTriangle, Clock, RefreshCw,
   Target, ChevronDown, ChevronUp, User, Calendar,
@@ -287,7 +288,8 @@ const QualityMetrics = ({ cohortQualityStats }) => {
 // MAIN COMPONENT
 // ============================================
 const ConditioningDashboard = () => {
-  const { db } = useAppServices();
+  const { db, user } = useAppServices();
+  const trainerId = user?.uid;
   
   const [cohorts, setCohorts] = useState([]);
   const [selectedCohortId, setSelectedCohortId] = useState(null);
@@ -494,6 +496,18 @@ const ConditioningDashboard = () => {
       
       {/* Quality Metrics (Phase 2) */}
       <QualityMetrics cohortQualityStats={cohortQualityStats} />
+      
+      {/* Trainer Nudge Panel (Phase 3) */}
+      {selectedCohortId && userSummaries.length > 0 && (
+        <div className="mb-6">
+          <TrainerNudgePanel
+            db={db}
+            trainerId={trainerId}
+            cohortId={selectedCohortId}
+            cohortUsers={userSummaries}
+          />
+        </div>
+      )}
       
       {/* No cohort selected */}
       {!selectedCohortId && (
