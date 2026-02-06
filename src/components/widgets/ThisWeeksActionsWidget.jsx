@@ -267,12 +267,26 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
   }, [dailyPlan, currentPhase?.id, journeyDay, currentDayData, leaderProfileComplete, baselineAssessmentComplete, currentWeekNumber]);
 
-  // Get carried over items (including incomplete prep phase items)
+  // Get carried over items (including incomplete prep phase items AND all prior weeks)
   const carriedOverItems = useMemo(() => {
     // No carryover in Prep Phase
     if (currentPhase?.id === 'pre-start') return [];
     
     const carriedItems = [];
+    const dailyProgress = userState?.dailyProgress || {};
+    
+    // Helper function to check if an action is completed
+    const isActionCompleted = (actionId) => {
+      // Check in dailyProgress
+      const completedInDailyProgress = Object.values(dailyProgress).some(
+        dp => dp?.itemsCompleted?.includes(actionId)
+      );
+      if (completedInDailyProgress) return true;
+      
+      // Also check in actionProgress
+      const progress = getItemProgress(actionId);
+      return progress?.status === 'completed';
+    };
     
     // Get explicitly carried over items from actionProgress
     const explicitCarryOver = getCarriedOverItems(currentWeekNumber);
@@ -319,9 +333,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         });
       }
       
-      // Also check for incomplete prep phase daily plan items
+      // Check for incomplete prep phase daily plan items
       const prepDays = dailyPlan.filter(d => d.phase === 'pre-start');
-      const dailyProgress = userState?.dailyProgress || {};
       
       prepDays.forEach(day => {
         if (day.actions && Array.isArray(day.actions)) {
@@ -329,13 +342,10 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             // Skip if not required
             if (action.optional || action.required === false) return;
             
-            // Check if completed in dailyProgress
+            // Check if completed
             const actionId = action.id || `daily-${day.id}-${(action.label || '').toLowerCase().replace(/\s+/g, '-').substring(0, 20)}-${idx}`;
-            const isCompleted = Object.values(dailyProgress).some(
-              dp => dp?.itemsCompleted?.includes(actionId)
-            );
             
-            if (!isCompleted) {
+            if (!isActionCompleted(actionId)) {
               // Filter out items that are in the interactive list or daily reps
               const labelLower = (action.label || '').toLowerCase();
               if (labelLower.includes('leader profile') || labelLower.includes('baseline assessment')) return;
@@ -351,6 +361,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 dayId: day.id,
                 dayNumber: day.dayNumber,
                 carriedOver: true,
+                fromWeek: 0,
                 resourceId: action.resourceId,
                 resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
                 url: action.url || action.videoUrl || action.link || action.details?.externalUrl
@@ -359,10 +370,76 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           });
         }
       });
+      
+      // **NEW: Check for incomplete items from ALL prior weeks (not just prep)**
+      // Loop through weeks 1 to currentWeekNumber - 1
+      const phaseStartDbDay = 15; // Start phase begins at day 15
+      
+      for (let priorWeek = 1; priorWeek < currentWeekNumber; priorWeek++) {
+        const startDay = (priorWeek - 1) * 7 + 1;
+        const endDay = priorWeek * 7;
+        const absStartDay = phaseStartDbDay + startDay - 1;
+        const absEndDay = phaseStartDbDay + endDay - 1;
+        
+        // Get days for this prior week
+        const priorWeekDays = dailyPlan.filter(d => 
+          d.dayNumber >= absStartDay && 
+          d.dayNumber <= absEndDay
+        );
+        
+        // Check each action in each day
+        priorWeekDays.forEach(day => {
+          if (day.actions && Array.isArray(day.actions)) {
+            day.actions.forEach((action, idx) => {
+              // Skip if not required
+              if (action.optional || action.required === false) return;
+              // Skip daily reps (handled separately)
+              if (action.type === 'daily_rep') return;
+              
+              const label = action.label || 'Week Action';
+              const actionId = action.id || `daily-${day.id}-${label.toLowerCase().replace(/\s+/g, '-').substring(0, 20)}-${idx}`;
+              
+              // Skip if already in carriedItems (avoid duplicates)
+              if (carriedItems.some(item => item.id === actionId)) return;
+              
+              if (!isActionCompleted(actionId)) {
+                // Map action type to category
+                let category = 'Content';
+                const actionType = (action.type || '').toLowerCase();
+                if (actionType === 'community' || actionType === 'leader_circle' || actionType === 'open_gym') {
+                  category = 'Community';
+                } else if (actionType === 'coaching' || actionType === 'call') {
+                  category = 'Coaching';
+                }
+                
+                carriedItems.push({
+                  ...action,
+                  id: actionId,
+                  type: action.type || action.resourceType || 'content',
+                  displayType: action.resourceType || action.type || 'content',
+                  label: label,
+                  required: true,
+                  category,
+                  fromDailyPlan: true,
+                  dayId: day.id,
+                  dayNumber: day.dayNumber,
+                  carriedOver: true,
+                  fromWeek: priorWeek,
+                  resourceId: action.resourceId,
+                  resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
+                  resourceTitle: action.resourceTitle,
+                  url: action.url || action.videoUrl || action.link || action.details?.externalUrl || action.metadata?.externalUrl,
+                  estimatedMinutes: action.estimatedMinutes
+                });
+              }
+            });
+          }
+        });
+      }
     }
     
     return carriedItems;
-  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, leaderProfileComplete, baselineAssessmentComplete, dailyPlan, userState?.dailyProgress]);
+  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, leaderProfileComplete, baselineAssessmentComplete, dailyPlan, userState?.dailyProgress]);
 
   // Preserve carried over items - merge new items but keep completed ones
   useEffect(() => {
