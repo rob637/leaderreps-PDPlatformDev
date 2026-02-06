@@ -52,7 +52,7 @@ const RepFloatingButton = () => {
   }
 
   const handlePasswordSubmit = () => {
-    if (password === '7778') {
+    if (password === '7777') {
       // Save authentication to session storage
       sessionStorage.setItem(AI_COACH_AUTH_KEY, 'true');
       setIsSessionAuthenticated(true);
