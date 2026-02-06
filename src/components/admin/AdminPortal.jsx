@@ -36,6 +36,7 @@ import CohortManager from './CohortManager';
 import UserManagement from './UserManagement';
 import LeaderProfileReports from './LeaderProfileReports';
 import NotificationManager from './NotificationManager';
+import ConditioningDashboard from './ConditioningDashboard';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
@@ -145,7 +146,8 @@ const AdminPortal = () => {
     {
       title: 'Reports',
       items: [
-        { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText }
+        { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
+        { id: 'conditioning', label: 'Conditioning', icon: Dumbbell }
       ]
     },
     {
@@ -205,6 +207,8 @@ const AdminPortal = () => {
       //   return <MigrationTool />;
       case 'leader-profiles':
         return <LeaderProfileReports />;
+      case 'conditioning':
+        return <ConditioningDashboard />;
       default:
         return <AdminDashboard />;
     }

@@ -25,7 +25,7 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user }) => {
-  const { identityStatement, habitAnchor, whyStatement, globalMetadata, isAdmin } = useAppServices();
+  const { identityStatement, habitAnchor, whyStatement, globalMetadata, isAdmin, userProfile } = useAppServices();
   const { prepRequirementsComplete } = useDailyPlan();
   const [showAnchors, setShowAnchors] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -74,6 +74,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
   const menuItems = [
     // Rep Coach removed from sidebar - access via floating AI Coach button (password protected)
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'conditioning', label: 'Conditioning', icon: Dumbbell, requiresCohort: true },
     { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
     
     { type: 'section', label: 'Resources' },
@@ -101,7 +102,12 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
       return false; 
     }
 
-    // 3. FEATURE FLAG CHECK: Filter out items where the flag is off
+    // 3. COHORT CHECK: Filter out items that require a cohort if user doesn't have one
+    if (item.requiresCohort && !userProfile?.cohortId) {
+      return false;
+    }
+
+    // 4. FEATURE FLAG CHECK: Filter out items where the flag is off
     if (item.flag && FEATURE_FLAGS[item.flag] !== true) {
       return false;
     }
