@@ -662,7 +662,9 @@ Help them with their question. Be practical and actionable.`;
             <button
               onClick={() => {
                 // Navigate to dashboard if not already there
-                if (screenKey !== 'dashboard') {
+                // Use currentScreen directly - screenKey maps unknowns to 'dashboard'
+                const actualScreen = (currentScreen || 'dashboard').toLowerCase();
+                if (!actualScreen.includes('dashboard')) {
                   navigate('dashboard');
                   // Wait for navigation and page render, then start spotlight
                   // 600ms gives time for: navigation + dashboard mount + element render
