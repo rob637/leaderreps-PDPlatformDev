@@ -12,6 +12,7 @@ import {
 import { motion } from 'framer-motion';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAppServices } from '../../services/useAppServices';
+import { useNavigation } from '../../providers/NavigationProvider';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import GazooSpotlight from './GazooSpotlight';
 
@@ -239,7 +240,8 @@ const GAZOO_INTROS = [
 ];
 
 const GazooOverlay = ({ onClose }) => {
-  const { user, navigate, currentScreen } = useAppServices();
+  const { user, navigate } = useAppServices();
+  const { currentScreen } = useNavigation();
   const { 
     currentDayData, 
     currentPhase, 
