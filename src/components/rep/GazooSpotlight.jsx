@@ -247,46 +247,26 @@ const GazooSpotlight = ({
             )}
           </motion.div>
           
-          {/* Clickable backdrop to close - but NOT when clicking inside the highlighted element */}
+          {/* Clickable backdrop to close - uses clip-path to cut a hole for the highlighted element */}
           <div 
             className="fixed inset-0 z-[9998]" 
-            onClick={(e) => {
-              // Check if click is inside the highlighted element area
-              if (elementRect) {
-                const clickX = e.clientX;
-                const clickY = e.clientY;
-                const isInsideHighlight = 
-                  clickX >= elementRect.left - 8 && 
-                  clickX <= elementRect.left + elementRect.width + 8 &&
-                  clickY >= elementRect.top - 8 && 
-                  clickY <= elementRect.top + elementRect.height + 8;
-                
-                if (isInsideHighlight) {
-                  // Don't close - user is interacting with the highlighted element
-                  return;
-                }
-              }
-              handleSkip();
-            }}
+            onClick={handleSkip}
             style={{ 
               pointerEvents: 'auto',
-              background: 'transparent'
+              background: 'transparent',
+              // Cut a hole in the backdrop so clicks pass through to the highlighted element
+              clipPath: elementRect 
+                ? `polygon(
+                    0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%,
+                    ${elementRect.left - 8}px ${elementRect.top - 8}px,
+                    ${elementRect.left - 8}px ${elementRect.top + elementRect.height + 8}px,
+                    ${elementRect.left + elementRect.width + 8}px ${elementRect.top + elementRect.height + 8}px,
+                    ${elementRect.left + elementRect.width + 8}px ${elementRect.top - 8}px,
+                    ${elementRect.left - 8}px ${elementRect.top - 8}px
+                  )`
+                : undefined
             }}
           />
-          
-          {/* Allow clicking on the highlighted element */}
-          {elementRect && (
-            <div
-              className="fixed z-[9999]"
-              style={{
-                left: elementRect.left - 8,
-                top: elementRect.top - 8,
-                width: elementRect.width + 16,
-                height: elementRect.height + 16,
-                pointerEvents: 'none'
-              }}
-            />
-          )}
           
           {/* Gazoo coaching panel */}
           <motion.div
