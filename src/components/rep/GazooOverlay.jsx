@@ -1,36 +1,134 @@
 // src/components/rep/GazooOverlay.jsx
-// The Great Gazoo - Persistent AI Coach overlay that hovers above the app
-// Stays visible while navigating, can be minimized/expanded
+// The Great Gazoo - Active AI Coach that guides users through the app
+// Proactively tells users what to do based on current screen + context
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  X, Minus, Maximize2, Send, Sparkles, 
-  MessageCircle, ArrowRight, Loader2
+  X, ChevronRight, Sparkles, CheckCircle2, 
+  ArrowRight, Play, Target, BookOpen,
+  ClipboardCheck, MessageSquare, Award
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 
-// Gazoo's personality and responses
-const GAZOO_RESPONSES = {
-  greeting: {
-    morning: "Good morning, dum-dum! Ready to lead today?",
-    afternoon: "Hello there! Let's make progress this afternoon.",
-    evening: "Evening check-in time! How did leadership go today?",
-    night: "Burning the midnight oil? I'm here to help!"
+// Screen-specific guidance that Gazoo provides
+const SCREEN_GUIDANCE = {
+  dashboard: {
+    icon: Target,
+    title: "Your Command Center",
+    getInstructions: (ctx) => {
+      if (!ctx.prepComplete && ctx.isPrep) {
+        return [
+          { text: "First, complete your preparation items below", highlight: true },
+          { text: "Tap each item to mark it complete" },
+          { text: "Once done, your daily journey begins!" }
+        ];
+      }
+      if (ctx.incompleteActions > 0) {
+        return [
+          { text: `You have ${ctx.incompleteActions} action${ctx.incompleteActions > 1 ? 's' : ''} to complete`, highlight: true },
+          { text: "Start with the first one - build momentum!" },
+          { text: "Each completed action strengthens your leadership" }
+        ];
+      }
+      return [
+        { text: "Outstanding! You've completed today's actions", highlight: true },
+        { text: "Check your Leadership Roadmap for overall progress" },
+        { text: "Consider reviewing content in the Library" }
+      ];
+    }
   },
-  encouragement: [
-    "You're doing great, dum-dum! Keep it up!",
-    "That's the spirit! Leaders never stop growing.",
-    "Excellent progress! Your team is lucky to have you.",
-    "Remember: small daily reps build leadership muscles!",
-    "Every completed action moves you closer to mastery!"
-  ],
-  guidance: {
-    prep: "Focus on completing your preparation items first. They'll set you up for success!",
-    actions: "Check your Dashboard for today's actions. I'll guide you through them!",
-    complete: "Fantastic! You've completed today's items. Take a moment to reflect on your wins."
+  dailyPractice: {
+    icon: ClipboardCheck,
+    title: "Daily Practice",
+    getInstructions: () => [
+      { text: "Set your intention for today", highlight: true },
+      { text: "Be specific - what leadership skill will you practice?" },
+      { text: "Write it down, then commit to it" }
+    ]
+  },
+  developmentplan: {
+    icon: BookOpen,
+    title: "Development Plan",
+    getInstructions: (ctx) => [
+      { text: `You're on Day ${ctx.dayNumber} of your journey`, highlight: true },
+      { text: "Review your current skill focus" },
+      { text: "Complete each module in order for best results" }
+    ]
+  },
+  leadershipRoadmap: {
+    icon: Award,
+    title: "Leadership Roadmap",
+    getInstructions: () => [
+      { text: "Track your overall progress here", highlight: true },
+      { text: "Each completed phase unlocks new capabilities" },
+      { text: "Focus on depth, not speed" }
+    ]
+  },
+  conditioning: {
+    icon: Target,
+    title: "Arena Conditioning",
+    getInstructions: (ctx) => {
+      if (ctx.needsWeeklyRep) {
+        return [
+          { text: "You need to complete a rep this week!", highlight: true },
+          { text: "Tap 'Log a Rep' to record a leadership moment" },
+          { text: "Be specific about the situation and your action" }
+        ];
+      }
+      return [
+        { text: "You're on track with your conditioning", highlight: true },
+        { text: "Keep documenting your leadership moments" },
+        { text: "Quality reps build lasting skills" }
+      ];
+    }
+  },
+  reflection: {
+    icon: MessageSquare,
+    title: "Reflection Time",
+    getInstructions: () => [
+      { text: "Reflect on your leadership today", highlight: true },
+      { text: "What went well? What would you do differently?" },
+      { text: "Honest reflection accelerates growth" }
+    ]
+  },
+  library: {
+    icon: BookOpen,
+    title: "Content Library",
+    getInstructions: () => [
+      { text: "Browse curated leadership content", highlight: true },
+      { text: "Videos, readings, and tools await" },
+      { text: "Pick something aligned with your current focus" }
+    ]
+  },
+  coaching: {
+    icon: MessageSquare,
+    title: "Coaching Sessions",
+    getInstructions: () => [
+      { text: "Review your coaching schedule", highlight: true },
+      { text: "Prepare questions before each session" },
+      { text: "Take notes on key insights" }
+    ]
   }
 };
+
+// Gazoo's personality phrases
+const GAZOO_INTROS = [
+  "Alright, dum-dum, here's what to do:",
+  "Listen up! Your next steps:",
+  "Pay attention now:",
+  "Here's your mission:",
+  "Focus on this:"
+];
+
+const GAZOO_ENCOURAGEMENT = [
+  "You've got this!",
+  "One step at a time!",
+  "Leaders take action!",
+  "Stay focused!",
+  "Make it happen!"
+];
 
 const GazooOverlay = ({ onClose }) => {
   const { user, navigate, currentScreen } = useAppServices();
@@ -41,235 +139,199 @@ const GazooOverlay = ({ onClose }) => {
     cohortData 
   } = useDailyPlan();
 
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [userInput, setUserInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
-  const _firstName = user?.displayName?.split(' ')[0] || 'Leader';
+  const firstName = user?.displayName?.split(' ')[0] || 'Leader';
 
-  // Time of day
-  const timeOfDay = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return 'morning';
-    if (hour >= 12 && hour < 17) return 'afternoon';
-    if (hour >= 17 && hour < 21) return 'evening';
-    return 'night';
-  }, []);
+  // Build context for guidance
+  const context = useMemo(() => ({
+    isPrep: currentPhase?.id === 'pre-start',
+    prepComplete: prepRequirementsComplete?.allComplete,
+    incompleteActions: (currentDayData?.actions || []).filter(a => !a.isCompleted).length,
+    completedActions: (currentDayData?.actions || []).filter(a => a.isCompleted).length,
+    dayNumber: currentDayData?.dayNumber || 1,
+    cohortName: cohortData?.name,
+    needsWeeklyRep: true // Could be calculated from conditioning data
+  }), [currentPhase, prepRequirementsComplete, currentDayData, cohortData]);
 
-  // Initial greeting
+  // Get current screen guidance
+  const screenKey = useMemo(() => {
+    const screen = (currentScreen || 'dashboard').toLowerCase();
+    // Map screen names to guidance keys
+    if (screen.includes('dashboard')) return 'dashboard';
+    if (screen.includes('daily') || screen.includes('practice')) return 'dailyPractice';
+    if (screen.includes('develop') || screen.includes('devplan')) return 'developmentplan';
+    if (screen.includes('roadmap')) return 'leadershipRoadmap';
+    if (screen.includes('condition') || screen.includes('arena')) return 'conditioning';
+    if (screen.includes('reflect')) return 'reflection';
+    if (screen.includes('library') || screen.includes('content')) return 'library';
+    if (screen.includes('coach')) return 'coaching';
+    return 'dashboard';
+  }, [currentScreen]);
+
+  const guidance = SCREEN_GUIDANCE[screenKey] || SCREEN_GUIDANCE.dashboard;
+  const instructions = guidance.getInstructions(context);
+  const GuidanceIcon = guidance.icon;
+
+  // Random intro phrase - changes when screen changes
+  const intro = GAZOO_INTROS[Math.floor(Math.random() * GAZOO_INTROS.length)];
+  const encouragement = GAZOO_ENCOURAGEMENT[Math.floor(Math.random() * GAZOO_ENCOURAGEMENT.length)];
+
+  // Track screen changes to show new guidance
   useEffect(() => {
-    const greeting = GAZOO_RESPONSES.greeting[timeOfDay];
-    const phaseContext = currentPhase?.id === 'pre-start' 
-      ? "I see you're in the preparation phase. Let's get you ready!" 
-      : `You're on Day ${currentDayData?.dayNumber || 1} of your journey.`;
-    
-    setMessages([
-      { 
-        type: 'gazoo', 
-        text: `${greeting}\n\n${phaseContext}`,
-        timestamp: new Date()
-      }
-    ]);
-  }, [timeOfDay, currentPhase, currentDayData?.dayNumber]);
-
-  // Auto-scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Get current context for smart responses
-  const getContextualResponse = () => {
-    const isPrep = currentPhase?.id === 'pre-start';
-    const prepComplete = prepRequirementsComplete?.allComplete;
-    const incompleteActions = (currentDayData?.actions || []).filter(a => !a.isCompleted);
-
-    if (isPrep && !prepComplete) {
-      return GAZOO_RESPONSES.guidance.prep;
-    } else if (incompleteActions.length > 0) {
-      return `You have ${incompleteActions.length} action${incompleteActions.length > 1 ? 's' : ''} to complete. ${GAZOO_RESPONSES.guidance.actions}`;
-    } else {
-      return GAZOO_RESPONSES.guidance.complete;
+    if (hasInteracted) {
+      setIsExpanded(true); // Auto-expand on screen change
     }
-  };
+  }, [screenKey, hasInteracted]);
 
-  // Handle user messages
-  const handleSendMessage = async () => {
-    if (!userInput.trim()) return;
-
-    const userMessage = userInput.trim();
-    setMessages(prev => [...prev, { type: 'user', text: userMessage, timestamp: new Date() }]);
-    setUserInput('');
-    setIsTyping(true);
-
-    // Simulate Gazoo thinking
-    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 700));
-
-    // Generate response based on context
-    let response = '';
-    const lowerInput = userMessage.toLowerCase();
-
-    if (lowerInput.includes('help') || lowerInput.includes('what should')) {
-      response = getContextualResponse();
-    } else if (lowerInput.includes('dashboard') || lowerInput.includes('actions')) {
-      response = "Head to your Dashboard to see your daily actions. I'll be right here if you need guidance!";
-    } else if (lowerInput.includes('stuck') || lowerInput.includes("don't know")) {
-      response = "Every leader faces uncertainty, dum-dum! Start with one small action. Which item on your list feels most approachable?";
-    } else if (lowerInput.includes('thanks') || lowerInput.includes('thank you')) {
-      response = "You're welcome! Now go lead with intention. I believe in you!";
-    } else if (lowerInput.includes('cohort') || lowerInput.includes('team')) {
-      response = cohortData 
-        ? `You're part of ${cohortData.name}. You're not alone on this journey!`
-        : "You're building your leadership skills. Every rep counts!";
-    } else {
-      // Random encouragement
-      response = GAZOO_RESPONSES.encouragement[Math.floor(Math.random() * GAZOO_RESPONSES.encouragement.length)];
-    }
-
-    setMessages(prev => [...prev, { type: 'gazoo', text: response, timestamp: new Date() }]);
-    setIsTyping(false);
-  };
-
-  // Quick action buttons
-  const quickActions = [
-    { label: 'What should I do?', action: () => setUserInput("What should I do next?") },
-    { label: 'Go to Dashboard', action: () => navigate('dashboard') },
-    { label: "I'm stuck", action: () => setUserInput("I'm feeling stuck") },
-  ];
-
-  if (isMinimized) {
+  // Minimized floating button
+  if (!isExpanded) {
     return (
-      <button
-        onClick={() => setIsMinimized(false)}
-        className="fixed bottom-8 right-8 z-[90] flex items-center gap-2 px-4 py-3 
+      <motion.button
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        onClick={() => { setIsExpanded(true); setHasInteracted(true); }}
+        className="fixed bottom-6 right-6 z-[90] flex items-center gap-2 px-4 py-3 
                    bg-gradient-to-r from-lime-500 to-emerald-600 text-white
-                   rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                   rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105
+                   border-2 border-white/30"
       >
         <Sparkles className="w-5 h-5" />
-        <span className="font-semibold">Gazoo</span>
-        <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-      </button>
+        <span className="font-bold">Gazoo</span>
+        <span className="flex gap-0.5">
+          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+        </span>
+      </motion.button>
     );
   }
 
   return (
-    <div className="fixed bottom-8 right-8 z-[90] w-96 max-w-[calc(100vw-2rem)] 
-                    bg-white rounded-2xl shadow-2xl border border-slate-200
-                    flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
-      
-      {/* Header - Green gradient */}
-      <div className="bg-gradient-to-r from-lime-500 to-emerald-600 p-4 text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">The Great Gazoo</h3>
-              <p className="text-xs text-white/80">Your AI Leadership Guide</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <button 
-              onClick={() => setIsMinimized(true)}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
-              title="Minimize"
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
-              title="Close Gazoo"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+    <motion.div
+      initial={{ y: 100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 100, opacity: 0 }}
+      className="fixed bottom-6 right-6 z-[90] w-80 max-w-[calc(100vw-3rem)]"
+    >
+      {/* Main guidance card */}
+      <div className="bg-white rounded-2xl shadow-2xl border-2 border-lime-500/20 overflow-hidden">
         
-        {/* Current screen indicator */}
-        <div className="mt-3 flex items-center gap-2 text-xs text-white/70">
-          <MessageCircle className="w-3 h-3" />
-          <span>Watching: {currentScreen || 'Dashboard'}</span>
-        </div>
-      </div>
-
-      {/* Messages area */}
-      <div className="flex-1 max-h-[300px] overflow-y-auto p-4 space-y-3 bg-slate-50">
-        {messages.map((msg, idx) => (
-          <div 
-            key={idx} 
-            className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
-              msg.type === 'user' 
-                ? 'bg-corporate-navy text-white rounded-br-md' 
-                : 'bg-white border border-slate-200 text-slate-700 rounded-bl-md shadow-sm'
-            }`}>
-              <p className="text-sm whitespace-pre-line">{msg.text}</p>
-            </div>
-          </div>
-        ))}
-        
-        {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 bg-lime-500 rounded-full animate-bounce" />
-                <div className="w-2 h-2 bg-lime-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                <div className="w-2 h-2 bg-lime-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+        {/* Header */}
+        <div className="bg-gradient-to-r from-lime-500 to-emerald-600 p-4 text-white">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg leading-tight">The Great Gazoo</h3>
+                <p className="text-xs text-white/80 mt-0.5">Guiding {firstName}</p>
               </div>
             </div>
-          </div>
-        )}
-        
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Quick actions */}
-      <div className="px-4 py-2 border-t border-slate-100 bg-white">
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {quickActions.map((qa, idx) => (
-            <button
-              key={idx}
-              onClick={qa.action}
-              className="flex-shrink-0 px-3 py-1.5 text-xs font-medium 
-                         bg-slate-100 hover:bg-lime-100 text-slate-600 hover:text-lime-700
-                         rounded-full transition-colors whitespace-nowrap"
+            <button 
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-full transition-colors -mr-1 -mt-1"
+              title="Dismiss Gazoo"
             >
-              {qa.label}
+              <X className="w-5 h-5" />
             </button>
-          ))}
+          </div>
         </div>
-      </div>
 
-      {/* Input area */}
-      <div className="p-3 border-t border-slate-200 bg-white">
-        <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Ask Gazoo anything..."
-            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl
-                       text-sm focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-transparent"
-          />
+        {/* Current screen indicator */}
+        <div className="px-4 py-2.5 bg-lime-50 border-b border-lime-100 flex items-center gap-2">
+          <GuidanceIcon className="w-4 h-4 text-lime-600" />
+          <span className="text-sm font-medium text-lime-700">{guidance.title}</span>
+          <div className="ml-auto flex items-center gap-1 text-xs text-lime-600">
+            <Play className="w-3 h-3" />
+            <span>Active</span>
+          </div>
+        </div>
+
+        {/* Instructions */}
+        <div className="p-4 space-y-3">
+          {/* Gazoo's intro */}
+          <p className="text-sm font-semibold text-corporate-navy">
+            {intro}
+          </p>
+
+          {/* Step-by-step instructions */}
+          <div className="space-y-2">
+            {instructions.map((instruction, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ x: -10, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: idx * 0.1 }}
+                className={`flex items-start gap-3 p-2.5 rounded-lg ${
+                  instruction.highlight 
+                    ? 'bg-lime-50 border border-lime-200' 
+                    : 'bg-slate-50'
+                }`}
+              >
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                  instruction.highlight 
+                    ? 'bg-lime-500 text-white' 
+                    : 'bg-slate-200 text-slate-600'
+                }`}>
+                  <span className="text-xs font-bold">{idx + 1}</span>
+                </div>
+                <p className={`text-sm ${
+                  instruction.highlight 
+                    ? 'font-semibold text-lime-800' 
+                    : 'text-slate-600'
+                }`}>
+                  {instruction.text}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Encouragement */}
+          <div className="flex items-center justify-center gap-2 pt-2 text-sm text-emerald-600 font-medium">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>{encouragement}</span>
+          </div>
+        </div>
+
+        {/* Action footer */}
+        <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
           <button
-            onClick={handleSendMessage}
-            disabled={!userInput.trim() || isTyping}
-            className="px-4 py-2.5 bg-gradient-to-r from-lime-500 to-emerald-600 
-                       text-white rounded-xl hover:opacity-90 transition-opacity
-                       disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => setIsExpanded(false)}
+            className="text-xs text-slate-500 hover:text-slate-700 transition-colors"
           >
-            {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            Minimize
+          </button>
+          <button
+            onClick={() => {
+              // Navigate to most relevant action based on context
+              if (screenKey === 'dashboard' && context.incompleteActions > 0) {
+                navigate('dailyPractice');
+              } else if (screenKey !== 'dashboard') {
+                navigate('dashboard');
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-lime-500 to-emerald-600 
+                       text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+          >
+            <span>Let's Go</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
-    </div>
+
+      {/* Floating tip bubble */}
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="absolute -top-2 -left-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold shadow-lg"
+      >
+        💡 TIP
+      </motion.div>
+    </motion.div>
   );
 };
 
