@@ -9,7 +9,7 @@ import {
   ClipboardCheck, MessageSquare, Award, HelpCircle,
   AlertCircle
 } from 'lucide-react';
-// motion import available if needed for animations
+import { motion } from 'framer-motion';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';

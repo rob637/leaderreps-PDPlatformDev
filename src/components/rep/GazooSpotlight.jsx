@@ -8,7 +8,7 @@ import {
   X, ChevronRight, ChevronLeft, Sparkles, 
   Target, Play, Zap, Award
 } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Step definitions for the guided tour
 // Each step targets an element with data-gazoo-step="stepId"

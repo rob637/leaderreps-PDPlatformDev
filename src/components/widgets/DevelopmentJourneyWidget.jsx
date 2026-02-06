@@ -4,7 +4,7 @@
 // Fully dynamic - adapts to whatever is in the daily plan data
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Map, ChevronLeft, ChevronRight, CheckCircle, Circle, Lock,
   Target, Trophy, Star, Zap, Calendar, Clock, BookOpen,
