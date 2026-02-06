@@ -1076,13 +1076,20 @@ export const conditioningService = {
     const weeklyStatus = await conditioningService.getWeeklyStatus(db, userId, weekId, cohortId);
     const consecutiveMissed = await conditioningService.getConsecutiveMissedWeeks(db, userId, cohortId);
     const missedReps = await conditioningService.getMissedReps(db, userId, cohortId);
+    const patterns = await conditioningService.analyzeUserPatterns(db, userId, cohortId);
+    
+    // Determine attention level based on patterns and misses
+    const highSeverityPatterns = patterns.patterns?.filter(p => p.severity === 'high') || [];
+    const mediumSeverityPatterns = patterns.patterns?.filter(p => p.severity === 'medium') || [];
     
     return {
       userId,
       currentWeek: weeklyStatus,
       consecutiveMissedWeeks: consecutiveMissed,
       unresolvedMissedReps: missedReps.length,
-      needsAttention: consecutiveMissed >= 2 || missedReps.length > 2,
+      needsAttention: consecutiveMissed >= 2 || missedReps.length > 2 || highSeverityPatterns.length > 0,
+      patterns: patterns.patterns || [],
+      patternSeverity: highSeverityPatterns.length > 0 ? 'high' : mediumSeverityPatterns.length > 0 ? 'medium' : 'low',
       lastUpdated: new Date().toISOString()
     };
   },
@@ -1102,6 +1109,170 @@ export const conditioningService = {
       usersCompleted: summaries.filter(s => s.currentWeek.requiredRepCompleted).length,
       usersNeedingAttention: summaries.filter(s => s.needsAttention).length,
       userSummaries: summaries
+    };
+  },
+  
+  // ============================================
+  // PHASE 3: PATTERN RECOGNITION
+  // ============================================
+  
+  /**
+   * Pattern types that get flagged
+   */
+  PATTERN_TYPES: {
+    CONSECUTIVE_MISSES: 'consecutive_misses',  // Missed 2+ weeks in a row
+    CHRONIC_LATE: 'chronic_late',              // Consistently completing on deadline day
+    VAGUE_DEBRIEFS: 'vague_debriefs',          // Debriefs lacking specificity
+    SAFETY_REPS: 'safety_reps',                // Only doing "safe" rep types (avoiding tension)
+    NO_COMMITMENT: 'no_commitment',            // Reps without clear commitments
+    QUALITY_DECLINE: 'quality_decline'         // Quality dropping over time
+  },
+  
+  /**
+   * Analyze patterns for a single user over last N weeks
+   */
+  analyzeUserPatterns: async (db, userId, cohortId, weeksToAnalyze = 6) => {
+    const patterns = [];
+    
+    // Get all reps for this user in the cohort
+    const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+    const q = query(
+      repsRef,
+      where('cohortId', '==', cohortId),
+      orderBy('createdAt', 'desc'),
+      firestoreLimit(50)
+    );
+    
+    const snapshot = await getDocs(q);
+    const reps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    if (reps.length === 0) {
+      return { patterns: [], reps: [] };
+    }
+    
+    // 1. Check consecutive misses
+    const consecutiveMissed = await conditioningService.getConsecutiveMissedWeeks(db, userId, cohortId);
+    if (consecutiveMissed >= 2) {
+      patterns.push({
+        type: 'consecutive_misses',
+        severity: consecutiveMissed >= 3 ? 'high' : 'medium',
+        message: `Missed required rep for ${consecutiveMissed} consecutive weeks`,
+        data: { weeksCount: consecutiveMissed }
+      });
+    }
+    
+    // 2. Check for late completions (completing on Friday/Saturday consistently)
+    const completedReps = reps.filter(r => r.status === REP_STATUS.COMPLETED && r.completedAt);
+    if (completedReps.length >= 3) {
+      const lateCompletions = completedReps.filter(r => {
+        const completedDay = (r.completedAt.toDate ? r.completedAt.toDate() : new Date(r.completedAt)).getDay();
+        return completedDay >= 5; // Friday = 5, Saturday = 6
+      });
+      
+      if (lateCompletions.length / completedReps.length >= 0.7) {
+        patterns.push({
+          type: 'chronic_late',
+          severity: 'low',
+          message: 'Consistently completing reps at the last minute',
+          data: { 
+            lateCount: lateCompletions.length, 
+            totalCount: completedReps.length,
+            rate: Math.round((lateCompletions.length / completedReps.length) * 100)
+          }
+        });
+      }
+    }
+    
+    // 3. Check for "safety reps" - avoiding tension/feedback
+    if (completedReps.length >= 4) {
+      const tensionFeedbackReps = completedReps.filter(r => 
+        r.repType === 'tension' || r.repType === 'feedback'
+      );
+      
+      if (tensionFeedbackReps.length / completedReps.length < 0.25) {
+        patterns.push({
+          type: 'safety_reps',
+          severity: 'medium',
+          message: 'Avoiding challenging rep types (tension/feedback)',
+          data: { 
+            challengingCount: tensionFeedbackReps.length, 
+            totalCount: completedReps.length,
+            rate: Math.round((tensionFeedbackReps.length / completedReps.length) * 100)
+          }
+        });
+      }
+    }
+    
+    // 4. Check for vague debriefs (evidence without specific language)
+    const qualityStats = await conditioningService.getQualityStats(db, userId, cohortId);
+    if (qualityStats && qualityStats.evidenceSubmitted >= 3) {
+      const specificityRate = qualityStats.dimensionStats?.specific_language?.rate || 0;
+      if (specificityRate < 50) {
+        patterns.push({
+          type: 'vague_debriefs',
+          severity: specificityRate < 30 ? 'high' : 'medium',
+          message: 'Debriefs lack specific language',
+          data: { rate: specificityRate }
+        });
+      }
+      
+      // 5. Check for no commitments
+      const commitmentRate = qualityStats.dimensionStats?.named_commitment?.rate || 0;
+      if (commitmentRate < 40) {
+        patterns.push({
+          type: 'no_commitment',
+          severity: 'medium',
+          message: 'Reps rarely result in named commitments',
+          data: { rate: commitmentRate }
+        });
+      }
+    }
+    
+    return {
+      patterns,
+      repCount: reps.length,
+      completedCount: completedReps.length,
+      analyzedWeeks: weeksToAnalyze
+    };
+  },
+  
+  /**
+   * Get pattern analysis for all users in a cohort (for trainer dashboard)
+   */
+  getCohortPatterns: async (db, cohortId, userIds) => {
+    const results = await Promise.all(
+      userIds.map(async (userId) => {
+        const analysis = await conditioningService.analyzeUserPatterns(db, userId, cohortId);
+        return {
+          userId,
+          ...analysis
+        };
+      })
+    );
+    
+    // Aggregate pattern counts
+    const patternCounts = {};
+    const usersWithPatterns = [];
+    
+    results.forEach(result => {
+      if (result.patterns && result.patterns.length > 0) {
+        usersWithPatterns.push({
+          userId: result.userId,
+          patterns: result.patterns
+        });
+        
+        result.patterns.forEach(p => {
+          patternCounts[p.type] = (patternCounts[p.type] || 0) + 1;
+        });
+      }
+    });
+    
+    return {
+      cohortId,
+      totalUsers: userIds.length,
+      usersWithPatterns: usersWithPatterns.length,
+      patternCounts,
+      userPatterns: usersWithPatterns
     };
   },
   

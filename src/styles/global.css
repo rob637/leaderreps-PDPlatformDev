@@ -1,17 +1,17 @@
 /* LEADERREPS CORPORATE THEME - COMPLETE BRAND SYSTEM */
-/* Matching leaderreps.com design patterns, typography, and aesthetic */
+/* Corporate brand colors with Google-style pop techniques */
 
 :root {
-  /* === CORPORATE BRAND COLORS === */
-  --corporate-navy: #002E47;        /* Primary brand color */
-  --corporate-orange: #E04E1B;      /* Accent/CTA color */
-  --corporate-teal: #47A88D;        /* Secondary brand color */
-  --corporate-subtle-teal: #349881; /* Teal hover states */
-  --corporate-light-gray: #F3F4F6;  /* Page background - cool gray for card pop */
+  /* === CORPORATE BRAND COLORS (OFFICIAL) === */
+  --corporate-navy: #002E47;        /* Primary brand color - deep navy */
+  --corporate-orange: #E04E1B;      /* Accent/CTA - ORIGINAL brand orange */
+  --corporate-teal: #47A88D;        /* Secondary - ORIGINAL brand teal */
+  --corporate-subtle-teal: #349881; /* Teal hover - ORIGINAL */
+  --corporate-light-gray: #E5E7EB;  /* Page background - darker for card pop */
   
-  /* === PREMIUM BACKGROUNDS === */
-  --bg-warm: #F8F9FA;               /* Light gray background */
-  --bg-warm-subtle: #F3F4F6;        /* Subtle gray */
+  /* === GOOGLE-STYLE BACKGROUNDS (for contrast) === */
+  --bg-warm: #F1F3F4;               /* Light gray background */
+  --bg-warm-subtle: #E8EAED;        /* Slightly darker */
   --bg-card: #FFFFFF;               /* Pure white cards */
   --bg-elevated: #FFFFFF;           /* Elevated surfaces */
   
@@ -126,25 +126,28 @@
 /* Ensure body text is crisp */
 body {
   color: #1a1a1a;
+  background-color: #E5E7EB; /* Google-style gray background */
 }
 
-/* === CARD POP OVERRIDES === */
-/* Make all borders more pronounced */
+/* === GOOGLE-STYLE CARD POP === */
+/* Make borders crisp and visible */
 .border-slate-100, .border-slate-200, .border-gray-100, .border-gray-200 { 
-  border-color: rgba(0, 0, 0, 0.10) !important; 
+  border-color: rgba(0, 0, 0, 0.12) !important; 
 }
 
-/* Enhanced shadow hierarchy */
-.shadow-sm { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10), 0 0 0 1px rgba(0, 0, 0, 0.04) !important; }
-.shadow { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05) !important; }
-.shadow-md { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.05) !important; }
-.shadow-lg { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06) !important; }
-.shadow-xl { box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06) !important; }
+/* Bold shadow hierarchy - Google Material Design inspired */
+.shadow-sm { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08) !important; }
+.shadow { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05) !important; }
+.shadow-md { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05) !important; }
+.shadow-lg { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.20), 0 0 0 1px rgba(0, 0, 0, 0.05) !important; }
+.shadow-xl { box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.05) !important; }
 
-/* Pure white backgrounds - no warm tint */
+/* Pure white cards for maximum contrast against gray bg */
 .bg-white { background-color: #FFFFFF !important; }
-.bg-slate-50, .bg-gray-50 { background-color: #FAFAFA !important; }
-.bg-slate-100, .bg-gray-100 { background-color: #F5F5F5 !important; }
+
+/* Page backgrounds - distinct from white cards */
+.bg-slate-50, .bg-gray-50 { background-color: #F3F4F6 !important; }
+.bg-slate-100, .bg-gray-100 { background-color: #E5E7EB !important; }
 
 /* === MOBILE TOUCH OPTIMIZATION === */
 /* Removes 300ms tap delay on all interactive elements */
@@ -925,5 +928,60 @@ body {
   margin: inherit;
   overflow: visible;
   clip: auto;
-  white-space: normal;
+}
+
+/* === GOOGLE-STYLE POP ENHANCEMENTS === */
+/* Using ORIGINAL brand colors with pop techniques */
+
+/* Brand teal accent - use original colors */
+.bg-corporate-teal {
+  background-color: #47A88D !important;
+}
+.bg-corporate-teal:hover {
+  background-color: #349881 !important;
+}
+.text-corporate-teal {
+  color: #47A88D !important;
+}
+.border-corporate-teal {
+  border-color: #47A88D !important;
+}
+
+/* Brand orange accent - use original colors */
+.bg-corporate-orange {
+  background-color: #E04E1B !important;
+}
+.text-corporate-orange {
+  color: #E04E1B !important;
+}
+
+/* State colors stay vibrant (these are universal, not brand) */
+.bg-green-500, .bg-green-600 {
+  background-color: #16A34A !important;
+}
+.text-green-500, .text-green-600, .text-green-700 {
+  color: #16A34A !important;
+}
+
+/* Card hover elevation - POP TECHNIQUE */
+.hover\:shadow-md:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  transform: translateY(-1px);
+}
+
+/* Primary buttons get bold shadow - POP TECHNIQUE */
+button.bg-corporate-teal,
+button.bg-corporate-navy,
+[class*="bg-gradient"] {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+button.bg-corporate-teal:hover,
+button.bg-corporate-navy:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* Widget cards - ensure they pop against gray bg */
+[class*="rounded-xl"][class*="border"][class*="bg-white"],
+[class*="rounded-2xl"][class*="border"][class*="bg-white"] {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
 }

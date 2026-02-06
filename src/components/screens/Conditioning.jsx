@@ -272,7 +272,7 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, onPrep, 
           
           {/* Completed Rep Actions - Debrief & Quality */}
           {rep.status === REP_STATUS.COMPLETED && (
-            <div className="pt-2 border-t border-gray-100">
+            <div className="pt-3 border-t border-gray-100">
               {evidence ? (
                 <>
                   {/* Quality Assessment Display */}
@@ -285,19 +285,32 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, onPrep, 
                   )}
                   <div className="flex items-center gap-2 mt-2 text-xs text-green-600">
                     <CheckCircle className="w-3 h-3" />
-                    <span>Debrief submitted</span>
+                    <span>Debrief submitted ({evidence.level === 'LEVEL_1' ? 'Level 1 - Same Day' : 'Level 2'})</span>
                   </div>
                 </>
               ) : (
-                <Button
-                  onClick={() => onAddDebrief?.(rep)}
-                  disabled={isLoading}
-                  variant="outline"
-                  className="w-full py-2 border-corporate-navy text-corporate-navy hover:bg-corporate-navy/5"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Add Debrief
-                </Button>
+                <div className="space-y-2">
+                  {/* Debrief prompt with Level 1 incentive */}
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-amber-800">Debrief Required</p>
+                        <p className="text-xs text-amber-600 mt-0.5">
+                          Complete today for Level 1 evidence (higher quality credit)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => onAddDebrief?.(rep)}
+                    disabled={isLoading}
+                    className="w-full py-2.5 bg-corporate-navy hover:bg-corporate-navy/90 text-white"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Add Debrief Now
+                  </Button>
+                </div>
               )}
             </div>
           )}
@@ -544,7 +557,7 @@ const MissedRepsSection = ({ missedReps, onRollForward, isLoading }) => {
 // ============================================
 // MAIN CONDITIONING SCREEN
 // ============================================
-const Conditioning = () => {
+const Conditioning = ({ embedded = false }) => {
   const { user, userProfile, developmentPlanData, db } = useAppServices();
   const { cohortData } = useDailyPlan();
   const userId = user?.uid;
@@ -651,6 +664,16 @@ const Conditioning = () => {
       setIsSubmitting(true);
       await conditioningService.completeRep(db, userId, repId);
       await loadData();
+      
+      // Auto-prompt for debrief to encourage Level 1 evidence (same day)
+      // Find the rep we just completed
+      const completedRep = activeReps.find(r => r.id === repId) || missedReps.find(r => r.id === repId);
+      if (completedRep) {
+        // Small delay to let the UI update, then prompt for debrief
+        setTimeout(() => {
+          setEvidenceModalRep({ ...completedRep, status: REP_STATUS.COMPLETED, completedAt: new Date() });
+        }, 300);
+      }
     } catch (err) {
       console.error('Error completing rep:', err);
       setError('Failed to complete rep. Please try again.');
@@ -728,7 +751,7 @@ const Conditioning = () => {
   // No cohort check
   if (!cohortId) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className={`${embedded ? '' : 'min-h-screen'} bg-gray-50 p-4`}>
         <Card className="p-6 text-center">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-lg font-bold text-corporate-navy mb-2">No Cohort Assigned</h2>
@@ -743,7 +766,7 @@ const Conditioning = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+      <div className={`${embedded ? '' : 'min-h-screen'} bg-gray-50 p-4 flex items-center justify-center`}>
         <div className="text-center">
           <RefreshCw className="w-8 h-8 text-corporate-navy animate-spin mx-auto mb-2" />
           <p className="text-gray-600">Loading...</p>
@@ -753,14 +776,16 @@ const Conditioning = () => {
   }
   
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-corporate-navy text-white p-4">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-xl font-bold">Conditioning</h1>
-          <p className="text-sm text-white/80">Real leadership reps between sessions</p>
+    <div className={`${embedded ? '' : 'min-h-screen'} bg-gray-50`}>
+      {/* Header - hidden in embedded mode (panel has its own) */}
+      {!embedded && (
+        <div className="bg-corporate-navy text-white p-4">
+          <div className="max-w-2xl mx-auto">
+            <h1 className="text-xl font-bold">Conditioning</h1>
+            <p className="text-sm text-white/80">Real leadership reps between sessions</p>
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Content */}
       <div className="max-w-2xl mx-auto p-4">
@@ -853,8 +878,8 @@ const Conditioning = () => {
         )}
       </div>
       
-      {/* Floating Action Button */}
-      {activeReps.length > 0 && (
+      {/* Floating Action Button - hide in embedded mode */}
+      {!embedded && activeReps.length > 0 && (
         <button
           onClick={() => setShowCommitForm(true)}
           className="fixed bottom-6 right-6 w-14 h-14 bg-corporate-navy text-white rounded-full shadow-lg flex items-center justify-center hover:bg-corporate-navy/90 transition-all active:scale-95"

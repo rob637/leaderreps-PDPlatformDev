@@ -16,6 +16,7 @@ export const MissedDaysModal = ({
   isOpen, 
   onClose, 
   missedDays = [], 
+  missedWeeks = [],
   onToggleAction 
 }) => {
   const [expandedDay, setExpandedDay] = useState(missedDays[0]?.id || null);
@@ -25,6 +26,11 @@ export const MissedDaysModal = ({
   const handleToggleDay = (dayId) => {
     setExpandedDay(expandedDay === dayId ? null : dayId);
   };
+  
+  // Use missedWeeks for count, fall back to deriving from missedDays
+  const weekCount = missedWeeks.length > 0 
+    ? missedWeeks.length 
+    : [...new Set(missedDays.map(d => d.weekNumber).filter(Boolean))].length;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
@@ -36,7 +42,7 @@ export const MissedDaysModal = ({
           <div>
             <ModalTitle>Catch Up Plan</ModalTitle>
             <p className="text-sm text-slate-500">
-              You have {missedDays.length} missed days. Complete key actions to get back on track.
+              You have {weekCount} missed {weekCount === 1 ? 'week' : 'weeks'}. Complete key activities to get back on track.
             </p>
           </div>
         </div>

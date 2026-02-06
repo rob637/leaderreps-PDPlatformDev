@@ -409,6 +409,7 @@ export const useDevPlan = () => {
     unlockedResources: dailyPlanData.unlockedResources, // NEW: enriched resource data
     dailyPlan: dailyPlanData.dailyPlan,
     missedDays: dailyPlanData.missedDays,
+    missedWeeks: dailyPlanData.missedWeeks,
     toggleDayItemComplete: dailyPlanData.toggleItemComplete,
     completeDay: dailyPlanData.completeDay,
     

@@ -291,16 +291,43 @@ export const getDbDayNumber = (daysFromStart) => {
   // 0 days (start day) → DB day 15, 55 days → DB day 70
   return 15 + daysFromStart;
 };
+
+// =============================================================================
+// MODULE-LEVEL CACHE FOR DAILY PLAN
+// =============================================================================
+// Multiple components call useDailyPlan(), each creating its own hook instance.
+// Without caching, each instance fetches the daily plan independently and has
+// its own loadingPlan state. This causes race conditions where Dashboard shows
+// spinner even after data has loaded.
+//
+// Solution: Cache the fetched daily plan at module level so all instances share
+// the same data immediately.
+// =============================================================================
+let _dailyPlanCache = null;
+let _dailyPlanFetchPromise = null;
+let _dailyPlanListeners = new Set();
+
+const notifyDailyPlanListeners = (days) => {
+  _dailyPlanListeners.forEach(listener => listener(days));
+};
+
 export const useDailyPlan = () => {
   const { db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const { getItemProgress } = useActionProgress();
   const { isComplete: leaderProfileComplete } = useLeaderProfile();
-  const [dailyPlan, setDailyPlan] = useState([]);
-  const [loadingPlan, setLoadingPlan] = useState(true);
+  
+  // Initialize from cache if available
+  const [dailyPlan, setDailyPlan] = useState(() => _dailyPlanCache || []);
+  // Track if we're actively fetching (not just waiting for data)
+  const [isFetching, setIsFetching] = useState(false);
   const [cohortData, setCohortData] = useState(null);
   const [timeOffset, setTimeOffset] = useState(() => {
     return parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
   });
+  
+  // Derive loading from actual data state, not a separate flag
+  // This ensures all instances see consistent loading state
+  const loadingPlan = dailyPlan.length === 0 && !_dailyPlanCache;
 
   // 0. Initialize Time Travel Offset and listen for changes
   useEffect(() => {
@@ -326,11 +353,55 @@ export const useDailyPlan = () => {
 
   const simulatedNow = useMemo(() => new Date(Date.now() + timeOffset), [timeOffset]);
 
-  // 1. Fetch Daily Plan (All Days)
+  // Subscribe to daily plan updates from other instances
+  // AND sync from cache if it was populated before this component mounted
+  useEffect(() => {
+    // Check cache immediately on mount - another component may have already loaded it
+    if (_dailyPlanCache !== null && dailyPlan.length === 0) {
+      setDailyPlan(_dailyPlanCache);
+    }
+    
+    const listener = (days) => {
+      setDailyPlan(days);
+    };
+    _dailyPlanListeners.add(listener);
+    
+    return () => {
+      _dailyPlanListeners.delete(listener);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  // 1. Fetch Daily Plan (All Days) - WITH MODULE-LEVEL CACHE
   useEffect(() => {
     const fetchDailyPlan = async () => {
-      if (!db || !user) return;
-      try {
+      // If cache exists, use it immediately
+      if (_dailyPlanCache !== null) {
+        setDailyPlan(_dailyPlanCache);
+        return;
+      }
+      
+      if (!db || !user) {
+        // Can't fetch without db/user, but loadingPlan will stay true
+        // waiting for cache from another instance
+        return;
+      }
+      
+      // If another instance is already fetching, wait for it
+      if (_dailyPlanFetchPromise) {
+        try {
+          const days = await _dailyPlanFetchPromise;
+          setDailyPlan(days);
+        } catch (e) {
+          console.error('[useDailyPlan] Error waiting for fetch:', e);
+        }
+        return;
+      }
+      
+      setIsFetching(true);
+      
+      // This instance will fetch - create the promise
+      _dailyPlanFetchPromise = (async () => {
         const planRef = collection(db, 'daily_plan_v1');
         const q = query(planRef, orderBy('dayNumber', 'asc'));
         const snapshot = await getDocs(q);
@@ -341,11 +412,24 @@ export const useDailyPlan = () => {
         }));
         
         console.log(`[useDailyPlan] Loaded ${days.length} days from daily_plan_v1`);
+        
+        // Cache the result
+        _dailyPlanCache = days;
+        
+        // Notify all other listening instances
+        notifyDailyPlanListeners(days);
+        
+        return days;
+      })();
+      
+      try {
+        const days = await _dailyPlanFetchPromise;
         setDailyPlan(days);
       } catch (error) {
         console.error("Error fetching daily plan:", error);
       } finally {
-        setLoadingPlan(false);
+        setIsFetching(false);
+        _dailyPlanFetchPromise = null;
       }
     };
 
@@ -779,9 +863,9 @@ export const useDailyPlan = () => {
     return { dbDayNumber: dbDay, currentPhase: phase, phaseDayNumber: phaseDay };
   }, [daysFromStart, journeyDay]);
 
-  // 5. Get Current Day Data, Missed Days & Unlocked Content
-  const { currentDayData, missedDays, unlockedContentIds, unlockedResources, prepPhaseInfo } = useMemo(() => {
-    if (dailyPlan.length === 0) return { currentDayData: null, missedDays: [], unlockedContentIds: [], unlockedResources: [], prepPhaseInfo: null };
+  // 5. Get Current Day Data, Missed Weeks & Unlocked Content
+  const { currentDayData, missedDays, missedWeeks, unlockedContentIds, unlockedResources, prepPhaseInfo } = useMemo(() => {
+    if (dailyPlan.length === 0) return { currentDayData: null, missedDays: [], missedWeeks: [], unlockedContentIds: [], unlockedResources: [], prepPhaseInfo: null };
 
     // Find data for current day using the DB dayNumber
     const current = dailyPlan.find(d => d.dayNumber === dbDayNumber);
@@ -998,11 +1082,13 @@ export const useDailyPlan = () => {
       }
     }
 
-    // Calculate Missed Days (only for START phase - cohort-based)
+    // Calculate Missed Weeks (only for START phase - cohort-based)
     // UPDATED LOGIC (12/18/25):
     // Users are only "behind" if they have incomplete required actions from PREVIOUS weeks.
     // Within the current week, they have the full week to complete actions.
+    // UPDATED (1/15/25): Changed from counting individual days to counting weeks.
     let missed = [];
+    let missedWeekNumbers = [];
     if (currentPhase.trackMissedDays) {
       // Determine current week number based on current day
       // Note: dbDayNumber is the current day (e.g. 16)
@@ -1057,6 +1143,9 @@ export const useDailyPlan = () => {
           userProgress: userState.dailyProgress?.[d.id] || { itemsCompleted: [] }
         }))
         .sort((a, b) => a.dayNumber - b.dayNumber);
+      
+      // Count unique weeks with missed items
+      missedWeekNumbers = [...new Set(missed.map(d => d.weekNumber).filter(Boolean))].sort((a, b) => a - b);
     }
 
     // Calculate Unlocked Content (resources linked to actions up to current day)
@@ -1101,6 +1190,7 @@ export const useDailyPlan = () => {
     return { 
       currentDayData: enrichedCurrent, 
       missedDays: missed, 
+      missedWeeks: missedWeekNumbers, // New: unique week numbers with missed items
       unlockedContentIds: unlockedIds,
       unlockedResources, // New: enriched resource data
       prepPhaseInfo: prepInfo // New: Prep Phase welcome/countdown data
@@ -1163,10 +1253,20 @@ export const useDailyPlan = () => {
     await updateDevelopmentPlanData(updates);
   }, [updateDevelopmentPlanData]);
 
+  // Debug loading state before return
+  const loadingValue = loadingPlan || developmentPlanData == null;
+  console.log('[useDailyPlan] Loading state:', { 
+    loadingPlan, 
+    devPlanIsNull: developmentPlanData == null,
+    finalLoading: loadingValue,
+    dailyPlanLength: dailyPlan.length
+  });
+
   return {
     // Loading state
     // Wait for both the plan template AND the user data to load
-    loading: loadingPlan || developmentPlanData === null,
+    // Use == null to catch both null AND undefined (serviceData starts as {} so field is undefined)
+    loading: loadingValue,
     
     // Raw data
     dailyPlan,
@@ -1193,7 +1293,8 @@ export const useDailyPlan = () => {
     currentDayData,         // In Prep Phase, .actions contains CUMULATIVE actions from Day 1
     
     // Catch-up (only populated during START phase)
-    missedDays,
+    missedDays,             // Individual days with incomplete required actions
+    missedWeeks,            // Unique week numbers with missed items
     
     // Content unlocking
     unlockedContentIds,     // Simple ID list (backward compatible)

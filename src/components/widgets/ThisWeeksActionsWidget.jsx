@@ -310,7 +310,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           icon: 'User',
           description: 'Tell us about yourself to personalize your journey',
           estimatedMinutes: 3,
-          carriedOver: true
+          carriedOver: true,
+          fromWeek: 0
         });
       }
       
@@ -329,7 +330,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           icon: 'ClipboardCheck',
           description: 'Assess your current leadership skills',
           estimatedMinutes: 5,
-          carriedOver: true
+          carriedOver: true,
+          fromWeek: 0
         });
       }
       
@@ -814,8 +816,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">Optional</span>
             )}
             {isCarriedOver && (
-              <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
-                <Clock className="w-2.5 h-2.5" /> Prior Week
+              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
+                <Clock className="w-2.5 h-2.5" /> {item.fromWeek === 0 ? 'Prep' : `Week ${item.fromWeek}`}
               </span>
             )}
           </div>
@@ -1041,7 +1043,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   <div className="flex items-center gap-2 mb-2 px-1">
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-amber-600" />
-                      <span className="text-sm font-bold text-amber-800 uppercase tracking-wider">Prior Week - Incomplete</span>
+                      <span className="text-sm font-bold text-amber-800 uppercase tracking-wider">Catch Up</span>
                     </div>
                     <div className="flex-1 h-px bg-amber-200"></div>
                     <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">

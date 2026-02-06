@@ -8,7 +8,7 @@ import {
   X, ChevronRight, ChevronLeft, Sparkles, 
   Target, Play, Zap, Award
 } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Step definitions for the guided tour
 // Each step targets an element with data-gazoo-step="stepId"
@@ -23,11 +23,11 @@ const TOUR_STEPS = {
       position: 'right' // Where Gazoo panel appears relative to element
     },
     {
-      id: 'daily-reps',
-      title: "Daily Leadership Reps",
-      description: "These are your daily practice exercises. Consistency builds mastery.",
-      tip: "Just 5 minutes of practice daily beats 1 hour once a week.",
-      action: "Complete one rep when you're ready",
+      id: 'conditioning',
+      title: "Weekly Conditioning",
+      description: "Build leadership muscles with focused drills. Complete at least one rep this week.",
+      tip: "Conditioning builds lasting habits. Commit to a rep and follow through!",
+      action: "Tap to see available conditioning reps",
       position: 'right'
     },
     {
@@ -303,7 +303,7 @@ const GazooSpotlight = ({
                 </div>
                 <button
                   onClick={handleSkip}
-                  className="text-white/70 hover:text-white transition-colors"
+                  className="bg-transparent text-white/70 hover:text-white hover:bg-white/10 transition-colors p-1 rounded-lg"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -356,7 +356,7 @@ const GazooSpotlight = ({
               <button
                 onClick={handlePrev}
                 disabled={currentStepIndex === 0}
-                className={`flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg transition-all ${
+                className={`flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg transition-all bg-transparent ${
                   currentStepIndex === 0 
                     ? 'text-white/30 cursor-not-allowed' 
                     : 'text-white/80 hover:text-white hover:bg-white/10'

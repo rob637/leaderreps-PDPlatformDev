@@ -41,7 +41,7 @@ export const WIDGET_TEMPLATES = {
 <>
 {/* Catch Up Alert */}
 {(() => {
-   if (typeof missedDays !== 'undefined' && missedDays && missedDays.length > 0) {
+   if (typeof missedWeeks !== 'undefined' && missedWeeks && missedWeeks.length > 0) {
        return (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between mb-4">
              <div className="flex items-center gap-3">
@@ -49,8 +49,8 @@ export const WIDGET_TEMPLATES = {
                    <AlertTriangle className="w-5 h-5" />
                 </div>
                 <div>
-                   <h4 className="font-bold text-amber-900">You have {missedDays.length} missed days</h4>
-                   <p className="text-xs text-amber-700">Log in each day to gain better leadership skills and keep up with your cohort.</p>
+                   <h4 className="font-bold text-amber-900">You have {missedWeeks.length} missed {missedWeeks.length === 1 ? 'week' : 'weeks'}</h4>
+                   <p className="text-xs text-amber-700">Complete key activities from prior weeks to keep up with your cohort.</p>
                 </div>
              </div>
              <button 
@@ -3423,6 +3423,17 @@ export const FEATURE_METADATA = {
     extendedDescription: 'A checklist of small, consistent actions (reps) that build leadership muscle over time.',
     inputs: ['devPlanCurrentWeek', 'additionalCommitments', 'isSavingReps'],
     outputs: ['handleToggleAdditionalRep'],
+  },
+  'conditioning': {
+    core: true,
+    category: 'Dashboard',
+    name: 'Conditioning',
+    description: 'Daily Conditioning Reps',
+    purpose: 'Track your daily leadership conditioning routine.',
+    extendedDescription: 'Shows your weekly conditioning progress and allows quick access to log your daily reps through a slide-in panel.',
+    inputs: ['cohortId', 'user'],
+    outputs: [],
+    componentPath: 'src/components/widgets/ConditioningWidget.jsx',
   },
   'notifications': {
     core: true,

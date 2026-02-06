@@ -25,7 +25,14 @@ const DataProvider = ({
   const { db, auth, storage } = firebaseServices;
   const [services, setServices] = useState(null);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
+  // Initialize with null values so === null checks work correctly
   const [serviceData, setServiceData] = useState({
+    userProfile: null,
+    developmentPlanData: null,
+    dailyPracticeData: null,
+    strategicContentData: null,
+    membershipData: null,
+    globalMetadata: null,
   });
 
   useEffect(() => {
@@ -51,8 +58,7 @@ const DataProvider = ({
         }
       });
       setServices(createdServices);
-      setServiceData({
-  });
+      // Don't reset serviceData here - let the onChange callback populate it
     } catch (error) {
       console.error('[DataProvider] Error creating services:', error);
       setServices(null);

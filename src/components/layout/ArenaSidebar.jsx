@@ -13,7 +13,6 @@ import {
   Beaker,
   Anchor,
   Layers,
-  Dumbbell,
   Zap,
   Wrench,
   AlertTriangle,
@@ -74,7 +73,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
   const menuItems = [
     // Rep Coach removed from sidebar - access via floating AI Coach button (password protected)
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'conditioning', label: 'Conditioning', icon: Dumbbell, requiresCohort: true },
+    // Conditioning removed - now accessed via Dashboard widget with slide-in panel
     { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
     
     { type: 'section', label: 'Resources' },

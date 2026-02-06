@@ -1,14 +1,16 @@
 // src/components/rep/GazooOverlay.jsx
 // The Great Gazoo - Active AI Coach that guides users AND answers questions
-// Uses CLEAR feedback method for coaching responses
+// Uses REAL AI for coaching responses
 
 import React, { useState, useMemo, useRef } from 'react';
 import { 
   X, Minus, Sparkles, CheckCircle2, Send,
   ArrowRight, Play, Target, BookOpen, Loader2,
-  ClipboardCheck, MessageSquare, Award, HelpCircle
+  ClipboardCheck, MessageSquare, Award, HelpCircle,
+  AlertCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import GazooSpotlight from './GazooSpotlight';
@@ -72,8 +74,13 @@ const SCREEN_GUIDANCE = {
     title: "Arena Conditioning",
     getInstructions: () => [
       { text: "Log your leadership reps here", highlight: true },
-      { text: "Document real moments from your work" },
-      { text: "Quality over quantity - be specific!" }
+      { text: "Complete at least 1 rep per week" },
+      { text: "Use Prep to plan, then Debrief after" }
+    ],
+    quickPrompts: [
+      'How do I prep for a rep?',
+      'Help me choose a rep',
+      'Nervous about this conversation'
     ]
   },
   library: {
@@ -90,6 +97,68 @@ const SCREEN_GUIDANCE = {
 // CLEAR-based coaching responses
 const generateCLEARResponse = (question) => {
   const q = question.toLowerCase();
+  
+  // ====================
+  // CONDITIONING-SPECIFIC: Rep Prep
+  // ====================
+  if (q.includes('prep') || q.includes('prepare') || q.includes('before the conversation') || q.includes('how do i start')) {
+    return {
+      intro: "Here's how to prep for your leadership rep:",
+      steps: [
+        { letter: 'C', text: "Context: Write down the SPECIFIC situation you need to address (facts only, no judgment)" },
+        { letter: 'L', text: "Listen first: Plan an opening question to understand their perspective before you speak" },
+        { letter: 'E', text: "Explore: What behavior do you want to address? Be specific about what you observed" },
+        { letter: 'A', text: "Action: What commitment will you ask for? Make it measurable and time-bound" },
+        { letter: 'R', text: "Review: When will you follow up to check on the commitment?" }
+      ],
+      guardrail: "Remember: This prep is for thinking, not scripting. The real rep happens in person."
+    };
+  }
+  
+  // CONDITIONING-SPECIFIC: Debrief/Reflection
+  if (q.includes('debrief') || q.includes('reflect') || q.includes('after the conversation') || q.includes('went well') || q.includes('went wrong')) {
+    return {
+      intro: "Let's debrief your leadership rep:",
+      steps: [
+        { letter: 'C', text: "Context: What did you actually SAY? (Try to remember your exact words)" },
+        { letter: 'L', text: "Listen: How did they respond? What was their body language/tone?" },
+        { letter: 'E', text: "Explore: What surprised you? What was harder/easier than expected?" },
+        { letter: 'A', text: "Action: Did you get a commitment? If not, what blocked it?" },
+        { letter: 'R', text: "Review: What would you do DIFFERENTLY next time? Be specific." }
+      ],
+      guardrail: "Submit this debrief today for Level 1 evidence credit!"
+    };
+  }
+  
+  // CONDITIONING-SPECIFIC: What rep to do
+  if (q.includes('what rep') || q.includes('which rep') || q.includes('pick a rep') || q.includes('chose a rep') || q.includes('commit to')) {
+    return {
+      intro: "Choose a rep that challenges you:",
+      steps: [
+        { letter: 'C', text: "Context: Look for situations where you've been AVOIDING a conversation" },
+        { letter: 'L', text: "Listen to your gut: The conversation you're dreading is probably the one you need" },
+        { letter: 'E', text: "Explore different types: Feedback, 1:1, Tension - which have you avoided lately?" },
+        { letter: 'A', text: "Action: Pick ONE specific person and situation - not 'someone on my team', but 'Maya about the deadline'" },
+        { letter: 'R', text: "Review: Commit to a deadline. When will this conversation happen?" }
+      ],
+      guardrail: "Growth happens outside your comfort zone. Choose the rep that makes you a little nervous."
+    };
+  }
+  
+  // CONDITIONING-SPECIFIC: Scared/nervous about rep
+  if (q.includes('nervous') || q.includes('scared') || q.includes('anxious') || q.includes('worried') || q.includes('avoid')) {
+    return {
+      intro: "It's normal to feel nervous. Here's how to move forward:",
+      steps: [
+        { letter: 'C', text: "Context: Name what you're afraid of. Say it out loud: 'I'm worried that...'" },
+        { letter: 'L', text: "Listen: Often we fear their reaction. But what if they actually want this feedback?" },
+        { letter: 'E', text: "Explore: What's the cost of NOT having this conversation? It's usually higher than the risk" },
+        { letter: 'A', text: "Action: Start small. Your opening doesn't have to be perfect. 'I wanted to talk about...' works" },
+        { letter: 'R', text: "Review: After the rep, you'll realize it wasn't as bad as you imagined. This builds confidence" }
+      ],
+      guardrail: "Courage isn't the absence of fear. It's action despite fear. You've got this."
+    };
+  }
   
   // Feedback-related questions
   if (q.includes('feedback') || q.includes('difficult conversation') || q.includes('give feedback')) {
@@ -184,6 +253,8 @@ const GazooOverlay = ({ onClose }) => {
   const [userQuestion, setUserQuestion] = useState('');
   const [coachResponse, setCoachResponse] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [aiError, setAiError] = useState(null);
   const inputRef = useRef(null);
 
   const firstName = user?.displayName?.split(' ')[0] || 'Leader';
@@ -214,42 +285,111 @@ const GazooOverlay = ({ onClose }) => {
 
   const intro = GAZOO_INTROS[Math.floor(Math.random() * GAZOO_INTROS.length)];
 
-  // Handle asking a question
+  // Handle asking a question - REAL AI
   const handleAskQuestion = async () => {
     if (!userQuestion.trim()) return;
     
+    const question = userQuestion.trim();
     setIsTyping(true);
     setMode('coach');
-    
-    // Simulate thinking
-    await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
-    
-    const response = generateCLEARResponse(userQuestion);
-    setCoachResponse({ question: userQuestion, ...response });
+    setAiError(null);
     setUserQuestion('');
-    setIsTyping(false);
+    
+    // Add user message to chat history
+    const newHistory = [...chatHistory, { role: 'user', content: question }];
+    setChatHistory(newHistory);
+    
+    try {
+      const functions = getFunctions();
+      const reppyCoach = httpsCallable(functions, 'reppyCoach');
+      
+      // Build coaching context for The Great Gazoo
+      const coachingContext = `You are "The Great Gazoo" - a wise, slightly playful AI leadership coach.
+      
+Your personality:
+- Confident and direct, but supportive
+- Use occasional humor but stay professional
+- Reference the CLEAR method (Context, Listen, Explore, Action, Review) when giving feedback advice
+- Keep responses concise (2-4 paragraphs max)
+- End with an actionable suggestion or thought-provoking question
+
+The user is a leader in a professional development program. They are currently on the ${screenKey} screen of the app.
+
+Today's context:
+- Day ${context.dayNumber} of their program
+- Incomplete actions: ${context.incompleteActions}
+- Phase: ${context.isPrep ? 'Preparation' : 'Development'}
+${context.cohortName ? `- Cohort: ${context.cohortName}` : ''}
+
+Help them with their question. Be practical and actionable.`;
+
+      const result = await reppyCoach({
+        messages: newHistory,
+        context: {
+          userName: firstName,
+          userRole: 'leader',
+          sessionType: 'gazoo-coach',
+          customContext: coachingContext,
+        },
+      });
+      
+      const aiResponse = result.data.message;
+      
+      // Add AI response to history
+      setChatHistory(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      setCoachResponse({ 
+        question, 
+        aiResponse,
+        isAI: true 
+      });
+      
+    } catch (error) {
+      console.error('Gazoo AI error:', error);
+      setAiError('Having trouble connecting to AI. Try again?');
+      // Fallback to CLEAR method response
+      const fallback = generateCLEARResponse(question);
+      setCoachResponse({ question, ...fallback, isFallback: true });
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   // Minimized state
   if (isMinimized) {
     return (
-      <motion.button
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        onClick={() => setIsMinimized(false)}
-        className="fixed bottom-6 right-6 z-[90] flex items-center gap-2 px-4 py-3 
-                   bg-gradient-to-r from-lime-500 to-emerald-600 text-white
-                   rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105
-                   border-2 border-white/30"
-      >
-        <Sparkles className="w-5 h-5" />
-        <span className="font-bold">Gazoo</span>
-        <span className="flex gap-0.5">
-          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
-        </span>
-      </motion.button>
+      <>
+        <motion.button
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          onClick={() => setIsMinimized(false)}
+          className="fixed bottom-6 right-6 z-[90] flex items-center gap-2 px-4 py-3 
+                     bg-gradient-to-r from-lime-500 to-emerald-600 text-white
+                     rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105
+                     border-2 border-white/30"
+        >
+          <Sparkles className="w-5 h-5" />
+          <span className="font-bold">Gazoo</span>
+          <span className="flex gap-0.5">
+            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+          </span>
+        </motion.button>
+        
+        {/* Spotlight Tour - must be rendered even when minimized */}
+        <GazooSpotlight
+          isOpen={showSpotlight}
+          onClose={() => {
+            setShowSpotlight(false);
+            setIsMinimized(false);
+          }}
+          screenContext={screenKey}
+          onComplete={() => {
+            setShowSpotlight(false);
+            setIsMinimized(false);
+          }}
+        />
+      </>
     );
   }
 
@@ -278,17 +418,17 @@ const GazooOverlay = ({ onClose }) => {
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setIsMinimized(true)}
-                className="w-8 h-8 flex items-center justify-center bg-white text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors shadow-md"
+                className="w-8 h-8 flex items-center justify-center bg-white text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors shadow-md font-bold text-lg"
                 title="Minimize"
               >
-                <Minus className="w-4 h-4" />
+                –
               </button>
               <button 
                 onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center bg-white text-red-500 hover:bg-red-50 rounded-full transition-colors shadow-md"
+                className="w-8 h-8 flex items-center justify-center bg-white text-red-500 hover:bg-red-50 rounded-full transition-colors shadow-md font-bold text-lg"
                 title="Close Gazoo"
               >
-                <X className="w-4 h-4" />
+                ✕
               </button>
             </div>
           </div>
@@ -392,7 +532,7 @@ const GazooOverlay = ({ onClose }) => {
                     I'll use the CLEAR feedback method to coach you through any leadership challenge.
                   </p>
                   <div className="flex flex-wrap gap-2 justify-center">
-                    {['How do I give tough feedback?', 'Handling underperformance', 'Running better 1:1s'].map((q, i) => (
+                    {(guidance.quickPrompts || ['How do I give tough feedback?', 'Handling underperformance', 'Running better 1:1s']).map((q, i) => (
                       <button
                         key={i}
                         onClick={() => setUserQuestion(q)}
@@ -413,7 +553,7 @@ const GazooOverlay = ({ onClose }) => {
                 </div>
               )}
 
-              {/* CLEAR Response */}
+              {/* Coach Response */}
               {coachResponse && !isTyping && (
                 <div className="space-y-3">
                   {/* Question shown */}
@@ -422,29 +562,58 @@ const GazooOverlay = ({ onClose }) => {
                     <p className="text-sm font-medium text-corporate-navy">{coachResponse.question}</p>
                   </div>
 
-                  {/* CLEAR response */}
-                  <p className="text-sm font-semibold text-lime-700">{coachResponse.intro}</p>
-                  
-                  <div className="space-y-2">
-                    {coachResponse.steps.map((step, idx) => (
-                      <motion.div
-                        key={idx}
-                        initial={{ x: -10, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: idx * 0.1 }}
-                        className="flex items-start gap-3 p-2.5 bg-slate-50 rounded-lg"
-                      >
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-lime-500 to-emerald-600 text-white flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                          {step.letter}
+                  {/* AI Response */}
+                  {coachResponse.isAI && (
+                    <div className="bg-gradient-to-br from-lime-50 to-emerald-50 rounded-lg p-4 border border-lime-200">
+                      <div className="prose prose-sm max-w-none text-slate-700">
+                        <p className="whitespace-pre-wrap">{coachResponse.aiResponse}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fallback CLEAR response */}
+                  {!coachResponse.isAI && coachResponse.steps && (
+                    <>
+                      {coachResponse.isFallback && (
+                        <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                          <AlertCircle className="w-3 h-3" />
+                          <span>AI unavailable - showing framework response</span>
                         </div>
-                        <p className="text-sm text-slate-700">{step.text}</p>
-                      </motion.div>
-                    ))}
-                  </div>
+                      )}
+                      <p className="text-sm font-semibold text-lime-700">{coachResponse.intro}</p>
+                      
+                      <div className="space-y-2">
+                        {coachResponse.steps.map((step, idx) => (
+                          <motion.div
+                            key={idx}
+                            initial={{ x: -10, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: idx * 0.1 }}
+                            className="flex items-start gap-3 p-2.5 bg-slate-50 rounded-lg"
+                          >
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-lime-500 to-emerald-600 text-white flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                              {step.letter}
+                            </div>
+                            <p className="text-sm text-slate-700">{step.text}</p>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Guardrail message for Conditioning context */}
+                  {coachResponse.guardrail && (
+                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs text-amber-700 font-medium flex items-center gap-2">
+                        <Target className="w-3.5 h-3.5" />
+                        {coachResponse.guardrail}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Ask another */}
                   <button
-                    onClick={() => setCoachResponse(null)}
+                    onClick={() => { setCoachResponse(null); setChatHistory([]); }}
                     className="text-sm text-lime-600 hover:text-lime-700 font-medium"
                   >
                     ← Ask another question

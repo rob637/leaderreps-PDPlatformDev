@@ -26,6 +26,7 @@ import { serverTimestamp } from '../../services/firebaseUtils';
 import { FadeIn, Stagger } from '../motion';
 import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import ProgramStatusWidget from '../widgets/ProgramStatusWidget';
+import ConditioningWidget from '../widgets/ConditioningWidget';
 import PrepCompleteModal from '../modals/PrepCompleteModal';
 // NOTE: LeaderProfileWidget and BaselineAssessmentWidget removed - now handled as 
 // INTERACTIVE content items in ThisWeeksActionsWidget
@@ -41,8 +42,9 @@ const DASHBOARD_FEATURES = [
   'weekly-focus',
   'grounding-rep',
   'win-the-day',
+  'conditioning',        // Conditioning widget - replaces daily-leader-reps
   'daily-plan',
-  'daily-leader-reps',
+  // 'daily-leader-reps', // REMOVED - replaced by conditioning widget
   'this-weeks-actions',
   'notifications',
   'pm-bookend-header',
@@ -79,6 +81,7 @@ const Dashboard = () => {
     currentPhase,       // NEW: Phase info { id, name, displayName, trackMissedDays }
     phaseDayNumber,     // NEW: Day within current phase
     missedDays,
+    missedWeeks,        // NEW: Unique week numbers with missed items
     simulatedNow,
     toggleItemComplete,
     prepRequirementsComplete  // Dynamic prep completion check (loaded from Firestore)
@@ -465,7 +468,8 @@ const Dashboard = () => {
     currentDayData, // Current day config from daily_plan_v1
     currentPhase, // NEW: Phase object { id, name, displayName, trackMissedDays }
     phaseDayNumber, // NEW: Day within current phase (1-14 for prep, 1-56 for start)
-    missedDays, // Only populated during START phase (cohort-based)
+    missedDays, // Only populated during START phase (cohort-based) - individual days
+    missedWeeks, // Only populated during START phase - unique week numbers
     simulatedNow,
     devPlanCurrentWeek,
     currentWeek: devPlanCurrentWeek, // Alias for widgets expecting 'currentWeek'
@@ -619,7 +623,8 @@ const Dashboard = () => {
     'grounding-rep': () => shouldShow('grounding-rep', false) ? <WidgetRenderer widgetId="grounding-rep" scope={scope} /> : null,
     'win-the-day': () => shouldShow('win-the-day', true) ? <div data-gazoo-step="win-the-day"><WidgetRenderer widgetId="win-the-day" scope={scope} /></div> : null,
     'daily-plan': () => currentDayNumber >= 1 ? <WidgetRenderer widgetId="daily-plan" scope={scope} /> : null,
-    'daily-leader-reps': () => shouldShow('daily-leader-reps', true) ? <div data-gazoo-step="daily-reps"><WidgetRenderer widgetId="daily-leader-reps" scope={scope} /></div> : null,
+    'conditioning': () => <ConditioningWidget />,  // NEW: Conditioning with slide-in panel
+    'daily-leader-reps': () => null,  // DISABLED - replaced by conditioning widget
     'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <div data-gazoo-step="this-weeks-actions"><WidgetRenderer widgetId="this-weeks-actions" scope={scope} /></div> : null,
     'notifications': () => shouldShow('notifications', false) ? <WidgetRenderer widgetId="notifications" scope={scope} /> : null,
     'pm-bookend-header': () => shouldShow('pm-bookend-header', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
@@ -708,6 +713,7 @@ const Dashboard = () => {
         isOpen={isCatchUpModalOpen}
         onClose={() => setIsCatchUpModalOpen(false)}
         missedDays={missedDays}
+        missedWeeks={missedWeeks}
         onToggleAction={toggleItemComplete}
       />
 

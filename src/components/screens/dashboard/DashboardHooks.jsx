@@ -81,7 +81,6 @@ export const useDashboard = ({
   const [groundingRepRevealed, setGroundingRepRevealed] = useState(false);
   const [groundingRepConfetti, setGroundingRepConfetti] = useState(false);
 
-
   /* =========================================================
      LOAD DATA FROM FIRESTORE (Dependency on dailyPracticeData)
   ========================================================= */

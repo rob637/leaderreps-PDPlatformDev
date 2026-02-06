@@ -205,7 +205,9 @@ export const calculateRepStreak = (repsHistory = [], todayStr, hasCompletedRepTo
       let foundCurrent = false;
       let attempts = 0;
       
-      while (attempts < 10) {
+      while (attempts < 100) { // Increased safety limit for holiday periods
+        attempts++; // Increment at START to ensure loop terminates
+        
         const nextDate = new Date(expectedNext + 'T12:00:00');
         nextDate.setDate(nextDate.getDate() + 1);
         expectedNext = formatDateStr(nextDate);
@@ -223,8 +225,6 @@ export const calculateRepStreak = (repsHistory = [], todayStr, hasCompletedRepTo
         if (expectedNext > currentDate) {
           break;
         }
-        
-        attempts++;
       }
       
       if (foundCurrent) {
