@@ -274,21 +274,21 @@ const GazooOverlay = ({ onClose }) => {
                 <p className="text-xs text-white/80 mt-0.5">Coaching {firstName}</p>
               </div>
             </div>
-            {/* VISIBLE minimize and close buttons */}
-            <div className="flex items-center gap-1">
+            {/* VISIBLE minimize and close buttons - solid backgrounds for visibility */}
+            <div className="flex items-center gap-2">
               <button 
                 onClick={() => setIsMinimized(true)}
-                className="w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                className="w-8 h-8 flex items-center justify-center bg-white text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors shadow-md"
                 title="Minimize"
               >
-                <Minus className="w-4 h-4 text-white" />
+                <Minus className="w-4 h-4" />
               </button>
               <button 
                 onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-red-500/80 rounded-full transition-colors"
+                className="w-8 h-8 flex items-center justify-center bg-white text-red-500 hover:bg-red-50 rounded-full transition-colors shadow-md"
                 title="Close Gazoo"
               >
-                <X className="w-4 h-4 text-white" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
