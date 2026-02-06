@@ -1,20 +1,20 @@
 // src/components/rep/RepFloatingButton.jsx
-// Floating button to access AI Coaches - visible on both mobile and desktop
-// Password protected - positioned at bottom right
+// Floating button to access The Great Gazoo AI Coach
+// Password protected - Gazoo hovers above the app as persistent overlay
 // Session-based auth: cleared on logout so users must re-authenticate
 
 import React, { useState, useEffect } from 'react';
-import { Brain, X } from 'lucide-react';
+import { Brain, X, Sparkles } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
-import AICoachSelector from './AICoachSelector';
+import GazooOverlay from './GazooOverlay';
 
 // Session storage key for AI Coach authentication
 const AI_COACH_AUTH_KEY = 'ai-coach-authenticated';
 
 const RepFloatingButton = () => {
-  const { navigate, currentScreen } = useAppServices();
+  const { currentScreen } = useAppServices();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showCoachSelector, setShowCoachSelector] = useState(false);
+  const [showGazoo, setShowGazoo] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   
@@ -46,9 +46,9 @@ const RepFloatingButton = () => {
     };
   }, []);
 
-  // Hide when already on Rep or Reppy screens
-  if (currentScreen === 'rep' || currentScreen === 'reppy') {
-    return null;
+  // Hide the floating button when Gazoo is showing (Gazoo has its own minimize button)
+  if (showGazoo) {
+    return <GazooOverlay onClose={() => setShowGazoo(false)} />;
   }
 
   const handlePasswordSubmit = () => {
@@ -59,24 +59,19 @@ const RepFloatingButton = () => {
       setShowPasswordModal(false);
       setPassword('');
       setPasswordError(false);
-      setShowCoachSelector(true);
+      setShowGazoo(true); // Show Gazoo directly
     } else {
       setPasswordError(true);
     }
   };
   
   const handleButtonClick = () => {
-    // If already authenticated this session, go directly to coach selector
+    // If already authenticated this session, show Gazoo directly
     if (isSessionAuthenticated) {
-      setShowCoachSelector(true);
+      setShowGazoo(true);
     } else {
       setShowPasswordModal(true);
     }
-  };
-
-  const handleSelectRep = () => {
-    setShowCoachSelector(false);
-    navigate('rep');
   };
 
   return (
@@ -176,14 +171,6 @@ const RepFloatingButton = () => {
             </p>
           </div>
         </div>
-      )}
-
-      {/* AI Coach Selector Modal */}
-      {showCoachSelector && (
-        <AICoachSelector
-          onClose={() => setShowCoachSelector(false)}
-          onSelectRep={handleSelectRep}
-        />
       )}
     </>
   );
