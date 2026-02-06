@@ -7,11 +7,11 @@
   --corporate-orange: #E04E1B;      /* Accent/CTA color */
   --corporate-teal: #47A88D;        /* Secondary brand color */
   --corporate-subtle-teal: #349881; /* Teal hover states */
-  --corporate-light-gray: #FAFBFC;  /* Page background - warmer */
+  --corporate-light-gray: #F3F4F6;  /* Page background - cool gray for card pop */
   
-  /* === PREMIUM WARM BACKGROUNDS === */
-  --bg-warm: #FDFCFB;               /* Warm white */
-  --bg-warm-subtle: #FAF9F7;        /* Subtle warm */
+  /* === PREMIUM BACKGROUNDS === */
+  --bg-warm: #F8F9FA;               /* Light gray background */
+  --bg-warm-subtle: #F3F4F6;        /* Subtle gray */
   --bg-card: #FFFFFF;               /* Pure white cards */
   --bg-elevated: #FFFFFF;           /* Elevated surfaces */
   
@@ -59,14 +59,18 @@
   --radius-2xl: 1.5rem;    /* 24px */
   --radius-3xl: 2rem;      /* 32px */
   
-  /* === PREMIUM SHADOWS (Softer, more elegant) === */
-  --shadow-xs: 0 1px 2px rgba(0, 46, 71, 0.04);
-  --shadow-sm: 0 2px 8px rgba(0, 46, 71, 0.06);
-  --shadow-md: 0 4px 16px rgba(0, 46, 71, 0.08);
-  --shadow-lg: 0 8px 24px rgba(0, 46, 71, 0.10);
-  --shadow-xl: 0 16px 48px rgba(0, 46, 71, 0.12);
-  --shadow-glow-teal: 0 4px 24px rgba(71, 168, 141, 0.25);
-  --shadow-glow-orange: 0 4px 24px rgba(224, 78, 27, 0.20);
+  /* === PREMIUM SHADOWS (Bold, crisp, pop!) === */
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.10);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.14);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
+  --shadow-glow-teal: 0 4px 24px rgba(71, 168, 141, 0.30);
+  --shadow-glow-orange: 0 4px 24px rgba(224, 78, 27, 0.25);
+  
+  /* === CARD POP STYLING === */
+  --card-border: rgba(0, 0, 0, 0.12);
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
   
   /* === PREMIUM GRADIENTS === */
   --gradient-primary: linear-gradient(135deg, var(--corporate-teal) 0%, var(--corporate-navy) 100%);
@@ -81,9 +85,10 @@
   --color-subtle-teal: var(--corporate-subtle-teal);
   --color-bg: var(--corporate-light-gray);
   --color-surface: #FFFFFF;
-  --color-text: var(--corporate-navy);
-  --color-text-secondary: #334155;
-  --color-text-muted: #64748B;
+  /* Google-style crisp text colors */
+  --color-text: #1a1a1a;              /* Near-black for primary text */
+  --color-text-secondary: #3c3c3c;    /* Dark gray for secondary text */
+  --color-text-muted: #5c5c5c;        /* Medium gray for muted - still readable */
   --color-light-gray: var(--corporate-light-gray);
   --color-subtle: var(--corporate-teal);
   --color-success: var(--corporate-teal);
@@ -98,6 +103,48 @@
   --color-border: rgba(0, 46, 71, 0.08);
   --color-border-subtle: rgba(0, 46, 71, 0.05);
 }
+
+/* === GOOGLE-STYLE CRISP TEXT OVERRIDES === */
+/* Makes all gray text darker and more readable */
+.text-gray-300 { color: #6b6b6b !important; }
+.text-gray-400 { color: #5c5c5c !important; }
+.text-gray-500 { color: #4a4a4a !important; }
+.text-gray-600 { color: #3c3c3c !important; }
+.text-gray-700 { color: #2d2d2d !important; }
+.text-gray-800 { color: #1f1f1f !important; }
+.text-gray-900 { color: #121212 !important; }
+
+/* Slate colors also get the crisp treatment */
+.text-slate-300 { color: #6b6b6b !important; }
+.text-slate-400 { color: #5c5c5c !important; }
+.text-slate-500 { color: #4a4a4a !important; }
+.text-slate-600 { color: #3c3c3c !important; }
+.text-slate-700 { color: #2d2d2d !important; }
+.text-slate-800 { color: #1f1f1f !important; }
+.text-slate-900 { color: #121212 !important; }
+
+/* Ensure body text is crisp */
+body {
+  color: #1a1a1a;
+}
+
+/* === CARD POP OVERRIDES === */
+/* Make all borders more pronounced */
+.border-slate-100, .border-slate-200, .border-gray-100, .border-gray-200 { 
+  border-color: rgba(0, 0, 0, 0.10) !important; 
+}
+
+/* Enhanced shadow hierarchy */
+.shadow-sm { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10), 0 0 0 1px rgba(0, 0, 0, 0.04) !important; }
+.shadow { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05) !important; }
+.shadow-md { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.05) !important; }
+.shadow-lg { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06) !important; }
+.shadow-xl { box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06) !important; }
+
+/* Pure white backgrounds - no warm tint */
+.bg-white { background-color: #FFFFFF !important; }
+.bg-slate-50, .bg-gray-50 { background-color: #FAFAFA !important; }
+.bg-slate-100, .bg-gray-100 { background-color: #F5F5F5 !important; }
 
 /* === MOBILE TOUCH OPTIMIZATION === */
 /* Removes 300ms tap delay on all interactive elements */
