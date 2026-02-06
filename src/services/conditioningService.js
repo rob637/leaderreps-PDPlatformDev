@@ -64,6 +64,40 @@ export const REP_STATUS = {
   CANCELED: 'canceled'
 };
 
+// ============================================
+// PHASE 2: EVIDENCE & QUALITY ASSESSMENT
+// ============================================
+
+// Evidence levels based on submission timing
+export const EVIDENCE_LEVEL = {
+  LEVEL_1: 'level_1', // Submitted same business day
+  LEVEL_2: 'level_2'  // Submitted 24+ hours later
+};
+
+// Quality assessment dimensions
+export const QUALITY_DIMENSIONS = {
+  SPECIFIC_LANGUAGE: 'specific_language',    // Did they use specific language?
+  CLEAR_REQUEST: 'clear_request',            // Was there a clear request/ask?
+  NAMED_COMMITMENT: 'named_commitment',      // Was a commitment named (or explicitly absent)?
+  REFLECTION: 'reflection'                   // Did they reflect on the outcome?
+};
+
+// Debrief prompts for Level 1 (same day)
+export const LEVEL_1_PROMPTS = [
+  { id: 'what_said', label: 'What I said', prompt: 'What did you actually say? (exact language or close paraphrase)' },
+  { id: 'response', label: 'Their response', prompt: 'How did the other person respond?' },
+  { id: 'commitment', label: 'Commitment', prompt: 'What commitment (if any) was made?' },
+  { id: 'next_time', label: 'Next time', prompt: 'What would you do differently next time?' }
+];
+
+// Debrief prompts for Level 2 (24+ hours later - different focus)
+export const LEVEL_2_PROMPTS = [
+  { id: 'what_happened', label: 'What happened', prompt: 'Describe the conversation as you remember it.' },
+  { id: 'key_moment', label: 'Key moment', prompt: 'What was the most important moment in the conversation?' },
+  { id: 'outcome', label: 'Outcome', prompt: 'What was the outcome? Any follow-up needed?' },
+  { id: 'learning', label: 'Learning', prompt: 'What did you learn from this rep?' }
+];
+
 /**
  * Get the current week ID (Sunday-Saturday)
  * Format: YYYY-Www (e.g., "2026-W06")
@@ -677,6 +711,307 @@ export const conditioningService = {
     }
     
     return { type: 'none', message: null };
+  },
+  
+  // ============================================
+  // PHASE 2: EVIDENCE CAPTURE & DEBRIEF
+  // ============================================
+  
+  /**
+   * Determine evidence level based on when rep was completed vs when evidence is submitted
+   */
+  getEvidenceLevel: (completedAt) => {
+    if (!completedAt) return EVIDENCE_LEVEL.LEVEL_2;
+    
+    const now = timeService.getNow();
+    const completed = completedAt.toDate ? completedAt.toDate() : new Date(completedAt);
+    
+    // Same business day = Level 1 (within 24 hours and same calendar day)
+    const hoursDiff = (now - completed) / (1000 * 60 * 60);
+    const sameDay = now.toDateString() === completed.toDateString();
+    
+    if (hoursDiff < 24 && sameDay) {
+      return EVIDENCE_LEVEL.LEVEL_1;
+    }
+    return EVIDENCE_LEVEL.LEVEL_2;
+  },
+  
+  /**
+   * Get the appropriate debrief prompts based on evidence level
+   */
+  getDebriefPrompts: (evidenceLevel) => {
+    return evidenceLevel === EVIDENCE_LEVEL.LEVEL_1 ? LEVEL_1_PROMPTS : LEVEL_2_PROMPTS;
+  },
+  
+  /**
+   * Submit evidence/debrief for a completed rep
+   */
+  submitEvidence: async (db, userId, repId, evidenceData) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    
+    // Can only submit evidence for completed reps
+    if (currentRep.status !== REP_STATUS.COMPLETED) {
+      throw new Error('Can only submit evidence for completed reps');
+    }
+    
+    // Determine evidence level
+    const evidenceLevel = conditioningService.getEvidenceLevel(currentRep.completedAt);
+    
+    // Structure the evidence data
+    const evidence = {
+      level: evidenceLevel,
+      submittedAt: serverTimestamp(),
+      responses: evidenceData.responses || {}, // Map of promptId -> response text
+      voiceUrl: evidenceData.voiceUrl || null,  // Optional voice recording URL
+      transcription: evidenceData.transcription || null, // Voice transcription
+      inputMethod: evidenceData.inputMethod || 'written' // 'written' | 'voice'
+    };
+    
+    await updateDoc(repRef, {
+      evidence,
+      updatedAt: serverTimestamp()
+    });
+    
+    // Run quality assessment
+    const quality = conditioningService.assessQuality(evidence, currentRep);
+    
+    // Store quality assessment
+    await updateDoc(repRef, {
+      qualityAssessment: quality,
+      updatedAt: serverTimestamp()
+    });
+    
+    return { evidence, quality };
+  },
+  
+  /**
+   * Get evidence for a rep
+   */
+  getEvidence: async (db, userId, repId) => {
+    const rep = await conditioningService.getRep(db, userId, repId);
+    if (!rep) throw new Error('Rep not found');
+    
+    return {
+      evidence: rep.evidence || null,
+      qualityAssessment: rep.qualityAssessment || null,
+      evidenceLevel: rep.evidence?.level || null,
+      hasEvidence: !!rep.evidence
+    };
+  },
+  
+  // ============================================
+  // PHASE 2: QUALITY ASSESSMENT
+  // ============================================
+  
+  /**
+   * Assess the quality of submitted evidence
+   * Returns dimension scores and overall assessment
+   */
+  assessQuality: (evidence, rep) => {
+    const responses = evidence.responses || {};
+    const dimensions = {};
+    let passedCount = 0;
+    const totalDimensions = 4;
+    
+    // Check for specific language
+    const whatSaid = responses.what_said || responses.what_happened || '';
+    dimensions[QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE] = {
+      passed: whatSaid.length >= 20 && /["']/.test(whatSaid), // Has quotes = specific language
+      feedback: whatSaid.length < 20 
+        ? 'Try to include the actual words you used'
+        : !/["']/.test(whatSaid)
+        ? 'Include the specific language you used (in quotes)'
+        : 'Good - you included specific language'
+    };
+    if (dimensions[QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE].passed) passedCount++;
+    
+    // Check for clear request
+    const commitment = responses.commitment || responses.outcome || '';
+    const hasRequest = /ask|request|commit|agree|will you|can you|would you/i.test(whatSaid);
+    dimensions[QUALITY_DIMENSIONS.CLEAR_REQUEST] = {
+      passed: hasRequest || whatSaid.length >= 50,
+      feedback: hasRequest 
+        ? 'Good - you made a clear request or ask'
+        : 'Consider making a more explicit request in future reps'
+    };
+    if (dimensions[QUALITY_DIMENSIONS.CLEAR_REQUEST].passed) passedCount++;
+    
+    // Check for named commitment
+    const hasCommitment = commitment.length >= 10 && 
+      !/no commitment|none|n\/a|nothing/i.test(commitment);
+    const explicitlyNoCommitment = /no commitment|chose not to|decided against/i.test(commitment);
+    dimensions[QUALITY_DIMENSIONS.NAMED_COMMITMENT] = {
+      passed: hasCommitment || explicitlyNoCommitment,
+      feedback: hasCommitment 
+        ? 'Good - you named a specific commitment'
+        : explicitlyNoCommitment
+        ? 'Good - you explicitly noted no commitment was made'
+        : 'Try to get a specific commitment or note explicitly that none was made'
+    };
+    if (dimensions[QUALITY_DIMENSIONS.NAMED_COMMITMENT].passed) passedCount++;
+    
+    // Check for reflection
+    const nextTime = responses.next_time || responses.learning || '';
+    dimensions[QUALITY_DIMENSIONS.REFLECTION] = {
+      passed: nextTime.length >= 15,
+      feedback: nextTime.length >= 15
+        ? 'Good - you reflected on the experience'
+        : 'Add more detail about what you learned or would do differently'
+    };
+    if (dimensions[QUALITY_DIMENSIONS.REFLECTION].passed) passedCount++;
+    
+    // Overall assessment
+    const meetsStandard = passedCount >= 3; // Pass 3 of 4 dimensions
+    
+    return {
+      dimensions,
+      passedCount,
+      totalDimensions,
+      meetsStandard,
+      assessedAt: new Date().toISOString(),
+      summary: meetsStandard 
+        ? 'This rep meets the quality standard'
+        : `This rep needs improvement in ${totalDimensions - passedCount} area(s)`
+    };
+  },
+  
+  /**
+   * Get quality statistics for a user
+   */
+  getQualityStats: async (db, userId, cohortId = null) => {
+    const history = await conditioningService.getRepHistory(db, userId, cohortId, 100);
+    
+    const repsWithEvidence = history.filter(r => r.evidence);
+    const repsWithQuality = history.filter(r => r.qualityAssessment);
+    
+    const level1Count = repsWithEvidence.filter(r => r.evidence.level === EVIDENCE_LEVEL.LEVEL_1).length;
+    const level2Count = repsWithEvidence.filter(r => r.evidence.level === EVIDENCE_LEVEL.LEVEL_2).length;
+    const meetsStandardCount = repsWithQuality.filter(r => r.qualityAssessment.meetsStandard).length;
+    
+    // Dimension breakdown
+    const dimensionStats = {};
+    Object.values(QUALITY_DIMENSIONS).forEach(dim => {
+      const passed = repsWithQuality.filter(r => r.qualityAssessment.dimensions?.[dim]?.passed).length;
+      dimensionStats[dim] = {
+        passed,
+        total: repsWithQuality.length,
+        rate: repsWithQuality.length > 0 ? Math.round((passed / repsWithQuality.length) * 100) : 0
+      };
+    });
+    
+    return {
+      totalCompleted: history.filter(r => r.status === REP_STATUS.COMPLETED).length,
+      evidenceSubmitted: repsWithEvidence.length,
+      level1Evidence: level1Count,
+      level2Evidence: level2Count,
+      level1Rate: repsWithEvidence.length > 0 
+        ? Math.round((level1Count / repsWithEvidence.length) * 100) 
+        : 0,
+      meetsStandard: meetsStandardCount,
+      qualityRate: repsWithQuality.length > 0 
+        ? Math.round((meetsStandardCount / repsWithQuality.length) * 100) 
+        : 0,
+      dimensionStats
+    };
+  },
+  
+  // ============================================
+  // PHASE 2: PRACTICE RETRY FLOW
+  // ============================================
+  
+  /**
+   * Create a practice retry for a rep that didn't meet quality standard
+   * Practice retries don't replace the original rep, but help build the skill
+   */
+  createPracticeRetry: async (db, userId, originalRepId, targetDimension) => {
+    const originalRep = await conditioningService.getRep(db, userId, originalRepId);
+    
+    if (!originalRep) throw new Error('Original rep not found');
+    if (!originalRep.qualityAssessment) {
+      throw new Error('Original rep has not been assessed');
+    }
+    
+    const retryId = `retry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const practiceRetry = {
+      id: retryId,
+      originalRepId,
+      targetDimension, // The specific dimension to focus on
+      status: 'pending', // 'pending' | 'completed'
+      createdAt: serverTimestamp(),
+      // Copy context from original rep
+      person: originalRep.person,
+      repType: originalRep.repType,
+      originalEvidence: originalRep.evidence,
+      // Retry prompt based on dimension
+      prompt: conditioningService.getPracticePrompt(targetDimension),
+      response: null, // User's practice response
+      completedAt: null
+    };
+    
+    const retryRef = doc(db, 'users', userId, 'practice_retries', retryId);
+    await setDoc(retryRef, practiceRetry);
+    
+    return retryId;
+  },
+  
+  /**
+   * Get practice prompt for a specific dimension
+   */
+  getPracticePrompt: (dimension) => {
+    const prompts = {
+      [QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE]: 
+        'Rewrite what you said using the exact words you used or would use. Put your language in quotes.',
+      [QUALITY_DIMENSIONS.CLEAR_REQUEST]: 
+        'Write out a clear request or ask that you could make in this situation. Be specific about what you want the other person to do.',
+      [QUALITY_DIMENSIONS.NAMED_COMMITMENT]: 
+        'What specific commitment would you ask for? Write it as: "I\'d like you to commit to [specific action] by [specific time]."',
+      [QUALITY_DIMENSIONS.REFLECTION]: 
+        'What did you learn from this rep that you can apply next time? Be specific about what you would do differently.'
+    };
+    return prompts[dimension] || 'Practice this dimension again with more specific detail.';
+  },
+  
+  /**
+   * Complete a practice retry
+   */
+  completePracticeRetry: async (db, userId, retryId, response) => {
+    const retryRef = doc(db, 'users', userId, 'practice_retries', retryId);
+    
+    await updateDoc(retryRef, {
+      status: 'completed',
+      response: response.trim(),
+      completedAt: serverTimestamp()
+    });
+    
+    return true;
+  },
+  
+  /**
+   * Get pending practice retries for a user
+   */
+  getPendingRetries: async (db, userId) => {
+    const retriesRef = collection(db, 'users', userId, 'practice_retries');
+    const q = query(retriesRef, where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  },
+  
+  /**
+   * Get all practice retries for a rep
+   */
+  getRetriesForRep: async (db, userId, originalRepId) => {
+    const retriesRef = collection(db, 'users', userId, 'practice_retries');
+    const q = query(retriesRef, where('originalRepId', '==', originalRepId), orderBy('createdAt', 'desc'));
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   },
   
   // ============================================

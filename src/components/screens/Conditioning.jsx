@@ -4,17 +4,22 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { 
-  conditioningService, 
+import conditioningService, { 
   REP_TYPES, 
   REP_STATUS, 
   getWeekBoundaries
 } from '../../services/conditioningService.js';
 import { Card, Button } from '../ui';
 import { 
+  EvidenceCaptureModal,
+  QualityAssessmentCard,
+  PracticeRetryCard
+} from '../conditioning';
+import { 
   Plus, Check, X, AlertTriangle, Clock, User, 
   ChevronRight, RefreshCw, MessageSquare, Users,
-  Target, Calendar, CheckCircle, XCircle, AlertCircle
+  Target, Calendar, CheckCircle, XCircle, AlertCircle,
+  FileText
 } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 
@@ -148,7 +153,7 @@ const WeekStatusHeader = ({ weeklyStatus, nudgeStatus }) => {
 // ============================================
 // REP CARD COMPONENT
 // ============================================
-const RepCard = ({ rep, onComplete, onCancel, isLoading }) => {
+const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence, isLoading }) => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   
@@ -218,7 +223,7 @@ const RepCard = ({ rep, onComplete, onCancel, isLoading }) => {
             </div>
           )}
           
-          {/* Action Buttons */}
+          {/* Action Buttons - Active/Missed Reps */}
           {canTakeAction && (
             <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
               <Button
@@ -237,6 +242,38 @@ const RepCard = ({ rep, onComplete, onCancel, isLoading }) => {
               >
                 <X className="w-4 h-4" />
               </Button>
+            </div>
+          )}
+          
+          {/* Completed Rep Actions - Debrief & Quality */}
+          {rep.status === REP_STATUS.COMPLETED && (
+            <div className="pt-2 border-t border-gray-100">
+              {evidence ? (
+                <>
+                  {/* Quality Assessment Display */}
+                  {evidence.qualityAssessment && (
+                    <QualityAssessmentCard 
+                      qualityAssessment={evidence.qualityAssessment}
+                      onPractice={onPractice ? (dimension) => onPractice(rep, dimension) : null}
+                      compact={true}
+                    />
+                  )}
+                  <div className="flex items-center gap-2 mt-2 text-xs text-green-600">
+                    <CheckCircle className="w-3 h-3" />
+                    <span>Debrief submitted</span>
+                  </div>
+                </>
+              ) : (
+                <Button
+                  onClick={() => onAddDebrief?.(rep)}
+                  disabled={isLoading}
+                  variant="outline"
+                  className="w-full py-2 border-corporate-navy text-corporate-navy hover:bg-corporate-navy/5"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Add Debrief
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -479,10 +516,14 @@ const Conditioning = () => {
   const [weeklyStatus, setWeeklyStatus] = useState(null);
   const [activeReps, setActiveReps] = useState([]);
   const [missedReps, setMissedReps] = useState([]);
+  const [completedReps, setCompletedReps] = useState([]);
+  const [evidenceMap, setEvidenceMap] = useState({});
+  const [pendingRetries, setPendingRetries] = useState([]);
   const [nudgeStatus, setNudgeStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCommitForm, setShowCommitForm] = useState(false);
+  const [evidenceModalRep, setEvidenceModalRep] = useState(null);
   const [error, setError] = useState(null);
   
   // Load data
@@ -497,20 +538,40 @@ const Conditioning = () => {
       await conditioningService.checkAndMarkOverdueReps(db, userId, cohortId);
       
       // Load all data in parallel
-      const [status, active, missed, nudge] = await Promise.all([
+      const [status, active, missed, nudge, retries] = await Promise.all([
         conditioningService.getWeeklyStatus(db, userId, null, cohortId),
         conditioningService.getActiveReps(db, userId, cohortId),
         conditioningService.getMissedReps(db, userId, cohortId),
-        conditioningService.getNudgeStatus(db, userId, cohortId)
+        conditioningService.getNudgeStatus(db, userId, cohortId),
+        conditioningService.getPendingRetries(db, userId)
       ]);
       
       // Separate active reps from missed ones in the active list
       const currentWeekActive = active.filter(r => r.status === REP_STATUS.ACTIVE);
       
+      // Get completed reps from weekly status
+      const completed = (status?.reps || []).filter(r => r.status === REP_STATUS.COMPLETED);
+      
+      // Load evidence for completed reps
+      const evidencePromises = completed.map(async (rep) => {
+        const evidence = await conditioningService.getEvidence(db, userId, rep.id);
+        return { repId: rep.id, evidence };
+      });
+      const evidenceResults = await Promise.all(evidencePromises);
+      const newEvidenceMap = {};
+      evidenceResults.forEach(({ repId, evidence }) => {
+        if (evidence) {
+          newEvidenceMap[repId] = evidence;
+        }
+      });
+      
       setWeeklyStatus(status);
       setActiveReps(currentWeekActive);
+      setCompletedReps(completed);
       setMissedReps(missed);
       setNudgeStatus(nudge);
+      setPendingRetries(retries);
+      setEvidenceMap(newEvidenceMap);
     } catch (err) {
       console.error('Error loading conditioning data:', err);
       setError('Failed to load data. Please try again.');
@@ -588,6 +649,36 @@ const Conditioning = () => {
     }
   };
   
+  // Phase 2: Evidence submission handler
+  const handleEvidenceSubmitted = async () => {
+    setEvidenceModalRep(null);
+    await loadData();
+  };
+  
+  // Phase 2: Practice retry handler
+  const handleStartPractice = async (rep, dimension) => {
+    if (!userId || !db) return;
+    
+    try {
+      const evidence = evidenceMap[rep.id];
+      const context = {
+        originalResponse: evidence?.responses?.[dimension] || '',
+        repType: rep.repType,
+        person: rep.person
+      };
+      await conditioningService.createPracticeRetry(db, userId, rep.id, dimension, context);
+      await loadData();
+    } catch (err) {
+      console.error('Error creating practice retry:', err);
+      setError('Failed to start practice. Please try again.');
+    }
+  };
+  
+  // Phase 2: Practice completed handler
+  const handlePracticeComplete = async () => {
+    await loadData();
+  };
+  
   // No cohort check
   if (!cohortId) {
     return (
@@ -649,6 +740,16 @@ const Conditioning = () => {
           isLoading={isSubmitting}
         />
         
+        {/* Practice Retries Section */}
+        {pendingRetries.length > 0 && (
+          <div className="mb-6">
+            <PracticeRetryCard 
+              retries={pendingRetries}
+              onComplete={handlePracticeComplete}
+            />
+          </div>
+        )}
+        
         {/* Active Reps */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
@@ -682,21 +783,21 @@ const Conditioning = () => {
         </div>
         
         {/* Completed This Week */}
-        {weeklyStatus?.reps?.filter(r => r.status === REP_STATUS.COMPLETED).length > 0 && (
+        {completedReps.length > 0 && (
           <div className="mb-6">
             <h3 className="font-semibold text-corporate-navy mb-3">Completed This Week</h3>
-            {weeklyStatus.reps
-              .filter(r => r.status === REP_STATUS.COMPLETED)
-              .map((rep) => (
-                <RepCard
-                  key={rep.id}
-                  rep={rep}
-                  onComplete={() => {}}
-                  onCancel={() => {}}
-                  isLoading={false}
-                />
-              ))
-            }
+            {completedReps.map((rep) => (
+              <RepCard
+                key={rep.id}
+                rep={rep}
+                onComplete={() => {}}
+                onCancel={() => {}}
+                onAddDebrief={(rep) => setEvidenceModalRep(rep)}
+                onPractice={handleStartPractice}
+                evidence={evidenceMap[rep.id]}
+                isLoading={false}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -718,6 +819,17 @@ const Conditioning = () => {
           onSubmit={handleCommitRep}
           onClose={() => setShowCommitForm(false)}
           isLoading={isSubmitting}
+        />
+      )}
+      
+      {/* Evidence Capture Modal */}
+      {evidenceModalRep && (
+        <EvidenceCaptureModal
+          isOpen={true}
+          onClose={() => setEvidenceModalRep(null)}
+          rep={evidenceModalRep}
+          userId={userId}
+          onSubmitted={handleEvidenceSubmitted}
         />
       )}
     </div>

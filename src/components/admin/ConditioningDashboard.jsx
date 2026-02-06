@@ -4,11 +4,12 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
-import { conditioningService, REP_STATUS, getCurrentWeekId } from '../../services/conditioningService';
+import conditioningService, { REP_STATUS, getCurrentWeekId, QUALITY_DIMENSIONS } from '../../services/conditioningService';
 import { Card } from '../ui';
 import { 
   Users, CheckCircle, AlertTriangle, Clock, RefreshCw,
-  Target, ChevronDown, ChevronUp, User, Calendar
+  Target, ChevronDown, ChevronUp, User, Calendar,
+  BarChart3, FileText, ThumbsUp, MessageSquare, Handshake, Lightbulb
 } from 'lucide-react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
@@ -191,6 +192,98 @@ const StatsSummary = ({ cohortSummary }) => {
 };
 
 // ============================================
+// QUALITY METRICS (Phase 2)
+// ============================================
+const DIMENSION_CONFIG = {
+  [QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE]: { icon: MessageSquare, label: 'Specific Language', color: 'blue' },
+  [QUALITY_DIMENSIONS.CLEAR_REQUEST]: { icon: Target, label: 'Clear Request', color: 'green' },
+  [QUALITY_DIMENSIONS.NAMED_COMMITMENT]: { icon: Handshake, label: 'Named Commitment', color: 'amber' },
+  [QUALITY_DIMENSIONS.REFLECTION]: { icon: Lightbulb, label: 'Reflection', color: 'purple' }
+};
+
+const QualityMetrics = ({ cohortQualityStats }) => {
+  if (!cohortQualityStats) return null;
+  
+  const { 
+    totalWithEvidence, 
+    level1Rate, 
+    qualityRate, 
+    dimensionStats 
+  } = cohortQualityStats;
+  
+  if (totalWithEvidence === 0) {
+    return (
+      <Card className="p-4 mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <BarChart3 className="w-5 h-5 text-corporate-navy" />
+          <h3 className="font-semibold text-corporate-navy">Quality Metrics</h3>
+        </div>
+        <p className="text-sm text-gray-500 italic">No debriefs submitted yet for this cohort.</p>
+      </Card>
+    );
+  }
+  
+  return (
+    <Card className="p-4 mb-6">
+      <div className="flex items-center gap-2 mb-4">
+        <BarChart3 className="w-5 h-5 text-corporate-navy" />
+        <h3 className="font-semibold text-corporate-navy">Quality Metrics</h3>
+      </div>
+      
+      {/* Overview Stats */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="text-center p-3 bg-gray-50 rounded-lg">
+          <div className="text-2xl font-bold text-corporate-navy">{totalWithEvidence}</div>
+          <div className="text-xs text-gray-500">Debriefs</div>
+        </div>
+        <div className="text-center p-3 bg-blue-50 rounded-lg">
+          <div className="text-2xl font-bold text-blue-600">{level1Rate}%</div>
+          <div className="text-xs text-blue-600">Level 1 Rate</div>
+        </div>
+        <div className="text-center p-3 bg-green-50 rounded-lg">
+          <div className="text-2xl font-bold text-green-600">{qualityRate}%</div>
+          <div className="text-xs text-green-600">Quality Pass</div>
+        </div>
+      </div>
+      
+      {/* Dimension Breakdown */}
+      <h4 className="text-sm font-medium text-gray-700 mb-2">Dimension Pass Rates</h4>
+      <div className="space-y-2">
+        {Object.entries(dimensionStats || {}).map(([dimension, stats]) => {
+          const config = DIMENSION_CONFIG[dimension];
+          if (!config) return null;
+          const Icon = config.icon;
+          const colorClass = {
+            blue: 'bg-blue-500',
+            green: 'bg-green-500',
+            amber: 'bg-amber-500',
+            purple: 'bg-purple-500'
+          }[config.color] || 'bg-gray-500';
+          
+          return (
+            <div key={dimension} className="flex items-center gap-3">
+              <Icon className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              <div className="flex-1">
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                  <span>{config.label}</span>
+                  <span>{stats.passed}/{stats.total} ({stats.rate}%)</span>
+                </div>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full ${colorClass} transition-all`}
+                    style={{ width: `${stats.rate}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+};
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 const ConditioningDashboard = () => {
@@ -200,6 +293,7 @@ const ConditioningDashboard = () => {
   const [selectedCohortId, setSelectedCohortId] = useState(null);
   const [userSummaries, setUserSummaries] = useState([]);
   const [cohortSummary, setCohortSummary] = useState(null);
+  const [cohortQualityStats, setCohortQualityStats] = useState(null);
   const [expandedUserId, setExpandedUserId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -294,6 +388,44 @@ const ConditioningDashboard = () => {
         usersNeedingAttention: summaries.filter(s => s.needsAttention).length
       });
       
+      // Phase 2: Calculate cohort-wide quality stats
+      const allQualityStats = await Promise.all(
+        users.map(user => conditioningService.getQualityStats(db, user.id, selectedCohortId))
+      );
+      
+      // Aggregate quality stats across cohort
+      let totalWithEvidence = 0;
+      let totalLevel1 = 0;
+      let totalMeetsStandard = 0;
+      const aggregatedDimensions = {};
+      
+      allQualityStats.forEach(stats => {
+        totalWithEvidence += stats.evidenceSubmitted || 0;
+        totalLevel1 += stats.level1Evidence || 0;
+        totalMeetsStandard += stats.meetsStandard || 0;
+        
+        Object.entries(stats.dimensionStats || {}).forEach(([dim, dimStats]) => {
+          if (!aggregatedDimensions[dim]) {
+            aggregatedDimensions[dim] = { passed: 0, total: 0 };
+          }
+          aggregatedDimensions[dim].passed += dimStats.passed || 0;
+          aggregatedDimensions[dim].total += dimStats.total || 0;
+        });
+      });
+      
+      // Calculate rates
+      Object.keys(aggregatedDimensions).forEach(dim => {
+        const { passed, total } = aggregatedDimensions[dim];
+        aggregatedDimensions[dim].rate = total > 0 ? Math.round((passed / total) * 100) : 0;
+      });
+      
+      setCohortQualityStats({
+        totalWithEvidence,
+        level1Rate: totalWithEvidence > 0 ? Math.round((totalLevel1 / totalWithEvidence) * 100) : 0,
+        qualityRate: totalWithEvidence > 0 ? Math.round((totalMeetsStandard / totalWithEvidence) * 100) : 0,
+        dimensionStats: aggregatedDimensions
+      });
+      
     } catch (err) {
       console.error('Error loading cohort data:', err);
       setError('Failed to load cohort data');
@@ -359,6 +491,9 @@ const ConditioningDashboard = () => {
       
       {/* Stats Summary */}
       <StatsSummary cohortSummary={cohortSummary} />
+      
+      {/* Quality Metrics (Phase 2) */}
+      <QualityMetrics cohortQualityStats={cohortQualityStats} />
       
       {/* No cohort selected */}
       {!selectedCohortId && (
