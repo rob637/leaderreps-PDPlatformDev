@@ -66,6 +66,18 @@ service cloud.firestore {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
       allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
+    
+    // Conditioning notifications - Trainers can write to any user's notifications
+    // This allows trainers to push nudges into leader notification queues
+    match /users/{userId}/conditioning_notifications/{notifId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow create: if isAdmin();
+      allow update: if request.auth != null && (
+        request.auth.uid == userId || 
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
 
     // User data collection (Leader Profile, Assessments, etc.)
     match /user_data/{userId}/{document=**} {
@@ -76,12 +88,12 @@ service cloud.firestore {
     // Reppy standalone app user data
     match /reppy_users/{userId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
     
     // Reppy invitations (admin can create/manage, users can read their own)
-    match /reppy_invitations/{email} {
-      allow read: if request.auth != null && (request.auth.token.email.lower() == email.lower() || isAdmin());
+    match /reppy_invitations/{inviteId} {
+      allow read: if request.auth != null;
       allow write: if isAdmin();
     }
     
@@ -231,6 +243,33 @@ service cloud.firestore {
     match /cohorts/{document} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // CONDITIONING LAYER COLLECTIONS
+    // ============================================
+    
+    // Conditioning Nudges - Trainers send to leaders
+    // Trainers (admins) can create and read all nudges for their cohorts
+    // Target users can read their own nudges
+    match /conditioning_nudges/{nudgeId} {
+      allow read: if request.auth != null && (
+        isAdmin() || 
+        request.auth.uid == resource.data.targetUserId ||
+        request.auth.uid == resource.data.trainerId
+      );
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (
+        request.auth != null && 
+        request.auth.uid == resource.data.targetUserId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt'])
+      );
+      allow delete: if isAdmin();
+    }
+    
+    // Conditioning Escalations - Admin/Trainer only
+    match /conditioning_escalations/{escalationId} {
+      allow read, write: if isAdmin();
     }
 
     // Daily Plan V1 (New Day-by-Day Architecture)
