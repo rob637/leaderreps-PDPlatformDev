@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
 import conditioningService, { 
   REP_TYPES, 
   REP_STATUS, 
@@ -509,9 +510,11 @@ const MissedRepsSection = ({ missedReps, onRollForward, isLoading }) => {
 // MAIN CONDITIONING SCREEN
 // ============================================
 const Conditioning = () => {
-  const { user, userProfile, db } = useAppServices();
+  const { user, userProfile, developmentPlanData, db } = useAppServices();
+  const { cohortData } = useDailyPlan();
   const userId = user?.uid;
-  const cohortId = userProfile?.cohortId;
+  // Check multiple sources for cohortId (developmentPlanData is primary, but also check cohortData and userProfile)
+  const cohortId = developmentPlanData?.cohortId || cohortData?.id || userProfile?.cohortId;
   
   // State
   const [weeklyStatus, setWeeklyStatus] = useState(null);
