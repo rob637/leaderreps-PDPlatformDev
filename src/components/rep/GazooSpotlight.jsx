@@ -255,14 +255,14 @@ const GazooSpotlight = ({
               pointerEvents: 'auto',
               background: 'transparent',
               // Cut a hole in the backdrop so clicks pass through to the highlighted element
+              // evenodd fill rule is REQUIRED - without it the inner path doesn't create a hole
               clipPath: elementRect 
-                ? `polygon(
-                    0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%,
+                ? `polygon(evenodd,
+                    0% 0%, 0% 100%, 100% 100%, 100% 0%,
                     ${elementRect.left - 8}px ${elementRect.top - 8}px,
-                    ${elementRect.left - 8}px ${elementRect.top + elementRect.height + 8}px,
-                    ${elementRect.left + elementRect.width + 8}px ${elementRect.top + elementRect.height + 8}px,
                     ${elementRect.left + elementRect.width + 8}px ${elementRect.top - 8}px,
-                    ${elementRect.left - 8}px ${elementRect.top - 8}px
+                    ${elementRect.left + elementRect.width + 8}px ${elementRect.top + elementRect.height + 8}px,
+                    ${elementRect.left - 8}px ${elementRect.top + elementRect.height + 8}px
                   )`
                 : undefined
             }}
