@@ -617,14 +617,14 @@ const Dashboard = () => {
     'weekly-focus': () => shouldShow('weekly-focus', true) ? <WidgetRenderer widgetId="weekly-focus" scope={scope} /> : null,
     'lis-maker': () => shouldShow('lis-maker', false) ? <WidgetRenderer widgetId="lis-maker" scope={scope} /> : null,
     'grounding-rep': () => shouldShow('grounding-rep', false) ? <WidgetRenderer widgetId="grounding-rep" scope={scope} /> : null,
-    'win-the-day': () => shouldShow('win-the-day', true) ? <WidgetRenderer widgetId="win-the-day" scope={scope} /> : null,
+    'win-the-day': () => shouldShow('win-the-day', true) ? <div data-gazoo-step="win-the-day"><WidgetRenderer widgetId="win-the-day" scope={scope} /></div> : null,
     'daily-plan': () => currentDayNumber >= 1 ? <WidgetRenderer widgetId="daily-plan" scope={scope} /> : null,
-    'daily-leader-reps': () => shouldShow('daily-leader-reps', true) ? <WidgetRenderer widgetId="daily-leader-reps" scope={scope} /> : null,
-    'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <WidgetRenderer widgetId="this-weeks-actions" scope={scope} /> : null,
+    'daily-leader-reps': () => shouldShow('daily-leader-reps', true) ? <div data-gazoo-step="daily-reps"><WidgetRenderer widgetId="daily-leader-reps" scope={scope} /></div> : null,
+    'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <div data-gazoo-step="this-weeks-actions"><WidgetRenderer widgetId="this-weeks-actions" scope={scope} /></div> : null,
     'notifications': () => shouldShow('notifications', false) ? <WidgetRenderer widgetId="notifications" scope={scope} /> : null,
     'pm-bookend-header': () => shouldShow('pm-bookend-header', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
     'progress-feedback': () => shouldShow('progress-feedback', true) ? <WidgetRenderer widgetId="progress-feedback" scope={scope} /> : null,
-    'pm-bookend': () => shouldShow('pm-bookend', true) ? <WidgetRenderer widgetId="pm-bookend" scope={scope} /> : null,
+    'pm-bookend': () => shouldShow('pm-bookend', true) ? <div data-gazoo-step="pm-bookend"><WidgetRenderer widgetId="pm-bookend" scope={scope} /></div> : null,
     'scorecard': () => shouldShow('scorecard', true) ? <WidgetRenderer widgetId="scorecard" scope={scope} /> : null,
     
     // Legacy / Optional

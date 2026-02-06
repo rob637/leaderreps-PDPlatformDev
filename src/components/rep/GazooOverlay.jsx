@@ -11,6 +11,7 @@ import {
 import { motion } from 'framer-motion';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
+import GazooSpotlight from './GazooSpotlight';
 
 // CLEAR Feedback Method framework
 const CLEAR_METHOD = {
@@ -179,6 +180,7 @@ const GazooOverlay = ({ onClose }) => {
 
   const [mode, setMode] = useState('guide'); // 'guide' or 'coach'
   const [isMinimized, setIsMinimized] = useState(false);
+  const [showSpotlight, setShowSpotlight] = useState(false);
   const [userQuestion, setUserQuestion] = useState('');
   const [coachResponse, setCoachResponse] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
@@ -492,9 +494,11 @@ const GazooOverlay = ({ onClose }) => {
             </button>
             <button
               onClick={() => {
-                if (screenKey === 'dashboard' && context.incompleteActions > 0) {
-                  navigate('dailyPractice');
-                } else if (screenKey !== 'dashboard') {
+                // Launch spotlight tour on dashboard
+                if (screenKey === 'dashboard') {
+                  setShowSpotlight(true);
+                  setIsMinimized(true); // Minimize Gazoo while spotlight is active
+                } else {
                   navigate('dashboard');
                 }
               }}
@@ -507,6 +511,20 @@ const GazooOverlay = ({ onClose }) => {
           </div>
         )}
       </div>
+
+      {/* Spotlight Tour */}
+      <GazooSpotlight
+        isOpen={showSpotlight}
+        onClose={() => {
+          setShowSpotlight(false);
+          setIsMinimized(false);
+        }}
+        screenContext={screenKey}
+        onComplete={() => {
+          setShowSpotlight(false);
+          setIsMinimized(false);
+        }}
+      />
     </motion.div>
   );
 };
