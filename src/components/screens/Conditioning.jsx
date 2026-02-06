@@ -15,13 +15,14 @@ import {
   EvidenceCaptureModal,
   QualityAssessmentCard,
   PracticeRetryCard,
-  TrainerNudgeNotification
+  TrainerNudgeNotification,
+  RepPrepModal
 } from '../conditioning';
 import { 
   Plus, Check, X, AlertTriangle, Clock, User, 
   ChevronRight, RefreshCw, MessageSquare, Users,
   Target, Calendar, CheckCircle, XCircle, AlertCircle,
-  FileText
+  FileText, ClipboardList, Info
 } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 
@@ -155,7 +156,7 @@ const WeekStatusHeader = ({ weeklyStatus, nudgeStatus }) => {
 // ============================================
 // REP CARD COMPONENT
 // ============================================
-const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence, isLoading }) => {
+const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, onPrep, evidence, isLoading }) => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   
@@ -218,6 +219,14 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence
             </div>
           )}
           
+          {/* Prep Status Indicator */}
+          {rep.prep && (
+            <div className="flex items-center gap-1 text-xs text-blue-600 mb-3 bg-blue-50 px-2 py-1 rounded">
+              <ClipboardList className="w-3 h-3" />
+              <span>Prep notes saved</span>
+            </div>
+          )}
+          
           {/* Cancel Reason */}
           {rep.status === REP_STATUS.CANCELED && rep.cancelReason && (
             <div className="text-sm text-gray-500 mb-3">
@@ -227,23 +236,37 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence
           
           {/* Action Buttons - Active/Missed Reps */}
           {canTakeAction && (
-            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+            <div className="pt-2 border-t border-gray-100 space-y-2">
+              {/* Prep Button */}
               <Button
-                onClick={() => onComplete(rep.id)}
-                disabled={isLoading}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2"
-              >
-                <Check className="w-4 h-4 mr-1" />
-                Complete
-              </Button>
-              <Button
-                onClick={() => setShowCancelModal(true)}
+                onClick={() => onPrep?.(rep)}
                 disabled={isLoading}
                 variant="outline"
-                className="py-2"
+                className="w-full py-2 border-blue-300 text-blue-700 hover:bg-blue-50"
               >
-                <X className="w-4 h-4" />
+                <ClipboardList className="w-4 h-4 mr-2" />
+                {rep.prep ? 'Edit Prep Notes' : 'Prep This Rep'}
               </Button>
+              
+              {/* Complete & Cancel Row */}
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => onComplete(rep.id)}
+                  disabled={isLoading}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2"
+                >
+                  <Check className="w-4 h-4 mr-1" />
+                  Complete
+                </Button>
+                <Button
+                  onClick={() => setShowCancelModal(true)}
+                  disabled={isLoading}
+                  variant="outline"
+                  className="py-2"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           )}
           
@@ -287,6 +310,18 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence
           <Card className="w-full max-w-md">
             <div className="p-4">
               <h3 className="text-lg font-bold text-corporate-navy mb-2">Cancel Rep</h3>
+              
+              {/* Delete Prevention Messaging */}
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-amber-800">
+                    <p className="font-medium">Why can't I just delete this?</p>
+                    <p className="mt-1 text-xs">Reps cannot be deleted to prevent avoiding accountability. You can only cancel with a valid reason (e.g., person left role, meeting canceled permanently).</p>
+                  </div>
+                </div>
+              </div>
+              
               <p className="text-sm text-gray-600 mb-4">
                 Why are you canceling this rep? (Required)
               </p>
@@ -528,6 +563,7 @@ const Conditioning = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCommitForm, setShowCommitForm] = useState(false);
   const [evidenceModalRep, setEvidenceModalRep] = useState(null);
+  const [prepModalRep, setPrepModalRep] = useState(null);
   const [error, setError] = useState(null);
   
   // Load data
@@ -659,6 +695,12 @@ const Conditioning = () => {
     await loadData();
   };
   
+  // Phase 2: Prep saved handler
+  const handlePrepSaved = async () => {
+    setPrepModalRep(null);
+    await loadData();
+  };
+  
   // Phase 2: Practice retry handler
   const handleStartPractice = async (rep, dimension) => {
     if (!userId || !db) return;
@@ -783,6 +825,7 @@ const Conditioning = () => {
                 rep={rep}
                 onComplete={handleCompleteRep}
                 onCancel={handleCancelRep}
+                onPrep={(rep) => setPrepModalRep(rep)}
                 isLoading={isSubmitting}
               />
             ))
@@ -799,6 +842,7 @@ const Conditioning = () => {
                 rep={rep}
                 onComplete={() => {}}
                 onCancel={() => {}}
+                onPrep={(rep) => setPrepModalRep(rep)}
                 onAddDebrief={(rep) => setEvidenceModalRep(rep)}
                 onPractice={handleStartPractice}
                 evidence={evidenceMap[rep.id]}
@@ -837,6 +881,17 @@ const Conditioning = () => {
           rep={evidenceModalRep}
           userId={userId}
           onSubmitted={handleEvidenceSubmitted}
+        />
+      )}
+      
+      {/* Rep Prep Modal */}
+      {prepModalRep && (
+        <RepPrepModal
+          rep={prepModalRep}
+          existingPrep={prepModalRep?.prep || null}
+          onClose={() => setPrepModalRep(null)}
+          onSave={handlePrepSaved}
+          isLoading={isSubmitting}
         />
       )}
     </div>
