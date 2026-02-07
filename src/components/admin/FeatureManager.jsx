@@ -681,7 +681,7 @@ const FeatureManager = () => {
     ],
     locker: [
       'locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection',
-      'locker-controller', 'locker-reminders', 'locker-reps-history'
+      'locker-controller', 'locker-reminders', 'locker-reps-history', 'locker-conditioning-history'
     ],
     system: [
       'system-reminders-controller', 'time-traveler', 'admin-access-viewer'

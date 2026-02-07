@@ -21,7 +21,7 @@ const ConditioningPanel = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100]">
+    <div className="fixed inset-0 z-[9999]">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 transition-opacity"

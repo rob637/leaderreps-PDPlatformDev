@@ -28,7 +28,7 @@ const TOUR_STEPS = {
       description: "Build leadership muscles with focused drills. Complete at least one rep this week.",
       tip: "Conditioning builds lasting habits. Commit to a rep and follow through!",
       action: "Tap to see available conditioning reps",
-      position: 'right'
+      position: 'left' // Left side so it doesn't overlap with Conditioning detail panel on right
     },
     {
       id: 'this-weeks-actions',
@@ -55,25 +55,32 @@ const calculatePanelPosition = (elementRect, preferredPosition, windowWidth, win
   const panelHeight = 280;
   const padding = 16;
   
+  // Detect if a right-side detail panel is open (e.g., Conditioning panel)
+  // This reduces the effective available width on the right
+  const rightPanel = document.querySelector('[data-panel-side="right"], .conditioning-panel, [class*="right-panel"]');
+  const effectiveWidth = rightPanel 
+    ? Math.min(windowWidth, rightPanel.getBoundingClientRect().left) 
+    : windowWidth;
+  
   // Try preferred position first
   let position = { top: 0, left: 0 };
   
-  if (preferredPosition === 'right' && elementRect.right + panelWidth + padding < windowWidth) {
-    // Position to the right
+  if (preferredPosition === 'right' && elementRect.right + panelWidth + padding < effectiveWidth) {
+    // Position to the right (only if no right panel blocking)
     position.left = elementRect.right + padding;
     position.top = Math.max(padding, Math.min(elementRect.top, windowHeight - panelHeight - padding));
-  } else if (preferredPosition === 'left' && elementRect.left - panelWidth - padding > 0) {
-    // Position to the left
+  } else if ((preferredPosition === 'left' || preferredPosition === 'right') && elementRect.left - panelWidth - padding > 0) {
+    // Position to the left — also used as fallback when right is blocked
     position.left = elementRect.left - panelWidth - padding;
     position.top = Math.max(padding, Math.min(elementRect.top, windowHeight - panelHeight - padding));
   } else if (elementRect.bottom + panelHeight + padding < windowHeight) {
     // Position below
     position.top = elementRect.bottom + padding;
-    position.left = Math.max(padding, Math.min(elementRect.left, windowWidth - panelWidth - padding));
+    position.left = Math.max(padding, Math.min(elementRect.left, effectiveWidth - panelWidth - padding));
   } else {
     // Position above
     position.top = Math.max(padding, elementRect.top - panelHeight - padding);
-    position.left = Math.max(padding, Math.min(elementRect.left, windowWidth - panelWidth - padding));
+    position.left = Math.max(padding, Math.min(elementRect.left, effectiveWidth - panelWidth - padding));
   }
   
   return position;

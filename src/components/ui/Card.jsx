@@ -78,12 +78,13 @@ const Card = React.forwardRef(({
   const [showHelp, setShowHelp] = useState(false);
   
   // Premium variants with softer shadows and no hard borders
+  // Use border-y-0 + border-r-0 to preserve accent border-l when present
   const variants = {
-    default: 'bg-white shadow-sm hover:shadow-md border-0',
-    elevated: 'bg-white shadow-lg border-0',
-    flat: 'bg-slate-50/80 shadow-none border-0',
-    interactive: 'bg-white shadow-sm hover:shadow-lg cursor-pointer transition-all duration-200 border-0',
-    soft: 'bg-white/90 backdrop-blur-sm shadow-md border-0',
+    default: 'bg-white shadow-sm hover:shadow-md border-y-0 border-r-0',
+    elevated: 'bg-white shadow-lg border-y-0 border-r-0',
+    flat: 'bg-slate-50/80 shadow-none border-y-0 border-r-0',
+    interactive: 'bg-white shadow-sm hover:shadow-lg cursor-pointer transition-all duration-200 border-y-0 border-r-0',
+    soft: 'bg-white/90 backdrop-blur-sm shadow-md border-y-0 border-r-0',
     glass: 'bg-white/80 backdrop-blur-md shadow-md border border-white/50',
   };
 
