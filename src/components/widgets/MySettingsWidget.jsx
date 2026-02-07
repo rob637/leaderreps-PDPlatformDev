@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, User, Bell, CheckCircle, Edit2, Zap, Mail, Smartphone, VolumeX, Shield,
-  Download, LogOut, AlertTriangle
+  Download, LogOut, AlertTriangle, Sun, Moon, Monitor
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { useAppServices } from '../../services/useAppServices';
+import { useTheme } from '../../providers/ThemeProvider';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
 import PWAInstall from '../ui/PWAInstall';
@@ -35,6 +36,9 @@ const MySettingsWidget = () => {
   
   // Profile data
   const { profile, loading: profileLoading, isComplete: profileComplete } = useLeaderProfile();
+  
+  // Theme
+  const { theme, setTheme } = useTheme();
   
   // Use stored isComplete flag - profile is complete once user saves it
   const isProfileComplete = profileComplete;
@@ -126,7 +130,7 @@ const MySettingsWidget = () => {
           {/* Leader Profile Row - Clickable to edit */}
           <button
             onClick={() => setShowProfileForm(true)}
-            className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-slate-50 hover:border-corporate-teal/30 transition-colors"
+            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-corporate-teal/30 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isProfileComplete ? 'bg-green-100' : 'bg-corporate-orange/10'}`}>
@@ -137,7 +141,7 @@ const MySettingsWidget = () => {
                 )}
               </div>
               <div className="text-left">
-                <h4 className="font-medium text-corporate-navy text-sm">Leader Profile</h4>
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Leader Profile</h4>
                 <p className="text-xs text-slate-500">
                   {isProfileComplete 
                     ? `Welcome, ${profile?.firstName}!` 
@@ -154,7 +158,7 @@ const MySettingsWidget = () => {
           {/* Notifications Row - Clickable to open settings */}
           <button
             onClick={() => setShowNotificationSettings(true)}
-            className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-slate-50 hover:border-corporate-teal/30 transition-colors"
+            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-corporate-teal/30 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notifSettings.strategy !== 'disabled' ? 'bg-green-100' : 'bg-slate-100'}`}>
@@ -165,7 +169,7 @@ const MySettingsWidget = () => {
                 })()}
               </div>
               <div className="text-left">
-                <h4 className="font-medium text-corporate-navy text-sm">Notifications</h4>
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Notifications</h4>
                 <p className="text-xs text-slate-500">
                   {STRATEGY_DISPLAY[notifSettings.strategy]?.name || 'Smart Escalation'}
                 </p>
@@ -176,6 +180,45 @@ const MySettingsWidget = () => {
               <Edit2 className="w-3.5 h-3.5" />
             </div>
           </button>
+
+          {/* Appearance / Theme Row - Visible on all devices */}
+          <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/40">
+                {theme === 'dark' ? (
+                  <Moon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                ) : theme === 'light' ? (
+                  <Sun className="w-4 h-4 text-amber-500" />
+                ) : (
+                  <Monitor className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                )}
+              </div>
+              <div className="text-left">
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Appearance</h4>
+              </div>
+            </div>
+            <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
+              {[
+                { value: 'light', icon: Sun, label: 'Light' },
+                { value: 'system', icon: Monitor, label: 'System' },
+                { value: 'dark', icon: Moon, label: 'Dark' },
+              ].map(({ value, icon: ThemeIcon, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setTheme(value)}
+                  className={`p-1.5 rounded-md transition-all duration-200 ${
+                    theme === value
+                      ? 'bg-white dark:bg-slate-600 shadow-sm text-corporate-navy dark:text-white'
+                      : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                  }`}
+                  title={label}
+                  aria-label={`${label} theme`}
+                >
+                  <ThemeIcon className="w-4 h-4" />
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Install App & Sign Out - Mobile Only (hidden on desktop since they're in the sidebar) */}
           <div className="md:hidden space-y-2">

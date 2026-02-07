@@ -145,7 +145,7 @@ const AppContent = ({
           </nav>
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col h-screen md:h-[calc(100vh-16px)] overflow-hidden relative transition-all duration-300 bg-[#FAFBFC] md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2" role="main">
+          <div className="flex-1 flex flex-col h-screen md:h-[calc(100vh-16px)] overflow-hidden relative transition-all duration-300 bg-[#FAFBFC] dark:bg-slate-900 md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2" role="main">
             
             <main className="flex-1 flex flex-col overflow-hidden relative md:rounded-3xl" aria-label="Page content">
               {/* Global Back Button Header - REMOVED to save whitespace */}
@@ -167,7 +167,7 @@ const AppContent = ({
                     <div className="min-h-full flex items-center justify-center gradient-corporate-hero">
                       <div className="card-corporate-elevated flex flex-col items-center p-12">
                         <div className="loading-corporate mb-6"></div>
-                        <p className="corporate-text-body text-corporate-navy">
+                        <p className="corporate-text-body text-corporate-navy dark:text-slate-200">
                           Loading Content...
                         </p>
                       </div>
@@ -189,7 +189,7 @@ const AppContent = ({
             </div>
 
             {/* Footer - Hidden on mobile to save space, visible on desktop */}
-            <footer className="hidden md:block w-full text-center mt-auto border-t bg-white/60 backdrop-blur-sm border-slate-100 p-5">
+            <footer className="hidden md:block w-full text-center mt-auto border-t bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border-slate-100 dark:border-slate-700 p-5">
               {/* Sync Status Indicator */}
               <div className="flex justify-center mb-3">
                 <SyncIndicator variant="badge" showWhenSynced={false} />

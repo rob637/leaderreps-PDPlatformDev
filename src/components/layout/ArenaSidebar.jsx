@@ -127,13 +127,13 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
   return (
     <div 
       className={`
-        relative z-40 bg-corporate-light-gray text-corporate-navy transition-all duration-300 ease-in-out flex-col hidden md:flex border-slate-200 rounded-2xl overflow-hidden md:my-2 md:ml-2 h-screen md:h-[calc(100vh-16px)]
+        relative z-40 bg-corporate-light-gray dark:bg-slate-900 text-corporate-navy dark:text-slate-200 transition-all duration-300 ease-in-out flex-col hidden md:flex border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden md:my-2 md:ml-2 h-screen md:h-[calc(100vh-16px)]
         ${isOpen ? 'w-64' : 'w-20'}
       `}
       style={{ fontFamily: 'var(--font-body)' }}
     >
       {/* Header / Toggle */}
-      <div className="h-20 flex items-center justify-between px-4 border-b border-slate-200">
+      <div className="h-20 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-700">
         {isOpen ? (
           <a 
             href="https://leaderreps.com" 
@@ -142,9 +142,9 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
             className="flex items-center gap-3 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity cursor-pointer text-corporate-navy no-underline"
             title="Visit LeaderReps.com"
           >
-            <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl bg-white shadow-lg" />
+            <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 shadow-lg" />
             <div className="flex flex-col">
-              <span className="font-semibold text-lg tracking-tight leading-tight text-corporate-navy" style={{ fontFamily: 'var(--font-heading)' }}>LeaderReps</span>
+              <span className="font-semibold text-lg tracking-tight leading-tight text-corporate-navy dark:text-white" style={{ fontFamily: 'var(--font-heading)' }}>LeaderReps</span>
               <span className="text-[11px] text-corporate-teal font-medium uppercase tracking-widest">
                 The Arena
               </span>
@@ -158,18 +158,18 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
             className="w-10 mx-auto hover:opacity-80 transition-opacity cursor-pointer"
             title="Visit LeaderReps.com"
           >
-             <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl bg-white shadow-lg" />
+             <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 shadow-lg" />
           </a>
         )}
       </div>
 
       {/* Sidebar Toggle */}
-      <div className="flex justify-center py-3 border-b border-slate-200">
+      <div className="flex justify-center py-3 border-b border-slate-200 dark:border-slate-700">
         <button 
           onClick={toggle}
           aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           aria-expanded={isOpen}
-          className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-slate-200 rounded-xl text-slate-500 hover:text-corporate-navy transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 focus:ring-offset-white touch-manipulation"
+          className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-400 hover:text-corporate-navy dark:hover:text-white transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 touch-manipulation"
         >
           {isOpen ? <ChevronLeft className="w-5 h-5" aria-hidden="true" /> : <ChevronRight className="w-5 h-5" aria-hidden="true" />}
         </button>
@@ -185,7 +185,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
                    <span className={`text-[10px] font-semibold text-slate-500 uppercase tracking-[0.15em] ${isOpen ? 'block' : 'hidden'}`}>
                      {item.label}
                    </span>
-                   {!isOpen && <div className="h-px bg-slate-200 mx-2 my-3"></div>}
+                   {!isOpen && <div className="h-px bg-slate-200 dark:bg-slate-700 mx-2 my-3"></div>}
                  </li>
                );
             }
@@ -205,12 +205,12 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
                   aria-current={isActive ? 'page' : undefined}
                   className={`
                     w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] transition-all duration-200 relative border-none rounded-xl group
-                    focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 focus:ring-offset-white touch-manipulation
+                    focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 touch-manipulation
                     ${isActive 
                       ? 'bg-corporate-teal text-white shadow-lg shadow-corporate-teal/30 font-medium' 
                       : isHighlighted
-                        ? 'bg-gradient-to-r from-corporate-teal/20 to-corporate-orange/20 text-corporate-navy hover:from-corporate-teal/30 hover:to-corporate-orange/30 border border-corporate-teal/30'
-                        : 'bg-corporate-teal/10 text-corporate-navy hover:bg-corporate-teal/20 hover:text-corporate-navy'
+                        ? 'bg-gradient-to-r from-corporate-teal/20 to-corporate-orange/20 text-corporate-navy dark:text-slate-200 hover:from-corporate-teal/30 hover:to-corporate-orange/30 border border-corporate-teal/30'
+                        : 'bg-corporate-teal/10 text-corporate-navy dark:text-slate-200 hover:bg-corporate-teal/20 hover:text-corporate-navy dark:hover:text-white'
                     }
                   `}
                   title={!isOpen ? item.label : ''}
@@ -245,7 +245,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
 
           {/* Admin Link - Only visible to admins */}
           {isAdmin && (
-            <li className="mt-8 pt-4 border-t border-slate-200">
+            <li className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700">
               <button
                 onClick={() => navigate('admin-portal')}
                 className={`
@@ -270,7 +270,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
       </nav>
 
       {/* Footer / Sign Out */}
-      <div className="p-4 border-t border-slate-200 space-y-3">
+      <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
         
         {/* PWA Install Button */}
         <div className="w-full mb-1">
@@ -297,8 +297,8 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
                 {showAnchors && (
                     <>
                         <div className="fixed inset-0 z-50" onClick={() => setShowAnchors(false)} />
-                        <div className="absolute bottom-full left-0 mb-2 w-72 bg-white rounded-2xl shadow-2xl p-5 text-slate-800 z-50 border border-slate-100" style={{ fontFamily: 'var(--font-body)' }}>
-                             <h3 className="font-semibold mb-4 text-corporate-navy border-b border-slate-100 pb-3" style={{ fontFamily: 'var(--font-heading)' }}>Your Leadership Anchors</h3>
+                        <div className="absolute bottom-full left-0 mb-2 w-72 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-5 text-slate-800 dark:text-slate-200 z-50 border border-slate-100 dark:border-slate-700" style={{ fontFamily: 'var(--font-body)' }}>
+                             <h3 className="font-semibold mb-4 text-corporate-navy dark:text-white border-b border-slate-100 dark:border-slate-700 pb-3" style={{ fontFamily: 'var(--font-heading)' }}>Your Leadership Anchors</h3>
                              <div className="space-y-4 text-sm">
                                 {identityStatement && (
                                     <div>
@@ -327,7 +327,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
 
         <button
           onClick={() => setShowSignOutConfirm(true)}
-          className={`w-full flex items-center gap-3 px-1 py-2 text-slate-500 hover:text-corporate-navy transition-all duration-200 rounded-lg hover:bg-slate-200 ${!isOpen ? 'justify-center' : ''}`}
+          className={`w-full flex items-center gap-3 px-1 py-2 text-slate-500 dark:text-slate-400 hover:text-corporate-navy dark:hover:text-white transition-all duration-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 ${!isOpen ? 'justify-center' : ''}`}
           title={!isOpen ? "Sign Out" : ''}
         >
           <div className="p-1.5 rounded-lg">
@@ -347,13 +347,12 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
       {/* Sign Out Confirmation Dialog */}
       {showSignOutConfirm && (
         <>
-          <div 
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999]" 
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999]" 
             onClick={() => setShowSignOutConfirm(false)} 
           />
           <div className="fixed inset-0 flex items-center justify-center z-[10000] p-4">
             <div 
-              className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-slate-100"
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-slate-100 dark:border-slate-700"
               style={{ fontFamily: 'var(--font-body)' }}
               onClick={(e) => e.stopPropagation()}
             >

@@ -38,6 +38,7 @@ import UpdateNotification from './components/ui/UpdateNotification.jsx';
 import { NotificationProvider } from './providers/NotificationProvider.jsx';
 import { TimeProvider } from './providers/TimeProvider.jsx';
 import { AccessControlProvider } from './providers/AccessControlProvider.jsx';
+import { ThemeProvider } from './providers/ThemeProvider.jsx';
 
 // --- Mobile Experience Enhancements ---
 import { OfflineProvider } from './components/offline/useOffline.jsx';
@@ -206,6 +207,7 @@ function App() {
       {/* Accessibility: Live region for screen reader announcements */}
       <LiveRegion />
       
+      <ThemeProvider>
       <TimeProvider>
         <OfflineProvider>
           <DataProvider
@@ -249,6 +251,7 @@ function App() {
           </DataProvider>
         </OfflineProvider>
       </TimeProvider>
+      </ThemeProvider>
       
       {/* PWA Update Notification */}
       <UpdateNotification />
