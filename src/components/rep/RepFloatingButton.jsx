@@ -20,7 +20,8 @@ const RepFloatingButton = () => {
 
   return (
     <>
-      {/* Floating AI Coach Button - Desktop only (hidden on mobile) */}
+      {/* Floating AI Coach Button - Full on desktop, compact on mobile */}
+      {/* Desktop version */}
       <button
         onClick={handleButtonClick}
         className="
@@ -41,6 +42,27 @@ const RepFloatingButton = () => {
         <Brain className="w-5 h-5" />
         <span className="text-sm font-semibold">The Great Gazoo</span>
         <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">NEW</span>
+      </button>
+
+      {/* Mobile version - compact brain icon only */}
+      <button
+        onClick={handleButtonClick}
+        className="
+          fixed z-40
+          flex md:hidden
+          bottom-20
+          right-4
+          items-center justify-center
+          w-12 h-12
+          rounded-full
+          shadow-lg hover:shadow-xl
+          transition-all duration-200
+          active:scale-90
+          bg-gradient-to-r from-lime-500 to-emerald-600 text-white
+        "
+        aria-label="The Great Gazoo AI Coach"
+      >
+        <Brain className="w-5 h-5" />
       </button>
 
     </>
