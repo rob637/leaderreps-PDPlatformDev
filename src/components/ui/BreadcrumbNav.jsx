@@ -42,7 +42,7 @@ export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
       {/* Primary Back Action - Teal Arrow */}
       <button 
         onClick={handleBack}
-        className="p-1 hover:bg-teal-50 rounded-lg transition-colors flex-shrink-0"
+        className="p-1 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-colors flex-shrink-0"
         title="Go Back"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00A896" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -52,7 +52,7 @@ export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
       </button>
 
       {/* Breadcrumb Trail - Hierarchy Navigation */}
-      <nav className="flex items-center flex-wrap gap-1 text-sm text-slate-500">
+      <nav className="flex items-center flex-wrap gap-1 text-sm text-slate-500 dark:text-slate-400">
         {items.map((item, idx) => {
           const isLast = idx === items.length - 1;
           
@@ -60,11 +60,11 @@ export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
             <React.Fragment key={idx}>
               {/* Separator (except for first item) */}
               {idx > 0 && (
-                <ChevronRight className="w-4 h-4 text-slate-300 mx-1 flex-shrink-0" />
+                <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 mx-1 flex-shrink-0" />
               )}
               
               {isLast ? (
-                <span className="font-bold text-corporate-navy truncate max-w-[200px] sm:max-w-none">
+                <span className="font-bold text-corporate-navy dark:text-white truncate max-w-[200px] sm:max-w-none">
                   {item.label}
                 </span>
               ) : (
@@ -84,7 +84,7 @@ export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
       
       {/* Version Badge - Upper Right */}
       <span 
-        className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded select-none flex-shrink-0"
+        className="text-[10px] font-mono text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded select-none flex-shrink-0"
         title={`App version ${APP_VERSION}`}
       >
         v{APP_VERSION}

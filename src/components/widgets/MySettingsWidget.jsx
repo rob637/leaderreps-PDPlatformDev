@@ -223,14 +223,14 @@ const MySettingsWidget = () => {
           {/* Install App & Sign Out - Mobile Only (hidden on desktop since they're in the sidebar) */}
           <div className="md:hidden space-y-2">
             {/* Install App Row - Uses PWAInstall component (only shows if not installed) */}
-            <div className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
+            <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center bg-corporate-teal/10">
                   <Download className="w-4 h-4 text-corporate-teal" />
                 </div>
                 <div className="text-left">
-                  <h4 className="font-medium text-corporate-navy text-sm">Install App</h4>
-                  <p className="text-xs text-slate-500">Add to home screen</p>
+                  <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Install App</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Add to home screen</p>
                 </div>
               </div>
               <PWAInstall collapsed={true} />
@@ -239,15 +239,15 @@ const MySettingsWidget = () => {
             {/* Sign Out Row */}
             <button
               onClick={() => setShowSignOutConfirm(true)}
-              className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-red-50 hover:border-red-200 transition-colors"
+              className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
-                  <LogOut className="w-4 h-4 text-slate-500" />
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                  <LogOut className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                 </div>
                 <div className="text-left">
-                  <h4 className="font-medium text-corporate-navy text-sm">Sign Out</h4>
-                  <p className="text-xs text-slate-500">Exit the app</p>
+                  <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Sign Out</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Exit the app</p>
                 </div>
               </div>
             </button>
@@ -287,25 +287,25 @@ const MySettingsWidget = () => {
           />
           <div className="fixed inset-0 flex items-center justify-center z-[10000] p-4">
             <div 
-              className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-slate-100"
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-slate-100 dark:border-slate-700"
               style={{ fontFamily: 'var(--font-body)' }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-amber-100 rounded-full">
-                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 </div>
-                <h3 className="font-semibold text-lg text-slate-800" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h3 className="font-semibold text-lg text-slate-800 dark:text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                   Sign Out?
                 </h3>
               </div>
-              <p className="text-slate-600 text-sm mb-6">
+              <p className="text-slate-600 dark:text-slate-300 text-sm mb-6">
                 Are you sure you want to sign out of LeaderReps?
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowSignOutConfirm(false)}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>

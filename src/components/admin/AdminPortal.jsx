@@ -215,16 +215,16 @@ const AdminPortal = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
       {/* Admin Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-corporate-teal/10 rounded-lg">
               <ShieldAlert className="w-6 h-6 text-corporate-teal" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-corporate-navy">
+              <h1 className="text-xl font-bold text-corporate-navy dark:text-white">
                 Admin Command Center
               </h1>
               <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -234,19 +234,19 @@ const AdminPortal = () => {
               </div>
             </div>
           </div>
-          <div className="bg-slate-100 px-3 py-1.5 rounded-md border border-slate-200">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Production</span>
+          <div className="bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-600">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">Production</span>
           </div>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar Navigation */}
-        <div className="w-64 bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0">
+        <div className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 overflow-y-auto flex-shrink-0">
           <div className="p-4 space-y-6">
             {navGroups.map((group, idx) => (
               <div key={idx}>
-                <h3 className="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <h3 className="px-3 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
                   {group.title}
                 </h3>
                 <div className="space-y-1">
@@ -265,7 +265,7 @@ const AdminPortal = () => {
                           w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                           ${isActive 
                             ? 'bg-corporate-teal/10 text-corporate-teal' 
-                            : 'text-slate-600 hover:bg-slate-50 hover:text-corporate-navy'}
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-corporate-navy dark:hover:text-white'}
                         `}
                       >
                         <Icon className={`w-4 h-4 ${isActive ? 'text-corporate-teal' : 'text-slate-400'}`} />
@@ -280,7 +280,7 @@ const AdminPortal = () => {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto bg-slate-50 p-6" id="admin-content-area">
+        <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900 p-6" id="admin-content-area">
           <div className="max-w-6xl mx-auto">
             <BreadcrumbNav 
               items={[
@@ -289,7 +289,7 @@ const AdminPortal = () => {
               ]} 
               navigate={(path) => setActiveTab(path)} 
             />
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[600px] p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 min-h-[600px] p-6">
               {renderContent()}
             </div>
           </div>

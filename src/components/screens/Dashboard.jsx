@@ -663,7 +663,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="p-5 sm:p-6 lg:p-8 space-y-5 bg-[#FAFBFC] min-h-screen relative">
+    <div className="p-5 sm:p-6 lg:p-8 space-y-5 bg-[#FAFBFC] dark:bg-slate-900 min-h-screen relative">
       <div className="max-w-[860px] mx-auto">
       {/* Prep Gate Removed - incomplete prep items now carry over as past due */}
       <>
@@ -677,7 +677,7 @@ const Dashboard = () => {
         <FadeIn delay={0.1}>
           <div className="flex items-center justify-center gap-4 mb-3">
             <LayoutDashboard className="w-7 h-7 text-corporate-teal" />
-            <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy dark:text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
               Dashboard
             </h1>
           </div>
