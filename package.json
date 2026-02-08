@@ -14,6 +14,8 @@
     "rebuild": "echo '❌ BLOCKED: Use deploy:dev or deploy:test' && exit 1",
     "deploy:dev": "bash ./scripts/deploy.sh dev",
     "deploy:test": "bash ./scripts/deploy.sh test",
+    "deploy:repup:dev": "bash ./scripts/deploy-repup.sh dev",
+    "deploy:repup:test": "bash ./scripts/deploy-repup.sh test",
     "deploy": "echo '❌ Use deploy:dev or deploy:test instead' && exit 1",
     "deploy:quick": "echo '❌ Use deploy:dev or deploy:test instead' && exit 1",
     "sync:test": "./sync-dev-to-test.sh",

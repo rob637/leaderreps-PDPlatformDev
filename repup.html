@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    
+    <!-- SEO & Description -->
+    <title>RepUp - Leadership Conditioning</title>
+    <meta name="description" content="RepUp - Your pocket coach for leadership conditioning. Track reps, get AI coaching, and build leadership muscles." />
+    <meta name="keywords" content="leadership development, coaching, leadership reps, leadership conditioning, AI coach" />
+    <meta name="author" content="LeaderReps" />
+    
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/png" href="/icons/repup-icon-192.png" />
+    <link rel="shortcut icon" href="/icons/repup-icon-192.png" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/repup-icon-192.png" />
+    
+    <!-- Apple Mobile Web App -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="RepUp" />
+    
+    <!-- MS Tile -->
+    <meta name="msapplication-TileImage" content="/icons/repup-icon-192.png" />
+    <meta name="msapplication-TileColor" content="#1e3a5f" />
+    
+    <!-- PWA Manifest & Theme (corporate-navy) -->
+    <link rel="manifest" href="/repup-manifest.webmanifest" />
+    <meta name="theme-color" content="#1e3a5f" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1e3a5f" media="(prefers-color-scheme: dark)" />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,300;0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;0,6..12,800;1,6..12,400&display=swap" rel="stylesheet"> 
+    
+    <!-- BOOT AND ERROR OVERLAY SCRIPTS -->
+    <script>
+      (function () {
+        const steps = [];
+        function mark(s) { steps.push(s); console.log('[REPUP-BOOT]', s); }
+        function overlay(msg) {
+          const div = document.createElement('div');
+          div.id = '__boot_overlay__';
+          div.style.cssText = 'position:fixed;inset:0;background:#1e3a5fcc;color:#fff;backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:999999;padding:24px;font:14px/1.45 monospace;white-space:pre-wrap';
+          div.textContent = msg + '\nSteps: ' + steps.join(' → ');
+          document.addEventListener('DOMContentLoaded', () => document.body.appendChild(div));
+        }
+        window.__BOOTMARK__ = { mark, steps, overlay };
+
+        window.addEventListener('error', e => {
+          console.error('[window.error]', e.message, e.filename, e.lineno, e.colno, e.error);
+          overlay('JS error: ' + e.message);
+        });
+        window.addEventListener('unhandledrejection', e => {
+          console.error('[unhandledrejection]', e.reason);
+          overlay('Unhandled rejection: ' + (e.reason && (e.reason.message || e.reason) || 'unknown'));
+        });
+
+        mark('repup-html-loaded');
+      }());
+    </script>
+
+    <!-- RUNTIME CONFIG: Inject VITE_FIREBASE_CONFIG -->
+    <script>
+      const configString = '%VITE_FIREBASE_CONFIG%';
+      let configObj = {};
+      
+      try {
+          if (configString && !configString.startsWith('%VITE_') && configString.length > 5) {
+              configObj = JSON.parse(configString);
+          } else {
+              console.warn("[RepUp Config] VITE did not replace config placeholder.");
+          }
+      } catch(e) {
+          console.error("[RepUp Config] Failed to parse injected JSON:", e);
+          configObj = {};
+      }
+      
+      window.__firebase_config = configObj;
+      window.__BOOTMARK__ && window.__BOOTMARK__.mark('config-loaded');
+      
+      if (!window.__firebase_config || !window.__firebase_config.apiKey) {
+        console.warn('[REPUP-BOOT] Firebase env values appear missing.');
+      }
+    </script>
+
+    <style>
+      /* RepUp-specific loading styles */
+      #repup-root {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #1e3a5f 0%, #0d9488 100%);
+      }
+      .repup-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        color: white;
+        font-family: 'Nunito Sans', sans-serif;
+      }
+      .repup-loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="repup-root">
+      <div class="repup-loading">
+        <div class="repup-loading-spinner"></div>
+        <p style="margin-top: 16px; font-size: 18px; font-weight: 600;">RepUp</p>
+        <p style="margin-top: 4px; font-size: 14px; opacity: 0.8;">Loading your coach...</p>
+      </div>
+    </div>
+    <script type="module" src="/src/repup-main.jsx"></script>
+  </body>
+</html>

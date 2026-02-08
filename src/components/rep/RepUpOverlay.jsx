@@ -1,20 +1,22 @@
 // src/components/rep/RepUpOverlay.jsx
-// RepUp - Active AI Coach that guides users AND answers questions
+// RepUp - Two-feature coach: 1) Reps (Conditioning) and 2) Coach in your Pocket
 // Uses REAL AI for coaching responses
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   X, Minus, Sparkles, CheckCircle2, Send,
   ArrowRight, Play, Target, BookOpen, Loader2,
   ClipboardCheck, MessageSquare, Award, HelpCircle,
-  AlertCircle
+  AlertCircle, Dumbbell, Plus, ChevronRight, Clock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
-import RepUpSpotlight from './RepUpSpotlight';
+import conditioningService, { REP_STATUS, REP_TYPES } from '../../services/conditioningService';
+// SPOTLIGHT TOUR - COMMENTED OUT FOR LATER USE
+// import RepUpSpotlight from './RepUpSpotlight';
 
 // CLEAR Feedback Method framework
 const CLEAR_METHOD = {
@@ -230,7 +232,7 @@ const generateCLEARResponse = (question) => {
   };
 };
 
-// RepUp's personality
+/* REPUP_INTROS - COMMENTED OUT FOR LATER USE
 const REPUP_INTROS = [
   "Here's how to approach this:",
   "Let's break this down:",
@@ -238,9 +240,10 @@ const REPUP_INTROS = [
   "Here's the game plan:",
   "Focus on this:"
 ];
+*/
 
 const RepUpOverlay = ({ onClose }) => {
-  const { user, navigate } = useAppServices();
+  const { user, navigate, db, developmentPlanData, userProfile } = useAppServices();
   const { currentScreen } = useNavigation();
   const { 
     currentDayData, 
@@ -249,9 +252,11 @@ const RepUpOverlay = ({ onClose }) => {
     cohortData 
   } = useDailyPlan();
 
-  const [mode, setMode] = useState('guide'); // 'guide' or 'coach'
+  // Mode: 'reps' (conditioning) or 'coach' (AI chat)
+  const [mode, setMode] = useState('reps');
   const [isMinimized, setIsMinimized] = useState(false);
-  const [showSpotlight, setShowSpotlight] = useState(false);
+  // SPOTLIGHT TOUR - STATE COMMENTED OUT FOR LATER USE
+  // const [showSpotlight, setShowSpotlight] = useState(false);
   const [userQuestion, setUserQuestion] = useState('');
   const [coachResponse, setCoachResponse] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
@@ -259,7 +264,38 @@ const RepUpOverlay = ({ onClose }) => {
   const [_aiError, setAiError] = useState(null);
   const inputRef = useRef(null);
 
+  // Conditioning state
+  const userId = user?.uid;
+  const cohortId = developmentPlanData?.cohortId || cohortData?.id || userProfile?.cohortId;
+  const [reps, setReps] = useState([]);
+  const [weekStatus, setWeekStatus] = useState(null);
+  const [repsLoading, setRepsLoading] = useState(true);
+
   const firstName = user?.displayName?.split(' ')[0] || 'Leader';
+
+  // Load conditioning data
+  const loadReps = useCallback(async () => {
+    if (!userId || !cohortId || !db) {
+      setRepsLoading(false);
+      return;
+    }
+    try {
+      const [active, status] = await Promise.all([
+        conditioningService.getActiveReps(db, userId, cohortId),
+        conditioningService.getWeeklyStatus(db, userId, null, cohortId)
+      ]);
+      setReps(active || []);
+      setWeekStatus(status);
+    } catch (err) {
+      console.error('Error loading reps:', err);
+    } finally {
+      setRepsLoading(false);
+    }
+  }, [userId, cohortId, db]);
+
+  useEffect(() => {
+    loadReps();
+  }, [loadReps]);
 
   // Build context
   const context = useMemo(() => ({
@@ -270,7 +306,7 @@ const RepUpOverlay = ({ onClose }) => {
     cohortName: cohortData?.name,
   }), [currentPhase, prepRequirementsComplete, currentDayData, cohortData]);
 
-  // Get current screen guidance
+  // Get current screen for context-aware coaching prompts
   const screenKey = useMemo(() => {
     const screen = (currentScreen || 'dashboard').toLowerCase();
     if (screen.includes('dashboard')) return 'dashboard';
@@ -281,11 +317,8 @@ const RepUpOverlay = ({ onClose }) => {
     return 'dashboard';
   }, [currentScreen]);
 
+  // Used for quick prompts in Coach mode
   const guidance = SCREEN_GUIDANCE[screenKey] || SCREEN_GUIDANCE.dashboard;
-  const instructions = guidance.getInstructions(context);
-  const GuidanceIcon = guidance.icon;
-
-  const intro = REPUP_INTROS[Math.floor(Math.random() * REPUP_INTROS.length)];
 
   // Handle asking a question - REAL AI
   const handleAskQuestion = async () => {
@@ -359,33 +392,31 @@ Help them with their question. Be practical and actionable.`;
   // Minimized state
   if (isMinimized) {
     return (
-      <>
-        <motion.button
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          onClick={() => setIsMinimized(false)}
-          className="fixed bottom-6 right-6 z-[90] flex items-center gap-2 px-4 py-3 
-                     bg-gradient-to-r from-corporate-navy to-corporate-teal text-white
-                     rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105
-                     border-2 border-white/30"
-        >
-          <Sparkles className="w-5 h-5" />
-          <span className="font-bold">RepUp</span>
-          <span className="flex gap-0.5">
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
-          </span>
-        </motion.button>
-        
-        {/* Spotlight Tour - can still run even when minimized */}
-        <RepUpSpotlight
-          isOpen={showSpotlight}
-          onClose={() => setShowSpotlight(false)}
-          screenContext="dashboard"
-          onComplete={() => setShowSpotlight(false)}
-        />
-      </>
+      <motion.button
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        onClick={() => setIsMinimized(false)}
+        className="fixed bottom-6 right-6 z-[90] flex items-center gap-2 px-4 py-3 
+                   bg-gradient-to-r from-corporate-navy to-corporate-teal text-white
+                   rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105
+                   border-2 border-white/30"
+      >
+        <Sparkles className="w-5 h-5" />
+        <span className="font-bold">RepUp</span>
+        <span className="flex gap-0.5">
+          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+        </span>
+      </motion.button>
+      /* SPOTLIGHT TOUR - COMMENTED OUT FOR LATER USE
+      <RepUpSpotlight
+        isOpen={showSpotlight}
+        onClose={() => setShowSpotlight(false)}
+        screenContext="dashboard"
+        onComplete={() => setShowSpotlight(false)}
+      />
+      */
     );
   }
 
@@ -394,38 +425,33 @@ Help them with their question. Be practical and actionable.`;
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
-      className={`fixed z-[90] w-96 max-w-[calc(100vw-3rem)] ${
-        showSpotlight 
-          ? 'top-6 right-6' // Move to top when spotlight is active
-          : 'bottom-6 right-6' // Normal position
-      }`}
+      className="fixed z-[90] w-96 max-w-[calc(100vw-3rem)] bottom-6 right-6"
     >
       <div className="bg-white rounded-2xl shadow-2xl border-2 border-corporate-navy/20 overflow-hidden">
         
-        {/* Header - with VISIBLE buttons */}
-        <div className="bg-gradient-to-r from-corporate-navy to-corporate-teal p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <Sparkles className="w-6 h-6 text-white" />
+        {/* Header - sleek design */}
+        <div className="bg-gradient-to-r from-corporate-navy to-corporate-teal p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-lg leading-tight text-white">RepUp</h3>
-                <p className="text-xs text-white/80 mt-0.5">Your Coach in the Pocket</p>
+                <h3 className="font-bold text-base leading-tight text-white">RepUp</h3>
               </div>
             </div>
-            {/* VISIBLE minimize and close buttons - solid backgrounds for visibility */}
-            <div className="flex items-center gap-2">
+            {/* Minimize and close buttons */}
+            <div className="flex items-center gap-1.5">
               <button 
                 onClick={() => setIsMinimized(true)}
-                className="w-8 h-8 flex items-center justify-center bg-white text-corporate-teal hover:bg-corporate-teal/10 rounded-full transition-colors shadow-md font-bold text-lg"
+                className="w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-full transition-colors text-white font-bold text-sm"
                 title="Minimize"
               >
                 –
               </button>
               <button 
                 onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center bg-white text-red-500 hover:bg-red-50 rounded-full transition-colors shadow-md font-bold text-lg"
+                className="w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-red-500/80 rounded-full transition-colors text-white font-bold text-sm"
                 title="Close RepUp"
               >
                 ✕
@@ -434,87 +460,127 @@ Help them with their question. Be practical and actionable.`;
           </div>
         </div>
 
-        {/* Mode tabs */}
+        {/* Mode tabs - Reps and Coach */}
         <div className="flex border-b border-slate-200">
           <button
-            onClick={() => { setMode('guide'); setCoachResponse(null); }}
+            onClick={() => { setMode('reps'); setCoachResponse(null); loadReps(); }}
             className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-              mode === 'guide' 
-                ? 'bg-corporate-navy/5 text-corporate-navy border-b-2 border-corporate-navy' 
+              mode === 'reps' 
+                ? 'bg-corporate-teal/10 text-corporate-teal border-b-2 border-corporate-teal' 
                 : 'text-slate-500 hover:bg-slate-50'
             }`}
           >
-            <Target className="w-4 h-4" />
-            <span>Guide Me</span>
+            <Dumbbell className="w-4 h-4" />
+            <span>Reps</span>
           </button>
           <button
             onClick={() => setMode('coach')}
             className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
               mode === 'coach' 
-                ? 'bg-corporate-navy/5 text-corporate-navy border-b-2 border-corporate-navy' 
+                ? 'bg-corporate-teal/10 text-corporate-teal border-b-2 border-corporate-teal' 
                 : 'text-slate-500 hover:bg-slate-50'
             }`}
           >
-            <HelpCircle className="w-4 h-4" />
-            <span>Ask Coach</span>
+            <MessageSquare className="w-4 h-4" />
+            <span>Coach</span>
           </button>
         </div>
 
         {/* Content area */}
         <div className="max-h-[350px] overflow-y-auto">
           
-          {/* GUIDE MODE */}
-          {mode === 'guide' && (
+          {/* REPS MODE - Compact Conditioning */}
+          {mode === 'reps' && (
             <div className="p-4 space-y-3">
-              {/* Screen indicator */}
-              <div className="flex items-center gap-2 text-xs text-corporate-teal bg-corporate-navy/5 px-3 py-1.5 rounded-full w-fit">
-                <GuidanceIcon className="w-3 h-3" />
-                <span className="font-medium">{guidance.title}</span>
-                <Play className="w-3 h-3" />
-              </div>
+              {/* Loading state */}
+              {repsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 text-corporate-teal animate-spin" />
+                </div>
+              ) : !cohortId ? (
+                /* No cohort enrolled */
+                <div className="text-center py-6">
+                  <Target className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm text-slate-500">
+                    Join a cohort to start tracking reps
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Week Status */}
+                  <div className={`flex items-center gap-3 p-3 rounded-lg ${
+                    weekStatus?.requiredRepCompleted 
+                      ? 'bg-green-50 border border-green-200' 
+                      : 'bg-amber-50 border border-amber-200'
+                  }`}>
+                    {weekStatus?.requiredRepCompleted ? (
+                      <>
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="font-medium text-green-800 text-sm">Weekly Rep Done!</p>
+                          <p className="text-xs text-green-600">{weekStatus?.totalCompleted || 0} completed this week</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Target className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="font-medium text-amber-800 text-sm">1 Rep Required</p>
+                          <p className="text-xs text-amber-600">
+                            {reps.length > 0 
+                              ? `${reps.length} active rep${reps.length !== 1 ? 's' : ''}`
+                              : 'Commit to a rep to start'
+                            }
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
 
-              {/* Intro */}
-              <p className="text-sm font-semibold text-corporate-navy">
-                {intro}
-              </p>
-
-              {/* Instructions */}
-              <div className="space-y-2">
-                {instructions.map((instruction, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ x: -10, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className={`flex items-start gap-3 p-2.5 rounded-lg ${
-                      instruction.highlight 
-                        ? 'bg-corporate-navy/5 border border-corporate-teal/30' 
-                        : 'bg-slate-50'
-                    }`}
-                  >
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      instruction.highlight 
-                        ? 'bg-corporate-navy/50 text-white' 
-                        : 'bg-slate-200 text-slate-600'
-                    }`}>
-                      <span className="text-xs font-bold">{idx + 1}</span>
+                  {/* Active Reps List */}
+                  {reps.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Active Reps</p>
+                      {reps.slice(0, 3).map((rep) => {
+                        const repType = REP_TYPES.find(t => t.id === rep.repType);
+                        return (
+                          <motion.div
+                            key={rep.id}
+                            initial={{ x: -10, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors"
+                            onClick={() => navigate('conditioning')}
+                          >
+                            <div className="w-8 h-8 bg-corporate-teal/10 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Dumbbell className="w-4 h-4 text-corporate-teal" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm text-corporate-navy truncate">{rep.person}</p>
+                              <p className="text-xs text-slate-500">{repType?.label || rep.repType}</p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-slate-400" />
+                          </motion.div>
+                        );
+                      })}
+                      {reps.length > 3 && (
+                        <p className="text-xs text-slate-500 text-center">+{reps.length - 3} more</p>
+                      )}
                     </div>
-                    <p className={`text-sm ${
-                      instruction.highlight 
-                        ? 'font-semibold text-corporate-navy' 
-                        : 'text-slate-600'
-                    }`}>
-                      {instruction.text}
-                    </p>
-                  </motion.div>
-                ))}
-              </div>
+                  )}
 
-              {/* Encouragement */}
-              <div className="flex items-center justify-center gap-2 pt-2 text-sm text-corporate-teal font-medium">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>You've got this!</span>
-              </div>
+                  {/* Quick Add Button */}
+                  <button
+                    onClick={() => navigate('conditioning')}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 
+                               bg-gradient-to-r from-corporate-navy to-corporate-teal
+                               text-white text-sm font-medium rounded-lg
+                               hover:opacity-90 transition-opacity"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{reps.length === 0 ? 'Commit to a Rep' : 'Manage Reps'}</span>
+                  </button>
+                </>
+              )}
             </div>
           )}
 
@@ -634,7 +700,7 @@ Help them with their question. Be practical and actionable.`;
                 value={userQuestion}
                 onChange={(e) => setUserQuestion(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAskQuestion()}
-                placeholder="Describe your leadership challenge..."
+                placeholder="Ask me anything..."
                 className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl
                            text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
               />
@@ -651,7 +717,7 @@ Help them with their question. Be practical and actionable.`;
           </div>
         )}
 
-        {/* Footer for guide mode */}
+        {/* GUIDE MODE FOOTER - COMMENTED OUT FOR LATER USE
         {mode === 'guide' && (
           <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
             <button
@@ -663,19 +729,13 @@ Help them with their question. Be practical and actionable.`;
             </button>
             <button
               onClick={() => {
-                // Navigate to dashboard if not already there
-                // Use currentScreen directly - screenKey maps unknowns to 'dashboard'
                 const actualScreen = (currentScreen || 'dashboard').toLowerCase();
                 if (!actualScreen.includes('dashboard')) {
                   navigate('dashboard');
-                  // Wait for navigation and page render, then start spotlight
-                  // 600ms gives time for: navigation + dashboard mount + element render
                   setTimeout(() => setShowSpotlight(true), 600);
                 } else {
-                  // Already on dashboard - start spotlight immediately
                   setShowSpotlight(true);
                 }
-                // DON'T minimize - RepUp stays visible during guide
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-corporate-navy to-corporate-teal 
                          text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
@@ -685,21 +745,21 @@ Help them with their question. Be practical and actionable.`;
             </button>
           </div>
         )}
+        */}
       </div>
 
-      {/* Spotlight Tour - always uses 'dashboard' context since tour is dashboard-focused */}
+      {/* SPOTLIGHT TOUR - COMMENTED OUT FOR LATER USE
       <RepUpSpotlight
         isOpen={showSpotlight}
         onClose={() => {
           setShowSpotlight(false);
-          // RepUp stays open, just goes back to normal position
         }}
         screenContext="dashboard"
         onComplete={() => {
           setShowSpotlight(false);
-          // RepUp stays open after tour completes
         }}
       />
+      */}
     </motion.div>
   );
 };

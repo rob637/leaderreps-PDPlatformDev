@@ -1,0 +1,81 @@
+{
+  "id": "repup-pwa",
+  "name": "RepUp - Leadership Conditioning",
+  "short_name": "RepUp",
+  "description": "Your pocket coach for leadership conditioning. Track reps, get AI coaching, and build leadership muscles.",
+  "start_url": "/repup.html?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1e3a5f",
+  "theme_color": "#1e3a5f",
+  "categories": ["education", "productivity", "business"],
+  "screenshots": [
+    {
+      "src": "/images/repup-screenshot-mobile.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/images/repup-screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Track Reps",
+      "short_name": "Reps",
+      "description": "Log and track your leadership reps",
+      "url": "/repup.html?tab=reps",
+      "icons": [
+        {
+          "src": "/icons/repup-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Ask Coach",
+      "short_name": "Coach",
+      "description": "Get AI coaching for leadership challenges",
+      "url": "/repup.html?tab=coach",
+      "icons": [
+        {
+          "src": "/icons/repup-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "icons": [
+    {
+      "src": "/icons/repup-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/repup-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/repup-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/repup-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
