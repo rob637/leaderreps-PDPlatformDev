@@ -13,7 +13,7 @@ import conditioningService, {
 import { REP_TYPES, getRepType, isPrepRequired } from '../../services/repTaxonomy.js';
 import { Card, Button } from '../ui';
 import { 
-  EvidenceCaptureModal,
+  StructuredEvidenceModal,
   QualityAssessmentCard,
   PracticeRetryCard,
   TrainerNudgeNotification,
@@ -868,14 +868,13 @@ const Conditioning = () => {
         />
       )}
       
-      {/* Evidence Capture Modal */}
+      {/* Structured Evidence Capture Modal (Sprint 3) */}
       {evidenceModalRep && (
-        <EvidenceCaptureModal
-          isOpen={true}
-          onClose={() => setEvidenceModalRep(null)}
+        <StructuredEvidenceModal
           rep={evidenceModalRep}
-          userId={userId}
-          onSubmitted={handleEvidenceSubmitted}
+          onClose={() => setEvidenceModalRep(null)}
+          onSubmit={handleEvidenceSubmitted}
+          isLoading={isSubmitting}
         />
       )}
       
