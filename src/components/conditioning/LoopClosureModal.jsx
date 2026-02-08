@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { Card, Button } from '../ui';
-import { VoiceInputButton } from './VoiceInputButton';
+import VoiceInputButton from './VoiceInputButton';
 import { 
   X, CheckCircle, RefreshCw, AlertTriangle, 
   Calendar, MessageSquare, ArrowRight
