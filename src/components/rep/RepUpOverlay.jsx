@@ -243,7 +243,7 @@ const REPUP_INTROS = [
 */
 
 const RepUpOverlay = ({ onClose }) => {
-  const { user, navigate, db, developmentPlanData, userProfile } = useAppServices();
+  const { user, navigate, db, developmentPlanData } = useAppServices();
   const { currentScreen } = useNavigation();
   const { 
     currentDayData, 
@@ -266,7 +266,7 @@ const RepUpOverlay = ({ onClose }) => {
 
   // Conditioning state
   const userId = user?.uid;
-  const cohortId = developmentPlanData?.cohortId || cohortData?.id || userProfile?.cohortId;
+  const cohortId = developmentPlanData?.cohortId || cohortData?.id || user?.cohortId;
   const [reps, setReps] = useState([]);
   const [weekStatus, setWeekStatus] = useState(null);
   const [repsLoading, setRepsLoading] = useState(true);

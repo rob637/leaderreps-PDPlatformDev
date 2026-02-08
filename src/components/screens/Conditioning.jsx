@@ -521,10 +521,10 @@ const MissedRepsSection = ({ missedReps, onOpenDebrief, isLoading }) => {
 const Conditioning = ({ embedded = false, showFloatingAction }) => {
   // Default FAB visibility: show unless embedded (but can be overridden)
   const showFab = showFloatingAction ?? !embedded;
-  const { user, userProfile, developmentPlanData, db } = useAppServices();
+  const { user, developmentPlanData, db } = useAppServices();
   const { cohortData } = useDailyPlan();
   const userId = user?.uid;
-  const cohortId = userProfile?.cohortId;
+  const cohortId = developmentPlanData?.cohortId || cohortData?.id || user?.cohortId;
   
   // State
   const [weeklyStatus, setWeeklyStatus] = useState(null);
