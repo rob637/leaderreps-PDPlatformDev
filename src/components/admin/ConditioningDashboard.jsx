@@ -4,13 +4,14 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
-import conditioningService, { REP_STATUS, getCurrentWeekId, QUALITY_DIMENSIONS } from '../../services/conditioningService';
+import conditioningService, { REP_STATUS, getCurrentWeekId, QUALITY_DIMENSIONS, COACH_PROMPTS } from '../../services/conditioningService';
 import { Card } from '../ui';
 import { TrainerNudgePanel, CoachPromptsPanel } from '../conditioning';
 import { 
   Users, CheckCircle, AlertTriangle, Clock, RefreshCw,
   Target, ChevronDown, ChevronUp, User, Calendar,
-  BarChart3, FileText, ThumbsUp, MessageSquare, Handshake, Lightbulb
+  BarChart3, FileText, ThumbsUp, MessageSquare, Handshake, Lightbulb,
+  Activity, Heart, TrendingUp, TrendingDown
 } from 'lucide-react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
@@ -285,6 +286,111 @@ const QualityMetrics = ({ cohortQualityStats }) => {
 };
 
 // ============================================
+// COHORT HEALTH INDICATOR (Sprint 6)
+// ============================================
+const CohortHealthIndicator = ({ healthData, isLoading }) => {
+  if (!healthData && !isLoading) return null;
+  
+  const getHealthColor = (level) => ({
+    healthy: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300', fill: 'bg-green-500' },
+    caution: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300', fill: 'bg-amber-500' },
+    'at-risk': { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300', fill: 'bg-orange-500' },
+    critical: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300', fill: 'bg-red-500' }
+  })[level] || { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300', fill: 'bg-gray-500' };
+  
+  if (isLoading) {
+    return (
+      <Card className="p-4 mb-6">
+        <div className="flex items-center gap-3">
+          <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
+          <span className="text-sm text-gray-500">Calculating cohort health...</span>
+        </div>
+      </Card>
+    );
+  }
+  
+  const colors = getHealthColor(healthData.healthLevel);
+  const { breakdown } = healthData;
+  
+  return (
+    <Card className={`p-4 mb-6 border ${colors.border}`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-full ${colors.bg}`}>
+            <Activity className={`w-5 h-5 ${colors.text}`} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-corporate-navy">Cohort Health</h3>
+            <p className="text-sm text-gray-500">Overall accountability score</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className={`text-3xl font-bold ${colors.text}`}>{healthData.score}</div>
+            <div className={`text-xs font-medium uppercase ${colors.text}`}>{healthData.healthLevel}</div>
+          </div>
+          
+          {/* Circular progress indicator */}
+          <div className="relative w-16 h-16">
+            <svg className="w-full h-full transform -rotate-90">
+              <circle
+                cx="32"
+                cy="32"
+                r="28"
+                strokeWidth="6"
+                fill="none"
+                className="stroke-gray-200"
+              />
+              <circle
+                cx="32"
+                cy="32"
+                r="28"
+                strokeWidth="6"
+                fill="none"
+                strokeDasharray={`${healthData.score * 1.76} 176`}
+                className={`${colors.text.replace('text-', 'stroke-')}`}
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      {/* Breakdown */}
+      <div className="grid grid-cols-4 gap-3 text-center">
+        <div className="p-2 bg-green-50 rounded-lg">
+          <div className="text-lg font-bold text-green-600">{breakdown.completedUserCount}</div>
+          <div className="text-xs text-green-600">Complete</div>
+        </div>
+        <div className="p-2 bg-blue-50 rounded-lg">
+          <div className="text-lg font-bold text-blue-600">{breakdown.activeUserCount}</div>
+          <div className="text-xs text-blue-600">In Progress</div>
+        </div>
+        <div className="p-2 bg-gray-50 rounded-lg">
+          <div className="text-lg font-bold text-gray-600">{breakdown.incompleteUserCount}</div>
+          <div className="text-xs text-gray-600">No Activity</div>
+        </div>
+        <div className="p-2 bg-red-50 rounded-lg">
+          <div className="text-lg font-bold text-red-600">{breakdown.criticalPatternCount}</div>
+          <div className="text-xs text-red-600">Critical Flags</div>
+        </div>
+      </div>
+      
+      {/* Pattern alerts */}
+      {(breakdown.criticalPatternCount > 0 || breakdown.highPatternCount > 0) && (
+        <div className="mt-4 flex items-center gap-2 text-sm">
+          <AlertTriangle className="w-4 h-4 text-amber-500" />
+          <span className="text-gray-600">
+            {breakdown.criticalPatternCount + breakdown.highPatternCount} leaders need coaching attention
+          </span>
+        </div>
+      )}
+    </Card>
+  );
+};
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 const ConditioningDashboard = () => {
@@ -296,6 +402,8 @@ const ConditioningDashboard = () => {
   const [userSummaries, setUserSummaries] = useState([]);
   const [cohortSummary, setCohortSummary] = useState(null);
   const [cohortQualityStats, setCohortQualityStats] = useState(null);
+  const [cohortHealth, setCohortHealth] = useState(null);
+  const [isLoadingHealth, setIsLoadingHealth] = useState(false);
   const [expandedUserId, setExpandedUserId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -428,6 +536,18 @@ const ConditioningDashboard = () => {
         dimensionStats: aggregatedDimensions
       });
       
+      // Load cohort health score (Sprint 6)
+      setIsLoadingHealth(true);
+      try {
+        const userIds = summaries.map(s => s.userId);
+        const health = await conditioningService.getCohortHealthScore(db, selectedCohortId, userIds);
+        setCohortHealth(health);
+      } catch (healthErr) {
+        console.error('Error loading cohort health:', healthErr);
+      } finally {
+        setIsLoadingHealth(false);
+      }
+      
     } catch (err) {
       console.error('Error loading cohort data:', err);
       setError('Failed to load cohort data');
@@ -493,6 +613,14 @@ const ConditioningDashboard = () => {
       
       {/* Stats Summary */}
       <StatsSummary cohortSummary={cohortSummary} />
+      
+      {/* Cohort Health Indicator (Sprint 6) */}
+      {selectedCohortId && (
+        <CohortHealthIndicator 
+          healthData={cohortHealth} 
+          isLoading={isLoadingHealth} 
+        />
+      )}
       
       {/* Quality Metrics (Phase 2) */}
       <QualityMetrics cohortQualityStats={cohortQualityStats} />

@@ -1747,6 +1747,229 @@ export const conditioningService = {
     );
     
     return results;
+  },
+  
+  // ============================================
+  // PHASE 8: DETECTION HEURISTICS
+  // ============================================
+  
+  /**
+   * Get weekly completion data for a user (last N weeks)
+   */
+  getWeeklyData: async (db, userId, cohortId, weeksBack = 4) => {
+    const weeksRef = collection(db, 'users', userId, 'conditioning_weeks');
+    
+    const q = query(
+      weeksRef,
+      where('cohortId', '==', cohortId),
+      orderBy('weekStart', 'desc'),
+      firestoreLimit(weeksBack)
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  },
+  
+  /**
+   * DETECTION HEURISTIC 1: difficulty_repetition
+   * Same skill + difficulty repeated 3+ times in 4 weeks
+   * More strict than low_risk_pattern - groups by exact skill+difficulty
+   */
+  detectDifficultyRepetition: (reps) => {
+    // Group by repType + difficulty
+    const bySkillDifficulty = {};
+    reps.forEach(rep => {
+      const key = `${rep.repType}-${rep.difficulty || 'level_1'}`;
+      bySkillDifficulty[key] = (bySkillDifficulty[key] || []);
+      bySkillDifficulty[key].push(rep);
+    });
+    
+    // Find any combination repeated 3+ times
+    const repeated = Object.entries(bySkillDifficulty)
+      .filter(([_, reps]) => reps.length >= 3)
+      .map(([key, reps]) => ({
+        key,
+        count: reps.length,
+        repType: key.split('-')[0],
+        difficulty: key.split('-')[1]
+      }));
+    
+    if (repeated.length > 0) {
+      return {
+        detected: true,
+        heuristic: 'difficulty_repetition',
+        details: repeated,
+        suggestion: 'Prompt stretch to harder difficulty or different skill',
+        summary: `Same skill+difficulty (${repeated[0].key}) repeated ${repeated[0].count}x`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * DETECTION HEURISTIC 2: latency_pattern
+   * Execution consistently after Thursday (3+ of last 4 completed)
+   */
+  detectLatencyPattern: (reps) => {
+    // Get last 4 completed reps
+    const completedReps = reps
+      .filter(r => r.status === REP_STATUS.DEBRIEFED || r.status === REP_STATUS.EXECUTED)
+      .slice(0, 4);
+    
+    if (completedReps.length < 3) return { detected: false };
+    
+    let lateCount = 0;
+    completedReps.forEach(rep => {
+      const executedAt = rep.executedAt?.toDate?.() || rep.debriefedAt?.toDate?.() || null;
+      if (executedAt) {
+        const dayOfWeek = executedAt.getDay(); // 0=Sun, 5=Fri, 6=Sat
+        if (dayOfWeek >= 5 || dayOfWeek === 0) { // Fri, Sat, Sun = late
+          lateCount++;
+        }
+      }
+    });
+    
+    if (lateCount >= 3) {
+      return {
+        detected: true,
+        heuristic: 'latency_pattern',
+        details: { lateCount, total: completedReps.length },
+        suggestion: 'Flag avoidance pattern - challenge to execute earlier',
+        summary: `${lateCount} of last ${completedReps.length} reps executed late in week`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * DETECTION HEURISTIC 3: non_completion
+   * Missed ≥2 of last 4 weeks (based on weekly data)
+   */
+  detectNonCompletion: async (db, userId, cohortId) => {
+    const weeks = await conditioningService.getWeeklyData(db, userId, cohortId, 4);
+    
+    if (weeks.length < 2) return { detected: false };
+    
+    const missedWeeks = weeks.filter(w => !w.requiredRepCompleted);
+    
+    if (missedWeeks.length >= 2) {
+      return {
+        detected: true,
+        heuristic: 'non_completion',
+        details: { 
+          missedCount: missedWeeks.length, 
+          totalWeeks: weeks.length,
+          missedWeekIds: missedWeeks.map(w => w.id)
+        },
+        suggestion: 'Flag for trainer follow-up',
+        summary: `Missed ${missedWeeks.length} of last ${weeks.length} weeks`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * Run all detection heuristics for a user
+   * Returns structured analysis for trainer visibility
+   */
+  runDetectionHeuristics: async (db, userId, cohortId) => {
+    const reps = await conditioningService.getRepsInRange(db, userId, cohortId, 4);
+    
+    const results = {
+      difficulty_repetition: conditioningService.detectDifficultyRepetition(reps),
+      latency_pattern: conditioningService.detectLatencyPattern(reps),
+      non_completion: await conditioningService.detectNonCompletion(db, userId, cohortId)
+    };
+    
+    const detectedHeuristics = Object.entries(results)
+      .filter(([_, result]) => result.detected)
+      .map(([name, result]) => ({ name, ...result }));
+    
+    return {
+      heuristics: results,
+      detectedCount: detectedHeuristics.length,
+      detected: detectedHeuristics,
+      repsAnalyzed: reps.length
+    };
+  },
+  
+  /**
+   * Get cohort health score based on aggregated patterns
+   * Returns 0-100 score with breakdown
+   */
+  getCohortHealthScore: async (db, cohortId, userIds) => {
+    if (!userIds?.length) return { score: 100, breakdown: {} };
+    
+    let completedUserCount = 0;
+    let activeUserCount = 0;
+    let criticalPatternCount = 0;
+    let highPatternCount = 0;
+    let mediumPatternCount = 0;
+    
+    const weekId = getCurrentWeekId();
+    
+    for (const userId of userIds) {
+      try {
+        // Check current week status
+        const status = await conditioningService.getWeeklyStatus(db, userId, weekId, cohortId);
+        if (status.requiredRepCompleted) {
+          completedUserCount++;
+        } else if (status.totalActive > 0) {
+          activeUserCount++;
+        }
+        
+        // Get pattern detections
+        const { detectedPatterns } = await conditioningService.detectCoachPrompts(db, userId, cohortId);
+        detectedPatterns.forEach(p => {
+          if (p.priority === 'critical') criticalPatternCount++;
+          else if (p.priority === 'high') highPatternCount++;
+          else mediumPatternCount++;
+        });
+      } catch (err) {
+        console.error(`Error checking user ${userId}:`, err);
+      }
+    }
+    
+    const totalUsers = userIds.length;
+    const completionRate = totalUsers > 0 ? completedUserCount / totalUsers : 0;
+    
+    // Calculate health score
+    // Base score from completion rate (0-60 points)
+    let score = completionRate * 60;
+    
+    // Add points for active users (up to 20 points)
+    const activeRate = (completedUserCount + activeUserCount) / totalUsers;
+    score += activeRate * 20;
+    
+    // Deduct for patterns detected
+    score -= criticalPatternCount * 10;
+    score -= highPatternCount * 5;
+    score -= mediumPatternCount * 2;
+    
+    // Clamp to 0-100
+    score = Math.max(0, Math.min(100, Math.round(score)));
+    
+    // Determine health level
+    let healthLevel;
+    if (score >= 80) healthLevel = 'healthy';
+    else if (score >= 60) healthLevel = 'caution';
+    else if (score >= 40) healthLevel = 'at-risk';
+    else healthLevel = 'critical';
+    
+    return {
+      score,
+      healthLevel,
+      breakdown: {
+        totalUsers,
+        completedUserCount,
+        activeUserCount,
+        incompleteUserCount: totalUsers - completedUserCount - activeUserCount,
+        completionRate: Math.round(completionRate * 100),
+        criticalPatternCount,
+        highPatternCount,
+        mediumPatternCount
+      }
+    };
   }
 };
 
