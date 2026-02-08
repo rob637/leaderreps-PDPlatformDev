@@ -21,7 +21,8 @@ import {
   RepTypeBadge,
   RepProgressionTracker,
   PrepRequirementBadge,
-  HighRiskPrepModal
+  HighRiskPrepModal,
+  MissedRepDebriefModal
 } from '../conditioning';
 import { 
   Plus, Check, X, AlertTriangle, Clock, User, 
@@ -453,9 +454,9 @@ const RepCard = ({
 // Note: CommitRepForm is now imported from ../conditioning
 
 // ============================================
-// MISSED REPS SECTION
+// MISSED REPS SECTION (Updated for Sprint 4)
 // ============================================
-const MissedRepsSection = ({ missedReps, onRollForward, isLoading }) => {
+const MissedRepsSection = ({ missedReps, onOpenDebrief, isLoading }) => {
   if (!missedReps || missedReps.length === 0) return null;
   
   // Get rep type label using getRepType helper
@@ -471,7 +472,7 @@ const MissedRepsSection = ({ missedReps, onRollForward, isLoading }) => {
         <h3 className="font-semibold text-corporate-navy">Missed Reps ({missedReps.length})</h3>
       </div>
       <p className="text-sm text-gray-600 mb-3">
-        These reps were not completed by their deadline. Recommit or cancel them.
+        Complete a quick debrief to understand what happened and set up for success next week.
       </p>
       {missedReps.map((rep) => (
         <Card key={rep.id} className="mb-2 border-l-4 border-l-amber-500">
@@ -480,15 +481,30 @@ const MissedRepsSection = ({ missedReps, onRollForward, isLoading }) => {
               <div>
                 <span className="font-medium">{rep.person}</span>
                 <span className="text-sm text-gray-500 ml-2">({getRepTypeLabel(rep.repType)})</span>
+                {rep.missedDebrief && (
+                  <span className="text-xs text-green-600 ml-2">✓ Debriefed</span>
+                )}
               </div>
               <Button
-                onClick={() => onRollForward(rep.id)}
+                onClick={() => onOpenDebrief(rep)}
                 disabled={isLoading}
                 size="sm"
-                className="bg-amber-600 hover:bg-amber-700 text-white"
+                className={rep.missedDebrief 
+                  ? "bg-gray-500 hover:bg-gray-600 text-white"
+                  : "bg-amber-600 hover:bg-amber-700 text-white"
+                }
               >
-                <RefreshCw className="w-3 h-3 mr-1" />
-                Recommit
+                {rep.missedDebrief ? (
+                  <>
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                    Re-debrief
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-3 h-3 mr-1" />
+                    Debrief
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -717,6 +733,50 @@ const Conditioning = () => {
     }
   };
   
+  // Sprint 4: Missed rep debrief modal state
+  const [missedDebriefRep, setMissedDebriefRep] = useState(null);
+  
+  const handleOpenMissedDebrief = (rep) => {
+    setMissedDebriefRep(rep);
+  };
+  
+  const handleMissedRecommit = async (repId) => {
+    if (!userId || !cohortId || !db) return;
+    try {
+      setIsSubmitting(true);
+      await conditioningService.rollForwardRep(db, userId, repId, cohortId);
+      setMissedDebriefRep(null);
+      await loadData();
+    } catch (err) {
+      console.error('Error recommitting rep:', err);
+      setError('Failed to recommit rep. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleMissedModify = (rep) => {
+    // Close debrief modal and open commit form with rep data pre-filled
+    setMissedDebriefRep(null);
+    setShowCommitForm(true);
+    // Note: Could pass rep data to pre-fill the form in future enhancement
+  };
+  
+  const handleMissedCancel = async (repId, reason) => {
+    if (!userId || !db) return;
+    try {
+      setIsSubmitting(true);
+      await conditioningService.cancelRep(db, userId, repId, reason);
+      setMissedDebriefRep(null);
+      await loadData();
+    } catch (err) {
+      console.error('Error canceling rep:', err);
+      setError('Failed to cancel rep. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   // No cohort check
   if (!cohortId) {
     return (
@@ -777,7 +837,7 @@ const Conditioning = () => {
         {/* Missed Reps Section */}
         <MissedRepsSection 
           missedReps={missedReps}
-          onRollForward={handleRollForward}
+          onOpenDebrief={handleOpenMissedDebrief}
           isLoading={isSubmitting}
         />
         
@@ -885,6 +945,19 @@ const Conditioning = () => {
           onClose={() => setPrepModalRep(null)}
           rep={prepModalRep}
           onSubmit={handlePrepSubmit}
+          isLoading={isSubmitting}
+        />
+      )}
+      
+      {/* Missed Rep Debrief Modal (Sprint 4) */}
+      {missedDebriefRep && (
+        <MissedRepDebriefModal
+          isOpen={true}
+          onClose={() => setMissedDebriefRep(null)}
+          rep={missedDebriefRep}
+          onRecommit={handleMissedRecommit}
+          onModify={handleMissedModify}
+          onCancel={handleMissedCancel}
           isLoading={isSubmitting}
         />
       )}

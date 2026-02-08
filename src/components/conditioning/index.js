@@ -14,3 +14,6 @@ export { default as CommitRepForm } from './CommitRepForm';
 // Sprint 2: States + Progression
 export { default as RepProgressionTracker, PrepRequirementBadge, STATE_CONFIG, PROGRESSION_PATH } from './RepProgressionTracker';
 export { default as HighRiskPrepModal } from './HighRiskPrepModal';
+
+// Sprint 4: Missed Rep Debrief
+export { default as MissedRepDebriefModal } from './MissedRepDebriefModal';

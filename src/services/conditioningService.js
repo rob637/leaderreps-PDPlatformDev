@@ -509,6 +509,38 @@ export const conditioningService = {
     return true;
   },
   
+  /**
+   * Save debrief data for a missed rep (Sprint 4: Missed Rep Accountability)
+   * Records what blocked completion and plan for next week
+   */
+  saveMissedRepDebrief: async (db, userId, repId, debriefData) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    
+    // Can only debrief missed reps
+    if (currentRep.status !== 'missed') {
+      throw new Error('Can only debrief a missed rep');
+    }
+    
+    await updateDoc(repRef, {
+      updatedAt: serverTimestamp(),
+      missedDebrief: {
+        what_blocked: debriefData.what_blocked,
+        standard_breakdown: debriefData.standard_breakdown,
+        next_week_different: debriefData.next_week_different,
+        recommit_decision: debriefData.recommit_decision,
+        cancelReason: debriefData.cancelReason || null,
+        submittedAt: serverTimestamp()
+      }
+    });
+    
+    return true;
+  },
+  
   // ============================================
   // QUERY OPERATIONS
   // ============================================
