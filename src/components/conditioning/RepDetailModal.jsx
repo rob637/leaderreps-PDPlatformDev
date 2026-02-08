@@ -1,0 +1,333 @@
+// src/components/conditioning/RepDetailModal.jsx
+// Phase 6: View details of any rep (especially completed ones)
+// Shows full rep history: person, type, prep, debrief, quality, loop closure
+
+import React from 'react';
+import { Card, Button } from '../ui';
+import { 
+  X, User, Calendar, Clock, FileText, MessageSquare,
+  CheckCircle, AlertTriangle, RefreshCw, Star, Target
+} from 'lucide-react';
+import { getRepType } from '../../services/repTaxonomy.js';
+import { REP_STATUS } from '../../services/conditioningService.js';
+
+// ============================================
+// STATUS DISPLAY
+// ============================================
+const StatusDisplay = ({ status }) => {
+  const configs = {
+    committed: { label: 'Planned', color: 'blue', icon: Clock },
+    prepared: { label: 'Prepared', color: 'indigo', icon: FileText },
+    scheduled: { label: 'Scheduled', color: 'purple', icon: Calendar },
+    executed: { label: 'Delivered', color: 'teal', icon: Target },
+    debriefed: { label: 'Debriefed', color: 'green', icon: CheckCircle },
+    follow_up_pending: { label: 'Follow-Up', color: 'orange', icon: RefreshCw },
+    loop_closed: { label: 'Loop Closed', color: 'emerald', icon: CheckCircle },
+    missed: { label: 'Missed', color: 'amber', icon: AlertTriangle },
+    canceled: { label: 'Canceled', color: 'gray', icon: X }
+  };
+  
+  const config = configs[status] || configs.committed;
+  const Icon = config.icon;
+  
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-${config.color}-100 text-${config.color}-700`}>
+      <Icon className="w-4 h-4" />
+      {config.label}
+    </span>
+  );
+};
+
+// ============================================
+// SECTION COMPONENT
+// ============================================
+const Section = ({ title, icon: Icon, children, empty = false }) => {
+  if (empty) return null;
+  
+  return (
+    <div className="border-t border-gray-100 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
+      <h4 className="flex items-center gap-2 text-sm font-semibold text-corporate-navy mb-2">
+        {Icon && <Icon className="w-4 h-4" />}
+        {title}
+      </h4>
+      <div className="text-sm text-gray-700">{children}</div>
+    </div>
+  );
+};
+
+// ============================================
+// QUALITY DISPLAY
+// ============================================
+const QualityDisplay = ({ assessment }) => {
+  if (!assessment) return null;
+  
+  const dimensions = assessment.dimensions || {};
+  const dimensionLabels = {
+    specific_language: 'Specific Language',
+    clear_request: 'Clear Request',
+    named_commitment: 'Named Commitment',
+    reflection: 'Reflection'
+  };
+  
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+          assessment.meetsStandard 
+            ? 'bg-green-100 text-green-700' 
+            : 'bg-amber-100 text-amber-700'
+        }`}>
+          {assessment.passedCount}/{assessment.totalDimensions} dimensions
+        </span>
+        {assessment.meetsStandard && (
+          <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+        )}
+      </div>
+      
+      <div className="grid grid-cols-2 gap-2">
+        {Object.entries(dimensions).map(([key, value]) => (
+          <div 
+            key={key}
+            className={`p-2 rounded text-xs ${
+              value.passed 
+                ? 'bg-green-50 text-green-700' 
+                : 'bg-gray-50 text-gray-500'
+            }`}
+          >
+            <div className="flex items-center gap-1">
+              {value.passed ? (
+                <CheckCircle className="w-3 h-3" />
+              ) : (
+                <span className="w-3 h-3 rounded-full border border-current" />
+              )}
+              <span>{dimensionLabels[key] || key}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// MAIN MODAL COMPONENT
+// ============================================
+const RepDetailModal = ({ isOpen, onClose, rep }) => {
+  if (!isOpen || !rep) return null;
+  
+  const repTypeConfig = getRepType(rep.repType);
+  
+  const formatDate = (timestamp) => {
+    if (!timestamp) return null;
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  };
+  
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-corporate-navy to-corporate-navy/90">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-bold text-white">Rep Details</h3>
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-white/10 rounded text-white/80 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          {/* Person & Type */}
+          <div className="flex items-center gap-2 text-white">
+            <User className="w-4 h-4" />
+            <span className="font-medium">{rep.person}</span>
+          </div>
+          <div className="flex items-center gap-2 text-white/80 text-sm mt-1">
+            <Target className="w-3 h-3" />
+            <span>{repTypeConfig?.name || rep.repType}</span>
+          </div>
+        </div>
+        
+        {/* Status & Timeline */}
+        <div className="p-4 bg-gray-50 border-b border-gray-200">
+          <div className="flex flex-wrap items-center gap-3">
+            <StatusDisplay status={rep.status} />
+            
+            {rep.deadline && (
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Calendar className="w-3 h-3" />
+                <span>Due: {formatDate(rep.deadline)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {/* Notes */}
+          {rep.notes && (
+            <Section title="Notes" icon={MessageSquare}>
+              <p className="italic text-gray-600">"{rep.notes}"</p>
+            </Section>
+          )}
+          
+          {/* Risk Level */}
+          {rep.riskLevel && (
+            <Section title="Risk Level" icon={AlertTriangle}>
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                rep.riskLevel === 'high' 
+                  ? 'bg-red-100 text-red-700' 
+                  : rep.riskLevel === 'medium'
+                  ? 'bg-amber-100 text-amber-700'
+                  : 'bg-green-100 text-green-700'
+              }`}>
+                {rep.riskLevel.charAt(0).toUpperCase() + rep.riskLevel.slice(1)} Risk
+              </span>
+            </Section>
+          )}
+          
+          {/* Prep Data */}
+          {rep.prep && Object.keys(rep.prep).length > 0 && (
+            <Section title="Prep Notes" icon={FileText}>
+              <div className="space-y-2 bg-indigo-50 rounded-lg p-3">
+                {rep.prep.opening_language && (
+                  <div>
+                    <span className="text-xs font-medium text-indigo-700">Opening:</span>
+                    <p className="text-indigo-900">{rep.prep.opening_language}</p>
+                  </div>
+                )}
+                {rep.prep.behavior_to_address && (
+                  <div>
+                    <span className="text-xs font-medium text-indigo-700">Behavior:</span>
+                    <p className="text-indigo-900">{rep.prep.behavior_to_address}</p>
+                  </div>
+                )}
+                {rep.prep.commitment_to_request && (
+                  <div>
+                    <span className="text-xs font-medium text-indigo-700">Commitment:</span>
+                    <p className="text-indigo-900">{rep.prep.commitment_to_request}</p>
+                  </div>
+                )}
+              </div>
+            </Section>
+          )}
+          
+          {/* Evidence/Debrief */}
+          {rep.evidence && (
+            <Section title="Debrief" icon={CheckCircle}>
+              <div className="space-y-3">
+                {/* Evidence Level */}
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-gray-400" />
+                  <span className="text-xs text-gray-500">
+                    {rep.evidence.level === 'level_1' ? 'Same-day capture' : 'Later capture'}
+                  </span>
+                </div>
+                
+                {/* Debrief Responses */}
+                {rep.evidence.responses && Object.entries(rep.evidence.responses).length > 0 && (
+                  <div className="bg-green-50 rounded-lg p-3 space-y-2">
+                    {Object.entries(rep.evidence.responses).map(([key, value]) => (
+                      <div key={key}>
+                        <span className="text-xs font-medium text-green-700 capitalize">
+                          {key.replace(/_/g, ' ')}:
+                        </span>
+                        <p className="text-green-900">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Section>
+          )}
+          
+          {/* Quality Assessment */}
+          {rep.qualityAssessment && (
+            <Section title="Quality Assessment" icon={Star}>
+              <QualityDisplay assessment={rep.qualityAssessment} />
+            </Section>
+          )}
+          
+          {/* Loop Closure */}
+          {rep.loopClosure && (
+            <Section title="Loop Closure" icon={CheckCircle}>
+              <div className="bg-emerald-50 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                    rep.loopClosure.outcome === 'behavior_changed' || rep.loopClosure.outcome === 'commitment_held'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : rep.loopClosure.outcome === 'partial_change'
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {rep.loopClosure.outcome?.replace(/_/g, ' ')}
+                  </span>
+                </div>
+                
+                {rep.loopClosure.behavior_observed && (
+                  <div>
+                    <span className="text-xs font-medium text-emerald-700">Observed:</span>
+                    <p className="text-emerald-900">{rep.loopClosure.behavior_observed}</p>
+                  </div>
+                )}
+                
+                {rep.loopClosure.notes && (
+                  <div>
+                    <span className="text-xs font-medium text-emerald-700">Notes:</span>
+                    <p className="text-emerald-900">{rep.loopClosure.notes}</p>
+                  </div>
+                )}
+                
+                {rep.loopClosedAt && (
+                  <div className="text-xs text-emerald-600">
+                    Closed: {formatDate(rep.loopClosedAt)}
+                  </div>
+                )}
+              </div>
+            </Section>
+          )}
+          
+          {/* Cancel Reason */}
+          {rep.cancelReason && (
+            <Section title="Cancellation" icon={X}>
+              <div className="bg-gray-100 rounded-lg p-3">
+                <p className="text-gray-700">{rep.cancelReason}</p>
+              </div>
+            </Section>
+          )}
+          
+          {/* Timeline */}
+          <Section title="Timeline" icon={Clock}>
+            <div className="space-y-1 text-xs text-gray-500">
+              {rep.createdAt && <div>Created: {formatDate(rep.createdAt)}</div>}
+              {rep.preparedAt && <div>Prepared: {formatDate(rep.preparedAt)}</div>}
+              {rep.scheduledAt && <div>Scheduled: {formatDate(rep.scheduledAt)}</div>}
+              {rep.executedAt && <div>Executed: {formatDate(rep.executedAt)}</div>}
+              {rep.debriefedAt && <div>Debriefed: {formatDate(rep.debriefedAt)}</div>}
+              {rep.loopClosedAt && <div>Loop Closed: {formatDate(rep.loopClosedAt)}</div>}
+            </div>
+          </Section>
+        </div>
+        
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
+          <Button
+            onClick={onClose}
+            className="w-full bg-corporate-navy hover:bg-corporate-navy/90 text-white"
+          >
+            Close
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export default RepDetailModal;

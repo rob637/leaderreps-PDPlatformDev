@@ -70,7 +70,9 @@ export const REP_STATUS = {
   PREPARED: 'prepared',       // Optional prep completed
   SCHEDULED: 'scheduled',     // For reps requiring scheduling
   EXECUTED: 'executed',       // Real-world rep done, awaiting debrief
-  DEBRIEFED: 'debriefed',     // Complete - debrief submitted
+  DEBRIEFED: 'debriefed',     // Debrief submitted, awaiting follow-up
+  FOLLOW_UP_PENDING: 'follow_up_pending',  // Tracking behavior change
+  LOOP_CLOSED: 'loop_closed', // Follow-up confirmed, rep complete
   MISSED: 'missed',           // Past deadline without execution
   CANCELED: 'canceled',       // Rare, with reason required
   
@@ -85,7 +87,9 @@ export const STATE_TRANSITIONS = {
   prepared: ['scheduled', 'executed', 'missed', 'canceled'],
   scheduled: ['executed', 'missed', 'canceled'],
   executed: ['debriefed', 'missed'],  // Can still miss if no debrief
-  debriefed: [],  // Terminal state
+  debriefed: ['follow_up_pending', 'loop_closed'],  // Can skip follow-up or track it
+  follow_up_pending: ['loop_closed'],  // Complete follow-up
+  loop_closed: [],  // Terminal state - rep fully complete
   missed: ['committed'],  // Roll forward
   canceled: [],  // Terminal state
   // Legacy status - treat same as committed
@@ -1090,6 +1094,135 @@ export const conditioningService = {
       evidenceLevel: rep.evidence?.level || null,
       hasEvidence: !!rep.evidence
     };
+  },
+  
+  // ============================================
+  // PHASE 5: LOOP CLOSURE & FOLLOW-UP
+  // ============================================
+  
+  /**
+   * Start follow-up tracking for a debriefed rep
+   * Sets reminder date and transitions to follow_up_pending
+   */
+  startFollowUp: async (db, userId, repId, followUpData) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    
+    if (currentRep.status !== REP_STATUS.DEBRIEFED) {
+      throw new Error('Can only start follow-up for a debriefed rep');
+    }
+    
+    await updateDoc(repRef, {
+      status: REP_STATUS.FOLLOW_UP_PENDING,
+      followUp: {
+        reminderDate: followUpData.reminderDate,
+        what_to_check: followUpData.what_to_check || null,
+        expected_change: followUpData.expected_change || null,
+        createdAt: serverTimestamp()
+      },
+      updatedAt: serverTimestamp()
+    });
+    
+    return true;
+  },
+  
+  /**
+   * Close the loop on a rep - record follow-up outcome
+   * Transitions to loop_closed (terminal state)
+   */
+  closeLoop: async (db, userId, repId, closureData) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    
+    // Can close loop from either debriefed or follow_up_pending
+    const validStatuses = [REP_STATUS.DEBRIEFED, REP_STATUS.FOLLOW_UP_PENDING];
+    if (!validStatuses.includes(currentRep.status)) {
+      throw new Error('Can only close loop for debriefed or follow-up pending rep');
+    }
+    
+    await updateDoc(repRef, {
+      status: REP_STATUS.LOOP_CLOSED,
+      loopClosure: {
+        outcome: closureData.outcome, // 'behavior_changed' | 'needs_another_rep' | 'commitment_held' | 'no_change'
+        notes: closureData.notes || null,
+        behavior_observed: closureData.behavior_observed || null,
+        recommend_follow_up: closureData.recommend_follow_up || false,
+        closedAt: serverTimestamp()
+      },
+      loopClosedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    
+    return true;
+  },
+  
+  /**
+   * Get reps that need follow-up (debriefed but not loop_closed, past reminder date)
+   */
+  getRepsNeedingFollowUp: async (db, userId, cohortId = null) => {
+    const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+    
+    // Get all follow-up pending reps
+    const pendingQuery = query(
+      repsRef,
+      where('status', '==', REP_STATUS.FOLLOW_UP_PENDING)
+    );
+    
+    // Get debriefed reps (might need follow-up scheduling)
+    const debriefedQuery = query(
+      repsRef,
+      where('status', '==', REP_STATUS.DEBRIEFED)
+    );
+    
+    const [pendingSnap, debriefedSnap] = await Promise.all([
+      getDocs(pendingQuery),
+      getDocs(debriefedQuery)
+    ]);
+    
+    const now = new Date();
+    const reps = [];
+    
+    // All follow-up pending reps
+    pendingSnap.forEach(doc => {
+      const data = doc.data();
+      if (!cohortId || data.cohortId === cohortId) {
+        const reminderDate = data.followUp?.reminderDate?.toDate?.() || data.followUp?.reminderDate;
+        reps.push({
+          id: doc.id,
+          ...data,
+          isOverdue: reminderDate && new Date(reminderDate) <= now
+        });
+      }
+    });
+    
+    // Debriefed reps older than 7 days without follow-up scheduled
+    debriefedSnap.forEach(doc => {
+      const data = doc.data();
+      if (!cohortId || data.cohortId === cohortId) {
+        const debriefedAt = data.debriefedAt?.toDate?.() || data.debriefedAt;
+        const daysSinceDebrief = debriefedAt ? 
+          Math.floor((now - new Date(debriefedAt)) / (1000 * 60 * 60 * 24)) : 0;
+        
+        if (daysSinceDebrief >= 7) {
+          reps.push({
+            id: doc.id,
+            ...data,
+            needsFollowUpScheduling: true,
+            daysSinceDebrief
+          });
+        }
+      }
+    });
+    
+    return reps.sort((a, b) => (b.isOverdue ? 1 : 0) - (a.isOverdue ? 1 : 0));
   },
   
   // ============================================

@@ -23,7 +23,9 @@ import {
   RepProgressionTracker,
   PrepRequirementBadge,
   HighRiskPrepModal,
-  MissedRepDebriefModal
+  MissedRepDebriefModal,
+  LoopClosureModal,
+  RepDetailModal
 } from '../conditioning';
 import { 
   Plus, Check, X, AlertTriangle, Clock, User, 
@@ -66,7 +68,19 @@ const StatusBadge = ({ status }) => {
     [REP_STATUS.DEBRIEFED]: { 
       bg: 'bg-green-100', 
       text: 'text-green-700', 
-      label: 'Complete',
+      label: 'Debriefed',
+      icon: CheckCircle
+    },
+    [REP_STATUS.FOLLOW_UP_PENDING]: { 
+      bg: 'bg-orange-100', 
+      text: 'text-orange-700', 
+      label: 'Follow-Up',
+      icon: RefreshCw
+    },
+    [REP_STATUS.LOOP_CLOSED]: { 
+      bg: 'bg-emerald-100', 
+      text: 'text-emerald-700', 
+      label: 'Loop Closed',
       icon: CheckCircle
     },
     [REP_STATUS.MISSED]: { 
@@ -190,6 +204,8 @@ const RepCard = ({
   onComplete, 
   onCancel, 
   onAddDebrief, 
+  onCloseLoop,
+  onViewDetail,
   onPractice, 
   onStateChange,
   onOpenPrep,
@@ -261,11 +277,15 @@ const RepCard = ({
     <>
       <Card className={`mb-3 ${isOverdue ? 'border-l-4 border-l-amber-500' : ''}`}>
         <div className="p-4">
-          {/* Header Row */}
-          <div className="flex items-start justify-between mb-2">
+          {/* Header Row - Clickable to view details */}
+          <div 
+            className="flex items-start justify-between mb-2 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => onViewDetail?.(rep)}
+          >
             <div className="flex items-center gap-2">
               <User className="w-5 h-5 text-corporate-navy" />
               <span className="font-semibold text-corporate-navy">{rep.person}</span>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
             </div>
             <StatusBadge status={rep.status} />
           </div>
@@ -383,9 +403,9 @@ const RepCard = ({
             </div>
           )}
           
-          {/* Completed/Debriefed Rep - Show Evidence */}
+          {/* Completed/Debriefed Rep - Show Evidence & Loop Closure */}
           {(rep.status === 'debriefed' || rep.status === 'completed') && (
-            <div className="pt-2 border-t border-gray-100">
+            <div className="pt-2 border-t border-gray-100 space-y-2">
               {evidence ? (
                 <>
                   {/* Quality Assessment Display */}
@@ -396,10 +416,20 @@ const RepCard = ({
                       compact={true}
                     />
                   )}
-                  <div className="flex items-center gap-2 mt-2 text-xs text-green-600">
+                  <div className="flex items-center gap-2 text-xs text-green-600">
                     <CheckCircle className="w-3 h-3" />
                     <span>Debrief submitted</span>
                   </div>
+                  
+                  {/* Loop Closure CTA */}
+                  <Button
+                    onClick={() => onCloseLoop?.(rep)}
+                    disabled={isLoading}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Close the Loop
+                  </Button>
                 </>
               ) : (
                 <Button
@@ -411,6 +441,39 @@ const RepCard = ({
                   <FileText className="w-4 h-4 mr-2" />
                   Add Debrief
                 </Button>
+              )}
+            </div>
+          )}
+          
+          {/* Follow-Up Pending - Show Close Loop option */}
+          {rep.status === 'follow_up_pending' && (
+            <div className="pt-2 border-t border-gray-100">
+              <div className="flex items-center gap-2 text-xs text-orange-600 mb-2">
+                <RefreshCw className="w-3 h-3" />
+                <span>Tracking follow-up</span>
+              </div>
+              <Button
+                onClick={() => onCloseLoop?.(rep)}
+                disabled={isLoading}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Close the Loop
+              </Button>
+            </div>
+          )}
+          
+          {/* Loop Closed - Show completion */}
+          {rep.status === 'loop_closed' && (
+            <div className="pt-2 border-t border-gray-100">
+              <div className="flex items-center gap-2 text-xs text-emerald-600">
+                <CheckCircle className="w-3 h-3" />
+                <span>Loop closed - Rep complete</span>
+              </div>
+              {rep.loopClosure?.outcome && (
+                <div className="mt-1 text-xs text-gray-500">
+                  Outcome: {rep.loopClosure.outcome.replace(/_/g, ' ')}
+                </div>
               )}
             </div>
           )}
@@ -794,6 +857,35 @@ const Conditioning = ({ embedded = false, showFloatingAction }) => {
     }
   };
   
+  // Phase 5: Loop closure modal state
+  const [loopClosureRep, setLoopClosureRep] = useState(null);
+  
+  const handleOpenLoopClosure = (rep) => {
+    setLoopClosureRep(rep);
+  };
+  
+  const handleLoopClosureSubmit = async (closureData) => {
+    if (!userId || !db) return;
+    try {
+      setIsSubmitting(true);
+      await conditioningService.closeLoop(db, userId, closureData.repId, closureData);
+      setLoopClosureRep(null);
+      await loadData();
+    } catch (err) {
+      console.error('Error closing loop:', err);
+      setError('Failed to close loop. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Phase 6: Rep detail modal state
+  const [detailModalRep, setDetailModalRep] = useState(null);
+  
+  const handleOpenRepDetail = (rep) => {
+    setDetailModalRep(rep);
+  };
+  
   // No cohort check
   if (!cohortId) {
     return (
@@ -897,6 +989,8 @@ const Conditioning = ({ embedded = false, showFloatingAction }) => {
                 onStateChange={handleStateChange}
                 onOpenPrep={handleOpenPrep}
                 onAddDebrief={(rep) => setEvidenceModalRep(rep)}
+                onCloseLoop={handleOpenLoopClosure}
+                onViewDetail={handleOpenRepDetail}
                 isLoading={isSubmitting}
               />
             ))
@@ -916,6 +1010,8 @@ const Conditioning = ({ embedded = false, showFloatingAction }) => {
                 onStateChange={handleStateChange}
                 onOpenPrep={handleOpenPrep}
                 onAddDebrief={(rep) => setEvidenceModalRep(rep)}
+                onCloseLoop={handleOpenLoopClosure}
+                onViewDetail={handleOpenRepDetail}
                 onPractice={handleStartPractice}
                 evidence={evidenceMap[rep.id]}
                 isLoading={false}
@@ -976,6 +1072,26 @@ const Conditioning = ({ embedded = false, showFloatingAction }) => {
           onModify={handleMissedModify}
           onCancel={handleMissedCancel}
           isLoading={isSubmitting}
+        />
+      )}
+      
+      {/* Loop Closure Modal (Phase 5) */}
+      {loopClosureRep && (
+        <LoopClosureModal
+          isOpen={true}
+          onClose={() => setLoopClosureRep(null)}
+          rep={loopClosureRep}
+          onSubmit={handleLoopClosureSubmit}
+          isLoading={isSubmitting}
+        />
+      )}
+      
+      {/* Rep Detail Modal (Phase 6) */}
+      {detailModalRep && (
+        <RepDetailModal
+          isOpen={true}
+          onClose={() => setDetailModalRep(null)}
+          rep={detailModalRep}
         />
       )}
     </div>

@@ -20,3 +20,12 @@ export { default as MissedRepDebriefModal } from './MissedRepDebriefModal';
 
 // Sprint 5: Coach Prompts
 export { default as CoachPromptsPanel } from './CoachPromptsPanel';
+
+// Phase 5: Loop Closure
+export { default as LoopClosureModal } from './LoopClosureModal';
+
+// Phase 6: Rep Detail View
+export { default as RepDetailModal } from './RepDetailModal';
+
+// Voice Input
+export { default as VoiceInputButton, VoiceInputWithPreview } from './VoiceInputButton';

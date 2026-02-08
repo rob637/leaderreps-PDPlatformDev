@@ -1,11 +1,12 @@
 // src/components/conditioning/RepProgressionTracker.jsx
 // Visual rep progression tracker showing state workflow
 // Sprint 2: States + Progression (020726)
+// Phase 5: Added Loop Closure states
 
 import React, { useMemo } from 'react';
 import { 
   Clock, FileText, Calendar, Play, CheckCircle, Check,
-  XCircle, AlertCircle, ChevronRight, Lock, Unlock
+  XCircle, AlertCircle, ChevronRight, Lock, Unlock, RefreshCw, CircleCheck
 } from 'lucide-react';
 import { STATE_TRANSITIONS, REP_STATUS } from '../../services/conditioningService.js';
 import { isPrepRequired, getRepType, RISK_LEVELS } from '../../services/repTaxonomy.js';
@@ -13,6 +14,7 @@ import { isPrepRequired, getRepType, RISK_LEVELS } from '../../services/repTaxon
 // ============================================
 // STATE DEFINITIONS
 // V1 UX: Updated labels for clarity (Delivered ≠ Closed)
+// Phase 5: Added follow-up and loop closure states
 // ============================================
 const STATE_CONFIG = {
   committed: {
@@ -48,7 +50,21 @@ const STATE_CONFIG = {
     shortLabel: 'Debriefed',
     icon: CheckCircle,
     color: 'green',
-    description: 'Reflection complete'
+    description: 'Reflection complete, awaiting loop closure'
+  },
+  follow_up_pending: {
+    label: 'Follow-Up',
+    shortLabel: 'Follow-Up',
+    icon: RefreshCw,
+    color: 'orange',
+    description: 'Tracking behavior change'
+  },
+  loop_closed: {
+    label: 'Loop Closed',
+    shortLabel: 'Closed',
+    icon: CircleCheck,
+    color: 'emerald',
+    description: 'Rep complete - loop closed'
   },
   missed: {
     label: 'Missed',
@@ -94,6 +110,16 @@ const getColorClasses = (color, variant = 'default') => {
       active: 'bg-green-600 text-white border-green-700',
       muted: 'bg-green-50 text-green-400 border-green-200'
     },
+    orange: {
+      default: 'bg-orange-100 text-orange-700 border-orange-300',
+      active: 'bg-orange-600 text-white border-orange-700',
+      muted: 'bg-orange-50 text-orange-400 border-orange-200'
+    },
+    emerald: {
+      default: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+      active: 'bg-emerald-600 text-white border-emerald-700',
+      muted: 'bg-emerald-50 text-emerald-400 border-emerald-200'
+    },
     amber: {
       default: 'bg-amber-100 text-amber-700 border-amber-300',
       active: 'bg-amber-600 text-white border-amber-700',
@@ -109,9 +135,9 @@ const getColorClasses = (color, variant = 'default') => {
 };
 
 // ============================================
-// PROGRESSION PATH - Main workflow states
+// PROGRESSION PATH - Main workflow states (including loop closure)
 // ============================================
-const PROGRESSION_PATH = ['committed', 'prepared', 'scheduled', 'executed', 'debriefed'];
+const PROGRESSION_PATH = ['committed', 'prepared', 'scheduled', 'executed', 'debriefed', 'loop_closed'];
 
 // ============================================
 // STATE NODE COMPONENT
@@ -367,6 +393,18 @@ const StateActionButtons = ({
       label: 'Add Debrief',
       icon: CheckCircle,
       color: 'bg-green-600 hover:bg-green-700',
+      priority: 1
+    },
+    follow_up_pending: {
+      label: 'Track Follow-Up',
+      icon: RefreshCw,
+      color: 'bg-orange-600 hover:bg-orange-700',
+      priority: 2
+    },
+    loop_closed: {
+      label: 'Close Loop',
+      icon: CircleCheck,
+      color: 'bg-emerald-600 hover:bg-emerald-700',
       priority: 1
     }
   };

@@ -1,6 +1,6 @@
 // src/components/conditioning/EvidenceCaptureModal.jsx
 // V1 UX: Simplified single-input debrief modal
-// Future: Voice input and structured prompts
+// With real voice input using Web Speech API
 
 import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -10,52 +10,10 @@ import {
 } from '../../services/conditioningService.js';
 import { Card, Button } from '../ui';
 import { 
-  X, Mic, MicOff, Clock, 
+  X, Clock, 
   AlertCircle, Send, MessageSquare
 } from 'lucide-react';
-
-// ============================================
-// VOICE INPUT COMPONENT (Placeholder for future)
-// ============================================
-const VoiceInput = ({ onTranscription, disabled }) => {
-  const [isRecording, setIsRecording] = useState(false);
-  
-  // Note: Full voice recording implementation would require:
-  // - MediaRecorder API
-  // - Firebase Storage upload
-  // - Speech-to-text transcription (e.g., Google Cloud Speech)
-  // For now, this is a placeholder that shows the UI
-  
-  const handleToggleRecording = () => {
-    if (isRecording) {
-      setIsRecording(false);
-      // Simulate transcription for demo
-      onTranscription?.("I said to them directly: 'I noticed you've been late to the last three meetings. Can we talk about what's going on?'");
-    } else {
-      setIsRecording(true);
-    }
-  };
-  
-  return (
-    <button
-      type="button"
-      onClick={handleToggleRecording}
-      disabled={disabled}
-      className={`p-3 rounded-full transition-all ${
-        isRecording 
-          ? 'bg-red-500 text-white animate-pulse' 
-          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-      aria-label={isRecording ? 'Stop recording' : 'Start recording'}
-    >
-      {isRecording ? (
-        <MicOff className="w-5 h-5" />
-      ) : (
-        <Mic className="w-5 h-5" />
-      )}
-    </button>
-  );
-};
+import VoiceInputButton from './VoiceInputButton';
 
 // ============================================
 // EVIDENCE LEVEL INDICATOR
@@ -170,12 +128,15 @@ const EvidenceCaptureModal = ({ rep, onClose, onSubmit, isLoading }) => {
                 value={debriefText}
                 onChange={(e) => setDebriefText(e.target.value)}
                 placeholder="I said... They responded... The outcome was..."
-                className="w-full p-3 pr-12 border border-gray-300 rounded-lg text-sm min-h-[150px] resize-none focus:ring-2 focus:ring-corporate-navy focus:border-transparent"
+                className="w-full p-3 pr-14 border border-gray-300 rounded-lg text-sm min-h-[150px] resize-none focus:ring-2 focus:ring-corporate-navy focus:border-transparent"
                 autoFocus
               />
               <div className="absolute right-2 bottom-2">
-                <VoiceInput 
+                <VoiceInputButton 
                   onTranscription={(text) => setDebriefText(prev => prev ? `${prev} ${text}` : text)}
+                  onPartialTranscription={(text) => {
+                    // Show live preview while recording
+                  }}
                 />
               </div>
             </div>
