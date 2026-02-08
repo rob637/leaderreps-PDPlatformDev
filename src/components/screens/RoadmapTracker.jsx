@@ -180,7 +180,7 @@ const ContentDetailsModalInternal = ({ content, onClose, htmlContent, rating, se
 // --- Component 3: Roadmap Timeline View (Unchanged) ---
 const RoadmapTimeline = ({ data, navigateToMonth, viewMonth }) => {
     return (
-        <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-corporate-teal'>
+        <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white dark:bg-slate-800 shadow-2xl border-l-4 border-corporate-teal'>
             <p className='text-sm text-gray-600 mb-4'>Review your full two-year journey. Click a month to review its content and reflection.</p>
             <div className='max-h-96 overflow-y-auto space-y-2 pr-2'>
                 {data.plan.map(monthData => {
@@ -416,7 +416,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
 
 
     return (
-        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen bg-slate-50 text-corporate-navy">
+        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen bg-slate-50 dark:bg-slate-900 text-corporate-navy">
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8 border-corporate-teal/30'>
                 <Dumbbell className='w-10 h-10 text-corporate-teal'/>
                 <h1 className="text-4xl font-extrabold text-corporate-navy">Development Roadmap Tracker</h1>
@@ -674,7 +674,7 @@ export const RoadmapTrackerScreen = () => {
     if (error || !planExistsAndIsValid) {
         // If data is missing or invalid, prompt the user to go to the generator screen.
         return (
-            <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen bg-slate-50 text-corporate-navy">
+            <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen bg-slate-50 dark:bg-slate-900 text-corporate-navy">
                 <div className='flex items-center gap-4 border-b-2 pb-2 mb-8 border-corporate-orange/30'>
                     <AlertTriangle className='w-10 h-10 text-corporate-orange'/>
                     <h1 className="text-4xl font-extrabold text-corporate-navy">Roadmap Required</h1>

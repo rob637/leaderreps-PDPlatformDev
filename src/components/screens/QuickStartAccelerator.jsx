@@ -250,7 +250,7 @@ const QuickStartAcceleratorScreen = () => {
                 // --- Refactored Home View ---
                 return (
                     // Consistent page structure and padding
-                    <div className="p-5 sm:p-6 lg:p-8 lg:p-10 bg-[#FAFBFC]" style={{ fontFamily: 'var(--font-body)' }}>
+                    <div className="p-5 sm:p-6 lg:p-8 lg:p-10 bg-[#FAFBFC] dark:bg-slate-900" style={{ fontFamily: 'var(--font-body)' }}>
                         {/* Header */}
                         <header className="flex items-center gap-4 border-b pb-4 mb-10 border-slate-100">
                             <div className="w-14 h-14 rounded-2xl bg-corporate-orange/10 flex items-center justify-center">

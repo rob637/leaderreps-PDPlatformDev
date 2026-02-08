@@ -31,7 +31,7 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFBFC] p-5 sm:p-8 lg:p-10" style={{ fontFamily: 'var(--font-body)' }}>
+    <div className="min-h-screen bg-[#FAFBFC] dark:bg-slate-900 p-5 sm:p-8 lg:p-10" style={{ fontFamily: 'var(--font-body)' }}>
       <div className="max-w-3xl mx-auto">
         
         {/* Back Button */}

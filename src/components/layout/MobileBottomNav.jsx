@@ -53,7 +53,7 @@ const MobileBottomNav = ({ currentScreen }) => {
   // Only show on mobile devices
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-slate-100 md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-100 dark:border-slate-700 md:hidden"
       style={{ fontFamily: 'var(--font-body)' }}
       role="navigation"
       aria-label="Mobile navigation"
@@ -75,7 +75,7 @@ const MobileBottomNav = ({ currentScreen }) => {
                 transition-all duration-200
                 active:scale-95
                 focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2
-                ${isActive ? '' : 'active:bg-slate-50'}
+                ${isActive ? '' : 'active:bg-slate-50 dark:active:bg-slate-800'}
               `}
             >
               <div 
@@ -98,8 +98,8 @@ const MobileBottomNav = ({ currentScreen }) => {
               <span 
                 className={`text-[10px] transition-all duration-200 ${
                   isActive 
-                    ? 'text-corporate-navy font-semibold' 
-                    : 'text-slate-400 font-medium'
+                    ? 'text-corporate-navy dark:text-white font-semibold' 
+                    : 'text-slate-400 dark:text-slate-500 font-medium'
                 }`}
               >
                 {item.label}

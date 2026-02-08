@@ -517,8 +517,11 @@ const MissedRepsSection = ({ missedReps, onOpenDebrief, isLoading }) => {
 // ============================================
 // MAIN CONDITIONING SCREEN
 // ============================================
-const Conditioning = () => {
-  const { user, userProfile, db } = useAppServices();
+const Conditioning = ({ embedded = false, showFloatingAction }) => {
+  // Default FAB visibility: show unless embedded (but can be overridden)
+  const showFab = showFloatingAction ?? !embedded;
+  const { user, userProfile, developmentPlanData, db } = useAppServices();
+  const { cohortData } = useDailyPlan();
   const userId = user?.uid;
   const cohortId = userProfile?.cohortId;
   
@@ -908,8 +911,8 @@ const Conditioning = () => {
         )}
       </div>
       
-      {/* Floating Action Button */}
-      {activeReps.length > 0 && (
+      {/* Floating Action Button - controlled by showFab */}
+      {showFab && activeReps.length > 0 && (
         <button
           onClick={() => setShowCommitForm(true)}
           className="fixed bottom-6 right-6 w-14 h-14 bg-corporate-navy text-white rounded-full shadow-lg flex items-center justify-center hover:bg-corporate-navy/90 transition-all active:scale-95"

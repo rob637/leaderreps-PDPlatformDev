@@ -30,7 +30,7 @@ const ConditioningPanel = ({ isOpen, onClose }) => {
       
       {/* Slide-in Panel - Full screen on mobile, side panel on desktop */}
       <div 
-        className={`absolute top-0 right-0 h-full w-full md:max-w-2xl bg-white shadow-2xl transform transition-transform duration-300 ease-out overflow-hidden ${
+        className={`absolute top-0 right-0 h-full w-full md:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl transform transition-transform duration-300 ease-out overflow-hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -128,7 +128,7 @@ const ConditioningWidget = ({ helpText }) => {
         icon={Dumbbell} 
         accent="TEAL"
         helpText={helpText}
-        data-gazoo-step="conditioning"
+        data-repup-step="conditioning"
       >
         <div className="text-center py-2">
           <Target className="w-8 h-8 text-slate-300 mx-auto mb-2" />
@@ -153,7 +153,7 @@ const ConditioningWidget = ({ helpText }) => {
         icon={Dumbbell} 
         accent="TEAL"
         helpText={helpText}
-        data-gazoo-step="conditioning"
+        data-repup-step="conditioning"
         variant="interactive"
         onClick={() => setIsPanelOpen(true)}
       >
@@ -166,8 +166,8 @@ const ConditioningWidget = ({ helpText }) => {
             {/* Weekly Requirement Status */}
             <div className={`flex items-center gap-3 p-3 rounded-lg ${
               requiredMet 
-                ? 'bg-green-50 border border-green-200' 
-                : 'bg-amber-50 border border-amber-200'
+                ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
             }`}>
               {requiredMet ? (
                 <>

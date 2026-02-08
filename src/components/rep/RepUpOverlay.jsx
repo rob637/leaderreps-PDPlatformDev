@@ -1,20 +1,22 @@
-// src/components/rep/GazooOverlay.jsx
-// The Great Gazoo - Active AI Coach that guides users AND answers questions
+// src/components/rep/RepUpOverlay.jsx
+// RepUp - Two-feature coach: 1) Reps (Conditioning) and 2) Coach in your Pocket
 // Uses REAL AI for coaching responses
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   X, Minus, Sparkles, CheckCircle2, Send,
   ArrowRight, Play, Target, BookOpen, Loader2,
   ClipboardCheck, MessageSquare, Award, HelpCircle,
-  AlertCircle
+  AlertCircle, Dumbbell, Plus, ChevronRight, Clock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
-import GazooSpotlight from './GazooSpotlight';
+import conditioningService, { REP_STATUS, REP_TYPES } from '../../services/conditioningService';
+// SPOTLIGHT TOUR - COMMENTED OUT FOR LATER USE
+// import RepUpSpotlight from './RepUpSpotlight';
 
 // CLEAR Feedback Method framework
 const CLEAR_METHOD = {
@@ -230,17 +232,18 @@ const generateCLEARResponse = (question) => {
   };
 };
 
-// Gazoo's personality
-const GAZOO_INTROS = [
-  "Alright, dum-dum, here's what to do:",
-  "Listen up! Your next steps:",
-  "Pay attention now:",
-  "Here's your mission:",
+/* REPUP_INTROS - COMMENTED OUT FOR LATER USE
+const REPUP_INTROS = [
+  "Here's how to approach this:",
+  "Let's break this down:",
+  "Your next steps:",
+  "Here's the game plan:",
   "Focus on this:"
 ];
+*/
 
-const GazooOverlay = ({ onClose }) => {
-  const { user, navigate } = useAppServices();
+const RepUpOverlay = ({ onClose }) => {
+  const { user, navigate, db, developmentPlanData, userProfile } = useAppServices();
   const { currentScreen } = useNavigation();
   const { 
     currentDayData, 
@@ -249,9 +252,11 @@ const GazooOverlay = ({ onClose }) => {
     cohortData 
   } = useDailyPlan();
 
-  const [mode, setMode] = useState('guide'); // 'guide' or 'coach'
+  // Mode: 'reps' (conditioning) or 'coach' (AI chat)
+  const [mode, setMode] = useState('reps');
   const [isMinimized, setIsMinimized] = useState(false);
-  const [showSpotlight, setShowSpotlight] = useState(false);
+  // SPOTLIGHT TOUR - STATE COMMENTED OUT FOR LATER USE
+  // const [showSpotlight, setShowSpotlight] = useState(false);
   const [userQuestion, setUserQuestion] = useState('');
   const [coachResponse, setCoachResponse] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
@@ -259,7 +264,38 @@ const GazooOverlay = ({ onClose }) => {
   const [_aiError, setAiError] = useState(null);
   const inputRef = useRef(null);
 
+  // Conditioning state
+  const userId = user?.uid;
+  const cohortId = developmentPlanData?.cohortId || cohortData?.id || userProfile?.cohortId;
+  const [reps, setReps] = useState([]);
+  const [weekStatus, setWeekStatus] = useState(null);
+  const [repsLoading, setRepsLoading] = useState(true);
+
   const firstName = user?.displayName?.split(' ')[0] || 'Leader';
+
+  // Load conditioning data
+  const loadReps = useCallback(async () => {
+    if (!userId || !cohortId || !db) {
+      setRepsLoading(false);
+      return;
+    }
+    try {
+      const [active, status] = await Promise.all([
+        conditioningService.getActiveReps(db, userId, cohortId),
+        conditioningService.getWeeklyStatus(db, userId, null, cohortId)
+      ]);
+      setReps(active || []);
+      setWeekStatus(status);
+    } catch (err) {
+      console.error('Error loading reps:', err);
+    } finally {
+      setRepsLoading(false);
+    }
+  }, [userId, cohortId, db]);
+
+  useEffect(() => {
+    loadReps();
+  }, [loadReps]);
 
   // Build context
   const context = useMemo(() => ({
@@ -270,7 +306,7 @@ const GazooOverlay = ({ onClose }) => {
     cohortName: cohortData?.name,
   }), [currentPhase, prepRequirementsComplete, currentDayData, cohortData]);
 
-  // Get current screen guidance
+  // Get current screen for context-aware coaching prompts
   const screenKey = useMemo(() => {
     const screen = (currentScreen || 'dashboard').toLowerCase();
     if (screen.includes('dashboard')) return 'dashboard';
@@ -281,11 +317,8 @@ const GazooOverlay = ({ onClose }) => {
     return 'dashboard';
   }, [currentScreen]);
 
+  // Used for quick prompts in Coach mode
   const guidance = SCREEN_GUIDANCE[screenKey] || SCREEN_GUIDANCE.dashboard;
-  const instructions = guidance.getInstructions(context);
-  const GuidanceIcon = guidance.icon;
-
-  const intro = GAZOO_INTROS[Math.floor(Math.random() * GAZOO_INTROS.length)];
 
   // Handle asking a question - REAL AI
   const handleAskQuestion = async () => {
@@ -305,12 +338,12 @@ const GazooOverlay = ({ onClose }) => {
       const functions = getFunctions();
       const reppyCoach = httpsCallable(functions, 'reppyCoach');
       
-      // Build coaching context for The Great Gazoo
-      const coachingContext = `You are "The Great Gazoo" - a wise, slightly playful AI leadership coach.
+      // Build coaching context for RepUp
+      const coachingContext = `You are "RepUp" - a professional AI leadership coach and your partner in developing leadership skills.
       
 Your personality:
-- Confident and direct, but supportive
-- Use occasional humor but stay professional
+- Confident, direct, and supportive
+- Professional yet approachable
 - Reference the CLEAR method (Context, Listen, Explore, Action, Review) when giving feedback advice
 - Keep responses concise (2-4 paragraphs max)
 - End with an actionable suggestion or thought-provoking question
@@ -330,7 +363,7 @@ Help them with their question. Be practical and actionable.`;
         context: {
           userName: firstName,
           userRole: 'leader',
-          sessionType: 'gazoo-coach',
+          sessionType: 'repup-coach',
           customContext: coachingContext,
         },
       });
@@ -346,7 +379,7 @@ Help them with their question. Be practical and actionable.`;
       });
       
     } catch (error) {
-      console.error('Gazoo AI error:', error);
+      console.error('RepUp AI error:', error);
       setAiError('Having trouble connecting to AI. Try again?');
       // Fallback to CLEAR method response
       const fallback = generateCLEARResponse(question);
@@ -359,33 +392,31 @@ Help them with their question. Be practical and actionable.`;
   // Minimized state
   if (isMinimized) {
     return (
-      <>
-        <motion.button
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          onClick={() => setIsMinimized(false)}
-          className="fixed bottom-6 right-6 z-[90] flex items-center gap-2 px-4 py-3 
-                     bg-gradient-to-r from-lime-500 to-emerald-600 text-white
-                     rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105
-                     border-2 border-white/30"
-        >
-          <Sparkles className="w-5 h-5" />
-          <span className="font-bold">Gazoo</span>
-          <span className="flex gap-0.5">
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
-          </span>
-        </motion.button>
-        
-        {/* Spotlight Tour - can still run even when minimized */}
-        <GazooSpotlight
-          isOpen={showSpotlight}
-          onClose={() => setShowSpotlight(false)}
-          screenContext="dashboard"
-          onComplete={() => setShowSpotlight(false)}
-        />
-      </>
+      <motion.button
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        onClick={() => setIsMinimized(false)}
+        className="fixed bottom-6 right-6 z-[90] flex items-center gap-2 px-4 py-3 
+                   bg-gradient-to-r from-corporate-navy to-corporate-teal text-white
+                   rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105
+                   border-2 border-white/30"
+      >
+        <Sparkles className="w-5 h-5" />
+        <span className="font-bold">RepUp</span>
+        <span className="flex gap-0.5">
+          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+        </span>
+      </motion.button>
+      /* SPOTLIGHT TOUR - COMMENTED OUT FOR LATER USE
+      <RepUpSpotlight
+        isOpen={showSpotlight}
+        onClose={() => setShowSpotlight(false)}
+        screenContext="dashboard"
+        onComplete={() => setShowSpotlight(false)}
+      />
+      */
     );
   }
 
@@ -394,39 +425,34 @@ Help them with their question. Be practical and actionable.`;
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
-      className={`fixed z-[90] w-96 max-w-[calc(100vw-3rem)] ${
-        showSpotlight 
-          ? 'top-6 right-6' // Move to top when spotlight is active
-          : 'bottom-6 right-6' // Normal position
-      }`}
+      className="fixed z-[90] w-96 max-w-[calc(100vw-3rem)] bottom-6 right-6"
     >
-      <div className="bg-white rounded-2xl shadow-2xl border-2 border-lime-500/20 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl border-2 border-corporate-navy/20 overflow-hidden">
         
-        {/* Header - with VISIBLE buttons */}
-        <div className="bg-gradient-to-r from-lime-500 to-emerald-600 p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <Sparkles className="w-6 h-6 text-white" />
+        {/* Header - sleek design */}
+        <div className="bg-gradient-to-r from-corporate-navy to-corporate-teal p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-lg leading-tight text-white">The Great Gazoo</h3>
-                <p className="text-xs text-white/80 mt-0.5">Coaching {firstName}</p>
+                <h3 className="font-bold text-base leading-tight text-white">RepUp</h3>
               </div>
             </div>
-            {/* VISIBLE minimize and close buttons - solid backgrounds for visibility */}
-            <div className="flex items-center gap-2">
+            {/* Minimize and close buttons */}
+            <div className="flex items-center gap-1.5">
               <button 
                 onClick={() => setIsMinimized(true)}
-                className="w-8 h-8 flex items-center justify-center bg-white text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors shadow-md font-bold text-lg"
+                className="w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-full transition-colors text-white font-bold text-sm"
                 title="Minimize"
               >
                 –
               </button>
               <button 
                 onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center bg-white text-red-500 hover:bg-red-50 rounded-full transition-colors shadow-md font-bold text-lg"
-                title="Close Gazoo"
+                className="w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-red-500/80 rounded-full transition-colors text-white font-bold text-sm"
+                title="Close RepUp"
               >
                 ✕
               </button>
@@ -434,87 +460,127 @@ Help them with their question. Be practical and actionable.`;
           </div>
         </div>
 
-        {/* Mode tabs */}
+        {/* Mode tabs - Reps and Coach */}
         <div className="flex border-b border-slate-200">
           <button
-            onClick={() => { setMode('guide'); setCoachResponse(null); }}
+            onClick={() => { setMode('reps'); setCoachResponse(null); loadReps(); }}
             className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-              mode === 'guide' 
-                ? 'bg-lime-50 text-lime-700 border-b-2 border-lime-500' 
+              mode === 'reps' 
+                ? 'bg-corporate-teal/10 text-corporate-teal border-b-2 border-corporate-teal' 
                 : 'text-slate-500 hover:bg-slate-50'
             }`}
           >
-            <Target className="w-4 h-4" />
-            <span>Guide Me</span>
+            <Dumbbell className="w-4 h-4" />
+            <span>Reps</span>
           </button>
           <button
             onClick={() => setMode('coach')}
             className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
               mode === 'coach' 
-                ? 'bg-lime-50 text-lime-700 border-b-2 border-lime-500' 
+                ? 'bg-corporate-teal/10 text-corporate-teal border-b-2 border-corporate-teal' 
                 : 'text-slate-500 hover:bg-slate-50'
             }`}
           >
-            <HelpCircle className="w-4 h-4" />
-            <span>Ask Coach</span>
+            <MessageSquare className="w-4 h-4" />
+            <span>Coach</span>
           </button>
         </div>
 
         {/* Content area */}
         <div className="max-h-[350px] overflow-y-auto">
           
-          {/* GUIDE MODE */}
-          {mode === 'guide' && (
+          {/* REPS MODE - Compact Conditioning */}
+          {mode === 'reps' && (
             <div className="p-4 space-y-3">
-              {/* Screen indicator */}
-              <div className="flex items-center gap-2 text-xs text-lime-600 bg-lime-50 px-3 py-1.5 rounded-full w-fit">
-                <GuidanceIcon className="w-3 h-3" />
-                <span className="font-medium">{guidance.title}</span>
-                <Play className="w-3 h-3" />
-              </div>
+              {/* Loading state */}
+              {repsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 text-corporate-teal animate-spin" />
+                </div>
+              ) : !cohortId ? (
+                /* No cohort enrolled */
+                <div className="text-center py-6">
+                  <Target className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm text-slate-500">
+                    Join a cohort to start tracking reps
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Week Status */}
+                  <div className={`flex items-center gap-3 p-3 rounded-lg ${
+                    weekStatus?.requiredRepCompleted 
+                      ? 'bg-green-50 border border-green-200' 
+                      : 'bg-amber-50 border border-amber-200'
+                  }`}>
+                    {weekStatus?.requiredRepCompleted ? (
+                      <>
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="font-medium text-green-800 text-sm">Weekly Rep Done!</p>
+                          <p className="text-xs text-green-600">{weekStatus?.totalCompleted || 0} completed this week</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Target className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="font-medium text-amber-800 text-sm">1 Rep Required</p>
+                          <p className="text-xs text-amber-600">
+                            {reps.length > 0 
+                              ? `${reps.length} active rep${reps.length !== 1 ? 's' : ''}`
+                              : 'Commit to a rep to start'
+                            }
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
 
-              {/* Intro */}
-              <p className="text-sm font-semibold text-corporate-navy">
-                {intro}
-              </p>
-
-              {/* Instructions */}
-              <div className="space-y-2">
-                {instructions.map((instruction, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ x: -10, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className={`flex items-start gap-3 p-2.5 rounded-lg ${
-                      instruction.highlight 
-                        ? 'bg-lime-50 border border-lime-200' 
-                        : 'bg-slate-50'
-                    }`}
-                  >
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      instruction.highlight 
-                        ? 'bg-lime-500 text-white' 
-                        : 'bg-slate-200 text-slate-600'
-                    }`}>
-                      <span className="text-xs font-bold">{idx + 1}</span>
+                  {/* Active Reps List */}
+                  {reps.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Active Reps</p>
+                      {reps.slice(0, 3).map((rep) => {
+                        const repType = REP_TYPES.find(t => t.id === rep.repType);
+                        return (
+                          <motion.div
+                            key={rep.id}
+                            initial={{ x: -10, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors"
+                            onClick={() => navigate('conditioning')}
+                          >
+                            <div className="w-8 h-8 bg-corporate-teal/10 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Dumbbell className="w-4 h-4 text-corporate-teal" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm text-corporate-navy truncate">{rep.person}</p>
+                              <p className="text-xs text-slate-500">{repType?.label || rep.repType}</p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-slate-400" />
+                          </motion.div>
+                        );
+                      })}
+                      {reps.length > 3 && (
+                        <p className="text-xs text-slate-500 text-center">+{reps.length - 3} more</p>
+                      )}
                     </div>
-                    <p className={`text-sm ${
-                      instruction.highlight 
-                        ? 'font-semibold text-lime-800' 
-                        : 'text-slate-600'
-                    }`}>
-                      {instruction.text}
-                    </p>
-                  </motion.div>
-                ))}
-              </div>
+                  )}
 
-              {/* Encouragement */}
-              <div className="flex items-center justify-center gap-2 pt-2 text-sm text-emerald-600 font-medium">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>You've got this!</span>
-              </div>
+                  {/* Quick Add Button */}
+                  <button
+                    onClick={() => navigate('conditioning')}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 
+                               bg-gradient-to-r from-corporate-navy to-corporate-teal
+                               text-white text-sm font-medium rounded-lg
+                               hover:opacity-90 transition-opacity"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{reps.length === 0 ? 'Commit to a Rep' : 'Manage Reps'}</span>
+                  </button>
+                </>
+              )}
             </div>
           )}
 
@@ -524,8 +590,8 @@ Help them with their question. Be practical and actionable.`;
               {/* No response yet - show prompt */}
               {!coachResponse && !isTyping && (
                 <div className="text-center py-6">
-                  <div className="w-16 h-16 mx-auto bg-lime-100 rounded-full flex items-center justify-center mb-3">
-                    <MessageSquare className="w-8 h-8 text-lime-600" />
+                  <div className="w-16 h-16 mx-auto bg-corporate-teal/10 rounded-full flex items-center justify-center mb-3">
+                    <MessageSquare className="w-8 h-8 text-corporate-teal" />
                   </div>
                   <h4 className="font-semibold text-corporate-navy mb-1">Ask Me Anything</h4>
                   <p className="text-sm text-slate-500 mb-3">
@@ -536,7 +602,7 @@ Help them with their question. Be practical and actionable.`;
                       <button
                         key={i}
                         onClick={() => setUserQuestion(q)}
-                        className="text-xs px-3 py-1.5 bg-slate-100 hover:bg-lime-100 text-slate-600 hover:text-lime-700 rounded-full transition-colors"
+                        className="text-xs px-3 py-1.5 bg-slate-100 hover:bg-corporate-teal/10 text-slate-600 hover:text-corporate-navy rounded-full transition-colors"
                       >
                         {q}
                       </button>
@@ -548,8 +614,8 @@ Help them with their question. Be practical and actionable.`;
               {/* Typing indicator */}
               {isTyping && (
                 <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                  <Loader2 className="w-5 h-5 text-lime-500 animate-spin" />
-                  <span className="text-sm text-slate-600">Gazoo is thinking...</span>
+                  <Loader2 className="w-5 h-5 text-corporate-teal animate-spin" />
+                  <span className="text-sm text-slate-600">RepUp is thinking...</span>
                 </div>
               )}
 
@@ -564,7 +630,7 @@ Help them with their question. Be practical and actionable.`;
 
                   {/* AI Response */}
                   {coachResponse.isAI && (
-                    <div className="bg-gradient-to-br from-lime-50 to-emerald-50 rounded-lg p-4 border border-lime-200">
+                    <div className="bg-gradient-to-br from-blue-50 to-teal-50 rounded-lg p-4 border border-corporate-teal/30">
                       <div className="prose prose-sm max-w-none text-slate-700">
                         <p className="whitespace-pre-wrap">{coachResponse.aiResponse}</p>
                       </div>
@@ -580,7 +646,7 @@ Help them with their question. Be practical and actionable.`;
                           <span>AI unavailable - showing framework response</span>
                         </div>
                       )}
-                      <p className="text-sm font-semibold text-lime-700">{coachResponse.intro}</p>
+                      <p className="text-sm font-semibold text-corporate-navy">{coachResponse.intro}</p>
                       
                       <div className="space-y-2">
                         {coachResponse.steps.map((step, idx) => (
@@ -591,7 +657,7 @@ Help them with their question. Be practical and actionable.`;
                             transition={{ delay: idx * 0.1 }}
                             className="flex items-start gap-3 p-2.5 bg-slate-50 rounded-lg"
                           >
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-lime-500 to-emerald-600 text-white flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-corporate-navy to-corporate-teal text-white flex items-center justify-center flex-shrink-0 font-bold text-sm">
                               {step.letter}
                             </div>
                             <p className="text-sm text-slate-700">{step.text}</p>
@@ -614,7 +680,7 @@ Help them with their question. Be practical and actionable.`;
                   {/* Ask another */}
                   <button
                     onClick={() => { setCoachResponse(null); setChatHistory([]); }}
-                    className="text-sm text-lime-600 hover:text-lime-700 font-medium"
+                    className="text-sm text-corporate-teal hover:text-corporate-navy font-medium"
                   >
                     ← Ask another question
                   </button>
@@ -634,14 +700,14 @@ Help them with their question. Be practical and actionable.`;
                 value={userQuestion}
                 onChange={(e) => setUserQuestion(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAskQuestion()}
-                placeholder="Describe your leadership challenge..."
+                placeholder="Ask me anything..."
                 className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl
-                           text-sm focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-transparent"
+                           text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
               />
               <button
                 onClick={handleAskQuestion}
                 disabled={!userQuestion.trim() || isTyping}
-                className="px-4 py-2.5 bg-gradient-to-r from-lime-500 to-emerald-600 
+                className="px-4 py-2.5 bg-gradient-to-r from-corporate-navy to-corporate-teal 
                            text-white rounded-xl hover:opacity-90 transition-opacity
                            disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -651,33 +717,27 @@ Help them with their question. Be practical and actionable.`;
           </div>
         )}
 
-        {/* Footer for guide mode */}
+        {/* GUIDE MODE FOOTER - COMMENTED OUT FOR LATER USE
         {mode === 'guide' && (
           <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
             <button
               onClick={() => setMode('coach')}
-              className="text-xs text-lime-600 hover:text-lime-700 font-medium flex items-center gap-1"
+              className="text-xs text-corporate-teal hover:text-corporate-navy font-medium flex items-center gap-1"
             >
               <HelpCircle className="w-3 h-3" />
               Need help?
             </button>
             <button
               onClick={() => {
-                // Navigate to dashboard if not already there
-                // Use currentScreen directly - screenKey maps unknowns to 'dashboard'
                 const actualScreen = (currentScreen || 'dashboard').toLowerCase();
                 if (!actualScreen.includes('dashboard')) {
                   navigate('dashboard');
-                  // Wait for navigation and page render, then start spotlight
-                  // 600ms gives time for: navigation + dashboard mount + element render
                   setTimeout(() => setShowSpotlight(true), 600);
                 } else {
-                  // Already on dashboard - start spotlight immediately
                   setShowSpotlight(true);
                 }
-                // DON'T minimize - Gazoo stays visible during guide
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-lime-500 to-emerald-600 
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-corporate-navy to-corporate-teal 
                          text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
             >
               <span>Let's Go</span>
@@ -685,23 +745,23 @@ Help them with their question. Be practical and actionable.`;
             </button>
           </div>
         )}
+        */}
       </div>
 
-      {/* Spotlight Tour - always uses 'dashboard' context since tour is dashboard-focused */}
-      <GazooSpotlight
+      {/* SPOTLIGHT TOUR - COMMENTED OUT FOR LATER USE
+      <RepUpSpotlight
         isOpen={showSpotlight}
         onClose={() => {
           setShowSpotlight(false);
-          // Gazoo stays open, just goes back to normal position
         }}
         screenContext="dashboard"
         onComplete={() => {
           setShowSpotlight(false);
-          // Gazoo stays open after tour completes
         }}
       />
+      */}
     </motion.div>
   );
 };
 
-export default GazooOverlay;
+export default RepUpOverlay;

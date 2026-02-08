@@ -1,26 +1,27 @@
 // src/components/rep/RepFloatingButton.jsx
-// Floating button to access The Great Gazoo AI Coach
-// Gazoo hovers above the app as persistent overlay
+// Floating button to access RepUp AI Coach
+// RepUp hovers above the app as persistent overlay
 
 import React, { useState } from 'react';
 import { Brain, Sparkles } from 'lucide-react';
-import GazooOverlay from './GazooOverlay';
+import RepUpOverlay from './RepUpOverlay';
 
 const RepFloatingButton = () => {
-  const [showGazoo, setShowGazoo] = useState(false);
+  const [showRepUp, setShowRepUp] = useState(false);
 
-  // Hide the floating button when Gazoo is showing (Gazoo has its own minimize button)
-  if (showGazoo) {
-    return <GazooOverlay onClose={() => setShowGazoo(false)} />;
+  // Hide the floating button when RepUp is showing (RepUp has its own minimize button)
+  if (showRepUp) {
+    return <RepUpOverlay onClose={() => setShowRepUp(false)} />;
   }
 
   const handleButtonClick = () => {
-    setShowGazoo(true);
+    setShowRepUp(true);
   };
 
   return (
     <>
-      {/* Floating AI Coach Button - Desktop only (hidden on mobile) */}
+      {/* Floating AI Coach Button - Full on desktop, compact on mobile */}
+      {/* Desktop version */}
       <button
         onClick={handleButtonClick}
         className="
@@ -34,13 +35,34 @@ const RepFloatingButton = () => {
           shadow-lg hover:shadow-xl
           transition-all duration-200 
           active:scale-95 hover:scale-105
-          bg-gradient-to-r from-lime-500 to-emerald-600 text-white
+          bg-gradient-to-r from-corporate-navy to-corporate-teal text-white
         "
-        aria-label="The Great Gazoo"
+        aria-label="RepUp"
       >
         <Brain className="w-5 h-5" />
-        <span className="text-sm font-semibold">The Great Gazoo</span>
+        <span className="text-sm font-semibold">RepUp</span>
         <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">NEW</span>
+      </button>
+
+      {/* Mobile version - compact brain icon only */}
+      <button
+        onClick={handleButtonClick}
+        className="
+          fixed z-40
+          flex md:hidden
+          bottom-20
+          right-4
+          items-center justify-center
+          w-12 h-12
+          rounded-full
+          shadow-lg hover:shadow-xl
+          transition-all duration-200
+          active:scale-90
+          bg-gradient-to-r from-corporate-navy to-corporate-teal text-white
+        "
+        aria-label="RepUp AI Coach"
+      >
+        <Brain className="w-5 h-5" />
       </button>
 
     </>

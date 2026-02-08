@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, User, Bell, CheckCircle, Edit2, Zap, Mail, Smartphone, VolumeX, Shield,
-  Download, LogOut, AlertTriangle
+  Download, LogOut, AlertTriangle, Sun, Moon, Monitor
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { useAppServices } from '../../services/useAppServices';
+import { useTheme } from '../../providers/ThemeProvider';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
 import PWAInstall from '../ui/PWAInstall';
@@ -35,6 +36,9 @@ const MySettingsWidget = () => {
   
   // Profile data
   const { profile, loading: profileLoading, isComplete: profileComplete } = useLeaderProfile();
+  
+  // Theme
+  const { theme, setTheme } = useTheme();
   
   // Use stored isComplete flag - profile is complete once user saves it
   const isProfileComplete = profileComplete;
@@ -126,7 +130,7 @@ const MySettingsWidget = () => {
           {/* Leader Profile Row - Clickable to edit */}
           <button
             onClick={() => setShowProfileForm(true)}
-            className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-slate-50 hover:border-corporate-teal/30 transition-colors"
+            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-corporate-teal/30 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isProfileComplete ? 'bg-green-100' : 'bg-corporate-orange/10'}`}>
@@ -137,7 +141,7 @@ const MySettingsWidget = () => {
                 )}
               </div>
               <div className="text-left">
-                <h4 className="font-medium text-corporate-navy text-sm">Leader Profile</h4>
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Leader Profile</h4>
                 <p className="text-xs text-slate-500">
                   {isProfileComplete 
                     ? `Welcome, ${profile?.firstName}!` 
@@ -154,7 +158,7 @@ const MySettingsWidget = () => {
           {/* Notifications Row - Clickable to open settings */}
           <button
             onClick={() => setShowNotificationSettings(true)}
-            className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-slate-50 hover:border-corporate-teal/30 transition-colors"
+            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-corporate-teal/30 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notifSettings.strategy !== 'disabled' ? 'bg-green-100' : 'bg-slate-100'}`}>
@@ -165,7 +169,7 @@ const MySettingsWidget = () => {
                 })()}
               </div>
               <div className="text-left">
-                <h4 className="font-medium text-corporate-navy text-sm">Notifications</h4>
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Notifications</h4>
                 <p className="text-xs text-slate-500">
                   {STRATEGY_DISPLAY[notifSettings.strategy]?.name || 'Smart Escalation'}
                 </p>
@@ -177,17 +181,56 @@ const MySettingsWidget = () => {
             </div>
           </button>
 
+          {/* Appearance / Theme Row - Visible on all devices */}
+          <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/40">
+                {theme === 'dark' ? (
+                  <Moon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                ) : theme === 'light' ? (
+                  <Sun className="w-4 h-4 text-amber-500" />
+                ) : (
+                  <Monitor className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                )}
+              </div>
+              <div className="text-left">
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Appearance</h4>
+              </div>
+            </div>
+            <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
+              {[
+                { value: 'light', icon: Sun, label: 'Light' },
+                { value: 'system', icon: Monitor, label: 'System' },
+                { value: 'dark', icon: Moon, label: 'Dark' },
+              ].map(({ value, icon: ThemeIcon, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setTheme(value)}
+                  className={`p-1.5 rounded-md transition-all duration-200 ${
+                    theme === value
+                      ? 'bg-white dark:bg-slate-600 shadow-sm text-corporate-navy dark:text-white'
+                      : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                  }`}
+                  title={label}
+                  aria-label={`${label} theme`}
+                >
+                  <ThemeIcon className="w-4 h-4" />
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Install App & Sign Out - Mobile Only (hidden on desktop since they're in the sidebar) */}
           <div className="md:hidden space-y-2">
             {/* Install App Row - Uses PWAInstall component (only shows if not installed) */}
-            <div className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
+            <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center bg-corporate-teal/10">
                   <Download className="w-4 h-4 text-corporate-teal" />
                 </div>
                 <div className="text-left">
-                  <h4 className="font-medium text-corporate-navy text-sm">Install App</h4>
-                  <p className="text-xs text-slate-500">Add to home screen</p>
+                  <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Install App</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Add to home screen</p>
                 </div>
               </div>
               <PWAInstall collapsed={true} />
@@ -196,15 +239,15 @@ const MySettingsWidget = () => {
             {/* Sign Out Row */}
             <button
               onClick={() => setShowSignOutConfirm(true)}
-              className="w-full p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-red-50 hover:border-red-200 transition-colors"
+              className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
-                  <LogOut className="w-4 h-4 text-slate-500" />
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                  <LogOut className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                 </div>
                 <div className="text-left">
-                  <h4 className="font-medium text-corporate-navy text-sm">Sign Out</h4>
-                  <p className="text-xs text-slate-500">Exit the app</p>
+                  <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Sign Out</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Exit the app</p>
                 </div>
               </div>
             </button>
@@ -244,25 +287,25 @@ const MySettingsWidget = () => {
           />
           <div className="fixed inset-0 flex items-center justify-center z-[10000] p-4">
             <div 
-              className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-slate-100"
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-slate-100 dark:border-slate-700"
               style={{ fontFamily: 'var(--font-body)' }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-amber-100 rounded-full">
-                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 </div>
-                <h3 className="font-semibold text-lg text-slate-800" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h3 className="font-semibold text-lg text-slate-800 dark:text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                   Sign Out?
                 </h3>
               </div>
-              <p className="text-slate-600 text-sm mb-6">
+              <p className="text-slate-600 dark:text-slate-300 text-sm mb-6">
                 Are you sure you want to sign out of LeaderReps?
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowSignOutConfirm(false)}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>

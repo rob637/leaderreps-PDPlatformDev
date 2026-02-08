@@ -166,7 +166,7 @@ const WeekCard = ({
         relative rounded-2xl p-4 transition-all duration-300 border-2
         ${isSelected 
           ? `${theme.bgColor} ${theme.borderColor} shadow-lg` 
-          : 'bg-white border-slate-200 hover:border-slate-300'
+          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
         }
         ${isComplete ? 'ring-2 ring-emerald-400 ring-offset-2' : ''}
       `}>

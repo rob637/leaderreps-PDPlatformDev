@@ -104,6 +104,65 @@
   --color-border-subtle: rgba(0, 46, 71, 0.05);
 }
 
+/* =============================================
+   DARK MODE - Complete Token Override
+   Applied when <html class="dark">
+   ============================================= */
+.dark {
+  /* === DARK BACKGROUNDS === */
+  --corporate-light-gray: #0F172A;   /* Page background - deep slate */
+  --bg-warm: #1E293B;                /* Warm background → dark slate */
+  --bg-warm-subtle: #162032;         /* Slightly darker */
+  --bg-card: #1E293B;                /* Card surfaces */
+  --bg-elevated: #263348;            /* Elevated surfaces */
+  
+  /* === DARK TEXT COLORS === */
+  --color-text: #F1F5F9;             /* Primary text - near white */
+  --color-text-secondary: #CBD5E1;   /* Secondary - light slate */
+  --color-text-muted: #94A3B8;       /* Muted - medium slate */
+  
+  /* === DARK SURFACE COLORS === */
+  --color-bg: #0F172A;               /* Page bg */
+  --color-surface: #1E293B;          /* Card/surface bg */
+  
+  /* === DARK BORDERS & SHADOWS === */
+  --color-border: rgba(148, 163, 184, 0.15);
+  --color-border-subtle: rgba(148, 163, 184, 0.08);
+  --card-border: rgba(148, 163, 184, 0.12);
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(148, 163, 184, 0.08);
+  
+  /* === DARK SHADOWS === */
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --shadow-glow-teal: 0 4px 24px rgba(71, 168, 141, 0.2);
+  --shadow-glow-orange: 0 4px 24px rgba(224, 78, 27, 0.15);
+  
+  /* === DARK GRADIENTS === */
+  --gradient-surface: linear-gradient(180deg, #1E293B 0%, #162032 100%);
+  --gradient-subtle: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+  
+  /* === DARK ALPHA VARIANTS === */
+  --corporate-navy-10: rgba(148, 163, 184, 0.1);
+  --corporate-navy-20: rgba(148, 163, 184, 0.15);
+  --corporate-navy-5: rgba(148, 163, 184, 0.05);
+  --corporate-teal-10: rgba(71, 168, 141, 0.15);
+  --corporate-teal-20: rgba(71, 168, 141, 0.2);
+  --corporate-teal-5: rgba(71, 168, 141, 0.08);
+  --corporate-orange-10: rgba(224, 78, 27, 0.15);
+  --corporate-orange-20: rgba(224, 78, 27, 0.2);
+  
+  /* === DARK BUTTON COLORS === */
+  --color-primary-button: #47A88D;
+  --color-primary-button-hover: #5BC4A6;
+  --color-secondary-button: #E04E1B;
+  --color-secondary-button-hover: #F06030;
+  
+  color-scheme: dark;
+}
+
 /* === GOOGLE-STYLE CRISP TEXT OVERRIDES === */
 /* Makes all gray text darker and more readable */
 .text-gray-300 { color: #6b6b6b !important; }
@@ -123,17 +182,59 @@
 .text-slate-800 { color: #1f1f1f !important; }
 .text-slate-900 { color: #121212 !important; }
 
+/* DARK MODE: Reverse the crisp overrides - lighter text on dark bg */
+.dark .text-gray-300, .dark .text-slate-300 { color: #94A3B8 !important; }
+.dark .text-gray-400, .dark .text-slate-400 { color: #94A3B8 !important; }
+.dark .text-gray-500, .dark .text-slate-500 { color: #CBD5E1 !important; }
+.dark .text-gray-600, .dark .text-slate-600 { color: #CBD5E1 !important; }
+.dark .text-gray-700, .dark .text-slate-700 { color: #E2E8F0 !important; }
+.dark .text-gray-800, .dark .text-slate-800 { color: #F1F5F9 !important; }
+.dark .text-gray-900, .dark .text-slate-900 { color: #F8FAFC !important; }
+
 /* Ensure body text is crisp */
 body {
   color: #1a1a1a;
   background-color: #E5E7EB; /* Google-style gray background */
 }
 
+/* DARK MODE: Body */
+.dark body, body.dark, html.dark body {
+  color: #F1F5F9;
+  background-color: #0F172A;
+}
+
+/* DARK MODE: Hardcoded corporate-navy hex in templates */
+.dark .text-\[\#002E47\] { color: #E2E8F0 !important; }
+.dark .text-\[\#00A896\] { color: #47A88D !important; }
+.dark .bg-\[\#FAFBFC\] { background-color: #0F172A !important; }
+
 /* === GOOGLE-STYLE CARD POP === */
 /* Make borders crisp and visible */
 .border-slate-100, .border-slate-200, .border-gray-100, .border-gray-200 { 
   border-color: rgba(0, 0, 0, 0.12) !important; 
 }
+
+/* DARK MODE: Softer borders */
+.dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300,
+.dark .border-gray-100, .dark .border-gray-200, .dark .border-gray-300 {
+  border-color: rgba(148, 163, 184, 0.15) !important;
+}
+
+/* DARK MODE: Gray-200 backgrounds (progress bar tracks, badges etc.) */
+.dark .bg-gray-200, .dark .bg-slate-200 {
+  background-color: #334155 !important;
+}
+
+/* DARK MODE: Text gray-500 / slate-500 boost for readability */
+.dark .text-gray-500, .dark .text-slate-500 {
+  color: #94A3B8 !important;
+}
+
+/* DARK MODE: Shadows for dark surfaces */
+.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3) !important; }
+.dark .shadow { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) !important; }
+.dark .shadow-lg { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) !important; }
+.dark .shadow-xl { box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) !important; }
 
 /* Bold shadow hierarchy - Google Material Design inspired */
 .shadow-sm { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08) !important; }
@@ -142,12 +243,143 @@ body {
 .shadow-lg { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.20), 0 0 0 1px rgba(0, 0, 0, 0.05) !important; }
 .shadow-xl { box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.05) !important; }
 
+/* DARK MODE: Deeper shadows */
+.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3) !important; }
+.dark .shadow { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.08) !important; }
+.dark .shadow-md { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(148, 163, 184, 0.08) !important; }
+.dark .shadow-lg { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(148, 163, 184, 0.08) !important; }
+.dark .shadow-xl { box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(148, 163, 184, 0.08) !important; }
+
 /* Pure white cards for maximum contrast against gray bg */
 .bg-white { background-color: #FFFFFF !important; }
+
+/* DARK MODE: Cards become dark surfaces */
+.dark .bg-white { background-color: #1E293B !important; }
 
 /* Page backgrounds - distinct from white cards */
 .bg-slate-50, .bg-gray-50 { background-color: #F3F4F6 !important; }
 .bg-slate-100, .bg-gray-100 { background-color: #E5E7EB !important; }
+
+/* DARK MODE: Page backgrounds */
+.dark .bg-slate-50, .dark .bg-gray-50 { background-color: #162032 !important; }
+.dark .bg-slate-100, .dark .bg-gray-100 { background-color: #0F172A !important; }
+
+/* =============================================
+   DARK MODE: Comprehensive Surface Overrides
+   Catches hardcoded light backgrounds across all widgets
+   ============================================= */
+
+/* Form inputs — dark backgrounds, light text, softer borders */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #1E293B !important;
+  color: #F1F5F9 !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748B !important;
+}
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: #47A88D !important;
+  box-shadow: 0 0 0 2px rgba(71, 168, 141, 0.2) !important;
+}
+
+/* Table headers & rows */
+.dark thead { background-color: #162032 !important; }
+.dark thead tr { background-color: #162032 !important; }
+.dark thead th { 
+  color: #94A3B8 !important; 
+  border-color: rgba(148, 163, 184, 0.15) !important;
+}
+.dark tbody tr { 
+  border-color: rgba(148, 163, 184, 0.1) !important;
+}
+.dark tbody tr:hover {
+  background-color: rgba(148, 163, 184, 0.05) !important;
+}
+.dark tbody td {
+  border-color: rgba(148, 163, 184, 0.1) !important;
+}
+
+/* Tinted backgrounds — subtle dark variants */
+.dark .bg-green-50 { background-color: rgba(16, 185, 129, 0.1) !important; }
+.dark .bg-green-100 { background-color: rgba(16, 185, 129, 0.15) !important; }
+.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.1) !important; }
+.dark .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.15) !important; }
+.dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.1) !important; }
+.dark .bg-amber-100 { background-color: rgba(245, 158, 11, 0.15) !important; }
+.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
+.dark .bg-blue-100 { background-color: rgba(59, 130, 246, 0.15) !important; }
+.dark .bg-red-50 { background-color: rgba(239, 68, 68, 0.1) !important; }
+.dark .bg-red-100 { background-color: rgba(239, 68, 68, 0.15) !important; }
+.dark .bg-orange-50 { background-color: rgba(249, 115, 22, 0.1) !important; }
+.dark .bg-orange-100 { background-color: rgba(249, 115, 22, 0.15) !important; }
+.dark .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.1) !important; }
+.dark .bg-indigo-100 { background-color: rgba(99, 102, 241, 0.15) !important; }
+.dark .bg-purple-50 { background-color: rgba(168, 85, 247, 0.1) !important; }
+.dark .bg-purple-100 { background-color: rgba(168, 85, 247, 0.15) !important; }
+.dark .bg-teal-50 { background-color: rgba(20, 184, 166, 0.1) !important; }
+.dark .bg-teal-100 { background-color: rgba(20, 184, 166, 0.15) !important; }
+.dark .bg-yellow-50 { background-color: rgba(234, 179, 8, 0.1) !important; }
+.dark .bg-yellow-100 { background-color: rgba(234, 179, 8, 0.15) !important; }
+
+/* Tinted text colors that become unreadable in dark mode */
+.dark .text-green-800, .dark .text-emerald-800 { color: #6EE7B7 !important; }
+.dark .text-green-700, .dark .text-emerald-700 { color: #6EE7B7 !important; }
+.dark .text-green-600, .dark .text-emerald-600 { color: #34D399 !important; }
+.dark .text-amber-800 { color: #FCD34D !important; }
+.dark .text-amber-700 { color: #FCD34D !important; }
+.dark .text-amber-600 { color: #FBBF24 !important; }
+.dark .text-blue-800 { color: #93C5FD !important; }
+.dark .text-blue-700 { color: #93C5FD !important; }
+.dark .text-blue-600 { color: #60A5FA !important; }
+.dark .text-red-800 { color: #FCA5A5 !important; }
+.dark .text-red-700 { color: #FCA5A5 !important; }
+.dark .text-red-600 { color: #F87171 !important; }
+.dark .text-orange-800 { color: #FDBA74 !important; }
+.dark .text-orange-700 { color: #FDBA74 !important; }
+
+/* Tinted borders */
+.dark .border-green-200, .dark .border-emerald-200 { border-color: rgba(16, 185, 129, 0.3) !important; }
+.dark .border-green-100, .dark .border-emerald-100 { border-color: rgba(16, 185, 129, 0.2) !important; }
+.dark .border-amber-200 { border-color: rgba(245, 158, 11, 0.3) !important; }
+.dark .border-amber-100 { border-color: rgba(245, 158, 11, 0.2) !important; }
+.dark .border-blue-200 { border-color: rgba(59, 130, 246, 0.3) !important; }
+.dark .border-blue-100 { border-color: rgba(59, 130, 246, 0.2) !important; }
+.dark .border-red-200 { border-color: rgba(239, 68, 68, 0.3) !important; }
+.dark .border-orange-200 { border-color: rgba(249, 115, 22, 0.3) !important; }
+
+/* Key text colors that go invisible on dark */
+.dark .text-corporate-navy { color: #E2E8F0 !important; }
+.dark .text-corporate-navy\/80 { color: rgba(226, 232, 240, 0.8) !important; }
+
+/* Gradient backgrounds used for "coming soon" / empty state cards */
+.dark .from-slate-50 { --tw-gradient-from: #1E293B !important; }
+.dark .to-slate-100 { --tw-gradient-to: #263348 !important; }
+.dark .from-slate-100 { --tw-gradient-from: #1E293B !important; }
+.dark .to-slate-200 { --tw-gradient-to: #263348 !important; }
+
+/* Divide borders */
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(148, 163, 184, 0.15) !important;
+}
+
+/* Hover states */
+.dark .hover\:bg-slate-50:hover { background-color: rgba(148, 163, 184, 0.08) !important; }
+.dark .hover\:bg-gray-50:hover { background-color: rgba(148, 163, 184, 0.08) !important; }
+.dark .hover\:bg-slate-100:hover { background-color: rgba(148, 163, 184, 0.12) !important; }
+.dark .hover\:bg-gray-100:hover { background-color: rgba(148, 163, 184, 0.12) !important; }
+.dark .hover\:bg-slate-200:hover { background-color: rgba(148, 163, 184, 0.15) !important; }
+
+/* Hardcoded #FAFBFC backgrounds */
+.dark [class*="bg-[#FAFBFC]"] { background-color: #0F172A !important; }
 
 /* === MOBILE TOUCH OPTIMIZATION === */
 /* Removes 300ms tap delay on all interactive elements */

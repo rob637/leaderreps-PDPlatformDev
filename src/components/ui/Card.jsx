@@ -80,12 +80,12 @@ const Card = React.forwardRef(({
   // Premium variants with softer shadows and no hard borders
   // Use border-y-0 + border-r-0 to preserve accent border-l when present
   const variants = {
-    default: 'bg-white shadow-sm hover:shadow-md border-y-0 border-r-0',
-    elevated: 'bg-white shadow-lg border-y-0 border-r-0',
-    flat: 'bg-slate-50/80 shadow-none border-y-0 border-r-0',
-    interactive: 'bg-white shadow-sm hover:shadow-lg cursor-pointer transition-all duration-200 border-y-0 border-r-0',
-    soft: 'bg-white/90 backdrop-blur-sm shadow-md border-y-0 border-r-0',
-    glass: 'bg-white/80 backdrop-blur-md shadow-md border border-white/50',
+    default: 'bg-white dark:bg-slate-800 shadow-sm hover:shadow-md border-y-0 border-r-0',
+    elevated: 'bg-white dark:bg-slate-800 shadow-lg border-y-0 border-r-0',
+    flat: 'bg-slate-50/80 dark:bg-slate-800/80 shadow-none border-y-0 border-r-0',
+    interactive: 'bg-white dark:bg-slate-800 shadow-sm hover:shadow-lg cursor-pointer transition-all duration-200 border-y-0 border-r-0',
+    soft: 'bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-md border-y-0 border-r-0',
+    glass: 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-md shadow-md border border-white/50 dark:border-slate-600/50',
   };
 
   // Subtle accent indicators - use left border instead of top for elegance
@@ -184,7 +184,7 @@ const Card = React.forwardRef(({
             <div className="flex items-center gap-3">
               {Icon && <Icon className={cn("w-5 h-5 flex-shrink-0", iconColors[accent])} />}
               {title && (
-                <h3 className="text-lg font-semibold text-corporate-navy tracking-tight flex-1" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h3 className="text-lg font-semibold text-corporate-navy dark:text-white tracking-tight flex-1" style={{ fontFamily: 'var(--font-heading)' }}>
                   {title}
                 </h3>
               )}

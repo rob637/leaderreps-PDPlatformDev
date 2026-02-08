@@ -9,6 +9,9 @@
       "hosting": {
         "corporate": [
           "leaderrepscorp"
+        ],
+        "repup": [
+          "repup-test"
         ]
       }
     },
@@ -16,6 +19,9 @@
       "hosting": {
         "reppy": [
           "leaderreps-reppy"
+        ],
+        "repup": [
+          "repup-dev"
         ]
       }
     }

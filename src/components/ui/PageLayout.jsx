@@ -82,7 +82,7 @@ export const PageLayout = ({
   ] : []);
 
   return (
-    <div className="min-h-screen bg-[#FAFBFC]">
+    <div className="min-h-screen bg-[#FAFBFC] dark:bg-slate-900">
       <div className={`${maxWidth} mx-auto p-5 sm:p-8 lg:p-10`}>
         
         {/* Navigation - Replaces old Back Button */}
@@ -99,13 +99,13 @@ export const PageLayout = ({
           <header className={`mb-10 ${centerHeader ? 'text-center' : ''}`}>
             <div className={`flex items-center gap-4 mb-3 ${centerHeader ? 'justify-center' : ''}`}>
               {Icon && <Icon className={`w-7 h-7 ${iconColorClass}`} />}
-              <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy dark:text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                 {title}
               </h1>
             </div>
             
             {sub && (
-              <p className={`text-slate-500 text-base sm:text-lg mt-2 leading-relaxed ${centerHeader ? 'max-w-2xl mx-auto' : ''}`} style={{ fontFamily: 'var(--font-body)' }}>
+              <p className={`text-slate-500 dark:text-slate-400 text-base sm:text-lg mt-2 leading-relaxed ${centerHeader ? 'max-w-2xl mx-auto' : ''}`} style={{ fontFamily: 'var(--font-body)' }}>
                 {sub}
               </p>
             )}

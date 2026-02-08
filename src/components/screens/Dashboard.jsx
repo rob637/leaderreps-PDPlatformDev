@@ -624,15 +624,15 @@ const Dashboard = () => {
     'weekly-focus': () => shouldShow('weekly-focus', true) ? <WidgetRenderer widgetId="weekly-focus" scope={scope} /> : null,
     'lis-maker': () => shouldShow('lis-maker', false) ? <WidgetRenderer widgetId="lis-maker" scope={scope} /> : null,
     'grounding-rep': () => shouldShow('grounding-rep', false) ? <WidgetRenderer widgetId="grounding-rep" scope={scope} /> : null,
-    'win-the-day': () => shouldShow('win-the-day', true) ? <div data-gazoo-step="win-the-day"><WidgetRenderer widgetId="win-the-day" scope={scope} /></div> : null,
+    'win-the-day': () => shouldShow('win-the-day', true) ? <div data-repup-step="win-the-day"><WidgetRenderer widgetId="win-the-day" scope={scope} /></div> : null,
     'daily-plan': () => currentDayNumber >= 1 ? <WidgetRenderer widgetId="daily-plan" scope={scope} /> : null,
     'conditioning': () => <ConditioningWidget helpText={getWidgetHelpText('conditioning')} />,  // NEW: Conditioning with slide-in panel
     'daily-leader-reps': () => null,  // DISABLED - replaced by conditioning widget
-    'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <div data-gazoo-step="this-weeks-actions"><WidgetRenderer widgetId="this-weeks-actions" scope={scope} /></div> : null,
+    'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <div data-repup-step="this-weeks-actions"><WidgetRenderer widgetId="this-weeks-actions" scope={scope} /></div> : null,
     'notifications': () => shouldShow('notifications', false) ? <WidgetRenderer widgetId="notifications" scope={scope} /> : null,
     'pm-bookend-header': () => shouldShow('pm-bookend-header', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
     'progress-feedback': () => shouldShow('progress-feedback', true) ? <WidgetRenderer widgetId="progress-feedback" scope={scope} /> : null,
-    'pm-bookend': () => shouldShow('pm-bookend', true) ? <div data-gazoo-step="pm-bookend"><WidgetRenderer widgetId="pm-bookend" scope={scope} /></div> : null,
+    'pm-bookend': () => shouldShow('pm-bookend', true) ? <div data-repup-step="pm-bookend"><WidgetRenderer widgetId="pm-bookend" scope={scope} /></div> : null,
     'scorecard': () => shouldShow('scorecard', true) ? <WidgetRenderer widgetId="scorecard" scope={scope} /> : null,
     
     // Legacy / Optional
@@ -663,7 +663,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="p-5 sm:p-6 lg:p-8 space-y-5 bg-[#FAFBFC] min-h-screen relative">
+    <div className="p-5 sm:p-6 lg:p-8 space-y-5 bg-[#FAFBFC] dark:bg-slate-900 min-h-screen relative">
       <div className="max-w-[860px] mx-auto">
       {/* Prep Gate Removed - incomplete prep items now carry over as past due */}
       <>
@@ -677,7 +677,7 @@ const Dashboard = () => {
         <FadeIn delay={0.1}>
           <div className="flex items-center justify-center gap-4 mb-3">
             <LayoutDashboard className="w-7 h-7 text-corporate-teal" />
-            <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy dark:text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
               Dashboard
             </h1>
           </div>
