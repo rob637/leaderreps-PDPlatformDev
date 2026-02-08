@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { useDailyPlan } from '../../hooks/useDailyPlan.js';
 import conditioningService, { 
   REP_STATUS, 
   getWeekBoundaries,
