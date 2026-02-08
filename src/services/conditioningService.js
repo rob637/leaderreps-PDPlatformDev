@@ -87,7 +87,9 @@ export const STATE_TRANSITIONS = {
   executed: ['debriefed', 'missed'],  // Can still miss if no debrief
   debriefed: [],  // Terminal state
   missed: ['committed'],  // Roll forward
-  canceled: []  // Terminal state
+  canceled: [],  // Terminal state
+  // Legacy status - treat same as committed
+  active: ['prepared', 'scheduled', 'executed', 'debriefed', 'missed', 'canceled']
 };
 
 // ============================================
