@@ -1051,7 +1051,9 @@ export const conditioningService = {
   },
   
   /**
-   * Submit evidence/debrief for a completed rep
+   * Submit evidence/debrief for a rep that has been executed
+   * Accepts reps in 'prepared', 'scheduled', 'executed', or 'active' (legacy) status
+   * Transitions the rep to 'debriefed' status upon successful submission
    */
   submitEvidence: async (db, userId, repId, evidenceData) => {
     const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
@@ -1061,13 +1063,21 @@ export const conditioningService = {
     
     const currentRep = repSnap.data();
     
-    // Can only submit evidence for completed reps
-    if (currentRep.status !== REP_STATUS.COMPLETED) {
-      throw new Error('Can only submit evidence for completed reps');
+    // Valid statuses for submitting evidence (user is saying "I did it, here's what happened")
+    const validStatuses = [
+      REP_STATUS.PREPARED,   // Did prep, now debriefing
+      REP_STATUS.SCHEDULED,  // Was scheduled, now debriefing
+      REP_STATUS.EXECUTED,   // Marked as done, now debriefing
+      REP_STATUS.COMMITTED,  // Committed directly to debrief (no prep)
+      'active'               // Legacy status
+    ];
+    
+    if (!validStatuses.includes(currentRep.status)) {
+      throw new Error(`Cannot submit evidence for rep in '${currentRep.status}' status. Valid statuses: prepared, scheduled, executed, committed`);
     }
     
-    // Determine evidence level
-    const evidenceLevel = conditioningService.getEvidenceLevel(currentRep.completedAt);
+    // Determine evidence level based on when evidence is being submitted vs deadline
+    const evidenceLevel = conditioningService.getEvidenceLevel(currentRep.deadline);
     
     // Structure the evidence data
     const evidence = {
@@ -1076,11 +1086,16 @@ export const conditioningService = {
       responses: evidenceData.responses || {}, // Map of promptId -> response text
       voiceUrl: evidenceData.voiceUrl || null,  // Optional voice recording URL
       transcription: evidenceData.transcription || null, // Voice transcription
-      inputMethod: evidenceData.inputMethod || 'written' // 'written' | 'voice'
+      inputMethod: evidenceData.inputMethod || 'written', // 'written' | 'voice' | 'structured_v2'
+      structured: evidenceData.structured || null // Structured evidence from StructuredEvidenceModal
     };
     
+    // Update rep with evidence and transition to debriefed status
     await updateDoc(repRef, {
       evidence,
+      status: REP_STATUS.DEBRIEFED,
+      executedAt: currentRep.executedAt || serverTimestamp(), // Set executedAt if not already set
+      debriefedAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
     
