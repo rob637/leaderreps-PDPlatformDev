@@ -604,19 +604,27 @@ const Conditioning = ({ embedded = false, showFloatingAction }) => {
   
   // Handlers
   const handleCommitRep = async (repData) => {
-    if (!userId || !cohortId || !db) return;
+    console.log('[Conditioning] handleCommitRep called', { userId, cohortId, hasDb: !!db, repData });
+    
+    if (!userId || !cohortId || !db) {
+      console.error('[Conditioning] Cannot commit rep - missing:', { userId: !userId, cohortId: !cohortId, db: !db });
+      setError('Unable to commit rep. Please make sure you are enrolled in a cohort.');
+      return;
+    }
     
     try {
       setIsSubmitting(true);
-      await conditioningService.commitRep(db, userId, {
+      console.log('[Conditioning] Calling conditioningService.commitRep...');
+      const repId = await conditioningService.commitRep(db, userId, {
         ...repData,
         cohortId
       });
+      console.log('[Conditioning] Rep committed successfully:', repId);
       setShowCommitForm(false);
       await loadData();
     } catch (err) {
-      console.error('Error committing rep:', err);
-      setError('Failed to commit rep. Please try again.');
+      console.error('[Conditioning] Error committing rep:', err);
+      setError(`Failed to commit rep: ${err.message}`);
     } finally {
       setIsSubmitting(false);
     }
