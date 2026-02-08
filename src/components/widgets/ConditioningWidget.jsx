@@ -1,9 +1,8 @@
 // src/components/widgets/ConditioningWidget.jsx
-// Dashboard widget for Conditioning - shows quick status and opens slide-in panel
-// Replaces the old daily-leader-reps widget
+// Dashboard widget for Conditioning - navigates to full Conditioning screen
+// V1 UX Update: Removed slide-in panel in favor of consistent navigation
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { 
   Dumbbell, Target, CheckCircle, Clock,
   ChevronRight, Plus, FileText, AlertCircle
@@ -12,68 +11,16 @@ import { Card, Button } from '../ui';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import conditioningService, { REP_STATUS, getWeekBoundaries } from '../../services/conditioningService';
-import Conditioning from '../screens/Conditioning';
-
-// ============================================
-// CONDITIONING SLIDE-IN PANEL
-// ============================================
-const ConditioningPanel = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[9999]">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50 transition-opacity"
-        onClick={onClose}
-      />
-      
-      {/* Slide-in Panel - Full screen on mobile, side panel on desktop */}
-      <div 
-        className={`absolute top-0 right-0 h-full w-full md:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl transform transition-transform duration-300 ease-out overflow-hidden ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        {/* Panel Header */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
-              <Dumbbell className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="font-bold text-base">Conditioning</h2>
-              <p className="text-xs text-white/70">Leadership Rep Practice</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-white font-medium"
-            aria-label="Close panel"
-          >
-            ✕
-          </button>
-        </div>
-        
-        {/* Panel Content - Full Conditioning Screen */}
-        <div className="h-[calc(100%-60px)] overflow-y-auto">
-          <Conditioning embedded={true} />
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-};
 
 // ============================================
 // CONDITIONING WIDGET
 // ============================================
 const ConditioningWidget = ({ helpText }) => {
-  const { user, db, developmentPlanData, userProfile } = useAppServices();
+  const { user, db, developmentPlanData, userProfile, navigate } = useAppServices();
   const { cohortData } = useDailyPlan();
   const userId = user?.uid;
   const cohortId = developmentPlanData?.cohortId || cohortData?.id || userProfile?.cohortId;
   
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [weeklyStatus, setWeeklyStatus] = useState(null);
   const [activeCount, setActiveCount] = useState(0);
   const [pendingDebriefs, setPendingDebriefs] = useState(0);
@@ -114,10 +61,9 @@ const ConditioningWidget = ({ helpText }) => {
     loadStatus();
   }, [loadStatus]);
 
-  // Refresh when panel closes
-  const handleClosePanel = () => {
-    setIsPanelOpen(false);
-    loadStatus(); // Refresh status
+  // Handle navigation to conditioning screen
+  const handleNavigate = () => {
+    navigate?.('conditioning');
   };
 
   // No cohort = show enrollment prompt
@@ -145,18 +91,22 @@ const ConditioningWidget = ({ helpText }) => {
   
   const requiredMet = weeklyStatus?.requiredRepCompleted || false;
   const completedCount = weeklyStatus?.totalCompleted || 0;
+  
+  // CTA text based on state
+  const ctaText = requiredMet 
+    ? 'Commit to another Real Rep' 
+    : 'Commit to your Real Rep';
 
   return (
-    <>
-      <Card 
-        title="Conditioning" 
-        icon={Dumbbell} 
-        accent="TEAL"
-        helpText={helpText}
-        data-repup-step="conditioning"
-        variant="interactive"
-        onClick={() => setIsPanelOpen(true)}
-      >
+    <Card 
+      title="Conditioning Real Rep" 
+      icon={Dumbbell} 
+      accent="TEAL"
+      helpText={helpText}
+      data-repup-step="conditioning"
+      variant="interactive"
+      onClick={handleNavigate}
+    >
         {isLoading ? (
           <div className="flex items-center justify-center py-4">
             <div className="w-6 h-6 border-2 border-corporate-teal/20 border-t-corporate-teal rounded-full animate-spin" />
@@ -220,16 +170,20 @@ const ConditioningWidget = ({ helpText }) => {
                 {formatDate(weekStart)} - {formatDate(weekEnd)}
               </span>
             </div>
+            
+            {/* CTA Button */}
+            <div className={`flex items-center gap-2 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
+              requiredMet 
+                ? 'bg-green-100 hover:bg-green-200 text-green-700' 
+                : 'bg-amber-100 hover:bg-amber-200 text-amber-700'
+            }`}>
+              <Plus className="w-4 h-4" />
+              <span>{ctaText}</span>
+              <ChevronRight className="w-4 h-4 ml-auto" />
+            </div>
           </div>
         )}
       </Card>
-
-      {/* Slide-in Panel */}
-      <ConditioningPanel 
-        isOpen={isPanelOpen} 
-        onClose={handleClosePanel} 
-      />
-    </>
   );
 };
 

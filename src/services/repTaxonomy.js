@@ -567,6 +567,26 @@ export const HIGH_RISK_PREP_QUESTIONS = [
 // =========================================
 
 /**
+ * Difficulty sort order (easiest to hardest)
+ */
+const DIFFICULTY_SORT_ORDER = {
+  'level_1': 1,
+  'level_2': 2,
+  'level_3': 3
+};
+
+/**
+ * Sort rep types by difficulty (easiest to hardest)
+ */
+export const sortByDifficulty = (repTypes) => {
+  return [...repTypes].sort((a, b) => {
+    const aOrder = DIFFICULTY_SORT_ORDER[a.defaultDifficulty] || 2;
+    const bOrder = DIFFICULTY_SORT_ORDER[b.defaultDifficulty] || 2;
+    return aOrder - bOrder;
+  });
+};
+
+/**
  * Get rep type by ID
  */
 export const getRepType = (repTypeId) => {
@@ -574,10 +594,11 @@ export const getRepType = (repTypeId) => {
 };
 
 /**
- * Get rep types by category
+ * Get rep types by category (sorted by difficulty: easiest to hardest)
  */
 export const getRepTypesByCategory = (categoryId) => {
-  return REP_TYPES.filter(t => t.category === categoryId);
+  const types = REP_TYPES.filter(t => t.category === categoryId);
+  return sortByDifficulty(types);
 };
 
 /**
@@ -648,5 +669,6 @@ export default {
   isPrepRequired,
   getRubric,
   getStretchPrompts,
-  getProgression
+  getProgression,
+  sortByDifficulty
 };

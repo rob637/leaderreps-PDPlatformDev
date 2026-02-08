@@ -221,7 +221,9 @@ const RepTypePicker = ({
             isSelected={selectedRepTypeId === repType.id}
             onClick={() => {
               onSelect(repType.id);
-              // Don't auto-close so user can see their selection
+              // V1 UX: Auto-collapse after selection to bring form fields into view
+              // Small delay to show the selection animation
+              setTimeout(() => setSelectedCategory(null), 150);
             }}
           />
         ))}

@@ -20,9 +20,9 @@ import { Timestamp } from 'firebase/firestore';
 // ============================================
 // FIELD INPUT COMPONENT
 // ============================================
-const FieldInput = ({ field, value, onChange, disabled = false }) => {
+const FieldInput = ({ field, value, onChange, disabled = false, error = null, showError = false }) => {
   return (
-    <div>
+    <div className={error && showError ? 'field-error' : ''}>
       <label className="block text-sm font-medium text-gray-700 mb-1">
         {field.label} {field.required && <span className="text-red-500">*</span>}
       </label>
@@ -31,9 +31,16 @@ const FieldInput = ({ field, value, onChange, disabled = false }) => {
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
         placeholder={field.placeholder}
-        className="w-full p-3 border border-gray-300 rounded-lg text-sm min-h-[80px] resize-none focus:ring-2 focus:ring-corporate-navy focus:border-transparent"
+        className={`w-full p-3 border rounded-lg text-sm min-h-[80px] resize-none focus:ring-2 focus:ring-corporate-navy focus:border-transparent ${
+          error && showError 
+            ? 'border-red-400 bg-red-50' 
+            : 'border-gray-300'
+        }`}
         disabled={disabled}
       />
+      {error && showError && (
+        <p className="text-sm text-red-600 mt-1">{error}</p>
+      )}
     </div>
   );
 };
@@ -202,6 +209,10 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading }) => {
   const [useCustomDeadline, setUseCustomDeadline] = useState(false);
   const [customDeadline, setCustomDeadline] = useState('');
   
+  // V1 UX: Validation feedback state
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [errors, setErrors] = useState({});
+  
   // Get selected rep type info
   const selectedRepType = useMemo(() => {
     return repTypeId ? getRepType(repTypeId) : null;
@@ -215,6 +226,10 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading }) => {
       setDifficulty(repType.defaultDifficulty);
       setRiskLevel(repType.defaultRisk);
     }
+    // Clear rep type error when selected
+    if (errors.repType) {
+      setErrors(prev => ({ ...prev, repType: null }));
+    }
   };
   
   // Update universal field
@@ -223,9 +238,46 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading }) => {
       ...prev,
       [fieldId]: value
     }));
+    // Clear field error when user types
+    if (errors[fieldId]) {
+      setErrors(prev => ({ ...prev, [fieldId]: null }));
+    }
   };
   
-  // Form validation
+  // Clear person error when typing
+  const handlePersonChange = (value) => {
+    setPerson(value);
+    if (errors.person) {
+      setErrors(prev => ({ ...prev, person: null }));
+    }
+  };
+  
+  // V1 UX: Validate form and return errors object
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!repTypeId) {
+      newErrors.repType = 'Please select a rep type';
+    }
+    if (!person.trim()) {
+      newErrors.person = 'Please enter who this rep is with';
+    }
+    if (!difficulty) {
+      newErrors.difficulty = 'Please select a difficulty level';
+    }
+    
+    // Check required universal fields
+    const requiredFields = Object.values(UNIVERSAL_REP_FIELDS).filter(f => f.required);
+    for (const field of requiredFields) {
+      if (!universalFields[field.id]?.trim()) {
+        newErrors[field.id] = `${field.label} is required`;
+      }
+    }
+    
+    return newErrors;
+  };
+  
+  // Form validation (for button state)
   const isValid = useMemo(() => {
     if (!repTypeId) return false;
     if (!person.trim()) return false;
@@ -243,7 +295,24 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading }) => {
   // Handle submit
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!isValid || isLoading) return;
+    setSubmitAttempted(true);
+    
+    // Validate and show errors
+    const validationErrors = validateForm();
+    setErrors(validationErrors);
+    
+    if (Object.keys(validationErrors).length > 0) {
+      // V1 UX: Scroll to first error
+      setTimeout(() => {
+        const firstError = document.querySelector('.field-error');
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      return;
+    }
+    
+    if (isLoading) return;
     
     let deadline = null;
     if (useCustomDeadline && customDeadline) {
@@ -296,19 +365,22 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading }) => {
           {/* Form Body */}
           <div className="p-4 space-y-5">
             {/* Step 1: Rep Type */}
-            <div>
+            <div className={errors.repType ? 'field-error' : ''}>
               <RepTypePicker
                 selectedRepTypeId={repTypeId}
                 onSelect={handleRepTypeSelect}
                 showDetails={true}
               />
+              {errors.repType && submitAttempted && (
+                <p className="text-sm text-red-600 mt-2">{errors.repType}</p>
+              )}
             </div>
             
             {/* Only show rest of form once rep type is selected */}
             {selectedRepType && (
               <>
                 {/* Step 2: Who */}
-                <div>
+                <div className={errors.person ? 'field-error' : ''}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Who is this rep with? <span className="text-red-500">*</span>
                   </label>
@@ -318,11 +390,18 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading }) => {
                   <input
                     type="text"
                     value={person}
-                    onChange={(e) => setPerson(e.target.value)}
+                    onChange={(e) => handlePersonChange(e.target.value)}
                     placeholder="e.g., Maya, Jordan, Chris"
-                    className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-corporate-navy focus:border-transparent"
+                    className={`w-full p-3 border rounded-lg text-base focus:ring-2 focus:ring-corporate-navy focus:border-transparent ${
+                      errors.person && submitAttempted 
+                        ? 'border-red-400 bg-red-50' 
+                        : 'border-gray-300'
+                    }`}
                     required
                   />
+                  {errors.person && submitAttempted && (
+                    <p className="text-sm text-red-600 mt-1">{errors.person}</p>
+                  )}
                 </div>
                 
                 {/* Step 3: Risk & Difficulty */}
@@ -351,6 +430,8 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading }) => {
                       field={field}
                       value={universalFields[field.id]}
                       onChange={(value) => handleUniversalFieldChange(field.id, value)}
+                      error={errors[field.id]}
+                      showError={submitAttempted}
                     />
                   ))}
                 </CollapsibleSection>
@@ -419,12 +500,17 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading }) => {
           <div className="p-4 border-t border-gray-200 bg-gray-50 sticky bottom-0">
             <Button
               type="submit"
-              disabled={!isValid || isLoading}
+              disabled={isLoading}
               className="w-full bg-corporate-navy hover:bg-corporate-navy/90 text-white py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Committing...' : 'Commit to This Rep'}
             </Button>
-            {!isValid && repTypeId && (
+            {submitAttempted && Object.keys(errors).length > 0 && (
+              <p className="text-xs text-red-600 text-center mt-2">
+                Please fill in all required fields above
+              </p>
+            )}
+            {!submitAttempted && !isValid && repTypeId && (
               <p className="text-xs text-gray-500 text-center mt-2">
                 Fill in all required fields to continue
               </p>

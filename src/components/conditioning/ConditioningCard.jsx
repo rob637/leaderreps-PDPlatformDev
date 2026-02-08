@@ -11,7 +11,7 @@ import {
 import { Card } from '../ui';
 import { 
   Target, CheckCircle, Clock, AlertTriangle, 
-  ChevronRight, Dumbbell
+  ChevronRight, Dumbbell, Plus
 } from 'lucide-react';
 
 const ConditioningCard = ({ onNavigate }) => {
@@ -69,11 +69,16 @@ const ConditioningCard = ({ onNavigate }) => {
   const { requiredRepCompleted, totalCompleted, totalActive, totalMissed } = weeklyStatus || {};
   const hasIssues = totalMissed > 0 || (nudgeStatus?.type === 'warning' || nudgeStatus?.type === 'urgent' || nudgeStatus?.type === 'escalation');
   
+  // Determine CTA text based on state
+  const ctaText = requiredRepCompleted 
+    ? 'Commit to another Real Rep' 
+    : 'Commit to your Real Rep';
+  
   return (
     <Card 
-      className={`cursor-pointer hover:shadow-md transition-shadow ${
-        hasIssues ? 'border-l-4 border-l-amber-500' : 
-        requiredRepCompleted ? 'border-l-4 border-l-green-500' : ''
+      className={`cursor-pointer hover:shadow-md transition-shadow border-l-4 ${
+        hasIssues ? 'border-l-amber-500' : 
+        requiredRepCompleted ? 'border-l-green-500' : 'border-l-gray-300'
       }`}
       onClick={() => onNavigate?.('conditioning')}
     >
@@ -144,6 +149,17 @@ const ConditioningCard = ({ onNavigate }) => {
             {totalCompleted} rep{totalCompleted !== 1 ? 's' : ''} completed this week
           </p>
         )}
+        
+        {/* CTA Button */}
+        <div className={`flex items-center gap-2 mt-3 px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+          requiredRepCompleted 
+            ? 'bg-green-100 hover:bg-green-200 text-green-700' 
+            : 'bg-amber-100 hover:bg-amber-200 text-amber-700'
+        }`}>
+          <Plus className="w-4 h-4" />
+          <span>{ctaText}</span>
+          <ChevronRight className="w-4 h-4 ml-auto" />
+        </div>
       </div>
     </Card>
   );
