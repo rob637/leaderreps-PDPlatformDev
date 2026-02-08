@@ -1038,6 +1038,7 @@ const Conditioning = ({ embedded = false, showFloatingAction }) => {
           onSubmit={handleCommitRep}
           onClose={() => setShowCommitForm(false)}
           isLoading={isSubmitting}
+          activeRepsCount={activeReps.length}
         />
       )}
       

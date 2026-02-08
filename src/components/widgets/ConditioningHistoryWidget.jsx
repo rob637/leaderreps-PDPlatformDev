@@ -1,12 +1,14 @@
 // src/components/widgets/ConditioningHistoryWidget.jsx
 // Locker widget: Displays conditioning rep history grouped by week
+// V1 UX: Added drill-down to view rep details
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Dumbbell, CheckCircle, Clock, Target, Calendar,
-  ChevronDown, ChevronUp, AlertTriangle, XCircle
+  ChevronDown, ChevronUp, AlertTriangle, XCircle, ChevronRight
 } from 'lucide-react';
 import { Card } from '../ui';
+import { RepDetailModal } from '../conditioning';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import conditioningService, { REP_STATUS, REP_TYPES, getCurrentWeekId, getWeekBoundaries } from '../../services/conditioningService';
@@ -21,6 +23,7 @@ const ConditioningHistoryWidget = ({ helpText }) => {
   const [weeklyHistory, setWeeklyHistory] = useState([]);
   const [expandedWeeks, setExpandedWeeks] = useState(new Set());
   const [visibleWeeks, setVisibleWeeks] = useState(4);
+  const [selectedRep, setSelectedRep] = useState(null);
 
   // Load conditioning history
   const loadHistory = useCallback(async () => {
@@ -222,9 +225,10 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                     {week.reps.length > 0 ? (
                       <div className="space-y-2">
                         {week.reps.map((rep, idx) => (
-                          <div 
+                          <button 
                             key={rep.id || idx}
-                            className="flex items-start gap-3 p-3 bg-white rounded-lg border border-slate-100"
+                            onClick={() => setSelectedRep(rep)}
+                            className="w-full flex items-start gap-3 p-3 bg-white rounded-lg border border-slate-100 hover:border-corporate-teal hover:bg-teal-50/30 transition-colors text-left cursor-pointer group"
                           >
                             <div className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                               rep.status === REP_STATUS.COMPLETED
@@ -262,7 +266,8 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                                 </p>
                               )}
                             </div>
-                          </div>
+                            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-corporate-teal flex-shrink-0 mt-1" />
+                          </button>
                         ))}
                       </div>
                     ) : (
@@ -298,6 +303,14 @@ const ConditioningHistoryWidget = ({ helpText }) => {
             </div>
           )}
         </div>
+      )}
+      
+      {/* Rep Detail Modal */}
+      {selectedRep && (
+        <RepDetailModal
+          rep={selectedRep}
+          onClose={() => setSelectedRep(null)}
+        />
       )}
     </Card>
   );

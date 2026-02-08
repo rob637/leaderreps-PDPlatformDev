@@ -186,7 +186,7 @@ const CollapsibleSection = ({ title, children, defaultOpen = false, helpText }) 
 // ============================================
 // MAIN FORM COMPONENT
 // ============================================
-const CommitRepForm = ({ onSubmit, onClose, isLoading }) => {
+const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) => {
   // Form state
   const [repTypeId, setRepTypeId] = useState(null);
   const [person, setPerson] = useState('');
@@ -364,6 +364,21 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading }) => {
           
           {/* Form Body */}
           <div className="p-4 space-y-5">
+            {/* V1 UX: Soft warning when active rep exists */}
+            {activeRepsCount > 0 && (
+              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-800">
+                    You have {activeRepsCount} active rep{activeRepsCount !== 1 ? 's' : ''}
+                  </p>
+                  <p className="text-xs text-amber-600 mt-0.5">
+                    Consider completing your current rep before starting another.
+                  </p>
+                </div>
+              </div>
+            )}
+            
             {/* Step 1: Rep Type */}
             <div className={errors.repType ? 'field-error' : ''}>
               <RepTypePicker
