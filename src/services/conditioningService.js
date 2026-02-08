@@ -683,23 +683,34 @@ export const conditioningService = {
   },
   
   /**
-   * Get all active reps (current + missed that need attention)
+   * Get all active reps (in-progress + missed that need attention)
+   * Includes all non-terminal statuses: committed, prepared, scheduled, executed, active (legacy), missed
    */
   getActiveReps: async (db, userId, cohortId = null) => {
     const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+    
+    // All in-progress statuses (includes 'active' for backward compatibility with old data)
+    const inProgressStatuses = [
+      'committed',   // Just committed, not yet prepped
+      'prepared',    // Prep completed, ready to execute
+      'scheduled',   // Has a scheduled time
+      'executed',    // Done but not yet debriefed
+      'active',      // Legacy status (backward compatibility)
+      'missed'       // Past deadline, needs attention
+    ];
     
     let q;
     if (cohortId) {
       q = query(
         repsRef, 
-        where('status', 'in', [REP_STATUS.ACTIVE, REP_STATUS.MISSED]),
+        where('status', 'in', inProgressStatuses),
         where('cohortId', '==', cohortId),
         orderBy('deadline', 'asc')
       );
     } else {
       q = query(
         repsRef, 
-        where('status', 'in', [REP_STATUS.ACTIVE, REP_STATUS.MISSED]),
+        where('status', 'in', inProgressStatuses),
         orderBy('deadline', 'asc')
       );
     }
@@ -812,15 +823,21 @@ export const conditioningService = {
   
   /**
    * Get weekly status summary
+   * Updated to handle both new state machine values and legacy status values
    */
   getWeeklyStatus: async (db, userId, weekId = null, cohortId = null) => {
     const targetWeekId = weekId || getCurrentWeekId();
     const reps = await conditioningService.getRepsByWeek(db, userId, targetWeekId, cohortId);
     
-    const completed = reps.filter(r => r.status === REP_STATUS.COMPLETED);
-    const active = reps.filter(r => r.status === REP_STATUS.ACTIVE);
-    const missed = reps.filter(r => r.status === REP_STATUS.MISSED);
-    const canceled = reps.filter(r => r.status === REP_STATUS.CANCELED);
+    // Completed states (includes legacy 'completed' and new 'debriefed')
+    const completedStates = ['debriefed', 'completed'];
+    // Active/in-progress states (includes legacy 'active' and all new in-progress states)
+    const activeStates = ['committed', 'prepared', 'scheduled', 'executed', 'active'];
+    
+    const completed = reps.filter(r => completedStates.includes(r.status));
+    const active = reps.filter(r => activeStates.includes(r.status));
+    const missed = reps.filter(r => r.status === 'missed');
+    const canceled = reps.filter(r => r.status === 'canceled');
     
     const { weekStart, weekEnd } = getWeekBoundaries(targetWeekId);
     
