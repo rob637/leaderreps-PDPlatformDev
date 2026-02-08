@@ -1,20 +1,23 @@
 // src/components/screens/Conditioning.jsx
 // Conditioning Layer - Real Leadership Rep Accountability
 // Mobile-first design for use between Foundation sessions
+// Updated for 16 Rep Types (020726)
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import conditioningService, { 
-  REP_TYPES, 
   REP_STATUS, 
   getWeekBoundaries
 } from '../../services/conditioningService.js';
+import { REP_TYPES, getRepType } from '../../services/repTaxonomy.js';
 import { Card, Button } from '../ui';
 import { 
   EvidenceCaptureModal,
   QualityAssessmentCard,
   PracticeRetryCard,
-  TrainerNudgeNotification
+  TrainerNudgeNotification,
+  CommitRepForm,
+  RepTypeBadge
 } from '../conditioning';
 import { 
   Plus, Check, X, AlertTriangle, Clock, User, 
@@ -25,20 +28,39 @@ import {
 import { Timestamp } from 'firebase/firestore';
 
 // ============================================
-// STATUS BADGE COMPONENT
+// STATUS BADGE COMPONENT (Updated for new states)
 // ============================================
 const StatusBadge = ({ status }) => {
   const configs = {
-    [REP_STATUS.ACTIVE]: { 
+    // New granular states
+    [REP_STATUS.COMMITTED]: { 
       bg: 'bg-blue-100', 
       text: 'text-blue-700', 
-      label: 'Active',
+      label: 'Committed',
       icon: Clock
     },
-    [REP_STATUS.COMPLETED]: { 
+    [REP_STATUS.PREPARED]: { 
+      bg: 'bg-indigo-100', 
+      text: 'text-indigo-700', 
+      label: 'Prepared',
+      icon: FileText
+    },
+    [REP_STATUS.SCHEDULED]: { 
+      bg: 'bg-purple-100', 
+      text: 'text-purple-700', 
+      label: 'Scheduled',
+      icon: Calendar
+    },
+    [REP_STATUS.EXECUTED]: { 
+      bg: 'bg-teal-100', 
+      text: 'text-teal-700', 
+      label: 'Executed',
+      icon: Check
+    },
+    [REP_STATUS.DEBRIEFED]: { 
       bg: 'bg-green-100', 
       text: 'text-green-700', 
-      label: 'Completed',
+      label: 'Complete',
       icon: CheckCircle
     },
     [REP_STATUS.MISSED]: { 
@@ -52,10 +74,23 @@ const StatusBadge = ({ status }) => {
       text: 'text-gray-500', 
       label: 'Canceled',
       icon: XCircle
+    },
+    // Legacy aliases - map to new states
+    'active': { 
+      bg: 'bg-blue-100', 
+      text: 'text-blue-700', 
+      label: 'Active',
+      icon: Clock
+    },
+    'completed': { 
+      bg: 'bg-green-100', 
+      text: 'text-green-700', 
+      label: 'Complete',
+      icon: CheckCircle
     }
   };
   
-  const config = configs[status] || configs[REP_STATUS.ACTIVE];
+  const config = configs[status] || configs[REP_STATUS.COMMITTED];
   const Icon = config.icon;
   
   return (
@@ -66,17 +101,7 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// ============================================
-// REP TYPE BADGE
-// ============================================
-const RepTypeBadge = ({ repType }) => {
-  const type = REP_TYPES.find(t => t.id === repType);
-  return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-corporate-navy/10 text-corporate-navy">
-      {type?.label || repType}
-    </span>
-  );
-};
+// Note: RepTypeBadge is now imported from ../conditioning
 
 // ============================================
 // WEEK STATUS HEADER
@@ -164,8 +189,11 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
   
+  // Check if rep is overdue (only for active/pending states)
   const isOverdue = useMemo(() => {
-    if (!rep.deadline || rep.status !== REP_STATUS.ACTIVE) return false;
+    // States that can be overdue: committed, prepared, scheduled
+    const activeStates = ['committed', 'prepared', 'scheduled', 'active'];
+    if (!rep.deadline || !activeStates.includes(rep.status)) return false;
     const deadline = rep.deadline.toDate ? rep.deadline.toDate() : new Date(rep.deadline);
     return deadline < new Date();
   }, [rep.deadline, rep.status]);
@@ -178,7 +206,9 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence
     }
   };
   
-  const canTakeAction = rep.status === REP_STATUS.ACTIVE || rep.status === REP_STATUS.MISSED;
+  // States that allow taking action (complete/cancel)
+  const activeStates = ['committed', 'prepared', 'scheduled', 'active'];
+  const canTakeAction = activeStates.includes(rep.status) || rep.status === REP_STATUS.MISSED;
   
   return (
     <>
@@ -246,8 +276,8 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence
             </div>
           )}
           
-          {/* Completed Rep Actions - Debrief & Quality */}
-          {rep.status === REP_STATUS.COMPLETED && (
+          {/* Completed/Executed Rep Actions - Debrief & Quality */}
+          {(rep.status === 'debriefed' || rep.status === 'executed' || rep.status === 'completed') && (
             <div className="pt-2 border-t border-gray-100">
               {evidence ? (
                 <>
@@ -320,156 +350,19 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence
   );
 };
 
-// ============================================
-// COMMIT REP FORM
-// ============================================
-const CommitRepForm = ({ onSubmit, onClose, isLoading }) => {
-  const [person, setPerson] = useState('');
-  const [repType, setRepType] = useState('feedback');
-  const [notes, setNotes] = useState('');
-  const [useCustomDeadline, setUseCustomDeadline] = useState(false);
-  const [customDeadline, setCustomDeadline] = useState('');
-  
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!person.trim()) return;
-    
-    let deadline = null;
-    if (useCustomDeadline && customDeadline) {
-      const deadlineDate = new Date(customDeadline);
-      deadlineDate.setHours(23, 59, 59, 999);
-      deadline = Timestamp.fromDate(deadlineDate);
-    }
-    
-    onSubmit({
-      person: person.trim(),
-      repType,
-      notes: notes.trim() || null,
-      deadline
-    });
-  };
-  
-  // Get max deadline date (end of current week - Saturday)
-  const { weekEnd } = getWeekBoundaries();
-  const maxDeadline = weekEnd.toISOString().split('T')[0];
-  const today = new Date().toISOString().split('T')[0];
-  
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
-      <Card className="w-full sm:max-w-md sm:mx-4 rounded-b-none sm:rounded-b-lg max-h-[90vh] overflow-y-auto">
-        <form onSubmit={handleSubmit}>
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-corporate-navy">Commit to a Rep</h3>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="p-4 space-y-4">
-            {/* Person */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Who is this rep with? *
-              </label>
-              <input
-                type="text"
-                value={person}
-                onChange={(e) => setPerson(e.target.value)}
-                placeholder="Enter person's name"
-                className="w-full p-3 border border-gray-300 rounded-lg text-base"
-                autoFocus
-                required
-              />
-            </div>
-            
-            {/* Rep Type */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Type of Rep *
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {REP_TYPES.map((type) => (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => setRepType(type.id)}
-                    className={`p-3 rounded-lg border text-left transition-all ${
-                      repType === type.id
-                        ? 'border-corporate-navy bg-corporate-navy/5 ring-2 ring-corporate-navy'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="font-medium text-sm">{type.label}</div>
-                    <div className="text-xs text-gray-500">{type.description}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Notes (Optional) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes (optional)
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="What do you want to address?"
-                className="w-full p-3 border border-gray-300 rounded-lg text-sm min-h-[80px]"
-              />
-            </div>
-            
-            {/* Custom Deadline Toggle */}
-            <div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={useCustomDeadline}
-                  onChange={(e) => setUseCustomDeadline(e.target.checked)}
-                  className="rounded"
-                />
-                <span className="text-sm text-gray-700">Set custom deadline (default: end of week)</span>
-              </label>
-              
-              {useCustomDeadline && (
-                <input
-                  type="date"
-                  value={customDeadline}
-                  onChange={(e) => setCustomDeadline(e.target.value)}
-                  min={today}
-                  max={maxDeadline}
-                  className="mt-2 w-full p-3 border border-gray-300 rounded-lg text-base"
-                />
-              )}
-            </div>
-          </div>
-          
-          <div className="p-4 border-t border-gray-200 bg-gray-50">
-            <Button
-              type="submit"
-              disabled={!person.trim() || isLoading}
-              className="w-full bg-corporate-navy hover:bg-corporate-navy/90 text-white py-3"
-            >
-              {isLoading ? 'Committing...' : 'Commit to This Rep'}
-            </Button>
-          </div>
-        </form>
-      </Card>
-    </div>
-  );
-};
+// Note: CommitRepForm is now imported from ../conditioning
 
 // ============================================
 // MISSED REPS SECTION
 // ============================================
 const MissedRepsSection = ({ missedReps, onRollForward, isLoading }) => {
   if (!missedReps || missedReps.length === 0) return null;
+  
+  // Get rep type label using getRepType helper
+  const getRepTypeLabel = (repTypeId) => {
+    const repType = getRepType(repTypeId);
+    return repType?.shortLabel || repType?.label || repTypeId;
+  };
   
   return (
     <div className="mb-6">
@@ -486,7 +379,7 @@ const MissedRepsSection = ({ missedReps, onRollForward, isLoading }) => {
             <div className="flex items-center justify-between">
               <div>
                 <span className="font-medium">{rep.person}</span>
-                <span className="text-sm text-gray-500 ml-2">({REP_TYPES.find(t => t.id === rep.repType)?.label})</span>
+                <span className="text-sm text-gray-500 ml-2">({getRepTypeLabel(rep.repType)})</span>
               </div>
               <Button
                 onClick={() => onRollForward(rep.id)}
@@ -548,10 +441,14 @@ const Conditioning = () => {
       ]);
       
       // Separate active reps from missed ones in the active list
-      const currentWeekActive = active.filter(r => r.status === REP_STATUS.ACTIVE);
+      // Filter for active states (committed, prepared, scheduled)
+      const activeStates = ['committed', 'prepared', 'scheduled', 'active'];
+      const currentWeekActive = active.filter(r => activeStates.includes(r.status));
       
       // Get completed reps from weekly status
-      const completed = (status?.reps || []).filter(r => r.status === REP_STATUS.COMPLETED);
+      // Filter for completed states (debriefed, executed, completed)
+      const completedStates = ['debriefed', 'executed', 'completed'];
+      const completed = (status?.reps || []).filter(r => completedStates.includes(r.status));
       
       // Load evidence for completed reps
       const evidencePromises = completed.map(async (rep) => {

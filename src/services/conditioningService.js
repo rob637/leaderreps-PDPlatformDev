@@ -15,6 +15,10 @@ import {
   limit as firestoreLimit
 } from 'firebase/firestore';
 import { timeService } from './timeService';
+import { REP_TYPES, getRepType, isPrepRequired } from './repTaxonomy';
+
+// Re-export REP_TYPES from repTaxonomy for backward compatibility
+export { REP_TYPES };
 
 /**
  * Conditioning Layer Service
@@ -22,22 +26,31 @@ import { timeService } from './timeService';
  * Manages real leadership rep accountability between Foundation sessions.
  * Core rule: Each leader must complete ≥1 real rep per week.
  * 
- * Data Model:
+ * Data Model (Updated for 16 Rep Types):
  * /users/{uid}/conditioning_reps/{repId}
  *   - person: string (who the rep is with)
- *   - repType: 'feedback' | '1:1' | 'tension' | 'other'
- *   - status: 'active' | 'completed' | 'missed' | 'canceled'
+ *   - repType: string (one of 16 canonical rep types from repTaxonomy)
+ *   - riskLevel: 'low' | 'medium' | 'high'
+ *   - difficulty: 'level_1' | 'level_2' | 'level_3'
+ *   - context: { trigger, intended_outcome, standard, hard_move, close_next }
+ *   - status: 'committed' | 'prepared' | 'scheduled' | 'executed' | 'debriefed' | 'missed' | 'canceled'
+ *   - prepRequired: boolean
  *   - deadline: Timestamp (defaults to end of week - Saturday 11:59 PM)
  *   - weekId: string (YYYY-Www format, e.g., "2026-W06")
  *   - cohortId: string (ties rep to specific cohort)
  *   - createdAt: Timestamp
  *   - updatedAt: Timestamp
- *   - completedAt?: Timestamp
+ *   - preparedAt?: Timestamp
+ *   - scheduledAt?: Timestamp
+ *   - executedAt?: Timestamp
+ *   - debriefedAt?: Timestamp
+ *   - completedAt?: Timestamp (legacy alias for debriefedAt)
  *   - canceledAt?: Timestamp
  *   - cancelReason?: string (required if canceled)
  *   - rolledForwardFrom?: string (repId if this was rolled from missed week)
- *   - prep?: { text?: string, voiceUrl?: string, transcription?: string } (Phase 2)
- *   - evidence?: { ... } (Phase 2)
+ *   - prep?: { rubricResponses, riskResponses, inputMethod, savedAt }
+ *   - evidence?: { structured, reflection, level, submittedAt }
+ *   - missedDebrief?: { what_blocked, standard_breakdown, next_week_different }
  * 
  * /users/{uid}/conditioning_weeks/{weekId}
  *   - weekStart: Timestamp (Sunday 00:00)
@@ -50,20 +63,31 @@ import { timeService } from './timeService';
  *   - consecutiveMissedWeeks: number (for escalation logic)
  */
 
-// Rep types available for commitment
-export const REP_TYPES = [
-  { id: 'feedback', label: 'Feedback', description: 'Give or request feedback' },
-  { id: '1:1', label: '1:1', description: 'One-on-one conversation' },
-  { id: 'tension', label: 'Tension', description: 'Address a tension or conflict' },
-  { id: 'other', label: 'Other', description: 'Other leadership rep' }
-];
-
-// Rep statuses
+// Rep statuses (expanded for new state machine)
 export const REP_STATUS = {
-  ACTIVE: 'active',
-  COMPLETED: 'completed',
-  MISSED: 'missed',
-  CANCELED: 'canceled'
+  // New granular states
+  COMMITTED: 'committed',     // Rep is set, nothing else done
+  PREPARED: 'prepared',       // Optional prep completed
+  SCHEDULED: 'scheduled',     // For reps requiring scheduling
+  EXECUTED: 'executed',       // Real-world rep done, awaiting debrief
+  DEBRIEFED: 'debriefed',     // Complete - debrief submitted
+  MISSED: 'missed',           // Past deadline without execution
+  CANCELED: 'canceled',       // Rare, with reason required
+  
+  // Legacy aliases for backward compatibility
+  ACTIVE: 'committed',        // Alias: active -> committed
+  COMPLETED: 'debriefed'      // Alias: completed -> debriefed
+};
+
+// State transitions (what states can follow each state)
+export const STATE_TRANSITIONS = {
+  committed: ['prepared', 'scheduled', 'executed', 'missed', 'canceled'],
+  prepared: ['scheduled', 'executed', 'missed', 'canceled'],
+  scheduled: ['executed', 'missed', 'canceled'],
+  executed: ['debriefed', 'missed'],  // Can still miss if no debrief
+  debriefed: [],  // Terminal state
+  missed: ['committed'],  // Roll forward
+  canceled: []  // Terminal state
 };
 
 // ============================================
@@ -163,7 +187,7 @@ export const conditioningService = {
   // ============================================
   
   /**
-   * Commit a new leadership rep
+   * Commit a new leadership rep (Updated for 16 Rep Types)
    */
   commitRep: async (db, userId, repData) => {
     if (!userId) throw new Error('User ID required');
@@ -171,20 +195,47 @@ export const conditioningService = {
     if (!repData.repType) throw new Error('Rep type is required');
     if (!repData.cohortId) throw new Error('Cohort ID is required');
     
+    // Validate rep type exists
+    const repTypeInfo = getRepType(repData.repType);
+    if (!repTypeInfo) {
+      throw new Error(`Invalid rep type: ${repData.repType}`);
+    }
+    
     const repId = `rep_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const weekId = getCurrentWeekId();
     const { weekEnd } = getWeekBoundaries(weekId);
+    
+    // Determine if prep is required based on rep type and risk level
+    const prepRequired = isPrepRequired(repData.repType, repData.riskLevel);
     
     const repDoc = {
       id: repId,
       person: repData.person.trim(),
       repType: repData.repType,
-      status: REP_STATUS.ACTIVE,
+      repCategory: repTypeInfo.category,
+      status: REP_STATUS.COMMITTED,
       deadline: repData.deadline || Timestamp.fromDate(weekEnd),
       weekId,
       cohortId: repData.cohortId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      
+      // New fields for 16 rep types
+      riskLevel: repData.riskLevel || repTypeInfo.defaultRisk || 'medium',
+      difficulty: repData.difficulty || repTypeInfo.defaultDifficulty || 'level_1',
+      prepRequired,
+      
+      // Universal context structure
+      ...(repData.context && { 
+        context: {
+          trigger: repData.context.trigger || '',
+          intended_outcome: repData.context.intended_outcome || '',
+          standard: repData.context.standard || '',
+          hard_move: repData.context.hard_move || '',
+          close_next: repData.context.close_next || ''
+        }
+      }),
+      
       // Optional fields
       ...(repData.notes && { notes: repData.notes }),
       ...(repData.rolledForwardFrom && { rolledForwardFrom: repData.rolledForwardFrom })

@@ -5,3 +5,7 @@ export { default as QualityAssessmentCard } from './QualityAssessmentCard';
 export { default as PracticeRetryCard, PracticeForm, PendingRetriesList } from './PracticeRetryCard';
 export { default as TrainerNudgePanel } from './TrainerNudgePanel';
 export { default as TrainerNudgeNotification } from './TrainerNudgeNotification';
+
+// New components for 16 Rep Types
+export { default as RepTypePicker, RepTypeBadge } from './RepTypePicker';
+export { default as CommitRepForm } from './CommitRepForm';
