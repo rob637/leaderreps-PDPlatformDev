@@ -1,23 +1,21 @@
 // src/components/conditioning/EvidenceCaptureModal.jsx
-// Phase 2: Evidence capture and debrief form for completed reps
-// Supports written and voice input with Level 1/2 distinction
+// V1 UX: Simplified single-input debrief modal
+// Future: Voice input and structured prompts
 
 import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
   conditioningService, 
-  EVIDENCE_LEVEL,
-  LEVEL_1_PROMPTS,
-  LEVEL_2_PROMPTS
+  EVIDENCE_LEVEL
 } from '../../services/conditioningService.js';
 import { Card, Button } from '../ui';
 import { 
-  X, Mic, MicOff, Clock, CheckCircle, 
-  AlertCircle, ChevronRight, ChevronLeft, Send
+  X, Mic, MicOff, Clock, 
+  AlertCircle, Send, MessageSquare
 } from 'lucide-react';
 
 // ============================================
-// VOICE INPUT COMPONENT (Placeholder for Phase 2+)
+// VOICE INPUT COMPONENT (Placeholder for future)
 // ============================================
 const VoiceInput = ({ onTranscription, disabled }) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -60,42 +58,6 @@ const VoiceInput = ({ onTranscription, disabled }) => {
 };
 
 // ============================================
-// SINGLE PROMPT CARD
-// ============================================
-const PromptCard = ({ prompt, value, onChange, isActive }) => {
-  return (
-    <div className={`transition-all ${isActive ? 'opacity-100' : 'opacity-50'}`}>
-      <label className="block text-sm font-medium text-corporate-navy mb-2">
-        {prompt.label}
-      </label>
-      <p className="text-sm text-gray-600 mb-3">{prompt.prompt}</p>
-      
-      <div className="relative">
-        <textarea
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Type your response..."
-          className="w-full p-3 pr-12 border border-gray-300 rounded-lg text-sm min-h-[100px] resize-none focus:ring-2 focus:ring-corporate-navy focus:border-transparent"
-          disabled={!isActive}
-        />
-        <div className="absolute right-2 bottom-2">
-          <VoiceInput 
-            onTranscription={(text) => onChange(value ? `${value} ${text}` : text)}
-            disabled={!isActive}
-          />
-        </div>
-      </div>
-      
-      {value && value.length > 0 && (
-        <div className="mt-1 text-xs text-gray-400 text-right">
-          {value.length} characters
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ============================================
 // EVIDENCE LEVEL INDICATOR
 // ============================================
 const EvidenceLevelBadge = ({ level }) => {
@@ -109,65 +71,35 @@ const EvidenceLevelBadge = ({ level }) => {
     }`}>
       <Clock className="w-4 h-4" />
       <span className="font-medium">
-        {isLevel1 ? 'Level 1 Evidence' : 'Level 2 Evidence'}
-      </span>
-      <span className="text-xs opacity-75">
-        ({isLevel1 ? 'Same day' : '24+ hours later'})
+        {isLevel1 ? 'Quick Debrief' : 'Later Debrief'}
       </span>
     </div>
   );
 };
 
 // ============================================
-// MAIN EVIDENCE CAPTURE MODAL
+// MAIN EVIDENCE CAPTURE MODAL - V1 SIMPLIFIED
 // ============================================
 const EvidenceCaptureModal = ({ rep, onClose, onSubmit, isLoading }) => {
   const { db, user } = useAppServices();
   const userId = user?.uid;
   
-  // Determine evidence level
+  // Determine evidence level (for future structured prompts)
   const evidenceLevel = useMemo(() => {
     return conditioningService.getEvidenceLevel(rep?.completedAt);
   }, [rep?.completedAt]);
   
-  // Get appropriate prompts
-  const prompts = useMemo(() => {
-    return evidenceLevel === EVIDENCE_LEVEL.LEVEL_1 ? LEVEL_1_PROMPTS : LEVEL_2_PROMPTS;
-  }, [evidenceLevel]);
-  
-  // Form state - responses for each prompt
-  const [responses, setResponses] = useState({});
-  const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
+  // V1: Single debrief text input
+  const [debriefText, setDebriefText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   
-  // Calculate completion progress
-  const completedPrompts = Object.values(responses).filter(r => r && r.length >= 10).length;
-  const progress = Math.round((completedPrompts / prompts.length) * 100);
-  const isComplete = completedPrompts === prompts.length;
-  
-  const handleResponseChange = (promptId, value) => {
-    setResponses(prev => ({
-      ...prev,
-      [promptId]: value
-    }));
-  };
-  
-  const handleNext = () => {
-    if (currentPromptIndex < prompts.length - 1) {
-      setCurrentPromptIndex(prev => prev + 1);
-    }
-  };
-  
-  const handlePrevious = () => {
-    if (currentPromptIndex > 0) {
-      setCurrentPromptIndex(prev => prev - 1);
-    }
-  };
+  // V1: Require at least 20 characters for a meaningful debrief
+  const isValid = debriefText.trim().length >= 20;
   
   const handleSubmit = async () => {
-    if (!isComplete) {
-      setError('Please complete all prompts before submitting');
+    if (!isValid) {
+      setError('Please add a bit more detail (at least 20 characters)');
       return;
     }
     
@@ -175,8 +107,11 @@ const EvidenceCaptureModal = ({ rep, onClose, onSubmit, isLoading }) => {
       setIsSubmitting(true);
       setError(null);
       
+      // V1: Store as simple single response
       const result = await conditioningService.submitEvidence(db, userId, rep.id, {
-        responses,
+        responses: {
+          quick_debrief: debriefText.trim()
+        },
         inputMethod: 'written'
       });
       
@@ -184,81 +119,74 @@ const EvidenceCaptureModal = ({ rep, onClose, onSubmit, isLoading }) => {
       onClose?.();
     } catch (err) {
       console.error('Error submitting evidence:', err);
-      setError('Failed to submit evidence. Please try again.');
+      setError('Failed to submit debrief. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
   
-  const currentPrompt = prompts[currentPromptIndex];
-  
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-corporate-navy to-corporate-navy/90">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-bold text-corporate-navy">Debrief Your Rep</h3>
+            <h3 className="text-lg font-bold text-white">Debrief Your Rep</h3>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded"
+              className="p-1 hover:bg-white/10 rounded text-white/80 hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
           
           {/* Rep Context */}
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+          <div className="flex items-center gap-2 text-sm text-white/80">
             <span className="font-medium">{rep?.person}</span>
             <span>•</span>
             <span>{rep?.repType}</span>
           </div>
-          
-          {/* Evidence Level Badge */}
-          <EvidenceLevelBadge level={evidenceLevel} />
-          
-          {/* Progress Bar */}
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-              <span>Progress</span>
-              <span>{completedPrompts}/{prompts.length} complete</span>
-            </div>
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-corporate-navy transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
         </div>
         
-        {/* Content - Scrollable */}
+        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
-          {/* Prompt Navigation Dots */}
-          <div className="flex items-center justify-center gap-2 mb-4">
-            {prompts.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentPromptIndex(idx)}
-                className={`w-2.5 h-2.5 rounded-full transition-all ${
-                  idx === currentPromptIndex 
-                    ? 'bg-corporate-navy scale-125' 
-                    : responses[prompts[idx].id]?.length >= 10
-                    ? 'bg-green-500'
-                    : 'bg-gray-300'
-                }`}
-                aria-label={`Go to prompt ${idx + 1}`}
-              />
-            ))}
+          {/* Evidence Level Badge */}
+          <div className="flex justify-center mb-4">
+            <EvidenceLevelBadge level={evidenceLevel} />
           </div>
           
-          {/* Current Prompt */}
-          <PromptCard
-            prompt={currentPrompt}
-            value={responses[currentPrompt.id]}
-            onChange={(value) => handleResponseChange(currentPrompt.id, value)}
-            isActive={true}
-          />
+          {/* V1: Single debrief prompt */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-corporate-navy">
+              <MessageSquare className="w-4 h-4 inline mr-2" />
+              What happened?
+            </label>
+            <p className="text-sm text-gray-600">
+              Quick capture: How did the conversation go? What did you actually say or do?
+            </p>
+            
+            <div className="relative">
+              <textarea
+                value={debriefText}
+                onChange={(e) => setDebriefText(e.target.value)}
+                placeholder="I said... They responded... The outcome was..."
+                className="w-full p-3 pr-12 border border-gray-300 rounded-lg text-sm min-h-[150px] resize-none focus:ring-2 focus:ring-corporate-navy focus:border-transparent"
+                autoFocus
+              />
+              <div className="absolute right-2 bottom-2">
+                <VoiceInput 
+                  onTranscription={(text) => setDebriefText(prev => prev ? `${prev} ${text}` : text)}
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-between text-xs text-gray-400">
+              <span>{debriefText.length} characters</span>
+              {debriefText.length < 20 && (
+                <span className="text-amber-500">Min 20 characters</span>
+              )}
+            </div>
+          </div>
           
           {/* Error Message */}
           {error && (
@@ -269,53 +197,32 @@ const EvidenceCaptureModal = ({ rep, onClose, onSubmit, isLoading }) => {
           )}
         </div>
         
-        {/* Footer - Navigation & Submit */}
+        {/* Footer */}
         <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between">
-            {/* Previous Button */}
+          <div className="flex items-center justify-between gap-3">
             <Button
-              onClick={handlePrevious}
-              disabled={currentPromptIndex === 0}
+              onClick={onClose}
               variant="outline"
-              className="flex items-center gap-1"
+              className="flex-1"
             >
-              <ChevronLeft className="w-4 h-4" />
-              Previous
+              Cancel
             </Button>
             
-            {/* Next or Submit */}
-            {currentPromptIndex < prompts.length - 1 ? (
-              <Button
-                onClick={handleNext}
-                className="flex items-center gap-1 bg-corporate-navy hover:bg-corporate-navy/90 text-white"
-              >
-                Next
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={!isComplete || isSubmitting || isLoading}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-              >
-                {isSubmitting ? (
-                  <>Submitting...</>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    Submit Debrief
-                  </>
-                )}
-              </Button>
-            )}
+            <Button
+              onClick={handleSubmit}
+              disabled={!isValid || isSubmitting || isLoading}
+              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Complete Debrief
+                </>
+              )}
+            </Button>
           </div>
-          
-          {/* Completion Hint */}
-          {!isComplete && currentPromptIndex === prompts.length - 1 && (
-            <p className="mt-2 text-xs text-center text-amber-600">
-              Complete all prompts to submit (min 10 characters each)
-            </p>
-          )}
         </div>
       </Card>
     </div>

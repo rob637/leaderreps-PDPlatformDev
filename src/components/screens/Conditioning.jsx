@@ -281,10 +281,15 @@ const RepCard = ({
             </div>
           </div>
           
-          {/* Prep Requirement Badge */}
+          {/* Prep Requirement Badge - shows "Prep Complete" when done */}
           {canTakeAction && (
             <div className="mb-3">
-              <PrepRequirementBadge repType={rep.repType} riskLevel={rep.riskLevel} size="small" />
+              <PrepRequirementBadge 
+                repType={rep.repType} 
+                riskLevel={rep.riskLevel} 
+                prepCompleted={!!rep.preparedAt}
+                size="small" 
+              />
             </div>
           )}
           

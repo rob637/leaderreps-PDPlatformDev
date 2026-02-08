@@ -4,7 +4,7 @@
 
 import React, { useMemo } from 'react';
 import { 
-  Clock, FileText, Calendar, Play, CheckCircle, 
+  Clock, FileText, Calendar, Play, CheckCircle, Check,
   XCircle, AlertCircle, ChevronRight, Lock, Unlock
 } from 'lucide-react';
 import { STATE_TRANSITIONS, REP_STATUS } from '../../services/conditioningService.js';
@@ -12,18 +12,19 @@ import { isPrepRequired, getRepType, RISK_LEVELS } from '../../services/repTaxon
 
 // ============================================
 // STATE DEFINITIONS
+// V1 UX: Updated labels for clarity (Delivered ≠ Closed)
 // ============================================
 const STATE_CONFIG = {
   committed: {
-    label: 'Committed',
-    shortLabel: 'Set',
+    label: 'Planned',
+    shortLabel: 'Planned',
     icon: Clock,
     color: 'blue',
     description: 'Rep committed, ready for prep or execution'
   },
   prepared: {
     label: 'Prepared',
-    shortLabel: 'Prep',
+    shortLabel: 'Prepped',
     icon: FileText,
     color: 'indigo',
     description: 'Prep work completed, ready to execute'
@@ -36,29 +37,29 @@ const STATE_CONFIG = {
     description: 'Time/meeting scheduled for rep'
   },
   executed: {
-    label: 'Executed',
-    shortLabel: 'Done',
+    label: 'Delivered',
+    shortLabel: 'Delivered',
     icon: Play,
     color: 'teal',
-    description: 'Rep executed, awaiting debrief'
+    description: 'Conversation happened, awaiting debrief'
   },
   debriefed: {
-    label: 'Complete',
-    shortLabel: 'Done',
+    label: 'Debriefed',
+    shortLabel: 'Debriefed',
     icon: CheckCircle,
     color: 'green',
-    description: 'Fully complete with debrief'
+    description: 'Reflection complete'
   },
   missed: {
     label: 'Missed',
-    shortLabel: 'Miss',
+    shortLabel: 'Missed',
     icon: AlertCircle,
     color: 'amber',
     description: 'Past deadline without execution'
   },
   canceled: {
     label: 'Canceled',
-    shortLabel: 'X',
+    shortLabel: 'Canceled',
     icon: XCircle,
     color: 'gray',
     description: 'Canceled with reason'
@@ -415,12 +416,22 @@ const StateActionButtons = ({
 // ============================================
 // PREP REQUIREMENT INDICATOR
 // ============================================
-export const PrepRequirementBadge = ({ repType, riskLevel, size = 'default' }) => {
+export const PrepRequirementBadge = ({ repType, riskLevel, prepCompleted = false, size = 'default' }) => {
   const required = isPrepRequired(repType, riskLevel);
   
   const sizeClasses = size === 'small' 
     ? 'text-xs px-1.5 py-0.5 gap-0.5' 
     : 'text-sm px-2 py-1 gap-1';
+  
+  // If prep was required and is now complete, show success badge
+  if (required && prepCompleted) {
+    return (
+      <span className={`inline-flex items-center rounded font-medium bg-green-100 text-green-700 ${sizeClasses}`}>
+        <Check className={size === 'small' ? 'w-3 h-3' : 'w-4 h-4'} />
+        Prep Complete
+      </span>
+    );
+  }
   
   if (required) {
     return (

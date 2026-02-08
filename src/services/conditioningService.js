@@ -351,44 +351,8 @@ export const conditioningService = {
     return true;
   },
   
-  /**
-   * Save prep notes for a rep (optional pre-execution preparation)
-   * No rewriting, no validation - just stores the leader's raw thinking
-   */
-  saveRepPrep: async (db, userId, repId, prepData) => {
-    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
-    const repSnap = await getDoc(repRef);
-    
-    if (!repSnap.exists()) throw new Error('Rep not found');
-    
-    const currentRep = repSnap.data();
-    
-    // Can only add prep to active or missed reps
-    if (currentRep.status === REP_STATUS.COMPLETED) {
-      throw new Error('Cannot add prep to a completed rep');
-    }
-    if (currentRep.status === REP_STATUS.CANCELED) {
-      throw new Error('Cannot add prep to a canceled rep');
-    }
-    
-    // Structure the prep data
-    const prep = {
-      opening_language: prepData.opening_language || null,
-      behavior_to_address: prepData.behavior_to_address || null,
-      commitment_to_request: prepData.commitment_to_request || null,
-      inputMethod: prepData.inputMethod || 'written', // 'written' | 'voice'
-      savedAt: serverTimestamp(),
-      voiceUrl: prepData.voiceUrl || null, // For future voice support
-      transcription: prepData.transcription || null // For future voice support
-    };
-    
-    await updateDoc(repRef, {
-      prep,
-      updatedAt: serverTimestamp()
-    });
-    
-    return true;
-  },
+  // NOTE: saveRepPrep is defined later (line ~589) with Sprint 2 risk-based prep support
+  // That version properly transitions to 'prepared' state
   
   /**
    * Get prep data for a rep
