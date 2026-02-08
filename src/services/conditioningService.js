@@ -15,6 +15,10 @@ import {
   limit as firestoreLimit
 } from 'firebase/firestore';
 import { timeService } from './timeService';
+import { REP_TYPES, getRepType, isPrepRequired } from './repTaxonomy';
+
+// Re-export REP_TYPES from repTaxonomy for backward compatibility
+export { REP_TYPES };
 
 /**
  * Conditioning Layer Service
@@ -22,22 +26,31 @@ import { timeService } from './timeService';
  * Manages real leadership rep accountability between Foundation sessions.
  * Core rule: Each leader must complete ≥1 real rep per week.
  * 
- * Data Model:
+ * Data Model (Updated for 16 Rep Types):
  * /users/{uid}/conditioning_reps/{repId}
  *   - person: string (who the rep is with)
- *   - repType: 'feedback' | '1:1' | 'tension' | 'other'
- *   - status: 'active' | 'completed' | 'missed' | 'canceled'
+ *   - repType: string (one of 16 canonical rep types from repTaxonomy)
+ *   - riskLevel: 'low' | 'medium' | 'high'
+ *   - difficulty: 'level_1' | 'level_2' | 'level_3'
+ *   - context: { trigger, intended_outcome, standard, hard_move, close_next }
+ *   - status: 'committed' | 'prepared' | 'scheduled' | 'executed' | 'debriefed' | 'missed' | 'canceled'
+ *   - prepRequired: boolean
  *   - deadline: Timestamp (defaults to end of week - Saturday 11:59 PM)
  *   - weekId: string (YYYY-Www format, e.g., "2026-W06")
  *   - cohortId: string (ties rep to specific cohort)
  *   - createdAt: Timestamp
  *   - updatedAt: Timestamp
- *   - completedAt?: Timestamp
+ *   - preparedAt?: Timestamp
+ *   - scheduledAt?: Timestamp
+ *   - executedAt?: Timestamp
+ *   - debriefedAt?: Timestamp
+ *   - completedAt?: Timestamp (legacy alias for debriefedAt)
  *   - canceledAt?: Timestamp
  *   - cancelReason?: string (required if canceled)
  *   - rolledForwardFrom?: string (repId if this was rolled from missed week)
- *   - prep?: { text?: string, voiceUrl?: string, transcription?: string } (Phase 2)
- *   - evidence?: { ... } (Phase 2)
+ *   - prep?: { rubricResponses, riskResponses, inputMethod, savedAt }
+ *   - evidence?: { structured, reflection, level, submittedAt }
+ *   - missedDebrief?: { what_blocked, standard_breakdown, next_week_different }
  * 
  * /users/{uid}/conditioning_weeks/{weekId}
  *   - weekStart: Timestamp (Sunday 00:00)
@@ -50,20 +63,31 @@ import { timeService } from './timeService';
  *   - consecutiveMissedWeeks: number (for escalation logic)
  */
 
-// Rep types available for commitment
-export const REP_TYPES = [
-  { id: 'feedback', label: 'Feedback', description: 'Give or request feedback' },
-  { id: '1:1', label: '1:1', description: 'One-on-one conversation' },
-  { id: 'tension', label: 'Tension', description: 'Address a tension or conflict' },
-  { id: 'other', label: 'Other', description: 'Other leadership rep' }
-];
-
-// Rep statuses
+// Rep statuses (expanded for new state machine)
 export const REP_STATUS = {
-  ACTIVE: 'active',
-  COMPLETED: 'completed',
-  MISSED: 'missed',
-  CANCELED: 'canceled'
+  // New granular states
+  COMMITTED: 'committed',     // Rep is set, nothing else done
+  PREPARED: 'prepared',       // Optional prep completed
+  SCHEDULED: 'scheduled',     // For reps requiring scheduling
+  EXECUTED: 'executed',       // Real-world rep done, awaiting debrief
+  DEBRIEFED: 'debriefed',     // Complete - debrief submitted
+  MISSED: 'missed',           // Past deadline without execution
+  CANCELED: 'canceled',       // Rare, with reason required
+  
+  // Legacy aliases for backward compatibility
+  ACTIVE: 'committed',        // Alias: active -> committed
+  COMPLETED: 'debriefed'      // Alias: completed -> debriefed
+};
+
+// State transitions (what states can follow each state)
+export const STATE_TRANSITIONS = {
+  committed: ['prepared', 'scheduled', 'executed', 'missed', 'canceled'],
+  prepared: ['scheduled', 'executed', 'missed', 'canceled'],
+  scheduled: ['executed', 'missed', 'canceled'],
+  executed: ['debriefed', 'missed'],  // Can still miss if no debrief
+  debriefed: [],  // Terminal state
+  missed: ['committed'],  // Roll forward
+  canceled: []  // Terminal state
 };
 
 // ============================================
@@ -82,6 +106,61 @@ export const QUALITY_DIMENSIONS = {
   CLEAR_REQUEST: 'clear_request',            // Was there a clear request/ask?
   NAMED_COMMITMENT: 'named_commitment',      // Was a commitment named (or explicitly absent)?
   REFLECTION: 'reflection'                   // Did they reflect on the outcome?
+};
+
+// ============================================
+// PHASE 7: COACH/TRAINER PROMPTS
+// ============================================
+
+/**
+ * COACH_PROMPTS - Pattern definitions for trainer coaching prompts
+ * Each pattern has: id, name, description, detectionRule, coachingQuestion, priority
+ */
+export const COACH_PROMPTS = {
+  low_risk_pattern: {
+    id: 'low_risk_pattern',
+    name: 'Comfort Zone Loop',
+    description: 'Same skill at low difficulty ≥3 times in 4 weeks',
+    priority: 'medium',
+    coachingQuestion: 'What would pushing to a harder edge look like for you right now?',
+    nudgeMessage: "I've noticed you're consistently executing well on familiar reps. Ready to stretch into something more challenging?"
+  },
+  
+  avoidance_pattern: {
+    id: 'avoidance_pattern',
+    name: 'Delayed Execution',
+    description: 'Commits early in week, executes late (after Thursday)',
+    priority: 'medium',
+    coachingQuestion: 'What makes you wait until late in the week to execute?',
+    nudgeMessage: "I see a pattern of committing early but executing late. What's getting in the way of acting sooner?"
+  },
+  
+  prep_strong_followthrough_weak: {
+    id: 'prep_strong_followthrough_weak',
+    name: 'Prep Without Action',
+    description: 'High prep completion rate, but low execution rate',
+    priority: 'high',
+    coachingQuestion: 'You prepare well but something blocks execution. What happens between prep and the conversation?',
+    nudgeMessage: "Your prep is thorough, but the rep isn't happening. What's the real barrier?"
+  },
+  
+  no_close_pattern: {
+    id: 'no_close_pattern',
+    name: 'Missing the Close',
+    description: 'No commitment or next step in ≥50% of debriefs',
+    priority: 'medium',
+    coachingQuestion: 'How could you incorporate a clearer ask or next step into your conversations?',
+    nudgeMessage: "Your reps often lack a defined next step. What commitment could you ask for?"
+  },
+  
+  consecutive_misses: {
+    id: 'consecutive_misses',
+    name: 'Consecutive Weeks Missed',
+    description: '≥2 missed reps in last 4 weeks',
+    priority: 'critical',
+    coachingQuestion: "What's blocking your ability to do reps right now? Let's problem-solve together.",
+    nudgeMessage: "You've missed multiple weeks. Let's connect and figure out what's going on."
+  }
 };
 
 // Debrief prompts for Level 1 (same day)
@@ -163,7 +242,7 @@ export const conditioningService = {
   // ============================================
   
   /**
-   * Commit a new leadership rep
+   * Commit a new leadership rep (Updated for 16 Rep Types)
    */
   commitRep: async (db, userId, repData) => {
     if (!userId) throw new Error('User ID required');
@@ -171,20 +250,47 @@ export const conditioningService = {
     if (!repData.repType) throw new Error('Rep type is required');
     if (!repData.cohortId) throw new Error('Cohort ID is required');
     
+    // Validate rep type exists
+    const repTypeInfo = getRepType(repData.repType);
+    if (!repTypeInfo) {
+      throw new Error(`Invalid rep type: ${repData.repType}`);
+    }
+    
     const repId = `rep_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const weekId = getCurrentWeekId();
     const { weekEnd } = getWeekBoundaries(weekId);
+    
+    // Determine if prep is required based on rep type and risk level
+    const prepRequired = isPrepRequired(repData.repType, repData.riskLevel);
     
     const repDoc = {
       id: repId,
       person: repData.person.trim(),
       repType: repData.repType,
-      status: REP_STATUS.ACTIVE,
+      repCategory: repTypeInfo.category,
+      status: REP_STATUS.COMMITTED,
       deadline: repData.deadline || Timestamp.fromDate(weekEnd),
       weekId,
       cohortId: repData.cohortId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      
+      // New fields for 16 rep types
+      riskLevel: repData.riskLevel || repTypeInfo.defaultRisk || 'medium',
+      difficulty: repData.difficulty || repTypeInfo.defaultDifficulty || 'level_1',
+      prepRequired,
+      
+      // Universal context structure
+      ...(repData.context && { 
+        context: {
+          trigger: repData.context.trigger || '',
+          intended_outcome: repData.context.intended_outcome || '',
+          standard: repData.context.standard || '',
+          hard_move: repData.context.hard_move || '',
+          close_next: repData.context.close_next || ''
+        }
+      }),
+      
       // Optional fields
       ...(repData.notes && { notes: repData.notes }),
       ...(repData.rolledForwardFrom && { rolledForwardFrom: repData.rolledForwardFrom })
@@ -402,6 +508,140 @@ export const conditioningService = {
     });
     
     return newRepId;
+  },
+  
+  /**
+   * Transition rep to a new state (Sprint 2: State Machine)
+   * Validates transition is allowed and updates timestamps
+   */
+  transitionRepState: async (db, userId, repId, newState, additionalData = {}) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    const currentState = currentRep.status;
+    
+    // Validate transition is allowed
+    const allowedTransitions = STATE_TRANSITIONS[currentState] || [];
+    if (!allowedTransitions.includes(newState)) {
+      throw new Error(`Cannot transition from ${currentState} to ${newState}`);
+    }
+    
+    // Build update object
+    const updateData = {
+      status: newState,
+      updatedAt: serverTimestamp()
+    };
+    
+    // Add state-specific timestamps
+    switch (newState) {
+      case 'prepared':
+        updateData.preparedAt = serverTimestamp();
+        break;
+      case 'scheduled':
+        updateData.scheduledAt = serverTimestamp();
+        if (additionalData.scheduledFor) {
+          updateData.scheduledFor = additionalData.scheduledFor;
+        }
+        break;
+      case 'executed':
+        updateData.executedAt = serverTimestamp();
+        break;
+      case 'debriefed':
+        updateData.debriefedAt = serverTimestamp();
+        updateData.completedAt = serverTimestamp(); // Legacy compatibility
+        break;
+      case 'missed':
+        updateData.missedAt = serverTimestamp();
+        break;
+      case 'canceled':
+        if (!additionalData.cancelReason) {
+          throw new Error('Cancel reason required');
+        }
+        updateData.canceledAt = serverTimestamp();
+        updateData.cancelReason = additionalData.cancelReason;
+        break;
+    }
+    
+    // Merge any additional data (like prep responses)
+    if (additionalData.prep) {
+      updateData.prep = additionalData.prep;
+    }
+    
+    await updateDoc(repRef, updateData);
+    
+    // Update weekly stats for terminal states
+    if (['debriefed', 'missed', 'canceled'].includes(newState)) {
+      await conditioningService.updateWeeklyStats(db, userId, currentRep.weekId, currentRep.cohortId);
+    }
+    
+    return true;
+  },
+  
+  /**
+   * Save prep data for a rep (Sprint 2: Risk-Based Prep)
+   * Also transitions to 'prepared' state
+   */
+  saveRepPrep: async (db, userId, repId, prepData) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    
+    // Can only prep from committed state
+    if (currentRep.status !== 'committed') {
+      throw new Error('Can only prep a committed rep');
+    }
+    
+    await updateDoc(repRef, {
+      status: 'prepared',
+      preparedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      prep: {
+        rubricResponses: prepData.rubricResponses || {},
+        riskResponses: prepData.riskResponses || {},
+        inputMethod: prepData.inputMethod || 'manual',
+        savedAt: serverTimestamp()
+      }
+    });
+    
+    return true;
+  },
+  
+  /**
+   * Save debrief data for a missed rep (Sprint 4: Missed Rep Accountability)
+   * Records what blocked completion and plan for next week
+   */
+  saveMissedRepDebrief: async (db, userId, repId, debriefData) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    
+    // Can only debrief missed reps
+    if (currentRep.status !== 'missed') {
+      throw new Error('Can only debrief a missed rep');
+    }
+    
+    await updateDoc(repRef, {
+      updatedAt: serverTimestamp(),
+      missedDebrief: {
+        what_blocked: debriefData.what_blocked,
+        standard_breakdown: debriefData.standard_breakdown,
+        next_week_different: debriefData.next_week_different,
+        recommit_decision: debriefData.recommit_decision,
+        cancelReason: debriefData.cancelReason || null,
+        submittedAt: serverTimestamp()
+      }
+    });
+    
+    return true;
   },
   
   // ============================================
@@ -1477,6 +1717,478 @@ export const conditioningService = {
     });
     
     return true;
+  },
+  
+  // ============================================
+  // PHASE 7: COACH PROMPT DETECTION
+  // ============================================
+  
+  /**
+   * Get all reps for a user within a date range
+   */
+  getRepsInRange: async (db, userId, cohortId, weeksBack = 4) => {
+    const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+    
+    // Calculate the start date (weeksBack weeks ago)
+    const now = timeService.getNow();
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - (weeksBack * 7));
+    
+    const q = query(
+      repsRef,
+      where('cohortId', '==', cohortId),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    const reps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Filter by date range in memory (Firestore compound queries are limited)
+    return reps.filter(rep => {
+      const createdAt = rep.createdAt?.toDate?.() || new Date(rep.createdAt);
+      return createdAt >= startDate;
+    });
+  },
+  
+  /**
+   * Detect low_risk_pattern: Same skill + low difficulty ≥3 times in 4 weeks
+   */
+  detectLowRiskPattern: (reps) => {
+    // Group by repType
+    const byType = {};
+    reps.forEach(rep => {
+      if (rep.difficulty === 'level_1' || rep.difficulty === 'low') {
+        const key = rep.repType;
+        byType[key] = (byType[key] || 0) + 1;
+      }
+    });
+    
+    // Find any type repeated 3+ times
+    const repeatedTypes = Object.entries(byType)
+      .filter(([_, count]) => count >= 3)
+      .map(([type, count]) => ({ type, count }));
+    
+    if (repeatedTypes.length > 0) {
+      return {
+        detected: true,
+        pattern: 'low_risk_pattern',
+        details: repeatedTypes,
+        summary: `Repeated ${repeatedTypes[0].type} at low difficulty ${repeatedTypes[0].count} times`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * Detect avoidance_pattern: Commits Monday, executes after Thursday
+   */
+  detectAvoidancePattern: (reps) => {
+    let lateExecutionCount = 0;
+    let totalExecuted = 0;
+    
+    reps.forEach(rep => {
+      if (rep.status === REP_STATUS.DEBRIEFED || rep.status === REP_STATUS.EXECUTED) {
+        totalExecuted++;
+        
+        const createdAt = rep.createdAt?.toDate?.() || new Date(rep.createdAt);
+        const executedAt = rep.executedAt?.toDate?.() || rep.debriefedAt?.toDate?.() || null;
+        
+        if (executedAt && createdAt) {
+          const createdDay = createdAt.getDay(); // 0=Sun, 1=Mon, etc
+          const executedDay = executedAt.getDay();
+          
+          // Committed early (Sun-Tue = 0-2), executed late (Fri-Sat = 5-6)
+          if (createdDay <= 2 && executedDay >= 5) {
+            lateExecutionCount++;
+          }
+        }
+      }
+    });
+    
+    // Pattern if ≥50% are late executions
+    if (totalExecuted >= 2 && lateExecutionCount / totalExecuted >= 0.5) {
+      return {
+        detected: true,
+        pattern: 'avoidance_pattern',
+        details: { lateExecutionCount, totalExecuted },
+        summary: `${lateExecutionCount} of ${totalExecuted} reps executed late in week`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * Detect prep_strong_followthrough_weak: High prep, low execution
+   */
+  detectPrepFollowthroughPattern: (reps) => {
+    const prepCompleted = reps.filter(r => r.prep && Object.keys(r.prep).length > 0).length;
+    const executed = reps.filter(r => 
+      r.status === REP_STATUS.DEBRIEFED || 
+      r.status === REP_STATUS.EXECUTED
+    ).length;
+    const totalCommitted = reps.length;
+    
+    if (totalCommitted < 3) return { detected: false };
+    
+    const prepRate = prepCompleted / totalCommitted;
+    const executionRate = executed / totalCommitted;
+    
+    // High prep (≥70%) but low execution (≤50%)
+    if (prepRate >= 0.7 && executionRate <= 0.5) {
+      return {
+        detected: true,
+        pattern: 'prep_strong_followthrough_weak',
+        details: { prepRate: Math.round(prepRate * 100), executionRate: Math.round(executionRate * 100) },
+        summary: `${Math.round(prepRate * 100)}% prep rate, but only ${Math.round(executionRate * 100)}% execution`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * Detect no_close_pattern: Missing close/next step in ≥50% of debriefs
+   */
+  detectNoClosePattern: (reps) => {
+    const debriefedReps = reps.filter(r => r.status === REP_STATUS.DEBRIEFED && r.evidence);
+    
+    if (debriefedReps.length < 3) return { detected: false };
+    
+    let missingCloseCount = 0;
+    debriefedReps.forEach(rep => {
+      const evidence = rep.evidence;
+      // Check structured evidence for commitment field
+      const hasClose = evidence.structured?.commitment || 
+                       evidence.commitment ||
+                       (evidence.reflection && evidence.reflection.toLowerCase().includes('next'));
+      
+      if (!hasClose || (typeof hasClose === 'string' && hasClose.trim().length < 10)) {
+        missingCloseCount++;
+      }
+    });
+    
+    if (missingCloseCount / debriefedReps.length >= 0.5) {
+      return {
+        detected: true,
+        pattern: 'no_close_pattern',
+        details: { missingCloseCount, totalDebriefed: debriefedReps.length },
+        summary: `${missingCloseCount} of ${debriefedReps.length} debriefs missing clear next step`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * Detect consecutive_misses: ≥2 missed reps in last 4 weeks
+   */
+  detectConsecutiveMisses: (reps) => {
+    const missedReps = reps.filter(r => r.status === REP_STATUS.MISSED);
+    
+    if (missedReps.length >= 2) {
+      return {
+        detected: true,
+        pattern: 'consecutive_misses',
+        details: { missedCount: missedReps.length },
+        summary: `${missedReps.length} missed reps in last 4 weeks`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * Run all pattern detections for a user
+   * Returns array of detected patterns with coaching prompts
+   */
+  detectCoachPrompts: async (db, userId, cohortId) => {
+    const reps = await conditioningService.getRepsInRange(db, userId, cohortId, 4);
+    
+    if (!reps || reps.length === 0) {
+      return { detectedPatterns: [], totalReps: 0 };
+    }
+    
+    const detectors = [
+      { fn: conditioningService.detectLowRiskPattern, prompt: COACH_PROMPTS.low_risk_pattern },
+      { fn: conditioningService.detectAvoidancePattern, prompt: COACH_PROMPTS.avoidance_pattern },
+      { fn: conditioningService.detectPrepFollowthroughPattern, prompt: COACH_PROMPTS.prep_strong_followthrough_weak },
+      { fn: conditioningService.detectNoClosePattern, prompt: COACH_PROMPTS.no_close_pattern },
+      { fn: conditioningService.detectConsecutiveMisses, prompt: COACH_PROMPTS.consecutive_misses }
+    ];
+    
+    const detectedPatterns = [];
+    
+    for (const { fn, prompt } of detectors) {
+      const result = fn(reps);
+      if (result.detected) {
+        detectedPatterns.push({
+          ...prompt,
+          detection: result
+        });
+      }
+    }
+    
+    // Sort by priority (critical first)
+    const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+    detectedPatterns.sort((a, b) => (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3));
+    
+    return {
+      detectedPatterns,
+      totalReps: reps.length,
+      analyzedWeeks: 4
+    };
+  },
+  
+  /**
+   * Get coach prompts for all users in a cohort (trainer dashboard)
+   */
+  getCohortCoachPrompts: async (db, cohortId, userIds) => {
+    const results = [];
+    
+    for (const userId of userIds) {
+      try {
+        const { detectedPatterns, totalReps } = await conditioningService.detectCoachPrompts(db, userId, cohortId);
+        
+        if (detectedPatterns.length > 0) {
+          results.push({
+            userId,
+            patterns: detectedPatterns,
+            totalReps,
+            topPattern: detectedPatterns[0]
+          });
+        }
+      } catch (err) {
+        console.error(`Error detecting patterns for user ${userId}:`, err);
+      }
+    }
+    
+    // Sort by priority of top pattern
+    const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+    results.sort((a, b) => 
+      (priorityOrder[a.topPattern?.priority] || 3) - (priorityOrder[b.topPattern?.priority] || 3)
+    );
+    
+    return results;
+  },
+  
+  // ============================================
+  // PHASE 8: DETECTION HEURISTICS
+  // ============================================
+  
+  /**
+   * Get weekly completion data for a user (last N weeks)
+   */
+  getWeeklyData: async (db, userId, cohortId, weeksBack = 4) => {
+    const weeksRef = collection(db, 'users', userId, 'conditioning_weeks');
+    
+    const q = query(
+      weeksRef,
+      where('cohortId', '==', cohortId),
+      orderBy('weekStart', 'desc'),
+      firestoreLimit(weeksBack)
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  },
+  
+  /**
+   * DETECTION HEURISTIC 1: difficulty_repetition
+   * Same skill + difficulty repeated 3+ times in 4 weeks
+   * More strict than low_risk_pattern - groups by exact skill+difficulty
+   */
+  detectDifficultyRepetition: (reps) => {
+    // Group by repType + difficulty
+    const bySkillDifficulty = {};
+    reps.forEach(rep => {
+      const key = `${rep.repType}-${rep.difficulty || 'level_1'}`;
+      bySkillDifficulty[key] = (bySkillDifficulty[key] || []);
+      bySkillDifficulty[key].push(rep);
+    });
+    
+    // Find any combination repeated 3+ times
+    const repeated = Object.entries(bySkillDifficulty)
+      .filter(([_, reps]) => reps.length >= 3)
+      .map(([key, reps]) => ({
+        key,
+        count: reps.length,
+        repType: key.split('-')[0],
+        difficulty: key.split('-')[1]
+      }));
+    
+    if (repeated.length > 0) {
+      return {
+        detected: true,
+        heuristic: 'difficulty_repetition',
+        details: repeated,
+        suggestion: 'Prompt stretch to harder difficulty or different skill',
+        summary: `Same skill+difficulty (${repeated[0].key}) repeated ${repeated[0].count}x`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * DETECTION HEURISTIC 2: latency_pattern
+   * Execution consistently after Thursday (3+ of last 4 completed)
+   */
+  detectLatencyPattern: (reps) => {
+    // Get last 4 completed reps
+    const completedReps = reps
+      .filter(r => r.status === REP_STATUS.DEBRIEFED || r.status === REP_STATUS.EXECUTED)
+      .slice(0, 4);
+    
+    if (completedReps.length < 3) return { detected: false };
+    
+    let lateCount = 0;
+    completedReps.forEach(rep => {
+      const executedAt = rep.executedAt?.toDate?.() || rep.debriefedAt?.toDate?.() || null;
+      if (executedAt) {
+        const dayOfWeek = executedAt.getDay(); // 0=Sun, 5=Fri, 6=Sat
+        if (dayOfWeek >= 5 || dayOfWeek === 0) { // Fri, Sat, Sun = late
+          lateCount++;
+        }
+      }
+    });
+    
+    if (lateCount >= 3) {
+      return {
+        detected: true,
+        heuristic: 'latency_pattern',
+        details: { lateCount, total: completedReps.length },
+        suggestion: 'Flag avoidance pattern - challenge to execute earlier',
+        summary: `${lateCount} of last ${completedReps.length} reps executed late in week`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * DETECTION HEURISTIC 3: non_completion
+   * Missed ≥2 of last 4 weeks (based on weekly data)
+   */
+  detectNonCompletion: async (db, userId, cohortId) => {
+    const weeks = await conditioningService.getWeeklyData(db, userId, cohortId, 4);
+    
+    if (weeks.length < 2) return { detected: false };
+    
+    const missedWeeks = weeks.filter(w => !w.requiredRepCompleted);
+    
+    if (missedWeeks.length >= 2) {
+      return {
+        detected: true,
+        heuristic: 'non_completion',
+        details: { 
+          missedCount: missedWeeks.length, 
+          totalWeeks: weeks.length,
+          missedWeekIds: missedWeeks.map(w => w.id)
+        },
+        suggestion: 'Flag for trainer follow-up',
+        summary: `Missed ${missedWeeks.length} of last ${weeks.length} weeks`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * Run all detection heuristics for a user
+   * Returns structured analysis for trainer visibility
+   */
+  runDetectionHeuristics: async (db, userId, cohortId) => {
+    const reps = await conditioningService.getRepsInRange(db, userId, cohortId, 4);
+    
+    const results = {
+      difficulty_repetition: conditioningService.detectDifficultyRepetition(reps),
+      latency_pattern: conditioningService.detectLatencyPattern(reps),
+      non_completion: await conditioningService.detectNonCompletion(db, userId, cohortId)
+    };
+    
+    const detectedHeuristics = Object.entries(results)
+      .filter(([_, result]) => result.detected)
+      .map(([name, result]) => ({ name, ...result }));
+    
+    return {
+      heuristics: results,
+      detectedCount: detectedHeuristics.length,
+      detected: detectedHeuristics,
+      repsAnalyzed: reps.length
+    };
+  },
+  
+  /**
+   * Get cohort health score based on aggregated patterns
+   * Returns 0-100 score with breakdown
+   */
+  getCohortHealthScore: async (db, cohortId, userIds) => {
+    if (!userIds?.length) return { score: 100, breakdown: {} };
+    
+    let completedUserCount = 0;
+    let activeUserCount = 0;
+    let criticalPatternCount = 0;
+    let highPatternCount = 0;
+    let mediumPatternCount = 0;
+    
+    const weekId = getCurrentWeekId();
+    
+    for (const userId of userIds) {
+      try {
+        // Check current week status
+        const status = await conditioningService.getWeeklyStatus(db, userId, weekId, cohortId);
+        if (status.requiredRepCompleted) {
+          completedUserCount++;
+        } else if (status.totalActive > 0) {
+          activeUserCount++;
+        }
+        
+        // Get pattern detections
+        const { detectedPatterns } = await conditioningService.detectCoachPrompts(db, userId, cohortId);
+        detectedPatterns.forEach(p => {
+          if (p.priority === 'critical') criticalPatternCount++;
+          else if (p.priority === 'high') highPatternCount++;
+          else mediumPatternCount++;
+        });
+      } catch (err) {
+        console.error(`Error checking user ${userId}:`, err);
+      }
+    }
+    
+    const totalUsers = userIds.length;
+    const completionRate = totalUsers > 0 ? completedUserCount / totalUsers : 0;
+    
+    // Calculate health score
+    // Base score from completion rate (0-60 points)
+    let score = completionRate * 60;
+    
+    // Add points for active users (up to 20 points)
+    const activeRate = (completedUserCount + activeUserCount) / totalUsers;
+    score += activeRate * 20;
+    
+    // Deduct for patterns detected
+    score -= criticalPatternCount * 10;
+    score -= highPatternCount * 5;
+    score -= mediumPatternCount * 2;
+    
+    // Clamp to 0-100
+    score = Math.max(0, Math.min(100, Math.round(score)));
+    
+    // Determine health level
+    let healthLevel;
+    if (score >= 80) healthLevel = 'healthy';
+    else if (score >= 60) healthLevel = 'caution';
+    else if (score >= 40) healthLevel = 'at-risk';
+    else healthLevel = 'critical';
+    
+    return {
+      score,
+      healthLevel,
+      breakdown: {
+        totalUsers,
+        completedUserCount,
+        activeUserCount,
+        incompleteUserCount: totalUsers - completedUserCount - activeUserCount,
+        completionRate: Math.round(completionRate * 100),
+        criticalPatternCount,
+        highPatternCount,
+        mediumPatternCount
+      }
+    };
   }
 };
 

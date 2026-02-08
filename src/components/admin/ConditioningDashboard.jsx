@@ -1,58 +1,25 @@
 // src/components/admin/ConditioningDashboard.jsx
 // Trainer view for Conditioning Layer accountability
-// Shows all cohort members' rep status, completion rates, patterns, and flags
+// Shows all cohort members' rep status, completion rates, and flags
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
-import conditioningService, { REP_STATUS, getCurrentWeekId, QUALITY_DIMENSIONS } from '../../services/conditioningService';
+import conditioningService, { REP_STATUS, getCurrentWeekId, QUALITY_DIMENSIONS, COACH_PROMPTS } from '../../services/conditioningService';
 import { Card } from '../ui';
-import { TrainerNudgePanel } from '../conditioning';
+import { TrainerNudgePanel, CoachPromptsPanel } from '../conditioning';
 import { 
   Users, CheckCircle, AlertTriangle, Clock, RefreshCw,
   Target, ChevronDown, ChevronUp, User, Calendar,
   BarChart3, FileText, ThumbsUp, MessageSquare, Handshake, Lightbulb,
-  TrendingDown, Shield, Zap, Eye
+  Activity, Heart, TrendingUp, TrendingDown
 } from 'lucide-react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-
-// ============================================
-// PATTERN BADGE COMPONENT
-// ============================================
-const PatternBadge = ({ pattern }) => {
-  const patternConfig = {
-    consecutive_misses: { icon: TrendingDown, label: 'Missed Weeks', color: 'red' },
-    chronic_late: { icon: Clock, label: 'Last Minute', color: 'amber' },
-    safety_reps: { icon: Shield, label: 'Safety Reps', color: 'blue' },
-    vague_debriefs: { icon: MessageSquare, label: 'Vague Debriefs', color: 'purple' },
-    no_commitment: { icon: Handshake, label: 'No Commitment', color: 'orange' },
-    quality_decline: { icon: TrendingDown, label: 'Quality Drop', color: 'red' }
-  };
-  
-  const config = patternConfig[pattern.type] || { icon: AlertTriangle, label: pattern.type, color: 'gray' };
-  const Icon = config.icon;
-  
-  const colorClasses = {
-    red: 'bg-red-100 text-red-700 border-red-200',
-    amber: 'bg-amber-100 text-amber-700 border-amber-200',
-    blue: 'bg-blue-100 text-blue-700 border-blue-200',
-    purple: 'bg-purple-100 text-purple-700 border-purple-200',
-    orange: 'bg-orange-100 text-orange-700 border-orange-200',
-    gray: 'bg-gray-100 text-gray-700 border-gray-200'
-  };
-  
-  return (
-    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${colorClasses[config.color]}`}>
-      <Icon className="w-3 h-3" />
-      <span>{config.label}</span>
-    </div>
-  );
-};
 
 // ============================================
 // USER ROW COMPONENT
 // ============================================
 const UserRow = ({ summary, isExpanded, onToggle }) => {
-  const { currentWeek, consecutiveMissedWeeks, needsAttention, patterns = [] } = summary;
+  const { currentWeek, consecutiveMissedWeeks, needsAttention } = summary;
   
   return (
     <div className={`border-b border-gray-100 last:border-b-0 ${needsAttention ? 'bg-red-50' : ''}`}>
@@ -78,7 +45,7 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
           </div>
           <div className="text-left">
             <div className="font-medium text-corporate-navy">
-              {summary.displayName || summary.email || summary.userId}
+              {summary.email || summary.userId}
             </div>
             <div className="text-sm text-gray-500">
               {currentWeek?.totalCompleted || 0} completed, {currentWeek?.totalActive || 0} active
@@ -86,16 +53,8 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
           </div>
         </div>
         
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {/* Patterns */}
-          {patterns.slice(0, 2).map((p, idx) => (
-            <PatternBadge key={idx} pattern={p} />
-          ))}
-          {patterns.length > 2 && (
-            <span className="text-xs text-gray-500">+{patterns.length - 2} more</span>
-          )}
-          
-          {consecutiveMissedWeeks > 0 && patterns.every(p => p.type !== 'consecutive_misses') && (
+        <div className="flex items-center gap-4">
+          {consecutiveMissedWeeks > 0 && (
             <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">
               {consecutiveMissedWeeks} week{consecutiveMissedWeeks !== 1 ? 's' : ''} missed
             </span>
@@ -114,44 +73,14 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
       </button>
       
       {/* Expanded Details */}
-      {isExpanded && (
+      {isExpanded && currentWeek?.reps && (
         <div className="px-4 pb-4 pt-2 bg-gray-50">
-          {/* Pattern Details */}
-          {patterns.length > 0 && (
-            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <h4 className="text-sm font-medium text-amber-800 mb-2 flex items-center gap-2">
-                <Eye className="w-4 h-4" />
-                Detected Patterns
-              </h4>
-              <div className="space-y-2">
-                {patterns.map((p, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${
-                        p.severity === 'high' ? 'bg-red-500' : 
-                        p.severity === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
-                      }`} />
-                      <span className="text-gray-700">{p.message}</span>
-                    </div>
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      p.severity === 'high' ? 'bg-red-100 text-red-700' :
-                      p.severity === 'medium' ? 'bg-amber-100 text-amber-700' :
-                      'bg-blue-100 text-blue-700'
-                    }`}>
-                      {p.severity}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
           <h4 className="text-sm font-medium text-gray-700 mb-2">This Week's Reps</h4>
-          {currentWeek?.reps?.length === 0 ? (
+          {currentWeek.reps.length === 0 ? (
             <p className="text-sm text-gray-500 italic">No reps committed this week</p>
           ) : (
             <div className="space-y-2">
-              {(currentWeek?.reps || []).map((rep) => (
+              {currentWeek.reps.map((rep) => (
                 <div 
                   key={rep.id}
                   className="flex items-center justify-between p-2 bg-white rounded border border-gray-200"
@@ -357,82 +286,106 @@ const QualityMetrics = ({ cohortQualityStats }) => {
 };
 
 // ============================================
-// PATTERN SUMMARY (Phase 3)
+// COHORT HEALTH INDICATOR (Sprint 6)
 // ============================================
-const PatternSummary = ({ userSummaries }) => {
-  // Aggregate patterns across all users
-  const patternStats = useMemo(() => {
-    const counts = {};
-    let usersWithPatterns = 0;
-    
-    userSummaries.forEach(summary => {
-      if (summary.patterns && summary.patterns.length > 0) {
-        usersWithPatterns++;
-        summary.patterns.forEach(p => {
-          counts[p.type] = (counts[p.type] || 0) + 1;
-        });
-      }
-    });
-    
-    return {
-      usersWithPatterns,
-      totalUsers: userSummaries.length,
-      counts
-    };
-  }, [userSummaries]);
+const CohortHealthIndicator = ({ healthData, isLoading }) => {
+  if (!healthData && !isLoading) return null;
   
-  const patternLabels = {
-    consecutive_misses: { label: 'Consecutive Misses', icon: TrendingDown, color: 'red' },
-    chronic_late: { label: 'Last-Minute Completions', icon: Clock, color: 'amber' },
-    safety_reps: { label: 'Avoiding Challenge', icon: Shield, color: 'blue' },
-    vague_debriefs: { label: 'Vague Debriefs', icon: MessageSquare, color: 'purple' },
-    no_commitment: { label: 'No Commitments', icon: Handshake, color: 'orange' }
-  };
+  const getHealthColor = (level) => ({
+    healthy: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300', fill: 'bg-green-500' },
+    caution: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300', fill: 'bg-amber-500' },
+    'at-risk': { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300', fill: 'bg-orange-500' },
+    critical: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300', fill: 'bg-red-500' }
+  })[level] || { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300', fill: 'bg-gray-500' };
   
-  if (Object.keys(patternStats.counts).length === 0) {
-    return null;
+  if (isLoading) {
+    return (
+      <Card className="p-4 mb-6">
+        <div className="flex items-center gap-3">
+          <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
+          <span className="text-sm text-gray-500">Calculating cohort health...</span>
+        </div>
+      </Card>
+    );
   }
   
+  const colors = getHealthColor(healthData.healthLevel);
+  const { breakdown } = healthData;
+  
   return (
-    <Card className="p-4 mb-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Eye className="w-5 h-5 text-corporate-navy" />
-        <h3 className="font-semibold text-corporate-navy">Pattern Detection</h3>
-        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-          {patternStats.usersWithPatterns} of {patternStats.totalUsers} leaders
-        </span>
+    <Card className={`p-4 mb-6 border ${colors.border}`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-full ${colors.bg}`}>
+            <Activity className={`w-5 h-5 ${colors.text}`} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-corporate-navy">Cohort Health</h3>
+            <p className="text-sm text-gray-500">Overall accountability score</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className={`text-3xl font-bold ${colors.text}`}>{healthData.score}</div>
+            <div className={`text-xs font-medium uppercase ${colors.text}`}>{healthData.healthLevel}</div>
+          </div>
+          
+          {/* Circular progress indicator */}
+          <div className="relative w-16 h-16">
+            <svg className="w-full h-full transform -rotate-90">
+              <circle
+                cx="32"
+                cy="32"
+                r="28"
+                strokeWidth="6"
+                fill="none"
+                className="stroke-gray-200"
+              />
+              <circle
+                cx="32"
+                cy="32"
+                r="28"
+                strokeWidth="6"
+                fill="none"
+                strokeDasharray={`${healthData.score * 1.76} 176`}
+                className={`${colors.text.replace('text-', 'stroke-')}`}
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+        </div>
       </div>
       
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {Object.entries(patternStats.counts)
-          .sort((a, b) => b[1] - a[1])
-          .map(([type, count]) => {
-            const config = patternLabels[type];
-            if (!config) return null;
-            const Icon = config.icon;
-            const colorClasses = {
-              red: 'bg-red-50 border-red-200 text-red-700',
-              amber: 'bg-amber-50 border-amber-200 text-amber-700',
-              blue: 'bg-blue-50 border-blue-200 text-blue-700',
-              purple: 'bg-purple-50 border-purple-200 text-purple-700',
-              orange: 'bg-orange-50 border-orange-200 text-orange-700'
-            };
-            
-            return (
-              <div 
-                key={type}
-                className={`p-3 rounded-lg border ${colorClasses[config.color]}`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{config.label}</span>
-                </div>
-                <div className="text-2xl font-bold">{count}</div>
-                <div className="text-xs opacity-75">leader{count !== 1 ? 's' : ''}</div>
-              </div>
-            );
-          })}
+      {/* Breakdown */}
+      <div className="grid grid-cols-4 gap-3 text-center">
+        <div className="p-2 bg-green-50 rounded-lg">
+          <div className="text-lg font-bold text-green-600">{breakdown.completedUserCount}</div>
+          <div className="text-xs text-green-600">Complete</div>
+        </div>
+        <div className="p-2 bg-blue-50 rounded-lg">
+          <div className="text-lg font-bold text-blue-600">{breakdown.activeUserCount}</div>
+          <div className="text-xs text-blue-600">In Progress</div>
+        </div>
+        <div className="p-2 bg-gray-50 rounded-lg">
+          <div className="text-lg font-bold text-gray-600">{breakdown.incompleteUserCount}</div>
+          <div className="text-xs text-gray-600">No Activity</div>
+        </div>
+        <div className="p-2 bg-red-50 rounded-lg">
+          <div className="text-lg font-bold text-red-600">{breakdown.criticalPatternCount}</div>
+          <div className="text-xs text-red-600">Critical Flags</div>
+        </div>
       </div>
+      
+      {/* Pattern alerts */}
+      {(breakdown.criticalPatternCount > 0 || breakdown.highPatternCount > 0) && (
+        <div className="mt-4 flex items-center gap-2 text-sm">
+          <AlertTriangle className="w-4 h-4 text-amber-500" />
+          <span className="text-gray-600">
+            {breakdown.criticalPatternCount + breakdown.highPatternCount} leaders need coaching attention
+          </span>
+        </div>
+      )}
     </Card>
   );
 };
@@ -449,6 +402,8 @@ const ConditioningDashboard = () => {
   const [userSummaries, setUserSummaries] = useState([]);
   const [cohortSummary, setCohortSummary] = useState(null);
   const [cohortQualityStats, setCohortQualityStats] = useState(null);
+  const [cohortHealth, setCohortHealth] = useState(null);
+  const [isLoadingHealth, setIsLoadingHealth] = useState(false);
   const [expandedUserId, setExpandedUserId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -581,6 +536,18 @@ const ConditioningDashboard = () => {
         dimensionStats: aggregatedDimensions
       });
       
+      // Load cohort health score (Sprint 6)
+      setIsLoadingHealth(true);
+      try {
+        const userIds = summaries.map(s => s.userId);
+        const health = await conditioningService.getCohortHealthScore(db, selectedCohortId, userIds);
+        setCohortHealth(health);
+      } catch (healthErr) {
+        console.error('Error loading cohort health:', healthErr);
+      } finally {
+        setIsLoadingHealth(false);
+      }
+      
     } catch (err) {
       console.error('Error loading cohort data:', err);
       setError('Failed to load cohort data');
@@ -647,13 +614,16 @@ const ConditioningDashboard = () => {
       {/* Stats Summary */}
       <StatsSummary cohortSummary={cohortSummary} />
       
+      {/* Cohort Health Indicator (Sprint 6) */}
+      {selectedCohortId && (
+        <CohortHealthIndicator 
+          healthData={cohortHealth} 
+          isLoading={isLoadingHealth} 
+        />
+      )}
+      
       {/* Quality Metrics (Phase 2) */}
       <QualityMetrics cohortQualityStats={cohortQualityStats} />
-      
-      {/* Pattern Detection (Phase 3) */}
-      {userSummaries.length > 0 && (
-        <PatternSummary userSummaries={userSummaries} />
-      )}
       
       {/* Trainer Nudge Panel (Phase 3) */}
       {selectedCohortId && userSummaries.length > 0 && (
@@ -663,6 +633,22 @@ const ConditioningDashboard = () => {
             trainerId={trainerId}
             cohortId={selectedCohortId}
             cohortUsers={userSummaries}
+          />
+        </div>
+      )}
+      
+      {/* Coach Prompts Panel (Sprint 5) */}
+      {selectedCohortId && userSummaries.length > 0 && (
+        <div className="mb-6">
+          <CoachPromptsPanel
+            db={db}
+            cohortId={selectedCohortId}
+            userIds={userSummaries.map(u => u.userId)}
+            userEmails={userSummaries.reduce((acc, u) => ({ ...acc, [u.userId]: u.email }), {})}
+            onSendNudge={(userId, message, pattern) => {
+              // Use training nudge panel's functionality
+              console.log('Coach prompt nudge:', { userId, message, pattern: pattern.name });
+            }}
           />
         </div>
       )}
