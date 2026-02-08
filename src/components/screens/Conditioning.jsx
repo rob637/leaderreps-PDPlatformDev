@@ -7,9 +7,10 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import conditioningService, { 
   REP_STATUS, 
-  getWeekBoundaries
+  getWeekBoundaries,
+  STATE_TRANSITIONS
 } from '../../services/conditioningService.js';
-import { REP_TYPES, getRepType } from '../../services/repTaxonomy.js';
+import { REP_TYPES, getRepType, isPrepRequired } from '../../services/repTaxonomy.js';
 import { Card, Button } from '../ui';
 import { 
   EvidenceCaptureModal,
@@ -17,7 +18,10 @@ import {
   PracticeRetryCard,
   TrainerNudgeNotification,
   CommitRepForm,
-  RepTypeBadge
+  RepTypeBadge,
+  RepProgressionTracker,
+  PrepRequirementBadge,
+  HighRiskPrepModal
 } from '../conditioning';
 import { 
   Plus, Check, X, AlertTriangle, Clock, User, 
@@ -177,11 +181,22 @@ const WeekStatusHeader = ({ weeklyStatus, nudgeStatus }) => {
 };
 
 // ============================================
-// REP CARD COMPONENT
+// REP CARD COMPONENT (Updated for Sprint 2)
 // ============================================
-const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence, isLoading }) => {
+const RepCard = ({ 
+  rep, 
+  onComplete, 
+  onCancel, 
+  onAddDebrief, 
+  onPractice, 
+  onStateChange,
+  onOpenPrep,
+  evidence, 
+  isLoading 
+}) => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [showProgression, setShowProgression] = useState(false);
   
   const formatDeadline = (deadline) => {
     if (!deadline) return 'End of week';
@@ -198,12 +213,42 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence
     return deadline < new Date();
   }, [rep.deadline, rep.status]);
   
+  // Check if prep is required but not done
+  const needsPrep = useMemo(() => {
+    if (rep.status !== 'committed') return false;
+    return isPrepRequired(rep.repType, rep.riskLevel) && !rep.preparedAt;
+  }, [rep.repType, rep.riskLevel, rep.status, rep.preparedAt]);
+  
   const handleCancelSubmit = () => {
     if (cancelReason.trim()) {
       onCancel(rep.id, cancelReason.trim());
       setShowCancelModal(false);
       setCancelReason('');
     }
+  };
+  
+  // Handle state change - route through prep if needed
+  const handleStateChange = (repId, newState) => {
+    if (newState === 'executed' && needsPrep) {
+      // Open prep modal instead of executing directly
+      onOpenPrep?.(rep);
+      return;
+    }
+    
+    if (newState === 'prepared') {
+      // Open prep modal
+      onOpenPrep?.(rep);
+      return;
+    }
+    
+    if (newState === 'debriefed') {
+      // Route to debrief
+      onAddDebrief?.(rep);
+      return;
+    }
+    
+    // Direct state transition
+    onStateChange?.(repId, newState);
   };
   
   // States that allow taking action (complete/cancel)
@@ -234,6 +279,13 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence
             </div>
           </div>
           
+          {/* Prep Requirement Badge */}
+          {canTakeAction && (
+            <div className="mb-3">
+              <PrepRequirementBadge repType={rep.repType} riskLevel={rep.riskLevel} size="small" />
+            </div>
+          )}
+          
           {/* Notes */}
           {rep.notes && (
             <p className="text-sm text-gray-600 mb-3 italic">"{rep.notes}"</p>
@@ -254,17 +306,51 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence
             </div>
           )}
           
-          {/* Action Buttons - Active/Missed Reps */}
+          {/* Progression Tracker - Collapsible (Active reps only) */}
           {canTakeAction && (
-            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-              <Button
-                onClick={() => onComplete(rep.id)}
-                disabled={isLoading}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2"
+            <div className="mb-3">
+              <button
+                onClick={() => setShowProgression(!showProgression)}
+                className="text-xs text-corporate-navy hover:underline flex items-center gap-1"
               >
-                <Check className="w-4 h-4 mr-1" />
-                Complete
-              </Button>
+                {showProgression ? 'Hide' : 'Show'} Progress Tracker
+                <ChevronRight className={`w-3 h-3 transition-transform ${showProgression ? 'rotate-90' : ''}`} />
+              </button>
+              {showProgression && (
+                <div className="mt-2">
+                  <RepProgressionTracker
+                    rep={rep}
+                    onStateChange={handleStateChange}
+                    showActions={true}
+                    compact={false}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Quick Action Buttons - Active/Missed Reps */}
+          {canTakeAction && !showProgression && (
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+              {needsPrep ? (
+                <Button
+                  onClick={() => onOpenPrep?.(rep)}
+                  disabled={isLoading}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2"
+                >
+                  <FileText className="w-4 h-4 mr-1" />
+                  Complete Prep First
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => handleStateChange(rep.id, 'executed')}
+                  disabled={isLoading}
+                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2"
+                >
+                  <Check className="w-4 h-4 mr-1" />
+                  Mark Executed
+                </Button>
+              )}
               <Button
                 onClick={() => setShowCancelModal(true)}
                 disabled={isLoading}
@@ -276,8 +362,22 @@ const RepCard = ({ rep, onComplete, onCancel, onAddDebrief, onPractice, evidence
             </div>
           )}
           
-          {/* Completed/Executed Rep Actions - Debrief & Quality */}
-          {(rep.status === 'debriefed' || rep.status === 'executed' || rep.status === 'completed') && (
+          {/* Executed Rep - Needs Debrief */}
+          {rep.status === 'executed' && (
+            <div className="pt-2 border-t border-gray-100">
+              <Button
+                onClick={() => onAddDebrief?.(rep)}
+                disabled={isLoading}
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-2"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Add Debrief to Complete
+              </Button>
+            </div>
+          )}
+          
+          {/* Completed/Debriefed Rep - Show Evidence */}
+          {(rep.status === 'debriefed' || rep.status === 'completed') && (
             <div className="pt-2 border-t border-gray-100">
               {evidence ? (
                 <>
@@ -577,6 +677,46 @@ const Conditioning = () => {
     await loadData();
   };
   
+  // Sprint 2: State transition handler
+  const [prepModalRep, setPrepModalRep] = useState(null);
+  
+  const handleStateChange = async (repId, newState) => {
+    if (!userId || !db) return;
+    
+    try {
+      setIsSubmitting(true);
+      await conditioningService.transitionRepState(db, userId, repId, newState);
+      await loadData();
+    } catch (err) {
+      console.error('Error transitioning rep state:', err);
+      setError(`Failed to update rep state: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Sprint 2: Open prep modal
+  const handleOpenPrep = (rep) => {
+    setPrepModalRep(rep);
+  };
+  
+  // Sprint 2: Submit prep and transition to prepared state
+  const handlePrepSubmit = async (prepData) => {
+    if (!userId || !db || !prepModalRep) return;
+    
+    try {
+      setIsSubmitting(true);
+      await conditioningService.saveRepPrep(db, userId, prepData.repId, prepData);
+      setPrepModalRep(null);
+      await loadData();
+    } catch (err) {
+      console.error('Error saving prep:', err);
+      setError('Failed to save prep. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   // No cohort check
   if (!cohortId) {
     return (
@@ -677,6 +817,9 @@ const Conditioning = () => {
                 rep={rep}
                 onComplete={handleCompleteRep}
                 onCancel={handleCancelRep}
+                onStateChange={handleStateChange}
+                onOpenPrep={handleOpenPrep}
+                onAddDebrief={(rep) => setEvidenceModalRep(rep)}
                 isLoading={isSubmitting}
               />
             ))
@@ -693,6 +836,8 @@ const Conditioning = () => {
                 rep={rep}
                 onComplete={() => {}}
                 onCancel={() => {}}
+                onStateChange={handleStateChange}
+                onOpenPrep={handleOpenPrep}
                 onAddDebrief={(rep) => setEvidenceModalRep(rep)}
                 onPractice={handleStartPractice}
                 evidence={evidenceMap[rep.id]}
@@ -731,6 +876,17 @@ const Conditioning = () => {
           rep={evidenceModalRep}
           userId={userId}
           onSubmitted={handleEvidenceSubmitted}
+        />
+      )}
+      
+      {/* High Risk Prep Modal */}
+      {prepModalRep && (
+        <HighRiskPrepModal
+          isOpen={true}
+          onClose={() => setPrepModalRep(null)}
+          rep={prepModalRep}
+          onSubmit={handlePrepSubmit}
+          isLoading={isSubmitting}
         />
       )}
     </div>

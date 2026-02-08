@@ -407,6 +407,108 @@ export const conditioningService = {
     return newRepId;
   },
   
+  /**
+   * Transition rep to a new state (Sprint 2: State Machine)
+   * Validates transition is allowed and updates timestamps
+   */
+  transitionRepState: async (db, userId, repId, newState, additionalData = {}) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    const currentState = currentRep.status;
+    
+    // Validate transition is allowed
+    const allowedTransitions = STATE_TRANSITIONS[currentState] || [];
+    if (!allowedTransitions.includes(newState)) {
+      throw new Error(`Cannot transition from ${currentState} to ${newState}`);
+    }
+    
+    // Build update object
+    const updateData = {
+      status: newState,
+      updatedAt: serverTimestamp()
+    };
+    
+    // Add state-specific timestamps
+    switch (newState) {
+      case 'prepared':
+        updateData.preparedAt = serverTimestamp();
+        break;
+      case 'scheduled':
+        updateData.scheduledAt = serverTimestamp();
+        if (additionalData.scheduledFor) {
+          updateData.scheduledFor = additionalData.scheduledFor;
+        }
+        break;
+      case 'executed':
+        updateData.executedAt = serverTimestamp();
+        break;
+      case 'debriefed':
+        updateData.debriefedAt = serverTimestamp();
+        updateData.completedAt = serverTimestamp(); // Legacy compatibility
+        break;
+      case 'missed':
+        updateData.missedAt = serverTimestamp();
+        break;
+      case 'canceled':
+        if (!additionalData.cancelReason) {
+          throw new Error('Cancel reason required');
+        }
+        updateData.canceledAt = serverTimestamp();
+        updateData.cancelReason = additionalData.cancelReason;
+        break;
+    }
+    
+    // Merge any additional data (like prep responses)
+    if (additionalData.prep) {
+      updateData.prep = additionalData.prep;
+    }
+    
+    await updateDoc(repRef, updateData);
+    
+    // Update weekly stats for terminal states
+    if (['debriefed', 'missed', 'canceled'].includes(newState)) {
+      await conditioningService.updateWeeklyStats(db, userId, currentRep.weekId, currentRep.cohortId);
+    }
+    
+    return true;
+  },
+  
+  /**
+   * Save prep data for a rep (Sprint 2: Risk-Based Prep)
+   * Also transitions to 'prepared' state
+   */
+  saveRepPrep: async (db, userId, repId, prepData) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    
+    // Can only prep from committed state
+    if (currentRep.status !== 'committed') {
+      throw new Error('Can only prep a committed rep');
+    }
+    
+    await updateDoc(repRef, {
+      status: 'prepared',
+      preparedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      prep: {
+        rubricResponses: prepData.rubricResponses || {},
+        riskResponses: prepData.riskResponses || {},
+        inputMethod: prepData.inputMethod || 'manual',
+        savedAt: serverTimestamp()
+      }
+    });
+    
+    return true;
+  },
+  
   // ============================================
   // QUERY OPERATIONS
   // ============================================

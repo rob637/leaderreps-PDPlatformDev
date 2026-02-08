@@ -9,3 +9,7 @@ export { default as TrainerNudgeNotification } from './TrainerNudgeNotification'
 // New components for 16 Rep Types
 export { default as RepTypePicker, RepTypeBadge } from './RepTypePicker';
 export { default as CommitRepForm } from './CommitRepForm';
+
+// Sprint 2: States + Progression
+export { default as RepProgressionTracker, PrepRequirementBadge, STATE_CONFIG, PROGRESSION_PATH } from './RepProgressionTracker';
+export { default as HighRiskPrepModal } from './HighRiskPrepModal';
