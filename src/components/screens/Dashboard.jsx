@@ -38,20 +38,19 @@ const DASHBOARD_FEATURES = [
   // 'baseline-assessment', // REMOVED - now in ThisWeeksActionsWidget as INTERACTIVE
   'welcome-message',
   'daily-quote',
-  // V1 CONDITIONING SIMPLIFICATION: Hide AM/PM bookends, scorecard
-  // 'am-bookend-header',   // HIDDEN for V1 - reduces cognitive load
+  'am-bookend-header',
   'weekly-focus',
-  // 'grounding-rep',       // HIDDEN for V1 - part of AM bookend
-  // 'win-the-day',         // HIDDEN for V1 - part of AM bookend
+  'grounding-rep',
+  'win-the-day',
   'conditioning',        // Conditioning widget - PRIMARY FOCUS for V1
   'daily-plan',
   // 'daily-leader-reps', // REMOVED - replaced by conditioning widget
-  'this-weeks-actions',  // KEEP - guides user through execution
+  'this-weeks-actions',
   'notifications',
-  // 'pm-bookend-header',   // HIDDEN for V1 - reduces cognitive load
-  // 'progress-feedback',   // HIDDEN for V1 - part of PM bookend
-  // 'pm-bookend',          // HIDDEN for V1 - reduces cognitive load
-  // 'scorecard'            // HIDDEN for V1 - reduces cognitive load
+  'pm-bookend-header',
+  'progress-feedback',
+  'pm-bookend',
+  'scorecard'
 ];
 
 const Dashboard = () => {
