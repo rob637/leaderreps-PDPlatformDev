@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import conditioningService, { REP_STATUS, getCurrentWeekId, QUALITY_DIMENSIONS } from '../../services/conditioningService';
 import { Card } from '../ui';
-import { TrainerNudgePanel } from '../conditioning';
+import { TrainerNudgePanel, CoachPromptsPanel } from '../conditioning';
 import { 
   Users, CheckCircle, AlertTriangle, Clock, RefreshCw,
   Target, ChevronDown, ChevronUp, User, Calendar,
@@ -505,6 +505,22 @@ const ConditioningDashboard = () => {
             trainerId={trainerId}
             cohortId={selectedCohortId}
             cohortUsers={userSummaries}
+          />
+        </div>
+      )}
+      
+      {/* Coach Prompts Panel (Sprint 5) */}
+      {selectedCohortId && userSummaries.length > 0 && (
+        <div className="mb-6">
+          <CoachPromptsPanel
+            db={db}
+            cohortId={selectedCohortId}
+            userIds={userSummaries.map(u => u.userId)}
+            userEmails={userSummaries.reduce((acc, u) => ({ ...acc, [u.userId]: u.email }), {})}
+            onSendNudge={(userId, message, pattern) => {
+              // Use training nudge panel's functionality
+              console.log('Coach prompt nudge:', { userId, message, pattern: pattern.name });
+            }}
           />
         </div>
       )}

@@ -108,6 +108,61 @@ export const QUALITY_DIMENSIONS = {
   REFLECTION: 'reflection'                   // Did they reflect on the outcome?
 };
 
+// ============================================
+// PHASE 7: COACH/TRAINER PROMPTS
+// ============================================
+
+/**
+ * COACH_PROMPTS - Pattern definitions for trainer coaching prompts
+ * Each pattern has: id, name, description, detectionRule, coachingQuestion, priority
+ */
+export const COACH_PROMPTS = {
+  low_risk_pattern: {
+    id: 'low_risk_pattern',
+    name: 'Comfort Zone Loop',
+    description: 'Same skill at low difficulty ≥3 times in 4 weeks',
+    priority: 'medium',
+    coachingQuestion: 'What would pushing to a harder edge look like for you right now?',
+    nudgeMessage: "I've noticed you're consistently executing well on familiar reps. Ready to stretch into something more challenging?"
+  },
+  
+  avoidance_pattern: {
+    id: 'avoidance_pattern',
+    name: 'Delayed Execution',
+    description: 'Commits early in week, executes late (after Thursday)',
+    priority: 'medium',
+    coachingQuestion: 'What makes you wait until late in the week to execute?',
+    nudgeMessage: "I see a pattern of committing early but executing late. What's getting in the way of acting sooner?"
+  },
+  
+  prep_strong_followthrough_weak: {
+    id: 'prep_strong_followthrough_weak',
+    name: 'Prep Without Action',
+    description: 'High prep completion rate, but low execution rate',
+    priority: 'high',
+    coachingQuestion: 'You prepare well but something blocks execution. What happens between prep and the conversation?',
+    nudgeMessage: "Your prep is thorough, but the rep isn't happening. What's the real barrier?"
+  },
+  
+  no_close_pattern: {
+    id: 'no_close_pattern',
+    name: 'Missing the Close',
+    description: 'No commitment or next step in ≥50% of debriefs',
+    priority: 'medium',
+    coachingQuestion: 'How could you incorporate a clearer ask or next step into your conversations?',
+    nudgeMessage: "Your reps often lack a defined next step. What commitment could you ask for?"
+  },
+  
+  consecutive_misses: {
+    id: 'consecutive_misses',
+    name: 'Consecutive Weeks Missed',
+    description: '≥2 missed reps in last 4 weeks',
+    priority: 'critical',
+    coachingQuestion: "What's blocking your ability to do reps right now? Let's problem-solve together.",
+    nudgeMessage: "You've missed multiple weeks. Let's connect and figure out what's going on."
+  }
+};
+
 // Debrief prompts for Level 1 (same day)
 export const LEVEL_1_PROMPTS = [
   { id: 'what_said', label: 'What I said', prompt: 'What did you actually say? (exact language or close paraphrase)' },
@@ -1443,6 +1498,255 @@ export const conditioningService = {
     });
     
     return true;
+  },
+  
+  // ============================================
+  // PHASE 7: COACH PROMPT DETECTION
+  // ============================================
+  
+  /**
+   * Get all reps for a user within a date range
+   */
+  getRepsInRange: async (db, userId, cohortId, weeksBack = 4) => {
+    const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+    
+    // Calculate the start date (weeksBack weeks ago)
+    const now = timeService.getNow();
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - (weeksBack * 7));
+    
+    const q = query(
+      repsRef,
+      where('cohortId', '==', cohortId),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    const reps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Filter by date range in memory (Firestore compound queries are limited)
+    return reps.filter(rep => {
+      const createdAt = rep.createdAt?.toDate?.() || new Date(rep.createdAt);
+      return createdAt >= startDate;
+    });
+  },
+  
+  /**
+   * Detect low_risk_pattern: Same skill + low difficulty ≥3 times in 4 weeks
+   */
+  detectLowRiskPattern: (reps) => {
+    // Group by repType
+    const byType = {};
+    reps.forEach(rep => {
+      if (rep.difficulty === 'level_1' || rep.difficulty === 'low') {
+        const key = rep.repType;
+        byType[key] = (byType[key] || 0) + 1;
+      }
+    });
+    
+    // Find any type repeated 3+ times
+    const repeatedTypes = Object.entries(byType)
+      .filter(([_, count]) => count >= 3)
+      .map(([type, count]) => ({ type, count }));
+    
+    if (repeatedTypes.length > 0) {
+      return {
+        detected: true,
+        pattern: 'low_risk_pattern',
+        details: repeatedTypes,
+        summary: `Repeated ${repeatedTypes[0].type} at low difficulty ${repeatedTypes[0].count} times`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * Detect avoidance_pattern: Commits Monday, executes after Thursday
+   */
+  detectAvoidancePattern: (reps) => {
+    let lateExecutionCount = 0;
+    let totalExecuted = 0;
+    
+    reps.forEach(rep => {
+      if (rep.status === REP_STATUS.DEBRIEFED || rep.status === REP_STATUS.EXECUTED) {
+        totalExecuted++;
+        
+        const createdAt = rep.createdAt?.toDate?.() || new Date(rep.createdAt);
+        const executedAt = rep.executedAt?.toDate?.() || rep.debriefedAt?.toDate?.() || null;
+        
+        if (executedAt && createdAt) {
+          const createdDay = createdAt.getDay(); // 0=Sun, 1=Mon, etc
+          const executedDay = executedAt.getDay();
+          
+          // Committed early (Sun-Tue = 0-2), executed late (Fri-Sat = 5-6)
+          if (createdDay <= 2 && executedDay >= 5) {
+            lateExecutionCount++;
+          }
+        }
+      }
+    });
+    
+    // Pattern if ≥50% are late executions
+    if (totalExecuted >= 2 && lateExecutionCount / totalExecuted >= 0.5) {
+      return {
+        detected: true,
+        pattern: 'avoidance_pattern',
+        details: { lateExecutionCount, totalExecuted },
+        summary: `${lateExecutionCount} of ${totalExecuted} reps executed late in week`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * Detect prep_strong_followthrough_weak: High prep, low execution
+   */
+  detectPrepFollowthroughPattern: (reps) => {
+    const prepCompleted = reps.filter(r => r.prep && Object.keys(r.prep).length > 0).length;
+    const executed = reps.filter(r => 
+      r.status === REP_STATUS.DEBRIEFED || 
+      r.status === REP_STATUS.EXECUTED
+    ).length;
+    const totalCommitted = reps.length;
+    
+    if (totalCommitted < 3) return { detected: false };
+    
+    const prepRate = prepCompleted / totalCommitted;
+    const executionRate = executed / totalCommitted;
+    
+    // High prep (≥70%) but low execution (≤50%)
+    if (prepRate >= 0.7 && executionRate <= 0.5) {
+      return {
+        detected: true,
+        pattern: 'prep_strong_followthrough_weak',
+        details: { prepRate: Math.round(prepRate * 100), executionRate: Math.round(executionRate * 100) },
+        summary: `${Math.round(prepRate * 100)}% prep rate, but only ${Math.round(executionRate * 100)}% execution`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * Detect no_close_pattern: Missing close/next step in ≥50% of debriefs
+   */
+  detectNoClosePattern: (reps) => {
+    const debriefedReps = reps.filter(r => r.status === REP_STATUS.DEBRIEFED && r.evidence);
+    
+    if (debriefedReps.length < 3) return { detected: false };
+    
+    let missingCloseCount = 0;
+    debriefedReps.forEach(rep => {
+      const evidence = rep.evidence;
+      // Check structured evidence for commitment field
+      const hasClose = evidence.structured?.commitment || 
+                       evidence.commitment ||
+                       (evidence.reflection && evidence.reflection.toLowerCase().includes('next'));
+      
+      if (!hasClose || (typeof hasClose === 'string' && hasClose.trim().length < 10)) {
+        missingCloseCount++;
+      }
+    });
+    
+    if (missingCloseCount / debriefedReps.length >= 0.5) {
+      return {
+        detected: true,
+        pattern: 'no_close_pattern',
+        details: { missingCloseCount, totalDebriefed: debriefedReps.length },
+        summary: `${missingCloseCount} of ${debriefedReps.length} debriefs missing clear next step`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * Detect consecutive_misses: ≥2 missed reps in last 4 weeks
+   */
+  detectConsecutiveMisses: (reps) => {
+    const missedReps = reps.filter(r => r.status === REP_STATUS.MISSED);
+    
+    if (missedReps.length >= 2) {
+      return {
+        detected: true,
+        pattern: 'consecutive_misses',
+        details: { missedCount: missedReps.length },
+        summary: `${missedReps.length} missed reps in last 4 weeks`
+      };
+    }
+    return { detected: false };
+  },
+  
+  /**
+   * Run all pattern detections for a user
+   * Returns array of detected patterns with coaching prompts
+   */
+  detectCoachPrompts: async (db, userId, cohortId) => {
+    const reps = await conditioningService.getRepsInRange(db, userId, cohortId, 4);
+    
+    if (!reps || reps.length === 0) {
+      return { detectedPatterns: [], totalReps: 0 };
+    }
+    
+    const detectors = [
+      { fn: conditioningService.detectLowRiskPattern, prompt: COACH_PROMPTS.low_risk_pattern },
+      { fn: conditioningService.detectAvoidancePattern, prompt: COACH_PROMPTS.avoidance_pattern },
+      { fn: conditioningService.detectPrepFollowthroughPattern, prompt: COACH_PROMPTS.prep_strong_followthrough_weak },
+      { fn: conditioningService.detectNoClosePattern, prompt: COACH_PROMPTS.no_close_pattern },
+      { fn: conditioningService.detectConsecutiveMisses, prompt: COACH_PROMPTS.consecutive_misses }
+    ];
+    
+    const detectedPatterns = [];
+    
+    for (const { fn, prompt } of detectors) {
+      const result = fn(reps);
+      if (result.detected) {
+        detectedPatterns.push({
+          ...prompt,
+          detection: result
+        });
+      }
+    }
+    
+    // Sort by priority (critical first)
+    const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+    detectedPatterns.sort((a, b) => (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3));
+    
+    return {
+      detectedPatterns,
+      totalReps: reps.length,
+      analyzedWeeks: 4
+    };
+  },
+  
+  /**
+   * Get coach prompts for all users in a cohort (trainer dashboard)
+   */
+  getCohortCoachPrompts: async (db, cohortId, userIds) => {
+    const results = [];
+    
+    for (const userId of userIds) {
+      try {
+        const { detectedPatterns, totalReps } = await conditioningService.detectCoachPrompts(db, userId, cohortId);
+        
+        if (detectedPatterns.length > 0) {
+          results.push({
+            userId,
+            patterns: detectedPatterns,
+            totalReps,
+            topPattern: detectedPatterns[0]
+          });
+        }
+      } catch (err) {
+        console.error(`Error detecting patterns for user ${userId}:`, err);
+      }
+    }
+    
+    // Sort by priority of top pattern
+    const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+    results.sort((a, b) => 
+      (priorityOrder[a.topPattern?.priority] || 3) - (priorityOrder[b.topPattern?.priority] || 3)
+    );
+    
+    return results;
   }
 };
 

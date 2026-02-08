@@ -17,3 +17,6 @@ export { default as HighRiskPrepModal } from './HighRiskPrepModal';
 
 // Sprint 4: Missed Rep Debrief
 export { default as MissedRepDebriefModal } from './MissedRepDebriefModal';
+
+// Sprint 5: Coach Prompts
+export { default as CoachPromptsPanel } from './CoachPromptsPanel';
