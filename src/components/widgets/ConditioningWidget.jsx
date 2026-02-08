@@ -128,7 +128,7 @@ const ConditioningWidget = ({ helpText }) => {
         icon={Dumbbell} 
         accent="TEAL"
         helpText={helpText}
-        data-gazoo-step="conditioning"
+        data-repup-step="conditioning"
       >
         <div className="text-center py-2">
           <Target className="w-8 h-8 text-slate-300 mx-auto mb-2" />
@@ -153,7 +153,7 @@ const ConditioningWidget = ({ helpText }) => {
         icon={Dumbbell} 
         accent="TEAL"
         helpText={helpText}
-        data-gazoo-step="conditioning"
+        data-repup-step="conditioning"
         variant="interactive"
         onClick={() => setIsPanelOpen(true)}
       >

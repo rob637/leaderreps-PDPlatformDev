@@ -1,5 +1,5 @@
-// src/components/rep/GazooSpotlight.jsx
-// The Great Gazoo - Guided Spotlight Mode
+// src/components/rep/RepUpSpotlight.jsx
+// RepUp - Guided Spotlight Mode
 // Walks users through their dashboard with an interactive spotlight tour
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -11,7 +11,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Step definitions for the guided tour
-// Each step targets an element with data-gazoo-step="stepId"
+// Each step targets an element with data-repup-step="stepId"
 const TOUR_STEPS = {
   dashboard: [
     {
@@ -20,7 +20,7 @@ const TOUR_STEPS = {
       description: "These are your 3 most important things to accomplish today. Be specific!",
       tip: "Pro tip: Start with what you're avoiding - those are often the most impactful.",
       action: "Set at least one win, then tap Next",
-      position: 'right' // Where Gazoo panel appears relative to element
+      position: 'right' // Where RepUp panel appears relative to element
     },
     {
       id: 'conditioning',
@@ -49,7 +49,7 @@ const TOUR_STEPS = {
   ]
 };
 
-// Calculate position for Gazoo panel based on element location
+// Calculate position for RepUp panel based on element location
 const calculatePanelPosition = (elementRect, preferredPosition, windowWidth, windowHeight) => {
   const panelWidth = 320;
   const panelHeight = 280;
@@ -86,7 +86,7 @@ const calculatePanelPosition = (elementRect, preferredPosition, windowWidth, win
   return position;
 };
 
-const GazooSpotlight = ({ 
+const RepUpSpotlight = ({ 
   isOpen, 
   onClose, 
   screenContext = 'dashboard',
@@ -105,7 +105,7 @@ const GazooSpotlight = ({
   const updateElementPosition = useCallback(() => {
     if (!currentStep) return;
     
-    const element = document.querySelector(`[data-gazoo-step="${currentStep.id}"]`);
+    const element = document.querySelector(`[data-repup-step="${currentStep.id}"]`);
     if (element) {
       const rect = element.getBoundingClientRect();
       setElementRect(rect);
@@ -148,7 +148,7 @@ const GazooSpotlight = ({
   useEffect(() => {
     if (!isOpen || !currentStep) return;
     
-    const element = document.querySelector(`[data-gazoo-step="${currentStep.id}"]`);
+    const element = document.querySelector(`[data-repup-step="${currentStep.id}"]`);
     if (element) {
       // Scroll element into view with some padding
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -242,7 +242,7 @@ const GazooSpotlight = ({
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="absolute rounded-xl ring-4 ring-emerald-400/60 shadow-[0_0_40px_rgba(16,185,129,0.4)]"
+                className="absolute rounded-xl ring-4 ring-corporate-teal/60 shadow-[0_0_40px_rgba(13,148,136,0.4)]"
                 style={{
                   left: elementRect.left - 8,
                   top: elementRect.top - 8,
@@ -275,7 +275,7 @@ const GazooSpotlight = ({
             }}
           />
           
-          {/* Gazoo coaching panel */}
+          {/* RepUp coaching panel */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ 
@@ -284,7 +284,7 @@ const GazooSpotlight = ({
               y: 0
             }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed z-[10000] w-80 bg-gradient-to-br from-emerald-600 via-emerald-500 to-lime-500 rounded-2xl shadow-2xl"
+            className="fixed z-[10000] w-80 bg-gradient-to-br from-corporate-navy via-corporate-teal to-corporate-teal rounded-2xl shadow-2xl"
             style={{
               top: panelPosition.top,
               left: panelPosition.left,
@@ -299,7 +299,7 @@ const GazooSpotlight = ({
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <span className="text-white font-bold text-sm">The Great Gazoo</span>
+                    <span className="text-white font-bold text-sm">RepUp</span>
                     <div className="text-white/70 text-xs">
                       Step {currentStepIndex + 1} of {steps.length}
                     </div>
@@ -350,7 +350,7 @@ const GazooSpotlight = ({
               
               {/* Action prompt */}
               <div className="flex items-center gap-2 text-white/80 text-sm mb-4">
-                <Play className="w-4 h-4 text-lime-200" />
+                <Play className="w-4 h-4 text-corporate-teal" />
                 <span>{currentStep.action}</span>
               </div>
             </div>
@@ -372,7 +372,7 @@ const GazooSpotlight = ({
               
               <button
                 onClick={handleNext}
-                className="flex items-center gap-1 text-sm px-4 py-2 bg-white text-emerald-700 font-semibold rounded-lg hover:bg-white/90 transition-all shadow-lg"
+                className="flex items-center gap-1 text-sm px-4 py-2 bg-white text-corporate-navy font-semibold rounded-lg hover:bg-white/90 transition-all shadow-lg"
               >
                 {currentStepIndex === steps.length - 1 ? (
                   <>
@@ -395,4 +395,4 @@ const GazooSpotlight = ({
   );
 };
 
-export default GazooSpotlight;
+export default RepUpSpotlight;

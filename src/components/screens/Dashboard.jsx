@@ -624,15 +624,15 @@ const Dashboard = () => {
     'weekly-focus': () => shouldShow('weekly-focus', true) ? <WidgetRenderer widgetId="weekly-focus" scope={scope} /> : null,
     'lis-maker': () => shouldShow('lis-maker', false) ? <WidgetRenderer widgetId="lis-maker" scope={scope} /> : null,
     'grounding-rep': () => shouldShow('grounding-rep', false) ? <WidgetRenderer widgetId="grounding-rep" scope={scope} /> : null,
-    'win-the-day': () => shouldShow('win-the-day', true) ? <div data-gazoo-step="win-the-day"><WidgetRenderer widgetId="win-the-day" scope={scope} /></div> : null,
+    'win-the-day': () => shouldShow('win-the-day', true) ? <div data-repup-step="win-the-day"><WidgetRenderer widgetId="win-the-day" scope={scope} /></div> : null,
     'daily-plan': () => currentDayNumber >= 1 ? <WidgetRenderer widgetId="daily-plan" scope={scope} /> : null,
     'conditioning': () => <ConditioningWidget helpText={getWidgetHelpText('conditioning')} />,  // NEW: Conditioning with slide-in panel
     'daily-leader-reps': () => null,  // DISABLED - replaced by conditioning widget
-    'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <div data-gazoo-step="this-weeks-actions"><WidgetRenderer widgetId="this-weeks-actions" scope={scope} /></div> : null,
+    'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <div data-repup-step="this-weeks-actions"><WidgetRenderer widgetId="this-weeks-actions" scope={scope} /></div> : null,
     'notifications': () => shouldShow('notifications', false) ? <WidgetRenderer widgetId="notifications" scope={scope} /> : null,
     'pm-bookend-header': () => shouldShow('pm-bookend-header', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
     'progress-feedback': () => shouldShow('progress-feedback', true) ? <WidgetRenderer widgetId="progress-feedback" scope={scope} /> : null,
-    'pm-bookend': () => shouldShow('pm-bookend', true) ? <div data-gazoo-step="pm-bookend"><WidgetRenderer widgetId="pm-bookend" scope={scope} /></div> : null,
+    'pm-bookend': () => shouldShow('pm-bookend', true) ? <div data-repup-step="pm-bookend"><WidgetRenderer widgetId="pm-bookend" scope={scope} /></div> : null,
     'scorecard': () => shouldShow('scorecard', true) ? <WidgetRenderer widgetId="scorecard" scope={scope} /> : null,
     
     // Legacy / Optional

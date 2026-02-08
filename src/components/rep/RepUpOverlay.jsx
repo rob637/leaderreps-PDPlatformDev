@@ -1,5 +1,5 @@
-// src/components/rep/GazooOverlay.jsx
-// The Great Gazoo - Active AI Coach that guides users AND answers questions
+// src/components/rep/RepUpOverlay.jsx
+// RepUp - Active AI Coach that guides users AND answers questions
 // Uses REAL AI for coaching responses
 
 import React, { useState, useMemo, useRef } from 'react';
@@ -14,7 +14,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
-import GazooSpotlight from './GazooSpotlight';
+import RepUpSpotlight from './RepUpSpotlight';
 
 // CLEAR Feedback Method framework
 const CLEAR_METHOD = {
@@ -230,16 +230,16 @@ const generateCLEARResponse = (question) => {
   };
 };
 
-// Gazoo's personality
-const GAZOO_INTROS = [
-  "Alright, dum-dum, here's what to do:",
-  "Listen up! Your next steps:",
-  "Pay attention now:",
-  "Here's your mission:",
+// RepUp's personality
+const REPUP_INTROS = [
+  "Here's how to approach this:",
+  "Let's break this down:",
+  "Your next steps:",
+  "Here's the game plan:",
   "Focus on this:"
 ];
 
-const GazooOverlay = ({ onClose }) => {
+const RepUpOverlay = ({ onClose }) => {
   const { user, navigate } = useAppServices();
   const { currentScreen } = useNavigation();
   const { 
@@ -285,7 +285,7 @@ const GazooOverlay = ({ onClose }) => {
   const instructions = guidance.getInstructions(context);
   const GuidanceIcon = guidance.icon;
 
-  const intro = GAZOO_INTROS[Math.floor(Math.random() * GAZOO_INTROS.length)];
+  const intro = REPUP_INTROS[Math.floor(Math.random() * REPUP_INTROS.length)];
 
   // Handle asking a question - REAL AI
   const handleAskQuestion = async () => {
@@ -305,12 +305,12 @@ const GazooOverlay = ({ onClose }) => {
       const functions = getFunctions();
       const reppyCoach = httpsCallable(functions, 'reppyCoach');
       
-      // Build coaching context for The Great Gazoo
-      const coachingContext = `You are "The Great Gazoo" - a wise, slightly playful AI leadership coach.
+      // Build coaching context for RepUp
+      const coachingContext = `You are "RepUp" - a professional AI leadership coach and your partner in developing leadership skills.
       
 Your personality:
-- Confident and direct, but supportive
-- Use occasional humor but stay professional
+- Confident, direct, and supportive
+- Professional yet approachable
 - Reference the CLEAR method (Context, Listen, Explore, Action, Review) when giving feedback advice
 - Keep responses concise (2-4 paragraphs max)
 - End with an actionable suggestion or thought-provoking question
@@ -330,7 +330,7 @@ Help them with their question. Be practical and actionable.`;
         context: {
           userName: firstName,
           userRole: 'leader',
-          sessionType: 'gazoo-coach',
+          sessionType: 'repup-coach',
           customContext: coachingContext,
         },
       });
@@ -346,7 +346,7 @@ Help them with their question. Be practical and actionable.`;
       });
       
     } catch (error) {
-      console.error('Gazoo AI error:', error);
+      console.error('RepUp AI error:', error);
       setAiError('Having trouble connecting to AI. Try again?');
       // Fallback to CLEAR method response
       const fallback = generateCLEARResponse(question);
@@ -365,12 +365,12 @@ Help them with their question. Be practical and actionable.`;
           animate={{ scale: 1, opacity: 1 }}
           onClick={() => setIsMinimized(false)}
           className="fixed bottom-6 right-6 z-[90] flex items-center gap-2 px-4 py-3 
-                     bg-gradient-to-r from-lime-500 to-emerald-600 text-white
+                     bg-gradient-to-r from-corporate-navy to-corporate-teal text-white
                      rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105
                      border-2 border-white/30"
         >
           <Sparkles className="w-5 h-5" />
-          <span className="font-bold">Gazoo</span>
+          <span className="font-bold">RepUp</span>
           <span className="flex gap-0.5">
             <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
             <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
@@ -379,7 +379,7 @@ Help them with their question. Be practical and actionable.`;
         </motion.button>
         
         {/* Spotlight Tour - can still run even when minimized */}
-        <GazooSpotlight
+        <RepUpSpotlight
           isOpen={showSpotlight}
           onClose={() => setShowSpotlight(false)}
           screenContext="dashboard"
@@ -400,25 +400,25 @@ Help them with their question. Be practical and actionable.`;
           : 'bottom-6 right-6' // Normal position
       }`}
     >
-      <div className="bg-white rounded-2xl shadow-2xl border-2 border-lime-500/20 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl border-2 border-corporate-navy/20 overflow-hidden">
         
         {/* Header - with VISIBLE buttons */}
-        <div className="bg-gradient-to-r from-lime-500 to-emerald-600 p-4">
+        <div className="bg-gradient-to-r from-corporate-navy to-corporate-teal p-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-lg leading-tight text-white">The Great Gazoo</h3>
-                <p className="text-xs text-white/80 mt-0.5">Coaching {firstName}</p>
+                <h3 className="font-bold text-lg leading-tight text-white">RepUp</h3>
+                <p className="text-xs text-white/80 mt-0.5">Your Coach in the Pocket</p>
               </div>
             </div>
             {/* VISIBLE minimize and close buttons - solid backgrounds for visibility */}
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setIsMinimized(true)}
-                className="w-8 h-8 flex items-center justify-center bg-white text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors shadow-md font-bold text-lg"
+                className="w-8 h-8 flex items-center justify-center bg-white text-corporate-teal hover:bg-corporate-teal/10 rounded-full transition-colors shadow-md font-bold text-lg"
                 title="Minimize"
               >
                 –
@@ -426,7 +426,7 @@ Help them with their question. Be practical and actionable.`;
               <button 
                 onClick={onClose}
                 className="w-8 h-8 flex items-center justify-center bg-white text-red-500 hover:bg-red-50 rounded-full transition-colors shadow-md font-bold text-lg"
-                title="Close Gazoo"
+                title="Close RepUp"
               >
                 ✕
               </button>
@@ -440,7 +440,7 @@ Help them with their question. Be practical and actionable.`;
             onClick={() => { setMode('guide'); setCoachResponse(null); }}
             className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
               mode === 'guide' 
-                ? 'bg-lime-50 text-lime-700 border-b-2 border-lime-500' 
+                ? 'bg-corporate-navy/5 text-corporate-navy border-b-2 border-corporate-navy' 
                 : 'text-slate-500 hover:bg-slate-50'
             }`}
           >
@@ -451,7 +451,7 @@ Help them with their question. Be practical and actionable.`;
             onClick={() => setMode('coach')}
             className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
               mode === 'coach' 
-                ? 'bg-lime-50 text-lime-700 border-b-2 border-lime-500' 
+                ? 'bg-corporate-navy/5 text-corporate-navy border-b-2 border-corporate-navy' 
                 : 'text-slate-500 hover:bg-slate-50'
             }`}
           >
@@ -467,7 +467,7 @@ Help them with their question. Be practical and actionable.`;
           {mode === 'guide' && (
             <div className="p-4 space-y-3">
               {/* Screen indicator */}
-              <div className="flex items-center gap-2 text-xs text-lime-600 bg-lime-50 px-3 py-1.5 rounded-full w-fit">
+              <div className="flex items-center gap-2 text-xs text-corporate-teal bg-corporate-navy/5 px-3 py-1.5 rounded-full w-fit">
                 <GuidanceIcon className="w-3 h-3" />
                 <span className="font-medium">{guidance.title}</span>
                 <Play className="w-3 h-3" />
@@ -488,20 +488,20 @@ Help them with their question. Be practical and actionable.`;
                     transition={{ delay: idx * 0.1 }}
                     className={`flex items-start gap-3 p-2.5 rounded-lg ${
                       instruction.highlight 
-                        ? 'bg-lime-50 border border-lime-200' 
+                        ? 'bg-corporate-navy/5 border border-corporate-teal/30' 
                         : 'bg-slate-50'
                     }`}
                   >
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                       instruction.highlight 
-                        ? 'bg-lime-500 text-white' 
+                        ? 'bg-corporate-navy/50 text-white' 
                         : 'bg-slate-200 text-slate-600'
                     }`}>
                       <span className="text-xs font-bold">{idx + 1}</span>
                     </div>
                     <p className={`text-sm ${
                       instruction.highlight 
-                        ? 'font-semibold text-lime-800' 
+                        ? 'font-semibold text-corporate-navy' 
                         : 'text-slate-600'
                     }`}>
                       {instruction.text}
@@ -511,7 +511,7 @@ Help them with their question. Be practical and actionable.`;
               </div>
 
               {/* Encouragement */}
-              <div className="flex items-center justify-center gap-2 pt-2 text-sm text-emerald-600 font-medium">
+              <div className="flex items-center justify-center gap-2 pt-2 text-sm text-corporate-teal font-medium">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>You've got this!</span>
               </div>
@@ -524,8 +524,8 @@ Help them with their question. Be practical and actionable.`;
               {/* No response yet - show prompt */}
               {!coachResponse && !isTyping && (
                 <div className="text-center py-6">
-                  <div className="w-16 h-16 mx-auto bg-lime-100 rounded-full flex items-center justify-center mb-3">
-                    <MessageSquare className="w-8 h-8 text-lime-600" />
+                  <div className="w-16 h-16 mx-auto bg-corporate-teal/10 rounded-full flex items-center justify-center mb-3">
+                    <MessageSquare className="w-8 h-8 text-corporate-teal" />
                   </div>
                   <h4 className="font-semibold text-corporate-navy mb-1">Ask Me Anything</h4>
                   <p className="text-sm text-slate-500 mb-3">
@@ -536,7 +536,7 @@ Help them with their question. Be practical and actionable.`;
                       <button
                         key={i}
                         onClick={() => setUserQuestion(q)}
-                        className="text-xs px-3 py-1.5 bg-slate-100 hover:bg-lime-100 text-slate-600 hover:text-lime-700 rounded-full transition-colors"
+                        className="text-xs px-3 py-1.5 bg-slate-100 hover:bg-corporate-teal/10 text-slate-600 hover:text-corporate-navy rounded-full transition-colors"
                       >
                         {q}
                       </button>
@@ -548,8 +548,8 @@ Help them with their question. Be practical and actionable.`;
               {/* Typing indicator */}
               {isTyping && (
                 <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                  <Loader2 className="w-5 h-5 text-lime-500 animate-spin" />
-                  <span className="text-sm text-slate-600">Gazoo is thinking...</span>
+                  <Loader2 className="w-5 h-5 text-corporate-teal animate-spin" />
+                  <span className="text-sm text-slate-600">RepUp is thinking...</span>
                 </div>
               )}
 
@@ -564,7 +564,7 @@ Help them with their question. Be practical and actionable.`;
 
                   {/* AI Response */}
                   {coachResponse.isAI && (
-                    <div className="bg-gradient-to-br from-lime-50 to-emerald-50 rounded-lg p-4 border border-lime-200">
+                    <div className="bg-gradient-to-br from-blue-50 to-teal-50 rounded-lg p-4 border border-corporate-teal/30">
                       <div className="prose prose-sm max-w-none text-slate-700">
                         <p className="whitespace-pre-wrap">{coachResponse.aiResponse}</p>
                       </div>
@@ -580,7 +580,7 @@ Help them with their question. Be practical and actionable.`;
                           <span>AI unavailable - showing framework response</span>
                         </div>
                       )}
-                      <p className="text-sm font-semibold text-lime-700">{coachResponse.intro}</p>
+                      <p className="text-sm font-semibold text-corporate-navy">{coachResponse.intro}</p>
                       
                       <div className="space-y-2">
                         {coachResponse.steps.map((step, idx) => (
@@ -591,7 +591,7 @@ Help them with their question. Be practical and actionable.`;
                             transition={{ delay: idx * 0.1 }}
                             className="flex items-start gap-3 p-2.5 bg-slate-50 rounded-lg"
                           >
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-lime-500 to-emerald-600 text-white flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-corporate-navy to-corporate-teal text-white flex items-center justify-center flex-shrink-0 font-bold text-sm">
                               {step.letter}
                             </div>
                             <p className="text-sm text-slate-700">{step.text}</p>
@@ -614,7 +614,7 @@ Help them with their question. Be practical and actionable.`;
                   {/* Ask another */}
                   <button
                     onClick={() => { setCoachResponse(null); setChatHistory([]); }}
-                    className="text-sm text-lime-600 hover:text-lime-700 font-medium"
+                    className="text-sm text-corporate-teal hover:text-corporate-navy font-medium"
                   >
                     ← Ask another question
                   </button>
@@ -636,12 +636,12 @@ Help them with their question. Be practical and actionable.`;
                 onKeyDown={(e) => e.key === 'Enter' && handleAskQuestion()}
                 placeholder="Describe your leadership challenge..."
                 className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl
-                           text-sm focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-transparent"
+                           text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
               />
               <button
                 onClick={handleAskQuestion}
                 disabled={!userQuestion.trim() || isTyping}
-                className="px-4 py-2.5 bg-gradient-to-r from-lime-500 to-emerald-600 
+                className="px-4 py-2.5 bg-gradient-to-r from-corporate-navy to-corporate-teal 
                            text-white rounded-xl hover:opacity-90 transition-opacity
                            disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -656,7 +656,7 @@ Help them with their question. Be practical and actionable.`;
           <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
             <button
               onClick={() => setMode('coach')}
-              className="text-xs text-lime-600 hover:text-lime-700 font-medium flex items-center gap-1"
+              className="text-xs text-corporate-teal hover:text-corporate-navy font-medium flex items-center gap-1"
             >
               <HelpCircle className="w-3 h-3" />
               Need help?
@@ -675,9 +675,9 @@ Help them with their question. Be practical and actionable.`;
                   // Already on dashboard - start spotlight immediately
                   setShowSpotlight(true);
                 }
-                // DON'T minimize - Gazoo stays visible during guide
+                // DON'T minimize - RepUp stays visible during guide
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-lime-500 to-emerald-600 
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-corporate-navy to-corporate-teal 
                          text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
             >
               <span>Let's Go</span>
@@ -688,20 +688,20 @@ Help them with their question. Be practical and actionable.`;
       </div>
 
       {/* Spotlight Tour - always uses 'dashboard' context since tour is dashboard-focused */}
-      <GazooSpotlight
+      <RepUpSpotlight
         isOpen={showSpotlight}
         onClose={() => {
           setShowSpotlight(false);
-          // Gazoo stays open, just goes back to normal position
+          // RepUp stays open, just goes back to normal position
         }}
         screenContext="dashboard"
         onComplete={() => {
           setShowSpotlight(false);
-          // Gazoo stays open after tour completes
+          // RepUp stays open after tour completes
         }}
       />
     </motion.div>
   );
 };
 
-export default GazooOverlay;
+export default RepUpOverlay;
