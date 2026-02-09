@@ -12,7 +12,7 @@ import conditioningService, {
   STATE_TRANSITIONS
 } from '../../services/conditioningService.js';
 import { REP_TYPES, getRepType, isPrepRequired } from '../../services/repTaxonomy.js';
-import { Card, Button } from '../ui';
+import { Card, Button, PageLayout } from '../ui';
 import { 
   StructuredEvidenceModal,
   QualityAssessmentCard,
@@ -889,7 +889,11 @@ const Conditioning = ({ embedded = false, showFloatingAction }) => {
   // No cohort check
   if (!cohortId) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <PageLayout 
+        title="Conditioning" 
+        subtitle="Real leadership reps between sessions"
+        icon={Target}
+      >
         <Card className="p-6 text-center">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-lg font-bold text-corporate-navy mb-2">No Cohort Assigned</h2>
@@ -897,34 +901,36 @@ const Conditioning = ({ embedded = false, showFloatingAction }) => {
             Conditioning is available for leaders enrolled in a cohort program.
           </p>
         </Card>
-      </div>
+      </PageLayout>
     );
   }
   
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-corporate-navy animate-spin mx-auto mb-2" />
-          <p className="text-gray-600">Loading...</p>
+      <PageLayout 
+        title="Conditioning" 
+        subtitle="Real leadership reps between sessions"
+        icon={Target}
+      >
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <RefreshCw className="w-8 h-8 text-corporate-navy animate-spin mx-auto mb-2" />
+            <p className="text-gray-600">Loading...</p>
+          </div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
   
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-corporate-navy text-white p-4">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-xl font-bold">Conditioning</h1>
-          <p className="text-sm text-white/80">Real leadership reps between sessions</p>
-        </div>
-      </div>
-      
-      {/* Content */}
-      <div className="max-w-2xl mx-auto p-4">
+    <PageLayout 
+      title="Conditioning" 
+      subtitle="Real leadership reps between sessions"
+      icon={Target}
+      maxWidth="max-w-2xl"
+    >
+      <div className="space-y-4">
         {/* Error Banner */}
         {error && (
           <Card className="mb-4 border-l-4 border-l-red-500 bg-red-50">
@@ -1095,7 +1101,7 @@ const Conditioning = ({ embedded = false, showFloatingAction }) => {
           rep={detailModalRep}
         />
       )}
-    </div>
+    </PageLayout>
   );
 };
 

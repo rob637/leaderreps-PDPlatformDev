@@ -27,6 +27,10 @@ export const BREADCRUMB_MAP = {
     { label: 'Home', path: 'dashboard' },
     { label: 'Executive Reflection', path: null }
   ],
+  'conditioning': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Conditioning', path: null }
+  ],
   
   // ============================================
   // LIBRARY - Main Hub
