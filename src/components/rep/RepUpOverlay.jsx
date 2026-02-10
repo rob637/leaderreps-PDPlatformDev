@@ -252,8 +252,8 @@ const RepUpOverlay = ({ onClose }) => {
     cohortData 
   } = useDailyPlan();
 
-  // Mode: 'reps' (conditioning) or 'coach' (AI chat)
-  const [mode, setMode] = useState('reps');
+  // Mode: 'coach' (AI chat) or 'reps' (conditioning) - Coach is the primary experience
+  const [mode, setMode] = useState('coach');
   const [isMinimized, setIsMinimized] = useState(false);
   // SPOTLIGHT TOUR - STATE COMMENTED OUT FOR LATER USE
   // const [showSpotlight, setShowSpotlight] = useState(false);
@@ -460,19 +460,8 @@ Help them with their question. Be practical and actionable.`;
           </div>
         </div>
 
-        {/* Mode tabs - Reps and Coach */}
+        {/* Mode tabs - Coach (Primary) and Reps */}
         <div className="flex border-b border-slate-200">
-          <button
-            onClick={() => { setMode('reps'); setCoachResponse(null); loadReps(); }}
-            className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-              mode === 'reps' 
-                ? 'bg-corporate-teal/10 text-corporate-teal border-b-2 border-corporate-teal' 
-                : 'text-slate-500 hover:bg-slate-50'
-            }`}
-          >
-            <Dumbbell className="w-4 h-4" />
-            <span>Reps</span>
-          </button>
           <button
             onClick={() => setMode('coach')}
             className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
@@ -483,6 +472,17 @@ Help them with their question. Be practical and actionable.`;
           >
             <MessageSquare className="w-4 h-4" />
             <span>Coach</span>
+          </button>
+          <button
+            onClick={() => { setMode('reps'); setCoachResponse(null); loadReps(); }}
+            className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+              mode === 'reps' 
+                ? 'bg-corporate-teal/10 text-corporate-teal border-b-2 border-corporate-teal' 
+                : 'text-slate-500 hover:bg-slate-50'
+            }`}
+          >
+            <Dumbbell className="w-4 h-4" />
+            <span>Reps</span>
           </button>
         </div>
 
