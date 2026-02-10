@@ -625,7 +625,12 @@ const DevelopmentJourneyWidget = () => {
           }
         });
         
-        const mainActions = actions.filter(a => a.type !== 'daily_rep');
+        // Filter to required actions only (exclude daily_reps and optional items)
+        const mainActions = actions.filter(a => 
+          a.type !== 'daily_rep' && 
+          a.required !== false && 
+          a.optional !== true
+        );
         
         // Check completion status for each action and store it
         const mainActionsWithStatus = mainActions.map(a => {
@@ -677,7 +682,12 @@ const DevelopmentJourneyWidget = () => {
         }
       });
       
-      const mainPostActions = postActions.filter(a => a.type !== 'daily_rep');
+      // Filter to required actions only (exclude daily_reps and optional items)
+      const mainPostActions = postActions.filter(a => 
+        a.type !== 'daily_rep' && 
+        a.required !== false && 
+        a.optional !== true
+      );
       
       // Check completion status for each action and store it
       const mainPostActionsWithStatus = mainPostActions.map(a => {
