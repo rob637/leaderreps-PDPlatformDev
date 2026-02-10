@@ -486,8 +486,8 @@ Help them with their question. Be practical and actionable.`;
           </button>
         </div>
 
-        {/* Content area */}
-        <div className="max-h-[350px] overflow-y-auto">
+        {/* Content area - consistent height for both tabs */}
+        <div className="min-h-[280px] max-h-[350px] overflow-y-auto">
           
           {/* REPS MODE - Compact Conditioning */}
           {mode === 'reps' && (
