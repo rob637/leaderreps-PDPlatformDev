@@ -1,24 +1,27 @@
 // src/components/rep/RepUpCoach.jsx
 // Standalone AI Coach for RepUp PWA
-// Full-screen version of the coach functionality
+// Full-screen version of the coach functionality with PERSISTENT MEMORY
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
-  MessageSquare, Send, Loader2, AlertCircle, Target
+  MessageSquare, Send, Loader2, AlertCircle, Target, Brain, History, Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useLeaderProfile } from '../../hooks/useLeaderProfile';
+import { conditioningService } from '../../services/conditioningService';
 
-// Quick prompts for different scenarios
+// Quick prompts for different scenarios - diverse leadership topics
 const QUICK_PROMPTS = [
-  { label: 'Prep for a rep', prompt: 'How do I prep for a leadership rep?' },
-  { label: 'Tough feedback', prompt: 'How do I give tough feedback to a team member?' },
-  { label: 'Nervous about conversation', prompt: "I'm nervous about an upcoming difficult conversation" },
-  { label: 'Running 1:1s', prompt: 'How can I run better 1:1 meetings?' },
-  { label: 'Team conflict', prompt: 'How do I handle conflict between team members?' },
-  { label: 'Underperformance', prompt: 'How do I address underperformance on my team?' }
+  { label: 'Motivating my team', prompt: 'How do I motivate my team during a challenging project?' },
+  { label: 'Delegating effectively', prompt: 'How can I delegate more effectively without micromanaging?' },
+  { label: 'Making tough decisions', prompt: 'How do I make difficult decisions when there is no clear answer?' },
+  { label: 'Building trust', prompt: 'How do I build trust with a new team I just inherited?' },
+  { label: 'Strategic thinking', prompt: 'How can I think more strategically as a leader?' },
+  { label: 'Managing up', prompt: 'How do I manage up and influence senior leadership?' }
 ];
 
 // CLEAR-based coaching responses (fallback when AI unavailable)
@@ -118,17 +121,241 @@ const generateCLEARResponse = (question) => {
   };
 };
 
-const RepUpCoach = ({ userId: _userId }) => {
-  const { user } = useAppServices();
-  const { cohortData, currentDayData } = useDailyPlan();
+const RepUpCoach = ({ userId: _userId, onSwitchToReps }) => {
+  const { user, db } = useAppServices();
+  const { cohortData, currentDayData, weekNumber } = useDailyPlan();
+  const { profile: leaderProfile, loading: profileLoading } = useLeaderProfile();
   
   const [userQuestion, setUserQuestion] = useState('');
   const [coachResponse, setCoachResponse] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
+  const [memoryLoaded, setMemoryLoaded] = useState(false);
+  const [conversationCount, setConversationCount] = useState(0);
+  const [repHistory, setRepHistory] = useState([]);
+  const [firstChatDate, setFirstChatDate] = useState(null);
+  const [commitments, setCommitments] = useState([]);
+  const [topicPatterns, setTopicPatterns] = useState({});
   const inputRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
   const firstName = user?.displayName?.split(' ')[0] || 'Leader';
+  const userId = user?.uid;
+
+  // Analyze topic patterns from past conversations
+  const analyzeTopicPatterns = useCallback((conversations) => {
+    const patterns = {
+      feedback: 0,
+      delegation: 0,
+      motivation: 0,
+      conflict: 0,
+      performance: 0,
+      strategy: 0,
+      communication: 0,
+      trust: 0,
+      decisions: 0
+    };
+    
+    conversations.forEach(conv => {
+      const text = (conv.userMessage || '').toLowerCase();
+      if (text.match(/feedback|critique|tough conversation/)) patterns.feedback++;
+      if (text.match(/delegat|handoff|assign/)) patterns.delegation++;
+      if (text.match(/motivat|engag|inspir|morale/)) patterns.motivation++;
+      if (text.match(/conflict|disagree|tension|fight/)) patterns.conflict++;
+      if (text.match(/perform|underperform|pip|improve/)) patterns.performance++;
+      if (text.match(/strateg|vision|goal|objective|priority/)) patterns.strategy++;
+      if (text.match(/communicat|message|present|email/)) patterns.communication++;
+      if (text.match(/trust|relationship|rapport/)) patterns.trust++;
+      if (text.match(/decision|decide|choice|uncertain/)) patterns.decisions++;
+    });
+    
+    return patterns;
+  }, []);
+
+  // Extract commitments from AI responses
+  const extractCommitments = useCallback((conversations) => {
+    const commitmentPatterns = [
+      /I('ll| will) try ([^.!?]+)/gi,
+      /commit(ted)? to ([^.!?]+)/gi,
+      /going to ([^.!?]+)/gi,
+      /my action.{0,20}is ([^.!?]+)/gi
+    ];
+    
+    const foundCommitments = [];
+    conversations.slice(0, 10).forEach(conv => {
+      const userText = conv.userMessage || '';
+      commitmentPatterns.forEach(pattern => {
+        const matches = userText.matchAll(pattern);
+        for (const match of matches) {
+          foundCommitments.push({
+            text: match[0],
+            date: conv.timestamp?.toDate?.() || new Date()
+          });
+        }
+      });
+    });
+    
+    return foundCommitments.slice(0, 5);
+  }, []);
+
+  // Load persistent conversation history and rep history on mount
+  useEffect(() => {
+    if (!userId || !db) return;
+    
+    const loadMemory = async () => {
+      try {
+        // Load saved conversations from Firestore
+        const conversationsRef = collection(db, `users/${userId}/coach_conversations`);
+        const q = query(conversationsRef, orderBy('timestamp', 'desc'), limit(50));
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+          const conversations = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          
+          // Get first chat date
+          const oldest = conversations[conversations.length - 1];
+          if (oldest?.timestamp) {
+            setFirstChatDate(oldest.timestamp.toDate?.() || new Date(oldest.timestamp));
+          }
+          
+          // Analyze topic patterns
+          const patterns = analyzeTopicPatterns(conversations);
+          setTopicPatterns(patterns);
+          
+          // Extract commitments user has made
+          const userCommitments = extractCommitments(conversations);
+          setCommitments(userCommitments);
+          
+          // Build chat history from past conversations (most recent 20 exchanges)
+          const history = [];
+          const recentConversations = conversations.slice(0, 20).reverse();
+          recentConversations.forEach(conv => {
+            if (conv.userMessage) {
+              history.push({ role: 'user', content: conv.userMessage });
+            }
+            if (conv.assistantMessage) {
+              history.push({ role: 'assistant', content: conv.assistantMessage });
+            }
+          });
+          
+          setChatHistory(history);
+          setConversationCount(snapshot.docs.length);
+        }
+        
+        // Load rep history for context
+        const reps = await conditioningService.getRepHistory(userId, { limit: 10 });
+        setRepHistory(reps || []);
+        
+        setMemoryLoaded(true);
+      } catch (error) {
+        console.error('Error loading coach memory:', error);
+        setMemoryLoaded(true); // Still mark as loaded to unblock UI
+      }
+    };
+    
+    loadMemory();
+  }, [userId, db, analyzeTopicPatterns, extractCommitments]);
+
+  // Save conversation to Firestore
+  const saveConversation = useCallback(async (userMsg, assistantMsg) => {
+    if (!userId || !db) return;
+    
+    try {
+      const conversationsRef = collection(db, `users/${userId}/coach_conversations`);
+      const conversationDoc = doc(conversationsRef);
+      
+      await setDoc(conversationDoc, {
+        userMessage: userMsg,
+        assistantMessage: assistantMsg,
+        timestamp: serverTimestamp(),
+        dayNumber: currentDayData?.dayNumber || 1,
+        cohortName: cohortData?.name || null
+      });
+      
+      setConversationCount(prev => prev + 1);
+      if (!firstChatDate) {
+        setFirstChatDate(new Date());
+      }
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+    }
+  }, [userId, db, currentDayData?.dayNumber, cohortData?.name, firstChatDate]);
+
+  // Build rich context for AI including leader profile and rep history
+  const buildRichContext = useCallback(() => {
+    const parts = [];
+    
+    // Leader profile context
+    if (leaderProfile) {
+      parts.push(`LEADER PROFILE (Remember this about ${firstName}):`);
+      if (leaderProfile.primaryGoal) parts.push(`- Primary Goal: ${leaderProfile.primaryGoal}`);
+      if (leaderProfile.biggestChallenge) parts.push(`- Biggest Challenge: ${leaderProfile.biggestChallenge}`);
+      if (leaderProfile.leadershipStyle) parts.push(`- Leadership Style: ${leaderProfile.leadershipStyle}`);
+      if (leaderProfile.leadershipStyleDescription) parts.push(`- Style Details: ${leaderProfile.leadershipStyleDescription}`);
+      if (leaderProfile.directReports) parts.push(`- Direct Reports: ${leaderProfile.directReports}`);
+      if (leaderProfile.yearsManaging) parts.push(`- Years Managing: ${leaderProfile.yearsManaging}`);
+      if (leaderProfile.companyName || leaderProfile.company) parts.push(`- Company: ${leaderProfile.companyName || leaderProfile.company}`);
+      if (leaderProfile.industry) parts.push(`- Industry: ${leaderProfile.industry}`);
+      if (leaderProfile.jobTitle) parts.push(`- Title: ${leaderProfile.jobTitle}`);
+      if (leaderProfile.successDefinition) parts.push(`- Success Definition: ${leaderProfile.successDefinition}`);
+      // Feedback skills (scored 1-10)
+      if (leaderProfile.feedbackReceptionScore > 0) parts.push(`- Feedback Reception Self-Rating: ${leaderProfile.feedbackReceptionScore}/10`);
+      if (leaderProfile.feedbackGivingScore > 0) parts.push(`- Feedback Giving Self-Rating: ${leaderProfile.feedbackGivingScore}/10`);
+    }
+    
+    // Development journey context
+    if (weekNumber || currentDayData?.dayNumber) {
+      parts.push(`\nDEVELOPMENT JOURNEY:`);
+      if (weekNumber) parts.push(`- Currently in Week ${weekNumber} of their leadership program`);
+      if (currentDayData?.dayNumber) parts.push(`- Day ${currentDayData.dayNumber} of training`);
+      if (currentDayData?.theme) parts.push(`- Today's theme: ${currentDayData.theme}`);
+    }
+    
+    // Rep history context
+    if (repHistory.length > 0) {
+      parts.push(`\nRECENT LEADERSHIP REPS (${firstName}'s practice history):`);
+      repHistory.slice(0, 5).forEach((rep, i) => {
+        const date = rep.completedAt?.toDate?.()?.toLocaleDateString() || 'recently';
+        parts.push(`- ${date}: ${rep.repTitle || rep.title || 'Leadership rep'} (${rep.rating || 'completed'})`);
+        if (rep.reflection) parts.push(`  Reflection: "${rep.reflection.substring(0, 100)}..."`);
+      });
+    }
+    
+    // Topic patterns - what they frequently ask about
+    const topTopics = Object.entries(topicPatterns)
+      .filter(([_, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+    
+    if (topTopics.length > 0) {
+      parts.push(`\nCOACHING PATTERNS (Topics ${firstName} frequently discusses):`);
+      topTopics.forEach(([topic, count]) => {
+        parts.push(`- ${topic}: ${count} conversation${count > 1 ? 's' : ''}`);
+      });
+    }
+    
+    // Past commitments made
+    if (commitments.length > 0) {
+      parts.push(`\nPAST COMMITMENTS (Follow up on these!):`);
+      commitments.forEach(c => {
+        const dateStr = c.date?.toLocaleDateString?.() || 'recently';
+        parts.push(`- ${dateStr}: "${c.text}"`);
+      });
+    }
+    
+    // Conversation context
+    if (conversationCount > 0) {
+      const daysSinceFirst = firstChatDate 
+        ? Math.floor((new Date() - firstChatDate) / (1000 * 60 * 60 * 24))
+        : 0;
+      parts.push(`\nRELATIONSHIP HISTORY: You've had ${conversationCount} conversation${conversationCount > 1 ? 's' : ''} with ${firstName} over ${daysSinceFirst} days. You KNOW this person. Reference past conversations when relevant.`);
+    }
+    
+    return parts.join('\n');
+  }, [leaderProfile, repHistory, firstName, conversationCount, firstChatDate, weekNumber, currentDayData, topicPatterns, commitments]);
 
   // Handle asking a question
   const handleAskQuestion = async () => {
@@ -146,22 +373,43 @@ const RepUpCoach = ({ userId: _userId }) => {
       const functions = getFunctions();
       const reppyCoach = httpsCallable(functions, 'reppyCoach');
       
-      const coachingContext = `You are "RepUp" - a professional AI leadership coach and your partner in developing leadership skills.
+      // Build rich context with leader profile and rep history
+      const richContext = buildRichContext();
       
-Your personality:
-- Confident, direct, and supportive
-- Professional yet approachable
-- Reference the CLEAR method (Context, Listen, Explore, Action, Review) when giving feedback advice
+      const coachingContext = `You are "RepUp" - ${firstName}'s PERSONAL AI leadership coach. You are NOT a generic chatbot.
+
+CRITICAL DIFFERENTIATION - What makes you different from ChatGPT or generic AI:
+1. You KNOW ${firstName} personally - their goals, challenges, leadership style, and history
+2. You remember EVERY conversation you've had together
+3. You track their leadership reps and growth over time
+4. You follow up on commitments they've made
+5. You notice patterns in what they struggle with
+6. You celebrate their progress and hold them accountable
+
+COACHING APPROACH:
+- Reference their specific context (company, role, direct reports) when relevant
+- Connect current questions to their stated goals and challenges  
+- If they've discussed similar topics before, acknowledge it: "We've talked about this before..."
+- If they made a commitment previously, ask about it: "Last time you mentioned you'd..."
+- Notice patterns: "I've noticed you often ask about [topic]..."
+- Be their PARTNER, not just an answerer of questions
+
+PERSONALITY:
+- Confident, direct, and genuinely caring
+- Professional yet warm - you know them
+- Practical and action-oriented
 - Keep responses concise (2-4 paragraphs max)
-- End with an actionable suggestion or thought-provoking question
+- End with an actionable next step or thought-provoking question
+- Can help with ANY leadership topic: delegation, motivation, strategy, conflict, decisions, influence, communication
 
-The user is in the RepUp standalone app focused on leadership conditioning.
-
-Today's context:
-- Day ${currentDayData?.dayNumber || 1} of their program
+TODAY'S CONTEXT:
+- Day ${currentDayData?.dayNumber || 1} of their leadership program
 ${cohortData?.name ? `- Cohort: ${cohortData.name}` : ''}
+${weekNumber ? `- Week ${weekNumber} of development journey` : ''}
 
-Help them with their question. Be practical and actionable.`;
+${richContext}
+
+Remember: You're their trusted coach who knows their story. Make them feel known.`;
 
       const result = await reppyCoach({
         messages: newHistory,
@@ -174,6 +422,9 @@ Help them with their question. Be practical and actionable.`;
       });
       
       const aiResponse = result.data.message;
+      
+      // Save conversation to Firestore for persistent memory
+      await saveConversation(question, aiResponse);
       
       setChatHistory(prev => [...prev, { role: 'assistant', content: aiResponse }]);
       setCoachResponse({ 
@@ -204,6 +455,51 @@ Help them with their question. Be practical and actionable.`;
     <div className="min-h-[calc(100vh-108px)] p-4 bg-slate-50">
       <div className="max-w-2xl mx-auto space-y-4">
         
+        {/* Memory indicator - shows when coach has persistent memory */}
+        {memoryLoaded && (conversationCount > 0 || leaderProfile?.primaryGoal) && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-corporate-navy/5 to-corporate-teal/10 rounded-xl p-3 border border-corporate-teal/20"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-corporate-teal/20 rounded-full flex items-center justify-center">
+                <Brain className="w-4 h-4 text-corporate-teal" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-corporate-teal flex-shrink-0" />
+                  <span className="text-sm font-semibold text-corporate-navy">I Know You, {firstName}</span>
+                </div>
+                <div className="text-xs text-slate-600 space-y-0.5">
+                  {conversationCount > 0 && (
+                    <div className="flex items-center gap-1">
+                      <History className="w-3 h-3 flex-shrink-0" />
+                      <span>{conversationCount} conversation{conversationCount !== 1 ? 's' : ''}{firstChatDate && ` since ${firstChatDate.toLocaleDateString()}`}</span>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    {leaderProfile?.primaryGoal && (
+                      <span className="flex items-center gap-1">
+                        <Target className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{leaderProfile.primaryGoal.substring(0, 40)}{leaderProfile.primaryGoal.length > 40 ? '...' : ''}</span>
+                      </span>
+                    )}
+                    {repHistory.length > 0 && (
+                      <span className="text-corporate-teal">{repHistory.length} reps</span>
+                    )}
+                    {Object.values(topicPatterns).some(v => v > 0) && (
+                      <span className="text-slate-500">
+                        • Top focus: {Object.entries(topicPatterns).sort((a,b) => b[1]-a[1])[0]?.[0] || 'leadership'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+        
         {/* Welcome state - no conversation yet */}
         {!coachResponse && !isTyping && (
           <div className="text-center py-8">
@@ -212,8 +508,8 @@ Help them with their question. Be practical and actionable.`;
             </div>
             <h2 className="text-xl font-bold text-corporate-navy mb-2">Ask Me Anything</h2>
             <p className="text-slate-600 mb-6 max-w-md mx-auto">
-              I'm your AI leadership coach. Ask me about difficult conversations, 
-              giving feedback, running 1:1s, or any leadership challenge.
+              I'm your AI leadership coach. Ask me about motivation, delegation, 
+              strategy, team dynamics, difficult conversations, or any leadership challenge.
             </p>
             
             {/* Quick prompts */}
@@ -317,6 +613,27 @@ Help them with their question. Be practical and actionable.`;
                 )}
               </div>
             )}
+            
+            {/* Route to Action - Get them back to doing reps */}
+            <div className="bg-gradient-to-r from-corporate-navy/5 to-corporate-teal/5 rounded-xl p-4 border border-corporate-teal/20">
+              <p className="text-sm font-medium text-corporate-navy mb-3">Ready to take action?</p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => onSwitchToReps?.()}
+                  className="flex items-center justify-center gap-2 py-3 px-4 bg-corporate-teal text-white rounded-lg font-medium hover:bg-corporate-teal/90 transition-colors"
+                >
+                  <Target className="w-4 h-4" />
+                  Commit to a Real Rep
+                </button>
+                <button
+                  onClick={() => onSwitchToReps?.()}
+                  className="flex items-center justify-center gap-2 py-2 px-4 text-corporate-navy border border-corporate-navy/20 rounded-lg text-sm hover:bg-corporate-navy/5 transition-colors"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Add Debrief to Completed Rep
+                </button>
+              </div>
+            </div>
             
             {/* New conversation button */}
             <button

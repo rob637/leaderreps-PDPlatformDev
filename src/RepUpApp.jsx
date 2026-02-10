@@ -38,7 +38,7 @@ function RepUpApp() {
   const [firebaseServices, setFirebaseServices] = useState(null);
   const [user, setUser] = useState(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [activeTab, setActiveTab] = useState('reps'); // 'reps' or 'coach'
+  const [activeTab, setActiveTab] = useState('coach'); // 'coach' or 'reps'
 
   // Initialize Firebase
   useEffect(() => {
@@ -164,19 +164,8 @@ function RepUpApp() {
                   </div>
                 </header>
 
-                {/* Tab Navigation */}
+                {/* Tab Navigation - Coach first per boss directive */}
                 <nav className="bg-white border-b border-slate-200 flex sticky top-[52px] z-40">
-                  <button
-                    onClick={() => setActiveTab('reps')}
-                    className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                      activeTab === 'reps'
-                        ? 'text-corporate-teal border-b-2 border-corporate-teal bg-corporate-teal/5'
-                        : 'text-slate-500 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Dumbbell className="w-4 h-4" />
-                    <span>Reps</span>
-                  </button>
                   <button
                     onClick={() => setActiveTab('coach')}
                     className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
@@ -187,6 +176,17 @@ function RepUpApp() {
                   >
                     <MessageSquare className="w-4 h-4" />
                     <span>Coach</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('reps')}
+                    className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                      activeTab === 'reps'
+                        ? 'text-corporate-teal border-b-2 border-corporate-teal bg-corporate-teal/5'
+                        : 'text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Dumbbell className="w-4 h-4" />
+                    <span>Reps</span>
                   </button>
                 </nav>
 
@@ -201,7 +201,7 @@ function RepUpApp() {
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <Conditioning embedded={true} showFloatingAction={true} />
+                        <Conditioning embedded={true} showFloatingAction={true} onAskCoach={() => setActiveTab('coach')} />
                       </motion.div>
                     )}
                     
@@ -213,7 +213,7 @@ function RepUpApp() {
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <RepUpCoach userId={user?.uid} />
+                        <RepUpCoach userId={user?.uid} onSwitchToReps={() => setActiveTab('reps')} />
                       </motion.div>
                     )}
                   </AnimatePresence>

@@ -112,6 +112,63 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     return 1; // Default
   }, [currentPhase, phaseDayNumber]);
 
+  // Normalize weekly resources (coaching and community items from weeklyResources)
+  const normalizeWeeklyResources = (weeklyResources, dayId, dayNumber, weekNumber) => {
+    const items = [];
+    
+    // Process coaching items
+    if (weeklyResources?.weeklyCoaching && Array.isArray(weeklyResources.weeklyCoaching)) {
+      weeklyResources.weeklyCoaching.forEach((item, idx) => {
+        const label = item.coachingItemLabel || 'Coaching';
+        // Create stable ID from week + label to avoid duplicates
+        const stableId = item.coachingItemId || `weekly-coaching-week${weekNumber}-${label.toLowerCase().replace(/\s+/g, '-').substring(0, 25)}-${idx}`;
+        
+        items.push({
+          id: stableId,
+          type: (item.coachingItemType || 'coaching').toLowerCase().replace(/\s+/g, '_'),
+          displayType: 'coaching',
+          label: label,
+          // Coach items are optional unless explicitly marked required
+          required: item.isOptionalCoachingItem === false,
+          optional: item.isOptionalCoachingItem !== false,
+          category: 'Coaching',
+          fromDailyPlan: true,
+          fromWeeklyResources: true,
+          dayId: dayId,
+          dayNumber: dayNumber,
+          weekNumber: weekNumber,
+          handlerType: item.coachingItemType === 'AI Feedback Coach' ? 'ai-roleplay' : item.coachingItemType?.toLowerCase().replace(/\s+/g, '-')
+        });
+      });
+    }
+    
+    // Process community items
+    if (weeklyResources?.weeklyCommunity && Array.isArray(weeklyResources.weeklyCommunity)) {
+      weeklyResources.weeklyCommunity.forEach((item, idx) => {
+        const label = item.communityItemLabel || 'Community';
+        const stableId = item.communityItemId || `weekly-community-week${weekNumber}-${label.toLowerCase().replace(/\s+/g, '-').substring(0, 25)}-${idx}`;
+        
+        items.push({
+          id: stableId,
+          type: (item.communityItemType || 'community').toLowerCase().replace(/\s+/g, '_'),
+          displayType: 'community',
+          label: label,
+          required: item.isRequiredCommunityItem === true,
+          optional: item.isRequiredCommunityItem !== true,
+          category: 'Community',
+          fromDailyPlan: true,
+          fromWeeklyResources: true,
+          dayId: dayId,
+          dayNumber: dayNumber,
+          weekNumber: weekNumber,
+          recommendedWeekDay: item.recommendedWeekDay
+        });
+      });
+    }
+    
+    return items;
+  };
+
   // Normalize daily plan actions
   const normalizeDailyActions = (actions, dayId, dayNumber) => {
     return (actions || []).map((action, idx) => {
@@ -259,6 +316,10 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     weekDays.forEach(day => {
       if (day.actions) {
         weekActions.push(...normalizeDailyActions(day.actions, day.id, day.dayNumber));
+      }
+      // Also include weekly resources (coaching/community items) from the first day of each week
+      if (day.weeklyResources && day.dayNumber === absStartDay) {
+        weekActions.push(...normalizeWeeklyResources(day.weeklyResources, day.id, day.dayNumber, currentWeekNumber));
       }
     });
     
@@ -435,6 +496,73 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 });
               }
             });
+          }
+          
+          // **NEW: Also check weeklyResources (coaching/community) for first day of each prior week**
+          if (day.weeklyResources && day.dayNumber === absStartDay) {
+            // Check coaching items
+            if (day.weeklyResources.weeklyCoaching && Array.isArray(day.weeklyResources.weeklyCoaching)) {
+              day.weeklyResources.weeklyCoaching.forEach((item, idx) => {
+                // Only carry over required coaching items (isOptionalCoachingItem === false)
+                if (item.isOptionalCoachingItem !== false) return;
+                
+                const label = item.coachingItemLabel || 'Coaching';
+                const itemId = item.coachingItemId || `weekly-coaching-week${priorWeek}-${label.toLowerCase().replace(/\s+/g, '-').substring(0, 25)}-${idx}`;
+                
+                // Skip if already in carriedItems
+                if (carriedItems.some(ci => ci.id === itemId)) return;
+                
+                if (!isActionCompleted(itemId)) {
+                  carriedItems.push({
+                    id: itemId,
+                    type: (item.coachingItemType || 'coaching').toLowerCase().replace(/\s+/g, '_'),
+                    displayType: 'coaching',
+                    label: label,
+                    required: true,
+                    category: 'Coaching',
+                    fromDailyPlan: true,
+                    fromWeeklyResources: true,
+                    dayId: day.id,
+                    dayNumber: day.dayNumber,
+                    carriedOver: true,
+                    fromWeek: priorWeek,
+                    handlerType: item.coachingItemType === 'AI Feedback Coach' ? 'ai-roleplay' : item.coachingItemType?.toLowerCase().replace(/\s+/g, '-')
+                  });
+                }
+              });
+            }
+            
+            // Check community items
+            if (day.weeklyResources.weeklyCommunity && Array.isArray(day.weeklyResources.weeklyCommunity)) {
+              day.weeklyResources.weeklyCommunity.forEach((item, idx) => {
+                // Only carry over required community items
+                if (item.isRequiredCommunityItem !== true) return;
+                
+                const label = item.communityItemLabel || 'Community';
+                const itemId = item.communityItemId || `weekly-community-week${priorWeek}-${label.toLowerCase().replace(/\s+/g, '-').substring(0, 25)}-${idx}`;
+                
+                // Skip if already in carriedItems
+                if (carriedItems.some(ci => ci.id === itemId)) return;
+                
+                if (!isActionCompleted(itemId)) {
+                  carriedItems.push({
+                    id: itemId,
+                    type: (item.communityItemType || 'community').toLowerCase().replace(/\s+/g, '_'),
+                    displayType: 'community',
+                    label: label,
+                    required: true,
+                    category: 'Community',
+                    fromDailyPlan: true,
+                    fromWeeklyResources: true,
+                    dayId: day.id,
+                    dayNumber: day.dayNumber,
+                    carriedOver: true,
+                    fromWeek: priorWeek,
+                    recommendedWeekDay: item.recommendedWeekDay
+                  });
+                }
+              });
+            }
           }
         });
       }

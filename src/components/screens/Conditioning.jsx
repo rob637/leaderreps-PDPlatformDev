@@ -31,7 +31,7 @@ import {
   Plus, Check, X, AlertTriangle, Clock, User, 
   ChevronRight, RefreshCw, MessageSquare, Users,
   Target, Calendar, CheckCircle, XCircle, AlertCircle,
-  FileText
+  FileText, Lightbulb, Dumbbell, Sparkles, HelpCircle
 } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 
@@ -190,6 +190,86 @@ const WeekStatusHeader = ({ weeklyStatus, nudgeStatus }) => {
               <span>{nudgeStatus.message}</span>
             </div>
           </div>
+        )}
+      </div>
+    </Card>
+  );
+};
+
+// ============================================
+// TODAY'S FOCUS CARD (Helps users know what to do NOW)
+// ============================================
+const TodaysFocusCard = ({ activeReps, onOpenPrep, onViewDetail, onAskCoach }) => {
+  // Find the most urgent rep to focus on
+  const focusRep = useMemo(() => {
+    if (!activeReps || activeReps.length === 0) return null;
+    
+    // Priority: overdue > due today > due tomorrow > earliest deadline
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+    
+    const sorted = [...activeReps].sort((a, b) => {
+      const aDeadline = a.deadline?.toDate?.() || new Date(a.deadline) || new Date();
+      const bDeadline = b.deadline?.toDate?.() || new Date(b.deadline) || new Date();
+      return aDeadline - bDeadline;
+    });
+    
+    // Find overdue or due today/tomorrow
+    for (const rep of sorted) {
+      const deadline = rep.deadline?.toDate?.() || new Date(rep.deadline);
+      if (deadline < now) return { ...rep, urgency: 'overdue' };
+      if (deadline < tomorrow) return { ...rep, urgency: 'today' };
+    }
+    
+    // Otherwise return earliest
+    return sorted[0] ? { ...sorted[0], urgency: 'upcoming' } : null;
+  }, [activeReps]);
+  
+  if (!focusRep) return null;
+  
+  const deadline = focusRep.deadline?.toDate?.() || new Date(focusRep.deadline);
+  const formatDeadline = () => {
+    if (focusRep.urgency === 'overdue') return 'Overdue!';
+    if (focusRep.urgency === 'today') return 'Due today';
+    return deadline.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+  
+  const needsPrep = focusRep.status === 'committed' && !focusRep.preparedAt;
+  
+  return (
+    <Card className="mb-4 bg-gradient-to-r from-corporate-teal/10 to-corporate-navy/5 border-corporate-teal/20">
+      <div className="p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Lightbulb className="w-4 h-4 text-corporate-teal" />
+          <span className="text-xs font-semibold text-corporate-teal uppercase tracking-wide">Today's Focus</span>
+        </div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-corporate-navy truncate">{focusRep.person}</p>
+            <p className="text-sm text-gray-600">
+              {focusRep.repType?.replace(/_/g, ' ') || 'Leadership Rep'} • {formatDeadline()}
+            </p>
+          </div>
+          <button
+            onClick={() => needsPrep ? onOpenPrep?.(focusRep) : onViewDetail?.(focusRep)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
+              needsPrep 
+                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                : 'bg-corporate-teal hover:bg-corporate-teal/90 text-white'
+            }`}
+          >
+            {needsPrep ? 'Prep Now' : 'Take Action'}
+          </button>
+        </div>
+        {onAskCoach && (
+          <button
+            onClick={onAskCoach}
+            className="mt-3 text-xs text-corporate-navy/70 hover:text-corporate-teal flex items-center gap-1 transition-colors"
+          >
+            <MessageSquare className="w-3 h-3" />
+            Nervous? Talk it through with your coach first
+          </button>
         )}
       </div>
     </Card>
@@ -586,7 +666,7 @@ const MissedRepsSection = ({ missedReps, onOpenDebrief, isLoading }) => {
 // ============================================
 // MAIN CONDITIONING SCREEN
 // ============================================
-const Conditioning = ({ embedded = false, showFloatingAction }) => {
+const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   // Default FAB visibility: show unless embedded (but can be overridden)
   const showFab = showFloatingAction ?? !embedded;
   const { user, developmentPlanData, db } = useAppServices();
@@ -946,6 +1026,16 @@ const Conditioning = ({ embedded = false, showFloatingAction }) => {
         {/* Week Status Header */}
         <WeekStatusHeader weeklyStatus={weeklyStatus} nudgeStatus={nudgeStatus} />
         
+        {/* Today's Focus Card - Shows most urgent rep */}
+        {activeReps.length > 0 && (
+          <TodaysFocusCard 
+            activeReps={activeReps}
+            onOpenPrep={handleOpenPrep}
+            onViewDetail={handleOpenRepDetail}
+            onAskCoach={onAskCoach}
+          />
+        )}
+        
         {/* Trainer Nudge Notifications */}
         <TrainerNudgeNotification db={db} userId={userId} />
         
@@ -974,16 +1064,34 @@ const Conditioning = ({ embedded = false, showFloatingAction }) => {
           </div>
           
           {activeReps.length === 0 ? (
-            <Card className="p-6 text-center border-dashed border-2">
-              <Target className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-600 mb-4">No active reps this week</p>
+            <Card className="p-8 text-center border-dashed border-2 border-corporate-teal/30 bg-gradient-to-br from-corporate-teal/5 to-transparent">
+              <div className="w-16 h-16 mx-auto mb-4 bg-corporate-teal/10 rounded-full flex items-center justify-center">
+                <Dumbbell className="w-8 h-8 text-corporate-teal" />
+              </div>
+              <h3 className="font-bold text-lg text-corporate-navy mb-2">Ready to Build Your Leadership Muscle?</h3>
+              <p className="text-gray-600 mb-2 max-w-sm mx-auto">
+                A "rep" is a real leadership moment you commit to practicing — 
+                like giving feedback, having a tough conversation, or delegating effectively.
+              </p>
+              <p className="text-sm text-corporate-teal font-medium mb-4">
+                Just 1 rep per week builds the habit.
+              </p>
               <Button
                 onClick={() => setShowCommitForm(true)}
-                className="bg-corporate-navy hover:bg-corporate-navy/90 text-white"
+                className="bg-corporate-navy hover:bg-corporate-navy/90 text-white px-6"
               >
                 <Plus className="w-4 h-4 mr-1" />
-                Commit to a Rep
+                Commit to Your First Rep
               </Button>
+              {onAskCoach && (
+                <button
+                  onClick={onAskCoach}
+                  className="mt-3 text-sm text-corporate-teal hover:underline flex items-center gap-1 mx-auto"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  Not sure where to start? Ask your coach
+                </button>
+              )}
             </Card>
           ) : (
             activeReps.map((rep) => (
@@ -1000,6 +1108,17 @@ const Conditioning = ({ embedded = false, showFloatingAction }) => {
                 isLoading={isSubmitting}
               />
             ))
+          )}
+          
+          {/* Stuck? Ask Coach - shows when there are active reps */}
+          {activeReps.length > 0 && onAskCoach && (
+            <button
+              onClick={onAskCoach}
+              className="w-full mt-2 py-2 text-sm text-corporate-teal hover:bg-corporate-teal/5 rounded-lg flex items-center justify-center gap-2 transition-colors"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Stuck on a rep? Talk it through with your coach
+            </button>
           )}
         </div>
         

@@ -595,10 +595,10 @@ Help them with their question. Be practical and actionable.`;
                   </div>
                   <h4 className="font-semibold text-corporate-navy mb-1">Ask Me Anything</h4>
                   <p className="text-sm text-slate-500 mb-3">
-                    I'll use the CLEAR feedback method to coach you through any leadership challenge.
+                    Your AI leadership coach for feedback, delegation, motivation, strategy, and more.
                   </p>
                   <div className="flex flex-wrap gap-2 justify-center">
-                    {(guidance.quickPrompts || ['How do I give tough feedback?', 'Handling underperformance', 'Running better 1:1s']).map((q, i) => (
+                    {(guidance.quickPrompts || ['Motivating my team', 'Delegating effectively', 'Making tough decisions']).map((q, i) => (
                       <button
                         key={i}
                         onClick={() => setUserQuestion(q)}

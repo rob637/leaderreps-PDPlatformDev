@@ -170,7 +170,7 @@ const Card = React.forwardRef(({
       onClick={onClick}
       className={cn(
         'rounded-2xl text-left w-full transition-all duration-200',
-        onClick && 'appearance-none border-none', // Reset button defaults
+        onClick && 'appearance-none bg-transparent', // Reset button defaults but preserve borders
         variants[variant],
         accents[accent],
         onClick && 'touch-manipulation active:scale-[0.98] cursor-pointer',

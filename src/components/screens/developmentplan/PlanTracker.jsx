@@ -79,6 +79,9 @@ const PlanTracker = ({
       
       // Aggregate content/actions
       const actions = [];
+      const coachingItems = [];
+      const communityItems = [];
+      
       weekDays.forEach(day => {
         if (day.actions) {
           actions.push(...day.actions.map((a, idx) => ({
@@ -87,6 +90,39 @@ const PlanTracker = ({
             id: a.id || `daily-${day.id}-${idx}`,
             dayNumber: day.dayNumber
           })));
+        }
+        
+        // Extract coaching items from weeklyResources (from first day of week)
+        if (day.dayNumber === absStartDay && day.weeklyResources) {
+          if (day.weeklyResources.weeklyCoaching) {
+            day.weeklyResources.weeklyCoaching.forEach((item, idx) => {
+              const label = item.coachingItemLabel || 'Coaching';
+              coachingItems.push({
+                id: item.coachingItemId || `weekly-coaching-week${i}-${label.toLowerCase().replace(/\s+/g, '-').substring(0, 25)}-${idx}`,
+                label: label,
+                type: 'coaching',
+                // CRITICAL: Optional items should NOT count toward required progress
+                required: item.isOptionalCoachingItem === false,
+                optional: item.isOptionalCoachingItem !== false,
+                dayId: day.id,
+                dayNumber: day.dayNumber
+              });
+            });
+          }
+          if (day.weeklyResources.weeklyCommunity) {
+            day.weeklyResources.weeklyCommunity.forEach((item, idx) => {
+              const label = item.communityItemLabel || 'Community';
+              communityItems.push({
+                id: item.communityItemId || `weekly-community-week${i}-${label.toLowerCase().replace(/\s+/g, '-').substring(0, 25)}-${idx}`,
+                label: label,
+                type: 'community',
+                required: item.isRequiredCommunityItem === true,
+                optional: item.isRequiredCommunityItem !== true,
+                dayId: day.id,
+                dayNumber: day.dayNumber
+              });
+            });
+          }
         }
       });
       
@@ -100,6 +136,8 @@ const PlanTracker = ({
         focus: firstDay.weekFocus || `Week ${i} Focus`,
         description: firstDay.weekDescription || 'Weekly development plan.',
         content: actions.filter(a => a.type !== 'daily_rep'), // Treat actions as content for the tracker
+        coaching: coachingItems,
+        community: communityItems,
         actions: actions
       });
     }
@@ -146,10 +184,9 @@ const PlanTracker = ({
     return {
       ...displayWeek,
       content: normalize(displayWeek.content),
-      // Community/Coaching might be mixed in content/actions in Daily Plan
-      // We can filter if needed, or just pass everything as content
-      community: [], 
-      coaching: []
+      // Use coaching and community from weeklyResources (extracted in masterPlan)
+      community: normalize(displayWeek.community || []), 
+      coaching: normalize(displayWeek.coaching || [])
     };
   }, [displayWeek]);
 
