@@ -659,14 +659,15 @@ export const conditioningService = {
   getActiveReps: async (db, userId, cohortId = null) => {
     const repsRef = collection(db, 'users', userId, 'conditioning_reps');
     
-    // All in-progress statuses (includes 'active' for backward compatibility with old data)
+    // All statuses that need user attention (shown in "Active Reps" section)
     const inProgressStatuses = [
-      'committed',   // Just committed, not yet prepped
-      'prepared',    // Prep completed, ready to execute
-      'scheduled',   // Has a scheduled time
-      'executed',    // Done but not yet debriefed
-      'active',      // Legacy status (backward compatibility)
-      'missed'       // Past deadline, needs attention
+      'committed',         // Just committed, not yet prepped
+      'prepared',          // Prep completed, ready to execute
+      'scheduled',         // Has a scheduled time
+      'executed',          // Done but not yet debriefed
+      'follow_up_pending', // Debriefed but needs to close the loop
+      'active',            // Legacy status (backward compatibility)
+      'missed'             // Past deadline, needs attention
     ];
     
     let q;
@@ -799,15 +800,24 @@ export const conditioningService = {
     const targetWeekId = weekId || getCurrentWeekId();
     const reps = await conditioningService.getRepsByWeek(db, userId, targetWeekId, cohortId);
     
-    // Completed states (includes legacy 'completed' and new 'debriefed')
-    const completedStates = ['debriefed', 'completed'];
-    // Active/in-progress states (includes legacy 'active' and all new in-progress states)
-    const activeStates = ['committed', 'prepared', 'scheduled', 'executed', 'active'];
+    // Completed states = rep is fully done (shown in "Completed This Week")
+    // Note: 'completed' is legacy status for backward compatibility
+    const completedStates = ['debriefed', 'loop_closed', 'completed'];
+    
+    // Active/in-progress states = reps needing attention (shown in "Active Reps")
+    // Note: 'follow_up_pending' needs attention (close the loop) but counts toward requirement
+    const activeStates = ['committed', 'prepared', 'scheduled', 'executed', 'follow_up_pending', 'active'];
     
     const completed = reps.filter(r => completedStates.includes(r.status));
     const active = reps.filter(r => activeStates.includes(r.status));
     const missed = reps.filter(r => r.status === 'missed');
     const canceled = reps.filter(r => r.status === 'canceled');
+    
+    // For weekly requirement: debriefed, loop_closed, OR follow_up_pending all count
+    // (they've done the rep, even if follow-up is pending)
+    const doneForRequirement = reps.filter(r => 
+      ['debriefed', 'loop_closed', 'follow_up_pending', 'completed'].includes(r.status)
+    );
     
     const { weekStart, weekEnd } = getWeekBoundaries(targetWeekId);
     
@@ -815,7 +825,7 @@ export const conditioningService = {
       weekId: targetWeekId,
       weekStart,
       weekEnd,
-      requiredRepCompleted: completed.length >= 1,
+      requiredRepCompleted: doneForRequirement.length >= 1,
       totalCommitted: reps.length - canceled.length,
       totalCompleted: completed.length,
       totalActive: active.length,

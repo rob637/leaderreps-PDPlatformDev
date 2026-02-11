@@ -715,13 +715,15 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       ]);
       
       // Separate active reps from missed ones in the active list
-      // Filter for active states (committed, prepared, scheduled)
-      const activeStates = ['committed', 'prepared', 'scheduled', 'active'];
+      // Filter for active states = reps needing user attention
+      // 'executed' = done but needs debrief
+      // 'follow_up_pending' = debriefed but needs loop closure
+      const activeStates = ['committed', 'prepared', 'scheduled', 'executed', 'follow_up_pending', 'active'];
       const currentWeekActive = active.filter(r => activeStates.includes(r.status));
       
       // Get completed reps from weekly status
-      // Filter for completed states (debriefed, executed, completed)
-      const completedStates = ['debriefed', 'executed', 'completed'];
+      // Filter for completed states = reps fully done (shown in "Completed This Week")
+      const completedStates = ['debriefed', 'loop_closed', 'completed'];
       const completed = (status?.reps || []).filter(r => completedStates.includes(r.status));
       
       // Load evidence for completed reps
