@@ -196,6 +196,21 @@
       ]
     },
     {
+      "site": "leaderreps-prod",
+      "public": "build",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
       "target": "corporate",
       "public": "corporate/dist",
       "ignore": [

@@ -2,7 +2,8 @@
   "projects": {
     "default": "leaderreps-pd-platform",
     "dev": "leaderreps-pd-platform",
-    "test": "leaderreps-test"
+    "test": "leaderreps-test",
+    "prod": "leaderreps-prod"
   },
   "targets": {
     "leaderreps-test": {

@@ -35,7 +35,7 @@ if [ -z "$1" ]; then
     echo "Environments:"
     echo "  dev   - Deploy to leaderreps-pd-platform (Development)"
     echo "  test  - Deploy to leaderreps-test (Testing/QA)"
-    echo "  prod  - Deploy to leaderreps-prod (Production) - NOT YET CONFIGURED"
+    echo "  prod  - Deploy to leaderreps-prod (Production)"
     echo ""
     exit 1
 fi
@@ -57,8 +57,11 @@ case $ENV in
         URL="https://leaderreps-test.web.app"
         ;;
     prod)
-        echo -e "${RED}❌ PROD deployment not yet configured.${NC}"
-        exit 1
+        ENV_FILE=".env.prod"
+        PROJECT_ID="leaderreps-prod"
+        HOSTING_TARGET="leaderreps-prod"
+        URL="https://leaderreps-prod.web.app"
+        IS_PRODUCTION=true
         ;;
     *)
         echo -e "${RED}❌ Unknown environment: $ENV${NC}"
@@ -99,11 +102,27 @@ echo ""
 # Confirmation for non-dev
 if [ "$ENV" != "dev" ]; then
     echo -e "${YELLOW}⚠️  You are deploying to $ENV environment.${NC}"
-    read -p "Continue? (y/N) " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Deployment cancelled."
-        exit 0
+    
+    # Extra confirmation for production
+    if [ "$IS_PRODUCTION" = true ]; then
+        echo ""
+        echo -e "${RED}╔═══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║  ⚠️  WARNING: PRODUCTION DEPLOYMENT                           ║${NC}"
+        echo -e "${RED}║  This will deploy to the LIVE production environment!         ║${NC}"
+        echo -e "${RED}╚═══════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        read -p "Type 'DEPLOY PROD' to confirm: " CONFIRM
+        if [ "$CONFIRM" != "DEPLOY PROD" ]; then
+            echo "Deployment cancelled."
+            exit 0
+        fi
+    else
+        read -p "Continue? (y/N) " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Deployment cancelled."
+            exit 0
+        fi
     fi
 fi
 
