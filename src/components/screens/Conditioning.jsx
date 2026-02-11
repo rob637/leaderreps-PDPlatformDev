@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan.js';
+import { useSafeNavigation } from '../../providers/NavigationProvider.jsx';
 import conditioningService, { 
   REP_STATUS, 
   getWeekBoundaries,
@@ -671,6 +672,11 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   const showFab = showFloatingAction ?? !embedded;
   const { user, developmentPlanData, db } = useAppServices();
   const { cohortData } = useDailyPlan();
+  
+  // Get navigation params (for opening commit form via navigation)
+  // Uses safe version since Conditioning can be used outside NavigationProvider (e.g., RepUpApp)
+  const navigation = useSafeNavigation();
+  const navParams = navigation?.navParams || {};
   const userId = user?.uid;
   const cohortId = developmentPlanData?.cohortId || cohortData?.id || user?.cohortId;
   
@@ -749,6 +755,13 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+  
+  // Auto-open commit form if navigated with openCommitForm param
+  useEffect(() => {
+    if (navParams?.openCommitForm) {
+      setShowCommitForm(true);
+    }
+  }, [navParams?.openCommitForm]);
   
   // Handlers
   const handleCommitRep = async (repData) => {
@@ -1068,20 +1081,39 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
               <div className="w-16 h-16 mx-auto mb-4 bg-corporate-teal/10 rounded-full flex items-center justify-center">
                 <Dumbbell className="w-8 h-8 text-corporate-teal" />
               </div>
-              <h3 className="font-bold text-lg text-corporate-navy mb-2">Ready to Build Your Leadership Muscle?</h3>
-              <p className="text-gray-600 mb-2 max-w-sm mx-auto">
-                A "rep" is a real leadership moment you commit to practicing — 
-                like giving feedback, having a tough conversation, or delegating effectively.
-              </p>
-              <p className="text-sm text-corporate-teal font-medium mb-4">
-                Just 1 rep per week builds the habit.
-              </p>
+              {completedReps.length > 0 || weeklyStatus?.totalCompleted > 0 ? (
+                // User has completed reps - show different messaging
+                <>
+                  <h3 className="font-bold text-lg text-corporate-navy mb-2">Want to Keep Building?</h3>
+                  <p className="text-gray-600 mb-2 max-w-sm mx-auto">
+                    Great work on your completed rep{completedReps.length > 1 ? 's' : ''}! 
+                    You can commit to additional reps if you want more practice.
+                  </p>
+                  <p className="text-sm text-corporate-teal font-medium mb-4">
+                    Additional reps are optional.
+                  </p>
+                </>
+              ) : (
+                // First-time user - show introductory messaging
+                <>
+                  <h3 className="font-bold text-lg text-corporate-navy mb-2">Ready to Build Your Leadership Muscle?</h3>
+                  <p className="text-gray-600 mb-2 max-w-sm mx-auto">
+                    A "rep" is a real leadership moment you commit to practicing — 
+                    like giving feedback, having a tough conversation, or delegating effectively.
+                  </p>
+                  <p className="text-sm text-corporate-teal font-medium mb-4">
+                    Just 1 rep per week builds the habit.
+                  </p>
+                </>
+              )}
               <Button
                 onClick={() => setShowCommitForm(true)}
                 className="bg-corporate-navy hover:bg-corporate-navy/90 text-white px-6"
               >
                 <Plus className="w-4 h-4 mr-1" />
-                Commit to Your First Rep
+                {completedReps.length > 0 || weeklyStatus?.totalCompleted > 0 
+                  ? 'Commit to Another Rep' 
+                  : 'Commit to Your First Rep'}
               </Button>
               {onAskCoach && (
                 <button

@@ -570,14 +570,20 @@ Help them with their question. Be practical and actionable.`;
 
                   {/* Quick Add Button */}
                   <button
-                    onClick={() => navigate('conditioning')}
+                    onClick={() => navigate('conditioning', { openCommitForm: true })}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 
                                bg-gradient-to-r from-corporate-navy to-corporate-teal
                                text-white text-sm font-medium rounded-lg
                                hover:opacity-90 transition-opacity"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>{reps.length === 0 ? 'Commit to a Rep' : 'Manage Reps'}</span>
+                    <span>
+                      {reps.length > 0 
+                        ? 'Manage Reps' 
+                        : weekStatus?.requiredRepCompleted 
+                          ? 'Commit to Another Rep' 
+                          : 'Commit to a Rep'}
+                    </span>
                   </button>
                 </>
               )}

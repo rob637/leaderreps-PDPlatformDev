@@ -41,4 +41,10 @@ export const useNavigation = () => {
   return context;
 };
 
+// Safe version that returns null instead of throwing (for components used outside NavigationProvider)
+export const useSafeNavigation = () => {
+  const context = useContext(NavigationContext);
+  return context; // Returns null if outside provider
+};
+
 export default NavigationProvider;
