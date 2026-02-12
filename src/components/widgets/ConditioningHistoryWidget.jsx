@@ -128,8 +128,8 @@ const ConditioningHistoryWidget = ({ helpText }) => {
         helpText={helpText}
       >
         <div className="text-center py-4">
-          <Target className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-          <p className="text-slate-600 text-sm">
+          <Target className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+          <p className="text-slate-600 dark:text-slate-400 text-sm">
             Conditioning history will appear once you're enrolled in a cohort program.
           </p>
         </div>
@@ -150,9 +150,9 @@ const ConditioningHistoryWidget = ({ helpText }) => {
         </div>
       ) : weeklyHistory.length === 0 ? (
         <div className="text-center py-8">
-          <Dumbbell className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-600 font-medium">No conditioning reps yet</p>
-          <p className="text-slate-400 text-sm mt-1">
+          <Dumbbell className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+          <p className="text-slate-600 dark:text-slate-400 font-medium">No conditioning reps yet</p>
+          <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">
             Complete your first leadership rep to start building your history!
           </p>
         </div>
@@ -168,14 +168,14 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                 key={week.weekId}
                 className={`rounded-xl border overflow-hidden ${
                   isCurrentWeek 
-                    ? 'border-corporate-teal bg-teal-50/30' 
-                    : 'border-slate-200 bg-white'
+                    ? 'border-corporate-teal bg-teal-50/30 dark:bg-teal-900/20' 
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
                 }`}
               >
                 {/* Week Header */}
                 <button
                   onClick={() => toggleWeekExpanded(week.weekId)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors"
+                  className="w-full flex items-center justify-between p-4 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
@@ -191,7 +191,7 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                     </div>
                     <div className="text-left">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-slate-800">
+                        <span className="font-semibold text-slate-800 dark:text-white">
                           {formatWeekRange(week)}
                         </span>
                         {isCurrentWeek && (
@@ -200,7 +200,7 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
                         {week.completedCount} completed
                         {week.canceledCount > 0 && `, ${week.canceledCount} canceled`}
                         {!metRequirement && ' • Requirement not met'}
@@ -208,32 +208,32 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-lg text-corporate-navy">
+                    <span className="font-bold text-lg text-corporate-navy dark:text-white">
                       {week.completedCount}
                     </span>
                     {isExpanded ? (
-                      <ChevronUp className="w-5 h-5 text-slate-400" />
+                      <ChevronUp className="w-5 h-5 text-slate-400 dark:text-slate-500" />
                     ) : (
-                      <ChevronDown className="w-5 h-5 text-slate-400" />
+                      <ChevronDown className="w-5 h-5 text-slate-400 dark:text-slate-500" />
                     )}
                   </div>
                 </button>
 
                 {/* Expanded Rep Details */}
                 {isExpanded && (
-                  <div className="border-t border-slate-100 bg-slate-50/50 p-4">
+                  <div className="border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/30 p-4">
                     {week.reps.length > 0 ? (
                       <div className="space-y-2">
                         {week.reps.map((rep, idx) => (
                           <button 
                             key={rep.id || idx}
                             onClick={() => setSelectedRep(rep)}
-                            className="w-full flex items-start gap-3 p-3 bg-white rounded-lg border border-slate-100 hover:border-corporate-teal hover:bg-teal-50/30 transition-colors text-left cursor-pointer group"
+                            className="w-full flex items-start gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 hover:border-corporate-teal hover:bg-teal-50/30 dark:hover:bg-teal-900/20 transition-colors text-left cursor-pointer group"
                           >
                             <div className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                               rep.status === REP_STATUS.COMPLETED
                                 ? 'bg-emerald-100 text-emerald-600'
-                                : 'bg-slate-100 text-slate-400'
+                                : 'bg-slate-100 dark:bg-slate-600 text-slate-400 dark:text-slate-300'
                             }`}>
                               {rep.status === REP_STATUS.COMPLETED ? (
                                 <CheckCircle className="w-4 h-4" />
@@ -243,10 +243,10 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-medium text-slate-800">
+                                <span className="font-medium text-slate-800 dark:text-white">
                                   {rep.person || 'Unknown person'}
                                 </span>
-                                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">
+                                <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs rounded-full">
                                   {getRepTypeLabel(rep.repType)}
                                 </span>
                                 {rep.status === REP_STATUS.CANCELED && (
@@ -256,7 +256,7 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                                 )}
                               </div>
                               {rep.completedAt && (
-                                <p className="text-xs text-slate-400 mt-1">
+                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                                   Completed {formatDate(rep.completedAt)}
                                 </p>
                               )}
@@ -266,12 +266,12 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                                 </p>
                               )}
                             </div>
-                            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-corporate-teal flex-shrink-0 mt-1" />
+                            <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-500 group-hover:text-corporate-teal flex-shrink-0 mt-1" />
                           </button>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-slate-400 text-center py-2">
+                      <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-2">
                         No rep details available
                       </p>
                     )}
@@ -287,7 +287,7 @@ const ConditioningHistoryWidget = ({ helpText }) => {
               {visibleWeeks > 4 && (
                 <button 
                   onClick={() => setVisibleWeeks(4)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-all"
                 >
                   Show Less
                 </button>

@@ -103,7 +103,7 @@ const ConditioningModal = ({
         className={cn(
           'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
           'w-full max-h-[90vh] overflow-hidden flex flex-col',
-          'bg-white rounded-2xl shadow-2xl border border-slate-100',
+          'bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700',
           maxWidth,
           className
         )}
@@ -141,7 +141,7 @@ const ConditioningModal = ({
 
         {/* ====== CONTEXT BAR — optional gray bar below header ====== */}
         {contextBar && (
-          <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex-shrink-0">
+          <div className="px-5 py-3 bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-600 flex-shrink-0">
             {contextBar}
           </div>
         )}
@@ -153,7 +153,7 @@ const ConditioningModal = ({
 
         {/* ====== FOOTER — consistent gray bar ====== */}
         {footer && (
-          <div className="px-5 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+          <div className="px-5 py-4 border-t border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 flex-shrink-0">
             {footer}
           </div>
         )}

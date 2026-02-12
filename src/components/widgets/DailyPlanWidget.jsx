@@ -65,8 +65,8 @@ const DailyPlanWidget = ({ helpText }) => {
       <Card title="Today's Plan" icon={Calendar} accent="TEAL" helpText={helpText}>
         <div className="space-y-3">
           {!hasItems && (
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-              <p className="text-sm text-slate-500">No specific items scheduled for today.</p>
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 text-center">
+              <p className="text-sm text-slate-500 dark:text-slate-400">No specific items scheduled for today.</p>
             </div>
           )}
           
@@ -75,14 +75,14 @@ const DailyPlanWidget = ({ helpText }) => {
             const isReadRep = action.type === 'read_rep' || (action.resourceId && !action.type); // Guessing if type missing
             
             return (
-              <div key={`action-${idx}`} className="flex gap-3 items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm">
+              <div key={`action-${idx}`} className="flex gap-3 items-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className={`w-2 h-2 rounded-full ${action.type === 'daily_rep' ? 'bg-corporate-teal' : 'bg-orange-400'}`}></div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium text-slate-700">{action.label}</div>
+                    <div className="text-sm font-medium text-slate-700 dark:text-slate-200">{action.label}</div>
                     {/* Optional Badge for Read & Reps */}
                     {isReadRep && (
-                      <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium uppercase tracking-wide">
+                      <span className="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-medium uppercase tracking-wide">
                         Optional
                       </span>
                     )}
@@ -128,7 +128,7 @@ const DailyPlanWidget = ({ helpText }) => {
         {loadingResource ? (
           <div className="flex flex-col items-center justify-center p-12 space-y-3">
             <Loader className="w-8 h-8 text-corporate-teal animate-spin" />
-            <p className="text-sm text-slate-400">Loading content...</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500">Loading content...</p>
           </div>
         ) : selectedResource ? (
           <div className="min-h-[60vh]">
@@ -140,7 +140,7 @@ const DailyPlanWidget = ({ helpText }) => {
           </div>
         ) : (
           <div className="text-center p-8">
-            <p className="text-slate-500">Content not found.</p>
+            <p className="text-slate-500 dark:text-slate-400">Content not found.</p>
           </div>
         )}
       </Modal>

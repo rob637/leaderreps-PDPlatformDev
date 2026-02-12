@@ -77,7 +77,7 @@ const WinTheDayWidget = ({ scope, helpText }) => {
   return (
     <Card title="Win the Day" icon={Trophy} accent="TEAL" helpText={helpText}>
       <div className="space-y-1">
-        <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider mb-1">
           Identify 3 High-Impact Actions
         </p>
         
@@ -88,7 +88,7 @@ const WinTheDayWidget = ({ scope, helpText }) => {
             <div 
               key={win.id} 
               className={`flex items-center gap-2 p-2 rounded-xl transition-colors group ${
-                win.completed ? 'bg-green-50 border border-green-200' : 'bg-slate-50 hover:bg-blue-50 border border-slate-100'
+                win.completed ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800' : 'bg-slate-50 dark:bg-slate-700 hover:bg-blue-50 dark:hover:bg-slate-600 border border-slate-100 dark:border-slate-600'
               }`}
             >
               <div 
@@ -98,7 +98,7 @@ const WinTheDayWidget = ({ scope, helpText }) => {
                 } ${
                   win.completed 
                     ? 'bg-green-500 border-green-500' 
-                    : 'border-slate-300 group-hover:border-blue-400'
+                    : 'border-slate-300 dark:border-slate-500 group-hover:border-blue-400'
                 }`}
               >
                 {win.completed && <CheckCircle className="w-3 h-3 text-white" />}
@@ -112,8 +112,8 @@ const WinTheDayWidget = ({ scope, helpText }) => {
                   placeholder={`Enter Priority #${index + 1}`}
                   className={`w-full bg-transparent outline-none text-sm font-bold ${
                     win.completed 
-                      ? 'text-green-700 line-through placeholder:text-green-300' 
-                      : 'text-slate-700 placeholder:text-slate-400'
+                      ? 'text-green-700 dark:text-green-400 line-through placeholder:text-green-300' 
+                      : 'text-slate-700 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500'
                   }`}
                 />
               </div>
@@ -122,7 +122,7 @@ const WinTheDayWidget = ({ scope, helpText }) => {
         })}
 
         {/* Save Button */}
-        <div className="flex items-center justify-start mt-3 pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-start mt-3 pt-2 border-t border-slate-100 dark:border-slate-600">
           <Button
             onClick={handleSave}
             disabled={saveStatus === 'saving' || !hasAnyContent}
@@ -131,7 +131,7 @@ const WinTheDayWidget = ({ scope, helpText }) => {
               saveStatus === 'saved' 
                 ? 'bg-green-500 hover:bg-green-500' 
                 : !hasAnyContent
-                  ? 'bg-slate-300 cursor-not-allowed'
+                  ? 'bg-slate-300 dark:bg-slate-600 cursor-not-allowed'
                   : 'bg-corporate-teal hover:bg-corporate-teal/90'
             }`}
           >

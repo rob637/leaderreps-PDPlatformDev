@@ -194,37 +194,37 @@ const AppContent = ({
               <div className="flex justify-center mb-3">
                 <SyncIndicator variant="badge" showWhenSynced={false} />
               </div>
-              <p className="text-slate-400 text-sm" style={{ fontFamily: 'var(--font-body)' }}>
+              <p className="text-slate-400 dark:text-slate-500 text-sm" style={{ fontFamily: 'var(--font-body)' }}>
                 © {currentYear} LeaderReps. All rights reserved.
               </p>
-              <nav className="mt-3 flex flex-wrap justify-center gap-2 text-xs text-slate-500" aria-label="Footer navigation">
+              <nav className="mt-3 flex flex-wrap justify-center gap-2 text-xs text-slate-500 dark:text-slate-400" aria-label="Footer navigation">
                 <button
                   onClick={() => navigate('privacy-policy')}
-                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 dark:text-slate-400 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
                   aria-label="View privacy policy"
                 >
                   Privacy Policy
                 </button>
-                <span className="text-slate-300 self-center" aria-hidden="true">·</span>
+                <span className="text-slate-300 dark:text-slate-600 self-center" aria-hidden="true">·</span>
                 <button
                   onClick={() => navigate('terms-of-service')}
-                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 dark:text-slate-400 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
                   aria-label="View terms and conditions"
                 >
                   Terms & Conditions
                 </button>
-                <span className="text-slate-300 self-center" aria-hidden="true">·</span>
+                <span className="text-slate-300 dark:text-slate-600 self-center" aria-hidden="true">·</span>
                 <button
                   onClick={() => navigate('contact-us')}
-                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 dark:text-slate-400 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
                   aria-label="Contact us"
                 >
                   Contact Us
                 </button>
-                <span className="text-slate-300 self-center" aria-hidden="true">·</span>
+                <span className="text-slate-300 dark:text-slate-600 self-center" aria-hidden="true">·</span>
                 <button
                   onClick={() => navigate('help-center')}
-                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 dark:text-slate-400 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
                   aria-label="Visit help center"
                 >
                   Help Center

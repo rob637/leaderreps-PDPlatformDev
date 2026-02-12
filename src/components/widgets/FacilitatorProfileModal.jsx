@@ -45,7 +45,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header with gradient */}
         <div className="relative bg-gradient-to-br from-corporate-navy via-corporate-navy/95 to-corporate-teal pt-8 pb-16 px-6">
           {/* Close button */}
@@ -66,7 +66,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
 
         {/* Profile Card - overlaps header */}
         <div className="relative -mt-12 px-6">
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-100">
+          <div className="bg-white dark:bg-slate-700 rounded-xl shadow-lg p-6 border border-slate-100 dark:border-slate-600">
             {/* Avatar */}
             <div className="flex justify-center -mt-14 mb-4">
               {photoUrl ? (
@@ -84,8 +84,8 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
 
             {/* Name & Title */}
             <div className="text-center mb-4">
-              <h2 className="text-xl font-bold text-corporate-navy">{name}</h2>
-              <p className="text-slate-500 text-sm flex items-center justify-center gap-1.5 mt-1">
+              <h2 className="text-xl font-bold text-corporate-navy dark:text-white">{name}</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm flex items-center justify-center gap-1.5 mt-1">
                 <Award className="w-4 h-4" />
                 {title}
               </p>
@@ -93,8 +93,8 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
 
             {/* Bio */}
             {bio && (
-              <div className="bg-slate-50 rounded-xl p-4 mb-4">
-                <p className="text-slate-600 text-sm leading-relaxed">{bio}</p>
+              <div className="bg-slate-50 dark:bg-slate-600 rounded-xl p-4 mb-4">
+                <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{bio}</p>
               </div>
             )}
 
@@ -109,8 +109,8 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
                     <Mail className="w-5 h-5 text-corporate-teal" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-slate-500">Email</p>
-                    <p className="text-sm text-corporate-navy font-medium group-hover:text-corporate-teal transition-colors">{email}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Email</p>
+                    <p className="text-sm text-corporate-navy dark:text-white font-medium group-hover:text-corporate-teal transition-colors">{email}</p>
                   </div>
                 </a>
               )}
@@ -124,8 +124,8 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
                     <Phone className="w-5 h-5 text-corporate-teal" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-slate-500">Phone</p>
-                    <p className="text-sm text-corporate-navy font-medium group-hover:text-corporate-teal transition-colors">{phone}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Phone</p>
+                    <p className="text-sm text-corporate-navy dark:text-white font-medium group-hover:text-corporate-teal transition-colors">{phone}</p>
                   </div>
                 </a>
               )}
@@ -141,7 +141,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
                     <Linkedin className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-slate-500">LinkedIn</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">LinkedIn</p>
                     <p className="text-sm text-blue-600 font-medium group-hover:underline">View Profile</p>
                   </div>
                 </a>
@@ -155,7 +155,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
           <Button
             variant="ghost"
             onClick={onClose}
-            className="text-slate-500 hover:text-slate-700"
+            className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
           >
             Close
           </Button>

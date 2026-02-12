@@ -144,10 +144,10 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
       <div className="space-y-4">
         {/* Cohort Info */}
         {cohortData ? (
-          <div className="bg-gradient-to-br from-corporate-navy/5 to-corporate-teal/5 rounded-xl p-4 border border-corporate-teal/10">
+          <div className="bg-gradient-to-br from-corporate-navy/5 to-corporate-teal/5 dark:from-corporate-navy/30 dark:to-corporate-teal/20 rounded-xl p-4 border border-corporate-teal/10 dark:border-corporate-teal/30">
             <div className="flex items-start justify-between">
               <div>
-                <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
                   <Users className="w-3 h-3" />
                   <span 
                     onClick={handleSecretClick}
@@ -161,19 +161,19 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
                     <span className="ml-1 text-[10px] text-amber-600 bg-amber-100 px-1 rounded">⚡</span>
                   )}
                 </div>
-                <h3 className="font-bold text-corporate-navy text-lg">{cohortData.name}</h3>
+                <h3 className="font-bold text-corporate-navy dark:text-white text-lg">{cohortData.name}</h3>
                 {cohortData.description && (
-                  <p className="text-slate-600 text-sm mt-1">{cohortData.description}</p>
+                  <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">{cohortData.description}</p>
                 )}
               </div>
               <div className={`flex flex-col items-center justify-center w-16 h-16 rounded-xl ${daysDisplay.bgColor}`}>
                 <span className={`text-2xl font-bold ${daysDisplay.color}`}>{daysDisplay.value}</span>
-                <span className="text-[10px] text-slate-500">{daysDisplay.label}</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">{daysDisplay.label}</span>
               </div>
             </div>
             
             {/* Start Date */}
-            <div className="flex items-center gap-2 mt-3 text-sm text-slate-600">
+            <div className="flex items-center gap-2 mt-3 text-sm text-slate-600 dark:text-slate-300">
               <Calendar className="w-4 h-4 text-corporate-teal" />
               <span>Starts: <strong>{formatStartDate(cohortData.startDate)}</strong></span>
             </div>
@@ -182,7 +182,7 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
             {cohortData?.facilitator && (
               <button
                 onClick={() => setShowFacilitatorModal(true)}
-                className="w-full flex items-center gap-3 mt-3 pt-3 border-t border-slate-200/60 hover:bg-corporate-teal/5 rounded-lg p-2 -mx-2 transition-all group text-left"
+                className="w-full flex items-center gap-3 mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-600/60 hover:bg-corporate-teal/5 rounded-lg p-2 -mx-2 transition-all group text-left"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-corporate-navy to-corporate-teal flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0">
                   {cohortData.facilitator.photoUrl ? (
@@ -196,36 +196,36 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-800 group-hover:text-corporate-teal transition-colors truncate text-sm">{cohortData.facilitator.name}</p>
-                  <p className="text-xs text-slate-500">Your Facilitator</p>
+                  <p className="font-medium text-slate-800 dark:text-white group-hover:text-corporate-teal transition-colors truncate text-sm">{cohortData.facilitator.name}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Your Facilitator</p>
                 </div>
-                <Info className="w-4 h-4 text-slate-300 group-hover:text-corporate-teal transition-colors flex-shrink-0" />
+                <Info className="w-4 h-4 text-slate-300 dark:text-slate-500 group-hover:text-corporate-teal transition-colors flex-shrink-0" />
               </button>
             )}
           </div>
         ) : (
-          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 text-center">
-            <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-slate-500 text-sm">No cohort assigned yet</p>
-            <p className="text-slate-400 text-xs mt-1">Contact your administrator</p>
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 text-center">
+            <Users className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+            <p className="text-slate-500 dark:text-slate-400 text-sm">No cohort assigned yet</p>
+            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">Contact your administrator</p>
           </div>
         )}
 
         {/* Prep Progress (only in Prep Phase) - COMPLETION-BASED */}
         {showPrepProgress && currentPhase?.id === 'pre-start' && prepRequirementsComplete && (
-          <div className="bg-white rounded-xl p-4 border border-slate-200">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-slate-700">Prep Progress</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Prep Progress</span>
               </div>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
                 {prepRequirementsComplete.completedCount} of {prepRequirementsComplete.totalCount} complete
               </span>
             </div>
             
             {/* Progress Bar */}
             <div className="mb-4">
-              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div 
                   className={`h-full rounded-full transition-all duration-500 ${
                     prepRequirementsComplete.allComplete 
@@ -236,7 +236,7 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
                 />
               </div>
               <div className="flex justify-between mt-1">
-                <span className="text-xs text-slate-400">Required Items</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500">Required Items</span>
                 <span className={`text-xs font-medium ${
                   prepRequirementsComplete.allComplete ? 'text-emerald-600' : 'text-corporate-teal'
                 }`}>
@@ -252,21 +252,21 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
                   key={item.id} 
                   className={`flex items-center gap-3 p-2 rounded-lg transition-all ${
                     item.complete 
-                      ? 'bg-emerald-50 border border-emerald-100' 
-                      : 'bg-slate-50 border border-slate-100'
+                      ? 'bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800' 
+                      : 'bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600'
                   }`}
                 >
                   <div 
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                       item.complete 
                         ? 'bg-emerald-500 text-white' 
-                        : 'bg-slate-200 text-slate-500'
+                        : 'bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-400'
                     }`}
                   >
                     {item.complete ? '✓' : idx + 1}
                   </div>
                   <span className={`text-sm ${
-                    item.complete ? 'text-emerald-700' : 'text-slate-600'
+                    item.complete ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'
                   }`}>
                     {item.label}
                   </span>
@@ -300,17 +300,17 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
         />
 
         {/* Current Phase */}
-        <div className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 border border-slate-200">
+        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 rounded-xl px-4 py-3 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-slate-500" />
-            <span className="text-sm text-slate-600">Current Phase</span>
+            <Shield className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            <span className="text-sm text-slate-600 dark:text-slate-300">Current Phase</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-corporate-navy">
+            <span className="text-sm font-medium text-corporate-navy dark:text-white">
               {currentPhase?.displayName || 'Unknown'}
             </span>
             {phaseDayNumber && (
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
                 (Day {phaseDayNumber})
               </span>
             )}
@@ -319,7 +319,7 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
 
         {/* Secret Time Traveler Panel */}
         {showTimeTraveler && (
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200 shadow-sm">
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 rounded-xl p-4 border border-amber-200 dark:border-amber-700 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-amber-600" />
@@ -342,7 +342,7 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
                   onChange={(e) => setTimeTravelPassword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
                   placeholder="Enter code..."
-                  className="w-full px-3 py-2 text-sm border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                  className="w-full px-3 py-2 text-sm border border-amber-200 dark:border-amber-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white dark:bg-slate-800 dark:text-white"
                   autoFocus
                 />
                 <button
@@ -365,25 +365,25 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
                 <div className="grid grid-cols-4 gap-2">
                   <button
                     onClick={() => handleTimeTravel(-7)}
-                    className="py-2 px-2 bg-white hover:bg-amber-100 text-amber-700 text-xs font-medium rounded-lg border border-amber-200 transition-colors"
+                    className="py-2 px-2 bg-white dark:bg-slate-800 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-lg border border-amber-200 dark:border-amber-700 transition-colors"
                   >
                     -7d
                   </button>
                   <button
                     onClick={() => handleTimeTravel(-1)}
-                    className="py-2 px-2 bg-white hover:bg-amber-100 text-amber-700 text-xs font-medium rounded-lg border border-amber-200 transition-colors"
+                    className="py-2 px-2 bg-white dark:bg-slate-800 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-lg border border-amber-200 dark:border-amber-700 transition-colors"
                   >
                     -1d
                   </button>
                   <button
                     onClick={() => handleTimeTravel(1)}
-                    className="py-2 px-2 bg-white hover:bg-amber-100 text-amber-700 text-xs font-medium rounded-lg border border-amber-200 transition-colors"
+                    className="py-2 px-2 bg-white dark:bg-slate-800 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-lg border border-amber-200 dark:border-amber-700 transition-colors"
                   >
                     +1d
                   </button>
                   <button
                     onClick={() => handleTimeTravel(7)}
-                    className="py-2 px-2 bg-white hover:bg-amber-100 text-amber-700 text-xs font-medium rounded-lg border border-amber-200 transition-colors"
+                    className="py-2 px-2 bg-white dark:bg-slate-800 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-lg border border-amber-200 dark:border-amber-700 transition-colors"
                   >
                     +7d
                   </button>
@@ -395,7 +395,7 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
                     type="number"
                     value={timeTravelDays}
                     onChange={(e) => setTimeTravelDays(parseInt(e.target.value) || 0)}
-                    className="flex-1 px-3 py-2 text-sm border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                    className="flex-1 px-3 py-2 text-sm border border-amber-200 dark:border-amber-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white dark:bg-slate-800 dark:text-white"
                     placeholder="Days (+/-)"
                   />
                   <button

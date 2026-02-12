@@ -51,12 +51,12 @@ const CategoryCard = ({ category, onClick, repCount }) => {
           </div>
           <div>
             <div className={`font-semibold ${colors.text}`}>{category.shortLabel}</div>
-            <div className="text-xs text-gray-500">{category.description}</div>
+            <div className="text-xs text-gray-500 dark:text-slate-400">{category.description}</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400">{repCount} types</span>
-          <ChevronRight className="w-5 h-5 text-gray-400" />
+          <span className="text-xs text-gray-400 dark:text-slate-500">{repCount} types</span>
+          <ChevronRight className="w-5 h-5 text-gray-400 dark:text-slate-500" />
         </div>
       </div>
     </button>
@@ -81,13 +81,13 @@ const RepTypeCard = ({ repType, isSelected, onClick }) => {
       className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
         isSelected 
           ? `${colors.bg} ${colors.border} ring-2 ${colors.ring}` 
-          : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+          : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 hover:shadow-sm'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-corporate-navy">{repType.shortLabel}</div>
-          <div className="text-sm text-gray-600 mt-0.5">{repType.description}</div>
+          <div className="font-medium text-corporate-navy dark:text-white">{repType.shortLabel}</div>
+          <div className="text-sm text-gray-600 dark:text-slate-400 mt-0.5">{repType.description}</div>
           
           <div className="flex items-center gap-3 mt-2 text-xs">
             <span className={`font-medium ${difficultyColor}`}>{difficultyLabel}</span>
@@ -126,12 +126,12 @@ const SelectedRepSummary = ({ repType, onClear }) => {
         <button
           type="button"
           onClick={onClear}
-          className="text-xs text-gray-500 hover:text-gray-700 underline"
+          className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 underline"
         >
           Change
         </button>
       </div>
-      <p className="text-xs text-gray-600 mt-1">{repType.description}</p>
+      <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">{repType.description}</p>
     </div>
   );
 };
@@ -169,7 +169,7 @@ const RepTypePicker = ({
   if (!selectedCategory) {
     return (
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
           What kind of rep is this?
         </label>
         {categories.map((category) => {
@@ -199,16 +199,16 @@ const RepTypePicker = ({
         <button
           type="button"
           onClick={() => setSelectedCategory(null)}
-          className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
         >
-          <ChevronLeft className="w-5 h-5 text-gray-600" />
+          <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-slate-300" />
         </button>
         <div className={`px-2 py-1 rounded-lg ${colors.bg}`}>
           <span className={`text-sm font-medium ${colors.text}`}>{categoryInfo?.shortLabel}</span>
         </div>
       </div>
       
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">
         Choose the specific rep type:
       </label>
       
@@ -231,12 +231,12 @@ const RepTypePicker = ({
       
       {/* Show "hard part" for selected type */}
       {showDetails && selectedRepType && selectedRepType.category === selectedCategory && (
-        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-slate-600">
           <div className="flex items-start gap-2">
-            <Info className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+            <Info className="w-4 h-4 text-gray-500 dark:text-slate-400 mt-0.5 flex-shrink-0" />
             <div>
-              <div className="text-xs font-medium text-gray-700">The hard part:</div>
-              <div className="text-sm text-gray-600">{selectedRepType.hardPart}</div>
+              <div className="text-xs font-medium text-gray-700 dark:text-slate-200">The hard part:</div>
+              <div className="text-sm text-gray-600 dark:text-slate-400">{selectedRepType.hardPart}</div>
             </div>
           </div>
         </div>

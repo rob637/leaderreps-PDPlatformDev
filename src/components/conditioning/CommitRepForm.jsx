@@ -48,12 +48,12 @@ const RiskSelector = ({ value, onChange, repType }) => {
   // If rep type always requires prep, force high risk
   if (repType?.prepRequired) {
     return (
-      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+      <div className="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg">
         <div className="flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-medium text-amber-800">Prep Required</p>
-            <p className="text-xs text-amber-600 mt-0.5">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Prep Required</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
               This rep type requires preparation before execution.
             </p>
           </div>
@@ -64,7 +64,7 @@ const RiskSelector = ({ value, onChange, repType }) => {
   
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
         How risky is this conversation?
       </label>
       <div className="grid grid-cols-3 gap-2">
@@ -76,11 +76,11 @@ const RiskSelector = ({ value, onChange, repType }) => {
             className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${
               value === risk.id
                 ? risk.id === 'high' 
-                  ? 'bg-red-50 border-red-300 text-red-700 ring-2 ring-red-500'
+                  ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 ring-2 ring-red-500'
                   : risk.id === 'medium'
-                  ? 'bg-amber-50 border-amber-300 text-amber-700 ring-2 ring-amber-500'
-                  : 'bg-green-50 border-green-300 text-green-700 ring-2 ring-green-500'
-                : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                  ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 ring-2 ring-amber-500'
+                  : 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400 ring-2 ring-green-500'
+                : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-gray-300 dark:hover:border-slate-500'
             }`}
           >
             {risk.label}
@@ -88,7 +88,7 @@ const RiskSelector = ({ value, onChange, repType }) => {
         ))}
       </div>
       {value === 'high' && (
-        <p className="text-xs text-amber-600 mt-2">
+        <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
           High-risk reps require preparation before execution.
         </p>
       )}
@@ -106,7 +106,7 @@ const DifficultySelector = ({ value, onChange, repType }) => {
   
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
         Difficulty level
       </label>
       <div className="space-y-2">
@@ -119,19 +119,19 @@ const DifficultySelector = ({ value, onChange, repType }) => {
               onClick={() => onChange(level.id)}
               className={`w-full p-3 rounded-xl border-2 text-left transition-all ${
                 value === level.id
-                  ? 'bg-corporate-navy/5 border-corporate-navy ring-2 ring-corporate-navy'
-                  : 'bg-white border-gray-200 hover:border-gray-300'
+                  ? 'bg-corporate-navy/5 dark:bg-corporate-navy/20 border-corporate-navy ring-2 ring-corporate-navy'
+                  : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
               }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className={`font-medium text-sm ${
-                    value === level.id ? 'text-corporate-navy' : 'text-gray-700'
+                    value === level.id ? 'text-corporate-navy dark:text-white' : 'text-gray-700 dark:text-slate-200'
                   }`}>
                     {level.label}
                   </div>
                   {progressionDesc && (
-                    <div className="text-xs text-gray-500 mt-0.5">{progressionDesc}</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{progressionDesc}</div>
                   )}
                 </div>
               </div>
@@ -150,26 +150,26 @@ const CollapsibleSection = ({ title, children, defaultOpen = false, helpText }) 
   const [isOpen, setIsOpen] = useState(defaultOpen);
   
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden">
+    <div className="border border-gray-200 dark:border-slate-600 rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-3 bg-gray-50 flex items-center justify-between hover:bg-gray-100 transition-colors"
+        className="w-full p-3 bg-gray-50 dark:bg-slate-700 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="font-medium text-sm text-corporate-navy">{title}</span>
+          <span className="font-medium text-sm text-corporate-navy dark:text-white">{title}</span>
           {helpText && (
-            <span className="text-xs text-gray-400">({helpText})</span>
+            <span className="text-xs text-gray-400 dark:text-slate-500">({helpText})</span>
           )}
         </div>
         {isOpen ? (
-          <ChevronUp className="w-4 h-4 text-gray-500" />
+          <ChevronUp className="w-4 h-4 text-gray-500 dark:text-slate-400" />
         ) : (
-          <ChevronDown className="w-4 h-4 text-gray-500" />
+          <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
         )}
       </button>
       {isOpen && (
-        <div className="p-4 space-y-4 bg-white">
+        <div className="p-4 space-y-4 bg-white dark:bg-slate-800">
           {children}
         </div>
       )}
@@ -358,7 +358,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
             </p>
           )}
           {!submitAttempted && !isValid && repTypeId && (
-            <p className="text-xs text-gray-500 text-center mt-2">
+            <p className="text-xs text-gray-500 dark:text-slate-400 text-center mt-2">
               Fill in all required fields to continue
             </p>
           )}
@@ -369,13 +369,13 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
           <div className="space-y-5">
             {/* V1 UX: Soft warning when active rep exists */}
             {activeRepsCount > 0 && (
-              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl">
+                <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-amber-800">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
                     You have {activeRepsCount} active rep{activeRepsCount !== 1 ? 's' : ''}
                   </p>
-                  <p className="text-xs text-amber-600 mt-0.5">
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
                     Consider completing your current rep before starting another.
                   </p>
                 </div>
@@ -399,10 +399,10 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
               <>
                 {/* Step 2: Who */}
                 <div className={errors.person ? 'field-error' : ''}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">
                     Who is this rep with? <span className="text-red-500">*</span>
                   </label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
                     Be specific - name, not "someone on my team"
                   </p>
                   <input
@@ -410,10 +410,10 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                     value={person}
                     onChange={(e) => handlePersonChange(e.target.value)}
                     placeholder="e.g., Maya, Jordan, Chris"
-                    className={`w-full p-3 border rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all ${
+                    className={`w-full p-3 border rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all dark:bg-slate-800 dark:text-white ${
                       errors.person && submitAttempted 
-                        ? 'border-red-400 bg-red-50' 
-                        : 'border-slate-200 hover:border-slate-300'
+                        ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
+                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
                     }`}
                     required
                   />
@@ -474,7 +474,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                         onChange={(e) => setUseCustomDeadline(e.target.checked)}
                         className="rounded"
                       />
-                      <span className="text-sm text-gray-700">
+                      <span className="text-sm text-gray-700 dark:text-slate-300">
                         Set custom deadline (default: end of week)
                       </span>
                     </label>
@@ -486,7 +486,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                         onChange={(e) => setCustomDeadline(e.target.value)}
                         min={today}
                         max={maxDeadline}
-                        className="mt-2 w-full p-3 border border-slate-200 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50"
+                        className="mt-2 w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 dark:bg-slate-800 dark:text-white"
                       />
                     )}
                   </div>
@@ -494,12 +494,12 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                 
                 {/* Prep Required Warning */}
                 {isPrepRequired(repTypeId, riskLevel) && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-amber-800">Prep Required</p>
-                        <p className="text-xs text-amber-600 mt-0.5">
+                        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Prep Required</p>
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
                           You'll need to complete prep before marking this rep as executed.
                         </p>
                       </div>

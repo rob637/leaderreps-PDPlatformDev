@@ -45,12 +45,12 @@ const Section = ({ title, icon: Icon, children, empty = false }) => {
   if (empty) return null;
   
   return (
-    <div className="border-t border-gray-100 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
-      <h4 className="flex items-center gap-2 text-sm font-semibold text-corporate-navy mb-2">
+    <div className="border-t border-gray-100 dark:border-slate-700 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
+      <h4 className="flex items-center gap-2 text-sm font-semibold text-corporate-navy dark:text-white mb-2">
         {Icon && <Icon className="w-4 h-4" />}
         {title}
       </h4>
-      <div className="text-sm text-gray-700">{children}</div>
+      <div className="text-sm text-gray-700 dark:text-slate-300">{children}</div>
     </div>
   );
 };
@@ -133,7 +133,7 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-corporate-navy to-corporate-navy/90">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-corporate-navy to-corporate-navy/90">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-bold text-white">Rep Details</h3>
             <button
@@ -157,12 +157,12 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
         </div>
         
         {/* Status & Timeline */}
-        <div className="p-4 bg-gray-50 border-b border-gray-200">
+        <div className="p-4 bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-700">
           <div className="flex flex-wrap items-center gap-3">
             <StatusDisplay status={rep.status} />
             
             {rep.deadline && (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
+              <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400">
                 <Calendar className="w-3 h-3" />
                 <span>Due: {formatDate(rep.deadline)}</span>
               </div>
@@ -175,7 +175,7 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
           {/* Notes */}
           {rep.notes && (
             <Section title="Notes" icon={MessageSquare}>
-              <p className="italic text-gray-600">"{rep.notes}"</p>
+              <p className="italic text-gray-600 dark:text-slate-400">"{rep.notes}"</p>
             </Section>
           )}
           
@@ -197,23 +197,23 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
           {/* Prep Data */}
           {rep.prep && Object.keys(rep.prep).length > 0 && (
             <Section title="Prep Notes" icon={FileText}>
-              <div className="space-y-2 bg-corporate-navy/5 rounded-lg p-3">
+              <div className="space-y-2 bg-corporate-navy/5 dark:bg-corporate-navy/20 rounded-lg p-3">
                 {rep.prep.opening_language && (
                   <div>
-                    <span className="text-xs font-medium text-corporate-navy/70">Opening:</span>
-                    <p className="text-corporate-navy">{rep.prep.opening_language}</p>
+                    <span className="text-xs font-medium text-corporate-navy/70 dark:text-slate-400">Opening:</span>
+                    <p className="text-corporate-navy dark:text-slate-200">{rep.prep.opening_language}</p>
                   </div>
                 )}
                 {rep.prep.behavior_to_address && (
                   <div>
-                    <span className="text-xs font-medium text-corporate-navy/70">Behavior:</span>
-                    <p className="text-corporate-navy">{rep.prep.behavior_to_address}</p>
+                    <span className="text-xs font-medium text-corporate-navy/70 dark:text-slate-400">Behavior:</span>
+                    <p className="text-corporate-navy dark:text-slate-200">{rep.prep.behavior_to_address}</p>
                   </div>
                 )}
                 {rep.prep.commitment_to_request && (
                   <div>
-                    <span className="text-xs font-medium text-corporate-navy/70">Commitment:</span>
-                    <p className="text-corporate-navy">{rep.prep.commitment_to_request}</p>
+                    <span className="text-xs font-medium text-corporate-navy/70 dark:text-slate-400">Commitment:</span>
+                    <p className="text-corporate-navy dark:text-slate-200">{rep.prep.commitment_to_request}</p>
                   </div>
                 )}
               </div>
@@ -226,21 +226,21 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
               <div className="space-y-3">
                 {/* Evidence Level */}
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs text-gray-500">
+                  <Clock className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+                  <span className="text-xs text-gray-500 dark:text-slate-400">
                     {rep.evidence.level === 'level_1' ? 'Same-day capture' : 'Later capture'}
                   </span>
                 </div>
                 
                 {/* Debrief Responses */}
                 {rep.evidence.responses && Object.entries(rep.evidence.responses).length > 0 && (
-                  <div className="bg-green-50 rounded-lg p-3 space-y-2">
+                  <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 space-y-2">
                     {Object.entries(rep.evidence.responses).map(([key, value]) => (
                       <div key={key}>
-                        <span className="text-xs font-medium text-green-700 capitalize">
+                        <span className="text-xs font-medium text-green-700 dark:text-green-400 capitalize">
                           {key.replace(/_/g, ' ')}:
                         </span>
-                        <p className="text-green-900">{value}</p>
+                        <p className="text-green-900 dark:text-green-200">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -259,7 +259,7 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
           {/* Loop Closure */}
           {rep.loopClosure && (
             <Section title="Loop Closure" icon={CheckCircle}>
-              <div className="bg-emerald-50 rounded-lg p-3 space-y-2">
+              <div className="bg-emerald-50 dark:bg-emerald-900/30 rounded-lg p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                     rep.loopClosure.outcome === 'behavior_changed' || rep.loopClosure.outcome === 'commitment_held'
@@ -298,15 +298,15 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
           {/* Cancel Reason */}
           {rep.cancelReason && (
             <Section title="Cancellation" icon={X}>
-              <div className="bg-gray-100 rounded-lg p-3">
-                <p className="text-gray-700">{rep.cancelReason}</p>
+              <div className="bg-gray-100 dark:bg-slate-700 rounded-lg p-3">
+                <p className="text-gray-700 dark:text-slate-300">{rep.cancelReason}</p>
               </div>
             </Section>
           )}
           
           {/* Timeline */}
           <Section title="Timeline" icon={Clock}>
-            <div className="space-y-1 text-xs text-gray-500">
+            <div className="space-y-1 text-xs text-gray-500 dark:text-slate-400">
               {rep.createdAt && <div>Created: {formatDate(rep.createdAt)}</div>}
               {rep.preparedAt && <div>Prepared: {formatDate(rep.preparedAt)}</div>}
               {rep.scheduledAt && <div>Scheduled: {formatDate(rep.scheduledAt)}</div>}
@@ -318,7 +318,7 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
         </div>
         
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <div className="p-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
           <Button
             onClick={onClose}
             className="w-full bg-corporate-navy hover:bg-corporate-navy/90 text-white"

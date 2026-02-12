@@ -203,21 +203,21 @@ const DevelopmentPlanWidget = ({ helpText }) => {
           {/* Header Info */}
           <div>
             <div className="flex justify-between items-start mb-1">
-              <h3 className="text-lg font-bold text-slate-800">{weekData.focus}</h3>
-              <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full uppercase tracking-wider">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white">{weekData.focus}</h3>
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full uppercase tracking-wider">
                 Week {weekData.weekNumber}
               </span>
             </div>
-            <p className="text-sm text-slate-600 mb-3">{weekData.description}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{weekData.description}</p>
             
             {/* Progress Bar */}
-            <div className="w-full bg-slate-100 rounded-full h-2 mb-1">
+              <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 mb-1">
               <div 
                 className="bg-blue-500 h-2 rounded-full transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
               ></div>
             </div>
-            <div className="flex justify-between text-xs text-slate-500">
+            <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
               <span>{progressPercent}% Complete</span>
               <span>{weekData.actions.length} Items</span>
             </div>
@@ -242,30 +242,30 @@ const DevelopmentPlanWidget = ({ helpText }) => {
                   key={item.id || idx}
                   onClick={hasResource ? handleRowClick : undefined}
                   className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                    isCompleted ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200 hover:border-blue-300'
+                    isCompleted ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600'
                   } ${hasResource ? 'cursor-pointer' : ''}`}
                 >
                   <div 
                     onClick={(e) => { e.stopPropagation(); handleToggle(item); }}
                     className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer transition-colors ${
-                      isCompleted ? 'bg-blue-500 border-blue-500' : 'border-slate-300 hover:border-blue-400'
+                      isCompleted ? 'bg-blue-500 border-blue-500' : 'border-slate-300 dark:border-slate-500 hover:border-blue-400'
                     }`}
                   >
                     {isCompleted && <CheckCircle className="w-3 h-3 text-white" />}
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-700'}`}>
+                    <p className={`text-sm font-medium ${isCompleted ? 'text-slate-500 dark:text-slate-400 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
                       {item.label || item.title}
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                       <Icon className="w-3 h-3" />
                       <span className="capitalize">{item.type?.replace(/_/g, ' ').toLowerCase()}</span>
                     </div>
                   </div>
 
                   {hasResource && (
-                    <div className="p-2 text-slate-400 group-hover:text-blue-600">
+                    <div className="p-2 text-slate-400 dark:text-slate-500">
                       {loadingResource === item.id ? <Loader className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
                     </div>
                   )}

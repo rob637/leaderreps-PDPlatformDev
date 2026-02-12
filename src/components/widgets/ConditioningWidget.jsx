@@ -77,8 +77,8 @@ const ConditioningWidget = ({ helpText }) => {
         data-repup-step="conditioning"
       >
         <div className="text-center py-2">
-          <Target className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-          <p className="text-slate-600 text-sm">
+          <Target className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+          <p className="text-slate-600 dark:text-slate-400 text-sm">
             Conditioning is available when you're enrolled in a cohort program.
           </p>
         </div>
@@ -123,16 +123,16 @@ const ConditioningWidget = ({ helpText }) => {
                 <>
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-green-800 text-sm">Weekly Requirement Met!</p>
-                    <p className="text-xs text-green-600">{completedCount} rep{completedCount !== 1 ? 's' : ''} completed this week</p>
+                    <p className="font-medium text-green-800 dark:text-green-200 text-sm">Weekly Requirement Met!</p>
+                    <p className="text-xs text-green-600 dark:text-green-400">{completedCount} rep{completedCount !== 1 ? 's' : ''} completed this week</p>
                   </div>
                 </>
               ) : (
                 <>
                   <Target className="w-5 h-5 text-amber-600 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-amber-800 text-sm">1 Rep Required This Week</p>
-                    <p className="text-xs text-amber-600">
+                    <p className="font-medium text-amber-800 dark:text-amber-200 text-sm">1 Rep Required This Week</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
                       {activeCount > 0 
                         ? `${activeCount} active rep${activeCount !== 1 ? 's' : ''} in progress`
                         : 'Commit to a rep to get started'
@@ -141,32 +141,32 @@ const ConditioningWidget = ({ helpText }) => {
                   </div>
                 </>
               )}
-              <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+              <ChevronRight className="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
             </div>
 
             {/* Pending Debriefs Alert */}
             {pendingDebriefs > 0 && (
-              <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-                <FileText className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                <span className="text-xs text-amber-700">
+              <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                <span className="text-xs text-amber-700 dark:text-amber-300">
                   <strong>{pendingDebriefs}</strong> rep{pendingDebriefs !== 1 ? 's' : ''} need{pendingDebriefs === 1 ? 's' : ''} debrief
                 </span>
               </div>
             )}
 
             {/* Quick Stats */}
-            <div className="flex items-center justify-between text-sm border-t border-slate-100 pt-2">
+            <div className="flex items-center justify-between text-sm border-t border-slate-100 dark:border-slate-700 pt-2">
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1.5 text-slate-600">
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                   <CheckCircle className="w-4 h-4 text-green-500" />
                   <span><strong>{completedCount}</strong> Completed</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-slate-600">
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                   <Clock className="w-4 h-4 text-blue-500" />
                   <span><strong>{activeCount}</strong> Active</span>
                 </div>
               </div>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-400 dark:text-slate-500">
                 {formatDate(weekStart)} - {formatDate(weekEnd)}
               </span>
             </div>
@@ -174,8 +174,8 @@ const ConditioningWidget = ({ helpText }) => {
             {/* CTA Button */}
             <div className={`flex items-center gap-2 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
               requiredMet 
-                ? 'bg-green-100 hover:bg-green-200 text-green-700' 
-                : 'bg-amber-100 hover:bg-amber-200 text-amber-700'
+                ? 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 text-green-700 dark:text-green-300' 
+                : 'bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300'
             }`}>
               <Plus className="w-4 h-4" />
               <span>{ctaText}</span>

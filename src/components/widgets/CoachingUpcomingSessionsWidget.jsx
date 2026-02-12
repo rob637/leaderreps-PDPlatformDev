@@ -68,15 +68,15 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
   const typeConfig = SESSION_TYPE_CONFIG[session.sessionType] || SESSION_TYPE_CONFIG.workshop;
   
   return (
-    <div className={`bg-white rounded-xl border border-slate-200 p-4 border-l-4 ${typeConfig.accent} hover:shadow-md transition-shadow`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 border-l-4 ${typeConfig.accent} hover:shadow-md transition-shadow`}>
       <div className="flex justify-between items-start mb-3">
         <div>
           <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${typeConfig.color} mb-2`}>
             {typeConfig.label}
           </span>
-          <h3 className="font-bold text-slate-800">{session.title}</h3>
+          <h3 className="font-bold text-slate-800 dark:text-white">{session.title}</h3>
           {session.coach && (
-            <p className="text-sm text-slate-500">with {session.coach}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">with {session.coach}</p>
           )}
         </div>
         
@@ -98,10 +98,10 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
       </div>
       
       {session.description && (
-        <p className="text-sm text-slate-600 mb-3 line-clamp-2">{session.description}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3 line-clamp-2">{session.description}</p>
       )}
       
-      <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+      <div className="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-1">
           <Calendar className="w-3.5 h-3.5" />
           <span>{formatSessionDate(session.date)}</span>
@@ -136,7 +136,7 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
       </div>
       
       {isRegistered && (
-        <div className="mt-3 pt-3 border-t border-slate-100">
+        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
           <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
             ✓ Registered
           </span>
@@ -228,9 +228,9 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
     return (
       <Card title="Live Sessions" icon={Calendar} accent="ORANGE" helpText={helpText}>
         <div className="text-center py-8">
-          <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="font-bold text-slate-600 mb-1">No Upcoming Sessions</h3>
-          <p className="text-sm text-slate-400">Check back soon for new coaching opportunities.</p>
+          <Calendar className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+          <h3 className="font-bold text-slate-600 dark:text-slate-300 mb-1">No Upcoming Sessions</h3>
+          <p className="text-sm text-slate-400 dark:text-slate-500">Check back soon for new coaching opportunities.</p>
         </div>
       </Card>
     );
@@ -244,22 +244,22 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
       helpText={helpText}
     >
       {activeViewMode === 'calendar' ? (
-        <div className="bg-white rounded-lg">
+        <div className="bg-white dark:bg-slate-800 rounded-lg">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-3">
-            <button onClick={prevMonth} className="p-1 hover:bg-slate-100 rounded">
-              <ChevronLeft className="w-4 h-4 text-slate-600" />
+            <button onClick={prevMonth} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
+              <ChevronLeft className="w-4 h-4 text-slate-600 dark:text-slate-300" />
             </button>
-            <span className="text-sm font-bold text-slate-800">{monthName}</span>
-            <button onClick={nextMonth} className="p-1 hover:bg-slate-100 rounded">
-              <ChevronRight className="w-4 h-4 text-slate-600" />
+            <span className="text-sm font-bold text-slate-800 dark:text-white">{monthName}</span>
+            <button onClick={nextMonth} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
+              <ChevronRight className="w-4 h-4 text-slate-600 dark:text-slate-300" />
             </button>
           </div>
           
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 gap-1 mb-1">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-              <div key={i} className="text-center text-[10px] font-bold text-slate-400 py-1">
+              <div key={i} className="text-center text-[10px] font-bold text-slate-400 dark:text-slate-500 py-1">
                 {day}
               </div>
             ))}
@@ -268,7 +268,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
           {/* Days Grid */}
           <div className="grid grid-cols-7 gap-1">
             {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-              <div key={`empty-${i}`} className="h-12 bg-slate-50 rounded" />
+              <div key={`empty-${i}`} className="h-12 bg-slate-50 dark:bg-slate-700/50 rounded" />
             ))}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
@@ -281,13 +281,13 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
                   key={day}
                   className={`h-12 rounded border p-0.5 ${
                     isToday(day) 
-                      ? 'border-indigo-400 bg-indigo-50' 
+                      ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' 
                       : hasSession 
-                        ? 'border-slate-200 bg-white' 
-                        : 'border-slate-100 bg-slate-50'
+                        ? 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800' 
+                        : 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50'
                   }`}
                 >
-                  <div className={`text-[10px] font-bold ${isToday(day) ? 'text-indigo-600' : 'text-slate-400'}`}>
+                  <div className={`text-[10px] font-bold ${isToday(day) ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`}>
                     {day}
                   </div>
                   {daySessions.slice(0, 1).map(session => (
@@ -299,7 +299,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
                     </div>
                   ))}
                   {daySessions.length > 1 && (
-                    <div className="text-[8px] text-slate-400">+{daySessions.length - 1}</div>
+                    <div className="text-[8px] text-slate-400 dark:text-slate-500">+{daySessions.length - 1}</div>
                   )}
                 </div>
               );

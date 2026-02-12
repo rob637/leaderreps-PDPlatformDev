@@ -117,7 +117,7 @@ const MySettingsWidget = () => {
   if (loading) {
     return (
       <Card accent="TEAL" className="animate-pulse">
-        <div className="h-16 bg-slate-100 rounded-lg" />
+        <div className="h-16 bg-slate-100 dark:bg-slate-700 rounded-lg" />
       </Card>
     );
   }
@@ -133,7 +133,7 @@ const MySettingsWidget = () => {
             className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-corporate-teal/30 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isProfileComplete ? 'bg-green-100' : 'bg-corporate-orange/10'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isProfileComplete ? 'bg-green-100 dark:bg-green-900/40' : 'bg-corporate-orange/10 dark:bg-corporate-orange/20'}`}>
                 {isProfileComplete ? (
                   <CheckCircle className="w-4 h-4 text-green-600" />
                 ) : (
@@ -161,7 +161,7 @@ const MySettingsWidget = () => {
             className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-corporate-teal/30 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notifSettings.strategy !== 'disabled' ? 'bg-green-100' : 'bg-slate-100'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notifSettings.strategy !== 'disabled' ? 'bg-green-100 dark:bg-green-900/40' : 'bg-slate-100 dark:bg-slate-700'}`}>
                 {(() => {
                   const strategyInfo = STRATEGY_DISPLAY[notifSettings.strategy] || STRATEGY_DISPLAY.smart_escalation;
                   const Icon = strategyInfo.icon;

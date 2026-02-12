@@ -54,7 +54,7 @@ const VoiceTextarea = ({
     <div className={className}>
       {/* Label */}
       {label && (
-        <label className="block text-sm font-medium text-corporate-navy mb-1">
+        <label className="block text-sm font-medium text-corporate-navy dark:text-white mb-1">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -62,7 +62,7 @@ const VoiceTextarea = ({
 
       {/* Help text */}
       {helpText && (
-        <p className="text-xs text-gray-500 mb-2">{helpText}</p>
+        <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">{helpText}</p>
       )}
 
       {/* Textarea with mic */}
@@ -75,12 +75,12 @@ const VoiceTextarea = ({
           disabled={disabled}
           className={`w-full p-3 pr-14 border rounded-xl text-sm resize-none transition-all duration-200
             ${isRecording
-              ? 'bg-red-50/50 border-red-300 ring-2 ring-red-200'
+              ? 'bg-red-50/50 dark:bg-red-900/20 border-red-300 dark:border-red-700 ring-2 ring-red-200 dark:ring-red-800'
               : hasError
-              ? 'border-red-400 bg-red-50/30 ring-2 ring-red-200'
-              : 'border-slate-200 hover:border-slate-300 focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal'
+              ? 'border-red-400 bg-red-50/30 dark:bg-red-900/20 ring-2 ring-red-200 dark:ring-red-800'
+              : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal'
             }
-            ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : 'bg-white'}
+            ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-700' : 'bg-white dark:bg-slate-800 dark:text-white'}
           `}
         />
 
@@ -116,7 +116,7 @@ const VoiceTextarea = ({
             </div>
           )}
         </div>
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-gray-400 dark:text-slate-500">
           {showMinWarning ? (
             <span className="text-amber-500">
               {charCount}/{minLength} min
