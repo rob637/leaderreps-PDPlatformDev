@@ -1,14 +1,14 @@
 // src/components/conditioning/QualityAssessmentCard.jsx
 // Phase 2: Displays quality assessment results after evidence submission
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   QUALITY_DIMENSIONS 
 } from '../../services/conditioningService.js';
 import { Card } from '../ui';
 import { 
   CheckCircle, XCircle, AlertTriangle, 
-  MessageSquare, Target, Handshake, Lightbulb
+  MessageSquare, Target, Handshake, Lightbulb, ChevronDown
 } from 'lucide-react';
 
 // Dimension icons and labels
@@ -89,7 +89,8 @@ const DimensionRow = ({ dimension, assessment, onPractice }) => {
 // ============================================
 // MAIN QUALITY CARD
 // ============================================
-const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false }) => {
+const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false, defaultExpanded = false }) => {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   if (!qualityAssessment) return null;
   
   const { dimensions, passedCount, totalDimensions, meetsStandard, summary } = qualityAssessment;
@@ -117,35 +118,30 @@ const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false 
       meetsStandard ? 'border-l-green-500' : 'border-l-amber-500'
     }`}>
       <div className="p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="font-bold text-corporate-navy">Quality Assessment</h4>
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-            meetsStandard 
-              ? 'bg-green-100 dark:bg-green-900/30 text-green-700' 
-              : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700'
-          }`}>
-            {meetsStandard ? (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                <span className="font-medium">Meets Standard</span>
-              </>
-            ) : (
-              <>
-                <AlertTriangle className="w-4 h-4" />
-                <span className="font-medium">Needs Improvement</span>
-              </>
-            )}
+        {/* Clickable Header */}
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <h4 className="font-bold text-corporate-navy dark:text-white">AI Review</h4>
+            <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              meetsStandard 
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-700' 
+                : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700'
+            }`}>
+              {meetsStandard ? <CheckCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+              <span>{passedCount}/{totalDimensions}</span>
+            </div>
           </div>
-        </div>
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${
+            expanded ? 'rotate-180' : ''
+          }`} />
+        </button>
         
-        {/* Score Bar */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300 mb-1">
-            <span>Score</span>
-            <span className="font-medium">{passedCount}/{totalDimensions}</span>
-          </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+        {/* Score Bar - always visible */}
+        <div className="mt-3">
+          <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div 
               className={`h-full transition-all ${
                 meetsStandard ? 'bg-green-500' : 'bg-amber-500'
@@ -155,20 +151,23 @@ const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false 
           </div>
         </div>
         
-        {/* Dimension Breakdown */}
-        <div className="space-y-3">
-          {Object.entries(dimensions || {}).map(([dimension, assessment]) => (
-            <DimensionRow
-              key={dimension}
-              dimension={dimension}
-              assessment={assessment}
-              onPractice={onPractice}
-            />
-          ))}
-        </div>
-        
-        {/* Summary */}
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 italic">{summary}</p>
+        {/* Expandable Detail */}
+        {expanded && (
+          <div className="mt-4 space-y-3">
+            {Object.entries(dimensions || {}).map(([dimension, assessment]) => (
+              <DimensionRow
+                key={dimension}
+                dimension={dimension}
+                assessment={assessment}
+                onPractice={onPractice}
+              />
+            ))}
+            
+            {summary && (
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 italic">{summary}</p>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );
