@@ -561,7 +561,7 @@ const RepCard = ({
 // ============================================
 // MISSED REPS SECTION (Updated for Sprint 4)
 // ============================================
-const MissedRepsSection = ({ missedReps, onOpenDebrief, isLoading }) => {
+const MissedRepsSection = ({ missedReps, onOpenDebrief, onRescueRep, isLoading }) => {
   if (!missedReps || missedReps.length === 0) return null;
   
   // Get rep type label using getRepType helper
@@ -577,12 +577,12 @@ const MissedRepsSection = ({ missedReps, onOpenDebrief, isLoading }) => {
         <h3 className="font-semibold text-corporate-navy">Missed Reps ({missedReps.length})</h3>
       </div>
       <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-        Complete a quick debrief to understand what happened and set up for success next week.
+        Complete a quick debrief to understand what happened, or mark as done if you actually completed it.
       </p>
       {missedReps.map((rep) => (
         <Card key={rep.id} className="mb-2 border-l-4 border-l-amber-500">
           <div className="p-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
               <div>
                 <span className="font-medium">{rep.person}</span>
                 <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">({getRepTypeLabel(rep.repType)})</span>
@@ -590,26 +590,31 @@ const MissedRepsSection = ({ missedReps, onOpenDebrief, isLoading }) => {
                   <span className="text-xs text-green-600 ml-2">✓ Debriefed</span>
                 )}
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {onRescueRep && (
+                <Button
+                  onClick={() => onRescueRep(rep)}
+                  disabled={isLoading}
+                  size="sm"
+                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white"
+                >
+                  <Check className="w-3 h-3 mr-1" />
+                  I did it
+                </Button>
+              )}
               <Button
                 onClick={() => onOpenDebrief(rep)}
                 disabled={isLoading}
                 size="sm"
-                className={rep.missedDebrief 
-                  ? "bg-gray-500 hover:bg-gray-600 text-white"
-                  : "bg-amber-600 hover:bg-amber-700 text-white"
-                }
+                className={`flex-1 ${
+                  rep.missedDebrief 
+                    ? 'bg-gray-500 hover:bg-gray-600 text-white'
+                    : 'bg-amber-600 hover:bg-amber-700 text-white'
+                }`}
               >
-                {rep.missedDebrief ? (
-                  <>
-                    <RefreshCw className="w-3 h-3 mr-1" />
-                    Re-debrief
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-3 h-3 mr-1" />
-                    Debrief
-                  </>
-                )}
+                <FileText className="w-3 h-3 mr-1" />
+                {rep.missedDebrief ? 'Re-debrief' : 'Couldn\'t do it'}
               </Button>
             </div>
           </div>
@@ -841,6 +846,22 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
     }
   };
   
+  // Rescue a missed rep - mark as executed (user actually did it)
+  const handleRescueMissedRep = async (rep) => {
+    if (!userId || !db) return;
+    
+    try {
+      setIsSubmitting(true);
+      await conditioningService.transitionRepState(db, userId, rep.id, 'executed');
+      await loadData();
+    } catch (err) {
+      console.error('Error rescuing missed rep:', err);
+      setError('Failed to update rep. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   // Sprint 2: Open prep modal
   const handleOpenPrep = (rep) => {
     setPrepModalRep(rep);
@@ -1013,6 +1034,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
         <MissedRepsSection 
           missedReps={missedReps}
           onOpenDebrief={handleOpenMissedDebrief}
+          onRescueRep={handleRescueMissedRep}
           isLoading={isSubmitting}
         />
         

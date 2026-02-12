@@ -90,7 +90,7 @@ export const STATE_TRANSITIONS = {
   debriefed: ['follow_up_pending', 'loop_closed'],  // Can skip follow-up or track it
   follow_up_pending: ['loop_closed'],  // Complete follow-up
   loop_closed: [],  // Terminal state - rep fully complete
-  missed: ['committed'],  // Roll forward
+  missed: ['committed', 'executed'],  // Roll forward OR rescue (actually did it)
   canceled: [],  // Terminal state
   // Legacy status - treat same as committed
   active: ['prepared', 'scheduled', 'executed', 'debriefed', 'missed', 'canceled']
@@ -443,9 +443,10 @@ export const conditioningService = {
     
     const currentRep = repSnap.data();
     
-    // Only active reps can be marked as missed
-    if (currentRep.status !== REP_STATUS.ACTIVE) {
-      return false; // Already handled
+    // All actionable statuses can be marked as missed
+    const actionableStatuses = ['committed', 'prepared', 'scheduled', 'active'];
+    if (!actionableStatuses.includes(currentRep.status)) {
+      return false; // Already handled (executed, debriefed, etc.)
     }
     
     await updateDoc(repRef, {
@@ -899,8 +900,11 @@ export const conditioningService = {
     const now = timeService.getNow();
     const activeReps = await conditioningService.getActiveReps(db, userId, cohortId);
     
+    // Check all actionable statuses, not just legacy 'active'
+    const actionableStatuses = ['committed', 'prepared', 'scheduled', 'active'];
+    
     const overdueReps = activeReps.filter(rep => {
-      if (rep.status !== REP_STATUS.ACTIVE) return false;
+      if (!actionableStatuses.includes(rep.status)) return false;
       const deadline = rep.deadline?.toDate ? rep.deadline.toDate() : new Date(rep.deadline);
       return deadline < now;
     });
