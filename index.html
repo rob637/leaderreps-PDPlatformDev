@@ -54,11 +54,32 @@
 
         window.addEventListener('error', e => {
           console.error('[window.error]', e.message, e.filename, e.lineno, e.colno, e.error);
+          // Don't overlay for SW/IndexedDB errors — those are handled below
+          if (e.message && e.message.includes('indexedDB')) return;
           overlay('JS error: ' + e.message);
         });
         window.addEventListener('unhandledrejection', e => {
-          console.error('[unhandledrejection]', e.reason);
-          overlay('Unhandled rejection: ' + (e.reason && (e.reason.message || e.reason) || 'unknown'));
+          var reason = e.reason || {};
+          var msg = reason.message || String(reason) || 'unknown';
+          console.error('[unhandledrejection]', msg);
+          // IndexedDB errors from service worker — attempt self-heal instead of blocking
+          if (msg.includes('indexedDB') || msg.includes('IndexedDB') || msg.includes('backing store')) {
+            e.preventDefault(); // Suppress the console error
+            console.warn('[BOOT] IndexedDB error detected — attempting service worker recovery...');
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(regs) {
+                var hadSW = regs.length > 0;
+                Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
+                  if (hadSW) {
+                    console.warn('[BOOT] Unregistered broken service worker, reloading...');
+                    window.location.reload();
+                  }
+                });
+              });
+            }
+            return;
+          }
+          overlay('Unhandled rejection: ' + msg);
         });
 
         mark('html-loaded');
