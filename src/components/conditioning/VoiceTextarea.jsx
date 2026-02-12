@@ -11,6 +11,7 @@ import { AlertCircle } from 'lucide-react';
 // VOICE TEXTAREA COMPONENT
 // ============================================
 const VoiceTextarea = ({
+  id,
   label,
   helpText,
   value = '',
@@ -68,6 +69,7 @@ const VoiceTextarea = ({
       {/* Textarea with mic */}
       <div className="relative">
         <textarea
+          id={id}
           value={displayText}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}

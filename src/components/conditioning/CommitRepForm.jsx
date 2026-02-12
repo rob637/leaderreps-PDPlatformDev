@@ -3,7 +3,7 @@
 // Based on Ryan's Conditioning Layer specs (020726)
 // UX v2: Uses ConditioningModal + VoiceTextarea for consistency
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { AlertTriangle, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../ui';
 import RepTypePicker from './RepTypePicker';
@@ -26,6 +26,7 @@ import { Timestamp } from 'firebase/firestore';
 const FieldInput = ({ field, value, onChange, disabled = false, error = null, showError = false }) => {
   return (
     <VoiceTextarea
+      id={`field-${field.id}`}
       label={`${field.label}${field.required ? '' : ' (optional)'}`}
       helpText={field.prompt}
       value={value || ''}
@@ -146,14 +147,15 @@ const DifficultySelector = ({ value, onChange, repType }) => {
 // ============================================
 // COLLAPSIBLE SECTION
 // ============================================
-const CollapsibleSection = ({ title, children, defaultOpen = false, helpText }) => {
+const CollapsibleSection = ({ title, children, defaultOpen = false, helpText, forceOpen = false }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const effectiveOpen = forceOpen || isOpen;
   
   return (
     <div className="border border-gray-200 dark:border-slate-600 rounded-xl overflow-hidden">
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen(!effectiveOpen)}
         className="w-full p-3 bg-gray-50 dark:bg-slate-700 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
       >
         <div className="flex items-center gap-2">
@@ -162,13 +164,13 @@ const CollapsibleSection = ({ title, children, defaultOpen = false, helpText }) 
             <span className="text-xs text-gray-400 dark:text-slate-500">({helpText})</span>
           )}
         </div>
-        {isOpen ? (
+        {effectiveOpen ? (
           <ChevronUp className="w-4 h-4 text-gray-500 dark:text-slate-400" />
         ) : (
           <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
         )}
       </button>
-      {isOpen && (
+      {effectiveOpen && (
         <div className="p-4 space-y-4 bg-white dark:bg-slate-800">
           {children}
         </div>
@@ -206,6 +208,8 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
   // V1 UX: Validation feedback state
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [errors, setErrors] = useState({});
+  const [defineRepForceOpen, setDefineRepForceOpen] = useState(false);
+  const personInputRef = useRef(null);
   
   // Get selected rep type info
   const selectedRepType = useMemo(() => {
@@ -295,11 +299,30 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
     setErrors(validationErrors);
     
     if (Object.keys(validationErrors).length > 0) {
-      // V1 UX: Scroll to first error
+      // Build ordered list of fields for focus priority
+      const universalFieldIds = Object.values(UNIVERSAL_REP_FIELDS).map(f => f.id);
+      const fieldOrder = ['repType', 'person', 'difficulty', ...universalFieldIds];
+      const firstErrorField = fieldOrder.find(id => validationErrors[id]);
+      
+      // Force open "Define Your Rep" section if it has errors
+      if (universalFieldIds.some(id => validationErrors[id])) {
+        setDefineRepForceOpen(true);
+      }
+      
+      // Scroll to first error and focus its input
       setTimeout(() => {
-        const firstError = document.querySelector('.field-error');
-        if (firstError) {
-          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (firstErrorField) {
+          const fieldEl = document.querySelector(`[data-field="${firstErrorField}"]`);
+          if (fieldEl) {
+            fieldEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Focus the input/textarea inside after scroll animation
+            setTimeout(() => {
+              const focusable = fieldEl.querySelector('input, textarea');
+              if (focusable) {
+                focusable.focus();
+              }
+            }, 400);
+          }
         }
       }, 100);
       return;
@@ -383,7 +406,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
             )}
             
             {/* Step 1: Rep Type */}
-            <div className={errors.repType ? 'field-error' : ''}>
+            <div data-field="repType" className={errors.repType ? 'field-error' : ''}>
               <RepTypePicker
                 selectedRepTypeId={repTypeId}
                 onSelect={handleRepTypeSelect}
@@ -398,7 +421,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
             {selectedRepType && (
               <>
                 {/* Step 2: Who */}
-                <div className={errors.person ? 'field-error' : ''}>
+                <div data-field="person" className={errors.person ? 'field-error' : ''}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">
                     Who is this rep with? <span className="text-red-500">*</span>
                   </label>
@@ -406,6 +429,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                     Be specific - name, not "someone on my team"
                   </p>
                   <input
+                    ref={personInputRef}
                     type="text"
                     value={person}
                     onChange={(e) => handlePersonChange(e.target.value)}
@@ -429,11 +453,13 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                     onChange={setRiskLevel}
                     repType={selectedRepType}
                   />
-                  <DifficultySelector 
-                    value={difficulty} 
-                    onChange={setDifficulty}
-                    repType={selectedRepType}
-                  />
+                  <div data-field="difficulty">
+                    <DifficultySelector 
+                      value={difficulty} 
+                      onChange={setDifficulty}
+                      repType={selectedRepType}
+                    />
+                  </div>
                 </div>
                 
                 {/* Step 4: Universal Structure Fields */}
@@ -441,16 +467,18 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                   title="Define Your Rep" 
                   defaultOpen={true}
                   helpText="What makes this a real rep"
+                  forceOpen={defineRepForceOpen}
                 >
                   {Object.values(UNIVERSAL_REP_FIELDS).map((field) => (
-                    <FieldInput
-                      key={field.id}
-                      field={field}
-                      value={universalFields[field.id]}
-                      onChange={(value) => handleUniversalFieldChange(field.id, value)}
-                      error={errors[field.id]}
-                      showError={submitAttempted}
-                    />
+                    <div key={field.id} data-field={field.id}>
+                      <FieldInput
+                        field={field}
+                        value={universalFields[field.id]}
+                        onChange={(value) => handleUniversalFieldChange(field.id, value)}
+                        error={errors[field.id]}
+                        showError={submitAttempted}
+                      />
+                    </div>
                   ))}
                 </CollapsibleSection>
                 
