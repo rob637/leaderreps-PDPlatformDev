@@ -113,7 +113,7 @@ const VoiceInputButton = ({
           setError('No microphone found.');
           break;
         case 'not-allowed':
-          setError('Microphone access denied.');
+          setError('Microphone access denied. Tap the lock icon in your browser\'s address bar to allow microphone access, then try again.');
           break;
         case 'network':
           setError('Network error. Check your connection.');
@@ -221,8 +221,8 @@ const VoiceInputButton = ({
       
       {/* Error tooltip */}
       {error && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 text-xs rounded-lg whitespace-nowrap flex items-center gap-1 shadow-lg">
-          <AlertCircle className="w-3 h-3" />
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs rounded-lg w-64 flex items-start gap-1 shadow-lg z-50">
+          <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
           {error}
         </div>
       )}
