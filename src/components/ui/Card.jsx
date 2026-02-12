@@ -5,7 +5,7 @@ import { Info, X } from 'lucide-react';
 // --- INFO TOOLTIP COMPONENT ---
 const InfoTooltip = ({ text, onClose }) => (
   <div className="absolute top-full left-0 right-0 mt-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-    <div className="bg-blue-50 dark:bg-blue-900/20 text-slate-700 dark:text-slate-200 text-sm rounded-xl p-4 shadow-lg border border-blue-200 dark:border-blue-800 mx-2 relative">
+    <div className="bg-blue-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm rounded-xl p-4 shadow-lg border border-blue-200 dark:border-blue-700 mx-2 relative">
       <button 
         onClick={onClose}
         className="absolute top-2 right-2 p-1 hover:bg-blue-100 rounded-full transition-colors bg-transparent"
