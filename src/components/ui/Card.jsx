@@ -191,7 +191,7 @@ const Card = React.forwardRef(({
               {helpText && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowHelp(!showHelp); }}
-                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors flex-shrink-0"
+                  className="p-1.5 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors flex-shrink-0"
                   aria-label="Widget information"
                 >
                   <Info className="w-4 h-4 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300" />

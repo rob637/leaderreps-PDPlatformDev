@@ -252,7 +252,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
                   w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-200 relative border-none rounded-xl group
                   ${currentScreen === 'admin-portal' 
                     ? 'bg-red-500/90 text-white shadow-lg shadow-red-500/20 font-medium' 
-                    : 'text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-300'
+                    : 'bg-transparent text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-300'
                   }
                 `}
                 title={!isOpen ? 'Admin Portal' : ''}
@@ -282,7 +282,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
             <div className="relative">
                 <button
                     onClick={() => setShowAnchors(!showAnchors)}
-                    className={`w-full flex items-center gap-3 px-1 py-2 text-slate-500 dark:text-slate-400 hover:text-corporate-navy dark:hover:text-white transition-all duration-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 ${!isOpen ? 'justify-center' : ''}`}
+                    className={`w-full flex items-center gap-3 px-1 py-2 bg-transparent text-slate-500 dark:text-slate-400 hover:text-corporate-navy dark:hover:text-white transition-all duration-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 ${!isOpen ? 'justify-center' : ''}`}
                     title={!isOpen ? "Leadership Anchors" : ''}
                 >
                     <div className="p-1.5 rounded-lg">
@@ -327,7 +327,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
 
         <button
           onClick={() => setShowSignOutConfirm(true)}
-          className={`w-full flex items-center gap-3 px-1 py-2 text-slate-500 dark:text-slate-400 hover:text-corporate-navy dark:hover:text-white transition-all duration-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 ${!isOpen ? 'justify-center' : ''}`}
+          className={`w-full flex items-center gap-3 px-1 py-2 bg-transparent text-slate-500 dark:text-slate-400 hover:text-corporate-navy dark:hover:text-white transition-all duration-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 ${!isOpen ? 'justify-center' : ''}`}
           title={!isOpen ? "Sign Out" : ''}
         >
           <div className="p-1.5 rounded-lg">
