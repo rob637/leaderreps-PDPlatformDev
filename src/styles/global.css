@@ -307,26 +307,26 @@ body {
 }
 
 /* Tinted backgrounds — subtle dark variants */
-.dark .bg-green-50 { background-color: rgba(16, 185, 129, 0.1) !important; }
-.dark .bg-green-100 { background-color: rgba(16, 185, 129, 0.15) !important; }
-.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.1) !important; }
-.dark .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.15) !important; }
-.dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.1) !important; }
-.dark .bg-amber-100 { background-color: rgba(245, 158, 11, 0.15) !important; }
-.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
-.dark .bg-blue-100 { background-color: rgba(59, 130, 246, 0.15) !important; }
-.dark .bg-red-50 { background-color: rgba(239, 68, 68, 0.1) !important; }
-.dark .bg-red-100 { background-color: rgba(239, 68, 68, 0.15) !important; }
-.dark .bg-orange-50 { background-color: rgba(249, 115, 22, 0.1) !important; }
-.dark .bg-orange-100 { background-color: rgba(249, 115, 22, 0.15) !important; }
-.dark .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.1) !important; }
-.dark .bg-indigo-100 { background-color: rgba(99, 102, 241, 0.15) !important; }
-.dark .bg-purple-50 { background-color: rgba(168, 85, 247, 0.1) !important; }
-.dark .bg-purple-100 { background-color: rgba(168, 85, 247, 0.15) !important; }
-.dark .bg-teal-50 { background-color: rgba(20, 184, 166, 0.1) !important; }
-.dark .bg-teal-100 { background-color: rgba(20, 184, 166, 0.15) !important; }
-.dark .bg-yellow-50 { background-color: rgba(234, 179, 8, 0.1) !important; }
-.dark .bg-yellow-100 { background-color: rgba(234, 179, 8, 0.15) !important; }
+.dark .bg-green-50 { background-color: rgba(16, 185, 129, 0.18) !important; }
+.dark .bg-green-100 { background-color: rgba(16, 185, 129, 0.25) !important; }
+.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.18) !important; }
+.dark .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.25) !important; }
+.dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.18) !important; }
+.dark .bg-amber-100 { background-color: rgba(245, 158, 11, 0.25) !important; }
+.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.18) !important; }
+.dark .bg-blue-100 { background-color: rgba(59, 130, 246, 0.25) !important; }
+.dark .bg-red-50 { background-color: rgba(239, 68, 68, 0.18) !important; }
+.dark .bg-red-100 { background-color: rgba(239, 68, 68, 0.25) !important; }
+.dark .bg-orange-50 { background-color: rgba(249, 115, 22, 0.18) !important; }
+.dark .bg-orange-100 { background-color: rgba(249, 115, 22, 0.25) !important; }
+.dark .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.18) !important; }
+.dark .bg-indigo-100 { background-color: rgba(99, 102, 241, 0.25) !important; }
+.dark .bg-purple-50 { background-color: rgba(168, 85, 247, 0.18) !important; }
+.dark .bg-purple-100 { background-color: rgba(168, 85, 247, 0.25) !important; }
+.dark .bg-teal-50 { background-color: rgba(20, 184, 166, 0.18) !important; }
+.dark .bg-teal-100 { background-color: rgba(20, 184, 166, 0.25) !important; }
+.dark .bg-yellow-50 { background-color: rgba(234, 179, 8, 0.18) !important; }
+.dark .bg-yellow-100 { background-color: rgba(234, 179, 8, 0.25) !important; }
 
 /* Tinted text colors that become unreadable in dark mode */
 .dark .text-green-800, .dark .text-emerald-800 { color: #6EE7B7 !important; }
@@ -373,34 +373,36 @@ body {
 }
 
 /* Hover states */
-.dark .hover\:bg-slate-50:hover { background-color: rgba(148, 163, 184, 0.1) !important; }
-.dark .hover\:bg-gray-50:hover { background-color: rgba(148, 163, 184, 0.1) !important; }
-.dark .hover\:bg-slate-100:hover { background-color: rgba(148, 163, 184, 0.15) !important; }
-.dark .hover\:bg-gray-100:hover { background-color: rgba(148, 163, 184, 0.15) !important; }
-.dark .hover\:bg-slate-200:hover { background-color: rgba(148, 163, 184, 0.2) !important; }
-.dark .hover\:bg-blue-50:hover { background-color: rgba(59, 130, 246, 0.12) !important; }
-.dark .hover\:bg-blue-100:hover { background-color: rgba(59, 130, 246, 0.18) !important; }
-.dark .hover\:bg-teal-50:hover { background-color: rgba(20, 184, 166, 0.12) !important; }
-.dark .hover\:bg-emerald-50:hover { background-color: rgba(16, 185, 129, 0.12) !important; }
-.dark .hover\:bg-amber-50:hover { background-color: rgba(245, 158, 11, 0.12) !important; }
+.dark .hover\:bg-slate-50:hover { background-color: rgba(148, 163, 184, 0.15) !important; }
+.dark .hover\:bg-gray-50:hover { background-color: rgba(148, 163, 184, 0.15) !important; }
+.dark .hover\:bg-slate-100:hover { background-color: rgba(148, 163, 184, 0.2) !important; }
+.dark .hover\:bg-gray-100:hover { background-color: rgba(148, 163, 184, 0.2) !important; }
+.dark .hover\:bg-slate-200:hover { background-color: rgba(148, 163, 184, 0.25) !important; }
+.dark .hover\:bg-blue-50:hover { background-color: rgba(59, 130, 246, 0.18) !important; }
+.dark .hover\:bg-blue-100:hover { background-color: rgba(59, 130, 246, 0.25) !important; }
+.dark .hover\:bg-teal-50:hover { background-color: rgba(20, 184, 166, 0.18) !important; }
+.dark .hover\:bg-emerald-50:hover { background-color: rgba(16, 185, 129, 0.18) !important; }
+.dark .hover\:bg-amber-50:hover { background-color: rgba(245, 158, 11, 0.18) !important; }
+.dark .hover\:bg-red-50:hover { background-color: rgba(239, 68, 68, 0.18) !important; }
+.dark .hover\:bg-red-100:hover { background-color: rgba(239, 68, 68, 0.25) !important; }
 
 /* Gradient backgrounds — dark mode versions */
-.dark .from-emerald-50 { --tw-gradient-from: rgba(16, 185, 129, 0.15) !important; }
-.dark .to-emerald-50 { --tw-gradient-to: rgba(16, 185, 129, 0.1) !important; }
-.dark .from-teal-50 { --tw-gradient-from: rgba(20, 184, 166, 0.15) !important; }
-.dark .to-teal-50 { --tw-gradient-to: rgba(20, 184, 166, 0.1) !important; }
-.dark .from-amber-50 { --tw-gradient-from: rgba(245, 158, 11, 0.15) !important; }
-.dark .to-amber-50 { --tw-gradient-to: rgba(245, 158, 11, 0.1) !important; }
-.dark .from-blue-50 { --tw-gradient-from: rgba(59, 130, 246, 0.15) !important; }
-.dark .to-blue-50 { --tw-gradient-to: rgba(59, 130, 246, 0.1) !important; }
-.dark .from-orange-50 { --tw-gradient-from: rgba(249, 115, 22, 0.15) !important; }
-.dark .to-orange-50 { --tw-gradient-to: rgba(249, 115, 22, 0.1) !important; }
-.dark .from-red-50 { --tw-gradient-from: rgba(239, 68, 68, 0.15) !important; }
-.dark .to-red-50 { --tw-gradient-to: rgba(239, 68, 68, 0.1) !important; }
-.dark .from-emerald-100 { --tw-gradient-from: rgba(16, 185, 129, 0.2) !important; }
-.dark .to-emerald-100 { --tw-gradient-to: rgba(16, 185, 129, 0.15) !important; }
-.dark .from-teal-100 { --tw-gradient-from: rgba(20, 184, 166, 0.2) !important; }
-.dark .to-teal-100 { --tw-gradient-to: rgba(20, 184, 166, 0.15) !important; }
+.dark .from-emerald-50 { --tw-gradient-from: rgba(16, 185, 129, 0.25) !important; }
+.dark .to-emerald-50 { --tw-gradient-to: rgba(16, 185, 129, 0.18) !important; }
+.dark .from-teal-50 { --tw-gradient-from: rgba(20, 184, 166, 0.25) !important; }
+.dark .to-teal-50 { --tw-gradient-to: rgba(20, 184, 166, 0.18) !important; }
+.dark .from-amber-50 { --tw-gradient-from: rgba(245, 158, 11, 0.25) !important; }
+.dark .to-amber-50 { --tw-gradient-to: rgba(245, 158, 11, 0.18) !important; }
+.dark .from-blue-50 { --tw-gradient-from: rgba(59, 130, 246, 0.25) !important; }
+.dark .to-blue-50 { --tw-gradient-to: rgba(59, 130, 246, 0.18) !important; }
+.dark .from-orange-50 { --tw-gradient-from: rgba(249, 115, 22, 0.25) !important; }
+.dark .to-orange-50 { --tw-gradient-to: rgba(249, 115, 22, 0.18) !important; }
+.dark .from-red-50 { --tw-gradient-from: rgba(239, 68, 68, 0.25) !important; }
+.dark .to-red-50 { --tw-gradient-to: rgba(239, 68, 68, 0.18) !important; }
+.dark .from-emerald-100 { --tw-gradient-from: rgba(16, 185, 129, 0.3) !important; }
+.dark .to-emerald-100 { --tw-gradient-to: rgba(16, 185, 129, 0.25) !important; }
+.dark .from-teal-100 { --tw-gradient-from: rgba(20, 184, 166, 0.3) !important; }
+.dark .to-teal-100 { --tw-gradient-to: rgba(20, 184, 166, 0.25) !important; }
 /* Hover gradient states */
 .dark .hover\:from-emerald-100:hover { --tw-gradient-from: rgba(16, 185, 129, 0.25) !important; }
 .dark .hover\:to-teal-100:hover { --tw-gradient-to: rgba(20, 184, 166, 0.2) !important; }

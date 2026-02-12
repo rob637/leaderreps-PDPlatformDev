@@ -169,7 +169,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
           onClick={toggle}
           aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           aria-expanded={isOpen}
-          className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-400 hover:text-corporate-navy dark:hover:text-white transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 touch-manipulation"
+          className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-400 hover:text-corporate-navy dark:hover:text-white transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 touch-manipulation"
         >
           {isOpen ? <ChevronLeft className="w-5 h-5" aria-hidden="true" /> : <ChevronRight className="w-5 h-5" aria-hidden="true" />}
         </button>
@@ -252,12 +252,12 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
                   w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-200 relative border-none rounded-xl group
                   ${currentScreen === 'admin-portal' 
                     ? 'bg-red-500/90 text-white shadow-lg shadow-red-500/20 font-medium' 
-                    : 'text-red-500 hover:bg-red-50 hover:text-red-600'
+                    : 'text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-300'
                   }
                 `}
                 title={!isOpen ? 'Admin Portal' : ''}
               >
-                <div className={`p-1.5 rounded-lg transition-colors ${currentScreen === 'admin-portal' ? 'bg-white/10 dark:bg-slate-800/10' : 'group-hover:bg-red-100'}`}>
+                <div className={`p-1.5 rounded-lg transition-colors ${currentScreen === 'admin-portal' ? 'bg-white/10 dark:bg-slate-800/10' : 'group-hover:bg-red-100 dark:group-hover:bg-red-900/30'}`}>
                   <ShieldCheck className="w-[18px] h-[18px]" />
                 </div>
                 <span className={`whitespace-nowrap text-sm transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
@@ -282,7 +282,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
             <div className="relative">
                 <button
                     onClick={() => setShowAnchors(!showAnchors)}
-                    className={`w-full flex items-center gap-3 px-1 py-2 text-slate-500 dark:text-slate-400 hover:text-corporate-navy transition-all duration-200 rounded-lg hover:bg-slate-200 ${!isOpen ? 'justify-center' : ''}`}
+                    className={`w-full flex items-center gap-3 px-1 py-2 text-slate-500 dark:text-slate-400 hover:text-corporate-navy dark:hover:text-white transition-all duration-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 ${!isOpen ? 'justify-center' : ''}`}
                     title={!isOpen ? "Leadership Anchors" : ''}
                 >
                     <div className="p-1.5 rounded-lg">

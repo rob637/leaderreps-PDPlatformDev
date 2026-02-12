@@ -1059,7 +1059,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               <div className="mb-4">
                 <button
                   onClick={() => setPrepExpanded(!prepExpanded)}
-                  className="w-full group flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 dark:border-emerald-700 dark:hover:from-emerald-900/50 dark:hover:to-teal-900/50 transition-all"
+                  className="w-full group flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-all"
                 >
                   <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
                     <Trophy className="w-5 h-5 text-white" />
@@ -1141,7 +1141,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <div className="mb-4">
                   <button
                     onClick={() => setPriorWeekExpanded(!priorWeekExpanded)}
-                    className="w-full group flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 dark:border-emerald-700 dark:hover:from-emerald-900/50 dark:hover:to-teal-900/50 transition-all"
+                    className="w-full group flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-all"
                   >
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
                       <Trophy className="w-5 h-5 text-white" />
@@ -1200,7 +1200,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <div className="mb-4">
                   <button
                     onClick={() => setThisWeekExpanded(!thisWeekExpanded)}
-                    className="w-full group flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 dark:border-emerald-700 dark:hover:from-emerald-900/50 dark:hover:to-teal-900/50 transition-all"
+                    className="w-full group flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-all"
                   >
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
                       <Trophy className="w-5 h-5 text-white" />
