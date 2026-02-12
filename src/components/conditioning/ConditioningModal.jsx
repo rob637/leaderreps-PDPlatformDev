@@ -117,7 +117,7 @@ const ConditioningModal = ({
             </div>
             <button
               onClick={onClose}
-              className="p-2.5 -mr-1 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors"
+              className="p-2.5 -mr-1 bg-transparent hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors"
               aria-label="Close"
             >
               <X className="w-5 h-5" />

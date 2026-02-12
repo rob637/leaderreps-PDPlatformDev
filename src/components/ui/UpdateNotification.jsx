@@ -189,7 +189,7 @@ const UpdateNotification = () => {
               {/* Close button */}
               <button
                 onClick={handleDismiss}
-                className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="p-1 bg-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -217,7 +217,7 @@ const UpdateNotification = () => {
               
               <button
                 onClick={handleDismiss}
-                className="px-5 py-3 text-slate-600 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-100 transition-colors"
+                className="px-5 py-3 bg-transparent text-slate-600 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
                 Later
               </button>
@@ -227,7 +227,7 @@ const UpdateNotification = () => {
             <div className="mt-4 pt-3 border-t border-slate-100 text-center">
               <button 
                 onClick={handleForceReset}
-                className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+                className="text-xs bg-transparent text-slate-400 hover:text-red-500 transition-colors"
               >
                 Having issues? Force refresh
               </button>
