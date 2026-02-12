@@ -66,15 +66,15 @@ const CalendarView = ({ sessions = [], onViewDetails }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
       {/* Calendar Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-100">
         <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-          <ChevronLeft className="w-5 h-5 text-slate-600" />
+          <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
         </button>
-        <h3 className="text-lg font-bold text-slate-800">{monthName}</h3>
+        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">{monthName}</h3>
         <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-          <ChevronRight className="w-5 h-5 text-slate-600" />
+          <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-300" />
         </button>
       </div>
 
@@ -93,7 +93,7 @@ const CalendarView = ({ sessions = [], onViewDetails }) => {
         <div className="grid grid-cols-7 gap-1">
           {/* Empty cells for days before month starts */}
           {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-            <div key={`empty-${i}`} className="h-20 bg-slate-50 rounded-lg" />
+            <div key={`empty-${i}`} className="h-20 bg-slate-50 dark:bg-slate-800 rounded-lg" />
           ))}
           
           {/* Actual days */}
@@ -106,10 +106,10 @@ const CalendarView = ({ sessions = [], onViewDetails }) => {
             // Helper to get session type color class
             const getSessionTypeClass = (sessionType) => {
               const type = (sessionType || '').toLowerCase();
-              if (type === 'open_gym' || type === 'OPEN_GYM') return 'bg-blue-100 text-blue-700';
-              if (type === 'leader_circle' || type === 'LEADER_CIRCLE') return 'bg-purple-100 text-purple-700';
-              if (type === 'live_workout' || type === 'LIVE_WORKOUT') return 'bg-green-100 text-green-700';
-              return 'bg-teal-100 text-teal-700';
+              if (type === 'open_gym' || type === 'OPEN_GYM') return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700';
+              if (type === 'leader_circle' || type === 'LEADER_CIRCLE') return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700';
+              if (type === 'live_workout' || type === 'LIVE_WORKOUT') return 'bg-green-100 dark:bg-green-900/30 text-green-700';
+              return 'bg-teal-100 dark:bg-teal-900/30 text-teal-700';
             };
             
             return (
@@ -117,13 +117,13 @@ const CalendarView = ({ sessions = [], onViewDetails }) => {
                 key={day}
                 className={`h-20 rounded-lg border p-1 transition-colors ${
                   isToday(day) 
-                    ? 'border-indigo-400 bg-indigo-50' 
+                    ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20' 
                     : hasSession 
-                      ? 'border-slate-200 bg-white hover:border-indigo-300 cursor-pointer' 
-                      : 'border-slate-100 bg-slate-50'
+                      ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-300 cursor-pointer' 
+                      : 'border-slate-100 bg-slate-50 dark:bg-slate-800'
                 }`}
               >
-                <div className={`text-xs font-bold mb-1 ${isToday(day) ? 'text-indigo-600' : 'text-slate-500'}`}>
+                <div className={`text-xs font-bold mb-1 ${isToday(day) ? 'text-indigo-600' : 'text-slate-500 dark:text-slate-400'}`}>
                   {day}
                 </div>
                 {daySessions.slice(0, 2).map(session => (
@@ -147,13 +147,13 @@ const CalendarView = ({ sessions = [], onViewDetails }) => {
       {/* Legend */}
       <div className="px-4 pb-4 flex flex-wrap gap-4 text-xs">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-blue-100" /> Open Gym
+          <div className="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900/30" /> Open Gym
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-purple-100" /> Leader Circle
+          <div className="w-3 h-3 rounded bg-purple-100 dark:bg-purple-900/30" /> Leader Circle
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-teal-100" /> Workshop
+          <div className="w-3 h-3 rounded bg-teal-100 dark:bg-teal-900/30" /> Workshop
         </div>
       </div>
     </div>
@@ -169,22 +169,22 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
     switch (normalizedType) {
       case SESSION_TYPES.OPEN_GYM:
       case 'open_gym': 
-        return { bg: 'bg-blue-50', text: 'text-blue-600', icon: Users };
+        return { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600', icon: Users };
       case SESSION_TYPES.LEADER_CIRCLE:
       case 'leader_circle': 
-        return { bg: 'bg-purple-50', text: 'text-purple-600', icon: MessageSquare };
+        return { bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-600', icon: MessageSquare };
       case SESSION_TYPES.WORKSHOP:
       case 'workshop': 
-        return { bg: 'bg-teal-50', text: 'text-teal-600', icon: Video };
+        return { bg: 'bg-teal-50 dark:bg-teal-900/20', text: 'text-teal-600', icon: Video };
       case SESSION_TYPES.ONE_ON_ONE:
       case 'one_on_one':
       case '1:1': 
-        return { bg: 'bg-orange-50', text: 'text-orange-600', icon: UserCheck };
+        return { bg: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-600', icon: UserCheck };
       case SESSION_TYPES.LIVE_WORKOUT:
       case 'live_workout':
-        return { bg: 'bg-green-50', text: 'text-green-600', icon: Play };
+        return { bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-600', icon: Play };
       default: 
-        return { bg: 'bg-slate-50', text: 'text-slate-600', icon: Calendar };
+        return { bg: 'bg-slate-50 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-300', icon: Calendar };
     }
   };
 
@@ -198,7 +198,7 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
   const time = session.time || '10:00 AM';
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-all">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-all">
       <div className="flex gap-4">
         {/* Date Badge */}
         <div className={`w-16 h-16 ${style.bg} rounded-lg flex flex-col items-center justify-center flex-shrink-0`}>
@@ -215,13 +215,13 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
                   {session.sessionType?.replace('_', ' ') || 'Session'}
                 </span>
                 {isRegistered && (
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-600">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600">
                     ✓ Registered
                   </span>
                 )}
               </div>
-              <h4 className="font-bold text-slate-800">{session.title}</h4>
-              <p className="text-sm text-slate-500 line-clamp-1">{session.description}</p>
+              <h4 className="font-bold text-slate-800 dark:text-slate-200">{session.title}</h4>
+              <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">{session.description}</p>
             </div>
           </div>
           
@@ -245,7 +245,7 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
             {isRegistered ? (
               <button 
                 onClick={() => onCancel(session)}
-                className="px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors"
+                className="px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 transition-colors"
               >
                 Cancel
               </button>
@@ -272,7 +272,7 @@ const OnDemandSection = ({ navigate }) => (
     {/* AI Coaching */}
     <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl p-6 text-white">
       <div className="flex items-start gap-4">
-        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+        <div className="w-14 h-14 bg-white/20 dark:bg-slate-800/20 rounded-xl flex items-center justify-center flex-shrink-0">
           <Bot className="w-7 h-7" />
         </div>
         <div className="flex-grow">
@@ -282,7 +282,7 @@ const OnDemandSection = ({ navigate }) => (
           </p>
           <button 
             onClick={() => navigate('ai-roleplay')}
-            className="px-4 py-2 bg-white text-indigo-600 font-bold rounded-lg hover:bg-violet-50 transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-white dark:bg-slate-800 text-indigo-600 font-bold rounded-lg hover:bg-violet-50 transition-colors flex items-center gap-2"
           >
             <Play className="w-4 h-4" /> Start Practicing
           </button>
@@ -291,14 +291,14 @@ const OnDemandSection = ({ navigate }) => (
     </div>
 
     {/* 1:1 Coaching Request */}
-    <div className="bg-white rounded-xl border border-slate-200 p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
       <div className="flex items-start gap-4">
-        <div className="w-14 h-14 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
+        <div className="w-14 h-14 bg-orange-50 dark:bg-orange-900/20 rounded-xl flex items-center justify-center flex-shrink-0">
           <UserCheck className="w-7 h-7 text-orange-600" />
         </div>
         <div className="flex-grow">
-          <h3 className="text-lg font-bold text-slate-800 mb-2">Request 1:1 Coaching</h3>
-          <p className="text-slate-500 text-sm mb-4">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">Request 1:1 Coaching</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
             Book a personalized session with one of our executive coaches for deep-dive guidance on your specific challenges.
           </p>
           <button className="px-4 py-2 border border-orange-600 text-orange-600 font-bold rounded-lg hover:bg-orange-50 transition-colors flex items-center gap-2">
@@ -309,14 +309,14 @@ const OnDemandSection = ({ navigate }) => (
     </div>
 
     {/* Submit Scenario */}
-    <div className="bg-white rounded-xl border border-slate-200 p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
       <div className="flex items-start gap-4">
-        <div className="w-14 h-14 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
+        <div className="w-14 h-14 bg-teal-50 dark:bg-teal-900/20 rounded-xl flex items-center justify-center flex-shrink-0">
           <MessageSquare className="w-7 h-7 text-teal-600" />
         </div>
         <div className="flex-grow">
-          <h3 className="text-lg font-bold text-slate-800 mb-2">Submit a Scenario</h3>
-          <p className="text-slate-500 text-sm mb-4">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">Submit a Scenario</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
             Have a tricky situation? Submit it for discussion in the next Open Gym or get async feedback from our coaches.
           </p>
           <button className="px-4 py-2 border border-teal-600 text-teal-600 font-bold rounded-lg hover:bg-teal-50 transition-colors flex items-center gap-2">
@@ -335,20 +335,20 @@ const MyCoachingSection = ({ registeredSessions, pastSessions, onCancel }) => (
   <div className="space-y-8">
     {/* Upcoming Registered */}
     <div>
-      <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+      <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
         <CalendarDays className="w-5 h-5 text-indigo-600" />
         My Upcoming Sessions
         {registeredSessions.length > 0 && (
-          <span className="bg-indigo-100 text-indigo-600 text-xs font-bold px-2 py-0.5 rounded-full">
+          <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 text-xs font-bold px-2 py-0.5 rounded-full">
             {registeredSessions.length}
           </span>
         )}
       </h3>
       
       {registeredSessions.length === 0 ? (
-        <div className="bg-slate-50 rounded-xl border border-dashed border-slate-300 p-8 text-center">
+        <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 p-8 text-center">
           <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <h4 className="font-bold text-slate-600 mb-1">No Registered Sessions</h4>
+          <h4 className="font-bold text-slate-600 dark:text-slate-300 mb-1">No Registered Sessions</h4>
           <p className="text-slate-400 text-sm">Browse live coaching to find sessions to join.</p>
         </div>
       ) : (
@@ -367,27 +367,27 @@ const MyCoachingSection = ({ registeredSessions, pastSessions, onCancel }) => (
 
     {/* Past Sessions / Replays */}
     <div>
-      <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+      <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
         <Video className="w-5 h-5 text-purple-600" />
         Past Sessions & Replays
       </h3>
       
       {pastSessions.length === 0 ? (
-        <div className="bg-slate-50 rounded-xl border border-dashed border-slate-300 p-8 text-center">
+        <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 p-8 text-center">
           <Video className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <h4 className="font-bold text-slate-600 mb-1">No Past Sessions Yet</h4>
+          <h4 className="font-bold text-slate-600 dark:text-slate-300 mb-1">No Past Sessions Yet</h4>
           <p className="text-slate-400 text-sm">Sessions you attend will appear here with replays.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {pastSessions.map(session => (
-            <div key={session.id} className="bg-white rounded-lg border border-slate-200 p-4">
+            <div key={session.id} className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Play className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-800 text-sm">{session.title}</h4>
+                  <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">{session.title}</h4>
                   <p className="text-xs text-slate-400 mb-2">{session.date}</p>
                   <button className="text-xs font-bold text-purple-600 hover:text-purple-800">
                     Watch Replay →
@@ -629,12 +629,12 @@ const CoachingHub = () => {
         ]}
       >
         <div className="max-w-2xl mx-auto">
-          <div className="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl p-8 text-center">
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 text-center">
             <div className="w-16 h-16 rounded-2xl bg-slate-200 flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-slate-400" />
             </div>
             <h2 className="text-xl font-bold text-corporate-navy mb-2">Coaching Coming Soon</h2>
-            <p className="text-slate-600 mb-4">
+            <p className="text-slate-600 dark:text-slate-300 mb-4">
               The Coaching zone unlocks on Day 22 of your program.
               {zoneVisibility.isCoaching1on1Window && (
                 <span className="block mt-2 text-corporate-teal font-medium">
@@ -642,7 +642,7 @@ const CoachingHub = () => {
                 </span>
               )}
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Current Day: {currentDayNumber} | Unlocks: Day 22
             </p>
           </div>
@@ -664,7 +664,7 @@ const CoachingHub = () => {
       <div className="max-w-6xl mx-auto">
         
         {/* Tab Navigation */}
-        <div className="flex items-center justify-between border-b border-slate-200 mb-6 overflow-x-auto">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto">
           <div className="flex">
             {isFeatureEnabled('coaching-upcoming-sessions') && (
               <TabButton 
@@ -695,16 +695,16 @@ const CoachingHub = () => {
           </div>
           
           {activeTab === 'live' && (
-            <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+            <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg">
               <button 
                 onClick={() => setViewMode('list')}
-                className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
+                className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-white dark:bg-slate-800 shadow text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'}`}
               >
                 List
               </button>
               <button 
                 onClick={() => setViewMode('calendar')}
-                className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'calendar' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
+                className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'calendar' ? 'bg-white dark:bg-slate-800 shadow text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'}`}
               >
                 Calendar
               </button>

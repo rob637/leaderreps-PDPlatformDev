@@ -59,14 +59,14 @@ const AnchorInputSection = ({
     const suggestionPrefix = title === '1. Identity Anchor' ? '... ' : ''; 
         
     return (
-        <div className="p-4 rounded-xl border border-slate-200">
+        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-2 mb-2">
                 <Icon className="w-5 h-5 text-corporate-teal" />
                 <h3 className="text-lg font-bold text-corporate-navy">
                     {title}
                 </h3>
             </div>
-            <p className="text-xs mb-3 text-slate-500">
+            <p className="text-xs mb-3 text-slate-500 dark:text-slate-400">
                 {description}
             </p>
             
@@ -89,7 +89,7 @@ const AnchorInputSection = ({
             
             {suggestions && suggestions.length > 0 && (
                 <>
-                    <p className="text-xs font-semibold mb-2 text-slate-500">
+                    <p className="text-xs font-semibold mb-2 text-slate-500 dark:text-slate-400">
                         SUGGESTIONS:
                     </p>
                     <div className="space-y-1 max-h-32 overflow-y-auto">
@@ -97,7 +97,7 @@ const AnchorInputSection = ({
                             <button
                                 key={index}
                                 onClick={() => onSelectSuggestion(suggestion.text)}
-                                className="w-full text-left p-2 rounded-lg text-sm transition-all bg-slate-50 hover:bg-teal-50 text-corporate-navy"
+                                className="w-full text-left p-2 rounded-lg text-sm transition-all bg-slate-50 dark:bg-slate-800 hover:bg-teal-50 text-corporate-navy"
                             >
                                 {suggestionPrefix} {suggestion.text}
                             </button>
@@ -191,32 +191,32 @@ export const CalendarSyncModal = ({ isOpen, onClose }) => {
                 </ModalTitle>
             </ModalHeader>
             <ModalBody>
-                <p className="text-slate-600 mb-6">
+                <p className="text-slate-600 dark:text-slate-300 mb-6">
                     Sync your Daily Reps and Coaching Sessions directly to your personal calendar. Never miss a beat in your leadership journey.
                 </p>
 
                 <div className="space-y-3">
                     <button 
                         onClick={() => handleSync('Google Calendar')}
-                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-corporate-teal hover:bg-teal-50 transition-all group"
+                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-corporate-teal hover:bg-teal-50 transition-all group"
                     >
-                        <span className="font-semibold text-slate-700 group-hover:text-teal-700">Google Calendar</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-teal-700">Google Calendar</span>
                         <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-corporate-teal" />
                     </button>
                     
                     <button 
                         onClick={() => handleSync('Outlook')}
-                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-corporate-teal hover:bg-teal-50 transition-all group"
+                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-corporate-teal hover:bg-teal-50 transition-all group"
                     >
-                        <span className="font-semibold text-slate-700 group-hover:text-teal-700">Outlook Calendar</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-teal-700">Outlook Calendar</span>
                         <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-corporate-teal" />
                     </button>
                     
                     <button 
                         onClick={() => handleSync('Apple Calendar')}
-                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-corporate-teal hover:bg-teal-50 transition-all group"
+                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-corporate-teal hover:bg-teal-50 transition-all group"
                     >
-                        <span className="font-semibold text-slate-700 group-hover:text-teal-700">Apple Calendar (iCal)</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-teal-700">Apple Calendar (iCal)</span>
                         <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-corporate-teal" />
                     </button>
                 </div>
@@ -248,11 +248,11 @@ export const ModeSwitch = ({ isArenaMode, onToggle, isLoading }) => (
 export const StreakTracker = ({ streakCount, streakCoins, userEmail }) => {
   const isDeveloper = userEmail === 'rob@sagecg.com';
   return (
-    <div className="flex items-center gap-4 px-4 py-2 rounded-lg border border-slate-200 bg-slate-50">
+    <div className="flex items-center gap-4 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
       <div className="flex items-center gap-2">
         <Flame className="w-5 h-5 text-corporate-orange" />
         <span className="font-bold text-lg text-corporate-navy">{streakCount}</span>
-        <span className="text-sm text-slate-500">Day Streak</span>
+        <span className="text-sm text-slate-500 dark:text-slate-400">Day Streak</span>
       </div>
       {isDeveloper && (
         <>
@@ -260,7 +260,7 @@ export const StreakTracker = ({ streakCount, streakCoins, userEmail }) => {
           <div className="flex items-center gap-2">
             <span className="text-xl">🪙</span>
             <span className="font-bold text-lg text-corporate-navy">{streakCoins}</span>
-            <span className="text-sm text-slate-500">Tokens</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">Tokens</span>
           </div>
         </>
       )}
@@ -283,13 +283,13 @@ export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose,
         <button
           key={index}
           onClick={() => onSelect(suggestion.value || suggestion.text || suggestion)}
-          className="w-full text-left p-4 rounded-lg border-2 border-slate-200 transition-all hover:border-corporate-teal hover:bg-teal-50"
+          className="w-full text-left p-4 rounded-lg border-2 border-slate-200 dark:border-slate-700 transition-all hover:border-corporate-teal hover:bg-teal-50"
         >
-          <p className="text-sm font-medium text-slate-700">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
             {prefix} <strong>{suggestion.value || suggestion.text || suggestion}</strong>
           </p>
           {suggestion.description && (
-            <p className="text-xs mt-1 text-slate-500">
+            <p className="text-xs mt-1 text-slate-500 dark:text-slate-400">
               {suggestion.description}
             </p>
           )}

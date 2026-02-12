@@ -11,16 +11,16 @@ import { Button, Card } from '../ui';
 const COLORS = CORPORATE_COLORS;
 
 const NotificationBanner = ({ notification, onDismiss }) => {
-    let baseStyle = 'bg-blue-50 border-blue-200 text-blue-700';
+    let baseStyle = 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700';
     let Icon = Bell;
     if (notification.type === 'warning' || notification.type === 'expiration') {
-        baseStyle = 'bg-yellow-50 border-yellow-200 text-yellow-700';
+        baseStyle = 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-700';
         Icon = AlertTriangle;
     } else if (notification.type === 'error') {
-        baseStyle = 'bg-red-50 border-red-200 text-red-700';
+        baseStyle = 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700';
         Icon = X;
     } else if (notification.type === 'success') {
-        baseStyle = 'bg-green-50 border-green-200 text-green-700';
+        baseStyle = 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700';
         Icon = CheckCircle;
     }
 
@@ -32,7 +32,7 @@ const NotificationBanner = ({ notification, onDismiss }) => {
             </div>
             <button 
                 onClick={() => onDismiss(notification.id)}
-                className="ml-4 p-1 rounded-full opacity-70 hover:opacity-100 transition-opacity text-slate-500"
+                className="ml-4 p-1 rounded-full opacity-70 hover:opacity-100 transition-opacity text-slate-500 dark:text-slate-400"
                 title="Dismiss"
             >
                 <X className="w-4 h-4" />
@@ -180,7 +180,7 @@ const MembershipModule = () => {
                 <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2 text-corporate-navy">
                     Membership & Billing
                 </h1>
-                <p className="text-base mb-6 text-slate-500">
+                <p className="text-base mb-6 text-slate-500 dark:text-slate-400">
                     Manage your plan, payments, and account status here.
                 </p>
 
@@ -205,7 +205,7 @@ const MembershipModule = () => {
                     
                     {/* Current Plan Card (Span 1) */}
                     <Card title="Current Plan" accent={statusColor} icon={ShieldCheck} className="lg:col-span-1">
-                        <p className="text-sm font-semibold mb-2 text-slate-500">
+                        <p className="text-sm font-semibold mb-2 text-slate-500 dark:text-slate-400">
                             STATUS: <span className={`font-extrabold uppercase`} style={{ color: COLORS[statusColor] }}>
                                 {membershipData.status}
                             </span>
@@ -215,7 +215,7 @@ const MembershipModule = () => {
                         </h3>
                         
                         {nextBillingDate && (
-                            <div className="flex items-center text-sm font-medium mb-4 p-3 rounded-lg bg-gray-50 border">
+                            <div className="flex items-center text-sm font-medium mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border">
                                 <Clock className="w-4 h-4 mr-2 text-corporate-teal" />
                                 <p>Next Billing Date: <strong>{nextBillingDate.toDateString()}</strong></p>
                             </div>
@@ -224,7 +224,7 @@ const MembershipModule = () => {
                         <p className="font-semibold text-base mb-2 text-corporate-navy">Your Features:</p>
                         <ul className="space-y-1 text-sm">
                             {currentPlanDetails.features && Object.entries(currentPlanDetails.features).map(([key, value], index) => (
-                                <li key={index} className="flex items-center text-gray-700">
+                                <li key={index} className="flex items-center text-gray-700 dark:text-gray-200">
                                     <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0 text-corporate-teal" />
                                     {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
                                 </li>
@@ -250,20 +250,20 @@ const MembershipModule = () => {
                             {upgradePlans.map(plan => (
                                 <div 
                                     key={plan.id} 
-                                    className="bg-white rounded-xl shadow-md p-3 sm:p-4 lg:p-6 border-t-4 hover:shadow-xl transition-shadow duration-300"
+                                    className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-3 sm:p-4 lg:p-6 border-t-4 hover:shadow-xl transition-shadow duration-300"
                                     style={{ borderColor: plan.id === 'pro' ? COLORS.PURPLE : COLORS.BLUE }}
                                 >
                                     <h4 className="text-xl font-extrabold mb-1 text-corporate-navy">{plan.name}</h4>
-                                    <p className="text-sm font-semibold mb-3 text-slate-500">{plan.recurrence}</p>
+                                    <p className="text-sm font-semibold mb-3 text-slate-500 dark:text-slate-400">{plan.recurrence}</p>
                                     
                                     <p className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-4 text-corporate-navy">
                                         <DollarSign className="inline-block w-6 h-6" />{plan.price}
-                                        <span className="text-base font-medium text-gray-500">/{plan.recurrence ? plan.recurrence.toLowerCase().replace('ly', '').replace('ally', '') : 'period'}</span>
+                                        <span className="text-base font-medium text-gray-500 dark:text-gray-400">/{plan.recurrence ? plan.recurrence.toLowerCase().replace('ly', '').replace('ally', '') : 'period'}</span>
                                     </p>
                                     
                                     <ul className="space-y-2 text-sm mb-6">
                                         {plan.features && Object.entries(plan.features).map(([key, value], index) => (
-                                            <li key={index} className="flex items-center text-gray-700">
+                                            <li key={index} className="flex items-center text-gray-700 dark:text-gray-200">
                                                 <CornerRightUp className="w-4 h-4 mr-2 flex-shrink-0 text-corporate-orange" />
                                                 {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
                                             </li>
@@ -288,25 +288,25 @@ const MembershipModule = () => {
                 <Card title="Payment History" accent='NAVY' icon={DollarSign}>
                     <div className="overflow-x-auto">
                         {membershipData.paymentHistory.length === 0 ? (
-                            <p className="text-sm text-center py-4 text-slate-500">No payment history found.</p>
+                            <p className="text-sm text-center py-4 text-slate-500 dark:text-slate-400">No payment history found.</p>
                         ) : (
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-slate-50">
+                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead className="bg-slate-50 dark:bg-slate-800">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Plan</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Amount</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Date</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Method</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Plan</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Amount</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Date</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Method</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     {membershipData.paymentHistory.map((item, index) => (
                                         <tr key={index}>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-corporate-navy">{item.planId}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${item.amount.toFixed(2)}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(item.date).toLocaleDateString()}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{item.method}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">${item.amount.toFixed(2)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">{new Date(item.date).toLocaleDateString()}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">{item.method}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold" style={{ color: item.status === 'Success' ? COLORS.GREEN : COLORS.RED }}>{item.status}</td>
                                         </tr>
                                     ))}
@@ -320,13 +320,13 @@ const MembershipModule = () => {
             {/* --- Payment Modal --- */}
             {modalOpen && selectedPlan && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 w-full shadow-2xl">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-3 sm:p-4 lg:p-6 w-full shadow-2xl">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl sm:text-2xl font-bold text-corporate-navy">
                                 Secure Checkout: {selectedPlan.name}
                             </h2>
                             <button onClick={() => setModalOpen(false)} className="p-2 rounded-full hover:bg-gray-100">
-                                <X className="w-6 h-6 text-slate-500" />
+                                <X className="w-6 h-6 text-slate-500 dark:text-slate-400" />
                             </button>
                         </div>
                         
@@ -337,9 +337,9 @@ const MembershipModule = () => {
                                 <span className="ml-2 text-xl sm:text-2xl font-extrabold text-corporate-teal">
                                     ${selectedPlan.price.toFixed(2)}
                                 </span>
-                                <span className="text-sm text-gray-500"> / {selectedPlan.recurrence}</span>
+                                <span className="text-sm text-gray-500 dark:text-gray-400"> / {selectedPlan.recurrence}</span>
                             </p>
-                            <p className="text-sm text-gray-500 mt-1">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                 Renews automatically. Cancel anytime.
                             </p>
                         </div>
@@ -356,7 +356,7 @@ const MembershipModule = () => {
                                     className={`flex-1 p-3 rounded-lg border-2 transition-all duration-200 ${
                                         paymentMethod === method 
                                             ? 'border-purple-600 shadow-lg' 
-                                            : 'border-gray-200 hover:border-gray-400'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-400'
                                     }`}
                                 >
                                     <CreditCard className="w-5 h-5 mx-auto mb-1" style={{ color: paymentMethod === method ? COLORS.PURPLE : COLORS.MUTED }} />
@@ -371,20 +371,20 @@ const MembershipModule = () => {
                         </h3>
                         {paymentMethod === 'card' && (
                             <div className="space-y-3 mb-6">
-                                <input type="text" placeholder="Card Number (Mock: 1111 ****)" className="w-full p-3 border border-gray-300 rounded-lg" disabled={paymentStatus === 'processing'} />
+                                <input type="text" placeholder="Card Number (Mock: 1111 ****)" className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg" disabled={paymentStatus === 'processing'} />
                                 <div className="flex space-x-3">
-                                    <input type="text" placeholder="MM/YY" className="w-1/2 p-3 border border-gray-300 rounded-lg" disabled={paymentStatus === 'processing'} />
-                                    <input type="text" placeholder="CVC" className="w-1/2 p-3 border border-gray-300 rounded-lg" disabled={paymentStatus === 'processing'} />
+                                    <input type="text" placeholder="MM/YY" className="w-1/2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg" disabled={paymentStatus === 'processing'} />
+                                    <input type="text" placeholder="CVC" className="w-1/2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg" disabled={paymentStatus === 'processing'} />
                                 </div>
                             </div>
                         )}
                         {paymentMethod === 'paypal' && (
-                            <p className="p-3 bg-blue-100 border border-blue-300 rounded-lg mb-6 text-sm text-blue-800">
+                            <p className="p-3 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 rounded-lg mb-6 text-sm text-blue-800">
                                 This would redirect you to the PayPal gateway for a one-time payment authorization.
                             </p>
                         )}
                         {paymentMethod === 'invoice' && (
-                            <p className="p-3 bg-amber-100 border border-amber-300 rounded-lg mb-6 text-sm text-amber-800">
+                            <p className="p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 rounded-lg mb-6 text-sm text-amber-800">
                                 A yearly invoice of ${selectedPlan.price.toFixed(2)} will be sent to {user?.email || 'your email address'}. Service begins upon payment.
                             </p>
                         )}

@@ -68,7 +68,7 @@ const VoiceInput = ({ onTranscription, disabled }) => {
       className={`p-3 rounded-full transition-all ${
         isRecording 
           ? 'bg-red-500 text-white animate-pulse' 
-          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       aria-label={isRecording ? 'Stop recording' : 'Start recording'}
     >
@@ -98,7 +98,7 @@ const PrepPromptCard = ({ prompt, value, onChange, isActive }) => {
       </div>
       
       {/* Prompt Question */}
-      <p className="text-sm text-gray-700 mb-3">{prompt.prompt}</p>
+      <p className="text-sm text-gray-700 dark:text-gray-200 mb-3">{prompt.prompt}</p>
       
       {/* Input Area */}
       <div className="relative">
@@ -106,7 +106,7 @@ const PrepPromptCard = ({ prompt, value, onChange, isActive }) => {
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder={prompt.placeholder}
-          className="w-full p-3 pr-12 border border-gray-300 rounded-lg text-sm min-h-[100px] resize-none focus:ring-2 focus:ring-corporate-navy focus:border-transparent"
+          className="w-full p-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg text-sm min-h-[100px] resize-none focus:ring-2 focus:ring-corporate-navy focus:border-transparent"
           disabled={!isActive}
         />
         <div className="absolute right-2 bottom-2">
@@ -118,7 +118,7 @@ const PrepPromptCard = ({ prompt, value, onChange, isActive }) => {
       </div>
       
       {/* Tip */}
-      <div className="mt-2 flex items-start gap-2 text-xs text-gray-500">
+      <div className="mt-2 flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
         <Lightbulb className="w-3 h-3 mt-0.5 flex-shrink-0" />
         <span className="italic">{prompt.tip}</span>
       </div>
@@ -218,7 +218,7 @@ const RepPrepModal = ({ rep, existingPrep, onClose, onSave, isLoading }) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-corporate-navy to-corporate-navy/90">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-corporate-navy to-corporate-navy/90">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-bold text-white">Prep Your Rep</h3>
             <button
@@ -238,7 +238,7 @@ const RepPrepModal = ({ rep, existingPrep, onClose, onSave, isLoading }) => {
         </div>
         
         {/* Info Banner */}
-        <div className="p-3 bg-amber-50 border-b border-amber-200">
+        <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800">
           <p className="text-sm text-amber-800">
             <strong>Optional prep:</strong> Think through your rep before executing. 
             Your notes won't be rewritten or validated — this is for your thinking.
@@ -247,7 +247,7 @@ const RepPrepModal = ({ rep, existingPrep, onClose, onSave, isLoading }) => {
         
         {/* Progress Bar */}
         <div className="px-4 pt-3">
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
             <span>Progress</span>
             <span>{completedPrompts}/{PREP_PROMPTS.length} prompts</span>
           </div>
@@ -289,7 +289,7 @@ const RepPrepModal = ({ rep, existingPrep, onClose, onSave, isLoading }) => {
           
           {/* Error Message */}
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2 text-red-700 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
@@ -297,7 +297,7 @@ const RepPrepModal = ({ rep, existingPrep, onClose, onSave, isLoading }) => {
         </div>
         
         {/* Footer - Navigation & Save */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <div className="flex items-center justify-between">
             {/* Previous Button */}
             <Button
@@ -341,7 +341,7 @@ const RepPrepModal = ({ rep, existingPrep, onClose, onSave, isLoading }) => {
           <div className="mt-3 text-center">
             <button
               onClick={onClose}
-              className="text-xs text-gray-500 hover:text-gray-700 underline"
+              className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 underline"
             >
               Skip prep — I'm ready to execute
             </button>

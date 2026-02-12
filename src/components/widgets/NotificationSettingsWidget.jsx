@@ -106,26 +106,26 @@ const NotificationSettingsWidget = () => {
     }));
   };
 
-  if (loading) return <Card className="p-6"><div className="animate-pulse h-20 bg-gray-100 rounded"></div></Card>;
+  if (loading) return <Card className="p-6"><div className="animate-pulse h-20 bg-gray-100 dark:bg-gray-700 rounded"></div></Card>;
 
   return (
     <Card className="p-6">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600">
           <Bell className="w-6 h-6" />
         </div>
         <div>
-          <h3 className="text-lg font-bold text-gray-900">Notification Preferences</h3>
-          <p className="text-sm text-gray-500">Manage how and when you receive updates</p>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Notification Preferences</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Manage how and when you receive updates</p>
         </div>
       </div>
 
       <div className="space-y-6">
         {/* Master Toggle */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100">
           <div>
-            <h4 className="font-medium text-gray-900">Enable Notifications</h4>
-            <p className="text-xs text-gray-500">Allow the system to send you reminders</p>
+            <h4 className="font-medium text-gray-900 dark:text-gray-100">Enable Notifications</h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Allow the system to send you reminders</p>
           </div>
           <div className="flex items-center gap-2">
             {saved && (
@@ -134,7 +134,7 @@ const NotificationSettingsWidget = () => {
               </span>
             )}
             {saving && (
-              <span className="text-xs text-gray-500">Saving...</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">Saving...</span>
             )}
             <label className="relative inline-flex items-center cursor-pointer">
               <input 
@@ -153,7 +153,7 @@ const NotificationSettingsWidget = () => {
           <>
             {/* Timezone */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
                 <Globe className="w-4 h-4" /> Your Time Zone
               </label>
               <Select 
@@ -162,14 +162,14 @@ const NotificationSettingsWidget = () => {
                 options={COMMON_TIMEZONES.map(tz => ({ value: tz, label: tz.replace(/_/g, ' ') }))}
                 placeholder="Select your timezone"
               />
-              <p className="text-xs text-gray-500 mt-1">Notifications will be sent based on this time.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Notifications will be sent based on this time.</p>
             </div>
 
             {/* Channels */}
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">Delivery Channels</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Delivery Channels</label>
               
-              <div className={`flex items-center justify-between p-3 rounded-lg border ${settings.channels.email ? 'border-blue-200 bg-blue-50' : 'border-gray-200'}`}>
+              <div className={`flex items-center justify-between p-3 rounded-lg border ${settings.channels.email ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="flex items-center gap-3">
                   <Mail className={`w-5 h-5 ${settings.channels.email ? 'text-blue-600' : 'text-gray-400'}`} />
                   <span className="text-sm font-medium">Email</span>
@@ -178,11 +178,11 @@ const NotificationSettingsWidget = () => {
                   type="checkbox" 
                   checked={settings.channels.email}
                   onChange={() => toggleChannel('email')}
-                  className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                  className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600"
                 />
               </div>
 
-              <div className={`flex items-center justify-between p-3 rounded-lg border ${settings.channels.sms ? 'border-blue-200 bg-blue-50' : 'border-gray-200'}`}>
+              <div className={`flex items-center justify-between p-3 rounded-lg border ${settings.channels.sms ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="flex items-center gap-3">
                   <MessageSquare className={`w-5 h-5 ${settings.channels.sms ? 'text-blue-600' : 'text-gray-400'}`} />
                   <span className="text-sm font-medium">SMS / Text</span>
@@ -191,7 +191,7 @@ const NotificationSettingsWidget = () => {
                   type="checkbox" 
                   checked={settings.channels.sms}
                   onChange={() => toggleChannel('sms')}
-                  className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                  className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600"
                 />
               </div>
             </div>
@@ -199,14 +199,14 @@ const NotificationSettingsWidget = () => {
             {/* Phone Number Input (Conditional) */}
             {settings.channels.sms && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Mobile Number</label>
                 <Input 
                   type="tel" 
                   placeholder="+1 (555) 000-0000"
                   value={settings.phoneNumber}
                   onChange={(e) => setSettings({...settings, phoneNumber: e.target.value})}
                 />
-                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" /> Standard messaging rates may apply.
                 </p>
               </div>

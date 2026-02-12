@@ -34,7 +34,7 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
 
     return (
         <div className="space-y-4 sm:space-y-5 lg:space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4 border-slate-200">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4 border-slate-200 dark:border-slate-700">
                 <h2 className="text-xl sm:text-2xl font-bold text-corporate-navy">Community Feed ({safeTierMeta[currentTierFilter]?.name || 'All'})</h2>
                 <Button onClick={() => setView('new-thread')} size="sm">
                     <PlusCircle className="w-4 h-4 mr-2" /> Start Discussion
@@ -55,7 +55,7 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                                 className={`px-3 py-1 text-[11px] font-bold rounded-full transition-all duration-200 border ${
                                     isActive
                                         ? 'text-white shadow-md scale-105'
-                                        : 'text-gray-700 bg-white hover:bg-gray-100 border-gray-300'
+                                        : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-800 hover:bg-gray-100 border-gray-300 dark:border-gray-600'
                                 }`}
                                 style={{ backgroundColor: isActive ? meta.hex : undefined, borderColor: isActive ? meta.hex : undefined }}
                             >
@@ -69,7 +69,7 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
             <div className="space-y-4">
                 {filteredThreads.length === 0 && (
                     <Card className="text-center border-dashed">
-                        <p className="text-gray-500 italic py-6">
+                        <p className="text-gray-500 dark:text-gray-400 italic py-6">
                             No posts match the "{safeTierMeta[currentTierFilter]?.name || currentTierFilter}" filter. {currentTierFilter !== 'All' && 'Try selecting "All".'}
                         </p>
                     </Card>
@@ -80,32 +80,32 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
 
                     return (
                         <Card key={thread.id} accent={isMyThread ? 'TEAL' : (thread.impact ? 'ORANGE' : 'NAVY')} className="transition-shadow duration-200 hover:shadow-lg">
-                            <div className="flex justify-between items-start mb-3 border-b pb-2 border-slate-200">
+                            <div className="flex justify-between items-start mb-3 border-b pb-2 border-slate-200 dark:border-slate-700">
                                 <div className="flex items-center space-x-3">
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xs text-gray-600 shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xs text-gray-600 dark:text-gray-300 shrink-0">
                                         {thread.rep}
                                     </div>
                                     <div>
                                         <p className="font-bold text-md leading-tight text-corporate-navy">{thread.ownerName || 'User'}</p>
-                                        <p className="text-xs text-gray-500">{thread.time}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{thread.time}</p>
                                     </div>
                                 </div>
                                 <div className='flex items-center gap-2 ml-2 flex-shrink-0'>
-                                    {thread.isPodMember && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700`}>Pod</span>}
+                                    {thread.isPodMember && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700`}>Pod</span>}
                                     {thread.impact && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white bg-corporate-orange flex items-center gap-1`}><Star size={10} fill="currentColor"/> Impact</span>}
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full`} style={{ background: `${threadTierMeta.hex}1A`, color: threadTierMeta.hex }}>{thread.tier}</span>
                                 </div>
                             </div>
 
                             {thread.title && thread.title !== thread.content && <h4 className="font-bold text-sm mb-1 text-corporate-navy">{thread.title}</h4>}
-                            <p className="text-sm text-gray-800 mb-4 font-medium whitespace-pre-wrap">{thread.content}</p>
+                            <p className="text-sm text-gray-800 dark:text-gray-200 mb-4 font-medium whitespace-pre-wrap">{thread.content}</p>
 
-                            <div className="flex justify-between items-center text-xs pt-3 border-t border-slate-200">
+                            <div className="flex justify-between items-center text-xs pt-3 border-t border-slate-200 dark:border-slate-700">
                                 <div className="flex space-x-4">
                                     <button onClick={() => handleReactClick(thread.id)} className="flex items-center text-red-500 hover:text-red-700 transition-colors group">
                                         <Heart className="w-3.5 h-3.5 mr-1 group-hover:fill-current" /> {thread.reactions || 0}
                                     </button>
-                                    <button onClick={() => handleCommentClick(thread.id)} className="flex items-center text-gray-500 hover:text-blue-600 transition-colors group">
+                                    <button onClick={() => handleCommentClick(thread.id)} className="flex items-center text-gray-500 dark:text-gray-400 hover:text-blue-600 transition-colors group">
                                         <MessageSquare className="w-3.5 h-3.5 mr-1" /> {thread.comments || 0}
                                     </button>
                                 </div>
@@ -163,29 +163,29 @@ const NewThreadView = ({ setView }) => {
 
     return (
         <Card title="Start a New Discussion" icon={PlusCircle} accent="TEAL">
-            <button onClick={() => setView('feed')} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition-colors">
+            <button onClick={() => setView('feed')} className="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-800 transition-colors">
                 <X className="w-5 h-5" />
             </button>
-            <p className="text-sm text-gray-700 mb-4 border-l-4 pl-3 italic border-corporate-teal">
+            <p className="text-sm text-gray-700 dark:text-gray-200 mb-4 border-l-4 pl-3 italic border-corporate-teal">
                 Use the structure below for high-quality discussions and faster responses from peers and coaches.
             </p>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
                 <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">1. Thread Title / Topic <span className="text-red-500">*</span></label>
-                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Applying SBI to high performers" className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal" required />
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">1. Thread Title / Topic <span className="text-red-500">*</span></label>
+                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Applying SBI to high performers" className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal" required />
                 </div>
                 <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">2. Situation & Context (1-2 sentences) <span className="text-red-500">*</span></label>
-                    <textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="e.g., Giving feedback to a senior engineer who is technically strong but dismissive in code reviews." className="w-full p-3 border border-gray-300 rounded-lg h-20 text-sm focus:ring-2 focus:ring-corporate-teal" required />
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">2. Situation & Context (1-2 sentences) <span className="text-red-500">*</span></label>
+                    <textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="e.g., Giving feedback to a senior engineer who is technically strong but dismissive in code reviews." className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg h-20 text-sm focus:ring-2 focus:ring-corporate-teal" required />
                 </div>
                 <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">3. Specific Question / Challenge <span className="text-red-500">*</span></label>
-                    <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="e.g., How can I deliver this feedback using SBI without demotivating them, focusing on the impact on team collaboration?" className="w-full p-3 border border-gray-300 rounded-lg h-24 text-sm focus:ring-2 focus:ring-corporate-teal" required />
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">3. Specific Question / Challenge <span className="text-red-500">*</span></label>
+                    <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="e.g., How can I deliver this feedback using SBI without demotivating them, focusing on the impact on team collaboration?" className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg h-24 text-sm focus:ring-2 focus:ring-corporate-teal" required />
                 </div>
                 <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">4. Primary Leadership Tier Focus</label>
-                    <select value={tier} onChange={(e) => setTier(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-corporate-teal">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">4. Primary Leadership Tier Focus</label>
+                    <select value={tier} onChange={(e) => setTier(e.target.value)} className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-corporate-teal">
                         <option value="T1">T1: Lead Self</option>
                         <option value="T2">T2: Lead Work</option>
                         <option value="T3">T3: Lead People</option>
@@ -271,23 +271,23 @@ const CommunityResourcesView = ({ db }) => {
                                 </div>
                             )}
                             <div className="flex items-start gap-3">
-                                <div className="p-2 bg-teal-50 rounded-lg">
+                                <div className="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg">
                                     {resource.resourceType === 'video' ? <Video className="w-6 h-6 text-teal-600" /> :
                                      resource.resourceType === 'file' ? <FileText className="w-6 h-6 text-teal-600" /> :
                                      <Link className="w-6 h-6 text-teal-600" />}
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-corporate-navy line-clamp-1">{resource.title}</h3>
-                                    <p className="text-sm text-slate-500 line-clamp-2 mt-1">{resource.description || 'No description'}</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mt-1">{resource.description || 'No description'}</p>
                                 </div>
                             </div>
                         </Card>
                     )})}
                 </div>
             ) : (
-                <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                <div className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-600">
                     <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500">No resources available yet.</p>
+                    <p className="text-slate-500 dark:text-slate-400">No resources available yet.</p>
                 </div>
             )}
 
@@ -380,16 +380,16 @@ const CommunityScreen = () => {
                 navigate={navigate}
             >
                 <div className="max-w-2xl mx-auto">
-                    <div className="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl p-8 text-center">
+                    <div className="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 text-center">
                         <div className="w-16 h-16 rounded-2xl bg-slate-200 flex items-center justify-center mx-auto mb-4">
                             <Lock className="w-8 h-8 text-slate-400" />
                         </div>
                         <h2 className="text-xl font-bold text-corporate-navy mb-2">Community Coming Soon</h2>
-                        <p className="text-slate-600 mb-4">
+                        <p className="text-slate-600 dark:text-slate-300 mb-4">
                             The Community unlocks on Day 15 of your program. 
                             Focus on your prep work and early development activities first!
                         </p>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                             Current Day: {currentDayNumber} | Unlocks: Day 15
                         </p>
                     </div>
@@ -406,7 +406,7 @@ const CommunityScreen = () => {
             navigate={navigate}
         >
             {/* Tab Navigation */}
-            <div className="flex overflow-x-auto border-b border-slate-200 mb-6 no-scrollbar">
+            <div className="flex overflow-x-auto border-b border-slate-200 dark:border-slate-700 mb-6 no-scrollbar">
                 <TabButton 
                     active={activeTab === 'events'} 
                     onClick={() => setActiveTab('events')} 

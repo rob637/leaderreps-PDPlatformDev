@@ -158,21 +158,21 @@ const Dashboard = () => {
         onClick={!disabled ? onChange : undefined}
         className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
           checked 
-            ? 'bg-teal-50 border-corporate-teal' 
-            : 'bg-white border-slate-200 hover:border-teal-300'
+            ? 'bg-teal-50 dark:bg-teal-900/20 border-corporate-teal' 
+            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-teal-300'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         <div className={`mt-0.5 w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${
-          checked ? 'bg-corporate-teal border-corporate-teal' : 'bg-white border-slate-300'
+          checked ? 'bg-corporate-teal border-corporate-teal' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'
         }`}>
           {checked && <CheckSquare className="w-4 h-4 text-white" />}
         </div>
         <div className="flex-1">
-          <p className={`font-semibold ${checked ? 'text-teal-900' : 'text-slate-700'}`}>
+          <p className={`font-semibold ${checked ? 'text-teal-900' : 'text-slate-700 dark:text-slate-200'}`}>
             {label}
           </p>
           {subLabel && (
-            <p className="text-xs text-slate-500 mt-0.5">{subLabel}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subLabel}</p>
           )}
         </div>
       </div>
@@ -267,7 +267,7 @@ const Dashboard = () => {
           <h1 className="text-3xl sm:text-4xl font-bold text-corporate-navy mb-2">
             {greeting}
           </h1>
-          <p className="text-slate-500 text-lg">
+          <p className="text-slate-500 dark:text-slate-400 text-lg">
             Ready to win the day? Let's get to work.
           </p>
         </div>
@@ -285,7 +285,7 @@ const Dashboard = () => {
               </label>
               <div className="flex gap-3">
                 {amWinCompleted ? (
-                  <div className="flex-1 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+                  <div className="flex-1 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-3">
                     <CheckSquare className="w-5 h-5 text-green-600" />
                     <span className="font-bold text-green-900 line-through opacity-75">{morningWIN}</span>
                   </div>
@@ -316,7 +316,7 @@ const Dashboard = () => {
                     className={`p-3 rounded-xl border-2 transition-colors ${
                       amWinCompleted 
                         ? 'bg-green-500 border-green-500 text-white' 
-                        : 'bg-white border-slate-200 text-slate-300 hover:border-green-400'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 hover:border-green-400'
                     }`}
                   >
                     <CheckSquare className="w-5 h-5" />
@@ -334,9 +334,9 @@ const Dashboard = () => {
               {otherTasks.map((task, idx) => (
                 <div key={task.id || idx} className="flex items-center gap-3">
                   <div className={`flex-1 p-3 rounded-xl border ${
-                    task.completed ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200'
+                    task.completed ? 'bg-slate-50 border-slate-200 dark:border-slate-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
                   }`}>
-                    <span className={`font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                    <span className={`font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>
                       {task.text}
                     </span>
                   </div>
@@ -345,7 +345,7 @@ const Dashboard = () => {
                     className={`p-3 rounded-xl border-2 transition-colors ${
                       task.completed
                         ? 'bg-corporate-teal border-corporate-teal text-white' 
-                        : 'bg-white border-slate-200 text-slate-300 hover:border-corporate-teal'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 hover:border-corporate-teal'
                     }`}
                   >
                     <CheckSquare className="w-5 h-5" />
@@ -385,7 +385,7 @@ const Dashboard = () => {
     'scorecard': () => (
       <WidgetRenderer widgetId="scorecard" scope={getScopeForWidget('scorecard')}>
         <div className="bg-corporate-navy rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-slate-800 opacity-5 rounded-full -mr-10 -mt-10" />
           
           <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-400" /> Today Scorecard
@@ -450,7 +450,7 @@ const Dashboard = () => {
               <Textarea 
                 value={reflectionGood}
                 onChange={(e) => setReflectionGood(e.target.value)}
-                className="bg-green-50 border-green-100 focus:ring-green-500"
+                className="bg-green-50 dark:bg-green-900/20 border-green-100 focus:ring-green-500"
                 rows={2}
                 placeholder="Celebrate a win..."
               />
@@ -463,7 +463,7 @@ const Dashboard = () => {
               <Textarea 
                 value={reflectionBetter}
                 onChange={(e) => setReflectionBetter(e.target.value)}
-                className="bg-orange-50 border-orange-100 focus:ring-orange-500"
+                className="bg-orange-50 dark:bg-orange-900/20 border-orange-100 focus:ring-orange-500"
                 rows={2}
                 placeholder="Identify an improvement..."
               />
@@ -494,8 +494,8 @@ const Dashboard = () => {
               Notifications
             </h2>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-500 italic text-center">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-slate-500 dark:text-slate-400 italic text-center">
               Notifications coming soon.
             </div>
           </div>
@@ -519,16 +519,16 @@ const Dashboard = () => {
   if (!user) return <div className="p-8 text-center">Please log in.</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-800 pb-20">
       {/* HEADER */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-corporate-navy">
                 Welcome back, {user.displayName?.split(' ')[0] || 'Leader'}
               </h1>
-              <p className="text-slate-500 text-sm">
+              <p className="text-slate-500 dark:text-slate-400 text-sm">
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
             </div>

@@ -27,8 +27,8 @@ const getAccentTextClass = (tierIdOrColorKey) => {
 
 const AICoachingSimulator = ({ item, isCourse = false }) => (
   <Card title={`AI Rep Coach for ${item.title || item.name}`} icon={ShieldCheck} accentColor="bg-corporate-teal" className="my-8">
-    <p className="text-sm text-slate-600 mb-4">Practice applying '{item.title || item.name}' principles in simulated scenarios.</p>
-    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center text-purple-700 font-medium italic">
+    <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">Practice applying '{item.title || item.name}' principles in simulated scenarios.</p>
+    <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg text-center text-purple-700 font-medium italic">
       {isCourse ? `Access the dedicated AI Coach for this course's modules.` : `AI Coaching Simulator coming soon...`}
     </div>
   </Card>
@@ -44,8 +44,8 @@ const ResourceDetailModal = ({ isVisible, onClose, resource, skill }) => {
             </ModalHeader>
             <ModalBody>
                 <p className="text-xs font-semibold uppercase mb-1 text-corporate-teal">Skill: {skill.name}</p>
-                <p className="text-sm text-slate-600 mb-4">{resource.summary || 'Details unavailable.'}</p>
-                {resource.type && <p className="text-xs text-slate-500 mb-1">Type: {resource.type}</p>}
+                <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">{resource.summary || 'Details unavailable.'}</p>
+                {resource.type && <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Type: {resource.type}</p>}
                 {resource.url && (
                     <a href={resource.url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-blue-600 hover:underline text-sm font-medium group">
                         View Resource <span className="inline-block transition-transform group-hover:translate-x-1">&rarr;</span>
@@ -80,23 +80,23 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                     </div>
                     <div className="flex-1">
                         <h1 className="text-2xl md:text-3xl font-extrabold text-corporate-navy">{course.title}</h1>
-                        <p className="text-lg text-slate-600 mt-2">{course.description}</p>
+                        <p className="text-lg text-slate-600 dark:text-slate-300 mt-2">{course.description}</p>
                         
                         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-6">
                             <div>
-                                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Duration</span>
-                                <p className="font-semibold text-slate-700">{course.duration}</p>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Duration</span>
+                                <p className="font-semibold text-slate-700 dark:text-slate-200">{course.duration}</p>
                             </div>
                             <div>
-                                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Format</span>
-                                <p className="font-semibold text-slate-700">{course.format}</p>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Format</span>
+                                <p className="font-semibold text-slate-700 dark:text-slate-200">{course.format}</p>
                             </div>
                             <div>
-                                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Level</span>
-                                <p className="font-semibold text-slate-700">{course.level}</p>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Level</span>
+                                <p className="font-semibold text-slate-700 dark:text-slate-200">{course.level}</p>
                             </div>
                             <div>
-                                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Price</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Price</span>
                                 <p className={`font-semibold text-lg ${accentTextClass}`}>${course.price}</p>
                             </div>
                         </div>
@@ -109,8 +109,8 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                     <div className="space-y-4">
                         <div>
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm text-slate-600">Enrollment Progress</span>
-                                <span className="text-sm font-semibold text-slate-700">{course.currentEnrollment}/{course.maxParticipants}</span>
+                                <span className="text-sm text-slate-600 dark:text-slate-300">Enrollment Progress</span>
+                                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{course.currentEnrollment}/{course.maxParticipants}</span>
                             </div>
                             <div className="w-full bg-slate-200 rounded-full h-2">
                                 <div 
@@ -122,15 +122,15 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                         
                         <div className="space-y-2">
                             <div className="flex justify-between">
-                                <span className="text-sm text-slate-600">Start Date:</span>
-                                <span className="font-medium text-slate-700">{new Date(course.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                <span className="text-sm text-slate-600 dark:text-slate-300">Start Date:</span>
+                                <span className="font-medium text-slate-700 dark:text-slate-200">{new Date(course.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-sm text-slate-600">End Date:</span>
-                                <span className="font-medium text-slate-700">{new Date(course.endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                <span className="text-sm text-slate-600 dark:text-slate-300">End Date:</span>
+                                <span className="font-medium text-slate-700 dark:text-slate-200">{new Date(course.endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-sm text-slate-600">Enrollment Deadline:</span>
+                                <span className="text-sm text-slate-600 dark:text-slate-300">Enrollment Deadline:</span>
                                 <span className="font-medium text-red-600">{new Date(course.enrollmentDeadline).toLocaleDateString()}</span>
                             </div>
                         </div>
@@ -151,7 +151,7 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                             <h4 className="font-semibold text-sm mb-2 text-corporate-navy">Meeting Times:</h4>
                             <ul className="space-y-1">
                                 {course.meetingTimes?.map((time, idx) => (
-                                    <li key={idx} className="text-sm text-slate-600 flex items-center gap-2">
+                                    <li key={idx} className="text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
                                         <Clock className="w-3 h-3" />
                                         {time}
                                     </li>
@@ -161,15 +161,15 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                         
                         <div>
                             <h4 className="font-semibold text-sm mb-2 text-corporate-navy">Instructor:</h4>
-                            <p className="font-medium text-slate-700">{course.instructor}</p>
-                            <p className="text-sm text-slate-600">{course.instructorBio}</p>
+                            <p className="font-medium text-slate-700 dark:text-slate-200">{course.instructor}</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-300">{course.instructorBio}</p>
                         </div>
                         
                         <div>
                             <h4 className="font-semibold text-sm mb-2 text-corporate-navy">Prerequisites:</h4>
                             <ul className="space-y-1">
                                 {course.prerequisites?.map((prereq, idx) => (
-                                    <li key={idx} className="text-sm text-slate-600">• {prereq}</li>
+                                    <li key={idx} className="text-sm text-slate-600 dark:text-slate-300">• {prereq}</li>
                                 ))}
                             </ul>
                         </div>
@@ -178,7 +178,7 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                             <h4 className="font-semibold text-sm mb-2 text-corporate-navy">Learning Outcomes:</h4>
                             <ul className="space-y-1">
                                 {course.learningOutcomes?.map((outcome, idx) => (
-                                    <li key={idx} className="text-sm text-slate-600">✓ {outcome}</li>
+                                    <li key={idx} className="text-sm text-slate-600 dark:text-slate-300">✓ {outcome}</li>
                                 ))}
                             </ul>
                         </div>
@@ -191,7 +191,7 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
             <Card title="Course Modules" icon={Briefcase} accentColor="bg-corporate-navy" className='mt-8'>
                 <div className="space-y-4">
                     {(course.modules || []).map((module, index) => (
-                        <div key={module.id || index} className="p-4 rounded-xl border border-slate-200 shadow-sm bg-white hover:border-blue-300 transition-colors">
+                        <div key={module.id || index} className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 hover:border-blue-300 transition-colors">
                             <h3 className="text-lg font-bold flex items-center gap-3 text-corporate-navy">
                                 <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-extrabold text-white ${accentBgClass}`}>{module.id || index + 1}</span>
                                 {module.title}
@@ -201,14 +201,14 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                                     <Lightbulb className="w-4 h-4 text-amber-500"/> Rationale: {module.focus}
                                     <span className="text-xs text-slate-400 group-open:rotate-90 transition-transform">▶</span>
                                 </summary>
-                                <blockquote className="mt-2 border-l-4 border-corporate-teal pl-4 py-1 text-sm italic text-slate-600">
+                                <blockquote className="mt-2 border-l-4 border-corporate-teal pl-4 py-1 text-sm italic text-slate-600 dark:text-slate-300">
                                     {module.rationale}
                                 </blockquote>
                             </details>
 
                             <div className='mt-3 pt-3 border-t border-slate-100'>
                                 <p className="text-sm font-semibold mb-1 text-corporate-orange"><CheckCircle className='w-4 h-4 inline-block mr-1'/> Pre-Work Required:</p>
-                                <ul className="list-disc pl-5 text-slate-700 space-y-0.5 text-sm">
+                                <ul className="list-disc pl-5 text-slate-700 dark:text-slate-200 space-y-0.5 text-sm">
                                     {(module.preWork || []).map((item, idx) => (
                                         <li key={idx} className='text-xs'>{item}</li>
                                     ))}
@@ -262,7 +262,7 @@ const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName
                     </div>
                     <div className="flex-1">
                         <h1 className="text-2xl md:text-3xl font-extrabold text-corporate-navy">{skill.name}</h1>
-                        <p className="text-lg text-slate-600 mt-2">{skill.summary}</p>
+                        <p className="text-lg text-slate-600 dark:text-slate-300 mt-2">{skill.summary}</p>
                         <p className={`text-xs font-semibold mt-3 px-3 py-1 rounded-full inline-block ${accentBgClass} bg-opacity-10 ${accentTextClass}`}>
                            {getTierName(skill.tier_id)}
                         </p>
@@ -274,7 +274,7 @@ const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName
 
             <Card title="Curated Deep Dive Resources" icon={BookOpen} accentColor="bg-corporate-navy" className='mt-8'>
                 {resources.length === 0 && (
-                    <p className="text-slate-500 italic text-sm text-center py-4">
+                    <p className="text-slate-500 dark:text-slate-400 italic text-sm text-center py-4">
                         No specific resources linked to this skill yet.
                     </p>
                 )}
@@ -283,11 +283,11 @@ const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName
                         <button
                             key={resource.resource_id || index}
                             onClick={() => localHandleOpenResource(resource)}
-                            className="w-full text-left p-4 rounded-xl bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-200 transition flex justify-between items-center group focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+                            className="w-full text-left p-4 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-teal-50 border border-slate-200 dark:border-slate-700 hover:border-teal-200 transition flex justify-between items-center group focus:outline-none focus:ring-2 focus:ring-corporate-teal"
                         >
                             <div className="overflow-hidden">
                                 <p className="font-semibold text-sm truncate text-corporate-navy">{resource.title}</p>
-                                <p className="text-xs text-slate-500">{resource.type || 'Resource'}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">{resource.type || 'Resource'}</p>
                             </div>
                             <ChevronRight className='w-5 h-5 text-slate-400 flex-shrink-0 ml-2 group-hover:text-corporate-teal transition-colors'/>
                         </button>
@@ -401,17 +401,17 @@ export default function AppliedLeadershipScreen() {
                 Back to Library
             </Button>
             
-            <div className='flex items-center gap-4 border-b border-slate-200 pb-4 mb-8'>
+            <div className='flex items-center gap-4 border-b border-slate-200 dark:border-slate-700 pb-4 mb-8'>
                 <ShieldCheck className='w-10 h-10 text-corporate-navy'/>
                 <h1 className="text-3xl md:text-4xl font-extrabold text-corporate-navy">Course Library</h1>
             </div>
-            <p className="text-lg text-slate-600 mb-10 max-w-3xl">
+            <p className="text-lg text-slate-600 dark:text-slate-300 mb-10 max-w-3xl">
                 Explore leadership skills, access curated resources, practice with AI coaching, and build mastery through focused reps. <strong className="text-corporate-navy">Practice over theory.</strong>
             </p>
 
             {isAppLoading && <LoadingState message="Loading course library..." />}
             {!isAppLoading && appError && (
-                 <div className="text-red-600 italic text-center py-10 bg-red-50 p-4 rounded-xl border border-red-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
+                 <div className="text-red-600 italic text-center py-10 bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-200 dark:border-red-800 max-w-2xl mx-auto flex items-center justify-center gap-2">
                      <AlertTriangle className="w-5 h-5 text-red-500"/>
                      <span>Error loading library: {appError.message}. Please try again later.</span>
                  </div>
@@ -436,31 +436,31 @@ export default function AppliedLeadershipScreen() {
                                     onClick={() => handleSelectCourse(course)}
                                     className="text-left block w-full group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-corporate-orange rounded-2xl"
                                 >
-                                    <div className={`p-6 rounded-2xl border border-slate-200 shadow-md transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl h-full flex flex-col bg-white`}>
+                                    <div className={`p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-md transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl h-full flex flex-col bg-white dark:bg-slate-800`}>
                                         <div className='flex items-center space-x-3 mb-4'>
                                             <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 ${accentBgClass} bg-opacity-10`}>
                                                 {IconComponent && <IconComponent className={`w-6 h-6 ${accentTextClass}`} />}
                                             </div>
                                             <h2 className="text-lg font-extrabold flex-1 text-corporate-navy leading-tight">{course.title}</h2>
                                         </div>
-                                        <p className="text-sm text-slate-600 mb-4 flex-grow line-clamp-3">{course.description}</p>
+                                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 flex-grow line-clamp-3">{course.description}</p>
                                         
                                         <div className="space-y-2 mb-4 border-t border-slate-100 pt-3">
                                             <div className="flex justify-between items-center text-xs">
-                                                <span className="text-slate-500">Duration:</span>
-                                                <span className="font-medium text-slate-700">{course.duration}</span>
+                                                <span className="text-slate-500 dark:text-slate-400">Duration:</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-200">{course.duration}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-xs">
-                                                <span className="text-slate-500">Format:</span>
-                                                <span className="font-medium text-slate-700">{course.format}</span>
+                                                <span className="text-slate-500 dark:text-slate-400">Format:</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-200">{course.format}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-xs">
-                                                <span className="text-slate-500">Starts:</span>
-                                                <span className="font-medium text-slate-700">{new Date(course.startDate).toLocaleDateString()}</span>
+                                                <span className="text-slate-500 dark:text-slate-400">Starts:</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-200">{new Date(course.startDate).toLocaleDateString()}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-xs">
-                                                <span className="text-slate-500">Enrollment:</span>
-                                                <span className="font-medium text-slate-700">{course.currentEnrollment}/{course.maxParticipants}</span>
+                                                <span className="text-slate-500 dark:text-slate-400">Enrollment:</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-200">{course.currentEnrollment}/{course.maxParticipants}</span>
                                             </div>
                                         </div>
                                         
@@ -486,7 +486,7 @@ export default function AppliedLeadershipScreen() {
             )}
 
             {!isAppLoading && !appError && safeCourses.length === 0 && (
-                 <div className="text-slate-500 italic text-center py-10 bg-slate-100 p-4 rounded-xl border border-slate-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
+                 <div className="text-slate-500 dark:text-slate-400 italic text-center py-10 bg-slate-100 dark:bg-slate-700 p-4 rounded-xl border border-slate-200 dark:border-slate-700 max-w-2xl mx-auto flex items-center justify-center gap-2">
                      <AlertTriangle className="w-5 h-5 text-orange-500"/>
                      <span>The Course Library appears to be empty. Please contact an administrator.</span>
                  </div>
@@ -495,7 +495,7 @@ export default function AppliedLeadershipScreen() {
     );
 
     return (
-        <div className='min-h-screen bg-slate-50'>
+        <div className='min-h-screen bg-slate-50 dark:bg-slate-800'>
             {selectedCourse ? (
                 <CourseDetailView course={selectedCourse} setCourseDetail={setSelectedCourse} />
             ) : selectedSkill ? (

@@ -209,13 +209,13 @@ const PrepWelcomeBanner = () => {
                 <span>Foundation Prep</span>
               </div>
               {cohortName && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 flex items-center gap-1">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center gap-1">
                   <Users className="w-3 h-3" />
                   {cohortName}
                 </span>
               )}
               {isPrepComplete && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600 font-bold">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 font-bold">
                   ✓ READY
                 </span>
               )}
@@ -226,7 +226,7 @@ const PrepWelcomeBanner = () => {
               {getPersonalizedHeadline()}
             </h2>
             
-            <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl">
+            <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
               {getSubtext()}
             </p>
 
@@ -234,7 +234,7 @@ const PrepWelcomeBanner = () => {
             {facilitator && (
               <button
                 onClick={() => setShowFacilitatorModal(true)}
-                className="flex items-center gap-3 bg-slate-50 hover:bg-slate-100 rounded-lg px-4 py-3 border border-slate-200 hover:border-slate-300 transition-all group text-left"
+                className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 rounded-lg px-4 py-3 border border-slate-200 dark:border-slate-700 hover:border-slate-300 transition-all group text-left"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-corporate-teal to-corporate-navy flex items-center justify-center text-white font-bold text-sm overflow-hidden">
                   {facilitator.photoUrl ? (
@@ -249,7 +249,7 @@ const PrepWelcomeBanner = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-corporate-navy font-medium text-sm group-hover:text-corporate-teal transition-colors">{facilitator.name}</p>
-                  <p className="text-slate-500 text-xs">Your Facilitator • Tap for details</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs">Your Facilitator • Tap for details</p>
                 </div>
                 <Info className="w-4 h-4 text-slate-400 group-hover:text-corporate-teal transition-colors" />
               </button>
@@ -279,12 +279,12 @@ const PrepWelcomeBanner = () => {
                 </div>
               )}
             </div>
-            <span className="text-xs text-slate-500 font-medium">until Session One</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">until Session One</span>
             
             {/* Session One Date - Show actual date from cohort */}
             {cohortStartDate && (
-              <div className="text-center bg-slate-50 rounded-lg px-3 py-2 border border-slate-200">
-                <div className="flex items-center gap-1.5 text-slate-600">
+              <div className="text-center bg-slate-50 dark:bg-slate-800 rounded-lg px-3 py-2 border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                   <Calendar className="w-3.5 h-3.5" />
                   <span className="text-xs font-medium">
                     {new Date(cohortStartDate).toLocaleDateString('en-US', { 

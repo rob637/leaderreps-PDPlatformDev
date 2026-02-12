@@ -182,7 +182,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
             if (item.type === 'section') {
                return (
                  <li key={`section-${index}`} className="mt-8 mb-3 px-3">
-                   <span className={`text-[10px] font-semibold text-slate-500 uppercase tracking-[0.15em] ${isOpen ? 'block' : 'hidden'}`}>
+                   <span className={`text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.15em] ${isOpen ? 'block' : 'hidden'}`}>
                      {item.label}
                    </span>
                    {!isOpen && <div className="h-px bg-slate-200 dark:bg-slate-700 mx-2 my-3"></div>}
@@ -217,7 +217,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
                 >
                   <div className={`p-1.5 rounded-lg transition-colors ${
                     isActive 
-                      ? 'bg-white/20' 
+                      ? 'bg-white/20 dark:bg-slate-800/20' 
                       : isHighlighted 
                         ? 'bg-gradient-to-br from-corporate-teal/30 to-corporate-orange/30'
                         : 'bg-corporate-teal/10 group-hover:bg-corporate-teal/20'
@@ -257,7 +257,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
                 `}
                 title={!isOpen ? 'Admin Portal' : ''}
               >
-                <div className={`p-1.5 rounded-lg transition-colors ${currentScreen === 'admin-portal' ? 'bg-white/10' : 'group-hover:bg-red-100'}`}>
+                <div className={`p-1.5 rounded-lg transition-colors ${currentScreen === 'admin-portal' ? 'bg-white/10 dark:bg-slate-800/10' : 'group-hover:bg-red-100'}`}>
                   <ShieldCheck className="w-[18px] h-[18px]" />
                 </div>
                 <span className={`whitespace-nowrap text-sm transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
@@ -282,7 +282,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
             <div className="relative">
                 <button
                     onClick={() => setShowAnchors(!showAnchors)}
-                    className={`w-full flex items-center gap-3 px-1 py-2 text-slate-500 hover:text-corporate-navy transition-all duration-200 rounded-lg hover:bg-slate-200 ${!isOpen ? 'justify-center' : ''}`}
+                    className={`w-full flex items-center gap-3 px-1 py-2 text-slate-500 dark:text-slate-400 hover:text-corporate-navy transition-all duration-200 rounded-lg hover:bg-slate-200 ${!isOpen ? 'justify-center' : ''}`}
                     title={!isOpen ? "Leadership Anchors" : ''}
                 >
                     <div className="p-1.5 rounded-lg">
@@ -303,19 +303,19 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
                                 {identityStatement && (
                                     <div>
                                     <p className="font-semibold text-corporate-teal uppercase tracking-wider text-[10px] mb-1">Identity</p>
-                                    <p className="text-slate-600 leading-relaxed">{identityStatement}</p>
+                                    <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{identityStatement}</p>
                                     </div>
                                 )}
                                 {habitAnchor && (
                                     <div>
                                     <p className="font-semibold text-blue-500 uppercase tracking-wider text-[10px] mb-1">Habit</p>
-                                    <p className="text-slate-600 leading-relaxed">{habitAnchor}</p>
+                                    <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{habitAnchor}</p>
                                     </div>
                                 )}
                                 {whyStatement && (
                                     <div>
                                     <p className="font-semibold text-corporate-orange uppercase tracking-wider text-[10px] mb-1">Why</p>
-                                    <p className="text-slate-600 leading-relaxed">{whyStatement}</p>
+                                    <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{whyStatement}</p>
                                     </div>
                                 )}
                             </div>
@@ -357,20 +357,20 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-amber-100 rounded-full">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full">
                   <AlertTriangle className="w-5 h-5 text-amber-600" />
                 </div>
-                <h3 className="font-semibold text-lg text-slate-800" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h3 className="font-semibold text-lg text-slate-800 dark:text-slate-200" style={{ fontFamily: 'var(--font-heading)' }}>
                   Sign Out?
                 </h3>
               </div>
-              <p className="text-slate-600 text-sm mb-6">
+              <p className="text-slate-600 dark:text-slate-300 text-sm mb-6">
                 Are you sure you want to sign out of LeaderReps?
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowSignOutConfirm(false)}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>

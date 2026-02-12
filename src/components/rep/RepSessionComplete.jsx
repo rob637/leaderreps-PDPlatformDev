@@ -54,7 +54,7 @@ const RepSessionComplete = ({
       {/* Streak Card */}
       <div className="bg-gradient-to-r from-rep-coral-light to-rep-teal-light rounded-2xl p-4 mb-6 w-full max-w-sm">
         <div className="flex items-center justify-center gap-3">
-          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
+          <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shadow-sm">
             <Flame className="w-6 h-6 text-corporate-orange" />
           </div>
           <div className="text-left">
@@ -74,7 +74,7 @@ const RepSessionComplete = ({
 
       {/* Next Session Preview */}
       {nextSessionPreview && (
-        <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 w-full max-w-sm text-left">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-6 w-full max-w-sm text-left">
           <div className="text-xs text-rep-text-secondary uppercase tracking-wide mb-1">Tomorrow</div>
           <div className="text-sm font-medium text-rep-text-primary">{nextSessionPreview}</div>
         </div>
@@ -93,7 +93,7 @@ const RepSessionComplete = ({
         
         <button
           onClick={onViewApp}
-          className="w-full py-3 bg-white text-rep-text-primary border border-gray-200 rounded-xl font-medium 
+          className="w-full py-3 bg-white dark:bg-slate-800 text-rep-text-primary border border-gray-200 dark:border-gray-700 rounded-xl font-medium 
                      hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
         >
           Explore the App

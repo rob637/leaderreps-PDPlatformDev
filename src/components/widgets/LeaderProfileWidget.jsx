@@ -15,7 +15,7 @@ const LeaderProfileWidget = () => {
   if (loading) {
     return (
       <Card accent="TEAL" className="animate-pulse">
-        <div className="h-24 bg-slate-100 rounded-lg" />
+        <div className="h-24 bg-slate-100 dark:bg-slate-700 rounded-lg" />
       </Card>
     );
   }
@@ -26,14 +26,14 @@ const LeaderProfileWidget = () => {
       <>
         <Card accent="TEAL">
           <div className="flex items-center gap-4 p-4">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
               <CheckCircle className="w-6 h-6 text-green-500" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-corporate-navy" style={{ fontFamily: 'var(--font-heading)' }}>
                 Leader Profile Complete
               </h3>
-              <p className="text-sm text-slate-500" style={{ fontFamily: 'var(--font-body)' }}>
+              <p className="text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: 'var(--font-body)' }}>
                 Welcome, {profile?.firstName}! Your personalized journey is ready.
               </p>
             </div>
@@ -78,21 +78,21 @@ const LeaderProfileWidget = () => {
                 Complete Your Leader Profile
               </h3>
               
-              <p className="text-sm text-slate-600 mb-3" style={{ fontFamily: 'var(--font-body)' }}>
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-3" style={{ fontFamily: 'var(--font-body)' }}>
                 Help us personalize your Foundation journey. Takes about 2 minutes.
               </p>
 
               {/* Benefits */}
               <div className="flex flex-wrap gap-2 mb-4">
-                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
+                <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-full">
                   <Sparkles className="w-3 h-3 text-corporate-orange" />
                   Personalized content
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
+                <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-full">
                   <Award className="w-3 h-3 text-corporate-teal" />
                   Better coaching
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
+                <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-full">
                   <Clock className="w-3 h-3 text-corporate-navy" />
                   ~2 min
                 </div>

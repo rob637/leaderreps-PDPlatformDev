@@ -189,12 +189,12 @@ const FeaturesLab = () => {
         key={feature.id} 
         className={`p-4 rounded-xl border transition-all duration-200 ${
           isEnabled 
-            ? 'bg-white border-corporate-teal shadow-md' 
-            : 'bg-slate-50 border-slate-200 opacity-75 hover:opacity-100'
+            ? 'bg-white dark:bg-slate-800 border-corporate-teal shadow-md' 
+            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-75 hover:opacity-100'
         }`}
       >
         <div className="flex justify-between items-start mb-3">
-          <div className={`p-2 rounded-lg ${isEnabled ? 'bg-teal-100 text-teal-700' : 'bg-slate-200 text-slate-500'}`}>
+          <div className={`p-2 rounded-lg ${isEnabled ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-700' : 'bg-slate-200 text-slate-500 dark:text-slate-400'}`}>
             <Icon className="w-6 h-6" />
           </div>
           <button 
@@ -206,13 +206,13 @@ const FeaturesLab = () => {
         </div>
         
         <h3 className="font-bold text-corporate-navy mb-1">{feature.title}</h3>
-        <p className="text-sm text-slate-600 mb-3 min-h-[40px]">{feature.description}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-300 mb-3 min-h-[40px]">{feature.description}</p>
         
         <div className="flex items-center gap-2">
           <span className={`text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wider ${
-            feature.status === 'beta' ? 'bg-blue-100 text-blue-700' :
-            feature.status === 'alpha' ? 'bg-purple-100 text-purple-700' :
-            'bg-slate-200 text-slate-600'
+            feature.status === 'beta' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700' :
+            feature.status === 'alpha' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700' :
+            'bg-slate-200 text-slate-600 dark:text-slate-300'
           }`}>
             {feature.status}
           </span>
@@ -227,7 +227,7 @@ const FeaturesLab = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-10 animate-fade-in">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-800 p-6 md:p-10 animate-fade-in">
       <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Header */}
@@ -241,11 +241,11 @@ const FeaturesLab = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-corporate-navy">Features Lab</h1>
-              <p className="text-slate-500">Experimental features playground. Toggle features to test functionality without impacting the main application.</p>
+              <p className="text-slate-500 dark:text-slate-400">Experimental features playground. Toggle features to test functionality without impacting the main application.</p>
             </div>
           </div>
           
-          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-xl flex items-start gap-3">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-400 p-4 rounded-r-xl flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
             <div>
               <p className="font-bold text-amber-800">Experimental Zone</p>
@@ -260,9 +260,9 @@ const FeaturesLab = () => {
         {/* Categories */}
         {Object.values(CATEGORIES).map(category => (
           <section key={category} className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+            <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
               <h2 className="text-xl font-bold text-corporate-navy">{category} Experiments</h2>
-              <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-1 rounded-full">
+              <span className="bg-slate-200 text-slate-600 dark:text-slate-300 text-xs font-bold px-2 py-1 rounded-full">
                 {FEATURES.filter(f => f.category === category).length}
               </span>
             </div>

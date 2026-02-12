@@ -10,8 +10,8 @@ const WinTracker = ({ wins = [], onToggle, onDelete }) => {
       className={`
         group flex items-center justify-between gap-3 p-3 rounded-xl transition-all duration-200 border mb-2
         ${item.completed 
-          ? 'bg-gray-50 border-gray-100' 
-          : 'bg-white border-gray-200 hover:border-corporate-teal/30 hover:shadow-sm'
+          ? 'bg-gray-50 dark:bg-gray-800 border-gray-100' 
+          : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:border-corporate-teal/30 hover:shadow-sm'
         }
       `}
     >
@@ -31,7 +31,7 @@ const WinTracker = ({ wins = [], onToggle, onDelete }) => {
             flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors
             ${item.completed 
               ? 'bg-corporate-teal border-corporate-teal text-white' 
-              : 'border-gray-300 text-transparent hover:border-corporate-teal'
+              : 'border-gray-300 dark:border-gray-600 text-transparent hover:border-corporate-teal'
             }
           `}
         >
@@ -63,7 +63,7 @@ const WinTracker = ({ wins = [], onToggle, onDelete }) => {
             {mainWins.length > 0 ? (
               mainWins.map(win => <WinItem key={win.id} item={win} />)
             ) : (
-              <div className="border-b border-gray-300 h-8 w-full max-w-md"></div>
+              <div className="border-b border-gray-300 dark:border-gray-600 h-8 w-full max-w-md"></div>
             )}
           </div>
         </div>
@@ -80,9 +80,9 @@ const WinTracker = ({ wins = [], onToggle, onDelete }) => {
               priorities.map(priority => <WinItem key={priority.id} item={priority} />)
             ) : (
               <div className="space-y-4 max-w-md">
-                 <div className="border-b border-gray-300 h-8 w-full"></div>
-                 <div className="border-b border-gray-300 h-8 w-full"></div>
-                 <div className="border-b border-gray-300 h-8 w-full"></div>
+                 <div className="border-b border-gray-300 dark:border-gray-600 h-8 w-full"></div>
+                 <div className="border-b border-gray-300 dark:border-gray-600 h-8 w-full"></div>
+                 <div className="border-b border-gray-300 dark:border-gray-600 h-8 w-full"></div>
               </div>
             )}
           </div>

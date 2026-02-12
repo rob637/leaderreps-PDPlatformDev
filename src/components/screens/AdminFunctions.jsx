@@ -73,15 +73,15 @@ const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
 
     return (
         <Card title="Administrator List" icon={Mail} accentColor="bg-corporate-navy">
-            <p className="text-sm text-slate-600 mb-4">Emails listed here are granted full access to Admin Functions and all hidden features.</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">Emails listed here are granted full access to Admin Functions and all hidden features.</p>
             
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 mb-4 max-h-48 overflow-y-auto">
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2 mb-4 max-h-48 overflow-y-auto">
                 {emails.length === 0 && (
-                    <p className="text-sm text-slate-500 italic">No admin emails currently set.</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 italic">No admin emails currently set.</p>
                 )}
                 {emails.map((email) => (
-                    <div key={email} className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 shadow-sm">
-                        <span className="text-sm font-medium text-slate-800 break-all">{email}</span>
+                    <div key={email} className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <span className="text-sm font-medium text-slate-800 dark:text-slate-200 break-all">{email}</span>
                         <Button 
                             onClick={() => handleRemoveEmail(email)} 
                             variant="ghost" 
@@ -102,7 +102,7 @@ const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddEmail()}
-                    className="flex-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none transition-all"
+                    className="flex-1 p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none transition-all"
                     disabled={isSaving}
                 />
                 <Button onClick={handleAddEmail} variant="primary" size="sm" disabled={isSaving || !newEmail.trim().includes('@')}>
@@ -110,7 +110,7 @@ const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
                 </Button>
             </div>
 
-            <div className="pt-4 border-t border-slate-200 flex items-center gap-4">
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center gap-4">
                 <Button 
                     onClick={handleSaveChanges} 
                     disabled={isSaving || !hasChanges} 
@@ -126,7 +126,7 @@ const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
                     </span>
                 )}
             </div>
-            <p className="text-xs text-slate-500 mt-2 italic">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 italic">
                     You must refresh the app to take effect after saving changes.
             </p>
         </Card>
@@ -204,8 +204,8 @@ const AdminFunctions = () => {
 
     if (isAppLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-                <div className="flex items-center justify-center p-8 text-center text-slate-500 bg-white rounded-xl shadow-sm min-h-[100px]">
+            <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-800">
+                <div className="flex items-center justify-center p-8 text-center text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 rounded-xl shadow-sm min-h-[100px]">
                     <Loader className="w-5 h-5 animate-spin mr-2 text-corporate-teal" />
                     Loading Admin Functions...
                 </div>
@@ -218,7 +218,7 @@ const AdminFunctions = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 space-y-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-800 p-6 space-y-8">
             <div className="max-w-7xl mx-auto">
                 <Button onClick={() => navigate('dashboard')} variant="nav-back" size="sm" className="mb-6">
                     <ArrowLeft className="w-5 h-5 mr-2" />
@@ -227,7 +227,7 @@ const AdminFunctions = () => {
 
                 <header className="mb-8">
                     <h1 className="text-3xl font-bold text-corporate-navy mb-2">Admin Functions</h1>
-                    <p className="text-slate-600">Manage system settings, feature flags, and user access.</p>
+                    <p className="text-slate-600 dark:text-slate-300">Manage system settings, feature flags, and user access.</p>
                 </header>
 
                 <WidgetRenderer widgetId="system-reminders-controller" scope={scope} />
@@ -239,7 +239,7 @@ const AdminFunctions = () => {
                     />
 
                     <Card title="Feature Flags" icon={Settings} accentColor="bg-corporate-teal">
-                        <p className="text-sm text-slate-600 mb-6">Enable or disable application features globally. Changes affect all users on next load.</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">Enable or disable application features globally. Changes affect all users on next load.</p>
 
                         <div className="space-y-4">
                             {[
@@ -261,14 +261,14 @@ const AdminFunctions = () => {
                                 const isEnabled = currentFlags[flagName]; 
 
                                 return (
-                                    <div key={flagName} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-white shadow-sm hover:border-slate-300 transition-colors">
-                                        <span className="text-sm font-medium text-slate-800">{flagName.replace('enable', '').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}</span>
+                                    <div key={flagName} className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 shadow-sm hover:border-slate-300 transition-colors">
+                                        <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{flagName.replace('enable', '').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}</span>
                                         
                                         <button
                                             onClick={() => handleToggleFlag(flagName)}
                                             disabled={isSaving}
                                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                                                isEnabled !== false ? `bg-green-100 border-green-200 text-green-700` : `bg-red-100 border-red-200 text-red-700`
+                                                isEnabled !== false ? `bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-700` : `bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-700`
                                             }`}
                                             aria-pressed={isEnabled !== false} 
                                             aria-label={`Toggle ${flagName}`}
@@ -281,7 +281,7 @@ const AdminFunctions = () => {
                             })}
                         </div>
 
-                        <div className="mt-6 pt-4 border-t border-slate-200 flex items-center gap-4">
+                        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center gap-4">
                             <Button onClick={handleSaveChanges} disabled={isSaving} variant="action-write" size="md">
                                 {isSaving ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <Save className="w-5 h-5 mr-2" />}
                                 {isSaving ? 'Saving Changes...' : 'Save Feature Flags'}
@@ -293,14 +293,14 @@ const AdminFunctions = () => {
                             )}
                         </div>
 
-                        <p className="text-xs text-slate-500 mt-4 italic">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 italic">
                             Feature flags are loaded from <code>metadata/config</code> document in Firestore.
                         </p>
                     </Card>
                 </div>
 
                  <Card title="Database Management" icon={Key} accentColor="bg-corporate-navy" className="mt-6">
-                    <p className="text-sm text-slate-600 mb-4">Direct access to the Firestore Data Manager to view and edit document/collection data.</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">Direct access to the Firestore Data Manager to view and edit document/collection data.</p>
                     <Button onClick={() => navigate('data-maintenance')} variant="outline" size="md">
                         <Shield className="w-5 h-5 mr-2" /> Open Data Manager
                     </Button>
@@ -358,7 +358,7 @@ const CoachingDataManager = () => {
 
     return (
         <Card title="Coaching Data" icon={Calendar} accentColor="bg-purple-600" className="mt-6">
-            <p className="text-sm text-slate-600 mb-4">
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
                 Manage coaching session data for testing. Seed creates Open Gym, Leader Circle, and Workshop sessions for the next 4 weeks.
             </p>
             
@@ -397,7 +397,7 @@ const CoachingDataManager = () => {
                 </p>
             )}
             
-            <p className="text-xs text-slate-500 mt-4 italic">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 italic">
                 Collections: coaching_session_types, coaching_sessions, coaching_registrations
             </p>
         </Card>

@@ -295,7 +295,7 @@ const RepUpSpotlight = ({
             <div className="px-4 py-3 border-b border-white/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-white/20 dark:bg-slate-800/20 rounded-full flex items-center justify-center">
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
                   <div>
@@ -319,8 +319,8 @@ const RepUpSpotlight = ({
                   <div 
                     key={step.id}
                     className={`h-1.5 flex-1 rounded-full transition-all ${
-                      idx < currentStepIndex ? 'bg-white' :
-                      idx === currentStepIndex ? 'bg-white/80' : 'bg-white/30'
+                      idx < currentStepIndex ? 'bg-white dark:bg-slate-800' :
+                      idx === currentStepIndex ? 'bg-white/80 dark:bg-slate-800/80' : 'bg-white/30 dark:bg-slate-800/30'
                     }`}
                   />
                 ))}
@@ -339,7 +339,7 @@ const RepUpSpotlight = ({
               </p>
               
               {/* Tip box */}
-              <div className="bg-white/15 rounded-lg p-3 mb-4">
+              <div className="bg-white/15 dark:bg-slate-800/15 rounded-lg p-3 mb-4">
                 <div className="flex items-start gap-2">
                   <Zap className="w-4 h-4 text-yellow-200 flex-shrink-0 mt-0.5" />
                   <p className="text-white/90 text-xs">
@@ -372,7 +372,7 @@ const RepUpSpotlight = ({
               
               <button
                 onClick={handleNext}
-                className="flex items-center gap-1 text-sm px-4 py-2 bg-white text-corporate-navy font-semibold rounded-lg hover:bg-white/90 transition-all shadow-lg"
+                className="flex items-center gap-1 text-sm px-4 py-2 bg-white dark:bg-slate-800 text-corporate-navy font-semibold rounded-lg hover:bg-white/90 transition-all shadow-lg"
               >
                 {currentStepIndex === steps.length - 1 ? (
                   <>

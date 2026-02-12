@@ -38,7 +38,7 @@ const LoadingBlock = ({ title = 'Loading…', description = 'Preparing your deve
   <div className="p-4 sm:p-3 sm:p-4 lg:p-6">
     <Card accent="TEAL">
       <h2 className="text-xl font-extrabold mb-2"> {title} </h2>
-      <p className="text-gray-600">{description}</p>
+      <p className="text-gray-600 dark:text-gray-300">{description}</p>
     </Card>
   </div>
 );
@@ -610,7 +610,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
 
       {error && (
         <div className="p-4 pt-6">
-          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-red-800 shadow-lg">
+          <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl p-4 text-red-800 shadow-lg">
             <strong className="font-bold">Error:</strong> {error.message || String(error)}
           </div>
         </div>

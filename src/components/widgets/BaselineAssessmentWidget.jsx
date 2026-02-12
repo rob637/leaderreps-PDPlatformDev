@@ -71,14 +71,14 @@ const BaselineAssessmentWidget = () => {
       <>
         <Card accent="TEAL">
           <div className="flex items-center gap-4 p-4">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
               <CheckCircle className="w-6 h-6 text-green-500" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-corporate-navy" style={{ fontFamily: 'var(--font-heading)' }}>
                 Baseline Assessment Complete
               </h3>
-              <p className="text-sm text-slate-500" style={{ fontFamily: 'var(--font-body)' }}>
+              <p className="text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: 'var(--font-body)' }}>
                 Completed {completedDate} • {goalCount} goal{goalCount !== 1 ? 's' : ''} set
               </p>
             </div>
@@ -125,21 +125,21 @@ const BaselineAssessmentWidget = () => {
                 Complete Your Baseline Assessment
               </h3>
               
-              <p className="text-sm text-slate-600 mb-3" style={{ fontFamily: 'var(--font-body)' }}>
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-3" style={{ fontFamily: 'var(--font-body)' }}>
                 Assess your current leadership skills and set goals. This creates your personalized development plan.
               </p>
 
               {/* Benefits */}
               <div className="flex flex-wrap gap-2 mb-4">
-                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
+                <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-full">
                   <Target className="w-3 h-3 text-corporate-teal" />
                   Set 1-3 goals
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
+                <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-full">
                   <BarChart2 className="w-3 h-3 text-blue-500" />
                   Track progress
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
+                <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-full">
                   <Clock className="w-3 h-3 text-amber-500" />
                   ~5 min
                 </div>

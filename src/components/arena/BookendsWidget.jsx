@@ -63,13 +63,13 @@ const BookendsWidget = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-300 h-full flex flex-col overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-300 dark:border-gray-600 h-full flex flex-col overflow-hidden">
       {/* Header / Toggle */}
       <div className="flex border-b border-gray-100">
         <button
           onClick={() => setMode('AM')}
           className={`flex-1 py-4 text-sm font-bold tracking-wide flex items-center justify-center gap-2 transition-colors
-            ${mode === 'AM' ? 'bg-orange-50 text-corporate-orange' : 'text-gray-400 hover:bg-gray-50'}
+            ${mode === 'AM' ? 'bg-orange-50 dark:bg-orange-900/20 text-corporate-orange' : 'text-gray-400 hover:bg-gray-50'}
           `}
         >
           <Sun className="w-4 h-4" />
@@ -101,7 +101,7 @@ const BookendsWidget = ({
                   onChange={(e) => setWinInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddWin()}
                   placeholder="One big thing..."
-                  className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 transition-all"
+                  className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 transition-all"
                 />
                 <button 
                   onClick={handleAddWin}
@@ -127,12 +127,12 @@ const BookendsWidget = ({
                   onChange={(e) => setPriorityInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddPriority()}
                   placeholder="Another task..."
-                  className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 transition-all"
+                  className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 transition-all"
                 />
                 <button 
                   onClick={handleAddPriority}
                   disabled={!priorityInput.trim()}
-                  className="px-4 bg-gray-200 text-gray-600 rounded-xl font-bold disabled:opacity-50 hover:bg-gray-300 transition-colors"
+                  className="px-4 bg-gray-200 text-gray-600 dark:text-gray-300 rounded-xl font-bold disabled:opacity-50 hover:bg-gray-300 transition-colors"
                 >
                   +
                 </button>
@@ -165,7 +165,7 @@ const BookendsWidget = ({
                   onClick={() => onUpdatePM({ groundingRep: !pmData?.groundingRep })}
                   className={`
                     w-6 h-6 rounded border-2 flex items-center justify-center transition-colors
-                    ${pmData?.groundingRep ? 'bg-corporate-navy border-corporate-navy text-white' : 'border-gray-300'}
+                    ${pmData?.groundingRep ? 'bg-corporate-navy border-corporate-navy text-white' : 'border-gray-300 dark:border-gray-600'}
                   `}
                 >
                   {pmData?.groundingRep && <CheckCircle2 className="w-4 h-4" />}
@@ -187,9 +187,9 @@ const BookendsWidget = ({
                       value={reflection.good}
                       onChange={(e) => handleReflectionChange('good', e.target.value)}
                       onBlur={handleReflectionBlur}
-                      className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-navy/20"
+                      className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-navy/20"
                     />
-                    <button className="px-4 bg-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-300 transition-colors">
+                    <button className="px-4 bg-gray-200 text-gray-600 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-300 transition-colors">
                       +
                     </button>
                   </div>
@@ -205,9 +205,9 @@ const BookendsWidget = ({
                       value={reflection.work}
                       onChange={(e) => handleReflectionChange('work', e.target.value)}
                       onBlur={handleReflectionBlur}
-                      className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-navy/20"
+                      className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-navy/20"
                     />
-                    <button className="px-4 bg-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-300 transition-colors">
+                    <button className="px-4 bg-gray-200 text-gray-600 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-300 transition-colors">
                       +
                     </button>
                   </div>
@@ -223,9 +223,9 @@ const BookendsWidget = ({
                       value={reflection.tomorrow}
                       onChange={(e) => handleReflectionChange('tomorrow', e.target.value)}
                       onBlur={handleReflectionBlur}
-                      className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-navy/20"
+                      className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-navy/20"
                     />
-                    <button className="px-4 bg-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-300 transition-colors">
+                    <button className="px-4 bg-gray-200 text-gray-600 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-300 transition-colors">
                       +
                     </button>
                   </div>
@@ -239,7 +239,7 @@ const BookendsWidget = ({
                 <h3 className="text-lg font-bold text-corporate-navy font-serif mb-4 text-left">Reflection Log</h3>
                 <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
                   {reflectionHistory.map((log) => (
-                    <div key={log.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100 text-left">
+                    <div key={log.id} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 text-left">
                       <div className="text-xs font-bold text-corporate-teal uppercase tracking-wider mb-2">
                         {new Date(log.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                       </div>
@@ -247,19 +247,19 @@ const BookendsWidget = ({
                         {log.reflectionGood && (
                           <div>
                             <span className="font-bold text-corporate-navy">Well: </span>
-                            <span className="text-gray-600">{log.reflectionGood}</span>
+                            <span className="text-gray-600 dark:text-gray-300">{log.reflectionGood}</span>
                           </div>
                         )}
                         {log.reflectionWork && (
                           <div>
                             <span className="font-bold text-corporate-navy">Work: </span>
-                            <span className="text-gray-600">{log.reflectionWork}</span>
+                            <span className="text-gray-600 dark:text-gray-300">{log.reflectionWork}</span>
                           </div>
                         )}
                         {log.reflectionTomorrow && (
                           <div>
                             <span className="font-bold text-corporate-navy">Tomorrow: </span>
-                            <span className="text-gray-600">{log.reflectionTomorrow}</span>
+                            <span className="text-gray-600 dark:text-gray-300">{log.reflectionTomorrow}</span>
                           </div>
                         )}
                       </div>
@@ -274,7 +274,7 @@ const BookendsWidget = ({
 
       {/* Stats Footer - Only show in AM mode since PM has stats at top */}
       {mode === 'AM' && (
-        <div className="bg-gray-50 p-4 border-t border-gray-100">
+        <div className="bg-gray-50 dark:bg-gray-800 p-4 border-t border-gray-100">
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
               <div className="text-xs text-gray-400 uppercase">WIN/Tasks</div>

@@ -52,8 +52,8 @@ const EvidenceLevelBadge = ({ level }) => {
   return (
     <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
       isLevel1 
-        ? 'bg-green-100 text-green-700' 
-        : 'bg-amber-100 text-amber-700'
+        ? 'bg-green-100 dark:bg-green-900/30 text-green-700' 
+        : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700'
     }`}>
       <Clock className="w-4 h-4" />
       <span className="font-medium">
@@ -84,11 +84,11 @@ const WhenField = ({ value, onChange }) => {
             className={`p-3 rounded-xl border-2 text-center transition-all ${
               value === option.id
                 ? 'border-corporate-teal bg-corporate-teal/5'
-                : 'border-gray-200 hover:border-gray-300'
+                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
             }`}
           >
             <div className="font-medium text-sm">{option.label}</div>
-            <div className="text-xs text-gray-500">{option.description}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{option.description}</div>
           </button>
         ))}
       </div>
@@ -114,7 +114,7 @@ const ContextField = ({ value, onChange }) => {
             className={`p-3 rounded-xl border-2 text-left transition-all ${
               value === option.id
                 ? 'border-corporate-teal bg-corporate-teal/5'
-                : 'border-gray-200 hover:border-gray-300'
+                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
             }`}
           >
             <span className="mr-2">{option.icon}</span>
@@ -145,11 +145,11 @@ const ResponseField = ({ value, note, onChange, onNoteChange }) => {
             className={`p-2 rounded-xl border-2 text-left text-sm transition-all ${
               value === option.id
                 ? option.sentiment === 'positive' 
-                  ? 'border-green-500 bg-green-50'
+                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                   : option.sentiment === 'negative'
-                  ? 'border-amber-500 bg-amber-50'
+                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
                   : 'border-corporate-teal bg-corporate-teal/5'
-                : 'border-gray-200 hover:border-gray-300'
+                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
             }`}
           >
             {option.label}
@@ -193,14 +193,14 @@ const CommitmentField = ({ value, hasNone, onChange, onHasNoneChange }) => {
           />
           <button
             onClick={() => onHasNoneChange(true)}
-            className="text-xs text-gray-500 hover:text-gray-700 underline"
+            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 underline"
           >
             No explicit commitment was made
           </button>
         </>
       ) : (
-        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-          <p className="text-sm text-gray-600 mb-2">
+        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
             Marking as "no explicit commitment" – why not?
           </p>
           <VoiceTextarea
@@ -457,7 +457,7 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
       
       {/* Error Message */}
       {error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-700 text-sm">
+        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-2 text-red-700 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>

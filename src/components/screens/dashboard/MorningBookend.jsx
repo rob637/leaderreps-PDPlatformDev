@@ -57,7 +57,7 @@ export const MorningBookend = ({
                     value={dailyWIN}
                     onChange={(e) => setDailyWIN(e.target.value)}
                     placeholder="What is the ONE thing that must get done today?"
-                    className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 transition-all outline-none"
+                    className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 transition-all outline-none"
                     rows={2}
                 />
             </div>
@@ -74,7 +74,7 @@ export const MorningBookend = ({
                 {/* Task List */}
                 <div className="space-y-2 mb-3">
                     {otherTasks.map((task) => (
-                        <div key={task.id} className="flex items-center gap-2 p-2 rounded bg-gray-50 border border-slate-200">
+                        <div key={task.id} className="flex items-center gap-2 p-2 rounded bg-gray-50 dark:bg-gray-800 border border-slate-200 dark:border-slate-700">
                             <input 
                                 type="checkbox"
                                 checked={task.completed}
@@ -82,7 +82,7 @@ export const MorningBookend = ({
                                 className="w-4 h-4 flex-shrink-0"
                                 style={{ accentColor: 'var(--corporate-teal)' }}
                             />
-                            <span className={`flex-1 text-sm ${task.completed ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                            <span className={`flex-1 text-sm ${task.completed ? 'line-through text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>
                                 {task.text}
                             </span>
                             <button
@@ -105,7 +105,7 @@ export const MorningBookend = ({
                             onChange={(e) => setNewTaskText(e.target.value)}
                             onKeyPress={handleKeyPress}
                             placeholder="Add another task..."
-                            className="flex-1 p-2 text-sm border border-slate-200 rounded-lg focus:ring-2 transition-all outline-none"
+                            className="flex-1 p-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 transition-all outline-none"
                         />
                         <Button 
                             onClick={handleAddClick}
@@ -120,7 +120,7 @@ export const MorningBookend = ({
             </div>
 
             {/* Leadership Identity Statement (Expandable) */}
-            <div className="pt-4 border-t border-slate-200">
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                 <button 
                     onClick={() => setShowLIS(!showLIS)}
                     className="flex items-center gap-2 text-sm font-semibold transition-colors hover:opacity-80 w-full text-corporate-teal"
@@ -142,7 +142,7 @@ export const MorningBookend = ({
             </div>
 
             {/* Save Button */}
-            <div className="mt-6 pt-4 border-t border-slate-200">
+            <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
                 <Button
                     onClick={onSave}
                     disabled={isSaving}

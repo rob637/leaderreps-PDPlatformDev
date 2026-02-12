@@ -41,7 +41,7 @@ const RepFloatingButton = () => {
       >
         <Brain className="w-5 h-5" />
         <span className="text-sm font-semibold">RepUp</span>
-        <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">NEW</span>
+        <span className="text-[10px] bg-white/20 dark:bg-slate-800/20 px-2 py-0.5 rounded-full font-bold">NEW</span>
       </button>
 
       {/* Mobile version - compact brain icon only */}

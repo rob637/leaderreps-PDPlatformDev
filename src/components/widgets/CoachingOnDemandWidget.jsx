@@ -15,25 +15,25 @@ const PRACTICE_CATEGORIES = {
   feedback: {
     label: 'Feedback',
     icon: MessageSquare,
-    color: 'bg-blue-100 text-blue-800',
+    color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800',
     description: 'Practice giving constructive feedback'
   },
   difficult_conversations: {
     label: 'Difficult Conversations',
     icon: Target,
-    color: 'bg-red-100 text-red-800',
+    color: 'bg-red-100 dark:bg-red-900/30 text-red-800',
     description: 'Navigate challenging discussions'
   },
   coaching: {
     label: 'Coaching',
     icon: BrainCircuit,
-    color: 'bg-teal-100 text-teal-800',
+    color: 'bg-teal-100 dark:bg-teal-900/30 text-teal-800',
     description: 'Develop your coaching skills'
   },
   delegation: {
     label: 'Delegation',
     icon: Target,
-    color: 'bg-green-100 text-green-800',
+    color: 'bg-green-100 dark:bg-green-900/30 text-green-800',
     description: 'Practice effective delegation'
   }
 };
@@ -46,7 +46,7 @@ const PracticeCard = ({ scenario, onClick }) => {
   return (
     <button
       onClick={() => onClick?.(scenario)}
-      className="w-full text-left bg-white rounded-xl border border-slate-200 p-4 hover:border-corporate-teal hover:shadow-md transition-all group"
+      className="w-full text-left bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:border-corporate-teal hover:shadow-md transition-all group"
     >
       <div className="flex items-start gap-3">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${category.color}`}>
@@ -66,16 +66,16 @@ const PracticeCard = ({ scenario, onClick }) => {
             )}
           </div>
           
-          <h4 className="font-bold text-slate-800 mb-1 group-hover:text-corporate-teal transition-colors">
+          <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-1 group-hover:text-corporate-teal transition-colors">
             {scenario.title}
           </h4>
           
           {scenario.description && (
-            <p className="text-sm text-slate-500 line-clamp-2">{scenario.description}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{scenario.description}</p>
           )}
         </div>
         
-        <div className="flex-shrink-0 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-corporate-teal group-hover:text-white transition-colors">
+        <div className="flex-shrink-0 w-8 h-8 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center group-hover:bg-corporate-teal group-hover:text-white transition-colors">
           <Play className="w-4 h-4" />
         </div>
       </div>
@@ -91,12 +91,12 @@ const QuickPracticeButton = ({ category, onClick }) => {
   return (
     <button
       onClick={() => onClick?.(category)}
-      className="flex flex-col items-center p-3 bg-white rounded-xl border border-slate-200 hover:border-corporate-teal hover:shadow-md transition-all"
+      className="flex flex-col items-center p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-corporate-teal hover:shadow-md transition-all"
     >
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${config.color} mb-2`}>
         <Icon className="w-6 h-6" />
       </div>
-      <span className="text-xs font-medium text-slate-700">{config.label}</span>
+      <span className="text-xs font-medium text-slate-700 dark:text-slate-200">{config.label}</span>
     </button>
   );
 };
@@ -158,7 +158,7 @@ const CoachingOnDemandWidget = ({ scope = {}, helpText }) => {
     <Card title="On-Demand Practice" icon={BrainCircuit} accent="PURPLE" helpText={helpText}>
       {/* Quick Start Grid */}
       <div className="mb-4">
-        <p className="text-xs font-medium text-slate-500 uppercase mb-2">Quick Start</p>
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Quick Start</p>
         <div className="grid grid-cols-4 gap-2">
           {Object.keys(PRACTICE_CATEGORIES).map(category => (
             <QuickPracticeButton 
@@ -172,7 +172,7 @@ const CoachingOnDemandWidget = ({ scope = {}, helpText }) => {
       
       {/* Featured Scenarios */}
       <div>
-        <p className="text-xs font-medium text-slate-500 uppercase mb-2">Featured Scenarios</p>
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Featured Scenarios</p>
         <div className="space-y-2">
           {displayScenarios.slice(0, 3).map(scenario => (
             <PracticeCard 

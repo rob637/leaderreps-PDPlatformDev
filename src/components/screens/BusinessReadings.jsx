@@ -113,7 +113,7 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
 
 const SearchInput = React.memo(({ value, onChange }) => (
     <div>
-        <label className="block text-sm font-medium mb-1 flex items-center gap-1.5 text-slate-500">
+        <label className="block text-sm font-medium mb-1 flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
             <SearchIcon className="w-4 h-4 text-corporate-teal"/> Search Library
         </label>
         <input
@@ -121,7 +121,7 @@ const SearchInput = React.memo(({ value, onChange }) => (
             value={value}
             onChange={onChange}
             placeholder="Find by title, author, or focus..."
-            className="w-full p-3 border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal text-sm"
+            className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal text-sm"
         />
     </div>
 ));
@@ -130,9 +130,9 @@ SearchInput.displayName = 'SearchInput';
 const AICoachInput = React.memo(({ aiQuery, handleAiQueryChange, submitHandler, isSubmitting, questionFeedback, selectedBookTitle }) => {
     const score = questionFeedback?.score ?? 0;
     const { bgColor, borderColor, textColor, Icon } = useMemo(() => {
-        if (score === 3) return { bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200', textColor: 'text-emerald-800', Icon: Zap };
-        if (score === 2) return { bgColor: 'bg-amber-50', borderColor: 'border-amber-200', textColor: 'text-amber-800', Icon: AlertTriangle };
-        return { bgColor: 'bg-red-50', borderColor: 'border-red-200', textColor: 'text-red-800', Icon: Info };
+        if (score === 3) return { bgColor: 'bg-emerald-50 dark:bg-emerald-900/20', borderColor: 'border-emerald-200 dark:border-emerald-800', textColor: 'text-emerald-800', Icon: Zap };
+        if (score === 2) return { bgColor: 'bg-amber-50 dark:bg-amber-900/20', borderColor: 'border-amber-200 dark:border-amber-800', textColor: 'text-amber-800', Icon: AlertTriangle };
+        return { bgColor: 'bg-red-50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-800', textColor: 'text-red-800', Icon: Info };
     }, [score]);
 
     return (
@@ -148,7 +148,7 @@ const AICoachInput = React.memo(({ aiQuery, handleAiQueryChange, submitHandler, 
                 <input
                     type="text" value={aiQuery} onChange={handleAiQueryChange}
                     placeholder={`Ask AI Rep Coach how to apply "${selectedBookTitle}"...`}
-                    className="flex-grow p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="flex-grow p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                     required disabled={isSubmitting}
                 />
                 <Button
@@ -177,18 +177,18 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <SearchInput value={filters.search} onChange={handleSearchChange} />
           <div>
-            <label className="block text-sm font-medium mb-1 text-slate-500">Complexity Level</label>
+            <label className="block text-sm font-medium mb-1 text-slate-500 dark:text-slate-400">Complexity Level</label>
             <select
               value={filters.complexity}
               onChange={(e) => handleFilterChange('complexity', e.target.value)}
-              className="w-full p-3 border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal text-sm"
+              className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal text-sm"
             >
               <option value="All">All Levels</option>
               {Object.keys(COMPLEXITY_MAP).map(k => (<option key={k} value={k}>{COMPLEXITY_MAP[k].label}</option>))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1 text-slate-500">Max Est. Time ({filters.maxDuration} min)</label>
+            <label className="block text-sm font-medium mb-1 text-slate-500 dark:text-slate-400">Max Est. Time ({filters.maxDuration} min)</label>
             <input
               type="range" min="60" max="300" step="10"
               value={filters.maxDuration}
@@ -201,17 +201,17 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
       </Card>
 
       {isSourceDataEmpty && (
-           <div className="p-10 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 text-center">
+           <div className="p-10 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-center">
                 <AlertTriangle className='w-10 h-10 mx-auto mb-4 text-corporate-orange'/>
                 <h3 className="text-xl font-bold text-corporate-navy">Reading Library Empty</h3>
-                <p className="text-slate-600 mt-2 text-sm">The reading catalog hasn't been loaded yet.</p>
+                <p className="text-slate-600 dark:text-slate-300 mt-2 text-sm">The reading catalog hasn't been loaded yet.</p>
            </div>
       )}
       {isFilteredEmpty && (
-           <div className="p-8 rounded-2xl border border-slate-200 bg-white text-center shadow-sm">
+           <div className="p-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-center shadow-sm">
                 <SearchIcon className='w-8 h-8 mx-auto mb-3 text-corporate-teal'/>
                 <h3 className="text-lg font-bold text-corporate-navy">No Results Found</h3>
-                <p className="text-slate-600 mt-1 text-sm">Try adjusting your search query or filter settings.</p>
+                <p className="text-slate-600 dark:text-slate-300 mt-1 text-sm">Try adjusting your search query or filter settings.</p>
            </div>
       )}
 
@@ -219,13 +219,13 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
         <div className="space-y-12">
           {Object.entries(filteredBooks).map(([tier, booksInCategory]) => (
             Array.isArray(booksInCategory) && booksInCategory.length > 0 && (
-                <div key={tier} className="rounded-2xl shadow-sm overflow-hidden border border-slate-200 bg-white">
-                  <div className="p-4 border-b border-slate-100 bg-slate-50">
+                <div key={tier} className="rounded-2xl shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50 dark:bg-slate-800">
                     <h3 className="text-lg font-bold flex items-center gap-2 text-corporate-navy">
                         <Target className="w-5 h-5 text-corporate-orange" />
                         {tier}
                     </h3>
-                    <p className="text-sm mt-1 text-slate-500">{booksInCategory.length} item{booksInCategory.length !== 1 ? 's' : ''} available</p>
+                    <p className="text-sm mt-1 text-slate-500 dark:text-slate-400">{booksInCategory.length} item{booksInCategory.length !== 1 ? 's' : ''} available</p>
                   </div>
 
                   <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -242,8 +242,8 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
                           <button
                             onClick={() => onSelectBook(book, tier)}
                             className={`p-5 text-left w-full h-full block rounded-2xl border transition-all duration-300 flex flex-col
-                                ${isSelected ? 'border-corporate-teal ring-1 ring-corporate-teal shadow-md' : 'border-slate-200 hover:border-corporate-teal/50 hover:shadow-md'}
-                                bg-white`}
+                                ${isSelected ? 'border-corporate-teal ring-1 ring-corporate-teal shadow-md' : 'border-slate-200 dark:border-slate-700 hover:border-corporate-teal/50 hover:shadow-md'}
+                                bg-white dark:bg-slate-800`}
                           >
                             {isNew && (
                                 <div className="absolute top-2 left-2 z-10 bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-md animate-pulse">
@@ -254,24 +254,24 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
                             
                             <div className="flex-grow pt-2">
                                 <div className="flex gap-3 items-start mb-3">
-                                    <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100 flex-shrink-0">
+                                    <div className="w-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center border border-slate-100 flex-shrink-0">
                                         <BookOpen className="w-5 h-5 text-corporate-teal" />
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <p className="font-bold text-sm leading-snug text-corporate-navy break-words whitespace-normal">{book.title}</p>
-                                        <p className="text-xs italic mt-1 text-slate-500">by {book.author}</p>
+                                        <p className="text-xs italic mt-1 text-slate-500 dark:text-slate-400">by {book.author}</p>
                                     </div>
                                 </div>
 
-                                <div className="my-3 h-px bg-slate-100" />
+                                <div className="my-3 h-px bg-slate-100 dark:bg-slate-700" />
 
                                 <div className="space-y-1.5 text-xs">
-                                    <div className="flex items-center gap-2 text-slate-600">
+                                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                         <Clock className="w-3.5 h-3.5 flex-shrink-0 text-corporate-orange"/>
                                         <span className="font-semibold">Est. Time:</span>
                                         <span className="ml-auto font-bold">{estimatedDuration ? `${estimatedDuration} min` : 'N/A'}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-slate-600">
+                                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                         <ComplexityIcon className={`w-3.5 h-3.5 flex-shrink-0 ${complexityMeta.color}`}/>
                                         <span className="font-semibold">Level:</span>
                                         <span className={`ml-auto font-bold ${complexityMeta.color}`}>{complexityMeta.label}</span>
@@ -282,7 +282,7 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
                                     <p className="text-[10px] font-semibold uppercase mb-1.5 text-corporate-teal">Key Focus</p>
                                     <div className="flex flex-wrap gap-1">
                                         {(String(book.focus || '').split(',').slice(0, 3)).map((f, i) => (
-                                            f.trim() && <span key={i} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-slate-100 text-slate-600">{f.trim()}</span>
+                                            f.trim() && <span key={i} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">{f.trim()}</span>
                                         ))}
                                     </div>
                                 </div>
@@ -292,7 +292,7 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
                           <button
                             onClick={(e) => { e.stopPropagation(); onToggleSave(book.id); }}
                             className={`absolute top-2 right-2 p-1.5 rounded-full transition-colors duration-200 shadow-sm
-                                ${isSaved ? 'bg-amber-500 text-white' : 'bg-white/80 text-slate-400 hover:text-amber-500'}`}
+                                ${isSaved ? 'bg-amber-500 text-white' : 'bg-white/80 dark:bg-slate-800/80 text-slate-400 hover:text-amber-500'}`}
                           >
                             <Star className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
                           </button>
@@ -320,7 +320,7 @@ function BookFlyerStable({
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 pb-4 border-b border-slate-200 dark:border-slate-700">
         <h2 className="text-2xl font-bold flex items-center gap-3 text-corporate-navy">
           <BookOpen className="w-7 h-7 flex-shrink-0 text-corporate-teal" />
           Focus Flyer: {selectedBook.title}
@@ -332,10 +332,10 @@ function BookFlyerStable({
 
       <Card accentColor="bg-corporate-teal" className="shadow-lg">
         <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50">
+          <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
             <TrendingUp className="w-5 h-5 flex-shrink-0 text-corporate-teal"/>
             <div>
-              <p className="text-xs font-medium uppercase text-slate-500">Your Progress (Mock)</p>
+              <p className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">Your Progress (Mock)</p>
               <div className="flex items-center gap-2 mt-1">
                 <div className="w-32 h-2 rounded-full bg-slate-200">
                   <div className="h-2 rounded-full bg-corporate-teal" style={{ width: `${progressPercent}%` }} />
@@ -359,14 +359,14 @@ function BookFlyerStable({
                     onClick={() => setIsExecutiveBrief(!isExecutiveBrief)}
                     className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-corporate-orange ${isExecutiveBrief ? 'bg-corporate-orange' : 'bg-slate-300'}`}
                 >
-                    <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ${isExecutiveBrief ? 'translate-x-6' : 'translate-x-1'}`} />
+                    <span className={`inline-block w-4 h-4 transform bg-white dark:bg-slate-800 rounded-full transition-transform duration-200 ${isExecutiveBrief ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
                 <span className="text-sm font-semibold text-corporate-navy">Executive Brief</span>
             </div>
           </div>
         </div>
 
-        <div className="p-6 rounded-xl border border-slate-200 bg-slate-50 min-h-[200px]">
+        <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 min-h-[200px]">
             {isFlyerLoading && (
                 <div className="h-full flex items-center justify-center gap-2 text-purple-600">
                     <Loader className='w-5 h-5 animate-spin'/>
@@ -374,9 +374,9 @@ function BookFlyerStable({
                 </div>
             )}
             {!isFlyerLoading && htmlFlyer.includes('Content Error:') && (
-                <div className="h-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-red-50 border border-red-200">
+                <div className="h-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                     <AlertTriangle className='w-6 h-6 text-red-500 mb-2'/>
-                    <div className="text-sm text-center max-w-none space-y-2 text-slate-700" dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
+                    <div className="text-sm text-center max-w-none space-y-2 text-slate-700 dark:text-slate-200" dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
                 </div>
             )}
             {!isFlyerLoading && !htmlFlyer.includes('Content Error:') && (
@@ -384,12 +384,12 @@ function BookFlyerStable({
             )}
         </div>
 
-        <div className="mt-8 pt-6 border-t border-slate-200">
+        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-3 text-corporate-navy">
             <MessageSquare className="w-6 h-6 text-purple-600"/> AI Rep Coach: Apply It Now
           </h3>
           {aiResponse && (
-            <div className="p-4 mb-4 rounded-xl shadow-sm border-l-4 border-purple-600 bg-purple-50 text-slate-700">
+            <div className="p-4 mb-4 rounded-xl shadow-sm border-l-4 border-purple-600 bg-purple-50 dark:bg-purple-900/20 text-slate-700 dark:text-slate-200">
               <p className="text-sm font-semibold flex items-center gap-2 mb-1 text-corporate-navy">
                 <Cpu className="w-4 h-4"/> AI Rep Coach Response:
               </p>
@@ -406,7 +406,7 @@ function BookFlyerStable({
           />
         </div>
 
-        <div className="mt-10 pt-6 flex flex-col sm:flex-row justify-end items-center gap-4 border-t border-slate-200">
+        <div className="mt-10 pt-6 flex flex-col sm:flex-row justify-end items-center gap-4 border-t border-slate-200 dark:border-slate-700">
           <Button
             onClick={() => onToggleSave(selectedBook.id)}
             variant="outline" size="sm"

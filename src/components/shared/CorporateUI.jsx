@@ -10,7 +10,7 @@ const CORPORATE_CLASSES = {
   HEADING_LG: 'corporate-heading-lg', 
   HEADING_MD: 'corporate-heading-md',
   TEXT_BODY: 'corporate-text-body',
-  BACK_BUTTON: 'flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors'
+  BACK_BUTTON: 'flex items-center gap-2 mb-6 text-gray-600 dark:text-gray-300 hover:text-gray-800 cursor-pointer transition-colors'
 };
 
 /* =========================================================
@@ -30,15 +30,15 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
   } else if (variant === 'secondary') {
     baseStyle += ` text-white shadow-lg hover:opacity-90 focus:ring-opacity-50`;
   } else if (variant === 'outline') {
-    baseStyle += ` border-2 hover:text-white focus:ring-opacity-50 bg-white`;
+    baseStyle += ` border-2 hover:text-white focus:ring-opacity-50 bg-white dark:bg-slate-800`;
   } else if (variant === 'nav-back') {
-    baseStyle += ` border-2 border-gray-300 text-gray-700 hover:bg-gray-100`;
+    baseStyle += ` border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100`;
   } else if (variant === 'ghost') {
-    baseStyle += ` text-gray-700 hover:bg-gray-100`;
+    baseStyle += ` text-gray-700 dark:text-gray-200 hover:bg-gray-100`;
   }
 
   if (disabled) {
-    baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center";
+    baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 dark:text-gray-400 cursor-not-allowed shadow-inner transition-none flex items-center justify-center";
   }
 
   const buttonStyle = {
@@ -156,7 +156,7 @@ export const PageHeader = ({ title, subtitle, icon: Icon }) => (
       </h1>
     )}
     {subtitle && (
-      <p className={`${CORPORATE_CLASSES.TEXT_BODY} text-gray-600 mt-2`}>
+      <p className={`${CORPORATE_CLASSES.TEXT_BODY} text-gray-600 dark:text-gray-300 mt-2`}>
         {subtitle}
       </p>
     )}

@@ -219,12 +219,12 @@ const SessionPickerModal = ({
       
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl">
+        <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-xl">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-slate-200">
+          <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
             <div>
-              <h2 className="text-lg font-bold text-slate-800">Pick a Session</h2>
-              <p className="text-sm text-slate-500">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Pick a Session</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {coachingItem?.label || 'Coaching Session'}
               </p>
             </div>
@@ -238,7 +238,7 @@ const SessionPickerModal = ({
           
           {/* Week Navigation */}
           {weekKeys.length > 1 && (
-            <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-200">
+            <div className="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <button
                 onClick={() => setSelectedWeek(Math.max(0, selectedWeek - 1))}
                 disabled={selectedWeek === 0}
@@ -246,7 +246,7 @@ const SessionPickerModal = ({
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <span className="text-sm font-medium text-slate-700">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 {getWeekLabel(weekKeys[selectedWeek])}
               </span>
               <button
@@ -268,7 +268,7 @@ const SessionPickerModal = ({
             ) : currentWeekSessions.length === 0 ? (
               <div className="text-center py-8">
                 <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500 text-sm">
+                <p className="text-slate-500 dark:text-slate-400 text-sm">
                   No sessions available {weekKeys.length > 1 ? 'for this week' : 'right now'}
                 </p>
                 <p className="text-slate-400 text-xs mt-1">
@@ -292,10 +292,10 @@ const SessionPickerModal = ({
                       className={`
                         p-3 rounded-xl border transition-all
                         ${registered 
-                          ? 'bg-teal-50 border-teal-200' 
+                          ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800' 
                           : isFull 
-                            ? 'bg-slate-50 border-slate-200 opacity-60'
-                            : 'bg-white border-slate-200 hover:border-teal-300 hover:shadow-sm'
+                            ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-60'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-teal-300 hover:shadow-sm'
                         }
                       `}
                     >
@@ -303,17 +303,17 @@ const SessionPickerModal = ({
                         {/* Icon */}
                         <div className={`
                           p-2 rounded-lg
-                          ${registered ? 'bg-teal-100 text-corporate-teal' : 'bg-slate-100 text-slate-500'}
+                          ${registered ? 'bg-teal-100 dark:bg-teal-900/30 text-corporate-teal' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}
                         `}>
                           <SessionIcon className="w-5 h-5" />
                         </div>
                         
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-slate-800 truncate">
+                          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
                             {session.title}
                           </h3>
-                          <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
                             <Calendar className="w-3 h-3" />
                             <span>{formatDate(session.date)}</span>
                             <Clock className="w-3 h-3 ml-1" />
@@ -348,7 +348,7 @@ const SessionPickerModal = ({
                             registered ? (
                               <button
                                 onClick={() => handleMarkAttended(session)}
-                                className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+                                className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 dark:bg-green-900/30 rounded-lg hover:bg-green-200 transition-colors"
                               >
                                 I Attended
                               </button>
@@ -359,7 +359,7 @@ const SessionPickerModal = ({
                             <button
                               onClick={() => handleCancel(session.id)}
                               disabled={registering === session.id}
-                              className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                              className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
                             >
                               {registering === session.id ? (
                                 <Loader className="w-3 h-3 animate-spin" />
@@ -374,7 +374,7 @@ const SessionPickerModal = ({
                               className={`
                                 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors
                                 ${isFull 
-                                  ? 'text-slate-400 bg-slate-100 cursor-not-allowed'
+                                  ? 'text-slate-400 bg-slate-100 dark:bg-slate-700 cursor-not-allowed'
                                   : 'text-white bg-corporate-teal hover:bg-teal-700 disabled:opacity-50'
                                 }
                               `}
@@ -399,7 +399,7 @@ const SessionPickerModal = ({
           
           {/* Footer */}
           {currentRegistration && (
-            <div className="p-4 border-t border-slate-200 bg-teal-50">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-teal-50 dark:bg-teal-900/20">
               <div className="flex items-center gap-2 text-sm text-corporate-teal">
                 <CheckCircle className="w-4 h-4" />
                 <span>

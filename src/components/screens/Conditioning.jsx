@@ -43,68 +43,68 @@ const StatusBadge = ({ status }) => {
   const configs = {
     // New granular states
     [REP_STATUS.COMMITTED]: { 
-      bg: 'bg-blue-100', 
+      bg: 'bg-blue-100 dark:bg-blue-900/30', 
       text: 'text-blue-700', 
       label: 'Committed',
       icon: Clock
     },
     [REP_STATUS.PREPARED]: { 
-      bg: 'bg-indigo-100', 
+      bg: 'bg-indigo-100 dark:bg-indigo-900/30', 
       text: 'text-indigo-700', 
       label: 'Prepared',
       icon: FileText
     },
     [REP_STATUS.SCHEDULED]: { 
-      bg: 'bg-purple-100', 
+      bg: 'bg-purple-100 dark:bg-purple-900/30', 
       text: 'text-purple-700', 
       label: 'Scheduled',
       icon: Calendar
     },
     [REP_STATUS.EXECUTED]: { 
-      bg: 'bg-teal-100', 
+      bg: 'bg-teal-100 dark:bg-teal-900/30', 
       text: 'text-teal-700', 
       label: 'Executed',
       icon: Check
     },
     [REP_STATUS.DEBRIEFED]: { 
-      bg: 'bg-green-100', 
+      bg: 'bg-green-100 dark:bg-green-900/30', 
       text: 'text-green-700', 
       label: 'Debriefed',
       icon: CheckCircle
     },
     [REP_STATUS.FOLLOW_UP_PENDING]: { 
-      bg: 'bg-orange-100', 
+      bg: 'bg-orange-100 dark:bg-orange-900/30', 
       text: 'text-orange-700', 
       label: 'Follow-Up',
       icon: RefreshCw
     },
     [REP_STATUS.LOOP_CLOSED]: { 
-      bg: 'bg-emerald-100', 
+      bg: 'bg-emerald-100 dark:bg-emerald-900/30', 
       text: 'text-emerald-700', 
       label: 'Loop Closed',
       icon: CheckCircle
     },
     [REP_STATUS.MISSED]: { 
-      bg: 'bg-amber-100', 
+      bg: 'bg-amber-100 dark:bg-amber-900/30', 
       text: 'text-amber-700', 
       label: 'Missed',
       icon: AlertCircle
     },
     [REP_STATUS.CANCELED]: { 
-      bg: 'bg-gray-100', 
-      text: 'text-gray-500', 
+      bg: 'bg-gray-100 dark:bg-gray-700', 
+      text: 'text-gray-500 dark:text-gray-400', 
       label: 'Canceled',
       icon: XCircle
     },
     // Legacy aliases - map to new states
     'active': { 
-      bg: 'bg-blue-100', 
+      bg: 'bg-blue-100 dark:bg-blue-900/30', 
       text: 'text-blue-700', 
       label: 'Active',
       icon: Clock
     },
     'completed': { 
-      bg: 'bg-green-100', 
+      bg: 'bg-green-100 dark:bg-green-900/30', 
       text: 'text-green-700', 
       label: 'Complete',
       icon: CheckCircle
@@ -142,14 +142,14 @@ const WeekStatusHeader = ({ weeklyStatus, nudgeStatus }) => {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="text-lg font-bold text-corporate-navy">This Week's Reps</h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {formatDate(weekStart)} - {formatDate(weekEnd)}
             </p>
           </div>
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
             requiredRepCompleted 
-              ? 'bg-green-100 text-green-700' 
-              : 'bg-amber-100 text-amber-700'
+              ? 'bg-green-100 dark:bg-green-900/30 text-green-700' 
+              : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700'
           }`}>
             {requiredRepCompleted ? (
               <>
@@ -181,10 +181,10 @@ const WeekStatusHeader = ({ weeklyStatus, nudgeStatus }) => {
         {nudgeStatus && nudgeStatus.type !== 'none' && (
           <div className={`mt-3 p-3 rounded-lg text-sm ${
             nudgeStatus.type === 'urgent' || nudgeStatus.type === 'escalation'
-              ? 'bg-red-50 text-red-700 border border-red-200'
+              ? 'bg-red-50 dark:bg-red-900/20 text-red-700 border border-red-200 dark:border-red-800'
               : nudgeStatus.type === 'warning'
-              ? 'bg-amber-50 text-amber-700 border border-amber-200'
-              : 'bg-blue-50 text-blue-700 border border-blue-200'
+              ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 border border-amber-200 dark:border-amber-800'
+              : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 border border-blue-200 dark:border-blue-800'
           }`}>
             <div className="flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -248,7 +248,7 @@ const TodaysFocusCard = ({ activeReps, onOpenPrep, onViewDetail, onAskCoach }) =
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <p className="font-bold text-corporate-navy truncate">{focusRep.person}</p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               {focusRep.repType?.replace(/_/g, ' ') || 'Leadership Rep'} • {formatDeadline()}
             </p>
           </div>
@@ -372,7 +372,7 @@ const RepCard = ({
           </div>
           
           {/* Type & Deadline Row */}
-          <div className="flex items-center gap-3 mb-3 text-sm text-gray-600">
+          <div className="flex items-center gap-3 mb-3 text-sm text-gray-600 dark:text-gray-300">
             <RepTypeBadge repType={rep.repType} />
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
@@ -396,7 +396,7 @@ const RepCard = ({
           
           {/* Notes */}
           {rep.notes && (
-            <p className="text-sm text-gray-600 mb-3 italic">"{rep.notes}"</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 italic">"{rep.notes}"</p>
           )}
           
           {/* Rolled Forward Indicator */}
@@ -409,7 +409,7 @@ const RepCard = ({
           
           {/* Cancel Reason */}
           {rep.status === REP_STATUS.CANCELED && rep.cancelReason && (
-            <div className="text-sm text-gray-500 mb-3">
+            <div className="text-sm text-gray-500 dark:text-gray-400 mb-3">
               <span className="font-medium">Reason:</span> {rep.cancelReason}
             </div>
           )}
@@ -552,7 +552,7 @@ const RepCard = ({
                 <span>Loop closed - Rep complete</span>
               </div>
               {rep.loopClosure?.outcome && (
-                <div className="mt-1 text-xs text-gray-500">
+                <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Outcome: {rep.loopClosure.outcome.replace(/_/g, ' ')}
                 </div>
               )}
@@ -567,14 +567,14 @@ const RepCard = ({
           <Card className="w-full max-w-md">
             <div className="p-4">
               <h3 className="text-lg font-bold text-corporate-navy mb-2">Cancel Rep</h3>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                 Why are you canceling this rep? (Required)
               </p>
               <textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
                 placeholder="e.g., Person left role, meeting canceled..."
-                className="w-full p-3 border border-gray-300 rounded-lg text-sm mb-4 min-h-[100px]"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm mb-4 min-h-[100px]"
                 autoFocus
               />
               <div className="flex gap-2">
@@ -621,7 +621,7 @@ const MissedRepsSection = ({ missedReps, onOpenDebrief, isLoading }) => {
         <AlertTriangle className="w-5 h-5 text-amber-600" />
         <h3 className="font-semibold text-corporate-navy">Missed Reps ({missedReps.length})</h3>
       </div>
-      <p className="text-sm text-gray-600 mb-3">
+      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
         Complete a quick debrief to understand what happened and set up for success next week.
       </p>
       {missedReps.map((rep) => (
@@ -630,7 +630,7 @@ const MissedRepsSection = ({ missedReps, onOpenDebrief, isLoading }) => {
             <div className="flex items-center justify-between">
               <div>
                 <span className="font-medium">{rep.person}</span>
-                <span className="text-sm text-gray-500 ml-2">({getRepTypeLabel(rep.repType)})</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">({getRepTypeLabel(rep.repType)})</span>
                 {rep.missedDebrief && (
                   <span className="text-xs text-green-600 ml-2">✓ Debriefed</span>
                 )}
@@ -992,7 +992,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
         <Card className="p-6 text-center">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-lg font-bold text-corporate-navy mb-2">No Cohort Assigned</h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             Conditioning is available for leaders enrolled in a cohort program.
           </p>
         </Card>
@@ -1011,7 +1011,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <RefreshCw className="w-8 h-8 text-corporate-navy animate-spin mx-auto mb-2" />
-            <p className="text-gray-600">Loading...</p>
+            <p className="text-gray-600 dark:text-gray-300">Loading...</p>
           </div>
         </div>
       </PageLayout>
@@ -1028,7 +1028,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       <div className="space-y-4">
         {/* Error Banner */}
         {error && (
-          <Card className="mb-4 border-l-4 border-l-red-500 bg-red-50">
+          <Card className="mb-4 border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900/20">
             <div className="p-3 flex items-center justify-between">
               <span className="text-red-700 text-sm">{error}</span>
               <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
@@ -1075,7 +1075,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-corporate-navy">Active Reps</h3>
-            <span className="text-sm text-gray-500">{activeReps.length} rep{activeReps.length !== 1 ? 's' : ''}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{activeReps.length} rep{activeReps.length !== 1 ? 's' : ''}</span>
           </div>
           
           {activeReps.length === 0 ? (
@@ -1087,7 +1087,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
                 // User has completed reps - show different messaging
                 <>
                   <h3 className="font-bold text-lg text-corporate-navy mb-2">Want to Keep Building?</h3>
-                  <p className="text-gray-600 mb-2 max-w-sm mx-auto">
+                  <p className="text-gray-600 dark:text-gray-300 mb-2 max-w-sm mx-auto">
                     Great work on your completed rep{completedReps.length > 1 ? 's' : ''}! 
                     You can commit to additional reps if you want more practice.
                   </p>
@@ -1099,7 +1099,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
                 // First-time user - show introductory messaging
                 <>
                   <h3 className="font-bold text-lg text-corporate-navy mb-2">Ready to Build Your Leadership Muscle?</h3>
-                  <p className="text-gray-600 mb-2 max-w-sm mx-auto">
+                  <p className="text-gray-600 dark:text-gray-300 mb-2 max-w-sm mx-auto">
                     A "rep" is a real leadership moment you commit to practicing — 
                     like giving feedback, having a tough conversation, or delegating effectively.
                   </p>

@@ -14,14 +14,14 @@ const NUDGE_TYPES = {
   reminder: {
     label: 'Reminder',
     icon: Clock,
-    bgColor: 'bg-blue-100',
+    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     textColor: 'text-blue-700',
     borderColor: 'border-l-blue-500'
   },
   encouragement: {
     label: 'From Your Trainer',
     icon: Heart,
-    bgColor: 'bg-green-100',
+    bgColor: 'bg-green-100 dark:bg-green-900/30',
     textColor: 'text-green-700',
     borderColor: 'border-l-green-500'
   },
@@ -35,7 +35,7 @@ const NUDGE_TYPES = {
   escalation: {
     label: 'Important',
     icon: AlertTriangle,
-    bgColor: 'bg-red-100',
+    bgColor: 'bg-red-100 dark:bg-red-900/30',
     textColor: 'text-red-700',
     borderColor: 'border-l-red-500'
   }
@@ -53,7 +53,7 @@ const NudgeCard = ({ nudge, onDismiss, onMarkRead }) => {
   const timeAgo = getTimeAgo(sentDate);
   
   return (
-    <Card className={`border-l-4 ${config.borderColor} ${isUnread ? 'bg-blue-50/30' : ''}`}>
+    <Card className={`border-l-4 ${config.borderColor} ${isUnread ? 'bg-blue-50/30 dark:bg-blue-900/20/30' : ''}`}>
       <div className="p-4">
         <div className="flex items-start gap-3">
           <div className={`p-2 rounded-full ${config.bgColor} flex-shrink-0`}>
@@ -71,10 +71,10 @@ const NudgeCard = ({ nudge, onDismiss, onMarkRead }) => {
               )}
             </div>
             
-            <p className="text-sm text-gray-700">{nudge.message}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-200">{nudge.message}</p>
             
             <div className="flex items-center gap-2 mt-2">
-              <div className="flex items-center gap-1 text-xs text-gray-500">
+              <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                 <User className="w-3 h-3" />
                 <span>From your trainer</span>
               </div>
@@ -186,7 +186,7 @@ const TrainerNudgeNotification = ({ db, userId, showAll = false }) => {
         {readNudges.length > 0 && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-xs text-gray-500 hover:text-corporate-navy flex items-center gap-1"
+            className="text-xs text-gray-500 dark:text-gray-400 hover:text-corporate-navy flex items-center gap-1"
           >
             {isExpanded ? (
               <>Hide read <ChevronUp className="w-3 h-3" /></>

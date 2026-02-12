@@ -91,7 +91,7 @@ const AppSettingsScreen = () => {
             </div>
             <div>
                 <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>App Settings</h1>
-                <p className="text-slate-500 mt-1">Manage your profile, security, and preferences.</p>
+                <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your profile, security, and preferences.</p>
             </div>
         </header>
 
@@ -100,11 +100,11 @@ const AppSettingsScreen = () => {
             {/* User Account Card */}
             <Card title="User Account" icon={User} accentColor="bg-corporate-teal">
                 <div className="space-y-4">
-                    <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100">
+                    <div className="p-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-xl border border-slate-100">
                         <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Full Name</p>
                         <p className="font-medium text-corporate-navy">{user?.name || 'N/A'}</p>
                     </div>
-                    <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100">
+                    <div className="p-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-xl border border-slate-100">
                         <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Email Address</p>
                         <p className="font-medium text-corporate-navy">{user?.email || 'N/A'}</p>
                     </div>
@@ -118,16 +118,16 @@ const AppSettingsScreen = () => {
             {/* Security Card */}
             <Card title="Security" icon={Lock} accentColor="bg-corporate-orange">
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-slate-50/80 rounded-xl border border-slate-100">
+                    <div className="flex items-center justify-between p-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-xl border border-slate-100">
                         <div>
                             <p className="text-sm font-medium text-corporate-navy">Two-Factor Auth</p>
                             <p className="text-xs text-slate-400 mt-0.5">Extra layer of security</p>
                         </div>
-                        <span className="px-2.5 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-full">Disabled</span>
+                        <span className="px-2.5 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 text-xs font-medium rounded-full">Disabled</span>
                     </div>
-                    <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100">
+                    <div className="p-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-xl border border-slate-100">
                         <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Last Sign In</p>
-                        <p className="font-mono text-sm text-slate-600">{new Date().toLocaleString()}</p>
+                        <p className="font-mono text-sm text-slate-600 dark:text-slate-300">{new Date().toLocaleString()}</p>
                     </div>
                     <Button onClick={handleSignOutAll} variant="danger" size="sm" className="w-full justify-center">
                         <LogOut className="w-4 h-4" />
@@ -139,34 +139,34 @@ const AppSettingsScreen = () => {
             {/* Push Notifications Card */}
             <Card title="Push Notifications" icon={Bell} accentColor="bg-blue-600">
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-slate-50/80 rounded-xl border border-slate-100">
+                    <div className="flex items-center justify-between p-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-xl border border-slate-100">
                         <div>
                             <p className="text-sm font-medium text-corporate-navy">Daily Reminders</p>
                             <p className="text-xs text-slate-400 mt-0.5">Get notified about your daily plan</p>
                         </div>
                         {notificationStatus === 'enabled' ? (
-                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-full flex items-center gap-1">
+                            <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-xs font-medium rounded-full flex items-center gap-1">
                                 <CheckCircle className="w-3 h-3" /> Enabled
                             </span>
                         ) : notificationStatus === 'blocked' ? (
-                            <span className="px-2.5 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-full flex items-center gap-1">
+                            <span className="px-2.5 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 text-xs font-medium rounded-full flex items-center gap-1">
                                 <BellOff className="w-3 h-3" /> Blocked
                             </span>
                         ) : notificationStatus === 'unsupported' ? (
-                            <span className="px-2.5 py-1 bg-slate-50 text-slate-500 text-xs font-medium rounded-full">Not Supported</span>
+                            <span className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-medium rounded-full">Not Supported</span>
                         ) : (
-                            <span className="px-2.5 py-1 bg-amber-50 text-amber-600 text-xs font-medium rounded-full">Disabled</span>
+                            <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 text-xs font-medium rounded-full">Disabled</span>
                         )}
                     </div>
                     
                     {notificationStatus === 'blocked' && (
-                        <p className="text-xs text-amber-600 bg-amber-50 p-3 rounded-lg">
+                        <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
                             Notifications are blocked in your browser. To enable them, click the lock icon in your browser's address bar and allow notifications.
                         </p>
                     )}
                     
                     {notificationStatus === 'unsupported' && (
-                        <p className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
                             Push notifications are not supported in this browser. Try using Chrome, Firefox, or Edge.
                         </p>
                     )}
@@ -191,7 +191,7 @@ const AppSettingsScreen = () => {
                     )}
                     
                     {notificationStatus === 'enabled' && (
-                        <p className="text-xs text-emerald-600 bg-emerald-50 p-3 rounded-lg flex items-start gap-2">
+                        <p className="text-xs text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg flex items-start gap-2">
                             <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                             You'll receive daily reminders based on your program schedule.
                         </p>
@@ -204,7 +204,7 @@ const AppSettingsScreen = () => {
                 <div className="space-y-4">
                     <div>
                         <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Gemini API Key Status</label>
-                        <div className={`flex items-center gap-2.5 p-3.5 rounded-xl border ${API_KEY ? 'bg-emerald-50/80 border-emerald-100 text-emerald-700' : 'bg-red-50/80 border-red-100 text-red-700'}`}>
+                        <div className={`flex items-center gap-2.5 p-3.5 rounded-xl border ${API_KEY ? 'bg-emerald-50/80 dark:bg-emerald-900/20/80 border-emerald-100 text-emerald-700' : 'bg-red-50/80 dark:bg-red-900/20/80 border-red-100 text-red-700'}`}>
                             <div className={`w-2 h-2 rounded-full ${API_KEY ? 'bg-emerald-500' : 'bg-red-500'}`} />
                             <span className="font-medium text-sm">{API_KEY ? 'Active / Configured' : 'Missing / Not Configured'}</span>
                         </div>
@@ -218,7 +218,7 @@ const AppSettingsScreen = () => {
             {/* Admin Tools Card */}
             {isAdmin && (
                 <Card title="Administrator Tools" icon={Shield} accentColor="bg-corporate-navy">
-                    <p className="text-sm text-slate-600 mb-4">Access tools for managing global application data and features.</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">Access tools for managing global application data and features.</p>
                     <div className="space-y-3">
                         <Button onClick={() => navigate('admin-functions')} variant="outline" size="sm" className="w-full justify-start">
                             <Settings className="w-4 h-4 text-slate-400" />
@@ -228,7 +228,7 @@ const AppSettingsScreen = () => {
                             <Cpu className="w-4 h-4" />
                             Firestore Data Manager (Raw)
                         </Button>
-                        <Button onClick={() => navigate('debug-data')} variant="outline" size="sm" className="w-full justify-start !text-blue-600 !border-blue-300 hover:!bg-blue-50">
+                        <Button onClick={() => navigate('debug-data')} variant="outline" size="sm" className="w-full justify-start !text-blue-600 !border-blue-300 hover:!bg-blue-50 dark:bg-blue-900/20">
                             <Code className="w-4 h-4" />
                             Raw Context Viewer
                         </Button>

@@ -82,7 +82,7 @@ const TaskSection = ({ otherTasks, onAddTask, onToggleTask, onRemoveTask }) => {
                         onChange={(e) => setNewTaskText(e.target.value)}
                         onKeyPress={handleKeyPress} 
                         placeholder="Add a task..."
-                        className="flex-1 p-2 border rounded-lg text-sm focus:ring-2 transition-all border-slate-200"
+                        className="flex-1 p-2 border rounded-lg text-sm focus:ring-2 transition-all border-slate-200 dark:border-slate-700"
                     />
                     <button 
                         onClick={handleAddClick}
@@ -179,7 +179,7 @@ export const EveningBookend = ({
 
             {/* Daily Tasks Section */}
             {onAddTask && (
-                <div className="pt-4 border-t border-slate-200">
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                     <TaskSection 
                         otherTasks={otherTasks}
                         onAddTask={onAddTask}
@@ -190,7 +190,7 @@ export const EveningBookend = ({
             )}
 
             {/* Daily Habits Tracker */}
-            <div className="pt-4 border-t border-slate-200">
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                 <p className="text-sm font-semibold mb-3 text-corporate-navy">Daily Habits Tracker</p>
                 <div className="space-y-2">
                     <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
@@ -227,7 +227,7 @@ export const EveningBookend = ({
             </div>
 
             {/* Save Button */}
-            <div className="mt-6 pt-4 border-t border-slate-200">
+            <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
                 <Button
                     onClick={() => {
                         if (onSave) onSave();

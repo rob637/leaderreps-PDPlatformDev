@@ -88,10 +88,10 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSucces
 
                 <Zap className={`w-12 h-12 text-corporate-navy mx-auto mb-4`} />
                 <h3 className="text-2xl font-extrabold text-corporate-navy mb-2">Grab a Micro-Action Rep</h3>
-                <p className="text-lg text-gray-600 mb-6">Frictionless training for momentum! Complete this action quickly (Feature 3).</p>
+                <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">Frictionless training for momentum! Complete this action quickly (Feature 3).</p>
 
-                <div className={`p-4 rounded-xl border-2 mb-6 ${logStatus === 'success' ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-100'}`}>
-                    <p className='text-sm font-semibold text-gray-700 mb-1'>Today's Micro-Action ({randomRep.tier}):</p>
+                <div className={`p-4 rounded-xl border-2 mb-6 ${logStatus === 'success' ? 'border-green-400 bg-green-50 dark:bg-green-900/20' : 'border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700'}`}>
+                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1'>Today's Micro-Action ({randomRep.tier}):</p>
                     <p className={`text-xl font-bold text-left ${logStatus === 'success' ? 'text-green-600' : 'text-corporate-navy'}`}>
                         <CornerRightUp className='w-5 h-5 inline mr-2'/> {randomRep.rep}
                     </p>
@@ -102,7 +102,7 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSucces
                     value={journalNote}
                     onChange={(e) => setJournalNote(e.target.value)}
                     placeholder="Optional journal note: What did I notice? (Feature 4)"
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal h-16 text-gray-800 mb-4"
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal h-16 text-gray-800 dark:text-gray-200 mb-4"
                     disabled={isLogging || logStatus === 'success'}
                 />
 
@@ -126,7 +126,7 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSucces
                     </p>
                 )}
                 
-                <button onClick={onClose} disabled={isLogging} className='text-sm text-gray-500 mt-4 hover:text-gray-700 block w-full'>
+                <button onClick={onClose} disabled={isLogging} className='text-sm text-gray-500 dark:text-gray-400 mt-4 hover:text-gray-700 block w-full'>
                     Close / Skip Challenge
                 </button>
             </div>

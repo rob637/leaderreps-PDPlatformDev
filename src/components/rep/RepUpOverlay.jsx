@@ -404,9 +404,9 @@ Help them with their question. Be practical and actionable.`;
         <Sparkles className="w-5 h-5" />
         <span className="font-bold">RepUp</span>
         <span className="flex gap-0.5">
-          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+          <span className="w-1.5 h-1.5 bg-white dark:bg-slate-800 rounded-full animate-pulse" />
+          <span className="w-1.5 h-1.5 bg-white dark:bg-slate-800 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+          <span className="w-1.5 h-1.5 bg-white dark:bg-slate-800 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
         </span>
       </motion.button>
       /* SPOTLIGHT TOUR - COMMENTED OUT FOR LATER USE
@@ -427,13 +427,13 @@ Help them with their question. Be practical and actionable.`;
       exit={{ y: 100, opacity: 0 }}
       className="fixed z-[90] w-96 max-w-[calc(100vw-3rem)] bottom-6 right-6"
     >
-      <div className="bg-white rounded-2xl shadow-2xl border-2 border-corporate-navy/20 overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border-2 border-corporate-navy/20 overflow-hidden">
         
         {/* Header - sleek design */}
         <div className="bg-gradient-to-r from-corporate-navy to-corporate-teal p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+              <div className="w-9 h-9 bg-white/20 dark:bg-slate-800/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -444,14 +444,14 @@ Help them with their question. Be practical and actionable.`;
             <div className="flex items-center gap-1.5">
               <button 
                 onClick={() => setIsMinimized(true)}
-                className="w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-full transition-colors text-white font-bold text-sm"
+                className="w-7 h-7 flex items-center justify-center bg-white/20 dark:bg-slate-800/20 hover:bg-white/30 rounded-full transition-colors text-white font-bold text-sm"
                 title="Minimize"
               >
                 –
               </button>
               <button 
                 onClick={onClose}
-                className="w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-red-500/80 rounded-full transition-colors text-white font-bold text-sm"
+                className="w-7 h-7 flex items-center justify-center bg-white/20 dark:bg-slate-800/20 hover:bg-red-500/80 rounded-full transition-colors text-white font-bold text-sm"
                 title="Close RepUp"
               >
                 ✕
@@ -461,13 +461,13 @@ Help them with their question. Be practical and actionable.`;
         </div>
 
         {/* Mode tabs - Coach (Primary) and Reps */}
-        <div className="flex border-b border-slate-200">
+        <div className="flex border-b border-slate-200 dark:border-slate-700">
           <button
             onClick={() => setMode('coach')}
             className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
               mode === 'coach' 
                 ? 'bg-corporate-teal/10 text-corporate-teal border-b-2 border-corporate-teal' 
-                : 'text-slate-500 hover:bg-slate-50'
+                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50'
             }`}
           >
             <MessageSquare className="w-4 h-4" />
@@ -478,7 +478,7 @@ Help them with their question. Be practical and actionable.`;
             className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
               mode === 'reps' 
                 ? 'bg-corporate-teal/10 text-corporate-teal border-b-2 border-corporate-teal' 
-                : 'text-slate-500 hover:bg-slate-50'
+                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50'
             }`}
           >
             <Dumbbell className="w-4 h-4" />
@@ -501,7 +501,7 @@ Help them with their question. Be practical and actionable.`;
                 /* No cohort enrolled */
                 <div className="text-center py-6">
                   <Target className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Join a cohort to start tracking reps
                   </p>
                 </div>
@@ -510,8 +510,8 @@ Help them with their question. Be practical and actionable.`;
                   {/* Week Status */}
                   <div className={`flex items-center gap-3 p-3 rounded-lg ${
                     weekStatus?.requiredRepCompleted 
-                      ? 'bg-green-50 border border-green-200' 
-                      : 'bg-amber-50 border border-amber-200'
+                      ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                      : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
                   }`}>
                     {weekStatus?.requiredRepCompleted ? (
                       <>
@@ -540,7 +540,7 @@ Help them with their question. Be practical and actionable.`;
                   {/* Active Reps List */}
                   {reps.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Active Reps</p>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Active Reps</p>
                       {reps.slice(0, 3).map((rep) => {
                         const repType = REP_TYPES.find(t => t.id === rep.repType);
                         return (
@@ -548,7 +548,7 @@ Help them with their question. Be practical and actionable.`;
                             key={rep.id}
                             initial={{ x: -10, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
-                            className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors"
+                            className="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors"
                             onClick={() => navigate('conditioning')}
                           >
                             <div className="w-8 h-8 bg-corporate-teal/10 rounded-full flex items-center justify-center flex-shrink-0">
@@ -556,14 +556,14 @@ Help them with their question. Be practical and actionable.`;
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm text-corporate-navy truncate">{rep.person}</p>
-                              <p className="text-xs text-slate-500">{repType?.label || rep.repType}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">{repType?.label || rep.repType}</p>
                             </div>
                             <ChevronRight className="w-4 h-4 text-slate-400" />
                           </motion.div>
                         );
                       })}
                       {reps.length > 3 && (
-                        <p className="text-xs text-slate-500 text-center">+{reps.length - 3} more</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 text-center">+{reps.length - 3} more</p>
                       )}
                     </div>
                   )}
@@ -600,7 +600,7 @@ Help them with their question. Be practical and actionable.`;
                     <MessageSquare className="w-8 h-8 text-corporate-teal" />
                   </div>
                   <h4 className="font-semibold text-corporate-navy mb-1">Ask Me Anything</h4>
-                  <p className="text-sm text-slate-500 mb-3">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
                     Your AI leadership coach for feedback, delegation, motivation, strategy, and more.
                   </p>
                   <div className="flex flex-wrap gap-2 justify-center">
@@ -608,7 +608,7 @@ Help them with their question. Be practical and actionable.`;
                       <button
                         key={i}
                         onClick={() => setUserQuestion(q)}
-                        className="text-xs px-3 py-1.5 bg-slate-100 hover:bg-corporate-teal/10 text-slate-600 hover:text-corporate-navy rounded-full transition-colors"
+                        className="text-xs px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-corporate-teal/10 text-slate-600 dark:text-slate-300 hover:text-corporate-navy rounded-full transition-colors"
                       >
                         {q}
                       </button>
@@ -619,9 +619,9 @@ Help them with their question. Be practical and actionable.`;
 
               {/* Typing indicator */}
               {isTyping && (
-                <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
+                <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                   <Loader2 className="w-5 h-5 text-corporate-teal animate-spin" />
-                  <span className="text-sm text-slate-600">RepUp is thinking...</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-300">RepUp is thinking...</span>
                 </div>
               )}
 
@@ -629,15 +629,15 @@ Help them with their question. Be practical and actionable.`;
               {coachResponse && !isTyping && (
                 <div className="space-y-3">
                   {/* Question shown */}
-                  <div className="bg-slate-100 rounded-lg p-3">
-                    <p className="text-xs text-slate-500 mb-1">You asked:</p>
+                  <div className="bg-slate-100 dark:bg-slate-700 rounded-lg p-3">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">You asked:</p>
                     <p className="text-sm font-medium text-corporate-navy">{coachResponse.question}</p>
                   </div>
 
                   {/* AI Response */}
                   {coachResponse.isAI && (
                     <div className="bg-gradient-to-br from-blue-50 to-teal-50 rounded-lg p-4 border border-corporate-teal/30">
-                      <div className="prose prose-sm max-w-none text-slate-700">
+                      <div className="prose prose-sm max-w-none text-slate-700 dark:text-slate-200">
                         <p className="whitespace-pre-wrap">{coachResponse.aiResponse}</p>
                       </div>
                     </div>
@@ -647,7 +647,7 @@ Help them with their question. Be practical and actionable.`;
                   {!coachResponse.isAI && coachResponse.steps && (
                     <>
                       {coachResponse.isFallback && (
-                        <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                        <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">
                           <AlertCircle className="w-3 h-3" />
                           <span>AI unavailable - showing framework response</span>
                         </div>
@@ -661,12 +661,12 @@ Help them with their question. Be practical and actionable.`;
                             initial={{ x: -10, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             transition={{ delay: idx * 0.1 }}
-                            className="flex items-start gap-3 p-2.5 bg-slate-50 rounded-lg"
+                            className="flex items-start gap-3 p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg"
                           >
                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-corporate-navy to-corporate-teal text-white flex items-center justify-center flex-shrink-0 font-bold text-sm">
                               {step.letter}
                             </div>
-                            <p className="text-sm text-slate-700">{step.text}</p>
+                            <p className="text-sm text-slate-700 dark:text-slate-200">{step.text}</p>
                           </motion.div>
                         ))}
                       </div>
@@ -675,7 +675,7 @@ Help them with their question. Be practical and actionable.`;
 
                   {/* Guardrail message for Conditioning context */}
                   {coachResponse.guardrail && (
-                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                       <p className="text-xs text-amber-700 font-medium flex items-center gap-2">
                         <Target className="w-3.5 h-3.5" />
                         {coachResponse.guardrail}
@@ -698,7 +698,7 @@ Help them with their question. Be practical and actionable.`;
 
         {/* Input area - always visible in coach mode */}
         {mode === 'coach' && !coachResponse && (
-          <div className="p-3 border-t border-slate-200 bg-white">
+          <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
             <div className="flex gap-2">
               <input
                 ref={inputRef}
@@ -707,7 +707,7 @@ Help them with their question. Be practical and actionable.`;
                 onChange={(e) => setUserQuestion(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAskQuestion()}
                 placeholder="Ask me anything..."
-                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl
+                className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl
                            text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
               />
               <button
@@ -725,7 +725,7 @@ Help them with their question. Be practical and actionable.`;
 
         {/* GUIDE MODE FOOTER - COMMENTED OUT FOR LATER USE
         {mode === 'guide' && (
-          <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+          <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 flex items-center justify-between">
             <button
               onClick={() => setMode('coach')}
               className="text-xs text-corporate-teal hover:text-corporate-navy font-medium flex items-center gap-1"

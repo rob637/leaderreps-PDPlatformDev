@@ -187,28 +187,28 @@ const ArenaDashboard = () => {
       onClick={!disabled ? onChange : undefined}
       className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
         checked 
-          ? 'bg-teal-50 border-teal-500' 
-          : 'bg-white border-gray-200 hover:border-teal-300'
+          ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-500' 
+          : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:border-teal-300'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <div className={`mt-0.5 w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${
-        checked ? 'bg-teal-500 border-teal-500' : 'bg-white border-gray-300'
+        checked ? 'bg-teal-500 border-teal-500' : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-gray-600'
       }`}>
         {checked && <CheckSquare className="w-4 h-4 text-white" />}
       </div>
       <div className="flex-1">
-        <p className={`font-semibold ${checked ? 'text-teal-900' : 'text-gray-700'}`}>
+        <p className={`font-semibold ${checked ? 'text-teal-900' : 'text-gray-700 dark:text-gray-200'}`}>
           {label}
         </p>
         {subLabel && (
-          <p className="text-xs text-gray-500 mt-0.5">{subLabel}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{subLabel}</p>
         )}
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] p-4 sm:p-6 lg:p-8 font-sans text-slate-800">
+    <div className="min-h-screen bg-[#F5F5F7] p-4 sm:p-6 lg:p-8 font-sans text-slate-800 dark:text-slate-200">
       <div className="max-w-5xl mx-auto space-y-8">
         
         {/* 1. HEADER */}
@@ -216,7 +216,7 @@ const ArenaDashboard = () => {
           <h1 className="text-3xl sm:text-4xl font-bold text-corporate-navy">
             {greeting}
           </h1>
-          <p className="text-lg text-slate-500 italic font-medium border-l-4 border-teal-500 pl-4 py-1">
+          <p className="text-lg text-slate-500 dark:text-slate-400 italic font-medium border-l-4 border-teal-500 pl-4 py-1">
             "{dailyQuote}"
           </p>
         </header>
@@ -246,7 +246,7 @@ const ArenaDashboard = () => {
             
             {/* 2. WEEKLY FOCUS */}
             <section>
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
                 <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
                   This Week's Focus
                 </h2>
@@ -267,7 +267,7 @@ const ArenaDashboard = () => {
             {/* 3. AM BOOKEND - DO MY REPS */}
             <section className="text-left">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
                   <Flame className="w-5 h-5" />
                 </div>
                 <h2 className="text-xl font-bold text-corporate-navy">
@@ -285,7 +285,7 @@ const ArenaDashboard = () => {
                     subLabel="Center yourself on your identity."
                   />
                 ) : (
-                  <div className="p-4 rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 flex items-center justify-between">
+                  <div className="p-4 rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 dark:bg-orange-900/20 flex items-center justify-between">
                     <div>
                       <p className="font-semibold text-orange-800">Grounding Rep: Read LIS</p>
                       <p className="text-xs text-orange-600">No Identity Statement set yet.</p>
@@ -314,9 +314,9 @@ const ArenaDashboard = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="p-4 rounded-xl border border-slate-200 bg-white opacity-75">
-                    <p className="font-semibold text-slate-700">Daily Rep</p>
-                    <p className="text-xs text-slate-500">
+                  <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 opacity-75">
+                    <p className="font-semibold text-slate-700 dark:text-slate-200">Daily Rep</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       Daily reps are delivered based on your Focus/Dev Plan.
                       <button onClick={() => navigate('development-plan')} className="text-teal-600 ml-1 hover:underline">
                         Check Plan
@@ -341,7 +341,7 @@ const ArenaDashboard = () => {
             {/* 4. WIN THE DAY - 1-2-3 */}
             <section>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
+                <div className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600">
                   <Trophy className="w-5 h-5" />
                 </div>
                 <h2 className="text-xl font-bold text-corporate-navy">
@@ -349,7 +349,7 @@ const ArenaDashboard = () => {
                 </h2>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 space-y-6">
                 
                 {/* 1. Top Priority */}
                 <div className="text-left">
@@ -358,7 +358,7 @@ const ArenaDashboard = () => {
                   </label>
                   <div className="flex gap-3">
                     {amWinCompleted ? (
-                      <div className="flex-1 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+                      <div className="flex-1 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-3">
                         <CheckSquare className="w-5 h-5 text-green-600" />
                         <span className="font-bold text-green-900 line-through opacity-75">{morningWIN}</span>
                       </div>
@@ -369,7 +369,7 @@ const ArenaDashboard = () => {
                           value={morningWIN}
                           onChange={(e) => setMorningWIN(e.target.value)}
                           placeholder="What is the ONE thing that must get done?"
-                          className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-medium"
+                          className="flex-1 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-medium"
                           disabled={amWinCompleted} 
                         />
                         {/* Save Button (Initial '+') */}
@@ -396,7 +396,7 @@ const ArenaDashboard = () => {
                         className={`p-3 rounded-xl border-2 transition-colors ${
                           amWinCompleted 
                             ? 'bg-green-500 border-green-500 text-white' 
-                            : 'bg-white border-slate-200 text-slate-300 hover:border-green-400'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 hover:border-green-400'
                         }`}
                       >
                         {amWinCompleted ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
@@ -421,13 +421,13 @@ const ArenaDashboard = () => {
                   {otherTasks.map((task, idx) => (
                     <div key={task.id || idx} className="flex items-center gap-3">
                       <div className={`flex-1 p-3 rounded-xl border ${
-                        task.completed ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200'
+                        task.completed ? 'bg-slate-50 border-slate-200 dark:border-slate-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
                       }`}>
                         <input
                           type="text"
                           value={task.text}
                           onChange={(e) => handleUpdateTask(task.id, e.target.value)}
-                          className={`w-full bg-transparent outline-none font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}
+                          className={`w-full bg-transparent outline-none font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}
                           disabled={task.completed}
                         />
                       </div>
@@ -436,7 +436,7 @@ const ArenaDashboard = () => {
                         className={`p-3 rounded-xl border-2 transition-colors ${
                           task.completed
                             ? 'bg-teal-500 border-teal-500 text-white' 
-                            : 'bg-white border-slate-200 text-slate-300 hover:border-teal-400'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 hover:border-teal-400'
                         }`}
                       >
                         {task.completed ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
@@ -458,12 +458,12 @@ const ArenaDashboard = () => {
                         onChange={(e) => setNewTaskText(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleAddOtherTask()}
                         placeholder="Add another priority..."
-                        className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm"
+                        className="flex-1 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm"
                       />
                       <button 
                         onClick={handleAddOtherTask}
                         disabled={!newTaskText.trim()}
-                        className="p-3 bg-teal-100 text-teal-700 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50 font-bold"
+                        className="p-3 bg-teal-100 dark:bg-teal-900/30 text-teal-700 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50 font-bold"
                       >
                         <Plus className="w-5 h-5" />
                       </button>
@@ -487,27 +487,27 @@ const ArenaDashboard = () => {
                   Notifications
                 </h2>
               </div>
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3 text-left">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3 text-left">
                 {/* Mock Notifications based on wireframe */}
                 <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
                   <div className="w-2 h-2 mt-2 rounded-full bg-orange-500 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-corporate-navy">Yesterday's "Needs Work"</p>
-                    <p className="text-xs text-slate-500">Review your reflection from yesterday.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Review your reflection from yesterday.</p>
                   </div>
                 </div>
                 <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
                   <div className="w-2 h-2 mt-2 rounded-full bg-teal-500 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-corporate-navy">Upcoming Feedback Practice</p>
-                    <p className="text-xs text-slate-500">Nov 29, 4:00 PM <span className="text-teal-600 font-bold ml-1">Register</span></p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Nov 29, 4:00 PM <span className="text-teal-600 font-bold ml-1">Register</span></p>
                   </div>
                 </div>
                 <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
                   <div className="w-2 h-2 mt-2 rounded-full bg-purple-500 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-corporate-navy">New R&R Unlocked</p>
-                    <p className="text-xs text-slate-500">Check your resource library.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Check your resource library.</p>
                   </div>
                 </div>
               </div>
@@ -517,7 +517,7 @@ const ArenaDashboard = () => {
             <section>
               <div className="bg-corporate-navy rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
                 {/* Background Pattern */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-slate-800 opacity-5 rounded-full -mr-10 -mt-10" />
                 
                 <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
                   <Trophy className="w-5 h-5 text-yellow-400" /> Today Scorecard
@@ -574,7 +574,7 @@ const ArenaDashboard = () => {
                     <span className="text-xs text-slate-400 uppercase tracking-wider">Day Streak</span>
                   </div>
                   {/* Placeholder for 0 Day Streak from wireframe? Maybe "Best Streak"? */}
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
                     Keep it up!
                   </div>
                 </div>
@@ -584,7 +584,7 @@ const ArenaDashboard = () => {
             {/* 7. PM BOOKEND - REFLECTION */}
             <section>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
                   <MessageSquare className="w-5 h-5" />
                 </div>
                 <h2 className="text-xl font-bold text-corporate-navy">
@@ -592,7 +592,7 @@ const ArenaDashboard = () => {
                 </h2>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
                 <div>
                   <label className="block text-sm font-bold text-green-700 mb-2">
                     What went well today?
@@ -600,7 +600,7 @@ const ArenaDashboard = () => {
                   <textarea 
                     value={reflectionGood}
                     onChange={(e) => setReflectionGood(e.target.value)}
-                    className="w-full p-3 bg-green-50 border border-green-100 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
+                    className="w-full p-3 bg-green-50 dark:bg-green-900/20 border border-green-100 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
                     rows={2}
                     placeholder="Celebrate a win..."
                   />
@@ -613,7 +613,7 @@ const ArenaDashboard = () => {
                   <textarea 
                     value={reflectionBetter}
                     onChange={(e) => setReflectionBetter(e.target.value)}
-                    className="w-full p-3 bg-orange-50 border border-orange-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all text-sm"
+                    className="w-full p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all text-sm"
                     rows={2}
                     placeholder="Identify an improvement..."
                   />

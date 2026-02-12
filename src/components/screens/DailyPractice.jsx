@@ -187,7 +187,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
         `px-4 py-2 font-semibold rounded-t-xl transition-colors ${
             tab === currentTab 
             ? 'bg-[#FCFCFA] text-corporate-navy border-t-2 border-x-2 border-corporate-teal' 
-            : 'bg-gray-200 text-gray-500 hover:text-corporate-navy'
+            : 'bg-gray-200 text-gray-500 dark:text-gray-400 hover:text-corporate-navy'
         }`;
 
     return (
@@ -195,7 +195,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
             <div className="max-w-[860px] mx-auto">
                 <div className="text-center max-w-4xl mx-auto mb-10">
                     <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy mb-3 tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>Manage Your Scorecard Commitments</h1>
-                    <p className="text-slate-500 text-base sm:text-lg leading-relaxed">Select the core micro-habits that directly support your current leadership development goals. Aim for 3-5 active commitments.</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg leading-relaxed">Select the core micro-habits that directly support your current leadership development goals. Aim for 3-5 active commitments.</p>
                 </div>
 
                 <Button onClick={() => setView('scorecard')} variant="nav-back" size="sm" className="mb-8" disabled={isSaving}>
@@ -209,29 +209,29 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                         <div className="space-y-4 h-96 overflow-y-auto pr-2">
                             {userCommitments.length > 0 ? (
                                 userCommitments.map(c => (
-                                    <div key={c.id} className="p-3 bg-slate-50 rounded-lg shadow-sm border flex justify-between items-center text-sm">
-                                        <p className='text-slate-900 font-medium'>{c.text || c.title}</p>
+                                    <div key={c.id} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg shadow-sm border flex justify-between items-center text-sm">
+                                        <p className='text-slate-900 dark:text-white font-medium'>{c.text || c.title}</p>
                                         <button onClick={() => handleRemoveCommitment(c.id)} className="text-slate-400 hover:text-red-500 transition-colors p-1" disabled={isSaving}>
                                             <X className="w-4 h-4" />
                                         </button>
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-slate-500 italic text-center py-4">No active commitments. Add some below!</p>
+                                <p className="text-slate-500 dark:text-slate-400 italic text-center py-4">No active commitments. Add some below!</p>
                             )}
                         </div>
                     </Card>
 
                     {/* Selector/Input Area (Right Columns) */}
                     <div className="lg:col-span-2 space-y-6">
-                        <Card title="Goal and Tier Alignment (Mandatory)" icon={Target} className='p-6 bg-white border-t-4 border-corporate-teal'>
+                        <Card title="Goal and Tier Alignment (Mandatory)" icon={Target} className='p-6 bg-white dark:bg-slate-800 border-t-4 border-corporate-teal'>
                             <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-4'>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">1. Strategic Goal</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">1. Strategic Goal</label>
                                     <select 
                                         value={linkedGoal}
                                         onChange={(e) => setLinkedGoal(e.target.value)}
-                                        className="w-full p-3 border border-slate-300 rounded-xl focus:ring-corporate-navy focus:border-corporate-navy text-corporate-navy font-semibold"
+                                        className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-corporate-navy focus:border-corporate-navy text-corporate-navy font-semibold"
                                     >
                                         {availableGoals.map(goal => (
                                             <option 
@@ -246,11 +246,11 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">2. Leadership Tier</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">2. Leadership Tier</label>
                                     <select 
                                         value={linkedTier}
                                         onChange={(e) => setLinkedTier(e.target.value)}
-                                        className="w-full p-3 border border-slate-300 rounded-xl focus:ring-corporate-navy focus:border-corporate-navy text-corporate-navy font-semibold"
+                                        className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-corporate-navy focus:border-corporate-navy text-corporate-navy font-semibold"
                                     >
                                          <option value="">--- Select Tier ---</option>
                                          {Object.values(Tiers).map(tier => (
@@ -262,20 +262,20 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                 </div>
                             </div>
                             
-                            <label className="block text-sm font-medium text-slate-700 mb-1">3. Target Colleague (Optional for inter-personal skills)</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">3. Target Colleague (Optional for inter-personal skills)</label>
                             <input
                                 type="text"
                                 value={targetColleague}
                                 onChange={(e) => setTargetColleague(e.target.value)}
                                 placeholder="e.g., Alex, Sarah, or Leave Blank for Self-Focus"
-                                className="w-full p-3 border border-slate-300 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal"
+                                className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal"
                             />
 
                             {!canAddCommitment && <p className='text-orange-600 text-sm mt-3'>* Please select a Strategic Goal and a Leadership Tier to activate the 'Add' buttons.</p>}
                         </Card>
 
                         {/* Tab Navigation */}
-                        <div className="flex space-x-2 border-b border-slate-300 -mb-px">
+                        <div className="flex space-x-2 border-b border-slate-300 dark:border-slate-600 -mb-px">
                             <button className={tabStyle('pdp')} onClick={() => setTab('pdp')}>
                                 PDP Content ({pdpContentReady.length})
                             </button>
@@ -288,17 +288,17 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                         </div>
                         
                         {/* Tab Content */}
-                        <div className='mt-0 bg-white p-6 rounded-b-3xl shadow-lg border-2 border-t-0 border-slate-200'>
+                        <div className='mt-0 bg-white dark:bg-slate-800 p-6 rounded-b-3xl shadow-lg border-2 border-t-0 border-slate-200 dark:border-slate-700'>
                         
                             {/* PDP Content Tab */}
                             {tab === 'pdp' && (
                                 <div className="space-y-4">
-                                    <p className='text-sm text-slate-700'>Items required for the current PDP month ({currentMonthPlan?.month || 'N/A'}).</p>
+                                    <p className='text-sm text-slate-700 dark:text-slate-200'>Items required for the current PDP month ({currentMonthPlan?.month || 'N/A'}).</p>
                                     <div className="h-64 overflow-y-auto pr-2 space-y-3 pt-2">
                                     {pdpContentReady.length > 0 ? (
                                         pdpContentReady.map(c => (
-                                            <div key={c.id} className="flex justify-between items-center p-3 text-sm bg-slate-50 rounded-lg border border-slate-200">
-                                                <span className='text-slate-800 font-medium'>{c.title} ({c.type}) (~{c.duration} min)</span>
+                                            <div key={c.id} className="flex justify-between items-center p-3 text-sm bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                                                <span className='text-slate-800 dark:text-slate-200 font-medium'>{c.title} ({c.type}) (~{c.duration} min)</span>
                                                 <button 
                                                     onClick={() => handleAddCommitment(c, 'pdp')}
                                                     disabled={!canAddCommitment || isSaving}
@@ -310,7 +310,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="text-slate-500 italic text-center py-10">No outstanding PDP content to add to your scorecard.</p>
+                                        <p className="text-slate-500 dark:text-slate-400 italic text-center py-10">No outstanding PDP content to add to your scorecard.</p>
                                     )}
                                     </div>
                                 </div>
@@ -324,7 +324,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                         placeholder="Filter Commitment Bank by keyword (e.g., 'feedback' or 'OKR')"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full p-3 border border-slate-300 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal mb-4"
+                                        className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal mb-4"
                                     />
                                     
                                     <div className="h-64 overflow-y-auto pr-2 space-y-3">
@@ -340,8 +340,8 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                                 <div key={category}>
                                                     <h3 className="text-sm font-bold text-corporate-navy border-b pb-1 mb-2">{category}</h3>
                                                     {categoryCommitments.map(c => (
-                                                        <div key={c.id} className="flex justify-between items-center p-2 text-sm bg-slate-50 rounded-lg mb-1">
-                                                            <span className='text-slate-800'>{c.text}</span>
+                                                        <div key={c.id} className="flex justify-between items-center p-2 text-sm bg-slate-50 dark:bg-slate-800 rounded-lg mb-1">
+                                                            <span className='text-slate-800 dark:text-slate-200'>{c.text}</span>
                                                             <button 
                                                                 onClick={() => handleAddCommitment(c, 'bank')}
                                                                 disabled={!canAddCommitment || isSaving}
@@ -354,7 +354,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                                 </div>
                                             );
                                         })}
-                                        {filteredBankCommitments.length === 0 && <p className="text-slate-500 italic mt-4 text-center">No unselected commitments match your search.</p>}
+                                        {filteredBankCommitments.length === 0 && <p className="text-slate-500 dark:text-slate-400 italic mt-4 text-center">No unselected commitments match your search.</p>}
                                     </div>
                                 </div>
                             )}
@@ -362,12 +362,12 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                             {/* Custom Commitment Tab */}
                             {tab === 'custom' && (
                                 <div className="space-y-4">
-                                    <p className='text-sm text-slate-700'>Define a hyper-specific, measurable action tailored to your unique challenges.</p>
+                                    <p className='text-sm text-slate-700 dark:text-slate-200'>Define a hyper-specific, measurable action tailored to your unique challenges.</p>
                                     <textarea 
                                         value={customCommitment}
                                         onChange={(e) => setCustomCommitment(e.target.value)}
                                         placeholder="e.g., Conduct a 10-minute debrief after every client meeting."
-                                        className="w-full p-3 border border-slate-300 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal h-20 mb-4"
+                                        className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal h-20 mb-4"
                                     />
                                     <Button 
                                         onClick={handleCreateCustomCommitment} 
@@ -389,15 +389,15 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 // --- Daily Practice Screen (default export) ---
 const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
     const getStatusColor = (status) => {
-        if (status === 'Committed') return 'bg-green-100 text-green-800 border-green-500 shadow-md';
-        if (status === 'Missed') return 'bg-red-100 text-red-800 border-red-500 shadow-md';
-        return 'bg-gray-100 text-gray-700 border-gray-300 shadow-sm';
+        if (status === 'Committed') return 'bg-green-100 dark:bg-green-900/30 text-green-800 border-green-500 shadow-md';
+        if (status === 'Missed') return 'bg-red-100 dark:bg-red-900/30 text-red-800 border-red-500 shadow-md';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 shadow-sm';
     };
 
     const getStatusIcon = (status) => {
         if (status === 'Committed') return <CheckCircle className="w-5 h-5 text-green-600" />;
         if (status === 'Missed') return <X className="w-5 h-5 text-corporate-orange" />;
-        return <Clock className="w-5 h-5 text-gray-500" />;
+        return <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />;
     };
 
     const status = commitment.status || 'Pending';
@@ -432,7 +432,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
                 </div>
             </div>
             
-            <div className="flex space-x-2 mt-3 pt-3 border-t border-gray-300/50">
+            <div className="flex space-x-2 mt-3 pt-3 border-t border-gray-300/50 dark:border-gray-600/50">
                 <Button 
                     onClick={() => onLogCommitment(commitment.id, 'Committed')} 
                     disabled={status === 'Committed'}
@@ -451,7 +451,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
                     <Button
                         onClick={() => onLogCommitment(commitment.id, 'Pending')}
                         variant="outline"
-                        className="px-3 py-1 text-xs border-gray-400 text-gray-700 hover:bg-gray-200"
+                        className="px-3 py-1 text-xs border-gray-400 text-gray-700 dark:text-gray-200 hover:bg-gray-200"
                     >
                         Reset
                     </Button>
@@ -475,7 +475,7 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
     });
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 space-y-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-800 p-6 space-y-8">
             <div className="max-w-[860px] mx-auto">
                 <Button
                     onClick={() => navigate('coaching-lab')}
@@ -489,14 +489,14 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                 
                 <div className="text-center max-w-4xl mx-auto mb-8">
                     <h1 className="text-3xl font-bold text-corporate-navy mb-2">Daily Commitment Scorecard (Leadership Practice)</h1>
-                    <p className="text-slate-600 text-lg">Track your daily commitment to the non-negotiable leadership actions that reinforce your professional identity. Consistently hitting this score is the key to sustained executive growth.</p>
+                    <p className="text-slate-600 dark:text-slate-300 text-lg">Track your daily commitment to the non-negotiable leadership actions that reinforce your professional identity. Consistently hitting this score is the key to sustained executive growth.</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Scorecard Column */}
                     <div className='lg:col-span-2 space-y-6'>
                         {(initialGoal || initialTier) && (
-                                <div className="p-4 bg-teal-50 border border-corporate-teal rounded-xl text-sm font-medium text-corporate-navy">
+                                <div className="p-4 bg-teal-50 dark:bg-teal-900/20 border border-corporate-teal rounded-xl text-sm font-medium text-corporate-navy">
                                 <p className='font-bold flex items-center'>
                                     <CornerRightUp className='w-4 h-4 mr-2'/> New PDP Focus:
                                 </p>
@@ -524,16 +524,16 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                                         />
                                     ))
                                 ) : (
-                                    <p className="text-slate-500 italic text-center py-4">Your scorecard is empty. Click 'Manage Commitments' to start building your daily practice!</p>
+                                    <p className="text-slate-500 dark:text-slate-400 italic text-center py-4">Your scorecard is empty. Click 'Manage Commitments' to start building your daily practice!</p>
                                 )}
                             </div>
 
-                            <div className="mt-8 pt-4 border-t border-slate-200 flex justify-between items-center">
+                            <div className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
                                 <h3 className="text-2xl font-bold text-corporate-navy">
                                     Daily Score:
                                 </h3>
                                 <span className={`text-4xl font-extrabold p-3 rounded-xl shadow-inner min-w-[100px] text-center ${
-                                    visibleCommitments.length > 0 && visibleCommitments.every(c => c.status === 'Committed') ? 'text-green-600 bg-green-50' : 'text-corporate-navy bg-slate-100'
+                                    visibleCommitments.length > 0 && visibleCommitments.every(c => c.status === 'Committed') ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : 'text-corporate-navy bg-slate-100 dark:bg-slate-700'
                                 }`}>
                                     {calculateTotalScore()}
                                 </span>
@@ -543,13 +543,13 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                     
                     {/* History Column */}
                     <div className='lg:col-span-1 space-y-6'>
-                        <Card title="Commitment History" icon={BarChart3} className='bg-slate-50 border-t-4 border-corporate-navy'>
-                            <p className='text-slate-700 text-sm mb-4'>
+                        <Card title="Commitment History" icon={BarChart3} className='bg-slate-50 dark:bg-slate-800 border-t-4 border-corporate-navy'>
+                            <p className='text-slate-700 dark:text-slate-200 text-sm mb-4'>
                                 **Data is persistent and loaded from Firestore!** (Last 7 days)
                             </p>
-                            <div className='p-6 bg-white border border-slate-200 rounded-xl'>
+                            <div className='p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl'>
                                 <h4 className='text-lg font-semibold text-corporate-navy mb-2'>Last 7 Days</h4>
-                                <div className='flex justify-between text-xs font-mono text-slate-700 space-x-1 overflow-x-auto'>
+                                <div className='flex justify-between text-xs font-mono text-slate-700 dark:text-slate-200 space-x-1 overflow-x-auto'>
                                     {commitmentHistory.slice(-7).map(item => (
                                         <div key={item.date} className='flex flex-col items-center min-w-[40px]'>
                                             <span className='font-bold'>{item.date.split('-').pop()}</span>
@@ -564,14 +564,14 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                 </div>
 
 
-                <Card title="Reinforcement Journal" icon={AlertTriangle} className="bg-slate-50 border-t-4 border-orange-500 mt-8">
-                    <p className="text-slate-700 text-sm mb-4">
+                <Card title="Reinforcement Journal" icon={AlertTriangle} className="bg-slate-50 dark:bg-slate-800 border-t-4 border-orange-500 mt-8">
+                    <p className="text-slate-700 dark:text-slate-200 text-sm mb-4">
                         Reflect on today's performance. How did executing (or missing) these leadership commitments impact your team's momentum and your own executive presence? This reinforcement loop is vital.
                     </p>
                     <textarea 
                         value={reflection}
                         onChange={(e) => setReflection(e.target.value)}
-                        className="w-full p-3 border border-slate-300 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal h-40" 
+                        className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal h-40" 
                         placeholder="My reflection (required)..."
                     ></textarea>
                     <Button 
@@ -694,7 +694,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
         );
     }
     if (error) {
-        return <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8"><p className="text-corporate-orange p-4 bg-red-100 rounded-xl">Error loading data: {error}</p></div>;
+        return <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8"><p className="text-corporate-orange p-4 bg-red-100 dark:bg-red-900/30 rounded-xl">Error loading data: {error}</p></div>;
     }
     
     const sharedProps = {

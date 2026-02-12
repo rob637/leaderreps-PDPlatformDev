@@ -122,7 +122,7 @@ const ReflectionLogScreen = () => {
                 <Card accent="TEAL" className="text-center border-dashed">
                     <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-400"/>
                     <h2 className="text-xl font-semibold mb-2 text-corporate-navy">No Reflections Yet</h2>
-                    <p className="text-gray-600 text-sm">Your daily reflection entries will appear here once you save them.</p>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">Your daily reflection entries will appear here once you save them.</p>
                     <Button onClick={() => navigate('daily-practice')} size="sm" className="mt-4">
                         Go to Daily Reflection
                     </Button>
@@ -136,18 +136,18 @@ const ReflectionLogScreen = () => {
                         // Use Card for each entry for consistent styling
                         <Card key={entry.id} accent="NAVY" className="shadow-md hover:shadow-lg transition-shadow">
                             {/* Date Header */}
-                            <p className="text-sm font-bold mb-3 border-b pb-2 flex justify-between items-center text-corporate-navy border-slate-200">
+                            <p className="text-sm font-bold mb-3 border-b pb-2 flex justify-between items-center text-corporate-navy border-slate-200 dark:border-slate-700">
                                <span>{formatDate(entry.timestamp || entry.date)}</span>
                                {/* Optional: Show short ID */}
                                {/* <span className="text-xs font-normal text-gray-400">ID: {entry.id.slice(0, 6)}</span> */}
                             </p>
                             {/* Reflection Content */}
-                            <div className="space-y-2 text-sm text-gray-700">
+                            <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
                                 {entry.did && <p><strong>Did:</strong> {entry.did}</p>}
                                 {entry.noticed && <p><strong>Noticed:</strong> {entry.noticed}</p>}
                                 {entry.tryDiff && <p><strong>Try:</strong> {entry.tryDiff}</p>}
                                 {entry.identity && (
-                                    <p className="italic font-medium text-gray-800 pt-2 border-t border-gray-200 mt-3 flex items-start gap-2">
+                                    <p className="italic font-medium text-gray-800 dark:text-gray-200 pt-2 border-t border-gray-200 dark:border-gray-700 mt-3 flex items-start gap-2">
                                         <User size={14} className="flex-shrink-0 mt-0.5 text-corporate-teal"/>
                                         <span>"I'm the kind of leader who {entry.identity}"</span>
                                     </p>

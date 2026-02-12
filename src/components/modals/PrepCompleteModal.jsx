@@ -9,7 +9,7 @@ const PrepCompleteModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-100">
           <div className="flex items-center gap-3">
@@ -17,8 +17,8 @@ const PrepCompleteModal = ({ isOpen, onClose }) => {
               <CheckCircle className="w-4 h-4 text-corporate-teal" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-800">Prep Complete</h2>
-              <p className="text-sm text-slate-500">New features are now available</p>
+              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Prep Complete</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">New features are now available</p>
             </div>
           </div>
           <button 
@@ -33,12 +33,12 @@ const PrepCompleteModal = ({ isOpen, onClose }) => {
         <div className="p-5 space-y-4">
           {/* AM Bookend */}
           <div className="flex gap-3">
-            <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
               <Sun className="w-4 h-4 text-amber-600" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-slate-800">Win the Day</h3>
-              <p className="text-sm text-slate-500 mt-0.5">
+              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Win the Day</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                 Set your top 3 priorities each morning.
               </p>
             </div>
@@ -46,12 +46,12 @@ const PrepCompleteModal = ({ isOpen, onClose }) => {
 
           {/* PM Bookend */}
           <div className="flex gap-3">
-            <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
               <Moon className="w-4 h-4 text-indigo-600" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-slate-800">Daily Reflection</h3>
-              <p className="text-sm text-slate-500 mt-0.5">
+              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Daily Reflection</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                 Review your day and plan for tomorrow.
               </p>
             </div>
@@ -63,8 +63,8 @@ const PrepCompleteModal = ({ isOpen, onClose }) => {
               <BookOpen className="w-4 h-4 text-corporate-teal" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-slate-800">Content Library</h3>
-              <p className="text-sm text-slate-500 mt-0.5">
+              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Content Library</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                 Videos, articles, and exercises are now accessible.
               </p>
             </div>

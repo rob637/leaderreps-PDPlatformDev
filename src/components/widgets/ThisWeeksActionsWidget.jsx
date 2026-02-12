@@ -890,18 +890,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     if (isSkipped) return null;
 
     const getCategoryStyles = () => {
-      if (isCompleted) return 'bg-emerald-50 border-emerald-200';
-      return 'bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200';
+      if (isCompleted) return 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-700';
+      return 'bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:border-slate-600';
     };
 
     const getCheckboxStyles = () => {
       if (isCompleted) return 'bg-emerald-500 border-emerald-500';
-      return 'border-blue-300 group-hover:border-blue-500';
+      return 'border-blue-300 group-hover:border-blue-500 dark:border-blue-500 dark:group-hover:border-blue-400';
     };
 
     const getIconColor = () => {
-      if (isCompleted) return 'text-emerald-600';
-      return 'text-blue-600';
+      if (isCompleted) return 'text-emerald-600 dark:text-emerald-400';
+      return 'text-blue-600 dark:text-blue-400';
     };
     
     // Determine if this item is clickable (either interactive or has a resource)
@@ -934,17 +934,17 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <p className={`text-sm font-bold ${isCompleted ? 'text-emerald-700 line-through' : 'text-slate-700'}`}>
+            <p className={`text-sm font-bold ${isCompleted ? 'text-emerald-700 dark:text-emerald-400 line-through' : 'text-slate-700 dark:text-white'}`}>
               {item.label || item.title || 'Untitled Action'}
             </p>
             {item.required !== false && !item.optional && !isCarriedOver && !isCompleted && (
-              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
             )}
             {!item.isInteractive && item.optional && !isCarriedOver && (
-              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">Optional</span>
+              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:text-slate-400 dark:bg-slate-700 px-1.5 py-0.5 rounded uppercase tracking-wider">Optional</span>
             )}
             {isCarriedOver && (
-              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
+              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
                 <Clock className="w-2.5 h-2.5" /> {item.fromWeek === 0 ? 'Prep' : `Week ${item.fromWeek}`}
               </span>
             )}
@@ -954,23 +954,23 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             <Icon className="w-3 h-3" />
             {item.isInteractive ? (
               <>
-                <span className="text-slate-600">{item.description}</span>
+                <span className="text-slate-600 dark:text-slate-400">{item.description}</span>
                 {item.estimatedMinutes && (
-                  <><span>•</span><span className="text-slate-500">{item.estimatedMinutes} min</span></>
+                  <><span>•</span><span className="text-slate-500 dark:text-slate-400">{item.estimatedMinutes} min</span></>
                 )}
               </>
             ) : (
               <>
                 <span className="capitalize">{(item.resourceType || item.displayType || item.type)?.replace(/_/g, ' ').toLowerCase() || 'Action'}</span>
                 {item.resourceTitle && (
-                  <><span>•</span><span className="text-slate-600 font-medium">{item.resourceTitle}</span></>
+                  <><span>•</span><span className="text-slate-600 dark:text-slate-400 font-medium">{item.resourceTitle}</span></>
                 )}
                 {item.description && !item.resourceTitle && (
-                  <><span>•</span><span className="text-slate-600">{item.description}</span></>
+                  <><span>•</span><span className="text-slate-600 dark:text-slate-400">{item.description}</span></>
                 )}
                 {/* Show estimated time to complete */}
                 {item.estimatedMinutes && (
-                   <><span>•</span><span className="text-slate-500">{item.estimatedMinutes} min</span></>
+                   <><span>•</span><span className="text-slate-500 dark:text-slate-400">{item.estimatedMinutes} min</span></>
                 )}
               </>
             )}
@@ -984,7 +984,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-500 dark:hover:text-blue-400 dark:hover:bg-blue-900/30 rounded-xl transition-all"
             >
               <Calendar className="w-5 h-5" />
             </a>
@@ -997,7 +997,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 e.stopPropagation();
                 handleInteractiveClick(item);
               }}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-xl transition-all"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
               title={isCompleted ? 'Edit' : 'Complete'}
             >
               <ExternalLink className="w-5 h-5" />
@@ -1008,7 +1008,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           {!item.isInteractive && (item.resourceId || item.url) && (
             <button
               onClick={(e) => handleViewResource(e, item)}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-xl transition-all"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
             >
               {loadingResource === item.id ? <Loader className="w-5 h-5 animate-spin" /> : <ExternalLink className="w-5 h-5" />}
             </button>
@@ -1037,18 +1037,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    <span className="text-sm font-bold text-amber-800 uppercase tracking-wider">Preparation</span>
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-sm font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">Preparation</span>
                   </div>
-                  <div className="flex-1 h-px bg-amber-200"></div>
-                  <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                  <div className="flex-1 h-px bg-amber-200 dark:bg-amber-700"></div>
+                  <span className="text-xs font-medium text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
                     {prepRequirementsComplete?.completedCount || 0}/{prepRequirementsComplete?.totalCount || requiredPrepActions.length} complete
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 mb-3 px-1">
+                <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 px-1">
                   Complete these {prepRequirementsComplete?.totalCount || requiredPrepActions.length} items to get ready for Session One and access additional arena functionality.
                 </p>
-                <div className="space-y-1 p-3 bg-amber-50/50 rounded-xl border border-amber-200/60">
+                <div className="space-y-1 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-xl border border-amber-200/60 dark:border-amber-700/40">
                   {requiredPrepActions.map((item, idx) => (
                     <ActionItem key={item.id || idx} item={item} idx={idx} />
                   ))}
@@ -1059,29 +1059,29 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               <div className="mb-4">
                 <button
                   onClick={() => setPrepExpanded(!prepExpanded)}
-                  className="w-full group flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100 transition-all"
+                  className="w-full group flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 dark:border-emerald-700 dark:hover:from-emerald-900/50 dark:hover:to-teal-900/50 transition-all"
                 >
                   <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
                     <Trophy className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-bold text-emerald-800">🎉 Preparation Complete!</p>
-                    <p className="text-xs text-emerald-600">
+                    <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">🎉 Preparation Complete!</p>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
                       All 5 tasks done — Your leadership tools are now unlocked below!
                     </p>
                   </div>
-                  <div className="flex-shrink-0 p-2 text-emerald-600 group-hover:text-emerald-800 transition-colors">
+                  <div className="flex-shrink-0 p-2 text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 transition-colors">
                     {prepExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </div>
                 </button>
                 
                 {prepExpanded && (
-                  <div className="mt-2 p-3 bg-white/80 rounded-xl border border-slate-200/60 space-y-2">
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Completed Items</p>
+                  <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Completed Items</p>
                     {prepRequirementsComplete.items.map((item) => (
                       <div key={item.id} className="flex items-center gap-2 text-sm">
                         <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                        <span className="text-emerald-700">{item.label}</span>
+                        <span className="text-emerald-700 dark:text-emerald-400">{item.label}</span>
                       </div>
                     ))}
                   </div>
@@ -1092,7 +1092,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             {/* Explore items (when prep complete) - shown inline with actions */}
             {prepRequirementsComplete?.allComplete && additionalPrepActions.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs text-slate-600 px-1">
+                <p className="text-xs text-slate-600 dark:text-slate-400 px-1">
                   Explore these tools at your own pace before Session 1:
                 </p>
                 <div className="space-y-1">
@@ -1101,8 +1101,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   ))}
                 </div>
                 
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
-                  <p className="text-xs text-slate-600">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
                     🚀 <span className="font-semibold">You're all set!</span> Session 1 will build on everything you've learned.
                   </p>
                 </div>
@@ -1111,8 +1111,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             
             {/* Just the success message if no explore items */}
             {prepRequirementsComplete?.allComplete && additionalPrepActions.length === 0 && (
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
-                <p className="text-xs text-slate-600">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   🚀 <span className="font-semibold">You're all set!</span> Session 1 will build on everything you've learned.
                 </p>
               </div>
@@ -1141,18 +1141,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <div className="mb-4">
                   <button
                     onClick={() => setPriorWeekExpanded(!priorWeekExpanded)}
-                    className="w-full group flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100 transition-all"
+                    className="w-full group flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 dark:border-emerald-700 dark:hover:from-emerald-900/50 dark:hover:to-teal-900/50 transition-all"
                   >
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
                       <Trophy className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-bold text-emerald-800">✅ Prior Week Complete!</p>
-                      <p className="text-xs text-emerald-600">
+                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">✅ Prior Week Complete!</p>
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400">
                         All {displayedCarriedOverItems.length} carried-over {displayedCarriedOverItems.length === 1 ? 'task' : 'tasks'} finished
                       </p>
                     </div>
-                    <div className="flex-shrink-0 p-2 text-emerald-600 group-hover:text-emerald-800 transition-colors">
+                    <div className="flex-shrink-0 p-2 text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 transition-colors">
                       {priorWeekExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                     </div>
                   </button>
@@ -1170,15 +1170,15 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2 px-1">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-amber-600" />
-                      <span className="text-sm font-bold text-amber-800 uppercase tracking-wider">Catch Up</span>
+                      <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span className="text-sm font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">Catch Up</span>
                     </div>
-                    <div className="flex-1 h-px bg-amber-200"></div>
-                    <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                    <div className="flex-1 h-px bg-amber-200 dark:bg-amber-700"></div>
+                    <span className="text-xs font-medium text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
                       {completedCarriedOver.length}/{displayedCarriedOverItems.length} complete
                     </span>
                   </div>
-                  <div className="space-y-1 p-3 bg-amber-50/50 rounded-xl border border-amber-200/60">
+                  <div className="space-y-1 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-xl border border-amber-200/60 dark:border-amber-700/40">
                     {displayedCarriedOverItems.map((item, idx) => (
                       <ActionItem key={item.id || `carried-${idx}`} item={item} idx={idx} isCarriedOver={true} />
                     ))}
@@ -1200,18 +1200,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <div className="mb-4">
                   <button
                     onClick={() => setThisWeekExpanded(!thisWeekExpanded)}
-                    className="w-full group flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100 transition-all"
+                    className="w-full group flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 dark:border-emerald-700 dark:hover:from-emerald-900/50 dark:hover:to-teal-900/50 transition-all"
                   >
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
                       <Trophy className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-bold text-emerald-800">🎉 This Week Complete!</p>
-                      <p className="text-xs text-emerald-600">
+                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">🎉 This Week Complete!</p>
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400">
                         All {allActions.length} {allActions.length === 1 ? 'task' : 'tasks'} finished — Great work!
                       </p>
                     </div>
-                    <div className="flex-shrink-0 p-2 text-emerald-600 group-hover:text-emerald-800 transition-colors">
+                    <div className="flex-shrink-0 p-2 text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 transition-colors">
                       {thisWeekExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                     </div>
                   </button>
@@ -1229,11 +1229,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <>
                   <div className="flex items-center gap-2 mb-2 px-1">
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-teal-600" />
-                      <span className="text-sm font-bold text-teal-800 uppercase tracking-wider">This Week</span>
+                      <CheckCircle className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      <span className="text-sm font-bold text-teal-800 dark:text-teal-400 uppercase tracking-wider">This Week</span>
                     </div>
-                    <div className="flex-1 h-px bg-teal-200"></div>
-                    <span className="text-xs font-medium text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full">
+                    <div className="flex-1 h-px bg-teal-200 dark:bg-teal-700"></div>
+                    <span className="text-xs font-medium text-teal-600 bg-teal-100 dark:text-teal-300 dark:bg-teal-900/40 px-2 py-0.5 rounded-full">
                       {completedThisWeek.length}/{allActions.length} complete
                     </span>
                   </div>
@@ -1248,7 +1248,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
             {/* Empty state */}
             {allActions.length === 0 && displayedCarriedOverItems.length === 0 && (
-              <div className="p-4 text-center text-slate-500 text-sm italic">No actions scheduled for this week.</div>
+              <div className="p-4 text-center text-slate-500 dark:text-slate-400 text-sm italic">No actions scheduled for this week.</div>
             )}
 
           </>

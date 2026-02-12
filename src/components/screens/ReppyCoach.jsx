@@ -167,7 +167,7 @@ const ReppyCoach = () => {
   return (
     <div className="min-h-screen bg-rep-warm-white flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+      <header className="sticky top-0 z-10 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border-b border-gray-100">
         <div className="flex items-center justify-between px-4 py-3 max-w-2xl mx-auto">
           <button 
             onClick={() => navigate('ai-coach')}
@@ -231,7 +231,7 @@ const ReppyCoach = () => {
           
           {phase === 'onboarding-intro' && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-corporate-teal to-corporate-navy rounded-xl flex items-center justify-center">
                     <Heart className="w-6 h-6 text-white" />
@@ -292,7 +292,7 @@ const ReppyCoach = () => {
 
           {phase === 'onboarding-name' && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="w-10 h-10 bg-rep-teal-light rounded-xl flex items-center justify-center mb-4">
                   <User className="w-5 h-5 text-corporate-teal" />
                 </div>
@@ -306,7 +306,7 @@ const ReppyCoach = () => {
 
           {phase === 'onboarding-role' && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
                 <p className="text-sm text-corporate-teal font-medium mb-2">Nice to meet you, {onboardingData.preferredName}! 👋</p>
                 <h2 className="text-xl font-semibold text-corporate-navy mb-2">Tell me about your role</h2>
                 <p className="text-rep-text-secondary">
@@ -319,7 +319,7 @@ const ReppyCoach = () => {
 
           {phase === 'onboarding-context' && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
                 <p className="text-sm text-corporate-teal font-medium mb-2">Got it — {onboardingData.role}</p>
                 <h2 className="text-xl font-semibold text-corporate-navy mb-2">A bit more context</h2>
                 <p className="text-rep-text-secondary">
@@ -334,7 +334,7 @@ const ReppyCoach = () => {
 
           {phase === 'onboarding-challenge' && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
                 <p className="text-sm text-corporate-teal font-medium mb-2">Thanks for sharing</p>
                 <h2 className="text-xl font-semibold text-corporate-navy mb-2">What's your biggest challenge right now?</h2>
                 <p className="text-rep-text-secondary">
@@ -347,7 +347,7 @@ const ReppyCoach = () => {
 
           {phase === 'onboarding-goals' && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
                 <p className="text-sm text-corporate-teal font-medium mb-2">"{onboardingData.biggestChallenge}" — we'll work on that</p>
                 <h2 className="text-xl font-semibold text-corporate-navy mb-2">What does success look like?</h2>
                 <p className="text-rep-text-secondary">
@@ -360,7 +360,7 @@ const ReppyCoach = () => {
 
           {phase === 'onboarding-complete' && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="w-12 h-12 bg-rep-teal-light rounded-xl flex items-center justify-center mb-4">
                   <CheckCircle2 className="w-6 h-6 text-corporate-teal" />
                 </div>
@@ -397,7 +397,7 @@ const ReppyCoach = () => {
           {phase === 'welcome' && session && (
             <div className="space-y-6">
               {/* Session Card */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-2 text-sm text-corporate-teal font-medium mb-3">
                   <span className="px-2 py-0.5 bg-rep-teal-light rounded-full">{weekData?.phase?.name}</span>
                   <span>•</span>
@@ -416,7 +416,7 @@ const ReppyCoach = () => {
 
               {/* Resources */}
               {weekData?.resources?.length > 0 && (
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-gray-100">
                   <button
                     onClick={() => setShowResources(!showResources)}
                     className="flex items-center justify-between w-full text-left"
@@ -473,7 +473,7 @@ const ReppyCoach = () => {
 
           {phase === 'checkin' && session && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-2 text-sm text-corporate-orange font-medium mb-3">
                   <span className="w-6 h-6 bg-rep-coral-light rounded-full flex items-center justify-center text-xs">1</span>
                   Check-In
@@ -488,7 +488,7 @@ const ReppyCoach = () => {
 
           {phase === 'learning' && session && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-2 text-sm text-corporate-teal font-medium mb-3">
                   <span className="w-6 h-6 bg-rep-teal-light rounded-full flex items-center justify-center text-xs">2</span>
                   Today's Insight
@@ -513,7 +513,7 @@ const ReppyCoach = () => {
 
           {phase === 'practice' && session && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-2 text-sm text-corporate-navy font-medium mb-3">
                   <span className="w-6 h-6 bg-rep-navy-light rounded-full flex items-center justify-center text-xs">3</span>
                   Your Practice
@@ -539,7 +539,7 @@ const ReppyCoach = () => {
 
           {phase === 'reflection' && session && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-2 text-sm text-corporate-orange font-medium mb-3">
                   <span className="w-6 h-6 bg-rep-coral-light rounded-full flex items-center justify-center text-xs">4</span>
                   Reflection
@@ -554,7 +554,7 @@ const ReppyCoach = () => {
 
           {phase === 'complete' && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
                 <div className="w-16 h-16 bg-rep-teal-light rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 className="w-8 h-8 text-corporate-teal" />
                 </div>
@@ -593,7 +593,7 @@ const ReppyCoach = () => {
 
       {/* Input Footer - Journal style */}
       {needsInput && (
-        <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-lg">
+        <footer className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-100 p-4 shadow-lg">
           <div className="max-w-2xl mx-auto">
             <div className="flex items-end gap-3">
               <div className="flex-1">
@@ -629,7 +629,7 @@ const ReppyCoach = () => {
                 className={`p-3 rounded-xl transition-all flex-shrink-0 ${
                   userInput.trim() 
                     ? 'bg-corporate-teal text-white hover:bg-corporate-teal-dark' 
-                    : 'bg-gray-100 text-gray-400'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
                 }`}
               >
                 <Send className="w-5 h-5" />

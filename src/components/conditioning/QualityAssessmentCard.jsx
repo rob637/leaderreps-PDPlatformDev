@@ -48,12 +48,12 @@ const DimensionRow = ({ dimension, assessment, onPractice }) => {
   return (
     <div className={`p-3 rounded-lg border ${
       passed 
-        ? 'bg-green-50 border-green-200' 
-        : 'bg-amber-50 border-amber-200'
+        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+        : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
     }`}>
       <div className="flex items-start gap-3">
         <div className={`p-2 rounded-full ${
-          passed ? 'bg-green-100' : 'bg-amber-100'
+          passed ? 'bg-green-100 dark:bg-green-900/30' : 'bg-amber-100 dark:bg-amber-900/30'
         }`}>
           <Icon className={`w-4 h-4 ${
             passed ? 'text-green-600' : 'text-amber-600'
@@ -69,7 +69,7 @@ const DimensionRow = ({ dimension, assessment, onPractice }) => {
               <XCircle className="w-4 h-4 text-amber-600" />
             )}
           </div>
-          <p className="text-sm text-gray-600 mt-1">{feedback}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{feedback}</p>
           
           {/* Practice button for failed dimensions */}
           {!passed && onPractice && (
@@ -99,8 +99,8 @@ const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false 
     return (
       <div className={`flex items-center gap-2 px-2 py-1 rounded text-xs font-medium ${
         meetsStandard 
-          ? 'bg-green-100 text-green-700' 
-          : 'bg-amber-100 text-amber-700'
+          ? 'bg-green-100 dark:bg-green-900/30 text-green-700' 
+          : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700'
       }`}>
         {meetsStandard ? (
           <CheckCircle className="w-3 h-3" />
@@ -122,8 +122,8 @@ const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false 
           <h4 className="font-bold text-corporate-navy">Quality Assessment</h4>
           <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
             meetsStandard 
-              ? 'bg-green-100 text-green-700' 
-              : 'bg-amber-100 text-amber-700'
+              ? 'bg-green-100 dark:bg-green-900/30 text-green-700' 
+              : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700'
           }`}>
             {meetsStandard ? (
               <>
@@ -141,7 +141,7 @@ const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false 
         
         {/* Score Bar */}
         <div className="mb-4">
-          <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
+          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300 mb-1">
             <span>Score</span>
             <span className="font-medium">{passedCount}/{totalDimensions}</span>
           </div>
@@ -168,7 +168,7 @@ const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false 
         </div>
         
         {/* Summary */}
-        <p className="mt-4 text-sm text-gray-600 italic">{summary}</p>
+        <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 italic">{summary}</p>
       </div>
     </Card>
   );

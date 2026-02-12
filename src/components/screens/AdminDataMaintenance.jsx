@@ -370,7 +370,7 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+      <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
         <AlertTriangle size={20} className="text-red-600 mb-2" />
         <p className="text-red-800">{error}</p>
       </div>
@@ -379,9 +379,9 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
 
   if (docs.length === 0) {
     return (
-      <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">
+      <div className="p-8 text-center bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-600">
         <MessageSquare className="w-12 h-12 mx-auto mb-4 text-slate-400" />
-        <p className="text-slate-600">No entries found</p>
+        <p className="text-slate-600 dark:text-slate-300">No entries found</p>
       </div>
     );
   }
@@ -398,10 +398,10 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
 
       <div className="grid gap-3">
         {docs.map(docData => (
-          <div key={docData.id} className="p-4 bg-white rounded-lg border border-slate-200 hover:border-corporate-teal transition-all shadow-sm">
+          <div key={docData.id} className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-corporate-teal transition-all shadow-sm">
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
-                <p className="text-xs text-slate-500 mb-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
                   {formatTimestamp(docData.timestamp || docData.date)}
                 </p>
                 <div className="text-sm space-y-1">
@@ -410,7 +410,7 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
                     if (!value) return null;
                     
                     return (
-                      <p key={field.key} className="text-slate-700">
+                      <p key={field.key} className="text-slate-700 dark:text-slate-200">
                         <strong>{field.label}:</strong> {
                           field.type === 'json' 
                             ? JSON.stringify(value).substring(0, 100) + '...'
@@ -442,7 +442,7 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
             
             {selectedDoc?.id === docData.id && (
               <div className="mt-3 pt-3 border-t border-slate-100">
-                <pre className="text-xs font-mono bg-slate-50 p-3 rounded overflow-auto max-h-64">
+                <pre className="text-xs font-mono bg-slate-50 dark:bg-slate-800 p-3 rounded overflow-auto max-h-64">
                   {pretty(docData)}
                 </pre>
               </div>
@@ -486,7 +486,7 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
         <select
           value={String(value)}
           onChange={(e) => handleChange(key, e.target.value === 'true')}
-          className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+          className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
         >
           <option value="true">True</option>
           <option value="false">False</option>
@@ -500,7 +500,7 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
           type="number"
           value={value}
           onChange={(e) => handleChange(key, Number(e.target.value))}
-          className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+          className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
         />
       );
     }
@@ -510,7 +510,7 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
         <textarea
           value={value}
           onChange={(e) => handleChange(key, e.target.value)}
-          className="w-full p-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+          className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-mono focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
           rows={4}
         />
       );
@@ -521,17 +521,17 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
         type="text"
         value={value}
         onChange={(e) => handleChange(key, e.target.value)}
-        className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+        className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
       />
     );
   };
 
   return (
     <div 
-      className={`rounded-xl border transition-colors ${isEditing ? 'border-corporate-teal bg-corporate-teal/5' : 'border-slate-200 bg-white'}`}
+      className={`rounded-xl border transition-colors ${isEditing ? 'border-corporate-teal bg-corporate-teal/5' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'}`}
     >
       {/* Header Bar */}
-      <div className="flex items-center justify-between p-3 border-b border-slate-200">
+      <div className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-3">
           <GripVertical className="w-5 h-5 text-slate-400 cursor-grab" />
           <p className="font-semibold text-corporate-navy">
@@ -564,7 +564,7 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
         <div className="p-4 space-y-3">
           {Object.entries(editedItem).map(([key, value]) => (
             <div key={key}>
-              <label className="block text-xs font-semibold mb-1 text-slate-500">
+              <label className="block text-xs font-semibold mb-1 text-slate-500 dark:text-slate-400">
                 {key}
               </label>
               {getInput(key, value)}
@@ -627,7 +627,7 @@ const CatalogTableEditor = ({ items, onChange }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-500">
+        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
           CATALOG ITEMS
         </p>
         <Button onClick={handleAddItem} variant="primary" size="sm">
@@ -636,7 +636,7 @@ const CatalogTableEditor = ({ items, onChange }) => {
         </Button>
       </div>
       
-      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+      <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
         {items.length > 0 ? (
           items.map((item, index) => (
             <CatalogItemEditor
@@ -649,7 +649,7 @@ const CatalogTableEditor = ({ items, onChange }) => {
             />
           ))
         ) : (
-          <div className="p-8 text-center text-slate-500">
+          <div className="p-8 text-center text-slate-500 dark:text-slate-400">
             <p>No items in this catalog.</p>
           </div>
         )}
@@ -775,9 +775,9 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
 
   if (!data) {
     return (
-      <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">
+      <div className="p-8 text-center bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-600">
         <Database className="w-12 h-12 mx-auto mb-4 text-slate-400" />
-        <p className="text-slate-600 mb-4">No data found for this table</p>
+        <p className="text-slate-600 dark:text-slate-300 mb-4">No data found for this table</p>
         <Button onClick={handleSave} variant="primary">
           <Plus size={16} />
           Create New Document
@@ -858,7 +858,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
       {showJson ? (
         <div className="relative">
           <textarea
-            className="w-full h-96 p-4 font-mono text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+            className="w-full h-96 p-4 font-mono text-sm border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
             value={jsonText}
             onChange={(e) => handleJsonChange(e.target.value)}
             spellCheck={false}
@@ -887,7 +887,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
               : value ?? '';
 
             return (
-              <div key={field.key} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <div key={field.key} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <label className="block text-sm font-semibold mb-1 text-corporate-navy">
@@ -900,25 +900,25 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
                 </div>
 
                 {field.readonly ? (
-                  <div className="p-3 bg-white rounded-lg border border-slate-200">
+                  <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                     {field.type === 'json' ? (
                       <pre className="text-xs font-mono whitespace-pre-wrap overflow-auto max-h-32">
                         {displayValue}
                       </pre>
                     ) : (
-                      <span className="text-sm text-slate-600">{displayValue || 'N/A'}</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-300">{displayValue || 'N/A'}</span>
                     )}
                   </div>
                 ) : field.type === 'textarea' ? (
                   <textarea
-                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                    className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     rows={4}
                     value={displayValue}
                     onChange={(e) => handleFieldChange(field.key, e.target.value, field.type)}
                   />
                 ) : field.type === 'json' ? (
                   <textarea
-                    className="w-full p-3 font-mono text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                    className="w-full p-3 font-mono text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     rows={6}
                     value={displayValue}
                     onChange={(e) => handleFieldChange(field.key, e.target.value, field.type)}
@@ -926,7 +926,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
                   />
                 ) : field.type === 'boolean' ? (
                   <select
-                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                    className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     value={String(value)}
                     onChange={(e) => handleFieldChange(field.key, e.target.value, field.type)}
                   >
@@ -936,7 +936,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
                 ) : (
                   <input
                     type={field.type === 'number' ? 'number' : field.type === 'email' ? 'email' : 'text'}
-                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                    className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     value={displayValue}
                     onChange={(e) => handleFieldChange(field.key, e.target.value, field.type)}
                   />
@@ -949,7 +949,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
 
       {/* Catalog Item Count */}
       {tableConfig.isCatalog && editedData.items && (
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl mt-4">
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl mt-4">
           <div className="flex items-center gap-2">
             <CheckCircle size={16} className="text-blue-600" />
             <span className="text-sm font-medium text-blue-900">
@@ -1054,7 +1054,7 @@ const TableViewer = ({ config, userId }) => {
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+      <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
         <div className="flex items-center gap-3 text-red-800">
           <AlertTriangle size={20} />
           <div>
@@ -1109,14 +1109,14 @@ export default function AdminDataMaintenance() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-800 flex items-center justify-center p-6">
         <Card accentColor="bg-red-600">
           <div className="text-center p-8">
             <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-red-600" />
             <h2 className="text-2xl font-bold mb-2 text-corporate-navy">
               Access Denied
             </h2>
-            <p className="text-slate-600">
+            <p className="text-slate-600 dark:text-slate-300">
               You need admin privileges to access this page.
             </p>
           </div>
@@ -1129,16 +1129,16 @@ export default function AdminDataMaintenance() {
   const currentTable = activeTable ? currentGroup.tables[activeTable] : null;
 
   return (
-    <div className="min-h-screen bg-slate-50 animate-fade-in">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-800 animate-fade-in">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2 text-corporate-navy">
                 Admin Data Maintenance
               </h1>
-              <p className="text-slate-600">
+              <p className="text-slate-600 dark:text-slate-300">
                 Comprehensive database management with full CRUD operations
               </p>
             </div>
@@ -1153,7 +1153,7 @@ export default function AdminDataMaintenance() {
                   value={targetUserId}
                   onChange={(e) => setTargetUserId(e.target.value)}
                   placeholder="Enter user ID..."
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-mono w-64 focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                  className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-mono w-64 focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 />
               </div>
             )}
@@ -1167,7 +1167,7 @@ export default function AdminDataMaintenance() {
       </div>
 
       {/* Module Group Tabs */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-6 flex gap-1 overflow-x-auto">
           {Object.entries(MODULE_GROUPS).map(([key, group]) => {
             const Icon = group.icon;
@@ -1205,7 +1205,7 @@ export default function AdminDataMaintenance() {
               <h3 className="text-lg font-bold mb-4 text-corporate-navy">
                 {currentGroup.name}
               </h3>
-              <p className="text-sm text-slate-600 mb-4">
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
                 {currentGroup.description}
               </p>
               
@@ -1219,7 +1219,7 @@ export default function AdminDataMaintenance() {
                       onClick={() => setActiveTable(key)}
                       className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-all ${
                         isActive 
-                          ? 'bg-white shadow-md border-l-4' 
+                          ? 'bg-white dark:bg-slate-800 shadow-md border-l-4' 
                           : 'hover:bg-slate-50 border-l-4 border-transparent'
                       }`}
                       style={{
@@ -1265,7 +1265,7 @@ export default function AdminDataMaintenance() {
                   <h3 className="text-xl font-bold mb-2 text-corporate-navy">
                     Enter a User ID
                   </h3>
-                  <p className="text-slate-600">
+                  <p className="text-slate-600 dark:text-slate-300">
                     Please enter a user ID above to view and edit their data
                   </p>
                 </div>
@@ -1282,13 +1282,13 @@ export default function AdminDataMaintenance() {
               <div className="text-sm">
                 <p className="font-semibold text-blue-900 mb-2">Database Paths (lowercase keys)</p>
                 <ul className="text-blue-800 space-y-1.5 leading-relaxed">
-                  <li>• User Profile: <code className="bg-blue-100 px-2 py-0.5 rounded text-xs">users/{'{userId}'}</code></li>
-                  <li>• Development Plan: <code className="bg-blue-100 px-2 py-0.5 rounded text-xs">modules/{'{userId}'}/development_plan/current</code></li>
-                  <li>• Daily Practice: <code className="bg-blue-100 px-2 py-0.5 rounded text-xs">modules/{'{userId}'}/daily_practice/current</code></li>
-                  <li>• Reflection History: <code className="bg-blue-100 px-2 py-0.5 rounded text-xs">modules/{'{userId}'}/daily_practice/reflection_history</code></li>
-                  <li>• Strategic Content: <code className="bg-blue-100 px-2 py-0.5 rounded text-xs">modules/{'{userId}'}/strategic_content/vision_mission</code></li>
-                  <li>• Global Metadata: <code className="bg-blue-100 px-2 py-0.5 rounded text-xs">metadata/config</code></li>
-                  <li>• Catalogs: <code className="bg-blue-100 px-2 py-0.5 rounded text-xs">metadata/config/catalog/{'{catalog_name}'}</code></li>
+                  <li>• User Profile: <code className="bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded text-xs">users/{'{userId}'}</code></li>
+                  <li>• Development Plan: <code className="bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded text-xs">modules/{'{userId}'}/development_plan/current</code></li>
+                  <li>• Daily Practice: <code className="bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded text-xs">modules/{'{userId}'}/daily_practice/current</code></li>
+                  <li>• Reflection History: <code className="bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded text-xs">modules/{'{userId}'}/daily_practice/reflection_history</code></li>
+                  <li>• Strategic Content: <code className="bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded text-xs">modules/{'{userId}'}/strategic_content/vision_mission</code></li>
+                  <li>• Global Metadata: <code className="bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded text-xs">metadata/config</code></li>
+                  <li>• Catalogs: <code className="bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded text-xs">metadata/config/catalog/{'{catalog_name}'}</code></li>
                 </ul>
               </div>
             </div>
@@ -1302,13 +1302,13 @@ export default function AdminDataMaintenance() {
                 <div className="text-purple-800 space-y-2">
                   <div>
                     <p className="font-medium">All field keys are lowercase:</p>
-                    <code className="bg-purple-100 px-2 py-1 rounded text-xs block mt-1">
+                    <code className="bg-purple-100 dark:bg-purple-900/30 px-2 py-1 rounded text-xs block mt-1">
                       {'userid, displayname, createdat, etc.'}
                     </code>
                   </div>
                   <div>
                     <p className="font-medium mt-2">Catalog structure:</p>
-                    <code className="bg-purple-100 px-2 py-1 rounded text-xs block mt-1">
+                    <code className="bg-purple-100 dark:bg-purple-900/30 px-2 py-1 rounded text-xs block mt-1">
                       {'{ items: [...] }'}
                     </code>
                   </div>

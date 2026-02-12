@@ -86,14 +86,14 @@ const STATE_CONFIG = {
 const getColorClasses = (color, variant = 'default') => {
   const colors = {
     blue: {
-      default: 'bg-blue-100 text-blue-700 border-blue-300',
+      default: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 border-blue-300',
       active: 'bg-blue-600 text-white border-blue-700',
-      muted: 'bg-blue-50 text-blue-400 border-blue-200'
+      muted: 'bg-blue-50 dark:bg-blue-900/20 text-blue-400 border-blue-200 dark:border-blue-800'
     },
     slate: {
-      default: 'bg-slate-100 text-slate-700 border-slate-300',
+      default: 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600',
       active: 'bg-slate-600 text-white border-slate-700',
-      muted: 'bg-slate-50 text-slate-400 border-slate-200'
+      muted: 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'
     },
     sky: {
       default: 'bg-sky-100 text-sky-700 border-sky-300',
@@ -101,34 +101,34 @@ const getColorClasses = (color, variant = 'default') => {
       muted: 'bg-sky-50 text-sky-400 border-sky-200'
     },
     teal: {
-      default: 'bg-teal-100 text-teal-700 border-teal-300',
+      default: 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 border-teal-300',
       active: 'bg-teal-600 text-white border-teal-700',
-      muted: 'bg-teal-50 text-teal-400 border-teal-200'
+      muted: 'bg-teal-50 dark:bg-teal-900/20 text-teal-400 border-teal-200 dark:border-teal-800'
     },
     green: {
-      default: 'bg-green-100 text-green-700 border-green-300',
+      default: 'bg-green-100 dark:bg-green-900/30 text-green-700 border-green-300',
       active: 'bg-green-600 text-white border-green-700',
-      muted: 'bg-green-50 text-green-400 border-green-200'
+      muted: 'bg-green-50 dark:bg-green-900/20 text-green-400 border-green-200 dark:border-green-800'
     },
     orange: {
-      default: 'bg-orange-100 text-orange-700 border-orange-300',
+      default: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 border-orange-300',
       active: 'bg-orange-600 text-white border-orange-700',
-      muted: 'bg-orange-50 text-orange-400 border-orange-200'
+      muted: 'bg-orange-50 dark:bg-orange-900/20 text-orange-400 border-orange-200 dark:border-orange-800'
     },
     emerald: {
-      default: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+      default: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 border-emerald-300',
       active: 'bg-emerald-600 text-white border-emerald-700',
-      muted: 'bg-emerald-50 text-emerald-400 border-emerald-200'
+      muted: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-400 border-emerald-200 dark:border-emerald-800'
     },
     amber: {
-      default: 'bg-amber-100 text-amber-700 border-amber-300',
+      default: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border-amber-300',
       active: 'bg-amber-600 text-white border-amber-700',
-      muted: 'bg-amber-50 text-amber-400 border-amber-200'
+      muted: 'bg-amber-50 dark:bg-amber-900/20 text-amber-400 border-amber-200 dark:border-amber-800'
     },
     gray: {
-      default: 'bg-gray-100 text-gray-600 border-gray-300',
+      default: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600',
       active: 'bg-gray-600 text-white border-gray-700',
-      muted: 'bg-gray-50 text-gray-400 border-gray-200'
+      muted: 'bg-gray-50 dark:bg-gray-800 text-gray-400 border-gray-200 dark:border-gray-700'
     }
   };
   return colors[color]?.[variant] || colors.gray[variant];
@@ -208,7 +208,7 @@ const StateNode = ({
         )}
       </div>
       <span className={`text-xs font-medium ${
-        isCurrent ? 'text-corporate-navy' : isPast ? 'text-gray-600' : 'text-gray-400'
+        isCurrent ? 'text-corporate-navy' : isPast ? 'text-gray-600 dark:text-gray-300' : 'text-gray-400'
       }`}>
         {config.shortLabel}
       </span>
@@ -305,7 +305,7 @@ const RepProgressionTracker = ({
   }
   
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
+    <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
       {/* Progress Line */}
       <div className="flex items-center mb-4">
         {mainStates.map((state, idx) => (
@@ -334,14 +334,14 @@ const RepProgressionTracker = ({
             <span className="text-sm font-medium text-corporate-navy">
               Current: {STATE_CONFIG[status]?.label || status}
             </span>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               {STATE_CONFIG[status]?.description}
             </p>
           </div>
           
           {/* Prep Lock Warning */}
           {executionLocked && (
-            <div className="flex items-center gap-1 text-amber-600 text-xs bg-amber-50 px-2 py-1 rounded">
+            <div className="flex items-center gap-1 text-amber-600 text-xs bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">
               <Lock className="w-3 h-3" />
               <span>Prep required first</span>
             </div>
@@ -464,7 +464,7 @@ export const PrepRequirementBadge = ({ repType, riskLevel, prepCompleted = false
   // If prep was required and is now complete, show success badge
   if (required && prepCompleted) {
     return (
-      <span className={`inline-flex items-center rounded font-medium bg-green-100 text-green-700 ${sizeClasses}`}>
+      <span className={`inline-flex items-center rounded font-medium bg-green-100 dark:bg-green-900/30 text-green-700 ${sizeClasses}`}>
         <Check className={size === 'small' ? 'w-3 h-3' : 'w-4 h-4'} />
         Prep Complete
       </span>
@@ -473,7 +473,7 @@ export const PrepRequirementBadge = ({ repType, riskLevel, prepCompleted = false
   
   if (required) {
     return (
-      <span className={`inline-flex items-center rounded font-medium bg-amber-100 text-amber-700 ${sizeClasses}`}>
+      <span className={`inline-flex items-center rounded font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 ${sizeClasses}`}>
         <Lock className={size === 'small' ? 'w-3 h-3' : 'w-4 h-4'} />
         Prep Required
       </span>
@@ -481,7 +481,7 @@ export const PrepRequirementBadge = ({ repType, riskLevel, prepCompleted = false
   }
   
   return (
-    <span className={`inline-flex items-center rounded font-medium bg-gray-100 text-gray-600 ${sizeClasses}`}>
+    <span className={`inline-flex items-center rounded font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 ${sizeClasses}`}>
       <Unlock className={size === 'small' ? 'w-3 h-3' : 'w-4 h-4'} />
       Prep Optional
     </span>

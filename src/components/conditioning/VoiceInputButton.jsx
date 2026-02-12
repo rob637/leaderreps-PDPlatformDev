@@ -178,7 +178,7 @@ const VoiceInputButton = ({
       <button
         type="button"
         disabled
-        className={`${sizeClasses[size]} rounded-full bg-gray-100 text-gray-400 cursor-not-allowed`}
+        className={`${sizeClasses[size]} rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed`}
         title="Voice input not supported in this browser"
       >
         <MicOff className={iconSizes[size]} />
@@ -197,7 +197,7 @@ const VoiceInputButton = ({
             ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50' 
             : isProcessing
             ? 'bg-amber-500 text-white'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         aria-label={isRecording ? 'Stop recording' : 'Start recording'}
         title={isRecording ? 'Click to stop' : 'Click to record'}
@@ -221,7 +221,7 @@ const VoiceInputButton = ({
       
       {/* Error tooltip */}
       {error && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-red-100 text-red-700 text-xs rounded-lg whitespace-nowrap flex items-center gap-1 shadow-lg">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 text-xs rounded-lg whitespace-nowrap flex items-center gap-1 shadow-lg">
           <AlertCircle className="w-3 h-3" />
           {error}
         </div>
@@ -270,8 +270,8 @@ export const VoiceInputWithPreview = ({
         rows={rows}
         className={`w-full p-3 pr-14 border rounded-xl text-sm resize-none transition-all duration-200 ${
           isRecording 
-            ? 'bg-red-50/50 border-red-300 ring-2 ring-red-200' 
-            : 'border-slate-200 hover:border-slate-300 focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal'
+            ? 'bg-red-50/50 dark:bg-red-900/20/50 border-red-300 ring-2 ring-red-200' 
+            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal'
         }`}
       />
       <div className="absolute right-2 bottom-2">

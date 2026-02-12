@@ -322,7 +322,7 @@ const RepCoach = () => {
   return (
     <div className="min-h-screen bg-rep-warm-white flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center justify-between px-4 py-3">
           <button 
             onClick={() => navigate('dashboard')}
@@ -404,7 +404,7 @@ const RepCoach = () => {
                   {!msg.data?.allDone && (
                     <button
                       onClick={handleStayAndChat}
-                      className="w-full py-2.5 bg-gray-100 text-rep-text-primary rounded-lg font-medium text-sm
+                      className="w-full py-2.5 bg-gray-100 dark:bg-gray-700 text-rep-text-primary rounded-lg font-medium text-sm
                                  hover:bg-gray-200 transition-colors"
                     >
                       Ask Rep a Question Instead
@@ -413,7 +413,7 @@ const RepCoach = () => {
                   {msg.data?.allDone && (
                     <button
                       onClick={handleStayAndChat}
-                      className="w-full py-2.5 bg-gray-100 text-rep-text-primary rounded-lg font-medium text-sm
+                      className="w-full py-2.5 bg-gray-100 dark:bg-gray-700 text-rep-text-primary rounded-lg font-medium text-sm
                                  hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                     >
                       <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -435,7 +435,7 @@ const RepCoach = () => {
       </main>
 
       {/* Input */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4">
+      <footer className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-100 p-4">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-2">
             <input
@@ -446,7 +446,7 @@ const RepCoach = () => {
               placeholder={sessionState === 'questions' 
                 ? "Ask a leadership question..." 
                 : "Type a message to Rep..."}
-              className="flex-1 px-4 py-3 bg-gray-100 rounded-xl text-sm placeholder:text-gray-400
+              className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 rounded-xl text-sm placeholder:text-gray-400
                          focus:outline-none focus:ring-2 focus:ring-corporate-teal/30 focus:bg-white
                          transition-all"
             />

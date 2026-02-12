@@ -33,7 +33,7 @@ const RegisteredSessionCard = ({ session, onCancel }) => {
   const isToday = new Date(session.date).toDateString() === new Date().toDateString();
   
   return (
-    <div className={`bg-white rounded-xl border p-4 ${isToday ? 'border-green-300 bg-green-50' : 'border-slate-200'}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl border p-4 ${isToday ? 'border-green-300 bg-green-50 dark:bg-green-900/20' : 'border-slate-200 dark:border-slate-700'}`}>
       <div className="flex justify-between items-start">
         <div className="flex-1">
           {isToday && (
@@ -41,21 +41,21 @@ const RegisteredSessionCard = ({ session, onCancel }) => {
               TODAY
             </span>
           )}
-          <h4 className="font-bold text-slate-800">{session.title}</h4>
+          <h4 className="font-bold text-slate-800 dark:text-slate-200">{session.title}</h4>
           {session.coach && (
-            <p className="text-sm text-slate-500">with {session.coach}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">with {session.coach}</p>
           )}
         </div>
         
         <button
           onClick={() => onCancel?.(session)}
-          className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+          className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 transition-colors"
         >
           Cancel
         </button>
       </div>
       
-      <div className="flex gap-4 mt-3 text-sm text-slate-500">
+      <div className="flex gap-4 mt-3 text-sm text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-1">
           <Calendar className="w-4 h-4" />
           <span>{formatSessionDate(session.date)}</span>
@@ -85,12 +85,12 @@ const RegisteredSessionCard = ({ session, onCancel }) => {
 // Past Session Card
 const PastSessionCard = ({ session }) => {
   return (
-    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+      <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
         <CheckCircle className="w-4 h-4 text-green-600" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-slate-700 truncate">{session.title}</p>
+        <p className="font-medium text-slate-700 dark:text-slate-200 truncate">{session.title}</p>
         <p className="text-xs text-slate-400">{formatSessionDate(session.date)}</p>
       </div>
       {session.rating && (
@@ -120,7 +120,7 @@ const CoachingMySessionsWidget = ({ scope = {}, helpText }) => {
       <Card title="My Coaching" icon={User} accent="TEAL" helpText={helpText}>
         <div className="text-center py-8">
           <User className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="font-bold text-slate-600 mb-1">No Sessions Yet</h3>
+          <h3 className="font-bold text-slate-600 dark:text-slate-300 mb-1">No Sessions Yet</h3>
           <p className="text-sm text-slate-400 mb-4">Register for a live session to get started.</p>
           <button 
             onClick={() => navigate?.('coaching-lab')}
@@ -138,7 +138,7 @@ const CoachingMySessionsWidget = ({ scope = {}, helpText }) => {
       {/* Upcoming Registrations */}
       {hasUpcoming && (
         <div className="mb-4">
-          <p className="text-xs font-medium text-slate-500 uppercase mb-2">
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">
             Upcoming ({registeredSessions.length})
           </p>
           <div className="space-y-2">
@@ -166,7 +166,7 @@ const CoachingMySessionsWidget = ({ scope = {}, helpText }) => {
       {/* Past Sessions */}
       {hasPast && (
         <div>
-          <p className="text-xs font-medium text-slate-500 uppercase mb-2">
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">
             History ({pastSessions.length})
           </p>
           <div className="space-y-2">
@@ -178,7 +178,7 @@ const CoachingMySessionsWidget = ({ scope = {}, helpText }) => {
           {pastSessions.length > 5 && (
             <button 
               onClick={() => navigate?.('coaching-lab', { tab: 'my', view: 'history' })}
-              className="w-full mt-2 py-2 text-sm text-slate-500 font-medium hover:bg-slate-100 rounded-lg transition-colors"
+              className="w-full mt-2 py-2 text-sm text-slate-500 dark:text-slate-400 font-medium hover:bg-slate-100 rounded-lg transition-colors"
             >
               View full history
             </button>
@@ -192,19 +192,19 @@ const CoachingMySessionsWidget = ({ scope = {}, helpText }) => {
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
               <p className="text-2xl font-bold text-corporate-navy">{pastSessions.length}</p>
-              <p className="text-xs text-slate-500">Sessions</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Sessions</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-corporate-navy">
                 {Math.round(pastSessions.reduce((acc, s) => acc + (s.durationMinutes || 60), 0) / 60)}h
               </p>
-              <p className="text-xs text-slate-500">Total Time</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Total Time</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-corporate-navy">
                 {pastSessions.filter(s => s.rating >= 4).length}
               </p>
-              <p className="text-xs text-slate-500">5-Star</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">5-Star</p>
             </div>
           </div>
         </div>

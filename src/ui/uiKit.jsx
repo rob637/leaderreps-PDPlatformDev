@@ -89,7 +89,7 @@ export const ExecSwitch = ({ checked, onChange, label = 'Executive Brief' }) => 
     <div className="flex items-center gap-2">
       <button type="button" role="switch" aria-checked={checked} onClick={toggle} onKeyDown={onKey} className="relative inline-flex items-center" style={{ width: 46, height: 26 }}>
         <span className={`absolute inset-0 rounded-full transition-colors duration-150 ${checked ? 'bg-corporate-orange' : 'bg-gray-400 dark:bg-slate-600'}`} />
-        <span className="relative w-[22px] h-[22px] bg-white rounded-full shadow transition-all duration-150" style={{ left: checked ? 22 : 2 }} />
+        <span className="relative w-[22px] h-[22px] bg-white dark:bg-slate-800 rounded-full shadow transition-all duration-150" style={{ left: checked ? 22 : 2 }} />
       </button>
       <span className="font-semibold text-corporate-navy dark:text-white">{label}</span>
     </div>

@@ -153,10 +153,10 @@ const HighRiskPrepModal = ({
           <span className="text-sm text-corporate-navy font-medium">{rep.person}</span>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
             isHighRisk 
-              ? 'bg-red-100 text-red-700' 
+              ? 'bg-red-100 dark:bg-red-900/30 text-red-700' 
               : riskLevel === 'medium' 
-              ? 'bg-amber-100 text-amber-700' 
-              : 'bg-green-100 text-green-700'
+              ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' 
+              : 'bg-green-100 dark:bg-green-900/30 text-green-700'
           }`}>
             {riskLevel.toUpperCase()} RISK
           </span>
@@ -192,7 +192,7 @@ const HighRiskPrepModal = ({
     >
       {/* High Risk Explanation */}
       {isHighRisk && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 mb-4">
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-amber-800">
@@ -242,7 +242,7 @@ const HighRiskPrepModal = ({
           <h4 className="text-sm font-semibold text-corporate-navy mb-3">
             Optional: Think Through Risks
           </h4>
-          <p className="text-xs text-gray-500 mb-3">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
             These questions are optional but help you prepare mentally.
           </p>
           {HIGH_RISK_PREP_QUESTIONS.slice(0, 2).map(question => (

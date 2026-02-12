@@ -25,10 +25,10 @@ const PHASE_THEMES = {
     subtitle: 'Get Ready',
     icon: Rocket,
     color: 'from-slate-600 to-slate-700',
-    bgColor: 'bg-slate-50',
-    borderColor: 'border-slate-300',
-    textColor: 'text-slate-700',
-    iconBg: 'bg-slate-100',
+    bgColor: 'bg-slate-50 dark:bg-slate-800',
+    borderColor: 'border-slate-300 dark:border-slate-600',
+    textColor: 'text-slate-700 dark:text-slate-200',
+    iconBg: 'bg-slate-100 dark:bg-slate-700',
     accentColor: 'slate'
   },
   'start': {
@@ -36,10 +36,10 @@ const PHASE_THEMES = {
     subtitle: 'Your Journey',
     icon: Mountain,
     color: 'from-corporate-teal to-emerald-600',
-    bgColor: 'bg-teal-50',
-    borderColor: 'border-teal-200',
+    bgColor: 'bg-teal-50 dark:bg-teal-900/20',
+    borderColor: 'border-teal-200 dark:border-teal-800',
     textColor: 'text-teal-700',
-    iconBg: 'bg-teal-100',
+    iconBg: 'bg-teal-100 dark:bg-teal-900/30',
     accentColor: 'teal'
   },
   'post-start': {
@@ -47,7 +47,7 @@ const PHASE_THEMES = {
     subtitle: 'Continue Growing',
     icon: GraduationCap,
     color: 'from-corporate-navy to-slate-700',
-    bgColor: 'bg-slate-50',
+    bgColor: 'bg-slate-50 dark:bg-slate-800',
     borderColor: 'border-corporate-navy/20',
     textColor: 'text-corporate-navy',
     iconBg: 'bg-corporate-navy/10',
@@ -212,16 +212,16 @@ const WeekCard = ({
         {/* Week Info */}
         <div className="text-center">
           <div className="text-xs font-medium text-slate-400 mb-0.5">WEEK {weekNumber}</div>
-          <div className={`text-sm font-bold ${isSelected ? theme.textColor : 'text-slate-700'}`}>
+          <div className={`text-sm font-bold ${isSelected ? theme.textColor : 'text-slate-700 dark:text-slate-200'}`}>
             {theme.title}
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5">{theme.subtitle}</div>
+          <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{theme.subtitle}</div>
         </div>
         
         {/* Progress Stats */}
         {!isLocked && (
           <div className="mt-3 pt-3 border-t border-slate-100">
-            <div className="flex justify-between text-[10px] text-slate-500">
+            <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
               <span>{completedActions}/{totalActions}</span>
               <span className="font-semibold">{progress}%</span>
             </div>
@@ -315,13 +315,13 @@ const WeekDetailPanel = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.3 }}
-      className={`mt-6 rounded-2xl border-2 overflow-hidden ${theme?.borderColor || 'border-slate-200'} ${theme?.bgColor || 'bg-slate-50'}`}
+      className={`mt-6 rounded-2xl border-2 overflow-hidden ${theme?.borderColor || 'border-slate-200 dark:border-slate-700'} ${theme?.bgColor || 'bg-slate-50 dark:bg-slate-800'}`}
     >
       {/* Header */}
       <div className={`bg-gradient-to-r ${theme?.color || 'from-slate-500 to-slate-600'} text-white p-5`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-white/20 dark:bg-slate-800/20 backdrop-blur flex items-center justify-center">
               <Icon className="w-6 h-6" />
             </div>
             <div>
@@ -342,9 +342,9 @@ const WeekDetailPanel = ({
         
         {/* Progress Bar */}
         <div className="mt-4">
-          <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+          <div className="h-2 bg-white/20 dark:bg-slate-800/20 rounded-full overflow-hidden">
             <motion.div 
-              className="h-full bg-white rounded-full"
+              className="h-full bg-white dark:bg-slate-800 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
@@ -360,7 +360,7 @@ const WeekDetailPanel = ({
       {/* Actions List */}
       <div className="p-5">
         {actions.length === 0 ? (
-          <div className="text-center py-8 text-slate-500">
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400">
             <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm">No actions scheduled for this week</p>
           </div>
@@ -379,26 +379,26 @@ const WeekDetailPanel = ({
                   className={`
                     flex items-center gap-3 p-3 rounded-xl border transition-all
                     ${isCompleted 
-                      ? 'bg-emerald-50 border-emerald-200' 
-                      : 'bg-white border-slate-200'
+                      ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' 
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
                     }
                   `}
                 >
                   <div className={`
                     w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
-                    ${isCompleted ? 'bg-emerald-100' : theme?.iconBg || 'bg-slate-100'}
+                    ${isCompleted ? 'bg-emerald-100' : theme?.iconBg || 'bg-slate-100 dark:bg-slate-700'}
                   `}>
                     {isCompleted ? (
                       <CheckCircle className="w-4 h-4 text-emerald-600" />
                     ) : (
-                      <TypeIcon className={`w-4 h-4 ${theme?.textColor || 'text-slate-600'}`} />
+                      <TypeIcon className={`w-4 h-4 ${theme?.textColor || 'text-slate-600 dark:text-slate-300'}`} />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${isCompleted ? 'text-emerald-700 line-through' : 'text-slate-700'}`}>
+                    <p className={`text-sm font-medium truncate ${isCompleted ? 'text-emerald-700 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
                       {action.label || action.title || 'Action Item'}
                     </p>
-                    <p className="text-xs text-slate-500 capitalize">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
                       {(action.type || action.resourceType || 'content').replace(/_/g, ' ')}
                     </p>
                   </div>
@@ -411,7 +411,7 @@ const WeekDetailPanel = ({
             
             {actions.length > 6 && (
               <div className="text-center pt-2">
-                <span className="text-sm text-slate-500">
+                <span className="text-sm text-slate-500 dark:text-slate-400">
                   +{actions.length - 6} more actions
                 </span>
               </div>
@@ -421,8 +421,8 @@ const WeekDetailPanel = ({
         
         {/* Current Week CTA */}
         {isCurrentWeek && (
-          <div className="mt-4 pt-4 border-t border-slate-200">
-            <div className={`flex items-center justify-center gap-2 text-sm font-medium ${theme?.textColor || 'text-slate-700'}`}>
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <div className={`flex items-center justify-center gap-2 text-sm font-medium ${theme?.textColor || 'text-slate-700 dark:text-slate-200'}`}>
               <Flag className="w-4 h-4" />
               <span>{isPhaseSegment ? 'You are currently in this phase' : 'This is your current week'}</span>
             </div>
@@ -797,7 +797,7 @@ const DevelopmentJourneyWidget = () => {
         icon={Map} 
         accent="TEAL"
       >
-        <div className="text-center py-8 text-slate-500">
+        <div className="text-center py-8 text-slate-500 dark:text-slate-400">
           <Map className="w-12 h-12 mx-auto mb-4 text-slate-300" />
           <p>Your journey will appear here once you begin.</p>
         </div>
@@ -813,7 +813,7 @@ const DevelopmentJourneyWidget = () => {
       headerRight={
         <div className="flex items-center gap-2">
           <div className="text-right">
-            <div className="text-xs text-slate-500">Overall Progress</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Overall Progress</div>
             <div className="text-lg font-bold text-corporate-teal">{overallProgress}%</div>
           </div>
           <div className="w-10 h-10 relative">
@@ -851,7 +851,7 @@ const DevelopmentJourneyWidget = () => {
                     relative w-[140px] flex-shrink-0 rounded-2xl p-4 cursor-pointer transition-all duration-300
                     ${segment.id === selectedSegment ? 'ring-2 ring-corporate-teal ring-offset-2' : ''}
                     ${segmentState === 'current' ? `${theme.bgColor} border-2 ${theme.borderColor} shadow-lg` : ''}
-                    ${segmentState === 'past' ? 'bg-white border-2 border-slate-200' : ''}
+                    ${segmentState === 'past' ? 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700' : ''}
                     ${segmentState === 'future' ? `${theme.bgColor} border-2 border-dashed ${theme.borderColor} opacity-80` : ''}
                     hover:shadow-md hover:-translate-y-1
                   `}
@@ -868,7 +868,7 @@ const DevelopmentJourneyWidget = () => {
                   {/* Completed badge */}
                   {segment.progress === 100 && (
                     <div className="absolute -top-2 -right-2">
-                      <CheckCircle className="w-6 h-6 text-emerald-500 bg-white rounded-full" />
+                      <CheckCircle className="w-6 h-6 text-emerald-500 bg-white dark:bg-slate-800 rounded-full" />
                     </div>
                   )}
                   
@@ -885,7 +885,7 @@ const DevelopmentJourneyWidget = () => {
                   <div className={`
                     w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3
                     ${segmentState === 'current' ? `bg-gradient-to-br ${theme.color}` : ''}
-                    ${segmentState === 'past' && segment.progress === 100 ? 'bg-emerald-100' : ''}
+                    ${segmentState === 'past' && segment.progress === 100 ? 'bg-emerald-100 dark:bg-emerald-900/30' : ''}
                     ${segmentState === 'past' && segment.progress < 100 ? theme.iconBg : ''}
                     ${segmentState === 'future' ? theme.iconBg : ''}
                   `}>
@@ -900,10 +900,10 @@ const DevelopmentJourneyWidget = () => {
                   
                   {/* Label */}
                   <div className="text-center mb-3">
-                    <div className="font-semibold text-sm text-slate-700">
+                    <div className="font-semibold text-sm text-slate-700 dark:text-slate-200">
                       {segment.label}
                     </div>
-                    <div className="text-xs text-slate-500 mt-0.5">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       {segment.completedActions} of {segment.totalActions} complete
                     </div>
                   </div>
@@ -964,7 +964,7 @@ const DevelopmentJourneyWidget = () => {
       {/* Journey Stats - Following methodology: Preparation → Foundation (8 weeks) → Ascent */}
       <div className="mt-6 grid grid-cols-3 gap-4">
         {/* Current Phase */}
-        <div className="text-center p-4 bg-slate-50 rounded-xl">
+        <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
           <div className="text-lg font-bold text-corporate-navy">
             {currentPhase?.id === 'pre-start' ? 'Preparation' 
               : currentPhase?.id === 'start' ? 'Foundation'
@@ -972,22 +972,22 @@ const DevelopmentJourneyWidget = () => {
               : '-'
             }
           </div>
-          <div className="text-xs text-slate-500 mt-1">Current Phase</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Current Phase</div>
         </div>
         {/* Foundation Progress */}
-        <div className="text-center p-4 bg-emerald-50 rounded-xl">
+        <div className="text-center p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
           <div className="text-2xl font-bold text-emerald-600">
             {journeyData.segments.filter(s => s.type === 'week' && s.progress === 100).length}
-            <span className="text-sm font-normal text-slate-500"> of {journeyData.totalWeeks || 8}</span>
+            <span className="text-sm font-normal text-slate-500 dark:text-slate-400"> of {journeyData.totalWeeks || 8}</span>
           </div>
-          <div className="text-xs text-slate-500 mt-1">Foundation Weeks</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Foundation Weeks</div>
         </div>
         {/* Actions Done */}
         <div className="text-center p-4 bg-corporate-teal/10 rounded-xl">
           <div className="text-2xl font-bold text-corporate-teal">
             {journeyData.segments.reduce((sum, s) => sum + s.completedActions, 0)}
           </div>
-          <div className="text-xs text-slate-500 mt-1">Actions Done</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Actions Done</div>
         </div>
       </div>
     </Card>

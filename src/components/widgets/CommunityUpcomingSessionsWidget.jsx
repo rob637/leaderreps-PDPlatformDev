@@ -37,22 +37,22 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
   const typeConfig = COMMUNITY_SESSION_TYPE_CONFIG[session.sessionType] || COMMUNITY_SESSION_TYPE_CONFIG.community_event;
   
   return (
-    <div className={`bg-white rounded-xl border border-slate-200 p-4 border-l-4 hover:shadow-md transition-shadow ${typeConfig.color.replace('bg-', 'border-l-').replace('text-', 'border-l-').split(' ')[0]}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 border-l-4 hover:shadow-md transition-shadow ${typeConfig.color.replace('bg-', 'border-l-').replace('text-', 'border-l-').split(' ')[0]}`}>
       <div className="flex justify-between items-start mb-3">
         <div>
           <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${typeConfig.color} mb-2`}>
             {typeConfig.label}
           </span>
-          <h3 className="font-bold text-slate-800">{session.title}</h3>
+          <h3 className="font-bold text-slate-800 dark:text-slate-200">{session.title}</h3>
           {session.host && (
-            <p className="text-sm text-slate-500">with {session.host}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">with {session.host}</p>
           )}
         </div>
         
         {isRegistered ? (
           <button
             onClick={() => onCancel?.(session)}
-            className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+            className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 transition-colors"
           >
             Cancel
           </button>
@@ -67,10 +67,10 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
       </div>
       
       {session.description && (
-        <p className="text-sm text-slate-600 mb-3 line-clamp-2">{session.description}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-300 mb-3 line-clamp-2">{session.description}</p>
       )}
       
-      <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+      <div className="flex flex-wrap gap-3 text-sm text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-1">
           <Calendar className="w-4 h-4" />
           <span>{formatSessionDate(session.date)}</span>
@@ -121,7 +121,7 @@ const CommunityUpcomingSessionsWidget = ({ helpText }) => {
       <Card title="Upcoming Community Sessions" icon={Users} helpText={helpText}>
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-32 bg-slate-100 rounded-xl"></div>
+            <div key={i} className="h-32 bg-slate-100 dark:bg-slate-700 rounded-xl"></div>
           ))}
         </div>
       </Card>
@@ -138,7 +138,7 @@ const CommunityUpcomingSessionsWidget = ({ helpText }) => {
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+            className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
           >
             <option value="all">All Types</option>
             {Object.entries(COMMUNITY_SESSION_TYPE_CONFIG).map(([key, config]) => (
@@ -150,7 +150,7 @@ const CommunityUpcomingSessionsWidget = ({ helpText }) => {
     >
       <div className="space-y-4">
         {filteredSessions.length === 0 ? (
-          <div className="text-center py-8 text-slate-500">
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
             <p>No upcoming sessions scheduled.</p>
           </div>

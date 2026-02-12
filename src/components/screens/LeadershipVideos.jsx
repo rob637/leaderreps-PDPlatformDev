@@ -66,7 +66,7 @@ const VideoCard = ({ title, speaker, duration, url, description, accent, categor
                     loading="lazy"
                 />
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
-                    <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-16 h-16 bg-white/90 dark:bg-slate-800/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                         <Play className="w-6 h-6 ml-1" style={{ color: accentColor }} />
                     </div>
                 </div>
@@ -76,7 +76,7 @@ const VideoCard = ({ title, speaker, duration, url, description, accent, categor
                 </div>
                 {/* Rating badge */}
                 {rating && (
-                    <div className="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded flex items-center text-xs font-medium">
+                    <div className="absolute top-2 right-2 bg-white/90 dark:bg-slate-800/90 px-2 py-1 rounded flex items-center text-xs font-medium">
                         <Star className="w-3 h-3 mr-1" style={{ color: 'var(--corporate-orange)', fill: 'var(--corporate-orange)' }} />
                         {rating}
                     </div>
@@ -99,7 +99,7 @@ const VideoCard = ({ title, speaker, duration, url, description, accent, categor
                 </h3>
                 
                 {/* Speaker & Metadata */}
-                <div className="flex items-center gap-4 mb-3 text-sm text-slate-500">
+                <div className="flex items-center gap-4 mb-3 text-sm text-slate-500 dark:text-slate-400">
                     <div className="flex items-center">
                         <User className="w-4 h-4 mr-1" />
                         {speaker}
@@ -123,7 +123,7 @@ const VideoCard = ({ title, speaker, duration, url, description, accent, categor
                         {tags.slice(0, 3).map((tag, index) => (
                             <span 
                                 key={index}
-                                className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md"
+                                className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-md"
                             >
                                 #{tag}
                             </span>
@@ -376,7 +376,7 @@ const LeadershipVideosScreen = () => {
     // Show loading if CMS data is still loading
     if (isLoadingCms) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-800">
                 <div className="text-center">
                     <Film className="w-12 h-12 animate-pulse mb-4 mx-auto text-corporate-teal" />
                     <p className="text-lg font-semibold text-corporate-navy">Loading Videos...</p>
@@ -525,7 +525,7 @@ const LeadershipVideosScreen = () => {
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-gray-500 italic">No videos found in this category.</p>
+                            <p className="text-gray-500 dark:text-gray-400 italic">No videos found in this category.</p>
                         )}
                     </section>
                 );

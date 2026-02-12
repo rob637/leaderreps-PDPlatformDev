@@ -62,7 +62,7 @@ const OutcomeSelector = ({ value, onChange }) => {
       <label className="block text-sm font-medium text-corporate-navy">
         What happened after the conversation?
       </label>
-      <p className="text-xs text-gray-500 mb-2">
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
         Close the loop on this rep by recording the follow-up outcome.
       </p>
       <div className="space-y-2">
@@ -70,10 +70,10 @@ const OutcomeSelector = ({ value, onChange }) => {
           const Icon = option.icon;
           const isSelected = value === option.id;
           const colorClasses = {
-            green: isSelected ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300',
-            amber: isSelected ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-amber-300',
-            blue: isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300',
-            red: isSelected ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-red-300'
+            green: isSelected ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-green-300',
+            amber: isSelected ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-amber-300',
+            blue: isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-blue-300',
+            red: isSelected ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-red-300'
           };
           const iconColorClasses = {
             green: isSelected ? 'text-green-600' : 'text-gray-400',
@@ -91,7 +91,7 @@ const OutcomeSelector = ({ value, onChange }) => {
               <Icon className={`w-5 h-5 mt-0.5 ${iconColorClasses[option.color]}`} />
               <div>
                 <span className="text-sm font-medium">{option.label}</span>
-                <p className="text-xs text-gray-500 mt-0.5">{option.description}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{option.description}</p>
               </div>
             </button>
           );
@@ -144,7 +144,7 @@ const LoopClosureModal = ({
       subtitle={`${rep?.person || ''} • ${rep?.repType || ''}`}
       contextBar={
         rep.debriefedAt ? (
-          <div className="flex items-center gap-1 text-xs text-gray-500">
+          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
             <Calendar className="w-3 h-3" />
             <span>Debriefed {new Date(rep.debriefedAt.toDate?.() || rep.debriefedAt).toLocaleDateString()}</span>
           </div>

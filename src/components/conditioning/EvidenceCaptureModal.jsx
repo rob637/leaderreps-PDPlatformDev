@@ -22,8 +22,8 @@ const EvidenceLevelBadge = ({ level }) => {
   return (
     <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
       isLevel1 
-        ? 'bg-green-100 text-green-700' 
-        : 'bg-amber-100 text-amber-700'
+        ? 'bg-green-100 dark:bg-green-900/30 text-green-700' 
+        : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700'
     }`}>
       <Clock className="w-4 h-4" />
       <span className="font-medium">
@@ -132,7 +132,7 @@ const EvidenceCaptureModal = ({ rep, onClose, onSubmit, isLoading }) => {
       
       {/* Error Message */}
       {error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-700 text-sm">
+        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-2 text-red-700 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>

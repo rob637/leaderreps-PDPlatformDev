@@ -19,21 +19,21 @@ const getPatternConfig = (patternId) => {
     low_risk_pattern: {
       icon: Target,
       color: 'amber',
-      bgColor: 'bg-amber-100',
+      bgColor: 'bg-amber-100 dark:bg-amber-900/30',
       textColor: 'text-amber-700',
       borderColor: 'border-amber-300'
     },
     avoidance_pattern: {
       icon: Clock,
       color: 'orange',
-      bgColor: 'bg-orange-100',
+      bgColor: 'bg-orange-100 dark:bg-orange-900/30',
       textColor: 'text-orange-700',
       borderColor: 'border-orange-300'
     },
     prep_strong_followthrough_weak: {
       icon: TrendingDown,
       color: 'red',
-      bgColor: 'bg-red-100',
+      bgColor: 'bg-red-100 dark:bg-red-900/30',
       textColor: 'text-red-700',
       borderColor: 'border-red-300'
     },
@@ -52,7 +52,7 @@ const getPatternConfig = (patternId) => {
       borderColor: 'border-red-400'
     }
   };
-  return configs[patternId] || { icon: Brain, color: 'gray', bgColor: 'bg-gray-100', textColor: 'text-gray-700', borderColor: 'border-gray-300' };
+  return configs[patternId] || { icon: Brain, color: 'gray', bgColor: 'bg-gray-100 dark:bg-gray-700', textColor: 'text-gray-700 dark:text-gray-200', borderColor: 'border-gray-300 dark:border-gray-600' };
 };
 
 const getPriorityBadge = (priority) => {
@@ -87,15 +87,15 @@ const PatternCard = ({ pattern, onSendNudge }) => {
               {pattern.priority}
             </span>
           </div>
-          <p className="text-xs text-gray-600 mb-2">
+          <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
             {pattern.detection?.summary || pattern.description}
           </p>
           
           {/* Coaching Question */}
-          <div className="bg-white/60 rounded p-2 mb-2">
+          <div className="bg-white/60 dark:bg-slate-800/60 rounded p-2 mb-2">
             <div className="flex items-start gap-2">
               <Lightbulb className="w-3 h-3 text-amber-600 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-gray-700 italic">
+              <p className="text-xs text-gray-700 dark:text-gray-200 italic">
                 "{pattern.coachingQuestion}"
               </p>
             </div>
@@ -129,7 +129,7 @@ const UserPatternsRow = ({ userResult, userEmail, onSendNudge, isExpanded, onTog
       <button
         onClick={onToggle}
         className={`w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors ${
-          topPattern.priority === 'critical' ? 'bg-red-50' : ''
+          topPattern.priority === 'critical' ? 'bg-red-50 dark:bg-red-900/20' : ''
         }`}
       >
         <div className="flex items-center gap-3">
@@ -140,7 +140,7 @@ const UserPatternsRow = ({ userResult, userEmail, onSendNudge, isExpanded, onTog
             <div className="font-medium text-corporate-navy">
               {userEmail || userResult.userId}
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               {patternCount} pattern{patternCount !== 1 ? 's' : ''} detected • {userResult.totalReps} reps analyzed
             </div>
           </div>
@@ -160,7 +160,7 @@ const UserPatternsRow = ({ userResult, userEmail, onSendNudge, isExpanded, onTog
       
       {/* Expanded Pattern Details */}
       {isExpanded && (
-        <div className="px-4 pb-4 pt-2 bg-gray-50 space-y-3">
+        <div className="px-4 pb-4 pt-2 bg-gray-50 dark:bg-gray-800 space-y-3">
           {userResult.patterns.map((pattern, idx) => (
             <PatternCard 
               key={pattern.id + idx}
@@ -237,7 +237,7 @@ export const CoachPromptsPanel = ({
   return (
     <Card className={`overflow-hidden ${className}`}>
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-corporate-navy/5 to-corporate-teal/5">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-corporate-navy/5 to-corporate-teal/5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-full bg-corporate-navy/10">
@@ -245,7 +245,7 @@ export const CoachPromptsPanel = ({
             </div>
             <div>
               <h3 className="font-semibold text-corporate-navy">Coach Prompts</h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Behavior patterns detected over 4 weeks
               </p>
             </div>
@@ -257,7 +257,7 @@ export const CoachPromptsPanel = ({
             className="p-2 rounded-lg hover:bg-white/50 transition-colors disabled:opacity-50"
             title="Refresh patterns"
           >
-            <RefreshCw className={`w-4 h-4 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
         
@@ -266,15 +266,15 @@ export const CoachPromptsPanel = ({
           <div className="flex items-center gap-4 mt-3 text-sm">
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-red-500"></span>
-              <span className="text-gray-600">{criticalCount} Critical</span>
+              <span className="text-gray-600 dark:text-gray-300">{criticalCount} Critical</span>
             </span>
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-              <span className="text-gray-600">{highCount} High</span>
+              <span className="text-gray-600 dark:text-gray-300">{highCount} High</span>
             </span>
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-corporate-teal"></span>
-              <span className="text-gray-600">{totalPatterns} Total Patterns</span>
+              <span className="text-gray-600 dark:text-gray-300">{totalPatterns} Total Patterns</span>
             </span>
           </div>
         )}
@@ -285,7 +285,7 @@ export const CoachPromptsPanel = ({
         {loading ? (
           <div className="p-8 text-center">
             <RefreshCw className="w-6 h-6 text-gray-400 animate-spin mx-auto mb-2" />
-            <p className="text-sm text-gray-500">Analyzing patterns...</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Analyzing patterns...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center">
@@ -301,8 +301,8 @@ export const CoachPromptsPanel = ({
         ) : results.length === 0 ? (
           <div className="p-8 text-center">
             <Brain className="w-8 h-8 text-green-400 mx-auto mb-2" />
-            <p className="text-sm font-medium text-gray-700">No patterns detected</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">No patterns detected</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               All leaders are executing effectively
             </p>
           </div>
@@ -324,7 +324,7 @@ export const CoachPromptsPanel = ({
       
       {/* Footer */}
       {lastRefresh && (
-        <div className="px-4 py-2 border-t border-gray-100 bg-gray-50">
+        <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 dark:bg-gray-800">
           <p className="text-xs text-gray-400 text-center">
             Last analyzed: {lastRefresh.toLocaleTimeString()}
           </p>

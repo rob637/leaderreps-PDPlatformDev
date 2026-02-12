@@ -35,7 +35,7 @@ const RegisteredSessionCard = ({ session, onCancel }) => {
   const isToday = new Date(session.date).toDateString() === new Date().toDateString();
   
   return (
-    <div className={`bg-white rounded-xl border p-4 ${isToday ? 'border-green-300 bg-green-50' : 'border-slate-200'}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl border p-4 ${isToday ? 'border-green-300 bg-green-50 dark:bg-green-900/20' : 'border-slate-200 dark:border-slate-700'}`}>
       <div className="flex justify-between items-start">
         <div className="flex-1">
           {isToday && (
@@ -43,21 +43,21 @@ const RegisteredSessionCard = ({ session, onCancel }) => {
               TODAY
             </span>
           )}
-          <h4 className="font-bold text-slate-800">{session.title}</h4>
+          <h4 className="font-bold text-slate-800 dark:text-slate-200">{session.title}</h4>
           {session.host && (
-            <p className="text-sm text-slate-500">with {session.host}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">with {session.host}</p>
           )}
         </div>
         
         <button
           onClick={() => onCancel?.(session.id)}
-          className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+          className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 transition-colors"
         >
           Cancel
         </button>
       </div>
       
-      <div className="flex gap-4 mt-3 text-sm text-slate-500">
+      <div className="flex gap-4 mt-3 text-sm text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-1">
           <Calendar className="w-4 h-4" />
           <span>{formatSessionDate(session.date)}</span>
@@ -109,8 +109,8 @@ const CommunityMyRegistrationsWidget = ({ helpText }) => {
     return (
       <Card title="My Community Sessions" icon={Calendar} helpText={helpText}>
         <div className="animate-pulse space-y-4">
-          <div className="h-24 bg-slate-100 rounded-xl"></div>
-          <div className="h-24 bg-slate-100 rounded-xl"></div>
+          <div className="h-24 bg-slate-100 dark:bg-slate-700 rounded-xl"></div>
+          <div className="h-24 bg-slate-100 dark:bg-slate-700 rounded-xl"></div>
         </div>
       </Card>
     );
@@ -120,7 +120,7 @@ const CommunityMyRegistrationsWidget = ({ helpText }) => {
     <Card title="My Community Sessions" icon={Calendar} helpText={helpText}>
       <div className="space-y-4">
         {mySessions.length === 0 ? (
-          <div className="text-center py-8 text-slate-500">
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400">
             <Calendar className="w-12 h-12 mx-auto mb-3 opacity-20" />
             <p>You haven't registered for any sessions yet.</p>
           </div>

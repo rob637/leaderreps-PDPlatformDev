@@ -5,6 +5,7 @@
 // ENHANCED (12/02/25): Added midnight rollover logic for Time Traveler testing
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
 import { serverTimestamp } from '../../../services/firebaseUtils';
 import { useAppServices } from '../../../hooks/useAppServices';
 import { timeService } from '../../../services/timeService';
@@ -218,8 +219,9 @@ export const useDashboard = ({
       
       try {
         // Get cohortId from user's development plan
-        const devPlanDoc = await db.collection('users').doc(userId).collection('developmentPlan').doc('current').get();
-        const cohortId = devPlanDoc.exists ? devPlanDoc.data()?.cohortId : null;
+        const devPlanRef = doc(db, 'users', userId, 'developmentPlan', 'current');
+        const devPlanDoc = await getDoc(devPlanRef);
+        const cohortId = devPlanDoc.exists() ? devPlanDoc.data()?.cohortId : null;
         
         if (!cohortId) {
           setConditioningStatus({ requiredRepCompleted: false, totalCompleted: 0, isLoading: false });

@@ -17,12 +17,12 @@ import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 // Markdown to HTML converter (Simplified version)
 const mdToHtml = async (md) => { /* ... Re-use definition from Labs.jsx ... */
     if (!md) return ''; let html = md;
-    html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-extrabold text-corporate-navy border-b border-gray-200 pb-2 mb-3 mt-5">$1</h2>');
+    html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-extrabold text-corporate-navy border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 mt-5">$1</h2>');
     html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-corporate-teal mt-4 mb-2">$1</h3>');
     html = html.replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold">$1</strong>');
     html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
     html = html.replace(/(<li>.*<\/li>\s*)+/g, (match) => `<ul class="list-disc list-inside space-y-1 mb-4 pl-4">${match.trim()}</ul>`);
-    html = html.split('\n').map(line => { line = line.trim(); if (!line || line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<li') || line === '</ul>') return line; return `<p class="text-sm text-gray-700 mb-2">${line}</p>`; }).join('');
+    html = html.split('\n').map(line => { line = line.trim(); if (!line || line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<li') || line === '</ul>') return line; return `<p class="text-sm text-gray-700 dark:text-gray-200 mb-2">${line}</p>`; }).join('');
     html = html.replace(/<p><\/p>/g, '');
     return `<div class="prose prose-sm max-w-none">${html}</div>`;
 };
@@ -116,16 +116,16 @@ const LISAuditorView = ({ setQuickStartView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 min-h-screen bg-slate-50">
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 min-h-screen bg-slate-50 dark:bg-slate-800">
             {/* Header */}
             <header className="flex items-center gap-4 border-b-2 pb-3 mb-8 border-corporate-navy/30">
                 <ShieldCheck className="w-10 h-10 flex-shrink-0 text-corporate-navy"/>
                 <div>
                     <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold text-corporate-navy">Leadership Identity Statement (LIS) Auditor</h1>
-                    <p className="text-md text-gray-600 mt-1">Refine your core leadership foundation.</p>
+                    <p className="text-md text-gray-600 dark:text-gray-300 mt-1">Refine your core leadership foundation.</p>
                 </div>
             </header>
-            <p className="text-lg text-gray-700 mb-6 max-w-3xl">Your LIS defines who you are at your best. Use the AI Rep Coach to ensure it's specific, actionable, and aligned.</p>
+            <p className="text-lg text-gray-700 dark:text-gray-200 mb-6 max-w-3xl">Your LIS defines who you are at your best. Use the AI Rep Coach to ensure it's specific, actionable, and aligned.</p>
 
             {/* Back Button */}
             <Button onClick={() => setQuickStartView('quick-start-home')} variant="nav-back" className="mb-8">
@@ -136,12 +136,12 @@ const LISAuditorView = ({ setQuickStartView }) => {
             <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8'>
                 {/* Left Column: LIS Input */}
                 <Card title="1. Draft Your Leadership Identity Statement" icon={ShieldCheck} accent='NAVY'>
-                    <p className="text-gray-700 text-sm mb-4">Define who you are when leading at your best. Focus on actions and values.</p>
+                    <p className="text-gray-700 dark:text-gray-200 text-sm mb-4">Define who you are when leading at your best. Focus on actions and values.</p>
                     {/* LIS Input Textarea */}
                     <textarea
                         value={lisDraft}
                         onChange={(e) => setLisDraft(e.target.value)}
-                        className="w-full p-3 mt-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-corporate-teal h-32 text-sm" // Teal focus
+                        className="w-full p-3 mt-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-corporate-teal h-32 text-sm" // Teal focus
                         placeholder="e.g., 'I build high-trust teams by modeling vulnerability and consistently delivering on commitments.'"
                         aria-label="Leadership Identity Statement Draft"
                     />
@@ -169,8 +169,8 @@ const LISAuditorView = ({ setQuickStartView }) => {
                             <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
                         </Card>
                     ) : ( // Placeholder if no critique yet
-                        <Card title="AI Rep Coach Critique" icon={Cpu} accent='TEAL' className="border-dashed border-gray-300 bg-gray-50 text-center">
-                            <p className="text-sm text-gray-500 italic py-8">Complete Step 1 and click "Run LIS Audit" to get feedback here.</p>
+                        <Card title="AI Rep Coach Critique" icon={Cpu} accent='TEAL' className="border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-center">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 italic py-8">Complete Step 1 and click "Run LIS Audit" to get feedback here.</p>
                         </Card>
                     )}
                 </div>
@@ -258,14 +258,14 @@ const QuickStartAcceleratorScreen = () => {
                             </div>
                             <div>
                                 <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>Foundation Program</h1>
-                                <p className="text-sm text-slate-500 mt-1">Core Pillar</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Core Pillar</p>
                             </div>
                         </header>
-                        <p className="text-lg text-slate-600 mb-10 max-w-3xl leading-relaxed">The foundational 4-session accelerator for the LeaderReps methodology. Review sessions, focus areas, and pre-work requirements.</p>
+                        <p className="text-lg text-slate-600 dark:text-slate-300 mb-10 max-w-3xl leading-relaxed">The foundational 4-session accelerator for the LeaderReps methodology. Review sessions, focus areas, and pre-work requirements.</p>
 
                         {/* Link to LIS Auditor Tool (Highlighted Card) */}
                         <Card title="Tool: Leadership Identity Statement (LIS) Auditor" icon={ShieldCheck} accent="TEAL" className="mb-8 cursor-pointer hover:border-teal-400" onClick={() => setQuickStartView('lis-auditor')}>
-                            <p className='text-gray-700 text-sm'>Draft and refine your core leadership statement using AI critique. **Crucial pre-work for Session 2.**</p>
+                            <p className='text-gray-700 dark:text-gray-200 text-sm'>Draft and refine your core leadership statement using AI critique. **Crucial pre-work for Session 2.**</p>
                             <div className="mt-4 text-corporate-teal font-semibold flex items-center group">
                                 Launch LIS Auditor <span className="inline-block transition-transform group-hover:translate-x-1 ml-1">&rarr;</span>
                             </div>
@@ -283,7 +283,7 @@ const QuickStartAcceleratorScreen = () => {
                                             <Lightbulb className="w-4 h-4 text-amber-500"/> Why This Session Matters
                                             <span className="text-xs text-slate-400 group-open:rotate-90 transition-transform">▶</span>
                                         </summary>
-                                        <blockquote className="mt-3 border-l-4 pl-4 py-2 text-sm italic text-slate-600 border-corporate-teal bg-slate-50/50 rounded-r-lg">
+                                        <blockquote className="mt-3 border-l-4 pl-4 py-2 text-sm italic text-slate-600 dark:text-slate-300 border-corporate-teal bg-slate-50/50 dark:bg-slate-800/50 rounded-r-lg">
                                             {session.keyRationale}
                                         </blockquote>
                                     </details>
@@ -293,12 +293,12 @@ const QuickStartAcceleratorScreen = () => {
                                         {/* Core Focus */}
                                         <div>
                                             <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-corporate-teal"><Target className='w-4 h-4'/> Core Focus</h3>
-                                            <p className="text-slate-600 text-sm leading-relaxed">{session.focus}</p>
+                                            <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{session.focus}</p>
                                         </div>
                                         {/* Pre-Work */}
                                         <div>
                                             <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-corporate-orange"><Clock className='w-4 h-4'/> Pre-Work Checklist</h3>
-                                            <ul className="list-disc pl-5 text-slate-600 space-y-1.5 text-sm">
+                                            <ul className="list-disc pl-5 text-slate-600 dark:text-slate-300 space-y-1.5 text-sm">
                                                 {session.preWork.map((item, index) => (
                                                     <li key={index}>{item}</li>
                                                 ))}
@@ -324,7 +324,7 @@ const QuickStartAcceleratorScreen = () => {
     if (appError) return <ConfigError message={`Failed to load Foundation Program: ${appError.message}`} />;
 
     return (
-      <div className="min-h-screen bg-slate-50"> {/* Consistent BG */}
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-800"> {/* Consistent BG */}
         {renderView()}
         {/* Resource Viewer Modal */}
         {selectedResource && (
@@ -345,7 +345,7 @@ const QuickStartAcceleratorScreen = () => {
 
 // Error component for configuration or loading issues
 const ConfigError = ({ message }) => (
-    <div className="min-h-[200px] flex items-center justify-center bg-red-50 p-4">
+    <div className="min-h-[200px] flex items-center justify-center bg-red-50 dark:bg-red-900/20 p-4">
         <div className="flex flex-col items-center text-center">
             <AlertTriangle className="h-12 w-12 text-red-500 mb-3" />
             <h2 className="text-xl font-bold text-red-800">Configuration Error</h2>

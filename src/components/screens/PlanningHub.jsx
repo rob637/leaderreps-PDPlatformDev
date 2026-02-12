@@ -15,12 +15,12 @@ import {
 // Markdown to HTML converter (Simplified version, ensure consistency if used elsewhere)
 const mdToHtml = async (md) => { /* ... Re-use definition from Labs.jsx ... */
     if (!md) return ''; let html = md;
-    html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-extrabold text-corporate-navy border-b border-gray-200 pb-2 mb-3 mt-5">$1</h2>');
+    html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-extrabold text-corporate-navy border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 mt-5">$1</h2>');
     html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-corporate-teal mt-4 mb-2">$1</h3>');
     html = html.replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold">$1</strong>');
     html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
     html = html.replace(/(<li>.*<\/li>\s*)+/g, (match) => `<ul class="list-disc list-inside space-y-1 mb-4 pl-4">${match.trim()}</ul>`);
-    html = html.split('\n').map(line => { line = line.trim(); if (!line || line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<li') || line === '</ul>') return line; return `<p class="text-sm text-gray-700 mb-2">${line}</p>`; }).join('');
+    html = html.split('\n').map(line => { line = line.trim(); if (!line || line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<li') || line === '</ul>') return line; return `<p class="text-sm text-gray-700 dark:text-gray-200 mb-2">${line}</p>`; }).join('');
     html = html.replace(/<p><\/p>/g, '');
     return `<div class="prose prose-sm max-w-none">${html}</div>`;
 };
@@ -208,7 +208,7 @@ const PreMortemView = ({ setPlanningView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="min-h-screen bg-slate-50 p-6 space-y-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-800 p-6 space-y-8">
             <div className="max-w-5xl mx-auto">
                 {/* Back Button */}
                 <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-6">
@@ -218,7 +218,7 @@ const PreMortemView = ({ setPlanningView }) => {
                 {/* Header */}
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-corporate-navy mb-2">Tool: Decision Pre-Mortem Audit</h1>
-                    <p className="text-slate-600 text-lg">Identify critical risks *before* committing to a high-stakes decision using the AI Devil's Advocate.</p>
+                    <p className="text-slate-600 dark:text-slate-300 text-lg">Identify critical risks *before* committing to a high-stakes decision using the AI Devil's Advocate.</p>
                 </div>
 
                 {/* Main Content Sections */}
@@ -229,31 +229,31 @@ const PreMortemView = ({ setPlanningView }) => {
                         <div className="mb-4">
                             <label className="block text-sm font-semibold mb-1 text-corporate-navy">Critical Decision:</label>
                             <textarea value={decision} onChange={(e) => setDecision(e.target.value)}
-                                className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-corporate-teal h-20 text-sm" placeholder="e.g., Should we acquire competitor X?" />
+                                className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-corporate-teal h-20 text-sm" placeholder="e.g., Should we acquire competitor X?" />
                         </div>
                         {/* Outcome Input */}
                         <div>
                             <label className="block text-sm font-semibold mb-1 text-corporate-navy">Desired Outcome (Success State):</label>
                             <input type="text" value={outcome} onChange={(e) => setOutcome(e.target.value)}
-                                className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-corporate-teal text-sm" placeholder="e.g., Integrate acquisition smoothly, retain 90% key staff, increase market share by 5% in 12 months."/>
+                                className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-corporate-teal text-sm" placeholder="e.g., Integrate acquisition smoothly, retain 90% key staff, increase market share by 5% in 12 months."/>
                         </div>
                     </Card>
 
                     {/* Step 2: Identify Initial Risks */}
                     <Card title="2. Identify Known Risks / Failure Modes" icon={AlertTriangle} accent='ORANGE'>
-                        <p className="text-slate-700 text-sm mb-3">List the main ways this decision could fail (Min. 2 required).</p>
+                        <p className="text-slate-700 dark:text-slate-200 text-sm mb-3">List the main ways this decision could fail (Min. 2 required).</p>
                         <div className="space-y-3">
                             {risks.map((risk, index) => (
                                 <div key={index} className="flex items-center gap-2">
                                     <span className="text-slate-400 font-mono text-sm">{index + 1}.</span>
                                     <input type="text" value={risk} onChange={(e) => handleRiskChange(index, e.target.value)}
-                                        className="flex-1 p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm" placeholder={`Potential failure mode ${index + 1}`} />
+                                        className="flex-1 p-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm" placeholder={`Potential failure mode ${index + 1}`} />
                                     <Button onClick={() => handleRemoveRisk(index)} variant="ghost" size="sm" className="!p-1 text-red-500 hover:bg-red-100"> <X className='w-4 h-4'/> </Button>
                                 </div>
                             ))}
                         </div>
                         {/* Add Risk Button */}
-                        <Button onClick={handleAddRisk} variant="outline" size="sm" className="mt-4 border-dashed border-slate-400 text-slate-600 hover:bg-slate-100">
+                        <Button onClick={handleAddRisk} variant="outline" size="sm" className="mt-4 border-dashed border-slate-400 text-slate-600 dark:text-slate-300 hover:bg-slate-100">
                             <PlusCircle className='w-4 h-4 mr-2'/> Add Risk
                         </Button>
                     </Card>
@@ -276,7 +276,7 @@ const PreMortemView = ({ setPlanningView }) => {
 
                         {/* Actionable Next Steps (Conditional) */}
                         {(mitigationText || riskScenario) && hasGeminiKey() && (
-                            <div className='mt-6 pt-4 border-t border-slate-300 space-y-3'>
+                            <div className='mt-6 pt-4 border-t border-slate-300 dark:border-slate-600 space-y-3'>
                                 <p className='text-sm font-semibold flex items-center gap-1 text-corporate-navy'><Award className="w-4 h-4 text-corporate-teal" /> Actionable Next Steps:</p>
                                 {/* Create Commitment Button */}
                                 {mitigationText && (
@@ -297,7 +297,7 @@ const PreMortemView = ({ setPlanningView }) => {
 
                 {/* Critique Section */}
                 <Card title="AI Critique of Pre-Mortem Analysis" icon={Cpu} accent='PURPLE' className="mt-8">
-                    <p className="text-slate-700 text-sm mb-4">Get AI feedback on your Pre-Mortem analysis for completeness and actionability.</p>
+                    <p className="text-slate-700 dark:text-slate-200 text-sm mb-4">Get AI feedback on your Pre-Mortem analysis for completeness and actionability.</p>
                     {/* Critique Button */}
                     <Button onClick={critiquePreMortem} disabled={isCritiquing || !decision.trim() || !outcome.trim() || risks.filter(r => r.trim()).length < 1 || !hasGeminiKey()} size="md" className="w-full bg-corporate-teal hover:bg-teal-700 text-white">
                         {isCritiquing ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <MessageSquare className='w-5 h-5 mr-2'/>} {isCritiquing ? 'Auditing Pre-Mortem...' : 'Run Pre-Mortem Critique'}
@@ -305,7 +305,7 @@ const PreMortemView = ({ setPlanningView }) => {
                      {!hasGeminiKey() && <p className="text-xs text-red-500 mt-2 text-center">API Key missing. Critique disabled.</p>}
                     {/* Critique Result */}
                     {critiqueHtml && (
-                        <div className="mt-6 pt-4 border-t border-slate-200">
+                        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
                             <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
                         </div>
                     )}
@@ -382,7 +382,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="min-h-screen bg-slate-50 p-6 space-y-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-800 p-6 space-y-8">
             <div className="max-w-5xl mx-auto">
                 {/* Back Button */}
                 <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-6">
@@ -392,26 +392,26 @@ const VisionBuilderView = ({ setPlanningView }) => {
                 {/* Header */}
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-corporate-navy mb-2">Tool: Vision & Mission Builder</h1>
-                    <p className="text-slate-600 text-lg">Define your aspirational 3-5 year Vision (Future State) and Mission (Core Purpose).</p>
+                    <p className="text-slate-600 dark:text-slate-300 text-lg">Define your aspirational 3-5 year Vision (Future State) and Mission (Core Purpose).</p>
                 </div>
 
                 {/* Main Content Sections */}
                 <div className="space-y-6">
                     {/* Vision Card */}
                     <Card title="1. Define Your Vision (3-5 Year Future State)" icon={TrendingUp} accent='ORANGE'>
-                        <p className="text-slate-700 text-sm mb-3">Inspiring, memorable, concise (max ~20 words).</p>
+                        <p className="text-slate-700 dark:text-slate-200 text-sm mb-3">Inspiring, memorable, concise (max ~20 words).</p>
                         <textarea value={vision} onChange={(e) => setVision(e.target.value)}
-                            className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 h-24 text-sm" placeholder="e.g., 'Become the undisputed leader in sustainable tech solutions...'" />
+                            className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-orange-500 h-24 text-sm" placeholder="e.g., 'Become the undisputed leader in sustainable tech solutions...'" />
                     </Card>
                     {/* Mission Card */}
                     <Card title="2. Define Your Mission (Core Purpose)" icon={Target} accent='TEAL'>
-                        <p className="text-slate-700 text-sm mb-3">Why your team exists, primary value delivered.</p>
+                        <p className="text-slate-700 dark:text-slate-200 text-sm mb-3">Why your team exists, primary value delivered.</p>
                         <textarea value={mission} onChange={(e) => setMission(e.target.value)}
-                            className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-corporate-teal h-20 text-sm" placeholder="e.g., 'To empower businesses with data-driven insights...'" />
+                            className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-corporate-teal h-20 text-sm" placeholder="e.g., 'To empower businesses with data-driven insights...'" />
                     </Card>
                     {/* Quality Check Card */}
-                    <Card title="Quality Check" icon={CheckCircle} accent='NAVY' className='bg-slate-50 text-sm border-t-4 border-corporate-navy'>
-                         <ul className="list-disc list-inside space-y-2 text-slate-700">
+                    <Card title="Quality Check" icon={CheckCircle} accent='NAVY' className='bg-slate-50 dark:bg-slate-800 text-sm border-t-4 border-corporate-navy'>
+                         <ul className="list-disc list-inside space-y-2 text-slate-700 dark:text-slate-200">
                             <li><strong>Inspiring?</strong> Does it motivate action?</li>
                             <li><strong>Clear & Concise?</strong> Is it easy to understand and remember?</li>
                             <li><strong>Distinct?</strong> Does it separate you from others?</li>
@@ -430,7 +430,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
 
                 {/* AI Critique Section */}
                 <Card title="AI Vision Auditor" icon={Cpu} accent='PURPLE' className='mt-8'> {/* Use Purple Accent */}
-                    <p className='text-slate-700 text-sm mb-4'>Use the AI Rep Coach to critique your statements for clarity, alignment, and actionability (T5 focus).</p>
+                    <p className='text-slate-700 dark:text-slate-200 text-sm mb-4'>Use the AI Rep Coach to critique your statements for clarity, alignment, and actionability (T5 focus).</p>
                     {/* Critique Button */}
                     <Button onClick={critiqueVision} disabled={isCritiquing || !vision.trim() || !mission.trim() || !hasGeminiKey()} size="md" className="w-full bg-corporate-teal hover:bg-teal-700 text-white"> {/* Purple Button */}
                         {isCritiquing ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <MessageSquare className='w-5 h-5 mr-2'/>} {isCritiquing ? 'Auditing Vision...' : 'Run Vision Critique'}
@@ -438,7 +438,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
                      {!hasGeminiKey() && <p className="text-xs text-red-500 mt-2 text-center">API Key missing. Critique disabled.</p>}
                     {/* Critique Result */}
                     {critiqueHtml && (
-                        <div className="mt-6 pt-4 border-t border-slate-200">
+                        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
                             <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
                         </div>
                     )}
@@ -540,7 +540,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="min-h-screen bg-slate-50 p-6 space-y-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-800 p-6 space-y-8">
             <div className="max-w-5xl mx-auto">
                 {/* Back Button */}
                 <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-6">
@@ -550,7 +550,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
                 {/* Header */}
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-corporate-navy mb-2">Tool: OKR Drafting & Audit</h1>
-                    <p className="text-slate-600 text-lg">Set ambitious Objectives (What) and measurable Key Results (How) for the quarter, aligned with your Vision.</p>
+                    <p className="text-slate-600 dark:text-slate-300 text-lg">Set ambitious Objectives (What) and measurable Key Results (How) for the quarter, aligned with your Vision.</p>
                 </div>
 
                 {/* OKR Cards */}
@@ -560,13 +560,13 @@ const OKRDraftingView = ({ setPlanningView }) => {
                             {/* Objective Input & Remove Button */}
                             <div className='flex justify-between items-start mb-4'>
                                 <input type="text" value={obj.objective} onChange={(e) => updateObjective(obj.id, e.target.value)}
-                                    className="flex-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-corporate-teal text-md font-semibold" placeholder="Ambitious, inspiring objective..." />
+                                    className="flex-1 p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-corporate-teal text-md font-semibold" placeholder="Ambitious, inspiring objective..." />
                                 <Button onClick={() => removeObjective(obj.id)} variant="ghost" size="sm" className="!p-1 text-red-500 hover:bg-red-100 ml-2"> <Trash2 className='w-4 h-4'/> </Button>
                             </div>
                             {/* Succession Dependency (unchanged UI) */}
-                            <div className='flex items-center gap-2 mb-6 p-2 rounded-lg bg-slate-100 border border-slate-200'>
-                                <label htmlFor={`dep-${obj.id}`} className='text-xs font-semibold flex items-center text-slate-600'><CornerRightUp className='w-3 h-3 mr-1'/> Succession:</label>
-                                <select id={`dep-${obj.id}`} value={obj.successionDependency || 'None'} onChange={(e) => setOkrs(prev => prev.map(o => o.id === obj.id ? { ...o, successionDependency: e.target.value } : o))} className="p-1 border border-slate-300 rounded text-xs bg-white">
+                            <div className='flex items-center gap-2 mb-6 p-2 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-700'>
+                                <label htmlFor={`dep-${obj.id}`} className='text-xs font-semibold flex items-center text-slate-600 dark:text-slate-300'><CornerRightUp className='w-3 h-3 mr-1'/> Succession:</label>
+                                <select id={`dep-${obj.id}`} value={obj.successionDependency || 'None'} onChange={(e) => setOkrs(prev => prev.map(o => o.id === obj.id ? { ...o, successionDependency: e.target.value } : o))} className="p-1 border border-slate-300 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-800">
                                     <option value="None">None</option>
                                     {(strategicContentData?.developmentAreas || []).map(area => <option key={area.id} value={area.title}>{area.title}</option>)}
                                 </select>
@@ -578,13 +578,13 @@ const OKRDraftingView = ({ setPlanningView }) => {
                                     <div key={kr.id} className='flex items-center gap-2'>
                                         <span className='font-mono text-sm text-orange-600 w-4'>{krIndex + 1}.</span>
                                         <input type="text" value={kr.kr} onChange={(e) => updateKR(obj.id, kr.id, e.target.value)}
-                                            className="flex-1 p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm" placeholder="e.g., Reduce bugs from 45 to 15 by EOM." />
+                                            className="flex-1 p-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm" placeholder="e.g., Reduce bugs from 45 to 15 by EOM." />
                                         <Button onClick={() => removeKR(obj.id, kr.id)} variant="ghost" size="sm" className="!p-1 text-slate-400 hover:text-red-500"> <X className='w-4 h-4'/> </Button>
                                     </div>
                                 ))}
                             </div>
                             {/* Add KR Button */}
-                            <Button onClick={() => addKR(obj.id)} variant="outline" size="sm" className="mt-4 border-dashed border-slate-400 text-slate-600 hover:bg-slate-100">
+                            <Button onClick={() => addKR(obj.id)} variant="outline" size="sm" className="mt-4 border-dashed border-slate-400 text-slate-600 dark:text-slate-300 hover:bg-slate-100">
                                 <PlusCircle className='w-4 h-4 mr-2'/> Add Key Result
                             </Button>
                         </Card>
@@ -604,7 +604,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
 
                 {/* AI Critique Section */}
                 <Card title="AI OKR Auditor" icon={Cpu} accent='TEAL' className='mt-8'>
-                    <p className='text-slate-700 text-sm mb-4'>Use the AI Rep Coach to review drafted OKRs for measurability, ambition, and alignment.</p>
+                    <p className='text-slate-700 dark:text-slate-200 text-sm mb-4'>Use the AI Rep Coach to review drafted OKRs for measurability, ambition, and alignment.</p>
                     {/* Critique Button */}
                     <Button onClick={critiqueOKRs} disabled={isCritiquing || okrs.length === 0 || !okrs.every(o=>o.objective.trim() && o.keyResults?.every(kr=>kr.kr.trim())) || !hasGeminiKey()} size="md" className="w-full bg-corporate-navy hover:bg-slate-700 text-white"> {/* Navy Button */}
                         {isCritiquing ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <MessageSquare className='w-5 h-5 mr-2'/>} {isCritiquing ? 'Auditing OKRs...' : 'Run OKR Audit'}
@@ -612,7 +612,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
                      {!hasGeminiKey() && <p className="text-xs text-red-500 mt-2 text-center">API Key missing. Audit disabled.</p>}
                     {/* Critique Result */}
                     {critiqueHtml && (
-                        <div className="mt-6 pt-4 border-t border-slate-200">
+                        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
                             <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
                         </div>
                     )}
@@ -733,7 +733,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="min-h-screen bg-slate-50 p-6 space-y-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-800 p-6 space-y-8">
             <div className="max-w-5xl mx-auto">
                 {/* Back Button */}
                 <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-6">
@@ -743,19 +743,19 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                 {/* Header */}
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-corporate-navy mb-2">Tool: Strategic Alignment Tracker</h1>
-                    <p className="text-slate-600 text-lg">Review OKR progress, log misalignments, and get AI-suggested "preventative reps" to improve team focus.</p>
+                    <p className="text-slate-600 dark:text-slate-300 text-lg">Review OKR progress, log misalignments, and get AI-suggested "preventative reps" to improve team focus.</p>
                 </div>
 
                 {/* Main Content Sections */}
                 <div className="space-y-6">
                     {/* OKR Progress Section */}
                     <h2 className='text-2xl font-bold border-b-2 pb-2 mb-4 text-corporate-navy border-corporate-teal'>Quarterly Objective Progress</h2>
-                    {objectives.length === 0 && <Card className="text-center italic text-slate-500 border-dashed">No OKRs defined yet. Use the OKR Drafting Tool.</Card>}
+                    {objectives.length === 0 && <Card className="text-center italic text-slate-500 dark:text-slate-400 border-dashed">No OKRs defined yet. Use the OKR Drafting Tool.</Card>}
                     {objectives.map(obj => (
                         <Card key={obj.id} title={obj.title} icon={CheckCircle} accent='TEAL' className="shadow-md">
                             {/* Progress Bar & Status */}
                             <div className="flex items-center justify-between mb-2">
-                                <p className="text-sm font-semibold text-slate-700">Progress: {Math.round(obj.progress * 100)}%</p>
+                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Progress: {Math.round(obj.progress * 100)}%</p>
                                 {/* Status Badge (FIXED) */}
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white`} style={{ backgroundColor: obj.color }}>{obj.status}</span>
                             </div>
@@ -764,20 +764,20 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                                 <div className={`h-2.5 rounded-full`} style={{ width: `${obj.progress * 100}%`, backgroundColor: obj.color }}></div> 
                             </div>
                             {/* Succession Dependency Note (if applicable) */}
-                            {obj.successionDependency && obj.successionDependency !== 'None' && <div className='mt-3 p-2 rounded text-xs flex items-center bg-slate-100 border border-slate-200'><CornerRightUp className='w-3 h-3 mr-1 text-slate-500'/> Succession Critical: Requires <strong>{obj.successionDependency}</strong> development.</div>}
+                            {obj.successionDependency && obj.successionDependency !== 'None' && <div className='mt-3 p-2 rounded text-xs flex items-center bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-700'><CornerRightUp className='w-3 h-3 mr-1 text-slate-500 dark:text-slate-400'/> Succession Critical: Requires <strong>{obj.successionDependency}</strong> development.</div>}
                         </Card>
                     ))}
 
                     {/* Misalignment Reflection Section */}
                     <Card title="Log Misalignment / Wasted Effort" icon={Activity} accent='ORANGE'>
-                        <p className="text-slate-700 text-sm mb-3">Describe a recent situation where your or your team's effort was not aligned with the OKRs above.</p>
+                        <p className="text-slate-700 dark:text-slate-200 text-sm mb-3">Describe a recent situation where your or your team's effort was not aligned with the OKRs above.</p>
                         <textarea value={misalignmentNotes} onChange={(e) => { setMisalignmentNotes(e.target.value); handleSaveReflection(); }}
-                            className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 h-28 text-sm" placeholder="e.g., 'Spent half of Tuesday on an urgent request that didn't map to any KR...'" />
+                            className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-orange-500 h-28 text-sm" placeholder="e.g., 'Spent half of Tuesday on an urgent request that didn't map to any KR...'" />
                     </Card>
 
                     {/* AI Suggestion Section */}
                     <Card title="AI-Suggested Preventative Rep" icon={Cpu} accent='PURPLE'>
-                        <p className='text-slate-700 text-sm mb-4'>Generate a T1/T2 daily rep to prevent this misalignment from recurring.</p>
+                        <p className='text-slate-700 dark:text-slate-200 text-sm mb-4'>Generate a T1/T2 daily rep to prevent this misalignment from recurring.</p>
                         <Button onClick={critiqueMisalignment} disabled={isSuggesting || !misalignmentNotes.trim() || !hasGeminiKey()} size="md" className="w-full bg-corporate-teal hover:bg-teal-700 text-white">
                             {isSuggesting ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <Zap className='w-5 h-5 mr-2'/>} {isSuggesting ? 'Generating Suggestion...' : 'Generate Preventative Rep'}
                         </Button>
@@ -785,9 +785,9 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                         
                         {/* Suggestion Result */}
                         {(suggestionText || lastJsonError) && (
-                            <div className="mt-6 pt-4 border-t border-slate-200">
+                            <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
                                 <p className='text-sm font-semibold mb-2 text-corporate-navy'>Suggested Rep (Tier: {suggestionCommitment?.tier || 'N/A'}):</p>
-                                <div className={`p-3 rounded-lg text-sm ${lastJsonError ? 'bg-red-100 text-red-800' : 'bg-purple-100 text-purple-800'}`}>
+                                <div className={`p-3 rounded-lg text-sm ${lastJsonError ? 'bg-red-100 dark:bg-red-900/30 text-red-800' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-800'}`}>
                                     {suggestionText}
                                     {lastJsonError && <p className="text-xs mt-2"><strong>Error Details:</strong> {lastJsonError}</p>}
                                 </div>
@@ -822,42 +822,42 @@ const PlanningHub = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 space-y-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-800 p-6 space-y-8">
             <div className="max-w-[860px] mx-auto">
                 <div className="text-center max-w-4xl mx-auto mb-12">
                     <h1 className="text-3xl font-bold text-corporate-navy mb-2">Strategic Planning Hub</h1>
-                    <p className="text-slate-600 text-lg">A suite of tools to help you define your strategy, set clear goals, and align your team for maximum impact.</p>
+                    <p className="text-slate-600 dark:text-slate-300 text-lg">A suite of tools to help you define your strategy, set clear goals, and align your team for maximum impact.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {/* Vision & Mission Builder */}
                     <Card title="Vision & Mission Builder" icon={TrendingUp} accent="ORANGE" onClick={() => setPlanningView('vision-builder')} className="hover:scale-[1.02] transition-transform cursor-pointer">
-                        <p className="text-slate-600">Define your aspirational 3-5 year Vision (Future State) and your team's core purpose (Mission). Get AI feedback on clarity and impact.</p>
+                        <p className="text-slate-600 dark:text-slate-300">Define your aspirational 3-5 year Vision (Future State) and your team's core purpose (Mission). Get AI feedback on clarity and impact.</p>
                     </Card>
 
                     {/* OKR Drafting & Audit */}
                     <Card title="OKR Drafting & Audit" icon={Target} accent="TEAL" onClick={() => setPlanningView('okr-drafting')} className="hover:scale-[1.02] transition-transform cursor-pointer">
-                        <p className="text-slate-600">Set quarterly Objectives and Key Results. Use the AI Auditor to ensure they are well-formed and impactful.</p>
+                        <p className="text-slate-600 dark:text-slate-300">Set quarterly Objectives and Key Results. Use the AI Auditor to ensure they are well-formed and impactful.</p>
                     </Card>
 
                     {/* Decision Pre-Mortem */}
                     <Card title="Decision Pre-Mortem" icon={AlertTriangle} accent="RED" onClick={() => setPlanningView('pre-mortem')} className="hover:scale-[1.02] transition-transform cursor-pointer">
-                        <p className="text-slate-600">Before a big decision, run a "pre-mortem" to identify potential failure points. The AI acts as a Devil's Advocate to find blind spots.</p>
+                        <p className="text-slate-600 dark:text-slate-300">Before a big decision, run a "pre-mortem" to identify potential failure points. The AI acts as a Devil's Advocate to find blind spots.</p>
                     </Card>
 
                     {/* Strategic Alignment Tracker */}
                     <Card title="Strategic Alignment Tracker" icon={Activity} accent="NAVY" onClick={() => setPlanningView('alignment-tracker')} className="hover:scale-[1.02] transition-transform cursor-pointer">
-                        <p className="text-slate-600">Track progress against OKRs, log misalignments, and get AI-suggested "preventative reps" to improve team focus.</p>
+                        <p className="text-slate-600 dark:text-slate-300">Track progress against OKRs, log misalignments, and get AI-suggested "preventative reps" to improve team focus.</p>
                     </Card>
 
                     {/* Trello Integration (Example) */}
-                    <Card title="Export to Trello (Coming Soon)" icon={Trello} accent="BLUE" className="opacity-60 cursor-not-allowed bg-slate-100">
-                        <p className="text-slate-500">Automatically create Trello boards and cards from your drafted OKRs to move from planning to execution seamlessly.</p>
+                    <Card title="Export to Trello (Coming Soon)" icon={Trello} accent="BLUE" className="opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-700">
+                        <p className="text-slate-500 dark:text-slate-400">Automatically create Trello boards and cards from your drafted OKRs to move from planning to execution seamlessly.</p>
                     </Card>
 
                      {/* Link to Development Plan */}
                     <Card title="Link to Development Plan" icon={Link} accent="PURPLE" onClick={() => navigate('dev-plan')} className="hover:scale-[1.02] transition-transform cursor-pointer">
-                        <p className="text-slate-600">Connect your strategic objectives to specific leadership development areas for you and your team.</p>
+                        <p className="text-slate-600 dark:text-slate-300">Connect your strategic objectives to specific leadership development areas for you and your team.</p>
                     </Card>
                 </div>
             </div>

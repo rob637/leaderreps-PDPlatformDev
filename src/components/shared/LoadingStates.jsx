@@ -44,7 +44,7 @@ export const ErrorState = ({
     <h3 className="text-lg font-semibold mb-2 text-corporate-navy">
       {title}
     </h3>
-    <p className="text-sm text-gray-600 mb-6 max-w-md">
+    <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 max-w-md">
       {message}
     </p>
     {onRetry && (
@@ -70,7 +70,7 @@ export const EmptyState = ({
     <h3 className="text-lg font-semibold mb-2 text-corporate-navy">
       {title}
     </h3>
-    <p className="text-sm text-gray-600 mb-6 max-w-md">
+    <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 max-w-md">
       {message}
     </p>
     {actionLabel && onAction && (
@@ -86,7 +86,7 @@ export const EmptyState = ({
 
 export const NetworkStatus = ({ isOnline = true }) => (
   <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-    isOnline ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+    isOnline ? 'bg-green-100 dark:bg-green-900/30 text-green-800' : 'bg-red-100 dark:bg-red-900/30 text-red-800'
   }`}>
     {isOnline ? (
       <Wifi className="h-3 w-3" />

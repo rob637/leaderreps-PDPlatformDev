@@ -38,7 +38,7 @@ const TestUtilsModal = ({ isOpen, onDeletePlan, onClose, membershipData, updateM
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 max-w-md w-full">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-3 sm:p-4 lg:p-6 max-w-md w-full">
         <h2 className="text-xl sm:text-2xl font-bold mb-2 text-corporate-navy">
           ⚙️ Test Utilities (Danger Zone)
         </h2>
@@ -48,7 +48,7 @@ const TestUtilsModal = ({ isOpen, onDeletePlan, onClose, membershipData, updateM
 
         <div className="mb-4">
           <p className="text-sm font-semibold">Membership Snapshot</p>
-          <pre className="text-xs p-3 mt-2 bg-gray-50 rounded" style={{ maxHeight: 160, overflow: 'auto' }}>{JSON.stringify(safeMembership, null, 2)}</pre>
+          <pre className="text-xs p-3 mt-2 bg-gray-50 dark:bg-gray-800 rounded" style={{ maxHeight: 160, overflow: 'auto' }}>{JSON.stringify(safeMembership, null, 2)}</pre>
         </div>
 
         <div className="grid grid-cols-2 gap-2 mb-3">
@@ -61,7 +61,7 @@ const TestUtilsModal = ({ isOpen, onDeletePlan, onClose, membershipData, updateM
         </div>
 
         {statusMessage && (
-          <div className="mb-3 text-sm text-gray-700">Status: {statusMessage}</div>
+          <div className="mb-3 text-sm text-gray-700 dark:text-gray-200">Status: {statusMessage}</div>
         )}
 
         {confirmDelete ? (
@@ -82,7 +82,7 @@ const TestUtilsModal = ({ isOpen, onDeletePlan, onClose, membershipData, updateM
           </Button>
         )}
 
-        <div className="pt-4 mt-4 border-t border-slate-200">
+        <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
           <Button onClick={onClose} variant="ghost" size="sm" className="w-full">Close</Button>
         </div>
       </div>

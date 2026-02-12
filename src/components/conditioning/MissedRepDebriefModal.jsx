@@ -48,7 +48,7 @@ const BlockerSelector = ({ value, onChange }) => {
       <label className="block text-sm font-medium text-corporate-navy">
         What got in the way?
       </label>
-      <p className="text-xs text-gray-500 mb-2">
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
         No judgment — understanding blockers helps you improve next time.
       </p>
       <div className="space-y-2">
@@ -61,7 +61,7 @@ const BlockerSelector = ({ value, onChange }) => {
               className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
                 value === option.id
                   ? 'border-corporate-teal bg-corporate-teal/5'
-                  : 'border-gray-200 hover:border-gray-300'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
               }`}
             >
               <Icon className={`w-5 h-5 ${value === option.id ? 'text-corporate-teal' : 'text-gray-400'}`} />
@@ -96,7 +96,7 @@ const StandardSelector = ({ value, onChange, blocker }) => {
       <label className="block text-sm font-medium text-corporate-navy">
         Which standard broke down?
       </label>
-      <p className="text-xs text-gray-500 mb-2">
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
         This helps identify patterns over time — not for blame.
       </p>
       <div className="space-y-2">
@@ -108,12 +108,12 @@ const StandardSelector = ({ value, onChange, blocker }) => {
               value === option.id
                 ? 'border-corporate-teal bg-corporate-teal/5'
                 : suggestedStandard === option.id
-                ? 'border-amber-300 bg-amber-50'
-                : 'border-gray-200 hover:border-gray-300'
+                ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/20'
+                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
             }`}
           >
             <span className="text-sm font-medium">{option.label}</span>
-            <span className="text-xs text-gray-500">{option.description}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{option.description}</span>
             {suggestedStandard === option.id && value !== option.id && (
               <span className="text-xs text-amber-600 mt-1">← Suggested based on blocker</span>
             )}
@@ -194,14 +194,14 @@ const RecommitOptions = ({ rep, selectedOption, onChange, cancelReason, onCancel
           onClick={() => onChange('recommit')}
           className={`w-full flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all ${
             selectedOption === 'recommit'
-              ? 'border-green-500 bg-green-50'
-              : 'border-gray-200 hover:border-gray-300'
+              ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
           }`}
         >
           <RefreshCw className={`w-5 h-5 mt-0.5 ${selectedOption === 'recommit' ? 'text-green-600' : 'text-gray-400'}`} />
           <div>
             <span className="text-sm font-medium">Recommit for this week</span>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Try again with {rep?.person} — same rep type ({repType?.shortLabel || rep?.repType})
             </p>
           </div>
@@ -211,14 +211,14 @@ const RecommitOptions = ({ rep, selectedOption, onChange, cancelReason, onCancel
           onClick={() => onChange('modify')}
           className={`w-full flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all ${
             selectedOption === 'modify'
-              ? 'border-amber-500 bg-amber-50'
-              : 'border-gray-200 hover:border-gray-300'
+              ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
           }`}
         >
           <ArrowRight className={`w-5 h-5 mt-0.5 ${selectedOption === 'modify' ? 'text-amber-600' : 'text-gray-400'}`} />
           <div>
             <span className="text-sm font-medium">Modify and recommit</span>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Adjust the person, rep type, or difficulty level
             </p>
           </div>
@@ -228,14 +228,14 @@ const RecommitOptions = ({ rep, selectedOption, onChange, cancelReason, onCancel
           onClick={() => onChange('cancel')}
           className={`w-full flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all ${
             selectedOption === 'cancel'
-              ? 'border-gray-500 bg-gray-50'
-              : 'border-gray-200 hover:border-gray-300'
+              ? 'border-gray-500 bg-gray-50 dark:bg-gray-800'
+              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
           }`}
         >
-          <X className={`w-5 h-5 mt-0.5 ${selectedOption === 'cancel' ? 'text-gray-600' : 'text-gray-400'}`} />
+          <X className={`w-5 h-5 mt-0.5 ${selectedOption === 'cancel' ? 'text-gray-600 dark:text-gray-300' : 'text-gray-400'}`} />
           <div>
             <span className="text-sm font-medium">Cancel this rep</span>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               The situation has changed — this rep is no longer relevant
             </p>
           </div>
@@ -363,7 +363,7 @@ const MissedRepDebriefModal = ({
       totalSteps={4}
       stepLabels={stepLabels}
       contextBar={
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
           <p className="text-xs text-amber-600">
             This rep was not completed by the deadline. Let's understand why and set up for success next time.
           </p>
@@ -435,7 +435,7 @@ const MissedRepDebriefModal = ({
       
       {/* Error */}
       {error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 text-sm">
           {error}
         </div>
       )}

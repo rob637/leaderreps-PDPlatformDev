@@ -53,43 +53,43 @@ const RepFeedItem = ({ item }) => {
 
     return (
         // Use consistent card styling from Card component (applied manually here for structure)
-        <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-md transition-shadow duration-200 hover:shadow-lg">
+        <div className="p-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md transition-shadow duration-200 hover:shadow-lg">
             {/* Header: User Info & Tags */}
-            <div className="flex justify-between items-start mb-3 border-b border-gray-200 pb-2">
+            <div className="flex justify-between items-start mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
                 {/* User Avatar (Placeholder) & Name/Time */}
                 <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"> {/* Placeholder Avatar */}
-                        <User className="w-4 h-4 text-gray-500" />
+                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     </div>
                     <div>
                         <p className="font-bold text-sm text-corporate-navy">{item.user}</p>
-                        <p className="text-xs text-gray-500">{item.time}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{item.time}</p>
                     </div>
                 </div>
                 {/* Pod Tag */}
                 {item.isPod && (
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1`}>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 flex items-center gap-1`}>
                         <Users size={12}/> Pod
                     </span>
                 )}
             </div>
 
             {/* Rep/Post Content */}
-            <p className="text-sm text-gray-800 mb-4 font-medium italic">"{item.rep}"</p>
+            <p className="text-sm text-gray-800 dark:text-gray-200 mb-4 font-medium italic">"{item.rep}"</p>
 
             {/* Footer: Actions & Tier */}
-            <div className="flex justify-between items-center text-xs pt-3 border-t border-gray-200">
+            <div className="flex justify-between items-center text-xs pt-3 border-t border-gray-200 dark:border-gray-700">
                 {/* Actions: React & Comment */}
                 <div className="flex space-x-4">
                     <button onClick={handleReact} className="flex items-center text-red-500 hover:text-red-700 transition-colors group" aria-label={`Like post by ${item.user}`}>
                         <Heart className="w-3.5 h-3.5 mr-1 group-hover:fill-current" /> {item.reactions}
                     </button>
-                    <button onClick={handleComment} className="flex items-center text-gray-500 hover:text-blue-600 transition-colors group" aria-label={`Comment on post by ${item.user}`}>
+                    <button onClick={handleComment} className="flex items-center text-gray-500 dark:text-gray-400 hover:text-blue-600 transition-colors group" aria-label={`Comment on post by ${item.user}`}>
                         <MessageSquare className="w-3.5 h-3.5 mr-1" /> {item.comments}
                     </button>
                 </div>
                 {/* Tier Tag */}
-                <span className={`text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded`}>{item.tier}</span>
+                <span className={`text-[10px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded`}>{item.tier}</span>
             </div>
         </div>
     );
@@ -160,7 +160,7 @@ const CommunityFeedScreen = () => {
         // Consistent page structure and padding
         <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 space-y-4 sm:space-y-6 lg:space-y-8 min-h-screen bg-[#F9FAFB]">
             {/* Header */}
-            <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-gray-200 pb-4">
+            <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-gray-200 dark:border-gray-700 pb-4">
                 <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3 text-corporate-navy">
                     <Users size={32} className="text-corporate-navy" /> Accountability Pod Feed
                 </h1>
@@ -176,15 +176,15 @@ const CommunityFeedScreen = () => {
                 {/* Left Column: Leaderboard & Quick Share */}
                 <aside className="lg:col-span-1 space-y-4 sm:space-y-5 lg:space-y-6 lg:sticky lg:top-3 sm:p-4 lg:p-6 self-start"> {/* Sticky sidebar */}
                     {/* Leaderboard Card */}
-                    <div className="p-3 sm:p-4 lg:p-6 bg-white border border-gray-200 rounded-xl shadow-lg">
-                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 border-b border-gray-200 pb-2 text-corporate-navy">
+                    <div className="p-3 sm:p-4 lg:p-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg">
+                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 text-corporate-navy">
                             <Award className="w-5 h-5 text-amber-500" /> Rep Streak Leaderboard (Pod)
                         </h2>
                         {MOCK_LEADERBOARD.map((leader, index) => (
-                            <div key={leader.rank} className={`flex items-center py-2 border-b border-gray-200 last:border-b-0 ${index < 3 ? '' : 'opacity-70'}`}>
+                            <div key={leader.rank} className={`flex items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-b-0 ${index < 3 ? '' : 'opacity-70'}`}>
                                 {/* Rank */}
                                 <span className={`font-extrabold w-6 text-center text-sm ${
-                                    index === 0 ? 'text-amber-500' : index === 1 ? 'text-gray-500' : index === 2 ? 'text-orange-700' : 'text-gray-400'
+                                    index === 0 ? 'text-amber-500' : index === 1 ? 'text-gray-500 dark:text-gray-400' : index === 2 ? 'text-orange-700' : 'text-gray-400'
                                 }`}>{leader.rank}.</span>
                                 {/* Name */}
                                 <span className="flex-1 font-semibold text-sm ml-2 truncate text-corporate-navy">{leader.name}</span>
@@ -197,16 +197,16 @@ const CommunityFeedScreen = () => {
                     </div>
 
                     {/* Quick Share Card */}
-                    <div className="p-3 sm:p-4 lg:p-6 bg-white border border-gray-200 rounded-xl shadow-lg">
-                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 border-b border-gray-200 pb-2 text-corporate-navy">
-                            <Link className="w-5 h-5 text-gray-500" /> Quick Share
+                    <div className="p-3 sm:p-4 lg:p-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg">
+                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 text-corporate-navy">
+                            <Link className="w-5 h-5 text-gray-500 dark:text-gray-400" /> Quick Share
                         </h2>
                         {/* Input */}
                         <textarea
                             value={quickShareText}
                             onChange={(e) => setQuickShareText(e.target.value)}
                             placeholder="Share your latest rep or a quick win..."
-                            className="w-full p-3 border border-gray-300 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-corporate-teal"
+                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-corporate-teal"
                             rows="3" disabled={isSharing}
                         />
                         {/* Share Button */}
@@ -239,7 +239,7 @@ const CommunityFeedScreen = () => {
 
                     {/* Feed Items */}
                     {filteredFeed.length === 0 ? (
-                         <div className="text-center text-gray-500 py-16 italic border-2 border-dashed border-gray-300 rounded-xl bg-white">
+                         <div className="text-center text-gray-500 dark:text-gray-400 py-16 italic border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-slate-800">
                             <MessageSquare className="w-10 h-10 mx-auto mb-3 text-gray-400"/>
                             The feed is quiet... Log a rep to share your progress!
                          </div>

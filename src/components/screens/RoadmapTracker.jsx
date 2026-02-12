@@ -33,10 +33,10 @@ const mdToHtml = async (md) => {
     html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
     html = html.split('\n').map(line => line.trim()).filter(line => line.length > 0).map(line => {
         if (line.startsWith('<ul>') || line.startsWith('<li>') || line.startsWith('<h') || line.startsWith('<s')) return line;
-        return `<p class="text-sm text-gray-700">${line}</p>`;
+        return `<p class="text-sm text-gray-700 dark:text-gray-200">${line}</p>`;
     }).join('');
     html = html.replace(/<p><\/p>/g, ''); 
-    html = html.replace(/<ul>/g, '<ul><li class="text-sm text-gray-700">').replace(/<\/li>/g, '</li></ul>');
+    html = html.replace(/<ul>/g, '<ul><li class="text-sm text-gray-700 dark:text-gray-200">').replace(/<\/li>/g, '</li></ul>');
     return html;
 };
 // FIX: Removed 'Eye' and other missing/unused icons from the import list based on the error.
@@ -126,31 +126,31 @@ const ContentDetailsModalInternal = ({ content, onClose, htmlContent, rating, se
                         <BookOpen className="w-8 h-8 mr-3 text-corporate-teal" />
                         {content.title} ({content.type})
                     </h2>
-                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-corporate-orange transition-colors">
+                    <button onClick={onClose} className="p-2 text-gray-500 dark:text-gray-400 hover:text-corporate-orange transition-colors">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
                 <div className="mb-6 text-sm flex space-x-4 border-b pb-4">
-                    <p className="text-gray-700 font-semibold">Tier: <span className='text-corporate-navy'>{tierData.name}</span></p>
-                    <p className="text-gray-700 font-semibold">Skill Focus: <span className='text-corporate-navy'>{content.skill}</span></p>
-                    <p className="text-gray-700 font-semibold">Est. Duration: <span className='text-corporate-navy'>{content.duration} min</span></p>
+                    <p className="text-gray-700 dark:text-gray-200 font-semibold">Tier: <span className='text-corporate-navy'>{tierData.name}</span></p>
+                    <p className="text-gray-700 dark:text-gray-200 font-semibold">Skill Focus: <span className='text-corporate-navy'>{content.skill}</span></p>
+                    <p className="text-gray-700 dark:text-gray-200 font-semibold">Est. Duration: <span className='text-corporate-navy'>{content.duration} min</span></p>
                 </div>
-                <div className="prose max-w-none text-gray-700">
+                <div className="prose max-w-none text-gray-700 dark:text-gray-200">
                     {htmlContent ? (
                         <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
                     ) : (
-                        <p className='text-gray-500 flex items-center'>
+                        <p className='text-gray-500 dark:text-gray-400 flex items-center'>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2"></div>
                             Loading content details...
                         </p>
                     )}
                 </div>
-                <div className='mt-8 pt-6 border-t border-gray-200'>
+                <div className='mt-8 pt-6 border-t border-gray-200 dark:border-gray-700'>
                     <h3 className='text-lg font-bold text-corporate-navy mb-3 flex items-center'>
                         <Star className="w-5 h-5 mr-2 text-corporate-orange" />
                         Review & Log Learning
                     </h3>
-                    <p className="text-sm text-gray-700 mb-4">
+                    <p className="text-sm text-gray-700 dark:text-gray-200 mb-4">
                         Rate the content's quality and helpfulness. This feedback loop helps the AI personalize future modules.
                     </p>
                     <div className='flex items-center space-x-4 mb-4'>
@@ -181,7 +181,7 @@ const ContentDetailsModalInternal = ({ content, onClose, htmlContent, rating, se
 const RoadmapTimeline = ({ data, navigateToMonth, viewMonth }) => {
     return (
         <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white dark:bg-slate-800 shadow-2xl border-l-4 border-corporate-teal'>
-            <p className='text-sm text-gray-600 mb-4'>Review your full two-year journey. Click a month to review its content and reflection.</p>
+            <p className='text-sm text-gray-600 dark:text-gray-300 mb-4'>Review your full two-year journey. Click a month to review its content and reflection.</p>
             <div className='max-h-96 overflow-y-auto space-y-2 pr-2'>
                 {data.plan.map(monthData => {
                     const isCurrentView = monthData.month === viewMonth;
@@ -192,7 +192,7 @@ const RoadmapTimeline = ({ data, navigateToMonth, viewMonth }) => {
                     return (
                         <div key={monthData.month}
                              className={`p-3 rounded-lg border flex justify-between items-center transition-all cursor-pointer shadow-sm
-                                         ${isCurrentView ? 'bg-corporate-teal/20 border-corporate-teal font-extrabold' : isCompleted ? 'bg-corporate-teal/10 border-corporate-teal' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
+                                         ${isCurrentView ? 'bg-corporate-teal/20 border-corporate-teal font-extrabold' : isCompleted ? 'bg-corporate-teal/10 border-corporate-teal' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100'}
                                          ${isFuture && !isCurrentView ? 'opacity-80' : ''}` 
                              }
                              onClick={() => {
@@ -460,7 +460,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                             </div>
                         </div>
                         <p className='text-md font-semibold text-corporate-navy mb-1'>{tierProgress.completedContent} / {tierProgress.totalContent} Content Reps Completed</p>
-                        <p className='text-xs text-gray-600'>For Tier: **{LEADERSHIP_TIERS[currentTierId]?.name}**</p>
+                        <p className='text-xs text-gray-600 dark:text-gray-300'>For Tier: **{LEADERSHIP_TIERS[currentTierId]?.name}**</p>
                     </Card>
 
                 </div>
@@ -470,13 +470,13 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                     
                     {/* VIEWING WARNINGS - THESE DISPLAY FOR FUTURE/PAST MONTHS */}
                     {viewMonth > data.currentMonth && ( // Check if viewing a future month
-                        <div className='p-4 rounded-xl bg-yellow-100 border-2 border-yellow-400 shadow-md text-yellow-800 font-semibold flex items-center gap-3'>
+                        <div className='p-4 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-400 shadow-md text-yellow-800 font-semibold flex items-center gap-3'>
                             <AlertTriangle className='w-5 h-5'/> 
                             Viewing **Future Training Month {viewMonth}**. You must complete Month **{data.currentMonth}** before accessing this content. Content is read-only.
                         </div>
                     )}
                     {!isCurrentView && isPastOrCurrent && (
-                        <div className='p-4 rounded-xl bg-gray-100 border-2 border-gray-400 shadow-md text-gray-800 font-semibold flex items-center gap-3'>
+                        <div className='p-4 rounded-xl bg-gray-100 dark:bg-gray-700 border-2 border-gray-400 shadow-md text-gray-800 dark:text-gray-200 font-semibold flex items-center gap-3'>
                             <Clock className='w-5 h-5'/> 
                             Viewing **Historical Training Month {viewMonth}**. Content and Reflection are read-only.
                         </div>
@@ -489,9 +489,9 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                         <div className='mb-4 p-4 rounded-xl bg-corporate-navy/10 border border-corporate-navy/20'>
                             <h3 className='font-bold text-corporate-navy mb-1 flex items-center'><Activity className="w-4 h-4 mr-2 text-corporate-teal" /> Monthly Executive Briefing</h3>
                             {briefingLoading && isCurrentView ? (
-                                <p className='text-sm text-gray-600 flex items-center'><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting advice...</p>
+                                <p className='text-sm text-gray-600 dark:text-gray-300 flex items-center'><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting advice...</p>
                             ) : (
-                                <div className="prose max-w-none text-gray-700">
+                                <div className="prose max-w-none text-gray-700 dark:text-gray-200">
                                     <div dangerouslySetInnerHTML={{ __html: safeBriefing }} /> 
                                 </div>
                             )}
@@ -500,7 +500,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                         {/* Status / Difficulty (Renders for all months) */}
                         <div className='mb-4 text-sm border-t pt-4'>
                             <p className='font-bold text-corporate-navy'>Tier: {LEADERSHIP_TIERS[currentTierId]?.name}</p>
-                            <p className='text-gray-600'>Target Difficulty: **{selfRating >= 8 ? 'Mastery' : selfRating >= 5 ? 'Core' : 'Intro'}** (Self-Rating: {selfRating}/10)</p>
+                            <p className='text-gray-600 dark:text-gray-300'>Target Difficulty: **{selfRating >= 8 ? 'Mastery' : selfRating >= 5 ? 'Core' : 'Intro'}** (Self-Rating: {selfRating}/10)</p>
                             {lowRatingFlag && (
                                 <p className='font-semibold mt-1 flex items-center text-corporate-orange'>
                                     <AlertTriangle className='w-4 h-4 mr-1' /> HIGH RISK TIER: Prioritize Content Completion.
@@ -517,13 +517,13 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                                 const actionButtonText = (item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content/Rep'; 
 
                                 return (
-                                    <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
+                                    <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl shadow-sm'>
                                         <div className='flex flex-col'>
-                                            <p className={`font-semibold text-sm ${isCompleted && isPastOrCurrent ? 'line-through text-gray-500' : 'text-corporate-navy'}`}>
+                                            <p className={`font-semibold text-sm ${isCompleted && isPastOrCurrent ? 'line-through text-gray-500 dark:text-gray-400' : 'text-corporate-navy'}`}>
                                                 {item.title} ({item.type})
                                                 {lowRatingFlag && <span className='ml-2 text-xs text-corporate-orange font-extrabold'>(CRITICAL)</span>}
                                             </p>
-                                            <p className='text-xs text-gray-600'>~{item.duration} min | Difficulty: {item.difficulty}</p>
+                                            <p className='text-xs text-gray-600 dark:text-gray-300'>~{item.duration} min | Difficulty: {item.difficulty}</p>
                                         </div>
                                         <div className='flex space-x-2'>
                                             <Button
@@ -558,13 +558,13 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                     {isCurrentView && (
                     <>
                         <Card title="Monthly Reflection" icon={Lightbulb} accent="NAVY" className='bg-corporate-navy/10 border-2 border-corporate-navy/20'>
-                            <p className="text-gray-700 text-sm mb-4">
+                            <p className="text-gray-700 dark:text-gray-200 text-sm mb-4">
                                 Reflect on the growth you achieved this month. How did the content/reps impact your daily leadership behavior? (**Minimum 50 characters required**)
                             </p>
                             <textarea
                                 value={localReflection} 
                                 onChange={(e) => setLocalReflection(e.target.value)}
-                                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal h-40"
+                                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal h-40"
                                 placeholder="My reflection (required)..."
                                 readOnly={!isCurrentView}
                             ></textarea>
@@ -573,12 +573,12 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                                     <p className={`text-xs ${localReflection.length < 50 ? 'text-corporate-orange' : 'text-corporate-teal'}`}>
                                         {localReflection.length} / 50 characters written.
                                     </p>
-                                    <span className={`text-xs font-semibold ${isSaving ? 'text-gray-500' : 'text-corporate-teal'}`}>
+                                    <span className={`text-xs font-semibold ${isSaving ? 'text-gray-500 dark:text-gray-400' : 'text-corporate-teal'}`}>
                                         {isSaving ? 'Saving...' : 'Reflection ready'}
                                     </span>
                                 </div>
                             )}
-                            {!isCurrentView && <p className='text-xs text-gray-500 mt-2'>Reflection is read-only for this month.</p>}
+                            {!isCurrentView && <p className='text-xs text-gray-500 dark:text-gray-400 mt-2'>Reflection is read-only for this month.</p>}
                             
                             {isCurrentView && (
                                  <Button
@@ -592,7 +592,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                         </Card>
 
                         <Card title="Recalibrate Skill Assessment" icon={Activity} accent='ORANGE' className='bg-corporate-orange/10 border-4 border-corporate-orange'>
-                            <p className="text-gray-700 text-sm mb-4">
+                            <p className="text-gray-700 dark:text-gray-200 text-sm mb-4">
                                 Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
                             </p>
                             <Button
@@ -605,7 +605,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                         </Card>
                         
                         <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-corporate-teal/10 border-4 border-corporate-teal'>
-                            <p className='text-sm text-gray-700 mb-4'>
+                            <p className='text-sm text-gray-700 dark:text-gray-200 mb-4'>
                                 Once all content and your reflection are complete, lock in your progress and move to **Training Month {data.currentMonth + 1}** of your Roadmap (Progressive Overload).
                             </p>
                             <Button
@@ -679,7 +679,7 @@ export const RoadmapTrackerScreen = () => {
                     <AlertTriangle className='w-10 h-10 text-corporate-orange'/>
                     <h1 className="text-4xl font-extrabold text-corporate-navy">Roadmap Required</h1>
                 </div>
-                <p className="text-lg text-gray-600 mb-8 max-w-3xl">
+                <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-3xl">
                     Your personalized development plan has not been generated yet. Please complete the initial assessment to unlock the Roadmap Tracker.
                 </p>
                 <Button onClick={() => navigate('prof-dev-plan')} variant='secondary' className='bg-corporate-orange hover:bg-red-700'>

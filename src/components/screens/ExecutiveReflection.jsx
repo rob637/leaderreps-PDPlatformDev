@@ -14,14 +14,14 @@ import { DIMENSION_TO_TIER_MAP } from '../../data/LeadershipTiers.js';
 const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, accentColor = 'bg-corporate-navy', size = 'full', className = '', ...rest }) => {
   const TrendIcon = trend > 0 ? TrendingUp : TrendingDown;
   const showTrend = trend !== 0;
-  const trendColor = trend > 0 ? 'text-green-600 bg-green-50' : trend < 0 ? 'text-orange-600 bg-orange-50' : 'text-slate-400 bg-slate-50';
+  const trendColor = trend > 0 ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : trend < 0 ? 'text-orange-600 bg-orange-50' : 'text-slate-400 bg-slate-50 dark:bg-slate-800';
   const widthClass = size === 'half' ? 'md:col-span-1' : (size === 'third' ? 'lg:col-span-1 md:col-span-2' : 'col-span-1');
 
   return (
     <Card {...rest} icon={Icon} title={value} onClick={onClick} className={`${widthClass} ${className}`} accentColor={accentColor}>
       <div className="flex justify-between items-center -mt-2">
         <div className="flex-1 mr-2">
-          <div className="text-xs font-medium text-slate-500 truncate">{label}</div>
+          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">{label}</div>
         </div>
         {showTrend && (
           <div className={`text-xs font-bold flex items-center gap-1 px-2 py-1 rounded-full ${trendColor}`}>
@@ -229,15 +229,15 @@ export default function ExecutiveReflection() {
     if (appError) return <div className="p-6 text-red-600">Failed to load report data: {appError.message}</div>;
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 space-y-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-800 p-6 space-y-8">
             <div className="max-w-[860px] mx-auto space-y-8">
                 <header className="text-center space-y-4">
                      <h1 className="text-3xl font-bold text-corporate-navy">Executive ROI Report</h1>
-                     <p className="text-lg text-slate-600 max-w-3xl mx-auto">Data-driven insights into your leadership development progress and impact (Last 90 Days).</p>
+                     <p className="text-lg text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">Data-driven insights into your leadership development progress and impact (Last 90 Days).</p>
                 </header>
 
                  <Card title="Performance Scorecard" icon={Activity} accentColor="bg-purple-600">
-                     <p className='text-sm text-slate-600 mb-6'>Key metrics summarizing recent activity and progress.</p>
+                     <p className='text-sm text-slate-600 dark:text-slate-300 mb-6'>Key metrics summarizing recent activity and progress.</p>
                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <StatCard icon={CheckCircle} label="Reps Completed Today" value={`${commitsCompletedToday} / ${commitsTotalToday}`} onClick={() => handleNavigation('daily-practice')} accentColor="bg-corporate-orange" trend={commitsCompletedToday > 0 ? 5 : 0} />
                         <StatCard icon={Star} label="Current Streak" value={`${perfectStreak} Days`} onClick={() => handleNavigation('daily-practice')} accentColor="bg-amber-500" trend={perfectStreak * 2} />
@@ -250,25 +250,25 @@ export default function ExecutiveReflection() {
                      </div>
                  </Card>
 
-                <h2 className='text-2xl font-bold pt-4 border-t border-slate-200 mt-10 text-corporate-navy'>Longitudinal Impact (90-Day View)</h2>
+                <h2 className='text-2xl font-bold pt-4 border-t border-slate-200 dark:border-slate-700 mt-10 text-corporate-navy'>Longitudinal Impact (90-Day View)</h2>
                 <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
                     <Card title="Confidence vs. Competence" icon={Target} accentColor="bg-corporate-teal" className='lg:col-span-2'>
-                        <p className='text-sm text-slate-600 mb-4'>Self-perception (Assessment Score) vs. Proven capability (Daily Rep Execution %).</p>
+                        <p className='text-sm text-slate-600 dark:text-slate-300 mb-4'>Self-perception (Assessment Score) vs. Proven capability (Daily Rep Execution %).</p>
                         <div className='grid grid-cols-2 gap-4 text-center'>
-                            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 shadow-inner">
-                                <p className='text-xs font-semibold uppercase text-slate-500'>Confidence</p>
+                            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 shadow-inner">
+                                <p className='text-xs font-semibold uppercase text-slate-500 dark:text-slate-400'>Confidence</p>
                                 <p className="text-4xl font-bold mt-1 text-corporate-navy">{longitudinalData.confidence.toFixed(1)}<span className="text-xl sm:text-2xl text-slate-400">/5</span></p>
-                                <p className='text-[10px] text-slate-500'>(Latest Self-Assessment)</p>
+                                <p className='text-[10px] text-slate-500 dark:text-slate-400'>(Latest Self-Assessment)</p>
                             </div>
-                            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 shadow-inner">
-                                <p className='text-xs font-semibold uppercase text-slate-500'>Competence</p>
+                            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 shadow-inner">
+                                <p className='text-xs font-semibold uppercase text-slate-500 dark:text-slate-400'>Competence</p>
                                 <p className="text-4xl font-bold mt-1 text-corporate-teal">{longitudinalData.competence}%</p>
-                                 <p className='text-[10px] text-slate-500'>(Daily Rep Success Rate)</p>
+                                 <p className='text-[10px] text-slate-500 dark:text-slate-400'>(Daily Rep Success Rate)</p>
                             </div>
                         </div>
                         <div className="mt-6 p-4 rounded-xl border border-corporate-teal/20 bg-corporate-teal/5 text-corporate-navy">
                             <p className='font-semibold text-sm flex items-center gap-2'><Cpu className='w-4 h-4 text-corporate-teal'/> AI Rep Coach Insight:</p>
-                            <p className='text-sm mt-1 italic text-slate-700'>
+                            <p className='text-sm mt-1 italic text-slate-700 dark:text-slate-200'>
                                 {longitudinalData.confidence >= 4 && Number(longitudinalData.competence) < 75 ?
                                     `High confidence, moderate execution. Focus daily reps on bridging the gap in ${weakestTierMeta.name}. Consistency is key.` :
                                 longitudinalData.confidence < 3.5 && Number(longitudinalData.competence) >= 75 ?
@@ -280,39 +280,39 @@ export default function ExecutiveReflection() {
                     </Card>
 
                     <Card title="Risk Reduction Scorecard" icon={ShieldCheck} accentColor="bg-corporate-orange">
-                        <p className='text-sm text-slate-600 mb-4'>Impact of Pre-Mortem Audits on mitigating strategic failures.</p>
+                        <p className='text-sm text-slate-600 dark:text-slate-300 mb-4'>Impact of Pre-Mortem Audits on mitigating strategic failures.</p>
                         <div className='text-center mb-4'>
-                            <p className='text-xs font-semibold uppercase text-slate-500'>Risk Mitigation Impact</p>
+                            <p className='text-xs font-semibold uppercase text-slate-500 dark:text-slate-400'>Risk Mitigation Impact</p>
                             <p className={`text-5xl font-bold mt-1 ${Number(longitudinalData.riskReduction) < 80 ? 'text-corporate-orange' : 'text-green-600'}`}>
                                 {longitudinalData.riskReduction}%
                             </p>
                         </div>
-                        <div className='mt-4 pt-4 border-t border-slate-200'>
+                        <div className='mt-4 pt-4 border-t border-slate-200 dark:border-slate-700'>
                             <p className='text-sm font-semibold text-corporate-navy'>Tier Mastery Projection:</p>
-                            <p className='text-sm text-slate-600 mt-1'>
+                            <p className='text-sm text-slate-600 dark:text-slate-300 mt-1'>
                                 Est. <strong className='text-lg text-corporate-navy'>{longitudinalData.tierMasteryProjection}</strong> days to master <strong style={{ color: weakestTierMeta.hex }}>{weakestTierMeta.name}</strong> based on current execution rate.
                             </p>
-                             <Button onClick={() => handleNavigation('planning-hub', { view: 'pre-mortem' })} variant="outline" size="sm" className="w-full mt-4 !border-orange-200 !text-corporate-orange hover:!bg-orange-50">
+                             <Button onClick={() => handleNavigation('planning-hub', { view: 'pre-mortem' })} variant="outline" size="sm" className="w-full mt-4 !border-orange-200 dark:border-orange-800 !text-corporate-orange hover:!bg-orange-50 dark:bg-orange-900/20">
                                  Go to Pre-Mortem Tool
                              </Button>
                         </div>
                     </Card>
 
                     <Card title="Performance vs. Well-being" icon={HeartPulse} accentColor="bg-red-600">
-                         <p className='text-sm text-slate-600 mb-4'>Correlation between daily energy/focus and rep completion rate.</p>
+                         <p className='text-sm text-slate-600 dark:text-slate-300 mb-4'>Correlation between daily energy/focus and rep completion rate.</p>
                          <div className="grid grid-cols-2 gap-4 text-center mb-4">
-                             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                                 <p className="text-xs text-slate-500 uppercase font-semibold">Overall Avg Score</p>
+                             <div className="p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                                 <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Overall Avg Score</p>
                                  <p className="text-xl sm:text-2xl font-bold text-corporate-navy">{longitudinalData.avgDailyScore}%</p>
                              </div>
-                             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                                 <p className="text-xs text-slate-500 uppercase font-semibold">Avg on Low Energy Days</p>
+                             <div className="p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                                 <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Avg on Low Energy Days</p>
                                  <p className={`text-2xl font-bold ${Number(longitudinalData.avgScoreLowEnergy) < Number(longitudinalData.avgDailyScore) ? 'text-red-600' : 'text-green-600'}`}>{longitudinalData.avgScoreLowEnergy}%</p>
                              </div>
                          </div>
-                         <div className="mt-4 p-4 rounded-xl border border-red-200 bg-red-50 text-corporate-navy">
+                         <div className="mt-4 p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-corporate-navy">
                              <p className='font-semibold text-sm flex items-center gap-2'><MessageSquare className='w-4 h-4 text-corporate-orange'/> AI Rep Coach Insight:</p>
-                             <p className='text-sm mt-1 italic text-slate-700'>
+                             <p className='text-sm mt-1 italic text-slate-700 dark:text-slate-200'>
                                 { (longitudinalData.lowEnergyDays / Math.max(1, Object.keys(dailyPracticeData?.resilienceLog || {}).length)) > 0.3 ?
                                     `Significant drop (${Number(longitudinalData.avgDailyScore) - Number(longitudinalData.avgScoreLowEnergy)} pts) on low energy days (${longitudinalData.lowEnergyDays} logged). Prioritize recovery reps.` :
                                     `Execution rate remains relatively stable despite energy fluctuations. Strong resilience practices evident.`
@@ -322,14 +322,14 @@ export default function ExecutiveReflection() {
                     </Card>
 
                     <Card title="Mentorship & Coaching Alliance" icon={Users} accentColor="bg-blue-600">
-                         <p className='text-sm text-slate-600 mb-4'>Opportunities to mentor peers vs. areas to seek guidance.</p>
-                         <div className="p-3 rounded-xl border border-blue-200 bg-blue-50 shadow-sm mb-3">
+                         <p className='text-sm text-slate-600 dark:text-slate-300 mb-4'>Opportunities to mentor peers vs. areas to seek guidance.</p>
+                         <div className="p-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 shadow-sm mb-3">
                              <p className='font-semibold text-sm flex items-center gap-2 text-blue-800'><TrendingUp className='w-4 h-4'/> Mentor Opportunity:</p>
-                             <p className='text-xs mt-1 text-slate-700'>Your strength in <strong>{weakestTierMeta.name}</strong> suggests you could mentor others. Action: Coach a peer on a related task this week.</p>
+                             <p className='text-xs mt-1 text-slate-700 dark:text-slate-200'>Your strength in <strong>{weakestTierMeta.name}</strong> suggests you could mentor others. Action: Coach a peer on a related task this week.</p>
                          </div>
-                         <div className="p-3 rounded-xl border border-red-200 bg-red-50 shadow-sm">
+                         <div className="p-3 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 shadow-sm">
                              <p className='font-semibold text-sm flex items-center gap-2 text-red-800'><TrendingDown className='w-4 h-4'/> Mentee Feedback (Example T4):</p>
-                             <p className='text-xs mt-1 text-slate-700'>Score: <strong>{longitudinalData.menteeFeedback.score}/100</strong>. Comment: "{longitudinalData.menteeFeedback.comment}"</p>
+                             <p className='text-xs mt-1 text-slate-700 dark:text-slate-200'>Score: <strong>{longitudinalData.menteeFeedback.score}/100</strong>. Comment: "{longitudinalData.menteeFeedback.comment}"</p>
                          </div>
                          <Button onClick={() => handleNavigation('coaching-lab', { view: 'feedback-review', tier: 'T4' })} size="sm" variant="primary" className='mt-4 w-full !bg-corporate-navy hover:!bg-corporate-navy/90'>
                              Review Full Mentee Feedback
@@ -337,11 +337,11 @@ export default function ExecutiveReflection() {
                     </Card>
 
                     <Card title="Organizational Impact Score" icon={BarChart3} accentColor="bg-purple-600">
-                         <p className='text-sm text-slate-600 mb-4'>Aggregated view of how development efforts correlate with team/org outcomes.</p>
-                         <div className='space-y-3 text-sm bg-slate-50 p-4 rounded-xl border border-slate-200'>
-                             <p className='flex justify-between font-semibold text-slate-700'>Psych Safety Index: <span className='font-bold text-green-600'>+12%</span></p>
-                             <p className='flex justify-between font-semibold text-slate-700'>Team Turnover Rate: <span className='font-bold text-green-600'>-6%</span></p>
-                             <p className='flex justify-between font-semibold text-slate-700'>Project On-Time Rate: <span className='font-bold text-amber-600'>+5%</span></p>
+                         <p className='text-sm text-slate-600 dark:text-slate-300 mb-4'>Aggregated view of how development efforts correlate with team/org outcomes.</p>
+                         <div className='space-y-3 text-sm bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700'>
+                             <p className='flex justify-between font-semibold text-slate-700 dark:text-slate-200'>Psych Safety Index: <span className='font-bold text-green-600'>+12%</span></p>
+                             <p className='flex justify-between font-semibold text-slate-700 dark:text-slate-200'>Team Turnover Rate: <span className='font-bold text-green-600'>-6%</span></p>
+                             <p className='flex justify-between font-semibold text-slate-700 dark:text-slate-200'>Project On-Time Rate: <span className='font-bold text-amber-600'>+5%</span></p>
                          </div>
                          <Button onClick={() => handleNavigation('planning-hub', { view: 'roi-report' })} size="sm" variant="secondary" className='mt-6 w-full !bg-corporate-teal hover:!bg-corporate-teal-dark'>
                              Generate Full Management ROI Report

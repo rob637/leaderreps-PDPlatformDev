@@ -22,7 +22,7 @@ const RepCohortPulse = ({
     : 0;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-corporate-navy to-corporate-teal px-4 py-3">
         <div className="flex items-center gap-2 text-white">
@@ -64,7 +64,7 @@ const RepCohortPulse = ({
           </div>
 
           {/* Top Focus */}
-          <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-3">
+          <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
             <TrendingUp className="w-5 h-5 text-rep-text-secondary" />
             <div>
               <div className="text-sm font-medium text-rep-text-primary truncate">{topFocus}</div>
@@ -75,7 +75,7 @@ const RepCohortPulse = ({
 
         {/* Next Event (if available) */}
         {nextEvent && (
-          <div className="mt-3 flex items-center gap-2 text-sm text-rep-text-secondary bg-rep-warm-white rounded-lg p-3 border border-dashed border-gray-200">
+          <div className="mt-3 flex items-center gap-2 text-sm text-rep-text-secondary bg-rep-warm-white rounded-lg p-3 border border-dashed border-gray-200 dark:border-gray-700">
             <Calendar className="w-4 h-4 text-corporate-teal" />
             <span>Next: <span className="font-medium text-rep-text-primary">{nextEvent}</span></span>
           </div>

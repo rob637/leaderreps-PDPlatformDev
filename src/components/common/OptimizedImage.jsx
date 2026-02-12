@@ -75,7 +75,7 @@ const OptimizedImage = memo(({
   if (hasError) {
     return (
       <div 
-        className={`bg-gray-100 flex items-center justify-center ${className}`}
+        className={`bg-gray-100 dark:bg-gray-700 flex items-center justify-center ${className}`}
         style={{ paddingBottom, position: paddingBottom ? 'relative' : undefined }}
       >
         <div className="text-gray-400 text-center p-4">

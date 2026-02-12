@@ -76,44 +76,44 @@ const PMReflectionWidget = ({
   return (
     <Card title="PM Reflection" icon={MessageSquare} accent="NAVY" helpText={helpText}>
       <div className="space-y-2">
-        <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
           Daily Reflection
         </span>
 
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+          <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
             1. What went well?
           </label>
           <textarea 
             value={reflectionGood}
             onChange={(e) => setReflectionGood(e.target.value)}
-            className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+            className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
             rows={1}
             placeholder="Celebrate a win..."
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+          <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
             2. What needs work?
           </label>
           <textarea 
             value={reflectionBetter}
             onChange={(e) => setReflectionBetter(e.target.value)}
-            className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+            className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
             rows={1}
             placeholder="Identify an improvement..."
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+          <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
             3. Closing thought
           </label>
           <textarea 
             value={reflectionBest}
             onChange={(e) => setReflectionBest(e.target.value)}
-            className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+            className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
             rows={1}
             placeholder="What will I do 1% better tomorrow?"
           />

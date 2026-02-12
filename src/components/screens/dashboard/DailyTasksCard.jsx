@@ -11,15 +11,15 @@ const TaskItem = ({ task, onToggle, onRemove, showRemove = true }) => {
   return (
     <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
       task.completed 
-        ? 'bg-green-50 border-green-200' 
-        : 'bg-white border-gray-200 hover:border-gray-300'
+        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+        : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:border-gray-300'
     }`}>
       <button
         onClick={() => onToggle(task.id)}
         className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
           task.completed
             ? 'bg-green-500 border-green-500 text-white'
-            : 'border-gray-300 hover:border-teal-400'
+            : 'border-gray-300 dark:border-gray-600 hover:border-teal-400'
         }`}
       >
         {task.completed && <Check className="w-3 h-3" />}
@@ -29,12 +29,12 @@ const TaskItem = ({ task, onToggle, onRemove, showRemove = true }) => {
         <p className={`text-sm ${
           task.completed 
             ? 'text-green-700 line-through' 
-            : 'text-gray-700'
+            : 'text-gray-700 dark:text-gray-200'
         }`}>
           {task.text}
         </p>
         {task.isSystem && (
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             System Task
           </p>
         )}
@@ -144,8 +144,8 @@ const DailyTasksCard = ({
         
         {/* Completed Tasks */}
         {completedTasks.length > 0 && (
-          <div className="pt-3 border-t border-gray-200">
-            <p className="text-xs font-semibold text-gray-500 mb-3 flex items-center gap-2">
+          <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-2">
               <Check className="w-4 h-4" />
               Completed ({completedTasks.length})
             </p>
@@ -170,7 +170,7 @@ const DailyTasksCard = ({
             value={newTaskText}
             onChange={(e) => setNewTaskText(e.target.value)}
             placeholder="Add a new task..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
             onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
             autoFocus
           />
@@ -208,11 +208,11 @@ const DailyTasksCard = ({
       {/* Empty State */}
       {otherTasks.length === 0 && !morningWIN && (
         <div className="text-center py-6">
-          <Clock className="w-12 h-12 mx-auto mb-3 text-slate-500" />
+          <Clock className="w-12 h-12 mx-auto mb-3 text-slate-500 dark:text-slate-400" />
           <p className="text-sm font-medium mb-1 text-corporate-navy">
             No tasks for today
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Add your first task or set today's WIN to get started
           </p>
         </div>

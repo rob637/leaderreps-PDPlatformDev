@@ -105,10 +105,10 @@ const CoachingActionItem = ({
         className={`
           group flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer
           ${isCompleted 
-            ? 'bg-green-50 border-green-200' 
+            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
             : isCarriedOver 
-              ? 'bg-amber-50 border-amber-200 hover:bg-amber-100' 
-              : 'bg-teal-50 border-teal-100 hover:bg-teal-100 hover:border-teal-300'
+              ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 hover:bg-amber-100' 
+              : 'bg-teal-50 dark:bg-teal-900/20 border-teal-100 hover:bg-teal-100 hover:border-teal-300'
           }
         `}
       >
@@ -133,20 +133,20 @@ const CoachingActionItem = ({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <p className={`text-sm font-bold ${isCompleted ? 'text-green-700 line-through' : 'text-slate-700'}`}>
+            <p className={`text-sm font-bold ${isCompleted ? 'text-green-700 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
               {label}
             </p>
             
             {/* Required Badge */}
             {item.required !== false && !item.optional && !isCarriedOver && (
-              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded uppercase tracking-wider">
                 Required
               </span>
             )}
             
             {/* Carried Over Badge */}
             {isCarriedOver && (
-              <span className="text-[10px] font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
+              <span className="text-[10px] font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
                 <Clock className="w-2.5 h-2.5" />
                 Carried {carryCount > 1 ? `(${carryCount}x)` : ''}
               </span>
@@ -154,7 +154,7 @@ const CoachingActionItem = ({
             
             {/* Last Chance Warning */}
             {carryCount >= 2 && (
-              <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
+              <span className="text-[10px] font-bold text-red-600 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
                 <AlertTriangle className="w-2.5 h-2.5" />
                 Last Chance
               </span>
@@ -162,7 +162,7 @@ const CoachingActionItem = ({
             
             {/* Registered Badge */}
             {registrationStatus === 'registered' && !isCompleted && (
-              <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
+              <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:bg-teal-900/20 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
                 <Calendar className="w-2.5 h-2.5" />
                 {formatSessionDate(sessionDate)}
               </span>
@@ -170,7 +170,7 @@ const CoachingActionItem = ({
           </div>
           
           {/* Meta Info */}
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <Icon className="w-3 h-3" />
             <span className="capitalize">{(item.type || 'coaching').replace(/_/g, ' ').toLowerCase()}</span>
             {item.estimatedTime && (
@@ -191,7 +191,7 @@ const CoachingActionItem = ({
         {/* Action Button */}
         {!isCompleted && (
           <div className="flex items-center">
-            <div className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-corporate-teal bg-teal-50 rounded-lg group-hover:bg-teal-100 transition-colors">
+            <div className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-corporate-teal bg-teal-50 dark:bg-teal-900/20 rounded-lg group-hover:bg-teal-100 transition-colors">
               {registrationStatus === 'registered' ? (
                 <div className="flex flex-col items-end">
                   <span className="font-bold">{formatSessionDate(sessionDate)}</span>

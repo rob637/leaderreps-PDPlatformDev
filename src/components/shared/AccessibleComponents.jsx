@@ -95,7 +95,7 @@ export const AccessibleInput = ({
           focus:outline-none focus:ring-2 focus:ring-offset-1
           ${error ? 
             'border-red-400 focus:ring-red-300' : 
-            'border-gray-300 focus:ring-corporate-teal'
+            'border-gray-300 dark:border-gray-600 focus:ring-corporate-teal'
           }
         `}
         aria-invalid={error ? 'true' : 'false'}
@@ -111,7 +111,7 @@ export const AccessibleInput = ({
       )}
       
       {helpText && (
-        <p id={helpId} className="text-sm text-gray-500">
+        <p id={helpId} className="text-sm text-gray-500 dark:text-gray-400">
           {helpText}
         </p>
       )}

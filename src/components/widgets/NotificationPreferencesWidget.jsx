@@ -352,9 +352,9 @@ const NotificationPreferencesWidget = ({ onClose }) => {
     return (
       <Card className="p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-slate-100 rounded w-1/3" />
-          <div className="h-20 bg-slate-100 rounded" />
-          <div className="h-20 bg-slate-100 rounded" />
+          <div className="h-6 bg-slate-100 dark:bg-slate-700 rounded w-1/3" />
+          <div className="h-20 bg-slate-100 dark:bg-slate-700 rounded" />
+          <div className="h-20 bg-slate-100 dark:bg-slate-700 rounded" />
         </div>
       </Card>
     );
@@ -371,7 +371,7 @@ const NotificationPreferencesWidget = ({ onClose }) => {
           <h3 className="text-lg font-bold text-corporate-navy" style={{ fontFamily: 'var(--font-heading)' }}>
             Notification Preferences
           </h3>
-          <p className="text-sm text-slate-500">Choose how you want to be reminded</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Choose how you want to be reminded</p>
         </div>
       </div>
 
@@ -392,16 +392,16 @@ const NotificationPreferencesWidget = ({ onClose }) => {
               className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
                 isSelected 
                   ? 'border-corporate-teal bg-corporate-teal/5' 
-                  : 'border-slate-200 hover:border-slate-300 bg-white'
+                  : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-800'
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg ${isSelected ? 'bg-corporate-teal text-white' : 'bg-slate-100 text-slate-500'}`}>
+                <div className={`p-2 rounded-lg ${isSelected ? 'bg-corporate-teal text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h4 className={`font-medium ${isSelected ? 'text-corporate-navy' : 'text-slate-700'}`}>
+                    <h4 className={`font-medium ${isSelected ? 'text-corporate-navy' : 'text-slate-700 dark:text-slate-200'}`}>
                       {strategy.name}
                     </h4>
                     {strategy.default && (
@@ -413,13 +413,13 @@ const NotificationPreferencesWidget = ({ onClose }) => {
                       <Check className="w-4 h-4 text-corporate-teal ml-auto" />
                     )}
                   </div>
-                  <p className="text-sm text-slate-500 mt-0.5">{strategy.description}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{strategy.description}</p>
                   
                   {/* Show details when selected */}
                   {isSelected && (
                     <ul className="mt-2 space-y-1">
                       {strategy.details.map((detail, idx) => (
-                        <li key={idx} className="text-xs text-slate-600 flex items-center gap-1.5">
+                        <li key={idx} className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
                           <span className="w-1 h-1 bg-corporate-teal rounded-full" />
                           {detail}
                         </li>
@@ -437,10 +437,10 @@ const NotificationPreferencesWidget = ({ onClose }) => {
       {settings.strategy !== 'disabled' && settings.channels.push && (
         <div className={`p-4 rounded-xl border mb-4 ${
           pushPermission === 'granted' 
-            ? 'border-green-200 bg-green-50' 
+            ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' 
             : pushPermission === 'denied'
-            ? 'border-red-200 bg-red-50'
-            : 'border-amber-200 bg-amber-50'
+            ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
+            : 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -449,14 +449,14 @@ const NotificationPreferencesWidget = ({ onClose }) => {
                 pushPermission === 'denied' ? 'text-red-600' : 'text-amber-600'
               }`} />
               <div>
-                <p className="font-medium text-sm text-slate-800">
+                <p className="font-medium text-sm text-slate-800 dark:text-slate-200">
                   {pushPermission === 'granted' 
                     ? 'Push notifications enabled'
                     : pushPermission === 'denied'
                     ? 'Push notifications blocked'
                     : 'Enable push notifications'}
                 </p>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-slate-600 dark:text-slate-300">
                   {pushPermission === 'granted'
                     ? 'You\'ll receive notifications on this device'
                     : pushPermission === 'denied'
@@ -481,7 +481,7 @@ const NotificationPreferencesWidget = ({ onClose }) => {
           
           {/* Detailed instructions when permission is denied */}
           {pushPermission === 'denied' && (
-            <div className="mt-3 pt-3 border-t border-red-200">
+            <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-800">
               <p className="text-sm font-medium text-red-800 mb-2">How to enable notifications:</p>
               <ol className="text-xs text-red-700 space-y-1.5 ml-4 list-decimal">
                 <li>Click the <strong>lock icon</strong> (or site settings icon) in your browser's address bar</li>
@@ -499,8 +499,8 @@ const NotificationPreferencesWidget = ({ onClose }) => {
 
       {/* Phone Number - Show prominently when SMS strategy is selected */}
       {strategyRequiresSMS(settings.strategy) && (
-        <div className={`p-4 rounded-xl border mb-4 ${phoneError ? 'border-red-300 bg-red-50' : 'border-amber-200 bg-amber-50'}`}>
-          <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+        <div className={`p-4 rounded-xl border mb-4 ${phoneError ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'}`}>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
             <MessageSquare className="w-4 h-4" /> 
             Mobile Number for SMS
             <span className="text-red-500">*</span>
@@ -539,7 +539,7 @@ const NotificationPreferencesWidget = ({ onClose }) => {
       {settings.strategy !== 'disabled' && (
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full flex items-center justify-between p-3 text-sm text-slate-600 hover:text-corporate-navy hover:bg-slate-50 rounded-lg transition-colors"
+          className="w-full flex items-center justify-between p-3 text-sm text-slate-600 dark:text-slate-300 hover:text-corporate-navy hover:bg-slate-50 rounded-lg transition-colors"
         >
           <span>Advanced Settings</span>
           <ChevronRight className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-90' : ''}`} />
@@ -548,10 +548,10 @@ const NotificationPreferencesWidget = ({ onClose }) => {
 
       {/* Advanced Settings Panel */}
       {showAdvanced && settings.strategy !== 'disabled' && (
-        <div className="mt-4 p-4 bg-slate-50 rounded-xl space-y-4">
+        <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl space-y-4">
           {/* Timezone */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
               <Globe className="w-4 h-4" /> Your Time Zone
             </label>
             <Select 
@@ -559,7 +559,7 @@ const NotificationPreferencesWidget = ({ onClose }) => {
               onChange={(e) => setSettings({...settings, timezone: e.target.value})}
               options={COMMON_TIMEZONES.map(tz => ({ value: tz, label: tz.replace(/_/g, ' ') }))}
             />
-            <p className="text-xs text-slate-500 mt-1">Notifications will be timed to your local time.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Notifications will be timed to your local time.</p>
           </div>
 
         </div>

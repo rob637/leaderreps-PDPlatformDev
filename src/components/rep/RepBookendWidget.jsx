@@ -82,8 +82,8 @@ const RepBookendWidget = ({
         title: 'Morning Intentions',
         icon: Sun,
         iconColor: 'text-amber-500',
-        bgColor: 'bg-amber-50',
-        borderColor: 'border-amber-200',
+        bgColor: 'bg-amber-50 dark:bg-amber-900/20',
+        borderColor: 'border-amber-200 dark:border-amber-800',
         subtitle: "Set your intentions for today",
         fields: [
           { label: 'What will you focus on today?', placeholder: 'My main focus today is...' },
@@ -95,8 +95,8 @@ const RepBookendWidget = ({
         title: 'Evening Reflection',
         icon: Moon,
         iconColor: 'text-indigo-500',
-        bgColor: 'bg-indigo-50',
-        borderColor: 'border-indigo-200',
+        bgColor: 'bg-indigo-50 dark:bg-indigo-900/20',
+        borderColor: 'border-indigo-200 dark:border-indigo-800',
         subtitle: "Reflect on your day",
         fields: [
           { key: 'good', label: 'What went well today?', placeholder: 'Today I...' },
@@ -237,7 +237,7 @@ const RepBookendWidget = ({
   if (isComplete || (alreadyCompleted && !isMorning)) {
     return (
       <div className={`${prompts.bgColor} rounded-xl p-6 text-center border ${prompts.borderColor}`}>
-        <div className="w-12 h-12 bg-white rounded-full mx-auto flex items-center justify-center mb-3 shadow-sm">
+        <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full mx-auto flex items-center justify-center mb-3 shadow-sm">
           <Check className="w-6 h-6 text-corporate-teal" />
         </div>
         <h3 className="font-semibold text-rep-text-primary mb-1">
@@ -256,7 +256,7 @@ const RepBookendWidget = ({
     <div className={`${prompts.bgColor} rounded-xl overflow-hidden border ${prompts.borderColor}`}>
       {/* Header */}
       <div className="px-4 py-3 border-b border-white/50 flex items-center gap-3">
-        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+        <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-sm">
           <Icon className={`w-5 h-5 ${prompts.iconColor}`} />
         </div>
         <div>
@@ -279,7 +279,7 @@ const RepBookendWidget = ({
                 value={intentions[index]}
                 onChange={(e) => handleIntentionChange(index, e.target.value)}
                 placeholder={field.placeholder}
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm 
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 text-sm 
                            placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-corporate-teal/30
                            focus:border-corporate-teal transition-all"
               />
@@ -297,7 +297,7 @@ const RepBookendWidget = ({
                 onChange={(e) => handleReflectionChange(field.key, e.target.value)}
                 placeholder={field.placeholder}
                 rows={2}
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm 
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 text-sm 
                            placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-corporate-teal/30
                            focus:border-corporate-teal transition-all resize-none"
               />

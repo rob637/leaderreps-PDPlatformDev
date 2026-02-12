@@ -22,12 +22,12 @@ const AICoachSelector = ({ onClose, onSelectRep }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200 overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-corporate-teal to-corporate-navy p-6 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-white/20 dark:bg-slate-800/20 rounded-xl flex items-center justify-center">
                 <Sparkles className="w-7 h-7" />
               </div>
               <div>
@@ -46,12 +46,12 @@ const AICoachSelector = ({ onClose, onSelectRep }) => {
 
         {/* Content */}
         <div className="p-6">
-          <p className="text-slate-600 mb-6">
+          <p className="text-slate-600 dark:text-slate-300 mb-6">
             Rep is your AI guide to the LeaderReps Dashboard. It helps you navigate your curriculum, 
             understand your actions, and stay on track with your cohort.
           </p>
           
-          <div className="flex items-center gap-4 text-sm text-slate-500 mb-6">
+          <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400 mb-6">
             <span className="flex items-center gap-1.5">
               <Target className="w-4 h-4 text-corporate-teal" />
               Dashboard content
@@ -75,7 +75,7 @@ const AICoachSelector = ({ onClose, onSelectRep }) => {
         <div className="px-6 pb-6 border-t border-gray-100 pt-4">
           <button
             onClick={handleOpenReppy}
-            className="w-full flex items-center justify-center gap-2 text-sm text-slate-500 hover:text-corporate-teal transition-colors"
+            className="w-full flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-corporate-teal transition-colors"
           >
             <span>Looking for Reppy? Open standalone app</span>
             <ExternalLink className="w-4 h-4" />
