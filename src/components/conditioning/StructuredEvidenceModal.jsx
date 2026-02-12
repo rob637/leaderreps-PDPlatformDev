@@ -374,6 +374,7 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
       case 2:
         return (
           <VoiceTextarea
+            id="debrief-what-said"
             label="What did you say/do? (Be specific — recite the feedback verbatim)"
             helpText="Describe exactly what you said and did. Use the mic to speak it out — voice capture is often more accurate than typing from memory."
             value={whatSaid}
@@ -381,6 +382,7 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
             placeholder="I said... Then I asked... I pointed out that..."
             minLength={20}
             rows={6}
+            autoFocus
           />
         );
       case 3:

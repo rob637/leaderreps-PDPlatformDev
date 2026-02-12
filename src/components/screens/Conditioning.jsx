@@ -424,33 +424,32 @@ const RepCard = ({
             </div>
           )}
           
-          {/* Completed/Debriefed Rep - Show Evidence & Loop Closure */}
+          {/* Completed/Debriefed Rep - Show AI feedback */}
           {(rep.status === 'debriefed' || rep.status === 'completed') && (
             <div className="pt-2 border-t border-gray-100 space-y-2">
               {evidence ? (
                 <>
-                  {/* Quality Assessment Display */}
+                  {/* Full Quality Assessment - AI reviewed feedback */}
                   {evidence.qualityAssessment && (
                     <QualityAssessmentCard 
                       qualityAssessment={evidence.qualityAssessment}
                       onPractice={onPractice ? (dimension) => onPractice(rep, dimension) : null}
-                      compact={true}
+                      compact={false}
                     />
                   )}
-                  <div className="flex items-center gap-2 text-xs text-green-600">
-                    <CheckCircle className="w-3 h-3" />
-                    <span>Debrief submitted</span>
-                  </div>
                   
-                  {/* Loop Closure CTA */}
-                  <Button
-                    onClick={() => onCloseLoop?.(rep)}
-                    disabled={isLoading}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Close the Loop
-                  </Button>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="font-medium">Debrief submitted</span>
+                    </div>
+                    <button
+                      onClick={() => onCloseLoop?.(rep)}
+                      className="text-xs text-corporate-teal hover:underline"
+                    >
+                      Close the loop →
+                    </button>
+                  </div>
                 </>
               ) : (
                 <Button
@@ -1021,54 +1020,50 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
           )}
           
           {activeReps.length === 0 ? (
-            <Card className="p-8 text-center border-dashed border-2 border-corporate-teal/30 bg-gradient-to-br from-corporate-teal/5 to-transparent">
-              <div className="w-16 h-16 mx-auto mb-4 bg-corporate-teal/10 rounded-full flex items-center justify-center">
-                <Dumbbell className="w-8 h-8 text-corporate-teal" />
-              </div>
-              {completedReps.length > 0 || weeklyStatus?.totalCompleted > 0 ? (
-                // User has completed reps - show different messaging
-                <>
-                  <h3 className="font-bold text-lg text-corporate-navy mb-2">Want to Keep Building?</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-2 max-w-sm mx-auto">
-                    Great work on your completed rep{completedReps.length > 1 ? 's' : ''}! 
-                    You can commit to additional reps if you want more practice.
-                  </p>
-                  <p className="text-sm text-corporate-teal font-medium mb-4">
-                    Additional reps are optional.
-                  </p>
-                </>
-              ) : (
-                // First-time user - show introductory messaging
-                <>
-                  <h3 className="font-bold text-lg text-corporate-navy mb-2">Ready to Build Your Leadership Muscle?</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-2 max-w-sm mx-auto">
-                    A "rep" is a real leadership moment you commit to practicing — 
-                    like giving feedback, having a tough conversation, or delegating effectively.
-                  </p>
-                  <p className="text-sm text-corporate-teal font-medium mb-4">
-                    Just 1 rep per week builds the habit.
-                  </p>
-                </>
-              )}
-              <Button
-                onClick={() => setShowCommitForm(true)}
-                className="bg-corporate-navy hover:bg-corporate-navy/90 text-white px-6"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                {completedReps.length > 0 || weeklyStatus?.totalCompleted > 0 
-                  ? 'Commit to Another Rep' 
-                  : 'Commit to Your First Rep'}
-              </Button>
-              {onAskCoach && (
-                <button
-                  onClick={onAskCoach}
-                  className="mt-3 text-sm text-corporate-teal hover:underline flex items-center gap-1 mx-auto"
+            completedReps.length > 0 || weeklyStatus?.totalCompleted > 0 ? (
+              // Compact prompt when user already has completed reps
+              <div className="flex items-center justify-center gap-3 py-4">
+                <Button
+                  onClick={() => setShowCommitForm(true)}
+                  variant="outline"
+                  className="border-corporate-teal text-corporate-teal hover:bg-corporate-teal/5 px-6"
                 >
-                  <HelpCircle className="w-4 h-4" />
-                  Not sure where to start? Ask your coach
-                </button>
-              )}
-            </Card>
+                  <Plus className="w-4 h-4 mr-1" />
+                  Commit to Another Rep
+                </Button>
+              </div>
+            ) : (
+              // First-time user - show introductory messaging
+              <Card className="p-8 text-center border-dashed border-2 border-corporate-teal/30 bg-gradient-to-br from-corporate-teal/5 to-transparent">
+                <div className="w-16 h-16 mx-auto mb-4 bg-corporate-teal/10 rounded-full flex items-center justify-center">
+                  <Dumbbell className="w-8 h-8 text-corporate-teal" />
+                </div>
+                <h3 className="font-bold text-lg text-corporate-navy mb-2">Ready to Build Your Leadership Muscle?</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-2 max-w-sm mx-auto">
+                  A "rep" is a real leadership moment you commit to practicing — 
+                  like giving feedback, having a tough conversation, or delegating effectively.
+                </p>
+                <p className="text-sm text-corporate-teal font-medium mb-4">
+                  Just 1 rep per week builds the habit.
+                </p>
+                <Button
+                  onClick={() => setShowCommitForm(true)}
+                  className="bg-corporate-navy hover:bg-corporate-navy/90 text-white px-6"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Commit to Your First Rep
+                </Button>
+                {onAskCoach && (
+                  <button
+                    onClick={onAskCoach}
+                    className="mt-3 text-sm text-corporate-teal hover:underline flex items-center gap-1 mx-auto"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                    Not sure where to start? Ask your coach
+                  </button>
+                )}
+              </Card>
+            )
           ) : (
             activeReps.map((rep) => (
               <RepCard

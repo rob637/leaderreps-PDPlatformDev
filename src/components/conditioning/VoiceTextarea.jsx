@@ -22,6 +22,7 @@ const VoiceTextarea = ({
   required = false,
   rows = 4,
   disabled = false,
+  autoFocus = false,
   className = '',
 }) => {
   const [partialTranscript, setPartialTranscript] = useState('');
@@ -75,6 +76,7 @@ const VoiceTextarea = ({
           placeholder={placeholder}
           rows={rows}
           disabled={disabled}
+          autoFocus={autoFocus}
           className={`w-full p-3 pr-14 border rounded-xl text-sm resize-none transition-all duration-200
             ${isRecording
               ? 'bg-red-50/50 dark:bg-red-900/20 border-red-300 dark:border-red-700 ring-2 ring-red-200 dark:ring-red-800'
