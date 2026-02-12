@@ -510,7 +510,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                         onChange={(e) => setCustomDeadline(e.target.value)}
                         min={today}
                         max={maxDeadline}
-                        className="mt-2 w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 dark:bg-slate-800 dark:text-white"
+                        className="mt-2 w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 dark:bg-slate-800 dark:text-white dark:[color-scheme:dark]"
                       />
                     )}
                   </div>
