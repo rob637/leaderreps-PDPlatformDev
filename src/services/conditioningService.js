@@ -1424,14 +1424,82 @@ export const conditioningService = {
   },
   
   /**
+   * Assess a practice response for a specific dimension
+   * Returns { passed, feedback } for the dimension
+   */
+  assessPracticeResponse: (dimension, response) => {
+    const text = (response || '').trim();
+    
+    switch (dimension) {
+      case QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE:
+        if (text.length < 10) {
+          return { passed: false, feedback: 'Too brief — try writing out the actual words you would say.' };
+        }
+        if (/["']/.test(text) && text.length >= 20) {
+          return { passed: true, feedback: 'Great — you used specific, quoted language. This is what makes reps real.' };
+        }
+        if (/["']/.test(text)) {
+          return { passed: true, feedback: 'Good — you included quotes. Try making it a bit more detailed next time.' };
+        }
+        if (text.length >= 30) {
+          return { passed: false, feedback: 'Good detail, but put the exact words in quotes to make it specific.' };
+        }
+        return { passed: false, feedback: 'Put the actual words you\'d say in quotes — e.g., "I need you to..."' };
+        
+      case QUALITY_DIMENSIONS.CLEAR_REQUEST:
+        if (text.length < 10) {
+          return { passed: false, feedback: 'Too brief — write out the specific request you would make.' };
+        }
+        if (/ask|request|need you to|want you to|commit|will you|can you|would you|I('d| would) like/i.test(text) && text.length >= 20) {
+          return { passed: true, feedback: 'Strong — that\'s a clear, actionable request. Use this in your next rep.' };
+        }
+        if (text.length >= 30) {
+          return { passed: true, feedback: 'Good detail. Make sure this comes across as a direct ask in conversation.' };
+        }
+        return { passed: false, feedback: 'Be more explicit — start with "I need you to..." or "Will you..."' };
+        
+      case QUALITY_DIMENSIONS.NAMED_COMMITMENT:
+        if (text.length < 10) {
+          return { passed: false, feedback: 'Too brief — write the specific commitment you would ask for.' };
+        }
+        if (/commit|by .*(monday|tuesday|wednesday|thursday|friday|end of|tomorrow|next week)/i.test(text)) {
+          return { passed: true, feedback: 'Excellent — a specific commitment with a timeline. That\'s the standard.' };
+        }
+        if (/commit|agree|will do|promise|plan to/i.test(text) && text.length >= 20) {
+          return { passed: true, feedback: 'Good commitment. Try adding a specific deadline next time.' };
+        }
+        if (/no commitment|chose not to|decided against|not appropriate/i.test(text)) {
+          return { passed: true, feedback: 'Good — explicitly noting no commitment is valid and shows awareness.' };
+        }
+        return { passed: false, feedback: 'Name the specific commitment and deadline — e.g., "Commit to X by Friday."' };
+        
+      case QUALITY_DIMENSIONS.REFLECTION:
+        if (text.length < 15) {
+          return { passed: false, feedback: 'Too brief — dig deeper into what you learned.' };
+        }
+        if (/next time|would do|differently|learned|realized|noticed|insight/i.test(text) && text.length >= 30) {
+          return { passed: true, feedback: 'Thoughtful reflection. This kind of self-awareness is what drives growth.' };
+        }
+        if (text.length >= 40) {
+          return { passed: true, feedback: 'Good depth. Try connecting what you learned to a specific future action.' };
+        }
+        return { passed: false, feedback: 'Say what you\'d do differently — "Next time I would..." helps lock in learning.' };
+        
+      default:
+        return { passed: text.length >= 20, feedback: text.length >= 20 ? 'Practice response recorded.' : 'Try adding more detail.' };
+    }
+  },
+
+  /**
    * Complete a practice retry
    */
-  completePracticeRetry: async (db, userId, retryId, response) => {
+  completePracticeRetry: async (db, userId, retryId, response, assessment = null) => {
     const retryRef = doc(db, 'users', userId, 'practice_retries', retryId);
     
     await updateDoc(retryRef, {
       status: 'completed',
       response: response.trim(),
+      assessment: assessment || null,
       completedAt: serverTimestamp()
     });
     

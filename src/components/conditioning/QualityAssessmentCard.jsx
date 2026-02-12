@@ -3,11 +3,11 @@
 
 import React, { useState } from 'react';
 import { 
-  QUALITY_DIMENSIONS 
+  QUALITY_DIMENSIONS, conditioningService
 } from '../../services/conditioningService.js';
 import { Card } from '../ui';
 import { 
-  CheckCircle, XCircle, AlertTriangle, Send,
+  CheckCircle, XCircle, AlertTriangle, Send, RotateCcw,
   MessageSquare, Target, Handshake, Lightbulb, ChevronDown
 } from 'lucide-react';
 
@@ -54,7 +54,7 @@ const DimensionRow = ({ dimension, assessment, onPractice }) => {
   const [isPracticing, setIsPracticing] = useState(false);
   const [practiceResponse, setPracticeResponse] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [practiceFeedback, setPracticeFeedback] = useState(null);
   
   const config = DIMENSION_CONFIG[dimension];
   if (!config || !assessment) return null;
@@ -65,6 +65,8 @@ const DimensionRow = ({ dimension, assessment, onPractice }) => {
   const handlePracticeClick = (e) => {
     e.stopPropagation();
     setIsPracticing(true);
+    setPracticeFeedback(null);
+    setPracticeResponse('');
   };
   
   const handleSubmitPractice = async (e) => {
@@ -73,8 +75,14 @@ const DimensionRow = ({ dimension, assessment, onPractice }) => {
     
     setIsSubmitting(true);
     try {
-      await onPractice(dimension, practiceResponse.trim());
-      setSubmitted(true);
+      // Get instant assessment feedback
+      const result = conditioningService.assessPracticeResponse(dimension, practiceResponse.trim());
+      
+      // Save to Firestore
+      await onPractice(dimension, practiceResponse.trim(), result);
+      
+      // Show feedback inline
+      setPracticeFeedback(result);
       setIsPracticing(false);
     } catch (err) {
       console.error('Error submitting practice:', err);
@@ -109,8 +117,8 @@ const DimensionRow = ({ dimension, assessment, onPractice }) => {
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{feedback}</p>
           
-          {/* Practice button or submitted confirmation for failed dimensions */}
-          {!passed && onPractice && !isPracticing && !submitted && (
+          {/* Practice button for failed dimensions - before any practice attempt */}
+          {!passed && onPractice && !isPracticing && !practiceFeedback && (
             <button
               onClick={handlePracticeClick}
               className="mt-2 text-xs font-medium text-corporate-teal hover:underline"
@@ -119,11 +127,38 @@ const DimensionRow = ({ dimension, assessment, onPractice }) => {
             </button>
           )}
           
-          {/* Submitted confirmation */}
-          {submitted && (
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-green-600">
-              <CheckCircle className="w-3.5 h-3.5" />
-              <span className="font-medium">Practice saved!</span>
+          {/* Practice feedback after submission */}
+          {practiceFeedback && (
+            <div className="mt-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+              {/* What they wrote */}
+              <div className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200 italic">
+                "{practiceResponse}"
+              </div>
+              
+              {/* AI Feedback */}
+              <div className={`flex items-start gap-2 px-3 py-2 rounded-lg text-sm ${
+                practiceFeedback.passed
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                  : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+              }`}>
+                {practiceFeedback.passed ? (
+                  <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                )}
+                <span>{practiceFeedback.feedback}</span>
+              </div>
+              
+              {/* Try again if didn't pass */}
+              {!practiceFeedback.passed && (
+                <button
+                  onClick={handlePracticeClick}
+                  className="flex items-center gap-1.5 text-xs font-medium text-corporate-teal hover:underline"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Try again
+                </button>
+              )}
             </div>
           )}
           
@@ -152,7 +187,7 @@ const DimensionRow = ({ dimension, assessment, onPractice }) => {
                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <Send className="w-3 h-3" />
-                  {isSubmitting ? 'Saving...' : 'Submit'}
+                  {isSubmitting ? 'Assessing...' : 'Submit'}
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setIsPracticing(false); setPracticeResponse(''); }}

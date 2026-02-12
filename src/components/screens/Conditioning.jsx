@@ -433,7 +433,7 @@ const RepCard = ({
                   {evidence.qualityAssessment && (
                     <QualityAssessmentCard 
                       qualityAssessment={evidence.qualityAssessment}
-                      onPractice={onPractice ? (dimension, response) => onPractice(rep, dimension, response) : null}
+                      onPractice={onPractice ? (dimension, response, assessment) => onPractice(rep, dimension, response, assessment) : null}
                       compact={false}
                     />
                   )}
@@ -472,7 +472,7 @@ const RepCard = ({
               {evidence?.qualityAssessment && (
                 <QualityAssessmentCard 
                   qualityAssessment={evidence.qualityAssessment}
-                  onPractice={onPractice ? (dimension, response) => onPractice(rep, dimension, response) : null}
+                  onPractice={onPractice ? (dimension, response, assessment) => onPractice(rep, dimension, response, assessment) : null}
                   compact={false}
                 />
               )}
@@ -498,7 +498,7 @@ const RepCard = ({
               {evidence?.qualityAssessment && (
                 <QualityAssessmentCard 
                   qualityAssessment={evidence.qualityAssessment}
-                  onPractice={onPractice ? (dimension, response) => onPractice(rep, dimension, response) : null}
+                  onPractice={onPractice ? (dimension, response, assessment) => onPractice(rep, dimension, response, assessment) : null}
                   compact={false}
                 />
               )}
@@ -805,15 +805,15 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   };
   
   // Phase 2: Practice retry handler
-  const handleStartPractice = async (rep, dimension, response) => {
+  const handleStartPractice = async (rep, dimension, response, assessment) => {
     if (!userId || !db) return;
     
     try {
       // Create the practice retry
       const retryId = await conditioningService.createPracticeRetry(db, userId, rep.id, dimension);
-      // Immediately complete it with the user's response
+      // Immediately complete it with the user's response and assessment
       if (response) {
-        await conditioningService.completePracticeRetry(db, userId, retryId, response);
+        await conditioningService.completePracticeRetry(db, userId, retryId, response, assessment || null);
       }
       // Don't call loadData() — the inline UI handles success state
     } catch (err) {
