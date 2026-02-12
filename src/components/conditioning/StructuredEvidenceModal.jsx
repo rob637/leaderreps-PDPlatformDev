@@ -129,36 +129,53 @@ const ContextField = ({ value, onChange }) => {
 // ============================================
 // RESPONSE FIELD (Their response)
 // ============================================
-const ResponseField = ({ value, note, onChange, onNoteChange }) => {
+const ResponseField = ({ value = [], note, onChange, onNoteChange }) => {
+  const selected = Array.isArray(value) ? value : (value ? [value] : []);
+  
+  const toggleOption = (id) => {
+    if (selected.includes(id)) {
+      onChange(selected.filter(s => s !== id));
+    } else {
+      onChange([...selected, id]);
+    }
+  };
+  
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-corporate-navy">
         <ArrowRight className="w-4 h-4 inline mr-2" />
         How did they respond?
       </label>
+      <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">Select all that apply</p>
       
       <div className="grid grid-cols-2 gap-2">
-        {RESPONSE_OPTIONS.map(option => (
-          <button
-            key={option.id}
-            onClick={() => onChange(option.id)}
-            className={`p-2 rounded-xl border-2 text-left text-sm transition-all ${
-              value === option.id
-                ? option.sentiment === 'positive' 
-                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                  : option.sentiment === 'negative'
-                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
-                  : 'border-corporate-teal bg-corporate-teal/5'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
+        {RESPONSE_OPTIONS.map(option => {
+          const isSelected = selected.includes(option.id);
+          return (
+            <button
+              key={option.id}
+              onClick={() => toggleOption(option.id)}
+              className={`p-2 rounded-xl border-2 text-left text-sm transition-all ${
+                isSelected
+                  ? option.sentiment === 'positive' 
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    : option.sentiment === 'negative'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                    : 'border-corporate-teal bg-corporate-teal/5'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                {isSelected && <CheckCircle className="w-3.5 h-3.5 flex-shrink-0 text-corporate-teal" />}
+                {option.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
       
       {/* Brief note via VoiceTextarea */}
-      {value && (
+      {selected.length > 0 && (
         <VoiceTextarea
           label="Brief note on their response (optional)"
           value={note || ''}
@@ -232,7 +249,7 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
   const [when, setWhen] = useState('');
   const [context, setContext] = useState('');
   const [whatSaid, setWhatSaid] = useState('');
-  const [theirResponse, setTheirResponse] = useState('');
+  const [theirResponse, setTheirResponse] = useState([]);
   const [responseNote, setResponseNote] = useState('');
   const [commitment, setCommitment] = useState('');
   const [commitmentNone, setCommitmentNone] = useState(false);
@@ -261,7 +278,7 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
       case 0: return !!when;
       case 1: return !!context;
       case 2: return whatSaid.trim().length >= 20;
-      case 3: return !!theirResponse;
+      case 3: return Array.isArray(theirResponse) ? theirResponse.length > 0 : !!theirResponse;
       case 4: return commitment.length > 0 || commitmentNone;
       default: return true;
     }
@@ -273,7 +290,7 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
     if (when) completed.push(0);
     if (context) completed.push(1);
     if (whatSaid.trim().length >= 20) completed.push(2);
-    if (theirResponse) completed.push(3);
+    if (Array.isArray(theirResponse) ? theirResponse.length > 0 : !!theirResponse) completed.push(3);
     if (commitment.length > 0 || commitmentNone) completed.push(4);
     return completed;
   }, [when, context, whatSaid, theirResponse, commitment, commitmentNone]);
