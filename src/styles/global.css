@@ -160,6 +160,9 @@
   --color-secondary-button: #E04E1B;
   --color-secondary-button-hover: #F06030;
   
+  /* Component-specific dark mode backgrounds (bypass !important wars) */
+  --conditioning-current-week-bg: #334155; /* slate-700 */
+  
   color-scheme: dark;
 }
 

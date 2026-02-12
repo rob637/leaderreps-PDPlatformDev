@@ -168,9 +168,10 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                 key={week.weekId}
                 className={`rounded-xl border overflow-hidden ${
                   isCurrentWeek 
-                    ? 'border-corporate-teal bg-teal-50 dark:!bg-slate-700' 
+                    ? 'border-corporate-teal' 
                     : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
                 }`}
+                style={isCurrentWeek ? { backgroundColor: 'var(--conditioning-current-week-bg, #f0fdfa)' } : undefined}
               >
                 {/* Week Header */}
                 <button
