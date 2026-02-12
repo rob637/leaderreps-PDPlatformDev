@@ -467,7 +467,15 @@ const RepCard = ({
           
           {/* Follow-Up Pending - Show Close Loop option */}
           {rep.status === 'follow_up_pending' && (
-            <div className="pt-2 border-t border-gray-100">
+            <div className="pt-2 border-t border-gray-100 space-y-2">
+              {/* AI Review */}
+              {evidence?.qualityAssessment && (
+                <QualityAssessmentCard 
+                  qualityAssessment={evidence.qualityAssessment}
+                  onPractice={onPractice ? (dimension) => onPractice(rep, dimension) : null}
+                  compact={false}
+                />
+              )}
               <div className="flex items-center gap-2 text-xs text-orange-600 mb-2">
                 <RefreshCw className="w-3 h-3" />
                 <span>Tracking follow-up</span>
@@ -485,7 +493,15 @@ const RepCard = ({
           
           {/* Loop Closed - Show completion */}
           {rep.status === 'loop_closed' && (
-            <div className="pt-2 border-t border-gray-100">
+            <div className="pt-2 border-t border-gray-100 space-y-2">
+              {/* AI Review */}
+              {evidence?.qualityAssessment && (
+                <QualityAssessmentCard 
+                  qualityAssessment={evidence.qualityAssessment}
+                  onPractice={onPractice ? (dimension) => onPractice(rep, dimension) : null}
+                  compact={false}
+                />
+              )}
               <div className="flex items-center gap-2 text-xs text-emerald-600">
                 <CheckCircle className="w-3 h-3" />
                 <span>Loop closed - Rep complete</span>
@@ -999,16 +1015,6 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
           onOpenDebrief={handleOpenMissedDebrief}
           isLoading={isSubmitting}
         />
-        
-        {/* Practice Retries Section */}
-        {pendingRetries.length > 0 && (
-          <div className="mb-6">
-            <PracticeRetryCard 
-              retries={pendingRetries}
-              onComplete={handlePracticeComplete}
-            />
-          </div>
-        )}
         
         {/* Active Reps */}
         <div className="mb-6">
