@@ -492,7 +492,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                 <input
                   type="text"
                   autoComplete="given-name"
-                  className="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
+                  className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   placeholder="John"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
@@ -506,7 +506,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                 <input
                   type="text"
                   autoComplete="family-name"
-                  className="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
+                  className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   placeholder="Doe"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
@@ -523,7 +523,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
             <input
               type="email"
               autoComplete="username"
-              className="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal disabled:bg-slate-50 disabled:text-slate-500 transition-all duration-200 hover:border-slate-300 text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
+              className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal disabled:bg-slate-50 disabled:text-slate-500 dark:disabled:bg-slate-600 dark:disabled:text-slate-400 transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               placeholder="name@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -540,7 +540,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
               <input
                 type="password"
                 autoComplete={isSignup ? "new-password" : "current-password"}
-                className="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
+                className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -557,7 +557,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
               <input
                 type="text"
                 autoComplete="off"
-                className="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
+                className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 placeholder="Enter code"
                 value={secretCode}
                 onChange={(e) => setSecretCode(e.target.value)}

@@ -120,14 +120,14 @@ const DifficultySelector = ({ value, onChange, repType }) => {
               onClick={() => onChange(level.id)}
               className={`w-full p-3 rounded-xl border-2 text-left transition-all ${
                 value === level.id
-                  ? 'bg-corporate-navy/5 dark:bg-corporate-navy/20 border-corporate-navy ring-2 ring-corporate-navy'
+                  ? 'bg-corporate-teal/10 dark:bg-corporate-teal/20 border-corporate-teal ring-2 ring-corporate-teal text-corporate-teal'
                   : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
               }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className={`font-medium text-sm ${
-                    value === level.id ? 'text-corporate-navy dark:text-white' : 'text-gray-700 dark:text-slate-200'
+                    value === level.id ? 'text-corporate-teal dark:text-corporate-teal' : 'text-gray-700 dark:text-slate-200'
                   }`}>
                     {level.label}
                   </div>
