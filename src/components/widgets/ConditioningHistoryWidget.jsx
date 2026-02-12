@@ -168,7 +168,7 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                 key={week.weekId}
                 className={`rounded-xl border overflow-hidden ${
                   isCurrentWeek 
-                    ? 'border-corporate-teal bg-teal-50/30 dark:bg-teal-900/20' 
+                    ? 'border-corporate-teal bg-teal-50 dark:bg-teal-900/30' 
                     : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
                 }`}
               >
@@ -180,8 +180,8 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                       metRequirement 
-                        ? 'bg-emerald-100 text-emerald-600' 
-                        : 'bg-amber-100 text-amber-600'
+                        ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' 
+                        : 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400'
                     }`}>
                       {metRequirement ? (
                         <CheckCircle className="w-5 h-5" />
