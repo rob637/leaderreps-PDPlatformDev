@@ -1,16 +1,19 @@
 // src/components/conditioning/StructuredEvidenceModal.jsx
 // Sprint 3: Structured Evidence Capture (replaces weak free-text)
 // Per Ryan's 020726 notes: Concrete specifics that are hard to fake
+// UX v2: Uses ConditioningModal + VoiceTextarea, voice-first approach
 
 import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import conditioningService, { EVIDENCE_LEVEL } from '../../services/conditioningService.js';
 import { getRepType } from '../../services/repTaxonomy.js';
-import { Card, Button } from '../ui';
+import { Button } from '../ui';
 import { 
-  X, Clock, CheckCircle, AlertCircle, Plus, Trash2, Send,
-  User, Calendar, MessageSquare, ArrowRight, Target
+  Clock, CheckCircle, AlertCircle, Send,
+  Calendar, ArrowRight, Target
 } from 'lucide-react';
+import ConditioningModal from './ConditioningModal';
+import VoiceTextarea from './VoiceTextarea';
 
 // ============================================
 // EVIDENCE FIELD DEFINITIONS
@@ -64,28 +67,6 @@ const EvidenceLevelBadge = ({ level }) => {
 };
 
 // ============================================
-// FORM STEP INDICATOR
-// ============================================
-const StepIndicator = ({ currentStep, totalSteps, completedSteps }) => {
-  return (
-    <div className="flex items-center justify-center gap-2 mb-4">
-      {Array.from({ length: totalSteps }, (_, idx) => (
-        <div
-          key={idx}
-          className={`w-2.5 h-2.5 rounded-full transition-all ${
-            idx === currentStep 
-              ? 'bg-corporate-navy scale-125' 
-              : completedSteps.includes(idx)
-              ? 'bg-green-500'
-              : 'bg-gray-300'
-          }`}
-        />
-      ))}
-    </div>
-  );
-};
-
-// ============================================
 // WHEN FIELD
 // ============================================
 const WhenField = ({ value, onChange }) => {
@@ -100,9 +81,9 @@ const WhenField = ({ value, onChange }) => {
           <button
             key={option.id}
             onClick={() => onChange(option.id)}
-            className={`p-3 rounded-lg border-2 text-center transition-all ${
+            className={`p-3 rounded-xl border-2 text-center transition-all ${
               value === option.id
-                ? 'border-corporate-navy bg-corporate-navy/5'
+                ? 'border-corporate-teal bg-corporate-teal/5'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
@@ -130,9 +111,9 @@ const ContextField = ({ value, onChange }) => {
           <button
             key={option.id}
             onClick={() => onChange(option.id)}
-            className={`p-3 rounded-lg border-2 text-left transition-all ${
+            className={`p-3 rounded-xl border-2 text-left transition-all ${
               value === option.id
-                ? 'border-corporate-navy bg-corporate-navy/5'
+                ? 'border-corporate-teal bg-corporate-teal/5'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
@@ -140,86 +121,6 @@ const ContextField = ({ value, onChange }) => {
             <span className="text-sm">{option.label}</span>
           </button>
         ))}
-      </div>
-    </div>
-  );
-};
-
-// ============================================
-// BULLET POINTS FIELD (What you said/did)
-// ============================================
-const BulletPointsField = ({ value = [], onChange, minItems = 2, maxItems = 5 }) => {
-  const [inputValue, setInputValue] = useState('');
-  
-  const handleAdd = () => {
-    if (inputValue.trim() && value.length < maxItems) {
-      onChange([...value, inputValue.trim()]);
-      setInputValue('');
-    }
-  };
-  
-  const handleRemove = (idx) => {
-    onChange(value.filter((_, i) => i !== idx));
-  };
-  
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && inputValue.trim()) {
-      e.preventDefault();
-      handleAdd();
-    }
-  };
-  
-  return (
-    <div className="space-y-3">
-      <label className="block text-sm font-medium text-corporate-navy">
-        <MessageSquare className="w-4 h-4 inline mr-2" />
-        What did you say/do? (Be specific - {minItems}-{maxItems} bullet points)
-      </label>
-      
-      {/* Existing bullets */}
-      <div className="space-y-2">
-        {value.map((bullet, idx) => (
-          <div 
-            key={idx}
-            className="flex items-start gap-2 p-2 bg-gray-50 rounded-lg"
-          >
-            <span className="text-corporate-navy font-bold mt-0.5">•</span>
-            <span className="flex-1 text-sm">{bullet}</span>
-            <button
-              onClick={() => handleRemove(idx)}
-              className="p-1 text-red-500 hover:bg-red-50 rounded"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
-      </div>
-      
-      {/* Add new bullet */}
-      {value.length < maxItems && (
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="e.g., I said 'I noticed you've been...' then asked..."
-            className="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-navy/20 focus:border-corporate-navy"
-          />
-          <Button
-            onClick={handleAdd}
-            disabled={!inputValue.trim()}
-            className="bg-corporate-navy hover:bg-corporate-navy/90 text-white"
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
-      
-      {/* Validation feedback */}
-      <div className={`text-xs ${value.length >= minItems ? 'text-green-600' : 'text-gray-500'}`}>
-        {value.length}/{minItems} minimum bullets added
-        {value.length >= minItems && <CheckCircle className="w-3 h-3 inline ml-1" />}
       </div>
     </div>
   );
@@ -241,13 +142,13 @@ const ResponseField = ({ value, note, onChange, onNoteChange }) => {
           <button
             key={option.id}
             onClick={() => onChange(option.id)}
-            className={`p-2 rounded-lg border-2 text-left text-sm transition-all ${
+            className={`p-2 rounded-xl border-2 text-left text-sm transition-all ${
               value === option.id
                 ? option.sentiment === 'positive' 
                   ? 'border-green-500 bg-green-50'
                   : option.sentiment === 'negative'
                   ? 'border-amber-500 bg-amber-50'
-                  : 'border-corporate-navy bg-corporate-navy/5'
+                  : 'border-corporate-teal bg-corporate-teal/5'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
@@ -256,19 +157,16 @@ const ResponseField = ({ value, note, onChange, onNoteChange }) => {
         ))}
       </div>
       
-      {/* Brief note */}
+      {/* Brief note via VoiceTextarea */}
       {value && (
-        <div className="mt-2">
-          <label className="block text-xs text-gray-600 mb-1">
-            Brief note on their response (optional):
-          </label>
-          <textarea
-            value={note || ''}
-            onChange={(e) => onNoteChange(e.target.value)}
-            placeholder="e.g., They seemed relieved I brought it up..."
-            className="w-full p-2 border border-gray-300 rounded-lg text-sm min-h-[60px] resize-none focus:ring-2 focus:ring-corporate-navy/20 focus:border-corporate-navy"
-          />
-        </div>
+        <VoiceTextarea
+          label="Brief note on their response (optional)"
+          value={note || ''}
+          onChange={onNoteChange}
+          placeholder="e.g., They seemed relieved I brought it up..."
+          rows={3}
+          className="mt-2"
+        />
       )}
     </div>
   );
@@ -287,11 +185,11 @@ const CommitmentField = ({ value, hasNone, onChange, onHasNoneChange }) => {
       
       {!hasNone ? (
         <>
-          <textarea
+          <VoiceTextarea
             value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={onChange}
             placeholder="e.g., They agreed to notify me before missing meetings going forward..."
-            className="w-full p-3 border border-gray-300 rounded-lg text-sm min-h-[80px] resize-none focus:ring-2 focus:ring-corporate-navy/20 focus:border-corporate-navy"
+            rows={3}
           />
           <button
             onClick={() => onHasNoneChange(true)}
@@ -301,15 +199,15 @@ const CommitmentField = ({ value, hasNone, onChange, onHasNoneChange }) => {
           </button>
         </>
       ) : (
-        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
           <p className="text-sm text-gray-600 mb-2">
             Marking as "no explicit commitment" – why not?
           </p>
-          <textarea
+          <VoiceTextarea
             value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={onChange}
             placeholder="e.g., This was an exploratory conversation, I wanted to understand first..."
-            className="w-full p-2 border border-gray-300 rounded text-sm min-h-[60px] resize-none focus:ring-2 focus:ring-corporate-navy/20 focus:border-corporate-navy"
+            rows={3}
           />
           <button
             onClick={() => { onHasNoneChange(false); onChange(''); }}
@@ -324,28 +222,6 @@ const CommitmentField = ({ value, hasNone, onChange, onHasNoneChange }) => {
 };
 
 // ============================================
-// OPTIONAL REFLECTION FIELD
-// ============================================
-const ReflectionField = ({ value, onChange }) => {
-  return (
-    <div className="space-y-3">
-      <label className="block text-sm font-medium text-corporate-navy">
-        Quick Reflection (Optional)
-      </label>
-      <p className="text-xs text-gray-500">
-        What would you do differently next time? What surprised you?
-      </p>
-      <textarea
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Optional - any insights or lessons from this rep..."
-        className="w-full p-3 border border-gray-300 rounded-lg text-sm min-h-[60px] resize-none focus:ring-2 focus:ring-corporate-navy/20 focus:border-corporate-navy"
-      />
-    </div>
-  );
-};
-
-// ============================================
 // MAIN STRUCTURED EVIDENCE MODAL
 // ============================================
 const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
@@ -355,7 +231,7 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
   // Form state
   const [when, setWhen] = useState('');
   const [context, setContext] = useState('');
-  const [whatSaid, setWhatSaid] = useState([]);
+  const [whatSaid, setWhatSaid] = useState('');
   const [theirResponse, setTheirResponse] = useState('');
   const [responseNote, setResponseNote] = useState('');
   const [commitment, setCommitment] = useState('');
@@ -384,7 +260,7 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
     switch (currentStep) {
       case 0: return !!when;
       case 1: return !!context;
-      case 2: return whatSaid.length >= 2;
+      case 2: return whatSaid.trim().length >= 20;
       case 3: return !!theirResponse;
       case 4: return commitment.length > 0 || commitmentNone;
       default: return true;
@@ -396,7 +272,7 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
     const completed = [];
     if (when) completed.push(0);
     if (context) completed.push(1);
-    if (whatSaid.length >= 2) completed.push(2);
+    if (whatSaid.trim().length >= 20) completed.push(2);
     if (theirResponse) completed.push(3);
     if (commitment.length > 0 || commitmentNone) completed.push(4);
     return completed;
@@ -434,8 +310,8 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
         // WHICH MOMENT
         context_moment: context,
         
-        // WHAT WAS SAID/DONE
-        what_said: whatSaid,
+        // WHAT WAS SAID/DONE (voice-first capture, single narrative)
+        what_said: whatSaid.trim(),
         
         // RESPONSE
         their_response: theirResponse,
@@ -479,7 +355,17 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
       case 1:
         return <ContextField value={context} onChange={setContext} />;
       case 2:
-        return <BulletPointsField value={whatSaid} onChange={setWhatSaid} />;
+        return (
+          <VoiceTextarea
+            label="What did you say/do? (Be specific — recite the feedback verbatim)"
+            helpText="Describe exactly what you said and did. Use the mic to speak it out — voice capture is often more accurate than typing from memory."
+            value={whatSaid}
+            onChange={setWhatSaid}
+            placeholder="I said... Then I asked... I pointed out that..."
+            minLength={20}
+            rows={6}
+          />
+        );
       case 3:
         return <ResponseField 
           value={theirResponse} 
@@ -497,7 +383,14 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
               onHasNoneChange={setCommitmentNone}
             />
             <div className="mt-4 pt-4 border-t border-gray-100">
-              <ReflectionField value={reflection} onChange={setReflection} />
+              <VoiceTextarea
+                label="Quick Reflection (Optional)"
+                helpText="What would you do differently next time? What surprised you?"
+                value={reflection}
+                onChange={setReflection}
+                placeholder="Optional — any insights or lessons from this rep..."
+                rows={3}
+              />
             </div>
           </>
         );
@@ -509,96 +402,67 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
   const stepLabels = ['When', 'Context', 'What You Said', 'Their Response', 'Commitment'];
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-bold text-corporate-navy">Debrief Your Rep</h3>
-            <button
-              onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          
-          {/* Rep Context */}
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-            <User className="w-4 h-4" />
-            <span className="font-medium">{rep?.person}</span>
-            <span>•</span>
-            <span>{repTypeInfo?.shortLabel || rep?.repType}</span>
-          </div>
-          
-          {/* Evidence Level Badge */}
+    <ConditioningModal
+      isOpen={true}
+      onClose={onClose}
+      title="Debrief Your Rep"
+      icon={Send}
+      subtitle={`${rep?.person || ''} • ${repTypeInfo?.shortLabel || rep?.repType || ''}`}
+      currentStep={currentStep}
+      totalSteps={TOTAL_STEPS}
+      stepLabels={stepLabels}
+      contextBar={
+        <div className="flex justify-center">
           <EvidenceLevelBadge level={evidenceLevel} />
-          
-          {/* Step Indicator */}
-          <div className="mt-3">
-            <StepIndicator 
-              currentStep={currentStep} 
-              totalSteps={TOTAL_STEPS}
-              completedSteps={completedSteps}
-            />
-            <div className="text-center text-xs text-gray-500">
-              Step {currentStep + 1}: {stepLabels[currentStep]}
-            </div>
-          </div>
         </div>
-        
-        {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {renderStepContent()}
+      }
+      footer={
+        <div className="flex items-center justify-between">
+          <Button
+            onClick={handlePrevious}
+            disabled={currentStep === 0}
+            variant="outline"
+          >
+            Previous
+          </Button>
           
-          {/* Error Message */}
-          {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
+          {currentStep < TOTAL_STEPS - 1 ? (
+            <Button
+              onClick={handleNext}
+              disabled={!isStepValid}
+              className="bg-corporate-navy hover:bg-corporate-navy/90 text-white"
+            >
+              Next →
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              disabled={completedSteps.length < TOTAL_STEPS || isSubmitting || isLoading}
+              className="bg-corporate-teal hover:bg-corporate-teal-dark text-white"
+            >
+              {isSubmitting ? (
+                'Submitting...'
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Submit Debrief
+                </>
+              )}
+            </Button>
           )}
         </div>
-        
-        {/* Footer - Navigation & Submit */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between">
-            <Button
-              onClick={handlePrevious}
-              disabled={currentStep === 0}
-              variant="outline"
-            >
-              Previous
-            </Button>
-            
-            {currentStep < TOTAL_STEPS - 1 ? (
-              <Button
-                onClick={handleNext}
-                disabled={!isStepValid}
-                className="bg-corporate-navy hover:bg-corporate-navy/90 text-white"
-              >
-                Next →
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={completedSteps.length < TOTAL_STEPS || isSubmitting || isLoading}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                {isSubmitting ? (
-                  'Submitting...'
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 mr-2" />
-                    Submit Debrief
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+      }
+    >
+      {renderStepContent()}
+      
+      {/* Error Message */}
+      {error && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-700 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{error}</span>
         </div>
-      </Card>
-    </div>
+      )}
+    </ConditioningModal>
   );
 };
 

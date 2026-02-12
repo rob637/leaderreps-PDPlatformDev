@@ -39,10 +39,10 @@ const getPatternConfig = (patternId) => {
     },
     no_close_pattern: {
       icon: MessageSquare,
-      color: 'purple',
-      bgColor: 'bg-purple-100',
-      textColor: 'text-purple-700',
-      borderColor: 'border-purple-300'
+      color: 'sky',
+      bgColor: 'bg-sky-100',
+      textColor: 'text-sky-700',
+      borderColor: 'border-sky-300'
     },
     consecutive_misses: {
       icon: AlertTriangle,
@@ -237,11 +237,11 @@ export const CoachPromptsPanel = ({
   return (
     <Card className={`overflow-hidden ${className}`}>
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+      <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-corporate-navy/5 to-corporate-teal/5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-purple-100">
-              <Brain className="w-5 h-5 text-purple-600" />
+            <div className="p-2 rounded-full bg-corporate-navy/10">
+              <Brain className="w-5 h-5 text-corporate-navy" />
             </div>
             <div>
               <h3 className="font-semibold text-corporate-navy">Coach Prompts</h3>
@@ -273,7 +273,7 @@ export const CoachPromptsPanel = ({
               <span className="text-gray-600">{highCount} High</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+              <span className="w-2 h-2 rounded-full bg-corporate-teal"></span>
               <span className="text-gray-600">{totalPatterns} Total Patterns</span>
             </span>
           </div>

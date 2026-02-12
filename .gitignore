@@ -104,19 +104,36 @@ Icon?
 .netlify/
 .firebase/
 
-# 1. Open your .gitignore file and add:
+# -------------------------
+# Firebase Admin SDK Keys & Secrets
+# -------------------------
 service-account-key.json
-
-# 2. Add and commit the .gitignore change
-git add .gitignore
-git commit -m "Update gitignore to exclude service-account-key.json"
 scripts/serviceAccount.json
 scripts/private/
 .env.secrets
-
-# Firebase Admin SDK Keys
 *-firebase-adminsdk.json
+
+# -------------------------
+# Data exports
+# -------------------------
 data-exports/
 
-# Google Cloud SDK cache files
+# -------------------------
+# Generated reports (re-generate with npm run lint)
+# -------------------------
+eslint-report.json
+lint-report.txt
+lint-report-source-only.txt
+TEST_AUDIT_REPORT.json
+build.log
+build_output.log
+
+# -------------------------
+# Google Cloud SDK
+# -------------------------
 google-cloud-sdk/**/__pycache__/
+
+# -------------------------
+# Browser-Use Audit Reports
+# -------------------------
+scripts/browser-use/reports/

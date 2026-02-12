@@ -17,8 +17,8 @@ import { REP_STATUS } from '../../services/conditioningService.js';
 const StatusDisplay = ({ status }) => {
   const configs = {
     committed: { label: 'Planned', color: 'blue', icon: Clock },
-    prepared: { label: 'Prepared', color: 'indigo', icon: FileText },
-    scheduled: { label: 'Scheduled', color: 'purple', icon: Calendar },
+    prepared: { label: 'Prepared', color: 'slate', icon: FileText },
+    scheduled: { label: 'Scheduled', color: 'sky', icon: Calendar },
     executed: { label: 'Delivered', color: 'teal', icon: Target },
     debriefed: { label: 'Debriefed', color: 'green', icon: CheckCircle },
     follow_up_pending: { label: 'Follow-Up', color: 'orange', icon: RefreshCw },
@@ -196,23 +196,23 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
           {/* Prep Data */}
           {rep.prep && Object.keys(rep.prep).length > 0 && (
             <Section title="Prep Notes" icon={FileText}>
-              <div className="space-y-2 bg-indigo-50 rounded-lg p-3">
+              <div className="space-y-2 bg-corporate-navy/5 rounded-lg p-3">
                 {rep.prep.opening_language && (
                   <div>
-                    <span className="text-xs font-medium text-indigo-700">Opening:</span>
-                    <p className="text-indigo-900">{rep.prep.opening_language}</p>
+                    <span className="text-xs font-medium text-corporate-navy/70">Opening:</span>
+                    <p className="text-corporate-navy">{rep.prep.opening_language}</p>
                   </div>
                 )}
                 {rep.prep.behavior_to_address && (
                   <div>
-                    <span className="text-xs font-medium text-indigo-700">Behavior:</span>
-                    <p className="text-indigo-900">{rep.prep.behavior_to_address}</p>
+                    <span className="text-xs font-medium text-corporate-navy/70">Behavior:</span>
+                    <p className="text-corporate-navy">{rep.prep.behavior_to_address}</p>
                   </div>
                 )}
                 {rep.prep.commitment_to_request && (
                   <div>
-                    <span className="text-xs font-medium text-indigo-700">Commitment:</span>
-                    <p className="text-indigo-900">{rep.prep.commitment_to_request}</p>
+                    <span className="text-xs font-medium text-corporate-navy/70">Commitment:</span>
+                    <p className="text-corporate-navy">{rep.prep.commitment_to_request}</p>
                   </div>
                 )}
               </div>

@@ -26,7 +26,7 @@ const CATEGORY_ICONS = {
 // Color mapping for categories
 const CATEGORY_COLORS = {
   reinforcing_redirecting: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', ring: 'ring-blue-500' },
-  ambiguous_emotional: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', ring: 'ring-purple-500' },
+  ambiguous_emotional: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', ring: 'ring-rose-500' },
   standards_authority: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', ring: 'ring-amber-500' },
   escalation_decisions: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', ring: 'ring-red-500' }
 };

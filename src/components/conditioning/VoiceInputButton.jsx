@@ -3,7 +3,7 @@
 // Provides real-time speech-to-text transcription
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, MicOff, AlertCircle, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Square, AlertCircle, Loader2 } from 'lucide-react';
 
 // Check for browser support
 const SpeechRecognition = typeof window !== 'undefined' && (
@@ -205,7 +205,7 @@ const VoiceInputButton = ({
         {isProcessing ? (
           <Loader2 className={`${iconSizes[size]} animate-spin`} />
         ) : isRecording ? (
-          <MicOff className={iconSizes[size]} />
+          <Square className={`${iconSizes[size]} fill-current`} />
         ) : (
           <Mic className={iconSizes[size]} />
         )}
@@ -268,8 +268,10 @@ export const VoiceInputWithPreview = ({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className={`w-full p-3 pr-14 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-corporate-navy focus:border-transparent ${
-          isRecording ? 'bg-red-50 border-red-300' : ''
+        className={`w-full p-3 pr-14 border rounded-xl text-sm resize-none transition-all duration-200 ${
+          isRecording 
+            ? 'bg-red-50/50 border-red-300 ring-2 ring-red-200' 
+            : 'border-slate-200 hover:border-slate-300 focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal'
         }`}
       />
       <div className="absolute right-2 bottom-2">

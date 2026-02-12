@@ -1,16 +1,19 @@
 // src/components/conditioning/MissedRepDebriefModal.jsx
 // Sprint 4: Structured accountability for missed reps (not punishment)
 // Per Ryan's 020726 notes: Debrief without guilt, learn for next time
+// UX v2: Uses ConditioningModal + VoiceTextarea, consistent look
 
 import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import conditioningService from '../../services/conditioningService.js';
 import { getRepType } from '../../services/repTaxonomy.js';
-import { Card, Button } from '../ui';
+import { Button } from '../ui';
 import { 
-  X, AlertTriangle, RefreshCw, ChevronRight, 
-  Clock, Shield, Lightbulb, ArrowRight, Check
+  AlertTriangle, RefreshCw, ChevronRight, 
+  Clock, Shield, Lightbulb, ArrowRight, Check, X
 } from 'lucide-react';
+import ConditioningModal from './ConditioningModal';
+import VoiceTextarea from './VoiceTextarea';
 
 // ============================================
 // BLOCKER OPTIONS
@@ -55,14 +58,15 @@ const BlockerSelector = ({ value, onChange }) => {
             <button
               key={option.id}
               onClick={() => onChange(option.id)}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-all ${
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
                 value === option.id
-                  ? 'border-corporate-navy bg-corporate-navy/5'
+                  ? 'border-corporate-teal bg-corporate-teal/5'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <Icon className={`w-5 h-5 ${value === option.id ? 'text-corporate-navy' : 'text-gray-400'}`} />
+              <Icon className={`w-5 h-5 ${value === option.id ? 'text-corporate-teal' : 'text-gray-400'}`} />
               <span className="text-sm">{option.label}</span>
+              {value === option.id && <Check className="w-4 h-4 text-corporate-teal ml-auto" />}
             </button>
           );
         })}
@@ -100,9 +104,9 @@ const StandardSelector = ({ value, onChange, blocker }) => {
           <button
             key={option.id}
             onClick={() => onChange(option.id)}
-            className={`w-full flex flex-col p-3 rounded-lg border-2 text-left transition-all ${
+            className={`w-full flex flex-col p-3 rounded-xl border-2 text-left transition-all ${
               value === option.id
-                ? 'border-corporate-navy bg-corporate-navy/5'
+                ? 'border-corporate-teal bg-corporate-teal/5'
                 : suggestedStandard === option.id
                 ? 'border-amber-300 bg-amber-50'
                 : 'border-gray-200 hover:border-gray-300'
@@ -151,33 +155,24 @@ const NextWeekPlan = ({ value, onChange, blocker, standard }) => {
   
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-medium text-corporate-navy">
-        What will you do differently next week?
-      </label>
-      
       {/* Contextual prompts */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <p className="text-xs text-blue-700 font-medium mb-1">Consider:</p>
-        <ul className="text-xs text-blue-600 space-y-1">
+      <div className="bg-corporate-navy/5 border border-corporate-navy/10 rounded-xl p-3">
+        <p className="text-xs text-corporate-navy font-medium mb-1">Consider:</p>
+        <ul className="text-xs text-corporate-navy/70 space-y-1">
           {prompts.map((prompt, idx) => (
             <li key={idx}>• {prompt}</li>
           ))}
         </ul>
       </div>
       
-      <textarea
+      <VoiceTextarea
+        label="What will you do differently next week?"
         value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         placeholder="Be specific — vague intentions rarely work..."
-        className="w-full p-3 border border-gray-300 rounded-lg text-sm min-h-[100px] resize-none focus:ring-2 focus:ring-corporate-navy/20 focus:border-corporate-navy"
+        minLength={20}
+        rows={4}
       />
-      
-      {value && value.length >= 20 && (
-        <div className="flex items-center gap-1 text-xs text-green-600">
-          <Check className="w-3 h-3" />
-          <span>Specific plan captured</span>
-        </div>
-      )}
     </div>
   );
 };
@@ -185,7 +180,7 @@ const NextWeekPlan = ({ value, onChange, blocker, standard }) => {
 // ============================================
 // RECOMMIT OPTIONS
 // ============================================
-const RecommitOptions = ({ rep, selectedOption, onChange }) => {
+const RecommitOptions = ({ rep, selectedOption, onChange, cancelReason, onCancelReasonChange }) => {
   const repType = useMemo(() => getRepType(rep?.repType), [rep?.repType]);
   
   return (
@@ -197,7 +192,7 @@ const RecommitOptions = ({ rep, selectedOption, onChange }) => {
       <div className="space-y-2">
         <button
           onClick={() => onChange('recommit')}
-          className={`w-full flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all ${
+          className={`w-full flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all ${
             selectedOption === 'recommit'
               ? 'border-green-500 bg-green-50'
               : 'border-gray-200 hover:border-gray-300'
@@ -214,7 +209,7 @@ const RecommitOptions = ({ rep, selectedOption, onChange }) => {
         
         <button
           onClick={() => onChange('modify')}
-          className={`w-full flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all ${
+          className={`w-full flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all ${
             selectedOption === 'modify'
               ? 'border-amber-500 bg-amber-50'
               : 'border-gray-200 hover:border-gray-300'
@@ -231,7 +226,7 @@ const RecommitOptions = ({ rep, selectedOption, onChange }) => {
         
         <button
           onClick={() => onChange('cancel')}
-          className={`w-full flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all ${
+          className={`w-full flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all ${
             selectedOption === 'cancel'
               ? 'border-gray-500 bg-gray-50'
               : 'border-gray-200 hover:border-gray-300'
@@ -246,6 +241,17 @@ const RecommitOptions = ({ rep, selectedOption, onChange }) => {
           </div>
         </button>
       </div>
+      
+      {selectedOption === 'cancel' && (
+        <VoiceTextarea
+          label="Why is this no longer relevant?"
+          value={cancelReason || ''}
+          onChange={onCancelReasonChange}
+          placeholder="e.g., Person left the team, situation resolved itself..."
+          rows={3}
+          className="mt-4"
+        />
+      )}
     </div>
   );
 };
@@ -342,162 +348,98 @@ const MissedRepDebriefModal = ({
     }
   };
   
-  if (!isOpen || !rep) return null;
+  if (!rep) return null;
   
   const stepLabels = ['What Blocked', 'Standard', "Next Week's Plan", 'Next Action'];
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
-              <h3 className="text-lg font-bold text-corporate-navy">Missed Rep Debrief</h3>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          
-          {/* Rep Context */}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-medium text-amber-800">{rep?.person}</span>
-              <span className="text-amber-600">•</span>
-              <span className="text-amber-700">{repType?.shortLabel || rep?.repType}</span>
-            </div>
-            <p className="text-xs text-amber-600 mt-1">
-              This rep was not completed by the deadline. Let's understand why and set up for success next time.
-            </p>
-          </div>
-          
-          {/* Step Indicator */}
-          <div className="flex items-center justify-between">
-            {stepLabels.map((label, idx) => (
-              <div key={idx} className="flex items-center">
-                <div 
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                    idx === currentStep
-                      ? 'bg-corporate-navy text-white'
-                      : idx < currentStep
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-500'
-                  }`}
-                >
-                  {idx < currentStep ? <Check className="w-3 h-3" /> : idx + 1}
-                </div>
-                {idx < stepLabels.length - 1 && (
-                  <div className={`w-8 h-0.5 mx-1 ${idx < currentStep ? 'bg-green-500' : 'bg-gray-200'}`} />
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="text-center text-xs text-gray-500 mt-1">
-            {stepLabels[currentStep]}
-          </div>
+    <ConditioningModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Missed Rep Debrief"
+      icon={AlertTriangle}
+      subtitle={`${rep?.person || ''} • ${repType?.shortLabel || rep?.repType || ''}`}
+      currentStep={currentStep}
+      totalSteps={4}
+      stepLabels={stepLabels}
+      contextBar={
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <p className="text-xs text-amber-600">
+            This rep was not completed by the deadline. Let's understand why and set up for success next time.
+          </p>
         </div>
-        
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {currentStep === 0 && (
-            <BlockerSelector value={blocker} onChange={setBlocker} />
-          )}
+      }
+      footer={
+        <div className="flex items-center justify-between">
+          <Button
+            onClick={handlePrevious}
+            disabled={currentStep === 0}
+            variant="outline"
+          >
+            Previous
+          </Button>
           
-          {currentStep === 1 && (
-            <StandardSelector value={standard} onChange={setStandard} blocker={blocker} />
-          )}
-          
-          {currentStep === 2 && (
-            <NextWeekPlan 
-              value={nextWeekPlan} 
-              onChange={setNextWeekPlan}
-              blocker={blocker}
-              standard={standard}
-            />
-          )}
-          
-          {currentStep === 3 && (
-            <>
-              <RecommitOptions 
-                rep={rep}
-                selectedOption={recommitOption}
-                onChange={setRecommitOption}
-              />
-              
-              {recommitOption === 'cancel' && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Why is this no longer relevant?
-                  </label>
-                  <textarea
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value)}
-                    placeholder="e.g., Person left the team, situation resolved itself..."
-                    className="w-full p-2 border border-gray-300 rounded text-sm min-h-[60px] resize-none focus:ring-2 focus:ring-corporate-navy/20 focus:border-corporate-navy"
-                  />
-                </div>
-              )}
-            </>
-          )}
-          
-          {/* Error */}
-          {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
-            </div>
-          )}
-        </div>
-        
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between">
+          {currentStep < 3 ? (
             <Button
-              onClick={handlePrevious}
-              disabled={currentStep === 0}
-              variant="outline"
+              onClick={handleNext}
+              disabled={
+                (currentStep === 0 && !isStep1Valid) ||
+                (currentStep === 1 && !isStep2Valid) ||
+                (currentStep === 2 && !isStep3Valid)
+              }
+              className="bg-corporate-navy hover:bg-corporate-navy/90 text-white"
             >
-              Previous
+              Next <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
-            
-            {currentStep < 3 ? (
-              <Button
-                onClick={handleNext}
-                disabled={
-                  (currentStep === 0 && !isStep1Valid) ||
-                  (currentStep === 1 && !isStep2Valid) ||
-                  (currentStep === 2 && !isStep3Valid)
-                }
-                className="bg-corporate-navy hover:bg-corporate-navy/90 text-white"
-              >
-                Next <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={!canSubmit || isSubmitting || isLoading}
-                className={`text-white ${
-                  recommitOption === 'recommit' 
-                    ? 'bg-green-600 hover:bg-green-700'
-                    : recommitOption === 'cancel'
-                    ? 'bg-gray-600 hover:bg-gray-700'
-                    : 'bg-amber-600 hover:bg-amber-700'
-                }`}
-              >
-                {isSubmitting ? 'Saving...' : (
-                  recommitOption === 'recommit' ? 'Recommit Rep' :
-                  recommitOption === 'cancel' ? 'Cancel Rep' : 'Modify & Recommit'
-                )}
-              </Button>
-            )}
-          </div>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              disabled={!canSubmit || isSubmitting || isLoading}
+              className="bg-corporate-teal hover:bg-corporate-teal-dark text-white"
+            >
+              {isSubmitting ? 'Saving...' : (
+                recommitOption === 'recommit' ? 'Recommit Rep' :
+                recommitOption === 'cancel' ? 'Cancel Rep' : 'Modify & Recommit'
+              )}
+            </Button>
+          )}
         </div>
-      </Card>
-    </div>
+      }
+    >
+      {currentStep === 0 && (
+        <BlockerSelector value={blocker} onChange={setBlocker} />
+      )}
+      
+      {currentStep === 1 && (
+        <StandardSelector value={standard} onChange={setStandard} blocker={blocker} />
+      )}
+      
+      {currentStep === 2 && (
+        <NextWeekPlan 
+          value={nextWeekPlan} 
+          onChange={setNextWeekPlan}
+          blocker={blocker}
+          standard={standard}
+        />
+      )}
+      
+      {currentStep === 3 && (
+        <RecommitOptions 
+          rep={rep}
+          selectedOption={recommitOption}
+          onChange={setRecommitOption}
+          cancelReason={cancelReason}
+          onCancelReasonChange={setCancelReason}
+        />
+      )}
+      
+      {/* Error */}
+      {error && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+    </ConditioningModal>
   );
 };
 

@@ -28,9 +28,9 @@ const NUDGE_TYPES = {
   check_in: {
     label: 'Check-In',
     icon: HelpCircle,
-    bgColor: 'bg-purple-100',
-    textColor: 'text-purple-700',
-    borderColor: 'border-l-purple-500'
+    bgColor: 'bg-sky-100',
+    textColor: 'text-sky-700',
+    borderColor: 'border-l-sky-500'
   },
   escalation: {
     label: 'Important',

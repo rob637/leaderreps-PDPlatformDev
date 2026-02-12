@@ -477,6 +477,14 @@ export const conditioningService = {
       rolledForwardFrom: missedRepId
     });
     
+    // Mark original as resolved so it no longer appears in missed reps list
+    const missedRepRef = doc(db, 'users', userId, 'conditioning_reps', missedRepId);
+    await updateDoc(missedRepRef, {
+      rolledForwardTo: newRepId,
+      missedDebriefComplete: true,
+      updatedAt: serverTimestamp()
+    });
+    
     return newRepId;
   },
   
@@ -601,6 +609,7 @@ export const conditioningService = {
     
     await updateDoc(repRef, {
       updatedAt: serverTimestamp(),
+      missedDebriefComplete: true,
       missedDebrief: {
         what_blocked: debriefData.what_blocked,
         standard_breakdown: debriefData.standard_breakdown,
@@ -713,7 +722,10 @@ export const conditioningService = {
     }
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Filter out missed reps that have already been debriefed
+    return snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(rep => !rep.missedDebriefComplete);
   },
   
   /**

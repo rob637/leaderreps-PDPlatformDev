@@ -28,14 +28,14 @@ const STATE_CONFIG = {
     label: 'Prepared',
     shortLabel: 'Prepped',
     icon: FileText,
-    color: 'indigo',
+    color: 'slate',
     description: 'Prep work completed, ready to execute'
   },
   scheduled: {
     label: 'Scheduled',
     shortLabel: 'Sched',
     icon: Calendar,
-    color: 'purple',
+    color: 'sky',
     description: 'Time/meeting scheduled for rep'
   },
   executed: {
@@ -90,15 +90,15 @@ const getColorClasses = (color, variant = 'default') => {
       active: 'bg-blue-600 text-white border-blue-700',
       muted: 'bg-blue-50 text-blue-400 border-blue-200'
     },
-    indigo: {
-      default: 'bg-indigo-100 text-indigo-700 border-indigo-300',
-      active: 'bg-indigo-600 text-white border-indigo-700',
-      muted: 'bg-indigo-50 text-indigo-400 border-indigo-200'
+    slate: {
+      default: 'bg-slate-100 text-slate-700 border-slate-300',
+      active: 'bg-slate-600 text-white border-slate-700',
+      muted: 'bg-slate-50 text-slate-400 border-slate-200'
     },
-    purple: {
-      default: 'bg-purple-100 text-purple-700 border-purple-300',
-      active: 'bg-purple-600 text-white border-purple-700',
-      muted: 'bg-purple-50 text-purple-400 border-purple-200'
+    sky: {
+      default: 'bg-sky-100 text-sky-700 border-sky-300',
+      active: 'bg-sky-600 text-white border-sky-700',
+      muted: 'bg-sky-50 text-sky-400 border-sky-200'
     },
     teal: {
       default: 'bg-teal-100 text-teal-700 border-teal-300',
@@ -374,13 +374,13 @@ const StateActionButtons = ({
     prepared: {
       label: 'Mark as Prepared',
       icon: FileText,
-      color: 'bg-indigo-600 hover:bg-indigo-700',
+      color: 'bg-slate-600 hover:bg-slate-700',
       priority: 2
     },
     scheduled: {
       label: 'Mark as Scheduled',
       icon: Calendar,
-      color: 'bg-purple-600 hover:bg-purple-700',
+      color: 'bg-sky-600 hover:bg-sky-700',
       priority: 3
     },
     executed: {

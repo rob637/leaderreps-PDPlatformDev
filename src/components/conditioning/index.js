@@ -29,3 +29,7 @@ export { default as RepDetailModal } from './RepDetailModal';
 
 // Voice Input
 export { default as VoiceInputButton, VoiceInputWithPreview } from './VoiceInputButton';
+
+// Unified Modal & Voice Textarea
+export { default as ConditioningModal, StepIndicator } from './ConditioningModal';
+export { default as VoiceTextarea } from './VoiceTextarea';

@@ -1,11 +1,14 @@
 // src/components/conditioning/CommitRepForm.jsx
 // New commitment form with 16 rep types and universal structure fields
 // Based on Ryan's Conditioning Layer specs (020726)
+// UX v2: Uses ConditioningModal + VoiceTextarea for consistency
 
 import React, { useState, useMemo } from 'react';
-import { X, AlertTriangle, ChevronDown, ChevronUp, Info, HelpCircle } from 'lucide-react';
-import { Card, Button } from '../ui';
+import { AlertTriangle, Info } from 'lucide-react';
+import { Button } from '../ui';
 import RepTypePicker from './RepTypePicker';
+import ConditioningModal from './ConditioningModal';
+import VoiceTextarea from './VoiceTextarea';
 import { 
   getRepType, 
   UNIVERSAL_REP_FIELDS, 
@@ -18,30 +21,21 @@ import { getWeekBoundaries } from '../../services/conditioningService';
 import { Timestamp } from 'firebase/firestore';
 
 // ============================================
-// FIELD INPUT COMPONENT
+// FIELD INPUT COMPONENT — wraps VoiceTextarea
 // ============================================
 const FieldInput = ({ field, value, onChange, disabled = false, error = null, showError = false }) => {
   return (
-    <div className={error && showError ? 'field-error' : ''}>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {field.label} {field.required && <span className="text-red-500">*</span>}
-      </label>
-      <p className="text-xs text-gray-500 mb-2">{field.prompt}</p>
-      <textarea
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={field.placeholder}
-        className={`w-full p-3 border rounded-lg text-sm min-h-[80px] resize-none focus:ring-2 focus:ring-corporate-navy focus:border-transparent ${
-          error && showError 
-            ? 'border-red-400 bg-red-50' 
-            : 'border-gray-300'
-        }`}
-        disabled={disabled}
-      />
-      {error && showError && (
-        <p className="text-sm text-red-600 mt-1">{error}</p>
-      )}
-    </div>
+    <VoiceTextarea
+      label={`${field.label}${field.required ? '' : ' (optional)'}`}
+      helpText={field.prompt}
+      value={value || ''}
+      onChange={onChange}
+      placeholder={field.placeholder}
+      rows={3}
+      disabled={disabled}
+      required={field.required}
+      error={error && showError ? error : null}
+    />
   );
 };
 
@@ -79,7 +73,7 @@ const RiskSelector = ({ value, onChange, repType }) => {
             key={risk.id}
             type="button"
             onClick={() => onChange(risk.id)}
-            className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+            className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${
               value === risk.id
                 ? risk.id === 'high' 
                   ? 'bg-red-50 border-red-300 text-red-700 ring-2 ring-red-500'
@@ -123,7 +117,7 @@ const DifficultySelector = ({ value, onChange, repType }) => {
               key={level.id}
               type="button"
               onClick={() => onChange(level.id)}
-              className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+              className={`w-full p-3 rounded-xl border-2 text-left transition-all ${
                 value === level.id
                   ? 'bg-corporate-navy/5 border-corporate-navy ring-2 ring-corporate-navy'
                   : 'bg-white border-gray-200 hover:border-gray-300'
@@ -156,7 +150,7 @@ const CollapsibleSection = ({ title, children, defaultOpen = false, helpText }) 
   const [isOpen, setIsOpen] = useState(defaultOpen);
   
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="border border-gray-200 rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -293,8 +287,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
   }, [repTypeId, person, difficulty, universalFields]);
   
   // Handle submit
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     setSubmitAttempted(true);
     
     // Validate and show errors
@@ -345,28 +338,38 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
   const today = new Date().toISOString().split('T')[0];
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
-      <Card className="w-full sm:max-w-lg sm:mx-4 rounded-b-none sm:rounded-b-lg max-h-[90vh] overflow-y-auto">
-        <form onSubmit={handleSubmit}>
-          {/* Header */}
-          <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-corporate-navy">Commit to a Rep</h3>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-          
+    <ConditioningModal
+      isOpen={true}
+      onClose={onClose}
+      title="Commit to a Rep"
+      subtitle={selectedRepType ? `${selectedRepType.label}` : 'Select a rep type to begin'}
+      footer={
+        <div>
+          <Button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="w-full bg-corporate-teal hover:bg-corporate-teal-dark text-white py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Committing...' : 'Commit to This Rep'}
+          </Button>
+          {submitAttempted && Object.keys(errors).length > 0 && (
+            <p className="text-xs text-red-600 text-center mt-2">
+              Please fill in all required fields above
+            </p>
+          )}
+          {!submitAttempted && !isValid && repTypeId && (
+            <p className="text-xs text-gray-500 text-center mt-2">
+              Fill in all required fields to continue
+            </p>
+          )}
+        </div>
+      }
+    >
           {/* Form Body */}
-          <div className="p-4 space-y-5">
+          <div className="space-y-5">
             {/* V1 UX: Soft warning when active rep exists */}
             {activeRepsCount > 0 && (
-              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                 <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-amber-800">
@@ -407,10 +410,10 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                     value={person}
                     onChange={(e) => handlePersonChange(e.target.value)}
                     placeholder="e.g., Maya, Jordan, Chris"
-                    className={`w-full p-3 border rounded-lg text-base focus:ring-2 focus:ring-corporate-navy focus:border-transparent ${
+                    className={`w-full p-3 border rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all ${
                       errors.person && submitAttempted 
                         ? 'border-red-400 bg-red-50' 
-                        : 'border-gray-300'
+                        : 'border-slate-200 hover:border-slate-300'
                     }`}
                     required
                   />
@@ -454,17 +457,13 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                 {/* Step 5: Optional Settings */}
                 <CollapsibleSection title="Additional Options" defaultOpen={false}>
                   {/* Notes */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Additional notes (optional)
-                    </label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Any other context..."
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm min-h-[60px] resize-none"
-                    />
-                  </div>
+                  <VoiceTextarea
+                    label="Additional notes (optional)"
+                    value={notes}
+                    onChange={setNotes}
+                    placeholder="Any other context..."
+                    rows={3}
+                  />
                   
                   {/* Custom Deadline */}
                   <div>
@@ -487,7 +486,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                         onChange={(e) => setCustomDeadline(e.target.value)}
                         min={today}
                         max={maxDeadline}
-                        className="mt-2 w-full p-3 border border-gray-300 rounded-lg text-base"
+                        className="mt-2 w-full p-3 border border-slate-200 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50"
                       />
                     )}
                   </div>
@@ -495,7 +494,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                 
                 {/* Prep Required Warning */}
                 {isPrepRequired(repTypeId, riskLevel) && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                       <div>
@@ -510,30 +509,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
               </>
             )}
           </div>
-          
-          {/* Submit Button */}
-          <div className="p-4 border-t border-gray-200 bg-gray-50 sticky bottom-0">
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-corporate-navy hover:bg-corporate-navy/90 text-white py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Committing...' : 'Commit to This Rep'}
-            </Button>
-            {submitAttempted && Object.keys(errors).length > 0 && (
-              <p className="text-xs text-red-600 text-center mt-2">
-                Please fill in all required fields above
-              </p>
-            )}
-            {!submitAttempted && !isValid && repTypeId && (
-              <p className="text-xs text-gray-500 text-center mt-2">
-                Fill in all required fields to continue
-              </p>
-            )}
-          </div>
-        </form>
-      </Card>
-    </div>
+    </ConditioningModal>
   );
 };
 

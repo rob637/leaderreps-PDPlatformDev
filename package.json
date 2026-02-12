@@ -18,7 +18,7 @@
     "deploy:repup:test": "bash ./scripts/deploy-repup.sh test",
     "deploy": "echo '❌ Use deploy:dev or deploy:test instead' && exit 1",
     "deploy:quick": "echo '❌ Use deploy:dev or deploy:test instead' && exit 1",
-    "sync:test": "./sync-dev-to-test.sh",
+    "sync:test": "./scripts/deploy/sync-dev-to-test.sh",
     "lint": "eslint .",
     "lint:ui": "bash ./scripts/ui-architecture-check.sh",
     "precommit": "npm run lint:ui && npm run lint",

@@ -34,9 +34,9 @@ const NUDGE_TYPES = {
     label: 'Check-In',
     description: 'Direct check-in from trainer',
     icon: HelpCircle,
-    color: 'purple',
-    bgColor: 'bg-purple-100',
-    textColor: 'text-purple-700'
+    color: 'sky',
+    bgColor: 'bg-sky-100',
+    textColor: 'text-sky-700'
   },
   escalation: {
     label: 'Escalation',
