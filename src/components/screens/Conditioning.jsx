@@ -21,7 +21,6 @@ import {
   TrainerNudgeNotification,
   CommitRepForm,
   RepTypeBadge,
-  RepProgressionTracker,
   PrepRequirementBadge,
   HighRiskPrepModal,
   MissedRepDebriefModal,
@@ -127,8 +126,8 @@ const StatusBadge = ({ status }) => {
 // ============================================
 // WEEK STATUS HEADER
 // ============================================
-const WeekStatusHeader = ({ weeklyStatus, nudgeStatus }) => {
-  const { weekStart, weekEnd, requiredRepCompleted, totalCompleted, totalActive } = weeklyStatus || {};
+const WeekStatusStrip = ({ weeklyStatus }) => {
+  const { weekStart, weekEnd, requiredRepCompleted } = weeklyStatus || {};
   
   const formatDate = (date) => {
     if (!date) return '';
@@ -137,63 +136,28 @@ const WeekStatusHeader = ({ weeklyStatus, nudgeStatus }) => {
   };
   
   return (
-    <Card className="mb-4">
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-lg font-bold text-corporate-navy">This Week's Reps</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {formatDate(weekStart)} - {formatDate(weekEnd)}
-            </p>
-          </div>
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
-            requiredRepCompleted 
-              ? 'bg-green-100 dark:bg-green-900/30 text-green-700' 
-              : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700'
-          }`}>
-            {requiredRepCompleted ? (
-              <>
-                <CheckCircle className="w-5 h-5" />
-                <span className="font-medium">Requirement Met</span>
-              </>
-            ) : (
-              <>
-                <Target className="w-5 h-5" />
-                <span className="font-medium">1 Rep Required</span>
-              </>
-            )}
-          </div>
-        </div>
-        
-        {/* Stats Row */}
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-1.5">
+    <div className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-sm ${
+      requiredRepCompleted 
+        ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+        : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
+    }`}>
+      <div className="flex items-center gap-2">
+        {requiredRepCompleted ? (
+          <>
             <CheckCircle className="w-4 h-4 text-green-600" />
-            <span><strong>{totalCompleted || 0}</strong> Completed</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-blue-600" />
-            <span><strong>{totalActive || 0}</strong> Active</span>
-          </div>
-        </div>
-        
-        {/* Nudge Message */}
-        {nudgeStatus && nudgeStatus.type !== 'none' && (
-          <div className={`mt-3 p-3 rounded-lg text-sm ${
-            nudgeStatus.type === 'urgent' || nudgeStatus.type === 'escalation'
-              ? 'bg-red-50 dark:bg-red-900/20 text-red-700 border border-red-200 dark:border-red-800'
-              : nudgeStatus.type === 'warning'
-              ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 border border-amber-200 dark:border-amber-800'
-              : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 border border-blue-200 dark:border-blue-800'
-          }`}>
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>{nudgeStatus.message}</span>
-            </div>
-          </div>
+            <span className="font-medium text-green-700 dark:text-green-300">Weekly requirement met</span>
+          </>
+        ) : (
+          <>
+            <Target className="w-4 h-4 text-amber-600" />
+            <span className="font-medium text-amber-700 dark:text-amber-300">1 rep required this week</span>
+          </>
         )}
       </div>
-    </Card>
+      <span className="text-xs text-gray-500 dark:text-gray-400">
+        {formatDate(weekStart)} - {formatDate(weekEnd)}
+      </span>
+    </div>
   );
 };
 
@@ -295,7 +259,6 @@ const RepCard = ({
 }) => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
-  const [showProgression, setShowProgression] = useState(false);
   
   const formatDeadline = (deadline) => {
     if (!deadline) return 'End of week';
@@ -382,8 +345,8 @@ const RepCard = ({
             </div>
           </div>
           
-          {/* Prep Requirement Badge - shows "Prep Complete" when done */}
-          {canTakeAction && (
+          {/* Prep Requirement Badge - only show when prep IS required */}
+          {canTakeAction && isPrepRequired(rep.repType, rep.riskLevel) && (
             <div className="mb-3">
               <PrepRequirementBadge 
                 repType={rep.repType} 
@@ -414,31 +377,8 @@ const RepCard = ({
             </div>
           )}
           
-          {/* Progression Tracker - Collapsible (Active reps only) */}
-          {canTakeAction && (
-            <div className="mb-3">
-              <button
-                onClick={() => setShowProgression(!showProgression)}
-                className="text-xs text-corporate-navy hover:underline flex items-center gap-1"
-              >
-                {showProgression ? 'Hide' : 'Show'} Progress Tracker
-                <ChevronRight className={`w-3 h-3 transition-transform ${showProgression ? 'rotate-90' : ''}`} />
-              </button>
-              {showProgression && (
-                <div className="mt-2">
-                  <RepProgressionTracker
-                    rep={rep}
-                    onStateChange={handleStateChange}
-                    showActions={true}
-                    compact={false}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-          
           {/* Quick Action Buttons - Active/Missed Reps */}
-          {canTakeAction && !showProgression && (
+          {canTakeAction && (
             <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
               {needsPrep ? (
                 <Button
@@ -1038,11 +978,11 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
           </Card>
         )}
         
-        {/* Week Status Header */}
-        <WeekStatusHeader weeklyStatus={weeklyStatus} nudgeStatus={nudgeStatus} />
+        {/* Compact Week Status */}
+        <WeekStatusStrip weeklyStatus={weeklyStatus} />
         
-        {/* Today's Focus Card - Shows most urgent rep */}
-        {activeReps.length > 0 && (
+        {/* Today's Focus Card - Only shown when 3+ active reps to help prioritize */}
+        {activeReps.length >= 3 && (
           <TodaysFocusCard 
             activeReps={activeReps}
             onOpenPrep={handleOpenPrep}
@@ -1073,10 +1013,12 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
         
         {/* Active Reps */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-corporate-navy">Active Reps</h3>
-            <span className="text-sm text-gray-500 dark:text-gray-400">{activeReps.length} rep{activeReps.length !== 1 ? 's' : ''}</span>
-          </div>
+          {activeReps.length > 1 && (
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-corporate-navy">Active Reps</h3>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{activeReps.length} reps</span>
+            </div>
+          )}
           
           {activeReps.length === 0 ? (
             <Card className="p-8 text-center border-dashed border-2 border-corporate-teal/30 bg-gradient-to-br from-corporate-teal/5 to-transparent">
