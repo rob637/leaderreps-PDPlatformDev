@@ -20,7 +20,7 @@ export const REP_CATEGORIES = {
     shortLabel: 'Hard Conversations',
     description: 'Conversations without clear behavioral charge',
     icon: 'Heart',
-    color: 'purple'
+    color: 'teal'
   },
   STANDARDS_AUTHORITY: {
     id: 'standards_authority',
@@ -36,7 +36,7 @@ export const REP_CATEGORIES = {
     shortLabel: 'High Stakes',
     description: 'Escalation and irreversible decisions',
     icon: 'AlertTriangle',
-    color: 'red'
+    color: 'orange'
   }
 };
 

@@ -16,22 +16,22 @@ import { REP_STATUS } from '../../services/conditioningService.js';
 // ============================================
 const StatusDisplay = ({ status }) => {
   const configs = {
-    committed: { label: 'Planned', color: 'blue', icon: Clock },
-    prepared: { label: 'Prepared', color: 'slate', icon: FileText },
-    scheduled: { label: 'Scheduled', color: 'sky', icon: Calendar },
-    executed: { label: 'Delivered', color: 'teal', icon: Target },
-    debriefed: { label: 'Debriefed', color: 'green', icon: CheckCircle },
-    follow_up_pending: { label: 'Follow-Up', color: 'orange', icon: RefreshCw },
-    loop_closed: { label: 'Loop Closed', color: 'emerald', icon: CheckCircle },
-    missed: { label: 'Missed', color: 'amber', icon: AlertTriangle },
-    canceled: { label: 'Canceled', color: 'gray', icon: X }
+    committed: { label: 'Planned', color: 'bg-blue-100 text-blue-700', icon: Clock },
+    prepared: { label: 'Prepared', color: 'bg-slate-100 text-slate-700', icon: FileText },
+    scheduled: { label: 'Scheduled', color: 'bg-sky-100 text-sky-700', icon: Calendar },
+    executed: { label: 'Delivered', color: 'bg-teal-100 text-teal-700', icon: Target },
+    debriefed: { label: 'Debriefed', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+    follow_up_pending: { label: 'Follow-Up', color: 'bg-orange-100 text-orange-700', icon: RefreshCw },
+    loop_closed: { label: 'Loop Closed', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle },
+    missed: { label: 'Missed', color: 'bg-amber-100 text-amber-700', icon: AlertTriangle },
+    canceled: { label: 'Canceled', color: 'bg-gray-100 text-gray-700', icon: X }
   };
   
   const config = configs[status] || configs.committed;
   const Icon = config.icon;
   
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-${config.color}-100 text-${config.color}-700`}>
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
       <Icon className="w-4 h-4" />
       {config.label}
     </span>
@@ -138,7 +138,8 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
             <h3 className="text-lg font-bold text-white">Rep Details</h3>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-white/10 rounded text-white/80 hover:text-white transition-colors"
+              className="p-2.5 -mr-1 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors"
+              aria-label="Close"
             >
               <X className="w-5 h-5" />
             </button>

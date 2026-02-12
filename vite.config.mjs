@@ -156,10 +156,8 @@ export default defineConfig({
     
     // Bundle size optimization
     rollupOptions: {
-      // Multi-page app support - main app + RepUp standalone
       input: {
         main: './index.html',
-        repup: './repup.html',
       },
       output: {
         manualChunks: (id) => {

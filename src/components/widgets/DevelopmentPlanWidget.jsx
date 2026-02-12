@@ -230,15 +230,23 @@ const DevelopmentPlanWidget = ({ helpText }) => {
               const isCompleted = progress.status === 'completed' || completedItems.includes(item.id);
               const Icon = getItemIcon(item.type);
 
+              const hasResource = item.resourceId || item.url;
+              const handleRowClick = (e) => {
+                if (hasResource) {
+                  handleViewResource(e, item);
+                }
+              };
+
               return (
                 <div 
                   key={item.id || idx}
+                  onClick={hasResource ? handleRowClick : undefined}
                   className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
                     isCompleted ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200 hover:border-blue-300'
-                  }`}
+                  } ${hasResource ? 'cursor-pointer' : ''}`}
                 >
                   <div 
-                    onClick={() => handleToggle(item)}
+                    onClick={(e) => { e.stopPropagation(); handleToggle(item); }}
                     className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer transition-colors ${
                       isCompleted ? 'bg-blue-500 border-blue-500' : 'border-slate-300 hover:border-blue-400'
                     }`}
@@ -256,13 +264,10 @@ const DevelopmentPlanWidget = ({ helpText }) => {
                     </div>
                   </div>
 
-                  {(item.resourceId || item.url) && (
-                    <button
-                      onClick={(e) => handleViewResource(e, item)}
-                      className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    >
+                  {hasResource && (
+                    <div className="p-2 text-slate-400 group-hover:text-blue-600">
                       {loadingResource === item.id ? <Loader className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
-                    </button>
+                    </div>
                   )}
                 </div>
               );

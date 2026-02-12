@@ -16,7 +16,8 @@ import {
   BrainCircuit,
   List,
   Dumbbell,
-  Bell
+  Bell,
+  Eye
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
@@ -37,6 +38,7 @@ import UserManagement from './UserManagement';
 import LeaderProfileReports from './LeaderProfileReports';
 import NotificationManager from './NotificationManager';
 import ConditioningDashboard from './ConditioningDashboard';
+import UxAuditPanel from './UxAuditPanel';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
@@ -157,7 +159,8 @@ const AdminPortal = () => {
         { id: 'features', label: 'Widget Lab', icon: FlaskConical },
         { id: 'system', label: 'System', icon: Settings },
         // { id: 'migration', label: 'Migration', icon: ArrowLeftRight },
-        { id: 'tests', label: 'Test Center', icon: TestTube2 }
+        { id: 'tests', label: 'Test Center', icon: TestTube2 },
+        { id: 'ux-audit', label: 'UX Audit Lab', icon: Eye }
       ]
     },
     {
@@ -209,6 +212,8 @@ const AdminPortal = () => {
         return <LeaderProfileReports />;
       case 'conditioning':
         return <ConditioningDashboard />;
+      case 'ux-audit':
+        return <UxAuditPanel />;
       default:
         return <AdminDashboard />;
     }

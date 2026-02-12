@@ -6,8 +6,11 @@ Uses browser-use + Claude to log into the app as a real user
 and perform UX audits of specific flows or the full app.
 
 Usage:
-  # Full conditioning flow audit
+  # Standalone: run a conditioning audit
   python3 scripts/browser-use/run_ux_audit.py
+
+  # Watch mode: process audits queued from the Admin UI
+  python3 scripts/browser-use/run_ux_audit.py --watch
 
   # Custom task
   python3 scripts/browser-use/run_ux_audit.py --task "Navigate to the dashboard and check if all widgets load"
@@ -22,6 +25,10 @@ Required env vars:
   ANTHROPIC_API_KEY     - Your Anthropic API key
   E2E_ADMIN_EMAIL       - Login email (defaults to rob@sagecg.com)
   E2E_ADMIN_PASSWORD    - Login password (REQUIRED)
+
+For --watch mode, also needs Firebase credentials:
+  GOOGLE_APPLICATION_CREDENTIALS - Path to Firebase service account JSON
+  OR the script will look for functions/serviceAccountKey.json
 """
 
 import argparse
@@ -150,6 +157,143 @@ For each screen visited:
 ### Top 5 Priority Fixes
 ### Overall App Score (1-10)
 """,
+
+    'dev-plan': """
+You are a UX auditor testing the LeaderReps leadership development platform.
+
+STEPS:
+1. You are logged in. Find and navigate to "Dev Plan" in the sidebar navigation.
+2. Once on the Dev Plan screen:
+   - Does it load fully? Any stuck spinners or empty states?
+   - Is the content organized logically?
+   - Check for any broken cards, missing content, or layout issues
+   - Look at how modules/weeks/content is presented
+   - Is there clear progress indication?
+3. If there are expandable sections or modules, open at least 2-3 of them.
+4. If there are any links to content (videos, articles), click one and check the experience.
+5. Navigate back and check the breadcrumb/back navigation works.
+6. Note typography, spacing, color consistency (should be navy/teal/orange palette).
+
+REPORT FORMAT:
+## UX Audit Report — Dev Plan
+### Issues Found (with Severity, Location, Description, Suggestion)
+### Positive Observations
+### Overall Assessment (1-10)
+""",
+
+    'profile-settings': """
+You are a UX auditor testing the LeaderReps leadership development platform.
+
+STEPS:
+1. You are logged in. Find and navigate to Profile or Settings (look in sidebar, top-right avatar, or bottom nav).
+2. Check the profile screen:
+   - Is user information displayed correctly?
+   - Are there edit capabilities? Do they work?
+   - Is the layout clean and organized?
+   - Any broken images, missing data, or layout issues?
+3. Look for Settings or Preferences:
+   - Are setting categories clear?
+   - Do toggles/controls look functional?
+   - Is dark mode available? Try toggling it.
+4. Check for any account management features (name, email, password change).
+5. Look for notification preferences if available.
+6. Navigate back to dashboard and verify the transition is smooth.
+
+REPORT FORMAT:
+## UX Audit Report — Profile & Settings
+### Issues Found (with Severity, Location, Description, Suggestion)
+### Positive Observations
+### Overall Assessment (1-10)
+""",
+
+    'navigation-flow': """
+You are a UX auditor testing the overall navigation and flow of the LeaderReps platform.
+
+STEPS:
+1. You are logged in. Start at the Dashboard.
+2. Systematically visit EVERY screen you can find in the navigation:
+   - Click each item in the sidebar (or bottom nav if mobile)
+   - For each screen: note the screen name, whether it loads, any errors
+   - Count how many navigation items there are
+3. Test the back/forward navigation:
+   - Use the browser back button after navigating to a deep screen
+   - Does it return to the right place?
+4. Check for dead-end screens:
+   - Any screen where you can't easily get back?
+   - Any screens that feel disconnected?
+5. Test the sidebar:
+   - Does it show which screen is currently active?
+   - Does it collapse/expand properly?
+   - Is the hierarchy logical?
+6. Look for any duplicate or confusing nav items.
+7. Time the transitions — do screens load quickly or is there noticeable lag?
+
+REPORT FORMAT:
+## UX Audit Report — Navigation & Flow
+### Navigation Map (list all screens found)
+### Issues Found (with Severity, Location, Description, Suggestion)
+### Screen Load Assessment
+### Navigation Coherence Score (1-10)
+### Overall Assessment (1-10)
+""",
+
+    'content-library': """
+You are a UX auditor testing the content experience on the LeaderReps platform.
+
+STEPS:
+1. You are logged in. Look for a Content Library, Locker, Explore, or similar content browsing area.
+2. If you find it:
+   - How is content organized? Categories, tags, search?
+   - Can you filter or sort?
+   - Click on at least 2-3 content items
+   - Check how content renders (text formatting, images, videos)
+   - Is there progress tracking on content?
+3. Check the content detail view:
+   - Is the layout readable?
+   - Are there related content suggestions?
+   - Can you navigate back easily?
+4. If there are videos:
+   - Do video players load?
+   - Are there proper controls?
+   - Is the thumbnail/preview useful?
+5. Note the overall content discovery experience — can you find what you need?
+
+REPORT FORMAT:
+## UX Audit Report — Content Experience
+### Issues Found (with Severity, Location, Description, Suggestion)
+### Content Organization Assessment
+### Positive Observations
+### Overall Assessment (1-10)
+""",
+
+    'error-states': """
+You are a UX auditor testing error handling and edge cases on the LeaderReps platform.
+
+STEPS:
+1. You are logged in. Test various error scenarios:
+2. Try clicking on elements that might be disabled or unavailable.
+3. Look for any JavaScript errors in the page (check if there are error banners, toasts, or console errors visible).
+4. Try navigating to areas that might require specific permissions.
+5. Check empty states:
+   - Are empty lists/sections handled gracefully?
+   - Do they show helpful messages?
+   - Are there clear CTAs for what to do next?
+6. Try resizing the browser window dramatically:
+   - Does the layout break at any viewport size?
+   - Do elements overlap?
+   - Is text still readable?
+7. Look for loading states:
+   - Are there skeleton screens or spinners during data loading?
+   - Do they feel appropriate or too long?
+8. Check for any hardcoded/placeholder text that shouldn't be there.
+
+REPORT FORMAT:
+## UX Audit Report — Error States & Edge Cases
+### Issues Found (with Severity, Location, Description, Suggestion)
+### Empty State Quality Assessment
+### Error Handling Quality
+### Overall Robustness Score (1-10)
+""",
 }
 
 
@@ -157,7 +301,7 @@ For each screen visited:
 # MAIN AUDIT RUNNER
 # ============================================
 
-async def run_audit(task, base_url, email, password, record=False, headless=True):
+async def run_audit(task, base_url, email, password, record=False, headless=True, model='claude-sonnet-4-20250514'):
     """Run a browser-use audit with Claude."""
     try:
         from browser_use import Agent, BrowserSession, ChatAnthropic
@@ -172,6 +316,9 @@ async def run_audit(task, base_url, email, password, record=False, headless=True
         print("   export ANTHROPIC_API_KEY='your-key-here'")
         sys.exit(1)
 
+    # Strip smart quotes that may have been introduced by copy-paste
+    api_key = api_key.strip().strip('\u2018\u2019\u201c\u201d\'"')
+
     if not password:
         print("❌ No password provided.")
         print("   export E2E_ADMIN_PASSWORD='your-password'")
@@ -185,6 +332,7 @@ async def run_audit(task, base_url, email, password, record=False, headless=True
     print(f"\n🔍 LeaderReps UX Audit")
     print(f"   Environment: {base_url}")
     print(f"   User: {email}")
+    print(f"   Model: {model}")
     print(f"   Headless: {headless}")
     print(f"   Recording: {record}")
     print(f"   Output: {output_dir}/")
@@ -219,7 +367,7 @@ Take your time. Be thorough. Note everything you observe.
 
     # Create the LLM
     llm = ChatAnthropic(
-        model='claude-sonnet-4-20250514',
+        model=model,
         api_key=api_key,
     )
 
@@ -247,8 +395,12 @@ Take your time. Be thorough. Note everything you observe.
         report_content += f"**User:** {email}\n\n"
         report_content += "---\n\n"
         
-        if result and hasattr(result, 'final_result') and result.final_result:
-            report_content += result.final_result()
+        if result and hasattr(result, 'final_result'):
+            final = result.final_result() if callable(result.final_result) else result.final_result
+            if final:
+                report_content += str(final)
+            else:
+                report_content += "Agent completed but produced no final result text."
         elif result:
             report_content += str(result)
         else:
@@ -259,10 +411,11 @@ Take your time. Be thorough. Note everything you observe.
 
         # Also save raw action history if available
         try:
-            if hasattr(result, 'action_results') and result.action_results:
+            action_results = result.action_results() if callable(getattr(result, 'action_results', None)) else getattr(result, 'action_results', None)
+            if action_results:
                 history_file = output_dir / f'audit-{timestamp}-actions.json'
-                actions = [str(a) for a in result.action_results()]
-                history_file.write_text(json.dumps(actions, indent=2))
+                actions = [str(a) for a in action_results]
+                history_file.write_text(json.dumps(actions, indent=2, ensure_ascii=False))
                 print(f"   Action history: {history_file}")
         except Exception:
             pass
@@ -273,7 +426,150 @@ Take your time. Be thorough. Note everything you observe.
         print(f"\n❌ Audit failed: {e}")
         raise
     finally:
-        await browser_session.close()
+        try:
+            await browser_session.stop()
+        except Exception:
+            pass  # Session may already be stopped
+
+
+# ============================================
+# FIRESTORE WATCH MODE
+# ============================================
+
+def get_firestore_client():
+    """Initialize Firestore client for watch mode."""
+    try:
+        import firebase_admin
+        from firebase_admin import credentials, firestore
+    except ImportError:
+        print("❌ firebase-admin not installed. Run:")
+        print("   pip3 install firebase-admin")
+        sys.exit(1)
+
+    # Try to find credentials
+    cred_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+    if not cred_path:
+        # Look for common locations
+        candidates = [
+            'functions/serviceAccountKey.json',
+            'serviceAccountKey.json',
+            os.path.expanduser('~/.config/firebase/serviceAccountKey.json'),
+        ]
+        for c in candidates:
+            if os.path.exists(c):
+                cred_path = c
+                break
+
+    if not cred_path or not os.path.exists(cred_path):
+        print("❌ Firebase credentials not found.")
+        print("   Set GOOGLE_APPLICATION_CREDENTIALS or place serviceAccountKey.json in functions/")
+        print("   Generate one at: Firebase Console → Project Settings → Service Accounts")
+        sys.exit(1)
+
+    # Determine which project from the service account
+    with open(cred_path) as f:
+        sa_data = json.load(f)
+    project_id = sa_data.get('project_id', 'unknown')
+    print(f"   Firebase project: {project_id}")
+    print(f"   Credentials: {cred_path}")
+
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+
+    return firestore.client()
+
+
+async def process_pending_audit(firestore_db, audit_doc, password, headless=True, model='claude-sonnet-4-20250514'):
+    """Process a single pending audit from Firestore."""
+    from firebase_admin import firestore as fs
+    
+    doc_ref = audit_doc.reference
+    data = audit_doc.to_dict()
+
+    audit_type = data.get('auditType', 'conditioning')
+    environment = data.get('environment', 'dev')
+    custom_task = data.get('customTask')
+    email = data.get('email', 'rob@sagecg.com')
+    base_url = data.get('url') or ENV_URLS.get(environment, ENV_URLS['dev'])
+
+    # Determine the task
+    if custom_task:
+        task = custom_task
+    elif audit_type in AUDIT_TASKS:
+        task = AUDIT_TASKS[audit_type]
+    else:
+        task = AUDIT_TASKS['conditioning']
+
+    print(f"\n{'='*60}")
+    print(f"📋 Processing audit: {audit_doc.id}")
+    print(f"   Type: {audit_type} | Env: {environment} | Email: {email}")
+    print(f"{'='*60}")
+
+    # Mark as running
+    doc_ref.update({
+        'status': 'running',
+        'updatedAt': fs.SERVER_TIMESTAMP,
+    })
+
+    try:
+        report = await run_audit(
+            task=task,
+            base_url=base_url,
+            email=email,
+            password=password,
+            headless=headless,
+            model=model,
+        )
+
+        # Extract score if present (look for X/10 pattern)
+        score = None
+        import re
+        score_match = re.search(r'(\d+(?:\.\d+)?)\s*/\s*10', report or '')
+        if score_match:
+            score = float(score_match.group(1))
+
+        # Write report back to Firestore
+        doc_ref.update({
+            'status': 'completed',
+            'report': report or 'No report generated.',
+            'score': score,
+            'completedAt': fs.SERVER_TIMESTAMP,
+            'updatedAt': fs.SERVER_TIMESTAMP,
+        })
+
+        print(f"✅ Audit {audit_doc.id} completed" + (f" (score: {score}/10)" if score else ""))
+
+    except Exception as e:
+        doc_ref.update({
+            'status': 'failed',
+            'error': str(e),
+            'updatedAt': fs.SERVER_TIMESTAMP,
+        })
+        print(f"❌ Audit {audit_doc.id} failed: {e}")
+
+
+async def watch_firestore(password, headless=True, poll_interval=10, model='claude-sonnet-4-20250514'):
+    """Poll Firestore for pending audits and process them."""
+    firestore_db = get_firestore_client()
+
+    print(f"\n👁️  Watch mode active — polling every {poll_interval}s")
+    print(f"   Audits are queued from Admin → UX Audit Lab")
+    print(f"   Press Ctrl+C to stop\n")
+
+    try:
+        while True:
+            # Query for pending audits
+            runs_ref = firestore_db.collection('admin').document('ux-audits').collection('runs')
+            pending = runs_ref.where('status', '==', 'pending').order_by('createdAt').limit(1).get()
+
+            for audit_doc in pending:
+                await process_pending_audit(firestore_db, audit_doc, password, headless, model=model)
+
+            await asyncio.sleep(poll_interval)
+
+    except KeyboardInterrupt:
+        print("\n\n👋 Watch mode stopped.")
 
 
 # ============================================
@@ -286,7 +582,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Audit the conditioning flow on dev
+  # Watch Firestore for audits queued from Admin UI
+  python3 scripts/browser-use/run_ux_audit.py --watch
+
+  # Standalone: audit the conditioning flow on dev
   python3 scripts/browser-use/run_ux_audit.py
 
   # Full app audit on test environment
@@ -301,8 +600,13 @@ Examples:
     )
 
     parser.add_argument(
+        '--watch',
+        action='store_true',
+        help='Watch Firestore for audits queued from the Admin UI'
+    )
+    parser.add_argument(
         '--audit',
-        choices=['conditioning', 'dashboard', 'full'],
+        choices=['conditioning', 'dashboard', 'full', 'dev-plan', 'profile-settings', 'navigation-flow', 'content-library', 'error-states'],
         default='conditioning',
         help='Pre-built audit to run (default: conditioning)'
     )
@@ -339,23 +643,93 @@ Examples:
         action='store_true',
         help='Save screenshots and recording'
     )
+    parser.add_argument(
+        '--poll-interval',
+        type=int,
+        default=10,
+        help='Seconds between Firestore polls in watch mode (default: 10)'
+    )
+    parser.add_argument(
+        '--model',
+        type=str,
+        default='claude-sonnet-4-20250514',
+        help='Anthropic model to use (default: claude-sonnet-4-20250514)'
+    )
+    parser.add_argument(
+        '--batch',
+        nargs='+',
+        choices=['conditioning', 'dashboard', 'full', 'dev-plan', 'profile-settings', 'navigation-flow', 'content-library', 'error-states'],
+        help='Run multiple audits in sequence with cooldown between them'
+    )
+    parser.add_argument(
+        '--cooldown',
+        type=int,
+        default=90,
+        help='Seconds to wait between batch audits for rate limit cooldown (default: 90)'
+    )
 
     args = parser.parse_args()
-
-    # Determine the task
-    task = args.task if args.task else AUDIT_TASKS[args.audit]
-    base_url = ENV_URLS[args.env]
     headless = not args.headed
 
-    # Run it
-    asyncio.run(run_audit(
-        task=task,
-        base_url=base_url,
-        email=args.email,
-        password=args.password,
-        record=args.record,
-        headless=headless,
-    ))
+    if args.watch:
+        # Watch mode — poll Firestore for pending audits
+        if not args.password:
+            print("❌ Password required. Set E2E_ADMIN_PASSWORD or use --password")
+            sys.exit(1)
+        asyncio.run(watch_firestore(
+            password=args.password,
+            headless=headless,
+            poll_interval=args.poll_interval,
+            model=args.model,
+        ))
+    else:
+        # Standalone mode — run a single audit or batch
+        base_url = ENV_URLS[args.env]
+
+        if args.batch:
+            # Batch mode — run multiple audits with cooldown
+            print(f"\n🔄 Batch mode: {len(args.batch)} audits queued")
+            print(f"   Audits: {', '.join(args.batch)}")
+            print(f"   Cooldown: {args.cooldown}s between audits\n")
+            
+            for i, audit_name in enumerate(args.batch):
+                print(f"\n{'='*60}")
+                print(f"📋 Batch {i+1}/{len(args.batch)}: {audit_name}")
+                print(f"{'='*60}")
+                
+                task = AUDIT_TASKS[audit_name]
+                try:
+                    asyncio.run(run_audit(
+                        task=task,
+                        base_url=base_url,
+                        email=args.email,
+                        password=args.password,
+                        record=args.record,
+                        headless=headless,
+                        model=args.model,
+                    ))
+                except Exception as e:
+                    print(f"❌ Batch audit '{audit_name}' failed: {e}")
+                
+                # Cooldown between audits (skip after last)
+                if i < len(args.batch) - 1:
+                    print(f"\n⏳ Cooling down {args.cooldown}s before next audit...")
+                    import time
+                    time.sleep(args.cooldown)
+            
+            print(f"\n✅ Batch complete! {len(args.batch)} audits run.")
+            print(f"   Reports in: scripts/browser-use/reports/")
+        else:
+            task = args.task if args.task else AUDIT_TASKS[args.audit]
+            asyncio.run(run_audit(
+                task=task,
+                base_url=base_url,
+                email=args.email,
+                password=args.password,
+                record=args.record,
+                headless=headless,
+                model=args.model,
+            ))
 
 
 if __name__ == '__main__':

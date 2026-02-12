@@ -399,7 +399,12 @@ const AdminDashboard = () => {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-500">Loading dashboard data...</div>;
+    return (
+      <div className="p-8 flex flex-col items-center justify-center gap-3 text-gray-500">
+        <div className="w-8 h-8 border-3 border-corporate-teal/30 border-t-corporate-teal rounded-full animate-spin" />
+        <p className="text-sm font-medium">Loading dashboard data...</p>
+      </div>
+    );
   }
 
   return (

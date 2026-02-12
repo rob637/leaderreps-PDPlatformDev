@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, User, Bell, CheckCircle, Edit2, Zap, Mail, Smartphone, VolumeX, Shield,
-  Download, LogOut, AlertTriangle, Sun, Moon, Monitor
+  Download, LogOut, AlertTriangle, Sun, Moon, Monitor, ChevronRight, KeyRound
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
@@ -44,7 +44,7 @@ const MySettingsWidget = () => {
   const isProfileComplete = profileComplete;
   
   // Notification settings
-  const { user, db, logout } = useAppServices();
+  const { user, db, logout, navigate } = useAppServices();
   const [notifLoading, setNotifLoading] = useState(true);
   const [notifSettings, setNotifSettings] = useState({
     enabled: true,
@@ -235,6 +235,23 @@ const MySettingsWidget = () => {
               </div>
               <PWAInstall collapsed={true} />
             </div>
+
+            {/* Account & Security Row */}
+            <button
+              onClick={() => navigate('app-settings')}
+              className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-corporate-teal/30 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+                  <KeyRound className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Account & Security</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Password, notifications, integrations</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
 
             {/* Sign Out Row */}
             <button

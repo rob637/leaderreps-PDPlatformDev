@@ -1,5 +1,82 @@
-import React from 'react';
-import { X, ExternalLink, Download, FileText, Film, Link as LinkIcon, Layers } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, ExternalLink, Download, FileText, Film, Link as LinkIcon, Layers, AlertCircle } from 'lucide-react';
+
+/**
+ * Iframe wrapper that detects load failures (blank/gray iframes from gview)
+ * and shows a prominent fallback UI after a timeout.
+ */
+const IframeWithFallback = ({ src, directUrl, title }) => {
+  const [showFallback, setShowFallback] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+
+  // If the iframe doesn't trigger onLoad within 8 seconds, show fallback
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!iframeLoaded) setShowFallback(true);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [iframeLoaded]);
+
+  const handleIframeLoad = useCallback(() => {
+    setIframeLoaded(true);
+  }, []);
+
+  if (showFallback && !iframeLoaded) {
+    return (
+      <div className="h-[70vh] w-full bg-slate-50 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-4 p-8">
+        <AlertCircle className="w-12 h-12 text-slate-400" />
+        <div className="text-center">
+          <p className="text-sm font-semibold text-slate-700 mb-1">Document preview unavailable</p>
+          <p className="text-xs text-slate-500 max-w-sm">
+            This document can&apos;t be previewed in the browser. You can download it or open it directly.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <a
+            href={directUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-corporate-teal text-white text-sm font-bold rounded-lg hover:bg-corporate-teal/90 transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Open in New Tab
+          </a>
+          <a
+            href={directUrl}
+            download
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-700 text-sm font-bold rounded-lg border border-slate-300 hover:bg-slate-50 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Download
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative">
+      <iframe
+        src={src}
+        className="w-full h-full"
+        title={title}
+        onLoad={handleIframeLoad}
+      />
+      {/* Always show fallback link */}
+      <div className="absolute bottom-4 right-4">
+        <a
+          href={directUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
+        >
+          <Download className="w-3 h-3" />
+          Download / Open Directly
+        </a>
+      </div>
+    </div>
+  );
+};
 
 const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
   if (!resource) return null;
@@ -240,28 +317,11 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
            }
 
            return (
-             <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative flex flex-col">
-                <div className="flex-1 relative bg-slate-200">
-                    {/* Use Google Viewer as Primary (User Preference) */}
-                    <iframe 
-                       src={`https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`}
-                       className="w-full h-full" 
-                       title={title}
-                    />
-                </div>
-
-                {/* Footer with Fallback Options */}
-                <div className="bg-white border-t border-slate-200 p-2 flex justify-center gap-4 text-xs">
-                    <a 
-                      href={url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-slate-500 hover:text-corporate-teal flex items-center gap-1"
-                    >
-                        <Download className="w-3 h-3" /> Download Original
-                    </a>
-                </div>
-             </div>
+             <IframeWithFallback
+               src={`https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`}
+               directUrl={url}
+               title={title}
+             />
            );
         }
 
@@ -271,25 +331,11 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
         const viewerUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
         
         return (
-          <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative">
-             <iframe 
-               src={viewerUrl} 
-               className="w-full h-full" 
-               title={title} 
-             />
-             {/* Fallback Link Overlay */}
-             <div className="absolute bottom-4 right-4">
-                <a 
-                  href={url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
-                >
-                  <Download className="w-3 h-3" />
-                  Download / Open Directly
-                </a>
-             </div>
-          </div>
+          <IframeWithFallback
+            src={viewerUrl}
+            directUrl={url}
+            title={title}
+          />
         );
       }
 

@@ -27,10 +27,10 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
 // Import raw content for AI analysis
-import adminGuideRaw from '../../../ADMIN-GUIDE.md?raw';
-import userGuideRaw from '../../../USER-GUIDE.md?raw';
-import testPlansRaw from '../../../TEST-PLANS.md?raw';
-import appArchitectureRaw from '../../../APP-ARCHITECTURE.md?raw';
+import adminGuideRaw from '../../../docs/ADMIN-GUIDE.md?raw';
+import userGuideRaw from '../../../docs/USER-GUIDE.md?raw';
+import testPlansRaw from '../../../docs/TEST-PLANS.md?raw';
+import appArchitectureRaw from '../../../docs/APP-ARCHITECTURE.md?raw';
 import packageJsonRaw from '../../../package.json?raw';
 import widgetTemplatesRaw from '../../config/widgetTemplates.js?raw';
 import adminPortalRaw from './AdminPortal.jsx?raw';
