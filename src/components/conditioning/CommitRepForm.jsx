@@ -4,7 +4,7 @@
 // UX v2: Uses ConditioningModal + VoiceTextarea for consistency
 
 import React, { useState, useMemo } from 'react';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../ui';
 import RepTypePicker from './RepTypePicker';
 import ConditioningModal from './ConditioningModal';
