@@ -434,11 +434,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                     value={person}
                     onChange={(e) => handlePersonChange(e.target.value)}
                     placeholder="e.g., Maya, Jordan, Chris"
-                    className={`w-full p-3 border rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all dark:bg-slate-800 dark:text-white ${
-                      errors.person && submitAttempted 
-                        ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
-                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
-                    }`}
+                    className="w-full p-3 border rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all dark:bg-slate-800 dark:text-white border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500"
                     required
                   />
                   {errors.person && submitAttempted && (
