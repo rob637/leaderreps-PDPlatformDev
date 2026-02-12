@@ -42,7 +42,7 @@ export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
       {/* Primary Back Action - Teal Arrow */}
       <button 
         onClick={handleBack}
-        className="p-1 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-colors flex-shrink-0"
+        className="p-1 bg-transparent hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-colors flex-shrink-0"
         title="Go Back"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00A896" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -70,7 +70,7 @@ export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
               ) : (
                 <button 
                   onClick={() => item.path && navigate(item.path, item.params)}
-                  className={`hover:text-corporate-teal hover:underline transition-colors flex items-center gap-1 ${!item.path ? 'cursor-default hover:no-underline' : ''}`}
+                  className={`bg-transparent hover:text-corporate-teal hover:underline transition-colors flex items-center gap-1 ${!item.path ? 'cursor-default hover:no-underline' : ''}`}
                   disabled={!item.path}
                 >
                   {item.label === 'Home' ? <Home className="w-3.5 h-3.5" /> : item.label}

@@ -997,7 +997,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 e.stopPropagation();
                 handleInteractiveClick(item);
               }}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
               title={isCompleted ? 'Edit' : 'Complete'}
             >
               <ExternalLink className="w-5 h-5" />
@@ -1008,7 +1008,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           {!item.isInteractive && (item.resourceId || item.url) && (
             <button
               onClick={(e) => handleViewResource(e, item)}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
             >
               {loadingResource === item.id ? <Loader className="w-5 h-5 animate-spin" /> : <ExternalLink className="w-5 h-5" />}
             </button>

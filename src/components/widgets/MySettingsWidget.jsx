@@ -209,7 +209,7 @@ const MySettingsWidget = () => {
                   className={`p-1.5 rounded-md transition-all duration-200 ${
                     theme === value
                       ? 'bg-white dark:bg-slate-600 shadow-sm text-corporate-navy dark:text-white'
-                      : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                      : 'bg-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                   }`}
                   title={label}
                   aria-label={`${label} theme`}

@@ -163,6 +163,11 @@
   color-scheme: dark;
 }
 
+/* === DARK MODE: Prevent browser default white on buttons === */
+.dark button:not([class*="bg-"]) {
+  background-color: transparent;
+}
+
 /* === GOOGLE-STYLE CRISP TEXT OVERRIDES === */
 /* Makes all gray text darker and more readable */
 .text-gray-300 { color: #6b6b6b !important; }
