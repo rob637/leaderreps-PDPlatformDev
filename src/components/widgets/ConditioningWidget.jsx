@@ -5,9 +5,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Dumbbell, Target, CheckCircle, Clock,
-  ChevronRight, Plus, FileText, AlertCircle
+  ChevronRight, FileText
 } from 'lucide-react';
-import { Card, Button } from '../ui';
+import { Card } from '../ui';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import conditioningService, { REP_STATUS, getWeekBoundaries } from '../../services/conditioningService';
@@ -92,10 +92,12 @@ const ConditioningWidget = ({ helpText }) => {
   const requiredMet = weeklyStatus?.requiredRepCompleted || false;
   const completedCount = weeklyStatus?.totalCompleted || 0;
   
-  // CTA text based on state
-  const ctaText = requiredMet 
-    ? 'Commit to another Real Rep' 
-    : 'Commit to your Real Rep';
+  // Status subtitle text
+  const statusSubtext = requiredMet 
+    ? `${completedCount} rep${completedCount !== 1 ? 's' : ''} completed this week`
+    : (activeCount > 0 
+        ? `${activeCount} active rep${activeCount !== 1 ? 's' : ''} in progress`
+        : 'Commit to a rep to get started');
 
   return (
     <Card 
@@ -132,12 +134,7 @@ const ConditioningWidget = ({ helpText }) => {
                   <Target className="w-5 h-5 text-amber-600 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-amber-800 dark:text-amber-200 text-sm">1 Rep Required This Week</p>
-                    <p className="text-xs text-amber-600 dark:text-amber-400">
-                      {activeCount > 0 
-                        ? `${activeCount} active rep${activeCount !== 1 ? 's' : ''} in progress`
-                        : 'Commit to a rep to get started'
-                      }
-                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">{statusSubtext}</p>
                   </div>
                 </>
               )}
@@ -170,17 +167,7 @@ const ConditioningWidget = ({ helpText }) => {
                 {formatDate(weekStart)} - {formatDate(weekEnd)}
               </span>
             </div>
-            
-            {/* CTA Button */}
-            <div className={`flex items-center gap-2 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
-              requiredMet 
-                ? 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 text-green-700 dark:text-green-300' 
-                : 'bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300'
-            }`}>
-              <Plus className="w-4 h-4" />
-              <span>{ctaText}</span>
-              <ChevronRight className="w-4 h-4 ml-auto" />
-            </div>
+
           </div>
         )}
       </Card>
