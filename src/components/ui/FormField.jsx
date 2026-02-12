@@ -96,7 +96,7 @@ const FormField = React.forwardRef(({
         
         {/* Help Text */}
         {help && !error && (
-          <div className="flex items-center gap-1.5 mt-1.5 text-slate-500">
+          <div className="flex items-center gap-1.5 mt-1.5 text-slate-500 dark:text-slate-400">
             <HelpCircle className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="text-xs">{help}</span>
           </div>
@@ -131,12 +131,12 @@ const FormSection = React.forwardRef(({
       {...props}
     >
       {(title || description) && (
-        <div className="pb-2 border-b border-slate-200">
+        <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
           {title && (
             <h3 className="text-lg font-bold text-corporate-navy">{title}</h3>
           )}
           {description && (
-            <p className="text-sm text-slate-500 mt-1">{description}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{description}</p>
           )}
         </div>
       )}
@@ -175,7 +175,7 @@ const FormActions = React.forwardRef(({
     <div
       ref={ref}
       className={cn(
-        'flex items-center gap-3 pt-4 border-t border-slate-200 mt-6',
+        'flex items-center gap-3 pt-4 border-t border-slate-200 dark:border-slate-700 mt-6',
         alignClasses[align] || alignClasses.right,
         className
       )}

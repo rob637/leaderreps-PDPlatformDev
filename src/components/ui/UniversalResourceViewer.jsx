@@ -23,11 +23,11 @@ const IframeWithFallback = ({ src, directUrl, title }) => {
 
   if (showFallback && !iframeLoaded) {
     return (
-      <div className="h-[70vh] w-full bg-slate-50 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-4 p-8">
+      <div className="h-[70vh] w-full bg-slate-50 dark:bg-slate-800 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-4 p-8">
         <AlertCircle className="w-12 h-12 text-slate-400" />
         <div className="text-center">
-          <p className="text-sm font-semibold text-slate-700 mb-1">Document preview unavailable</p>
-          <p className="text-xs text-slate-500 max-w-sm">
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Document preview unavailable</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
             This document can&apos;t be previewed in the browser. You can download it or open it directly.
           </p>
         </div>
@@ -44,7 +44,7 @@ const IframeWithFallback = ({ src, directUrl, title }) => {
           <a
             href={directUrl}
             download
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-700 text-sm font-bold rounded-lg border border-slate-300 hover:bg-slate-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 transition-colors"
           >
             <Download className="w-4 h-4" />
             Download
@@ -55,7 +55,7 @@ const IframeWithFallback = ({ src, directUrl, title }) => {
   }
 
   return (
-    <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative">
+    <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative">
       <iframe
         src={src}
         className="w-full h-full"
@@ -68,7 +68,7 @@ const IframeWithFallback = ({ src, directUrl, title }) => {
           href={directUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
+          className="bg-white/90 dark:bg-slate-800/90 hover:bg-white text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-2"
         >
           <Download className="w-3 h-3" />
           Download / Open Directly
@@ -118,8 +118,8 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
       case 'video':
         if (!url) {
           return (
-            <div className="aspect-video w-full bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center">
-              <p className="text-slate-500">No video URL available.</p>
+            <div className="aspect-video w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden flex items-center justify-center">
+              <p className="text-slate-500 dark:text-slate-400">No video URL available.</p>
             </div>
           );
         }
@@ -189,7 +189,7 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
                   href={url} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-sm text-slate-500 hover:text-blue-600 flex items-center gap-1"
+                  className="text-sm text-slate-500 dark:text-slate-400 hover:text-blue-600 flex items-center gap-1"
                 >
                   Having trouble? Watch on external site <ExternalLink className="w-3 h-3" />
                 </a>
@@ -204,14 +204,14 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
         return (
           <div className="flex flex-col h-[70vh] w-full">
             {/* Synopsis Section */}
-            <div className={`bg-slate-50 p-6 rounded-xl border border-slate-100 mb-4 overflow-y-auto ${url ? 'max-h-[40vh] flex-shrink-0' : 'flex-1 h-full'}`}>
+            <div className={`bg-slate-50 dark:bg-slate-800 p-6 rounded-xl border border-slate-100 mb-4 overflow-y-auto ${url ? 'max-h-[40vh] flex-shrink-0' : 'flex-1 h-full'}`}>
               <div className="flex items-center gap-2 mb-3">
                 <FileText className="w-5 h-5 text-corporate-teal" />
-                <h3 className="font-bold text-slate-700">Synopsis</h3>
+                <h3 className="font-bold text-slate-700 dark:text-slate-200">Synopsis</h3>
               </div>
               {resource.synopsis || resource.details?.synopsis ? (
                 <div 
-                  className="text-slate-700 text-sm leading-relaxed prose-sm prose-blue max-w-none [&>h3]:text-corporate-navy [&>h3]:font-bold [&>h3]:mt-4 [&>h3]:mb-2 [&>h4]:text-corporate-teal [&>h4]:font-bold [&>h4]:mt-3 [&>h4]:mb-1 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>p]:mb-3 [&>blockquote]:border-l-4 [&>blockquote]:border-corporate-teal [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4"
+                  className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed prose-sm prose-blue max-w-none [&>h3]:text-corporate-navy [&>h3]:font-bold [&>h3]:mt-4 [&>h3]:mb-2 [&>h4]:text-corporate-teal [&>h4]:font-bold [&>h4]:mt-3 [&>h4]:mb-1 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>p]:mb-3 [&>blockquote]:border-l-4 [&>blockquote]:border-corporate-teal [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4"
                   dangerouslySetInnerHTML={{ __html: resource.synopsis || resource.details?.synopsis }}
                 />
               ) : (
@@ -219,15 +219,15 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
               )}
               
               {(resource.author || resource.details?.author) && (
-                <div className="mt-4 pt-4 border-t border-slate-200">
-                  <p className="text-xs text-slate-500 font-medium">Author: {resource.author || resource.details?.author}</p>
+                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Author: {resource.author || resource.details?.author}</p>
                 </div>
               )}
             </div>
 
             {/* PDF Viewer (if URL exists) */}
             {url && (
-              <div className="flex-1 bg-slate-100 rounded-lg overflow-hidden relative min-h-[300px]">
+              <div className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative min-h-[300px]">
                  <iframe 
                    src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
                    className="w-full h-full" 
@@ -238,7 +238,7 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
                       href={url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
+                      className="bg-white/90 dark:bg-slate-800/90 hover:bg-white text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-2"
                     >
                       <Download className="w-3 h-3" />
                       Open Full PDF
@@ -273,7 +273,7 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
             embedUrl = url.replace('/view', '/preview');
           }
           return (
-            <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden">
+            <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden">
               <iframe src={embedUrl} className="w-full h-full" title={title} allow="autoplay" />
             </div>
           );
@@ -283,14 +283,14 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
         const isImage = url && url.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)/);
         if (isImage) {
             return (
-                <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center bg-black/5">
+                <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden flex items-center justify-center bg-black/5">
                     <img src={url} alt={title} className="max-w-full max-h-full object-contain" />
                     <div className="absolute bottom-4 right-4">
                         <a 
                           href={url} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 flex items-center gap-2"
+                          className="bg-white/90 dark:bg-slate-800/90 hover:bg-white text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-2"
                         >
                           <ExternalLink className="w-3 h-3" />
                           Open Original
@@ -342,7 +342,7 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
       default: // Link / Course / Other
         // Fallback: Try to iframe it (some sites allow it), otherwise show the link
         return (
-          <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden flex flex-col">
+          <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden flex flex-col">
              <iframe 
                 src={url} 
                 className="w-full h-full flex-1" 
@@ -352,12 +352,12 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
                     // but we provide the "Open in New Window" button below as a backup.
                 }}
              />
-             <div className="p-2 bg-slate-50 border-t flex justify-center">
+             <div className="p-2 bg-slate-50 dark:bg-slate-800 border-t flex justify-center">
                 <a 
                   href={url} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-xs text-slate-500 hover:text-blue-600 flex items-center gap-1"
+                  className="text-xs text-slate-500 dark:text-slate-400 hover:text-blue-600 flex items-center gap-1"
                 >
                   If content doesn't load, click here to open in new window <ExternalLink className="w-3 h-3" />
                 </a>
@@ -369,7 +369,7 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
 
   if (inline) {
     return (
-      <div className="w-full bg-slate-100 rounded-lg overflow-hidden">
+      <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden">
         {renderContent()}
       </div>
     );
@@ -381,7 +381,7 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
       onClick={onClose} // Close on backdrop click
     >
       <div 
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden relative"
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden relative"
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
       >
         {/* Absolute Close Button for reliability */}
@@ -391,20 +391,20 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
             e.stopPropagation();
             onClose();
           }}
-          className="absolute top-3 right-3 z-[60] p-2 bg-white/90 hover:bg-red-100 text-slate-500 hover:text-red-600 rounded-full transition-colors shadow-sm border border-slate-100"
+          className="absolute top-3 right-3 z-[60] p-2 bg-white/90 dark:bg-slate-800/90 hover:bg-red-100 text-slate-500 dark:text-slate-400 hover:text-red-600 rounded-full transition-colors shadow-sm border border-slate-100"
           title="Close"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Header */}
-        <div className="p-4 border-b flex items-center justify-between bg-slate-50 z-10 relative pr-16">
+        <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800 z-10 relative pr-16">
           <div>
             <h2 className="text-lg font-bold text-corporate-navy line-clamp-1">
               {title}
             </h2>
             {description && (
-              <p className="text-xs text-slate-500 line-clamp-1">{description}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{description}</p>
             )}
           </div>
           <div className="flex items-center gap-2 mr-8">
@@ -413,7 +413,7 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
                 href={url} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
+                className="p-2 hover:bg-slate-200 rounded-full text-slate-500 dark:text-slate-400 transition-colors"
                 title="Open in new tab"
               >
                 <ExternalLink className="w-5 h-5" />
@@ -423,7 +423,7 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 bg-slate-100">
+        <div className="flex-1 overflow-y-auto p-4 bg-slate-100 dark:bg-slate-700">
           {renderContent()}
         </div>
       </div>

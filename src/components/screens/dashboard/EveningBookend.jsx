@@ -44,8 +44,7 @@ const TaskSection = ({ otherTasks, onAddTask, onToggleTask, onRemoveTask }) => {
                 <div className="space-y-2 mb-3">
                     {otherTasks.map((task, idx) => (
                         <div key={task.id || idx} 
-                             className="flex items-center gap-2 p-2 border rounded-lg"
-                             style={{ borderColor: '#E5E7EB', backgroundColor: 'var(--corporate-light-gray)' }}>
+                             className="flex items-center gap-2 p-2 border rounded-lg border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
                             
                             {/* Checkbox for task completion */}
                             <input

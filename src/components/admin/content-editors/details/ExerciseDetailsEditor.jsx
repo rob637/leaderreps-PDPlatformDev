@@ -36,7 +36,7 @@ const ExerciseDetailsEditor = ({ details, onChange }) => {
           <button
             type="button"
             onClick={() => setShowPicker('REP')}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg hover:bg-blue-100"
           >
             <Plus size={16} />
             Add Video Rep
@@ -44,7 +44,7 @@ const ExerciseDetailsEditor = ({ details, onChange }) => {
           <button
             type="button"
             onClick={() => setShowPicker('READ_REP')}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-50 text-green-600 rounded-lg hover:bg-green-100"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-50 dark:bg-green-900/20 text-green-600 rounded-lg hover:bg-green-100"
           >
             <Plus size={16} />
             Add Reading Rep
@@ -54,12 +54,12 @@ const ExerciseDetailsEditor = ({ details, onChange }) => {
 
       <div className="space-y-2">
         {reps.map((rep, index) => (
-          <div key={rep.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div key={rep.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <GripVertical className="text-gray-400 cursor-move" size={20} />
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <span className={`px-2 py-0.5 text-xs rounded ${
-                  rep.type === CONTENT_TYPES.READ_REP ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                  rep.type === CONTENT_TYPES.READ_REP ? 'bg-green-100 text-green-800' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800'
                 }`}>
                   {rep.type === CONTENT_TYPES.READ_REP ? 'READ' : 'VIDEO'}
                 </span>
@@ -75,7 +75,7 @@ const ExerciseDetailsEditor = ({ details, onChange }) => {
           </div>
         ))}
         {reps.length === 0 && (
-          <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-lg">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400 border-2 border-dashed rounded-lg">
             No reps added yet
           </div>
         )}

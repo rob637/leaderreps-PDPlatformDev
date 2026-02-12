@@ -5,7 +5,7 @@ export const DashboardCard = ({ title, description, onClick, color, bgColor, bad
     <button
       onClick={onClick}
       className="w-full text-left transition-all duration-150 rounded-2xl border p-5 sm:p-6 h-full flex flex-col group
-        bg-white hover:shadow-xl cursor-pointer border-slate-200 hover:border-corporate-teal/50
+        bg-white dark:bg-slate-800 hover:shadow-xl cursor-pointer border-slate-200 dark:border-slate-700 hover:border-corporate-teal/50
         touch-manipulation active:scale-[0.98] active:bg-slate-50
         min-h-[120px] sm:min-h-[160px]"
     >
@@ -31,12 +31,12 @@ export const DashboardCard = ({ title, description, onClick, color, bgColor, bad
               </span>
             )}
             {count !== undefined && count > 0 && (
-              <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 text-slate-600">
+              <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                 {count}
               </span>
             )}
           </div>
-          <p className="text-sm sm:text-base text-slate-600 line-clamp-2 sm:line-clamp-none">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 line-clamp-2 sm:line-clamp-none">
             {description}
           </p>
         </div>

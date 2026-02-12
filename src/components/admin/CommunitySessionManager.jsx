@@ -481,7 +481,7 @@ const CommunitySessionManager = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-corporate-navy">Community Sessions</h2>
-          <p className="text-slate-500">Manage Leader Circles, Events, and Masterminds</p>
+          <p className="text-slate-500 dark:text-slate-400">Manage Leader Circles, Events, and Masterminds</p>
         </div>
         <button
           onClick={handleCreateSession}
@@ -493,7 +493,7 @@ const CommunitySessionManager = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex flex-wrap gap-3 w-full md:w-auto">
             {/* Search */}
@@ -504,7 +504,7 @@ const CommunitySessionManager = () => {
                 placeholder="Search sessions..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/20 w-full md:w-64"
+                className="pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/20 w-full md:w-64"
               />
             </div>
 
@@ -512,7 +512,7 @@ const CommunitySessionManager = () => {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+              className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
             >
               <option value="all">All Types</option>
               {Object.entries(COMMUNITY_SESSION_TYPE_CONFIG).map(([key, config]) => (
@@ -524,7 +524,7 @@ const CommunitySessionManager = () => {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+              className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
             >
               <option value="all">All Statuses</option>
               <option value={SESSION_STATUS.SCHEDULED}>Scheduled</option>
@@ -534,11 +534,11 @@ const CommunitySessionManager = () => {
           </div>
           
           {/* View Toggle */}
-          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+          <div className="flex gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
             <button
               onClick={() => setViewMode('list')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                viewMode === 'list' ? 'bg-white shadow text-slate-800' : 'text-slate-500'
+                viewMode === 'list' ? 'bg-white dark:bg-slate-800 shadow text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'
               }`}
             >
               List
@@ -546,7 +546,7 @@ const CommunitySessionManager = () => {
             <button
               onClick={() => setViewMode('calendar')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                viewMode === 'calendar' ? 'bg-white shadow text-slate-800' : 'text-slate-500'
+                viewMode === 'calendar' ? 'bg-white dark:bg-slate-800 shadow text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'
               }`}
             >
               Calendar
@@ -568,19 +568,19 @@ const CommunitySessionManager = () => {
 
       {/* Session List View */}
       {viewMode === 'list' && !editingSession && (
-        <div className="bg-white rounded-xl border border-slate-200">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
           <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase rounded-tl-xl">Session</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Date & Time</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Type</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Attendees</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Status</th>
-                <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 uppercase rounded-tr-xl">Actions</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase rounded-tl-xl">Session</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Date & Time</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Type</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Attendees</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Status</th>
+                <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase rounded-tr-xl">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {filteredSessions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
@@ -609,14 +609,14 @@ const CommunitySessionManager = () => {
 
       {/* Calendar View */}
       {viewMode === 'calendar' && !editingSession && (
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-4">
             <button 
               onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
               className="p-2 hover:bg-slate-100 rounded-lg"
             >
-              <ChevronLeft className="w-5 h-5 text-slate-600" />
+              <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
             </button>
             <h3 className="text-lg font-bold text-corporate-navy">
               {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
@@ -625,7 +625,7 @@ const CommunitySessionManager = () => {
               onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
               className="p-2 hover:bg-slate-100 rounded-lg"
             >
-              <ChevronRight className="w-5 h-5 text-slate-600" />
+              <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-300" />
             </button>
           </div>
           
@@ -645,8 +645,8 @@ const CommunitySessionManager = () => {
                 key={i}
                 className={`min-h-[100px] border rounded-lg p-1 ${
                   dayData.day 
-                    ? 'border-slate-200 bg-white' 
-                    : 'border-transparent bg-slate-50'
+                    ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800' 
+                    : 'border-transparent bg-slate-50 dark:bg-slate-800'
                 }`}
               >
                 {dayData.day && (
@@ -654,7 +654,7 @@ const CommunitySessionManager = () => {
                     <div className={`text-sm font-bold mb-1 ${
                       dayData.dateStr === new Date().toISOString().split('T')[0]
                         ? 'text-corporate-teal'
-                        : 'text-slate-600'
+                        : 'text-slate-600 dark:text-slate-300'
                     }`}>
                       {dayData.day}
                     </div>
@@ -721,7 +721,7 @@ const CommunitySessionManager = () => {
 // Session Edit Form Component
 const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
   return (
-    <div className="bg-white rounded-xl border-2 border-corporate-teal p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-corporate-teal p-6">
       <h3 className="text-lg font-bold text-corporate-navy mb-4">
         {isNew ? 'Create New Session' : 'Edit Session'}
       </h3>
@@ -729,27 +729,27 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Title */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Session Title *
           </label>
           <input
             type="text"
             value={session.title}
             onChange={(e) => setSession({...session, title: e.target.value})}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
             placeholder="e.g. Weekly Leader Circle"
           />
         </div>
 
         {/* Type */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Session Type
           </label>
           <select
             value={session.sessionType}
             onChange={(e) => setSession({...session, sessionType: e.target.value})}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
           >
             {Object.entries(COMMUNITY_SESSION_TYPE_CONFIG).map(([key, config]) => (
               <option key={key} value={key}>{config.label}</option>
@@ -759,79 +759,79 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
 
         {/* Host */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Host
           </label>
           <input
             type="text"
             value={session.host}
             onChange={(e) => setSession({...session, host: e.target.value})}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
             placeholder="e.g. Community Lead"
           />
         </div>
 
         {/* Date */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Date *
           </label>
           <input
             type="date"
             value={session.date}
             onChange={(e) => setSession({...session, date: e.target.value})}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
           />
         </div>
 
         {/* Time */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Time *
           </label>
           <input
             type="time"
             value={session.time}
             onChange={(e) => setSession({...session, time: e.target.value})}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
           />
         </div>
 
         {/* Duration */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Duration (minutes)
           </label>
           <input
             type="number"
             value={session.durationMinutes}
             onChange={(e) => setSession({...session, durationMinutes: parseInt(e.target.value)})}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
           />
         </div>
 
         {/* Max Attendees */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Max Attendees
           </label>
           <input
             type="number"
             value={session.maxAttendees}
             onChange={(e) => setSession({...session, maxAttendees: parseInt(e.target.value)})}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
           />
         </div>
 
         {/* Recurrence */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Recurrence
           </label>
           <select
             value={session.recurrence || 'none'}
             onChange={(e) => setSession({...session, recurrence: e.target.value})}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
           >
             <option value="none">None (One-time)</option>
             <option value="weekly">Weekly</option>
@@ -843,7 +843,7 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
         {/* End Date - Only shown when recurrence is set */}
         {session.recurrence && session.recurrence !== 'none' && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               End Date *
             </label>
             <input
@@ -851,7 +851,7 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
               value={session.endDate || ''}
               onChange={(e) => setSession({...session, endDate: e.target.value})}
               min={session.date}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
             />
             <p className="text-xs text-slate-400 mt-1">
               Sessions will be created for each {session.recurrence === 'weekly' ? 'week' : session.recurrence === 'biweekly' ? '2 weeks' : 'month'} until this date.
@@ -861,13 +861,13 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
 
         {/* Status */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Status
           </label>
           <select
             value={session.status}
             onChange={(e) => setSession({...session, status: e.target.value})}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
           >
             <option value={SESSION_STATUS.SCHEDULED}>Scheduled</option>
             <option value={SESSION_STATUS.COMPLETED}>Completed</option>
@@ -877,35 +877,35 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
 
         {/* Description */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Description
           </label>
           <textarea
             value={session.description}
             onChange={(e) => setSession({...session, description: e.target.value})}
             rows={3}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
             placeholder="Session details..."
           />
         </div>
 
         {/* Topic/Theme */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Topic / Theme (Optional)
           </label>
           <input
             type="text"
             value={session.topic || ''}
             onChange={(e) => setSession({...session, topic: e.target.value})}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
             placeholder="Specific topic for this session"
           />
         </div>
 
         {/* Zoom Link */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Meeting Link
           </label>
           <div className="relative">
@@ -914,7 +914,7 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
               type="text"
               value={session.zoomLink}
               onChange={(e) => setSession({...session, zoomLink: e.target.value})}
-              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
               placeholder="https://zoom.us/j/..."
             />
           </div>
@@ -924,7 +924,7 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
       <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
         <button
           onClick={onCancel}
-          className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+          className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 rounded-lg transition-colors"
         >
           Cancel
         </button>
@@ -953,8 +953,8 @@ const SessionRow = ({ session, registrations, onEdit, onDelete, onDuplicate, onV
             {typeConfig.icon}
           </div>
           <div>
-            <div className="font-medium text-slate-800">{session.title}</div>
-            <div className="text-xs text-slate-500 flex items-center gap-1">
+            <div className="font-medium text-slate-800 dark:text-slate-200">{session.title}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
               <Users className="w-3 h-3" />
               {session.host}
             </div>
@@ -962,8 +962,8 @@ const SessionRow = ({ session, registrations, onEdit, onDelete, onDuplicate, onV
         </div>
       </td>
       <td className="px-4 py-3">
-        <div className="text-sm text-slate-700">{formatDate(session.date)}</div>
-        <div className="text-xs text-slate-500">{session.time} ({session.durationMinutes}m)</div>
+        <div className="text-sm text-slate-700 dark:text-slate-200">{formatDate(session.date)}</div>
+        <div className="text-xs text-slate-500 dark:text-slate-400">{session.time} ({session.durationMinutes}m)</div>
         {session.recurrence && session.recurrence !== 'none' && (
           <div className="text-xs text-corporate-teal flex items-center gap-1 mt-0.5">
             <Repeat className="w-3 h-3" />
@@ -978,7 +978,7 @@ const SessionRow = ({ session, registrations, onEdit, onDelete, onDuplicate, onV
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="text-sm font-medium text-slate-700">
+          <div className="text-sm font-medium text-slate-700 dark:text-slate-200">
             {registrations.length} / {session.maxAttendees}
           </div>
           <button 
@@ -989,7 +989,7 @@ const SessionRow = ({ session, registrations, onEdit, onDelete, onDuplicate, onV
             <Eye className="w-4 h-4" />
           </button>
         </div>
-        <div className="w-24 h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
+        <div className="w-24 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full mt-1 overflow-hidden">
           <div 
             className="h-full bg-corporate-teal" 
             style={{ width: `${Math.min(100, (registrations.length / session.maxAttendees) * 100)}%` }}
@@ -1001,9 +1001,9 @@ const SessionRow = ({ session, registrations, onEdit, onDelete, onDuplicate, onV
           value={session.status}
           onChange={(e) => onUpdateStatus(e.target.value)}
           className={`text-xs font-medium px-2 py-1 rounded-full border-none focus:ring-0 cursor-pointer ${
-            session.status === SESSION_STATUS.SCHEDULED ? 'bg-blue-100 text-blue-700' :
-            session.status === SESSION_STATUS.COMPLETED ? 'bg-slate-100 text-slate-600' :
-            'bg-red-100 text-red-700'
+            session.status === SESSION_STATUS.SCHEDULED ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700' :
+            session.status === SESSION_STATUS.COMPLETED ? 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300' :
+            'bg-red-100 dark:bg-red-900/30 text-red-700'
           }`}
         >
           <option value={SESSION_STATUS.SCHEDULED}>Scheduled</option>
@@ -1015,28 +1015,28 @@ const SessionRow = ({ session, registrations, onEdit, onDelete, onDuplicate, onV
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button 
             onClick={onEdit}
-            className="p-1.5 text-slate-500 hover:text-corporate-teal hover:bg-teal-50 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-lg transition-colors"
             title="Edit"
           >
             <Edit className="w-4 h-4" />
           </button>
           <button 
             onClick={onDuplicate}
-            className="p-1.5 text-slate-500 hover:text-corporate-blue hover:bg-blue-50 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-corporate-blue hover:bg-blue-50 rounded-lg transition-colors"
             title="Duplicate"
           >
             <Copy className="w-4 h-4" />
           </button>
           <button 
             onClick={onExport}
-            className="p-1.5 text-slate-500 hover:text-corporate-navy hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-corporate-navy hover:bg-slate-100 rounded-lg transition-colors"
             title="Export Attendees"
           >
             <Download className="w-4 h-4" />
           </button>
           <button 
             onClick={onDelete}
-            className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             title="Delete"
           >
             <Trash2 className="w-4 h-4" />
@@ -1051,28 +1051,28 @@ const SessionRow = ({ session, registrations, onEdit, onDelete, onDuplicate, onV
 const AttendeesModal = ({ session, registrations, onClose, onMarkAttendance, onRemove, onSendNotification, onExport }) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-corporate-navy">Session Attendees</h3>
-            <p className="text-sm text-slate-500">{session.title} • {formatDate(session.date)}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{session.title} • {formatDate(session.date)}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
         
-        <div className="p-4 border-b border-slate-100 bg-slate-50 flex gap-3">
+        <div className="p-4 border-b border-slate-100 bg-slate-50 dark:bg-slate-800 flex gap-3">
           <button 
             onClick={onSendNotification}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50"
           >
             <Mail className="w-4 h-4" />
             Email Attendees
           </button>
           <button 
             onClick={onExport}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50"
           >
             <Download className="w-4 h-4" />
             Export CSV
@@ -1088,24 +1088,24 @@ const AttendeesModal = ({ session, registrations, onClose, onMarkAttendance, onR
           ) : (
             <div className="space-y-3">
               {registrations.map(reg => (
-                <div key={reg.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <div key={reg.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-corporate-teal/10 flex items-center justify-center text-corporate-teal font-bold text-xs">
                       {reg.userName?.charAt(0) || '?'}
                     </div>
                     <div>
-                      <div className="font-medium text-slate-800">{reg.userName}</div>
-                      <div className="text-xs text-slate-500">{reg.userEmail}</div>
+                      <div className="font-medium text-slate-800 dark:text-slate-200">{reg.userName}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{reg.userEmail}</div>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-2">
                     {reg.status === 'attended' ? (
-                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium flex items-center gap-1">
+                      <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 text-xs rounded-full font-medium flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" /> Attended
                       </span>
                     ) : reg.status === 'no_show' ? (
-                      <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full font-medium flex items-center gap-1">
+                      <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 text-xs rounded-full font-medium flex items-center gap-1">
                         <XCircle className="w-3 h-3" /> No Show
                       </span>
                     ) : (
@@ -1151,7 +1151,7 @@ const AttendeesModal = ({ session, registrations, onClose, onMarkAttendance, onR
 const NotificationModal = ({ session, attendeeCount, subject, setSubject, message, setMessage, onSend, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
           <h3 className="text-lg font-bold text-corporate-navy">Email Attendees</h3>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full">
@@ -1160,29 +1160,29 @@ const NotificationModal = ({ session, attendeeCount, subject, setSubject, messag
         </div>
         
         <div className="p-6 space-y-4">
-          <div className="bg-blue-50 text-blue-800 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+          <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
             <Info className="w-4 h-4" />
             Sending to {attendeeCount} registered attendees
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Subject</label>
             <input
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
               placeholder={`Update regarding ${session.title}`}
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Message</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Message</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={5}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
               placeholder="Type your message here..."
             />
           </div>
@@ -1191,7 +1191,7 @@ const NotificationModal = ({ session, attendeeCount, subject, setSubject, messag
         <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+            className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 rounded-lg transition-colors"
           >
             Cancel
           </button>

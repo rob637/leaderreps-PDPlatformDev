@@ -56,10 +56,10 @@ import {
 // ============================================
 
 const ENVIRONMENTS = {
-  dev: { label: 'Dev', url: 'https://leaderreps-pd-platform.web.app', color: 'bg-blue-100 text-blue-700' },
-  test: { label: 'Test', url: 'https://leaderreps-test.web.app', color: 'bg-amber-100 text-amber-700' },
-  prod: { label: 'Prod', url: 'https://leaderreps-prod.web.app', color: 'bg-red-100 text-red-700' },
-  local: { label: 'Local', url: 'http://localhost:5173', color: 'bg-green-100 text-green-700' },
+  dev: { label: 'Dev', url: 'https://leaderreps-pd-platform.web.app', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700' },
+  test: { label: 'Test', url: 'https://leaderreps-test.web.app', color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' },
+  prod: { label: 'Prod', url: 'https://leaderreps-prod.web.app', color: 'bg-red-100 dark:bg-red-900/30 text-red-700' },
+  local: { label: 'Local', url: 'http://localhost:5173', color: 'bg-green-100 dark:bg-green-900/30 text-green-700' },
 };
 
 const AUDIT_TYPES = [
@@ -94,10 +94,10 @@ const AUDIT_TYPES = [
 ];
 
 const STATUS_CONFIG = {
-  pending: { label: 'Queued', icon: Clock, color: 'text-amber-600 bg-amber-50 border-amber-200' },
-  running: { label: 'Running', icon: Loader, color: 'text-blue-600 bg-blue-50 border-blue-200', animate: true },
-  completed: { label: 'Completed', icon: CheckCircle2, color: 'text-green-600 bg-green-50 border-green-200' },
-  failed: { label: 'Failed', icon: XCircle, color: 'text-red-600 bg-red-50 border-red-200' },
+  pending: { label: 'Queued', icon: Clock, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' },
+  running: { label: 'Running', icon: Loader, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800', animate: true },
+  completed: { label: 'Completed', icon: CheckCircle2, color: 'text-green-600 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' },
+  failed: { label: 'Failed', icon: XCircle, color: 'text-red-600 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' },
 };
 
 // ============================================
@@ -165,7 +165,7 @@ const NewAuditForm = ({ onSubmit, isSubmitting }) => {
       {/* Header */}
       <div className="px-6 py-4 bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/10 rounded-lg">
+          <div className="p-2 bg-white/10 dark:bg-slate-800/10 rounded-lg">
             <Eye className="w-5 h-5" />
           </div>
           <div>
@@ -201,7 +201,7 @@ const NewAuditForm = ({ onSubmit, isSubmitting }) => {
                       <p className={`text-sm font-medium ${isSelected ? 'text-corporate-navy' : 'text-slate-700 dark:text-slate-300'}`}>
                         {type.label}
                       </p>
-                      <p className="text-xs text-slate-500 mt-0.5">{type.description}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{type.description}</p>
                     </div>
                   </div>
                 </button>
@@ -244,7 +244,7 @@ const NewAuditForm = ({ onSubmit, isSubmitting }) => {
                 className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all ${
                   selectedEnv === key
                     ? 'border-corporate-teal bg-corporate-teal/5 text-corporate-navy'
-                    : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-600 dark:text-slate-400'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:border-slate-600 dark:text-slate-400'
                 }`}
               >
                 {env.label}
@@ -350,7 +350,7 @@ const CliCommandHelper = () => {
 
           {commands.map((cmd, i) => (
             <div key={i} className="group">
-              <p className="text-xs text-slate-500 mb-1">{cmd.label}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{cmd.label}</p>
               <div className="flex items-center gap-2 bg-slate-900 rounded-lg px-3 py-2">
                 <code className="text-xs text-green-400 font-mono flex-1 overflow-x-auto">
                   {cmd.command}
@@ -364,7 +364,7 @@ const CliCommandHelper = () => {
             <p className="text-xs text-corporate-navy font-medium mb-1">
               How it works
             </p>
-            <ol className="text-xs text-slate-600 space-y-1 list-decimal list-inside">
+            <ol className="text-xs text-slate-600 dark:text-slate-300 space-y-1 list-decimal list-inside">
               <li>Queue an audit using the form above — config is saved to Firestore</li>
               <li>Run the Python runner in your terminal (it watches Firestore)</li>
               <li>The runner launches a real browser, logs in, and performs the audit</li>
@@ -441,7 +441,7 @@ const AuditReportCard = ({ audit, onDelete }) => {
           {/* Custom task if any */}
           {audit.customTask && (
             <div className="px-5 py-3 bg-slate-50 dark:bg-slate-700/30 border-b border-slate-200 dark:border-slate-700">
-              <p className="text-xs font-medium text-slate-500 mb-1">Custom Task</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Custom Task</p>
               <p className="text-sm text-slate-700 dark:text-slate-300">{audit.customTask}</p>
             </div>
           )}
@@ -459,7 +459,7 @@ const AuditReportCard = ({ audit, onDelete }) => {
 
               {audit.score && (
                 <div className="mt-3 flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-600">Overall Score:</span>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Overall Score:</span>
                   <span className={`text-lg font-bold ${
                     audit.score >= 8 ? 'text-green-600' :
                     audit.score >= 5 ? 'text-amber-600' : 'text-red-600'
@@ -607,7 +607,7 @@ const UxAuditPanel = () => {
             <Eye className="w-6 h-6 text-corporate-teal" />
             UX Audit Lab
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             AI-powered UX testing — Claude logs in and uses the app like a real user
           </p>
         </div>
@@ -617,17 +617,17 @@ const UxAuditPanel = () => {
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
           <p className="text-2xl font-bold text-corporate-navy dark:text-white">{completedCount}</p>
-          <p className="text-xs text-slate-500">Completed</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Completed</p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
           <p className="text-2xl font-bold text-amber-600">{pendingCount}</p>
-          <p className="text-xs text-slate-500">In Queue</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">In Queue</p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
           <p className="text-2xl font-bold text-corporate-teal">
             {avgScore ? avgScore.toFixed(1) : '—'}
           </p>
-          <p className="text-xs text-slate-500">Avg Score</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Avg Score</p>
         </div>
       </div>
 
@@ -656,7 +656,7 @@ const UxAuditPanel = () => {
         {audits.length === 0 && !loading ? (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
             <Monitor className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-            <p className="text-sm text-slate-500">No audits yet</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">No audits yet</p>
             <p className="text-xs text-slate-400 mt-1">
               Queue your first audit above, then start the Python runner
             </p>

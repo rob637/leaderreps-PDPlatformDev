@@ -80,7 +80,7 @@ export const StatCard = ({ label, value, color, trend }) => {
 
   return (
     <div 
-      className="p-5 rounded-xl border shadow-sm bg-white"
+      className="p-5 rounded-xl border shadow-sm bg-white dark:bg-slate-800"
       style={{ borderColor: 'rgba(71, 168, 141, 0.2)' }}
     >
       <div className="flex items-center gap-3 mb-3">
@@ -165,7 +165,7 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
         
         {/* Main Content Card */}
         <div 
-          className="relative bg-white rounded-3xl shadow-2xl p-12 max-w-md mx-4"
+          className="relative bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-12 max-w-md mx-4"
           style={{ 
             border: `3px solid var(--corporate-teal-40)`,
             animation: 'fadeIn 0.3s ease-out'
@@ -253,7 +253,7 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
    (Used in PlanTracker)
 ========================================================= */
 export const EmptyState = ({ title, description, action }) => (
-  <div className="text-center p-12 my-12 border-2 border-dashed rounded-2xl" style={{ borderColor: 'var(--corporate-teal)', backgroundColor: '#FCFCFA' }}>
+  <div className="text-center p-12 my-12 border-2 border-dashed rounded-2xl border-corporate-teal bg-[#FCFCFA] dark:bg-slate-800">
     <FileX 
       className="w-12 h-12 mx-auto mb-4" 
       style={{ color: 'var(--corporate-teal)' }} 

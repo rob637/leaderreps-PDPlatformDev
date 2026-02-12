@@ -81,8 +81,8 @@ const OfflineIndicator = ({
               inline-flex items-center gap-1.5 rounded-full font-medium
               ${currentSize.badge}
               ${isOnline 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-yellow-100 text-yellow-700'
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-700' 
+                : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700'
               }
               ${className}
             `}

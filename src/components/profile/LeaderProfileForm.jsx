@@ -211,7 +211,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
   // Render input field
   const renderInput = (field, label, type = 'text', required = false, placeholder = '', helpText = '', onBlur = null) => (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-slate-700">
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <input
@@ -222,13 +222,13 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
         placeholder={placeholder}
         className={`w-full px-4 py-3 rounded-xl border-2 transition-all
           ${errors[field] 
-            ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200' 
-            : 'border-slate-200 bg-white focus:border-corporate-teal focus:ring-corporate-teal/20'
+            ? 'border-red-300 bg-red-50 dark:bg-red-900/20 focus:border-red-500 focus:ring-red-200' 
+            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-corporate-teal focus:ring-corporate-teal/20'
           }
           focus:outline-none focus:ring-4`}
       />
       {helpText && !errors[field] && (
-        <p className="text-xs text-slate-500">{helpText}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{helpText}</p>
       )}
       {errors[field] && (
         <p className="text-xs text-red-500 flex items-center gap-1">
@@ -241,16 +241,16 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
   // Render select field
   const renderSelect = (field, label, options, required = false, placeholder = 'Select...') => (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-slate-700">
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <select
         value={formData[field] || ''}
         onChange={e => handleChange(field, e.target.value)}
-        className={`w-full px-4 py-3 rounded-xl border-2 transition-all appearance-none bg-white
+        className={`w-full px-4 py-3 rounded-xl border-2 transition-all appearance-none bg-white dark:bg-slate-800
           ${errors[field] 
-            ? 'border-red-300 bg-red-50' 
-            : 'border-slate-200 focus:border-corporate-teal'
+            ? 'border-red-300 bg-red-50 dark:bg-red-900/20' 
+            : 'border-slate-200 dark:border-slate-700 focus:border-corporate-teal'
           }
           focus:outline-none focus:ring-4 focus:ring-corporate-teal/20`}
       >
@@ -272,13 +272,13 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
   // Render textarea
   const renderTextarea = (field, label, placeholder = '', rows = 3) => (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-slate-700">{label}</label>
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">{label}</label>
       <textarea
         value={formData[field] || ''}
         onChange={e => handleChange(field, e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white
+        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800
           focus:border-corporate-teal focus:outline-none focus:ring-4 focus:ring-corporate-teal/20
           resize-none transition-all"
       />
@@ -296,7 +296,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
           className={`p-3 rounded-xl border-2 transition-all text-left
             ${formData[field] === opt.value
               ? 'border-corporate-teal bg-corporate-teal/10 text-corporate-teal'
-              : 'border-slate-200 hover:border-slate-300 bg-white'
+              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-800'
             }`}
         >
           {opt.icon && <span className="text-lg mr-1">{opt.icon}</span>}
@@ -309,9 +309,9 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
   // Render linear scale
   const renderLinearScale = (field, label, minLabel = 'Not Comfortable', maxLabel = 'Very Comfortable') => (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-slate-700">{label}</label>
-      <div className="flex items-center justify-between px-2 bg-slate-50 p-3 rounded-xl">
-        <span className="text-xs text-slate-500 w-20">{minLabel}</span>
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">{label}</label>
+      <div className="flex items-center justify-between px-2 bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
+        <span className="text-xs text-slate-500 dark:text-slate-400 w-20">{minLabel}</span>
         <div className="flex gap-4 sm:gap-8">
           {[1, 2, 3, 4, 5].map(val => (
             <label key={val} className="flex flex-col items-center cursor-pointer group">
@@ -321,13 +321,13 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
                 value={val}
                 checked={parseInt(formData[field]) === val}
                 onChange={() => handleChange(field, val)}
-                className="w-5 h-5 text-corporate-teal focus:ring-corporate-teal border-slate-300 cursor-pointer"
+                className="w-5 h-5 text-corporate-teal focus:ring-corporate-teal border-slate-300 dark:border-slate-600 cursor-pointer"
               />
               <span className={`text-xs mt-1 font-medium ${parseInt(formData[field]) === val ? 'text-corporate-teal' : 'text-slate-400 group-hover:text-slate-600'}`}>{val}</span>
             </label>
           ))}
         </div>
-        <span className="text-xs text-slate-500 w-20 text-right">{maxLabel}</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400 w-20 text-right">{maxLabel}</span>
       </div>
     </div>
   );
@@ -348,7 +348,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
               validatePhoneOnBlur
             )}
             
-            <div className="bg-slate-50 p-4 rounded-xl space-y-3 border border-slate-200">
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl space-y-3 border border-slate-200 dark:border-slate-700">
               <h4 className="text-sm font-semibold text-corporate-navy flex items-center gap-2">
                 <Bell className="w-4 h-4" /> Notification Preferences
               </h4>
@@ -356,8 +356,8 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
               {/* Email Toggle */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-slate-500" />
-                  <span className="text-sm text-slate-700">Email Notifications</span>
+                  <Mail className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <span className="text-sm text-slate-700 dark:text-slate-200">Email Notifications</span>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input 
@@ -385,8 +385,8 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
               {/* SMS Toggle */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-slate-500" />
-                  <span className="text-sm text-slate-700">SMS Notifications</span>
+                  <Phone className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <span className="text-sm text-slate-700 dark:text-slate-200">SMS Notifications</span>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input 
@@ -408,7 +408,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
                       }));
                     }}
                   />
-                  <div className={`w-9 h-5 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${!formData.phoneNumber ? 'bg-slate-100 cursor-not-allowed' : 'bg-slate-200 peer-checked:bg-corporate-teal'}`}></div>
+                  <div className={`w-9 h-5 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${!formData.phoneNumber ? 'bg-slate-100 dark:bg-slate-700 cursor-not-allowed' : 'bg-slate-200 peer-checked:bg-corporate-teal'}`}></div>
                 </label>
               </div>
               {!formData.phoneNumber && (
@@ -449,19 +449,19 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
             </div>
 
             <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700">What type of feedback helps you grow the most?</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">What type of feedback helps you grow the most?</label>
                 <div className="space-y-2">
                     {FEEDBACK_PREFERENCE_OPTIONS.map(opt => (
-                        <label key={opt.value} className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+                        <label key={opt.value} className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
                             <input
                                 type="radio"
                                 name="feedbackPreference"
                                 value={opt.value}
                                 checked={formData.feedbackPreference === opt.value}
                                 onChange={() => handleChange('feedbackPreference', opt.value)}
-                                className="w-4 h-4 text-corporate-teal focus:ring-corporate-teal border-slate-300"
+                                className="w-4 h-4 text-corporate-teal focus:ring-corporate-teal border-slate-300 dark:border-slate-600"
                             />
-                            <span className="text-sm text-slate-700">{opt.label}</span>
+                            <span className="text-sm text-slate-700 dark:text-slate-200">{opt.label}</span>
                         </label>
                     ))}
                 </div>
@@ -483,7 +483,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
                 <Sparkles className="w-5 h-5 text-corporate-orange mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-corporate-navy">You're almost there!</h4>
-                  <p className="text-sm text-slate-600 mt-1">
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
                     Your responses help us personalize your Foundation journey. 
                     We'll use this to recommend relevant content and coaching.
                   </p>
@@ -509,11 +509,11 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
   if (showSuccess) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+        <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
           <CheckCircle className="w-10 h-10 text-green-500" />
         </div>
         <h3 className="text-xl font-bold text-corporate-navy mb-2">Profile Complete!</h3>
-        <p className="text-slate-600">Welcome to Foundation Leadership Development</p>
+        <p className="text-slate-600 dark:text-slate-300">Welcome to Foundation Leadership Development</p>
       </div>
     );
   }
@@ -528,7 +528,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
   };
 
   return (
-    <div className={`${isModal ? 'bg-white rounded-2xl shadow-xl overflow-hidden w-full mx-auto flex flex-col max-h-[85vh]' : 'flex flex-col h-full'}`}>
+    <div className={`${isModal ? 'bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden w-full mx-auto flex flex-col max-h-[85vh]' : 'flex flex-col h-full'}`}>
       {/* Header */}
       <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-6 flex-shrink-0">
         <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -543,7 +543,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
             <span>Progress</span>
             <span>{Math.round(((currentStep + 1) / STEPS.length) * 100)}%</span>
           </div>
-          <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+          <div className="h-2 bg-white/20 dark:bg-slate-800/20 rounded-full overflow-hidden">
             <div 
               className="h-full bg-corporate-teal transition-all duration-500"
               style={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
@@ -553,7 +553,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
       </div>
 
       {/* Step Indicators */}
-      <div className="flex border-b border-slate-200 bg-slate-50 flex-shrink-0">
+      <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex-shrink-0">
         {STEPS.map((step, idx) => {
           const Icon = step.icon;
           const isActive = idx === currentStep;
@@ -566,7 +566,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
               disabled={idx > currentStep}
               className={`flex-1 py-3 px-2 text-center transition-all
                 ${isActive 
-                  ? 'bg-white border-b-2 border-corporate-teal' 
+                  ? 'bg-white dark:bg-slate-800 border-b-2 border-corporate-teal' 
                   : isComplete
                     ? 'text-corporate-teal hover:bg-white/50 cursor-pointer'
                     : 'text-slate-400 cursor-not-allowed'
@@ -601,17 +601,17 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
             <StepIcon className="w-5 h-5 text-corporate-teal" />
             <h3 className="text-lg font-bold text-corporate-navy">{currentStepData.title}</h3>
           </div>
-          <p className="text-sm text-slate-500">{currentStepData.description}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{currentStepData.description}</p>
         </div>
 
         {renderStepContent()}
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between p-4 pb-6 md:pb-4 bg-slate-50 border-t border-slate-200 flex-shrink-0">
+      <div className="flex items-center justify-between p-4 pb-6 md:pb-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex-shrink-0">
         <button
           onClick={currentStep === 0 ? onClose : handlePrevious}
-          className="flex items-center gap-1 px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+          className="flex items-center gap-1 px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
           {currentStep === 0 ? 'Cancel' : 'Back'}
@@ -623,7 +623,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
             <button
               onClick={handleSaveAndExit}
               disabled={saving}
-              className="flex items-center gap-1.5 px-4 py-2 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium"
+              className="flex items-center gap-1.5 px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium"
             >
               <Save className="w-4 h-4" />
               Save & Exit

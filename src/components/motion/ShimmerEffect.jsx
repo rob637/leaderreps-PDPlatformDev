@@ -68,7 +68,7 @@ export const ShimmerCard = ({
   ...props
 }) => {
   return (
-    <div className={`p-4 bg-white rounded-xl shadow-sm ${className}`} {...props}>
+    <div className={`p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm ${className}`} {...props}>
       {showImage && (
         <ShimmerEffect
           width="100%"

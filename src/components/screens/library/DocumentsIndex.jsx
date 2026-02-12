@@ -11,8 +11,8 @@ const DocumentsIndex = () => {
       icon={FileText}
       detailRoute="document-detail"
       indexRoute="documents-index"
-      color="text-slate-600"
-      bgColor="bg-slate-100"
+      color="text-slate-600 dark:text-slate-300"
+      bgColor="bg-slate-100 dark:bg-slate-700"
     />
   );
 };

@@ -92,10 +92,10 @@ const WidgetCard = React.forwardRef(({
   };
 
   const variants = {
-    default: 'bg-white border border-slate-200 shadow-sm',
-    elevated: 'bg-white border-none shadow-lg',
-    flat: 'bg-slate-50 border border-slate-200 shadow-none',
-    interactive: 'bg-white border border-slate-200 shadow-sm hover:shadow-md cursor-pointer transition-shadow',
+    default: 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm',
+    elevated: 'bg-white dark:bg-slate-800 border-none shadow-lg',
+    flat: 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-none',
+    interactive: 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md cursor-pointer transition-shadow',
   };
 
   const Component = onClick ? 'button' : 'div';
@@ -136,7 +136,7 @@ const WidgetCard = React.forwardRef(({
                 </h3>
               )}
               {subtitle && (
-                <p className="text-xs text-slate-500 mt-0.5 truncate">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                   {subtitle}
                 </p>
               )}
@@ -230,7 +230,7 @@ const WidgetHeader = React.forwardRef(({
         )}
         <div>
           {title && <h3 className="text-base font-bold text-corporate-navy">{title}</h3>}
-          {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>}
         </div>
       </div>
       {action && (

@@ -12,7 +12,7 @@ const ProgramsIndex = () => {
       icon={Layers}
       detailRoute="program-detail"
       color="text-indigo-600"
-      bgColor="bg-indigo-100"
+      bgColor="bg-indigo-100 dark:bg-indigo-900/30"
     />
   );
 };

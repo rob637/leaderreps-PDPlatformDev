@@ -44,14 +44,14 @@ const LoadingState = React.forwardRef(({
       <div
         ref={ref}
         className={cn(
-          'fixed inset-0 flex flex-col items-center justify-center bg-white z-50',
+          'fixed inset-0 flex flex-col items-center justify-center bg-white dark:bg-slate-800 z-50',
           className
         )}
         {...props}
       >
         <Loader className={cn('text-corporate-teal animate-spin', sizes.spinner)} />
         {message && (
-          <p className={cn('text-slate-500 mt-4', sizes.text)}>{message}</p>
+          <p className={cn('text-slate-500 dark:text-slate-400 mt-4', sizes.text)}>{message}</p>
         )}
       </div>
     );
@@ -69,7 +69,7 @@ const LoadingState = React.forwardRef(({
     >
       <Loader className={cn('text-corporate-teal animate-spin', sizes.spinner)} />
       {message && (
-        <p className={cn('text-slate-500 mt-3', sizes.text)}>{message}</p>
+        <p className={cn('text-slate-500 dark:text-slate-400 mt-3', sizes.text)}>{message}</p>
       )}
     </div>
   );
@@ -124,7 +124,7 @@ const SkeletonCard = React.forwardRef(({
     <div
       ref={ref}
       className={cn(
-        'rounded-2xl border border-slate-200 bg-white p-5 space-y-4',
+        'rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 space-y-4',
         className
       )}
       {...props}
@@ -169,7 +169,7 @@ const SkeletonStat = React.forwardRef(({
     <div
       ref={ref}
       className={cn(
-        'rounded-2xl border border-slate-200 bg-white p-5 border-t-4 border-t-slate-200',
+        'rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 border-t-4 border-t-slate-200',
         className
       )}
       {...props}

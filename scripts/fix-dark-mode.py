@@ -167,20 +167,17 @@ def process_file(filepath):
 
 
 def main():
-    search_dirs = [
-        os.path.join(BASE_DIR, 'src/components/widgets'),
-        os.path.join(BASE_DIR, 'src/components/coaching'),
-        os.path.join(BASE_DIR, 'src/components/conditioning'),
-        os.path.join(BASE_DIR, 'src/components/rep'),
-        os.path.join(BASE_DIR, 'src/components/arena'),
-        os.path.join(BASE_DIR, 'src/components/layout'),
-        os.path.join(BASE_DIR, 'src/components/shared'),
-        os.path.join(BASE_DIR, 'src/components/common'),
-        os.path.join(BASE_DIR, 'src/components/modals'),
-        os.path.join(BASE_DIR, 'src/components/screens'),
-        os.path.join(BASE_DIR, 'src/components/screens/dashboard'),
+    # Dynamically find ALL directories containing .jsx files
+    search_roots = [
+        os.path.join(BASE_DIR, 'src/components'),
         os.path.join(BASE_DIR, 'src/ui'),
     ]
+    
+    search_dirs = set()
+    for root in search_roots:
+        for dirpath, dirnames, filenames in os.walk(root):
+            if any(f.endswith('.jsx') for f in filenames):
+                search_dirs.add(dirpath)
 
     modified = []
     skipped = []

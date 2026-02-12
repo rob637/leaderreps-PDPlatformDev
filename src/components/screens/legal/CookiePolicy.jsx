@@ -51,7 +51,7 @@ const CookiePolicy = () => {
               Hopefully that has clarified things for you and as was previously mentioned if there is something that you aren't sure whether you need or not it's usually safer to leave cookies enabled in case it does interact with one of the features you use on our site.
             </p>
 
-            <p className="text-sm text-slate-500 mt-8">Last Updated: December 2025</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-8">Last Updated: December 2025</p>
           </div>
         </Card>
       </div>

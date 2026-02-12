@@ -101,12 +101,12 @@ const UnifiedContentManager = () => {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-800">
       {/* Header */}
-      <div className="bg-white border-b px-6 py-4 flex justify-between items-center">
+      <div className="bg-white dark:bg-slate-800 border-b px-6 py-4 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Unified Content Library</h1>
-          <p className="text-sm text-gray-500">Manage Programs, Workouts, and Resources</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Unified Content Library</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Manage Programs, Workouts, and Resources</p>
         </div>
         <button 
           onClick={handleAddNew}
@@ -120,7 +120,7 @@ const UnifiedContentManager = () => {
       {/* Main Layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar Tabs */}
-        <div className="w-64 bg-white border-r flex flex-col">
+        <div className="w-64 bg-white dark:bg-slate-800 border-r flex flex-col">
           <div className="p-4">
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
               Library Sections
@@ -135,8 +135,8 @@ const UnifiedContentManager = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       isActive 
-                        ? 'bg-blue-50 text-blue-700' 
-                        : 'text-gray-600 hover:bg-gray-50'
+                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700' 
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50'
                     }`}
                   >
                     <Icon size={18} />
@@ -151,7 +151,7 @@ const UnifiedContentManager = () => {
         {/* Content List */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Toolbar */}
-          <div className="p-4 border-b bg-white flex gap-4 items-center">
+          <div className="p-4 border-b bg-white dark:bg-slate-800 flex gap-4 items-center">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
@@ -162,7 +162,7 @@ const UnifiedContentManager = () => {
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-            <button className="flex items-center gap-2 px-3 py-2 border rounded-lg hover:bg-gray-50 text-gray-600">
+            <button className="flex items-center gap-2 px-3 py-2 border rounded-lg hover:bg-gray-50 text-gray-600 dark:text-gray-300">
               <Filter size={18} />
               Filters
             </button>
@@ -175,35 +175,35 @@ const UnifiedContentManager = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             ) : filteredList.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg border border-dashed">
+              <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-lg border border-dashed">
                 <div className="mx-auto h-12 w-12 text-gray-400 mb-3">
                   {React.createElement(TABS.find(t => t.id === activeTab)?.icon || Layout, { size: 48 })}
                 </div>
-                <h3 className="text-lg font-medium text-gray-900">No content found</h3>
-                <p className="text-gray-500 mt-1">Get started by creating a new {activeTab.toLowerCase()}.</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">No content found</h3>
+                <p className="text-gray-500 dark:text-gray-400 mt-1">Get started by creating a new {activeTab.toLowerCase()}.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {filteredList.map(item => (
                   <div 
                     key={item.id} 
-                    className="bg-white p-4 rounded-lg border hover:shadow-md transition-shadow flex justify-between items-center group"
+                    className="bg-white dark:bg-slate-800 p-4 rounded-lg border hover:shadow-md transition-shadow flex justify-between items-center group"
                   >
                     <div className="flex items-start gap-4">
                       <div className={`p-2 rounded-lg ${
-                        item.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        item.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                       }`}>
                         {React.createElement(TABS.find(t => t.id === activeTab)?.icon || Layout, { size: 24 })}
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900">{item.title}</h3>
-                        <p className="text-sm text-gray-500 line-clamp-1">{item.description || 'No description'}</p>
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100">{item.title}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">{item.description || 'No description'}</p>
                         <div className="flex gap-2 mt-2">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                             {item.difficulty || 'No Level'}
                           </span>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                            item.status === 'PUBLISHED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            item.status === 'PUBLISHED' ? 'bg-green-100 dark:bg-green-900/30 text-green-800' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800'
                           }`}>
                             {item.status}
                           </span>

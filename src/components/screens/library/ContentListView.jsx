@@ -157,7 +157,7 @@ const ContentListView = ({
           'from-corporate-navy to-slate-700'
         }`}>
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+            <div className="w-14 h-14 bg-white/20 dark:bg-slate-800/20 rounded-xl flex items-center justify-center">
               {Icon ? <Icon className="w-7 h-7" /> : <Zap className="w-7 h-7" />}
             </div>
             <div>
@@ -176,7 +176,7 @@ const ContentListView = ({
               placeholder={`Search ${title.toLowerCase()}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-corporate-teal focus:ring-2 focus:ring-corporate-teal/20 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-corporate-teal focus:ring-2 focus:ring-corporate-teal/20 outline-none transition-all"
             />
           </div>
           
@@ -185,7 +185,7 @@ const ContentListView = ({
             className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-colors ${
               showFilters || selectedSkills.length > 0
                 ? 'bg-corporate-teal/10 border-corporate-teal/30 text-corporate-teal'
-                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300'
             }`}
           >
             <SlidersHorizontal className="w-5 h-5" />
@@ -210,7 +210,7 @@ const ContentListView = ({
         )}
 
         {/* Results Count */}
-        <div className="text-sm text-slate-500 mb-4">
+        <div className="text-sm text-slate-500 dark:text-slate-400 mb-4">
           {loading ? 'Loading...' : `${filteredItems.length} item${filteredItems.length !== 1 ? 's' : ''}`}
         </div>
         
@@ -219,8 +219,8 @@ const ContentListView = ({
             <Loader className="animate-spin text-indigo-600 w-8 h-8" />
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center">
-            <p className="text-slate-500">No content found matching your criteria.</p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 p-12 text-center">
+            <p className="text-slate-500 dark:text-slate-400">No content found matching your criteria.</p>
             {(searchQuery || selectedSkills.length > 0) && (
               <button 
                 onClick={() => { setSearchQuery(''); setSelectedSkills([]); }}

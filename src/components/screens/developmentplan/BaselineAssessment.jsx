@@ -50,7 +50,7 @@ const RadioButtonInput = ({ question, options, value, onChange }) => {
                 value={option.value}
                 checked={value === option.value}
                 onChange={() => onChange(question.id, option.value)}
-                className="h-5 w-5 border-gray-300"
+                className="h-5 w-5 border-gray-300 dark:border-gray-600"
                 style={{ color: 'var(--corporate-teal)', accentColor: 'var(--corporate-teal)' }}
               />
               <label 
@@ -128,7 +128,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
         <div className="flex justify-between items-center p-2">
           <div className="flex-1">
             <h3 className="text-lg font-bold text-corporate-navy flex items-center gap-2">
-              <span className="p-1 bg-teal-100 rounded text-teal-700"><CheckCircle className="w-5 h-5" /></span>
+              <span className="p-1 bg-teal-100 dark:bg-teal-900/30 rounded text-teal-700"><CheckCircle className="w-5 h-5" /></span>
               Baseline Assessment Completed
             </h3>
             <p className="text-sm text-corporate-teal mt-1">
@@ -148,7 +148,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
   }
 
   const containerClass = isWidget 
-    ? "bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" 
+    ? "bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 overflow-hidden" 
     : "min-h-screen p-4 sm:p-6 lg:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 bg-corporate-light-gray";
 
   // --- REQ #14: Sleeker Layout ---
@@ -160,7 +160,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
       <div className={containerClass}>
       
       {/* Sticky Progress Bar */}
-      <div className={`${isWidget ? '' : 'sticky top-0 z-10'} py-4 ${isWidget ? 'bg-white' : 'bg-corporate-light-gray/95 backdrop-blur-sm'}`}>
+      <div className={`${isWidget ? '' : 'sticky top-0 z-10'} py-4 ${isWidget ? 'bg-white dark:bg-slate-800' : 'bg-corporate-light-gray/95 backdrop-blur-sm'}`}>
           <div className="flex justify-between text-sm mb-2 px-1">
             <span className="font-semibold" style={{ color: 'var(--corporate-teal)' }}>
               {completedQuestions} of {totalQuestions} Questions Answered
@@ -178,7 +178,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
       </div>
 
       {/* Main Content Card */}
-      <div className={`${isWidget ? '' : 'bg-white rounded-2xl shadow-xl overflow-hidden mt-4'}`}>
+      <div className={`${isWidget ? '' : 'bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden mt-4'}`}>
         
         {/* Header Area */}
         <div className="p-6 sm:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 border-b" style={{ borderColor: 'var(--corporate-teal)' }}>

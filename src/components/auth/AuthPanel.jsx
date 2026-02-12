@@ -438,7 +438,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
       </div>
       
       <div
-        className="relative p-8 sm:p-10 bg-white rounded-2xl shadow-2xl text-center w-full max-w-md border-0"
+        className="relative p-8 sm:p-10 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl text-center w-full max-w-md border-0"
         style={{ fontFamily: 'var(--font-body)' }}
       >
         {/* Logo */}
@@ -460,11 +460,11 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
         {inviteData && isSignup && (
             <div className="mb-6 p-4 bg-corporate-teal/5 text-corporate-navy rounded-xl text-sm border border-corporate-teal/20">
                 <p className="font-semibold text-corporate-teal">Invitation Accepted!</p>
-                <p className="text-slate-600 mt-1">{inviteData.customMessage || "Welcome to the team."}</p>
+                <p className="text-slate-600 dark:text-slate-300 mt-1">{inviteData.customMessage || "Welcome to the team."}</p>
             </div>
         )}
 
-        <p className="text-sm text-slate-500 mb-8 leading-relaxed">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
           {isReset
             ? 'Enter your email to receive a password reset link.'
             : isSignup
@@ -475,8 +475,8 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
         {statusMessage && (
           <div className={`mb-6 p-4 rounded-xl text-sm ${
             statusMessage.includes('sent') || statusMessage.includes('Welcome') 
-                ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' 
-                : 'bg-red-50 text-red-800 border border-red-100'
+                ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 border border-emerald-100' 
+                : 'bg-red-50 dark:bg-red-900/20 text-red-800 border border-red-100'
           }`}>
             {statusMessage}
           </div>
@@ -486,13 +486,13 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
           {isSignup && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
                   First Name
                 </label>
                 <input
                   type="text"
                   autoComplete="given-name"
-                  className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
+                  className="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
                   placeholder="John"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
@@ -500,13 +500,13 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
                   Last Name
                 </label>
                 <input
                   type="text"
                   autoComplete="family-name"
-                  className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
+                  className="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
                   placeholder="Doe"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
@@ -517,13 +517,13 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
               Email Address
             </label>
             <input
               type="email"
               autoComplete="username"
-              className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal disabled:bg-slate-50 disabled:text-slate-500 transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
+              className="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal disabled:bg-slate-50 disabled:text-slate-500 transition-all duration-200 hover:border-slate-300 text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
               placeholder="name@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -534,13 +534,13 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
 
           {mode !== 'reset' && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
                 Password
               </label>
               <input
                 type="password"
                 autoComplete={isSignup ? "new-password" : "current-password"}
-                className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
+                className="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -551,13 +551,13 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
 
           {isSignup && !inviteData && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
                 Secret Sign-Up Code
               </label>
               <input
                 type="text"
                 autoComplete="off"
-                className="w-full p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 placeholder:text-slate-400"
+                className="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all duration-200 hover:border-slate-300 text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
                 placeholder="Enter code"
                 value={secretCode}
                 onChange={(e) => setSecretCode(e.target.value)}
@@ -592,17 +592,17 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
             <>
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200"></div>
+                  <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="px-3 bg-white text-slate-400">or continue with</span>
+                  <span className="px-3 bg-white dark:bg-slate-800 text-slate-400">or continue with</span>
                 </div>
               </div>
               
               <button
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
-                className="w-full py-3.5 border border-slate-200 rounded-xl font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 flex items-center justify-center gap-3 active:scale-[0.98]"
+                className="w-full py-3.5 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 flex items-center justify-center gap-3 active:scale-[0.98]"
                 style={{ fontFamily: 'var(--font-body)' }}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -635,7 +635,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
             <>
               <button 
                 onClick={() => setMode('reset')}
-                className="text-slate-500 hover:text-corporate-teal transition-colors"
+                className="text-slate-500 dark:text-slate-400 hover:text-corporate-teal transition-colors"
               >
                 Forgot Password?
               </button>
@@ -656,7 +656,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                   setFirstName('');
                   setLastName('');
               }}
-              className="text-slate-500 hover:text-corporate-teal transition-colors"
+              className="text-slate-500 dark:text-slate-400 hover:text-corporate-teal transition-colors"
             >
               ← Back to Sign In
             </button>

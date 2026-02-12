@@ -57,36 +57,36 @@ import {
 const SESSION_TYPE_CONFIG = {
   open_gym: {
     label: 'Open Gym',
-    color: 'bg-orange-100 text-orange-800 border-orange-300',
+    color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 border-orange-300',
     icon: '🏋️'
   },
   leader_circle: {
     label: 'Leader Circle',
-    color: 'bg-purple-100 text-purple-800 border-purple-300',
+    color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 border-purple-300',
     icon: '🔮'
   },
   live_workout: {
     label: 'Live Workout',
-    color: 'bg-teal-100 text-teal-800 border-teal-300',
+    color: 'bg-teal-100 dark:bg-teal-900/30 text-teal-800 border-teal-300',
     icon: '⚡'
   },
   workshop: {
     label: 'Workshop',
-    color: 'bg-blue-100 text-blue-800 border-blue-300',
+    color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 border-blue-300',
     icon: '📚'
   },
   one_on_one: {
     label: '1:1 Coaching',
-    color: 'bg-green-100 text-green-800 border-green-300',
+    color: 'bg-green-100 dark:bg-green-900/30 text-green-800 border-green-300',
     icon: '👤'
   }
 };
 
 const STATUS_CONFIG = {
-  scheduled: { label: 'Scheduled', color: 'bg-blue-100 text-blue-700', icon: Calendar },
-  live: { label: 'Live Now', color: 'bg-green-100 text-green-700', icon: Play },
-  completed: { label: 'Completed', color: 'bg-slate-100 text-slate-600', icon: CheckCircle },
-  cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700', icon: XCircle }
+  scheduled: { label: 'Scheduled', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700', icon: Calendar },
+  live: { label: 'Live Now', color: 'bg-green-100 dark:bg-green-900/30 text-green-700', icon: Play },
+  completed: { label: 'Completed', color: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300', icon: CheckCircle },
+  cancelled: { label: 'Cancelled', color: 'bg-red-100 dark:bg-red-900/30 text-red-700', icon: XCircle }
 };
 
 // Format date for display - handles YYYY-MM-DD as local date (not UTC)
@@ -544,7 +544,7 @@ const SessionManager = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-corporate-navy">Session Manager</h2>
-          <p className="text-slate-500">Create, edit, and manage coaching sessions</p>
+          <p className="text-slate-500 dark:text-slate-400">Create, edit, and manage coaching sessions</p>
         </div>
         <button
           onClick={handleCreateSession}
@@ -557,62 +557,62 @@ const SessionManager = () => {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 border border-slate-200">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
               <Calendar className="w-5 h-5 text-blue-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-corporate-navy">
                 {sessions.filter(s => s.status === 'scheduled').length}
               </p>
-              <p className="text-xs text-slate-500">Upcoming</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Upcoming</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-200">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
               <Users className="w-5 h-5 text-green-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-corporate-navy">
                 {registrations.filter(r => r.status === 'registered').length}
               </p>
-              <p className="text-xs text-slate-500">Registrations</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Registrations</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-200">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
+            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <CheckCircle className="w-5 h-5 text-purple-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-corporate-navy">
                 {sessions.filter(s => s.status === 'completed').length}
               </p>
-              <p className="text-xs text-slate-500">Completed</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Completed</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-200">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-100 rounded-lg">
+            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
               <UserCheck className="w-5 h-5 text-orange-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-corporate-navy">
                 {registrations.filter(r => r.status === 'attended').length}
               </p>
-              <p className="text-xs text-slate-500">Attended</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Attended</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filters & View Toggle */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
@@ -623,7 +623,7 @@ const SessionManager = () => {
                 placeholder="Search sessions..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm w-48 focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+                className="pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm w-48 focus:outline-none focus:ring-2 focus:ring-corporate-teal"
               />
             </div>
             
@@ -631,7 +631,7 @@ const SessionManager = () => {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+              className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             >
               <option value="all">All Status</option>
               <option value="scheduled">Scheduled</option>
@@ -644,7 +644,7 @@ const SessionManager = () => {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+              className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             >
               <option value="all">All Types</option>
               {Object.entries(SESSION_TYPE_CONFIG).map(([key, config]) => (
@@ -654,11 +654,11 @@ const SessionManager = () => {
           </div>
           
           {/* View Toggle */}
-          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+          <div className="flex gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
             <button
               onClick={() => setViewMode('list')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                viewMode === 'list' ? 'bg-white shadow text-slate-800' : 'text-slate-500'
+                viewMode === 'list' ? 'bg-white dark:bg-slate-800 shadow text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'
               }`}
             >
               List
@@ -666,7 +666,7 @@ const SessionManager = () => {
             <button
               onClick={() => setViewMode('calendar')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                viewMode === 'calendar' ? 'bg-white shadow text-slate-800' : 'text-slate-500'
+                viewMode === 'calendar' ? 'bg-white dark:bg-slate-800 shadow text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'
               }`}
             >
               Calendar
@@ -688,19 +688,19 @@ const SessionManager = () => {
 
       {/* Session List View */}
       {viewMode === 'list' && !editingSession && (
-        <div className="bg-white rounded-xl border border-slate-200">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
           <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase rounded-tl-xl">Session</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Date & Time</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Type</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Attendees</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase">Status</th>
-                <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 uppercase rounded-tr-xl">Actions</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase rounded-tl-xl">Session</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Date & Time</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Type</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Attendees</th>
+                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Status</th>
+                <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase rounded-tr-xl">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {filteredSessions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
@@ -729,14 +729,14 @@ const SessionManager = () => {
 
       {/* Calendar View */}
       {viewMode === 'calendar' && !editingSession && (
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-4">
             <button 
               onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
               className="p-2 hover:bg-slate-100 rounded-lg"
             >
-              <ChevronLeft className="w-5 h-5 text-slate-600" />
+              <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
             </button>
             <h3 className="text-lg font-bold text-corporate-navy">
               {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
@@ -745,7 +745,7 @@ const SessionManager = () => {
               onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
               className="p-2 hover:bg-slate-100 rounded-lg"
             >
-              <ChevronRight className="w-5 h-5 text-slate-600" />
+              <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-300" />
             </button>
           </div>
           
@@ -765,8 +765,8 @@ const SessionManager = () => {
                 key={i}
                 className={`min-h-[100px] border rounded-lg p-1 ${
                   dayData.day 
-                    ? 'border-slate-200 bg-white' 
-                    : 'border-transparent bg-slate-50'
+                    ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800' 
+                    : 'border-transparent bg-slate-50 dark:bg-slate-800'
                 }`}
               >
                 {dayData.day && (
@@ -774,7 +774,7 @@ const SessionManager = () => {
                     <div className={`text-sm font-bold mb-1 ${
                       dayData.dateStr === new Date().toISOString().split('T')[0]
                         ? 'text-corporate-teal'
-                        : 'text-slate-600'
+                        : 'text-slate-600 dark:text-slate-300'
                     }`}>
                       {dayData.day}
                     </div>
@@ -841,7 +841,7 @@ const SessionManager = () => {
 // Session Edit Form Component
 const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
   return (
-    <div className="bg-white rounded-xl border-2 border-corporate-teal p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-corporate-teal p-6">
       <h3 className="text-lg font-bold text-corporate-navy mb-4">
         {isNew ? 'Create New Session' : 'Edit Session'}
       </h3>
@@ -849,27 +849,27 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Title */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Session Title *
           </label>
           <input
             type="text"
             value={session.title || ''}
             onChange={(e) => setSession({ ...session, title: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             placeholder="e.g., Open Gym: Feedback Skills"
           />
         </div>
         
         {/* Session Type */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Session Type *
           </label>
           <select
             value={session.sessionType || 'open_gym'}
             onChange={(e) => setSession({ ...session, sessionType: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
           >
             {Object.entries(SESSION_TYPE_CONFIG).map(([key, config]) => (
               <option key={key} value={key}>{config.icon} {config.label}</option>
@@ -879,41 +879,41 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
         
         {/* Coach */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Coach / Facilitator
           </label>
           <input
             type="text"
             value={session.coach || ''}
             onChange={(e) => setSession({ ...session, coach: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             placeholder="e.g., Ryan"
           />
         </div>
         
         {/* Date */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Date *
           </label>
           <input
             type="date"
             value={session.date || ''}
             onChange={(e) => setSession({ ...session, date: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
           />
         </div>
         
         {/* Recurrence (only for new sessions) */}
         {isNew && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               Recurrence
             </label>
             <select
               value={session.recurrence || 'none'}
               onChange={(e) => setSession({ ...session, recurrence: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             >
               <option value="none">No recurrence (single session)</option>
               <option value="weekly">Weekly</option>
@@ -926,42 +926,42 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
         {/* End Date (only shown if recurrence is selected) */}
         {isNew && session.recurrence && session.recurrence !== 'none' && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              End Date * <span className="text-xs text-slate-500">(for recurring sessions)</span>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              End Date * <span className="text-xs text-slate-500 dark:text-slate-400">(for recurring sessions)</span>
             </label>
             <input
               type="date"
               value={session.endDate || ''}
               onChange={(e) => setSession({ ...session, endDate: e.target.value })}
               min={session.date}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             />
           </div>
         )}
         
         {/* Time */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Time
           </label>
           <input
             type="time"
             value={session.time || '12:00'}
             onChange={(e) => setSession({ ...session, time: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
           />
         </div>
         
         {/* Duration */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Duration (minutes)
           </label>
           <input
             type="number"
             value={session.durationMinutes || 60}
             onChange={(e) => setSession({ ...session, durationMinutes: parseInt(e.target.value) || 60 })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             min="15"
             max="180"
           />
@@ -969,14 +969,14 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
         
         {/* Max Attendees */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Max Attendees
           </label>
           <input
             type="number"
             value={session.maxAttendees || 20}
             onChange={(e) => setSession({ ...session, maxAttendees: parseInt(e.target.value) || 20 })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             min="1"
             max="500"
           />
@@ -984,13 +984,13 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
         
         {/* Description */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             Description
           </label>
           <textarea
             value={session.description || ''}
             onChange={(e) => setSession({ ...session, description: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             rows={3}
             placeholder="What will attendees learn or practice?"
           />
@@ -998,7 +998,7 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
         
         {/* Zoom Link */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             <Video className="w-4 h-4 inline mr-1" />
             Zoom/Meeting Link
           </label>
@@ -1006,14 +1006,14 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
             type="url"
             value={session.zoomLink || ''}
             onChange={(e) => setSession({ ...session, zoomLink: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             placeholder="https://zoom.us/j/..."
           />
         </div>
         
         {/* Replay URL */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             <Play className="w-4 h-4 inline mr-1" />
             Replay URL
           </label>
@@ -1021,14 +1021,14 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
             type="url"
             value={session.replayUrl || ''}
             onChange={(e) => setSession({ ...session, replayUrl: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             placeholder="https://..."
           />
         </div>
         
         {/* Notes URL */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
             <LinkIcon className="w-4 h-4 inline mr-1" />
             Session Notes URL
           </label>
@@ -1036,7 +1036,7 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
             type="url"
             value={session.notesUrl || ''}
             onChange={(e) => setSession({ ...session, notesUrl: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             placeholder="https://..."
           />
         </div>
@@ -1044,13 +1044,13 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
         {/* Status (for editing only) */}
         {!isNew && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               Status
             </label>
             <select
               value={session.status || 'scheduled'}
               onChange={(e) => setSession({ ...session, status: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             >
               {Object.entries(STATUS_CONFIG).map(([key, config]) => (
                 <option key={key} value={key}>{config.label}</option>
@@ -1061,10 +1061,10 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
       </div>
       
       {/* Actions */}
-      <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200">
+      <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
         <button
           onClick={onCancel}
-          className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+          className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 rounded-lg transition-colors"
         >
           Cancel
         </button>
@@ -1100,8 +1100,8 @@ const SessionRow = ({
     <tr className="hover:bg-slate-50">
       <td className="px-4 py-3">
         <div>
-          <p className="font-medium text-slate-800">{session.title}</p>
-          <p className="text-sm text-slate-500">{session.coach && `with ${session.coach}`}</p>
+          <p className="font-medium text-slate-800 dark:text-slate-200">{session.title}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{session.coach && `with ${session.coach}`}</p>
         </div>
       </td>
       <td className="px-4 py-3">
@@ -1109,7 +1109,7 @@ const SessionRow = ({
           <Calendar className="w-4 h-4 text-slate-400" />
           <span>{formatDate(session.date)}</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <Clock className="w-4 h-4 text-slate-400" />
           <span>{session.time || 'TBD'}</span>
           {session.durationMinutes && <span>({session.durationMinutes} min)</span>}
@@ -1147,28 +1147,28 @@ const SessionRow = ({
           {showActions && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowActions(false)} />
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-xl border border-slate-200 z-20 py-1">
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 z-20 py-1">
                 <button
                   onClick={() => { onEdit(); setShowActions(false); }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50"
                 >
                   <Edit className="w-4 h-4" /> Edit Session
                 </button>
                 <button
                   onClick={() => { onDuplicate(); setShowActions(false); }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50"
                 >
                   <Copy className="w-4 h-4" /> Duplicate
                 </button>
                 <button
                   onClick={() => { onViewAttendees(); setShowActions(false); }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50"
                 >
                   <Users className="w-4 h-4" /> View Attendees
                 </button>
                 <button
                   onClick={() => { onExport(); setShowActions(false); }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50"
                 >
                   <Download className="w-4 h-4" /> Export Attendees
                 </button>
@@ -1225,11 +1225,11 @@ const AttendeesModal = ({
 }) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+      <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-corporate-navy">Session Attendees</h3>
-            <p className="text-sm text-slate-500">{session.title} - {formatDate(session.date)}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{session.title} - {formatDate(session.date)}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg">
             <X className="w-5 h-5 text-slate-400" />
@@ -1247,7 +1247,7 @@ const AttendeesModal = ({
           <button
             onClick={onExport}
             disabled={registrations.length === 0}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -1261,30 +1261,30 @@ const AttendeesModal = ({
             </div>
           ) : (
             <table className="w-full">
-              <thead className="bg-slate-50 sticky top-0">
+              <thead className="bg-slate-50 dark:bg-slate-800 sticky top-0">
                 <tr>
-                  <th className="text-left px-4 py-2 text-xs font-bold text-slate-500">Name</th>
-                  <th className="text-left px-4 py-2 text-xs font-bold text-slate-500">Email</th>
-                  <th className="text-left px-4 py-2 text-xs font-bold text-slate-500">Status</th>
-                  <th className="text-right px-4 py-2 text-xs font-bold text-slate-500">Actions</th>
+                  <th className="text-left px-4 py-2 text-xs font-bold text-slate-500 dark:text-slate-400">Name</th>
+                  <th className="text-left px-4 py-2 text-xs font-bold text-slate-500 dark:text-slate-400">Email</th>
+                  <th className="text-left px-4 py-2 text-xs font-bold text-slate-500 dark:text-slate-400">Status</th>
+                  <th className="text-right px-4 py-2 text-xs font-bold text-slate-500 dark:text-slate-400">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {registrations.map(reg => (
                   <tr key={reg.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-700">
+                    <td className="px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-200">
                       {reg.userName || 'Unknown User'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-500">
+                    <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                       {reg.userEmail || '-'}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                         reg.status === 'attended' 
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700'
                           : reg.status === 'no_show'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-blue-100 text-blue-700'
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700'
+                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700'
                       }`}>
                         {reg.status === 'attended' ? '✓ Attended' : 
                          reg.status === 'no_show' ? '✗ No Show' : 'Registered'}
@@ -1326,7 +1326,7 @@ const AttendeesModal = ({
           )}
         </div>
         
-        <div className="p-4 border-t border-slate-200 bg-slate-50 text-sm text-slate-500">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-500 dark:text-slate-400">
           Total: {registrations.length} attendee(s)
         </div>
       </div>
@@ -1347,11 +1347,11 @@ const NotificationModal = ({
 }) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-lg w-full">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+      <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-corporate-navy">Send Notification</h3>
-            <p className="text-sm text-slate-500">To {attendeeCount} attendee(s) of {session.title}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">To {attendeeCount} attendee(s) of {session.title}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg">
             <X className="w-5 h-5 text-slate-400" />
@@ -1360,41 +1360,41 @@ const NotificationModal = ({
         
         <div className="p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               Subject *
             </label>
             <input
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
               placeholder="e.g., Session Reminder"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               Message *
             </label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
               rows={5}
               placeholder="Enter your message to attendees..."
             />
           </div>
           
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-800">
             <AlertTriangle className="w-4 h-4 inline mr-2" />
             Email delivery requires backend integration with SendGrid, Mailgun, or similar service.
           </div>
         </div>
         
-        <div className="p-4 border-t border-slate-200 flex justify-end gap-3">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+            className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 rounded-lg"
           >
             Cancel
           </button>

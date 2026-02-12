@@ -122,7 +122,7 @@ const TabsTrigger = React.forwardRef(({
       'active:opacity-80',
       isActive
         ? 'border-corporate-teal text-corporate-navy'
-        : 'border-transparent text-slate-500 hover:text-corporate-navy hover:border-slate-300',
+        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-corporate-navy hover:border-slate-300',
       disabled && 'opacity-50 cursor-not-allowed'
     ),
     pills: cn(
@@ -155,7 +155,7 @@ const TabsTrigger = React.forwardRef(({
       {badge && (
         <span className={cn(
           'ml-1.5 px-1.5 py-0.5 text-xs font-bold rounded-full',
-          isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+          isActive ? 'bg-white/20 dark:bg-slate-800/20 text-white' : 'bg-slate-200 text-slate-600 dark:text-slate-300'
         )}>
           {badge}
         </span>

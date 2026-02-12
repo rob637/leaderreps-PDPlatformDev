@@ -85,13 +85,13 @@ const SkillsIndex = () => {
               </p>
             </div>
             <div className="flex gap-3">
-              <div className="flex items-center gap-1 text-xs bg-white/20 px-3 py-1.5 rounded-full">
+              <div className="flex items-center gap-1 text-xs bg-white/20 dark:bg-slate-800/20 px-3 py-1.5 rounded-full">
                 <Film className="w-3 h-3" /> Videos
               </div>
-              <div className="flex items-center gap-1 text-xs bg-white/20 px-3 py-1.5 rounded-full">
+              <div className="flex items-center gap-1 text-xs bg-white/20 dark:bg-slate-800/20 px-3 py-1.5 rounded-full">
                 <BookOpen className="w-3 h-3" /> Read & Reps
               </div>
-              <div className="flex items-center gap-1 text-xs bg-white/20 px-3 py-1.5 rounded-full">
+              <div className="flex items-center gap-1 text-xs bg-white/20 dark:bg-slate-800/20 px-3 py-1.5 rounded-full">
                 <Wrench className="w-3 h-3" /> Tools
               </div>
             </div>
@@ -107,7 +107,7 @@ const SkillsIndex = () => {
               placeholder="Search skills..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-corporate-teal focus:border-transparent bg-white shadow-sm"
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-corporate-teal focus:border-transparent bg-white dark:bg-slate-800 shadow-sm"
             />
           </div>
         </div>
@@ -117,16 +117,16 @@ const SkillsIndex = () => {
             <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
           </div>
         ) : filteredSkills.length === 0 ? (
-          <div className="text-center p-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+          <div className="text-center p-12 bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-600">
             <Zap className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-slate-700">No Skills Found</h3>
-            <p className="text-slate-500 mb-4">
+            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">No Skills Found</h3>
+            <p className="text-slate-500 dark:text-slate-400 mb-4">
               {searchQuery ? 'Try adjusting your search.' : 'No skills have been defined yet.'}
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="divide-y divide-slate-100">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="divide-y divide-slate-100 dark:divide-slate-700">
               {filteredSkills.map((skill) => {
                 const counts = contentCounts[skill.id] || { videos: 0, documents: 0, readReps: 0, tools: 0, total: 0 };
                 
@@ -138,21 +138,21 @@ const SkillsIndex = () => {
                   >
                     <div className="flex items-start gap-4">
                       {/* Icon */}
-                      <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      <div className="w-12 h-12 bg-teal-50 dark:bg-teal-900/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                         <Zap className="w-6 h-6 text-teal-600" />
                       </div>
                       
                       {/* Content */}
                       <div className="flex-grow min-w-0">
                         <div className="flex items-start justify-between gap-4">
-                          <h3 className="font-bold text-slate-800 group-hover:text-corporate-teal transition-colors">
+                          <h3 className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-corporate-teal transition-colors">
                             {skill.label}
                           </h3>
                           <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-corporate-teal group-hover:translate-x-1 transition-all" />
                         </div>
                         
                         {skill.description && (
-                          <p className="text-sm text-slate-500 line-clamp-2 mt-1">
+                          <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mt-1">
                             {skill.description}
                           </p>
                         )}
@@ -166,17 +166,17 @@ const SkillsIndex = () => {
                               </span>
                             )}
                             {counts.documents > 0 && (
-                              <span className="flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-full">
+                              <span className="flex items-center gap-1 text-[10px] font-bold bg-blue-50 dark:bg-blue-900/20 text-blue-600 px-2 py-1 rounded-full">
                                 <FileText className="w-3 h-3" /> {counts.documents}
                               </span>
                             )}
                             {counts.readReps > 0 && (
-                              <span className="flex items-center gap-1 text-[10px] font-bold bg-green-50 text-green-600 px-2 py-1 rounded-full">
+                              <span className="flex items-center gap-1 text-[10px] font-bold bg-green-50 dark:bg-green-900/20 text-green-600 px-2 py-1 rounded-full">
                                 <BookOpen className="w-3 h-3" /> {counts.readReps}
                               </span>
                             )}
                             {counts.tools > 0 && (
-                              <span className="flex items-center gap-1 text-[10px] font-bold bg-orange-50 text-orange-600 px-2 py-1 rounded-full">
+                              <span className="flex items-center gap-1 text-[10px] font-bold bg-orange-50 dark:bg-orange-900/20 text-orange-600 px-2 py-1 rounded-full">
                                 <Wrench className="w-3 h-3" /> {counts.tools}
                               </span>
                             )}
@@ -193,7 +193,7 @@ const SkillsIndex = () => {
 
         {/* Count */}
         {!loading && filteredSkills.length > 0 && (
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
             Showing {filteredSkills.length} skill{filteredSkills.length !== 1 ? 's' : ''}
           </p>
         )}

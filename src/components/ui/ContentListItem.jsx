@@ -29,8 +29,8 @@ export const ContentListItem = ({
       onClick={isUnlocked ? onClick : undefined}
       className={`w-full text-left transition-all duration-150 rounded-xl border p-4 flex items-center gap-4 group relative
         ${isUnlocked 
-          ? 'bg-white hover:shadow-md cursor-pointer border-slate-200 hover:border-corporate-teal/50 active:scale-[0.99] active:bg-slate-50' 
-          : 'bg-slate-50 border-slate-200 opacity-75 cursor-not-allowed'
+          ? 'bg-white dark:bg-slate-800 hover:shadow-md cursor-pointer border-slate-200 dark:border-slate-700 hover:border-corporate-teal/50 active:scale-[0.99] active:bg-slate-50' 
+          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-75 cursor-not-allowed'
         } mb-3`}
     >
       {/* Icon */}
@@ -46,7 +46,7 @@ export const ContentListItem = ({
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <h3 className={`text-base font-bold truncate ${isUnlocked ? 'text-corporate-navy' : 'text-slate-500'}`}>
+          <h3 className={`text-base font-bold truncate ${isUnlocked ? 'text-corporate-navy' : 'text-slate-500 dark:text-slate-400'}`}>
             {title}
           </h3>
           
@@ -63,12 +63,12 @@ export const ContentListItem = ({
           )}
         </div>
         
-        <p className="text-sm text-slate-600 line-clamp-1 mb-2">
+        <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-1 mb-2">
           {description}
         </p>
 
         {/* Metadata Row */}
-        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
           {/* Duration */}
           {(metadata.durationMin || metadata.durationWeeks) && (
             <div className="flex items-center gap-1">

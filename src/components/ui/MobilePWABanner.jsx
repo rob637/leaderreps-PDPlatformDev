@@ -118,7 +118,7 @@ const MobilePWABanner = () => {
             {/* Dismiss button */}
             <button
               onClick={handleDismiss}
-              className="flex-shrink-0 p-1.5 -mt-1 -mr-1 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
+              className="flex-shrink-0 p-1.5 -mt-1 -mr-1 bg-white/20 dark:bg-slate-800/20 hover:bg-white/30 rounded-full text-white transition-colors"
               aria-label="Dismiss"
             >
               <X className="w-4 h-4" />
@@ -145,7 +145,7 @@ const MobilePWABanner = () => {
           />
           <div className="fixed inset-x-4 bottom-4 z-[10000]">
             <div 
-              className="bg-white rounded-2xl shadow-2xl p-5 max-w-sm mx-auto"
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-5 max-w-sm mx-auto"
               style={{ fontFamily: 'var(--font-body)' }}
             >
               <div className="flex items-center justify-between mb-4">
@@ -168,12 +168,12 @@ const MobilePWABanner = () => {
                       <span className="text-white font-bold text-sm">1</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-slate-700 dark:text-slate-200">
                         Tap the <span className="font-semibold">Share</span> button
                       </p>
-                      <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 bg-slate-100 rounded-lg">
+                      <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-lg">
                         <Share className="w-4 h-4 text-blue-500" />
-                        <span className="text-xs text-slate-600">at the bottom of Safari</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-300">at the bottom of Safari</span>
                       </div>
                     </div>
                   </div>
@@ -184,12 +184,12 @@ const MobilePWABanner = () => {
                       <span className="text-white font-bold text-sm">2</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-slate-700 dark:text-slate-200">
                         Scroll and tap <span className="font-semibold">"Add to Home Screen"</span>
                       </p>
-                      <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 bg-slate-100 rounded-lg">
-                        <Plus className="w-4 h-4 text-slate-600" />
-                        <span className="text-xs text-slate-600">Add to Home Screen</span>
+                      <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                        <Plus className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                        <span className="text-xs text-slate-600 dark:text-slate-300">Add to Home Screen</span>
                       </div>
                     </div>
                   </div>
@@ -200,7 +200,7 @@ const MobilePWABanner = () => {
                       <span className="text-white font-bold text-sm">3</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-slate-700 dark:text-slate-200">
                         Tap <span className="font-semibold">"Add"</span> in the top right
                       </p>
                     </div>
@@ -208,10 +208,10 @@ const MobilePWABanner = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
                     Look for the "Install" or "Add to Home Screen" option in your browser menu.
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     For the best experience, use Safari on iOS or Chrome on Android.
                   </p>
                 </div>

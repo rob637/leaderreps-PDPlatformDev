@@ -149,7 +149,7 @@ const SwipeableRow = React.forwardRef(({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         className={cn(
-          "relative bg-white",
+          "relative bg-white dark:bg-slate-800",
           !isDragging && "transition-transform duration-200 ease-out"
         )}
         style={{ transform: `translateX(${translateX}px)` }}

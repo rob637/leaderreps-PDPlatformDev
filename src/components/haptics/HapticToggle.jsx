@@ -71,7 +71,7 @@ const HapticToggle = ({
           <span
             className={`
               ${currentSize.thumb}
-              rounded-full bg-white shadow-md
+              rounded-full bg-white dark:bg-slate-800 shadow-md
               transition-transform duration-200
             `}
             style={{ transform: currentSize.translate }}
@@ -103,7 +103,7 @@ const HapticToggle = ({
         <motion.span
           className={`
             ${currentSize.thumb}
-            rounded-full bg-white shadow-md
+            rounded-full bg-white dark:bg-slate-800 shadow-md
           `}
           animate={{ 
             x: checked ? (size === 'sm' ? 16 : size === 'lg' ? 24 : 20) : 2,
@@ -133,12 +133,12 @@ const HapticToggle = ({
       </div>
       <div className="flex-1 min-w-0">
         {label && (
-          <span className="block text-sm font-medium text-gray-900">
+          <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">
             {label}
           </span>
         )}
         {description && (
-          <span className="block text-sm text-gray-500 mt-0.5">
+          <span className="block text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             {description}
           </span>
         )}

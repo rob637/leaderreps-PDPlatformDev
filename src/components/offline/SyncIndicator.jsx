@@ -98,14 +98,14 @@ const SyncIndicator = ({
           className={`
             inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium
             ${!isOnline 
-              ? 'bg-gray-100 text-gray-600' 
+              ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300' 
               : syncStatus === 'error'
-                ? 'bg-red-100 text-red-700'
+                ? 'bg-red-100 dark:bg-red-900/30 text-red-700'
                 : syncStatus === 'syncing'
-                  ? 'bg-blue-100 text-blue-700'
+                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700'
                   : hasPendingActions
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-green-100 text-green-700'
+                    ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700'
+                    : 'bg-green-100 dark:bg-green-900/30 text-green-700'
             }
             ${className}
           `}

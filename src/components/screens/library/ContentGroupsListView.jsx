@@ -100,7 +100,7 @@ const ContentGroupsListView = ({
         {/* Hero Section */}
         <div className={`rounded-2xl p-8 text-white mb-8 shadow-lg bg-gradient-to-r ${getGradient()}`}>
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+            <div className="w-14 h-14 bg-white/20 dark:bg-slate-800/20 rounded-xl flex items-center justify-center">
               {Icon ? <Icon className="w-7 h-7" /> : <Zap className="w-7 h-7" />}
             </div>
             <div>
@@ -119,7 +119,7 @@ const ContentGroupsListView = ({
               placeholder={`Search ${title.toLowerCase()}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-corporate-teal focus:border-transparent bg-white shadow-sm"
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-corporate-teal focus:border-transparent bg-white dark:bg-slate-800 shadow-sm"
             />
           </div>
         </div>
@@ -133,14 +133,14 @@ const ContentGroupsListView = ({
 
         {/* Empty State */}
         {!loading && filteredGroups.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
               {Icon ? <Icon className="w-8 h-8 text-gray-400" /> : <Zap className="w-8 h-8 text-gray-400" />}
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
               No {title} Found
             </h3>
-            <p className="text-gray-500 mb-4">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
               {searchQuery ? 'Try adjusting your search.' : `No ${title.toLowerCase()} have been created yet.`}
             </p>
           </div>
@@ -157,11 +157,11 @@ const ContentGroupsListView = ({
                   key={group.id}
                   onClick={() => handleGroupClick(group)}
                   className={`
-                    group bg-white rounded-xl border shadow-sm p-4 
+                    group bg-white dark:bg-slate-800 rounded-xl border shadow-sm p-4 
                     flex items-center gap-4 transition-all
                     ${isLocked 
-                      ? 'border-gray-200 opacity-60 cursor-not-allowed' 
-                      : 'border-gray-200 hover:border-corporate-teal hover:shadow-md cursor-pointer'
+                      ? 'border-gray-200 dark:border-gray-700 opacity-60 cursor-not-allowed' 
+                      : 'border-gray-200 dark:border-gray-700 hover:border-corporate-teal hover:shadow-md cursor-pointer'
                     }
                   `}
                 >
@@ -169,7 +169,7 @@ const ContentGroupsListView = ({
                   <div className={`
                     w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0
                     ${isLocked 
-                      ? 'bg-gray-100 text-gray-400' 
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400' 
                       : `${bgColor || 'bg-corporate-teal/10'} ${color || 'text-corporate-teal'}`
                     }
                   `}>
@@ -181,11 +181,11 @@ const ContentGroupsListView = ({
 
                   {/* Content */}
                   <div className="flex-grow min-w-0">
-                    <h3 className={`font-bold text-lg mb-1 ${isLocked ? 'text-gray-400' : 'text-gray-900'}`}>
+                    <h3 className={`font-bold text-lg mb-1 ${isLocked ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
                       {group.label}
                     </h3>
                     {group.description && (
-                      <p className={`text-sm line-clamp-2 ${isLocked ? 'text-gray-400' : 'text-gray-500'}`}>
+                      <p className={`text-sm line-clamp-2 ${isLocked ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
                         {group.description}
                       </p>
                     )}
@@ -208,7 +208,7 @@ const ContentGroupsListView = ({
 
         {/* Count */}
         {!loading && filteredGroups.length > 0 && (
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
             Showing {filteredGroups.length} {filteredGroups.length === 1 ? title.slice(0, -1).toLowerCase() : title.toLowerCase()}
           </p>
         )}

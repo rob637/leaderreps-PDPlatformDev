@@ -76,7 +76,7 @@ const FileUploader = ({ onUploadComplete, folder = 'uploads', accept = '*/*' }) 
     <div className="w-full">
       <div 
         className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors
-          ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
+          ${dragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'}
           ${uploading ? 'opacity-50 pointer-events-none' : ''}
         `}
         onDragEnter={handleDrag}
@@ -94,10 +94,10 @@ const FileUploader = ({ onUploadComplete, folder = 'uploads', accept = '*/*' }) 
         
         <div className="flex flex-col items-center justify-center space-y-2">
           <Upload className={`w-8 h-8 ${dragActive ? 'text-blue-500' : 'text-gray-400'}`} />
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-gray-300">
             <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Supports images, videos, PDFs, docs
           </p>
         </div>
@@ -105,7 +105,7 @@ const FileUploader = ({ onUploadComplete, folder = 'uploads', accept = '*/*' }) 
 
       {uploading && (
         <div className="mt-4 space-y-2">
-          <div className="flex justify-between text-xs text-gray-600">
+          <div className="flex justify-between text-xs text-gray-600 dark:text-gray-300">
             <span>Uploading...</span>
             <span>{Math.round(progress)}%</span>
           </div>

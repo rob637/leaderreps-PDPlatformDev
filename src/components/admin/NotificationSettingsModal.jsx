@@ -117,9 +117,9 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-          <h3 className="font-bold text-slate-800 flex items-center gap-2">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
+          <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
             <Bell className="w-5 h-5 text-corporate-teal" />
             Notification Settings
           </h3>
@@ -135,21 +135,21 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
                 <p className="text-sm text-blue-800">
                   Managing notifications for <span className="font-bold">{userName}</span>
                 </p>
               </div>
 
               {/* Notification Email Section */}
-              <div className={`p-4 rounded-lg border ${isTestUser ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`p-4 rounded-lg border ${isTestUser ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
                 <div className="flex items-center gap-2 mb-3">
                   {isTestUser ? (
                     <TestTube className="w-4 h-4 text-amber-600" />
                   ) : (
-                    <AtSign className="w-4 h-4 text-slate-600" />
+                    <AtSign className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                   )}
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                     {isTestUser ? 'Test User - Override Email' : 'Notification Email'}
                   </label>
                   {isTestUser && (
@@ -164,32 +164,32 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
                       value={testNotificationRecipient}
                       onChange={(e) => setTestNotificationRecipient(e.target.value)}
                       placeholder="Enter override email address"
-                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-sm bg-white"
+                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-sm bg-white dark:bg-slate-800"
                     />
                     <p className="text-xs text-amber-700 mt-2">
                       ⚠️ This is a test user. All notifications will be redirected to the email above instead of <span className="font-medium">{userEmail}</span>.
                     </p>
                   </>
                 ) : (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
                     <Mail className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-700">{userEmail || 'No email set'}</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-200">{userEmail || 'No email set'}</span>
                   </div>
                 )}
               </div>
 
               {error && (
-                <div className="bg-red-50 p-3 rounded-lg border border-red-100 flex items-center gap-2 text-red-700 text-sm">
+                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-100 flex items-center gap-2 text-red-700 text-sm">
                   <AlertTriangle className="w-4 h-4" />
                   {error}
                 </div>
               )}
 
               {/* Master Toggle */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div>
-                  <h4 className="font-medium text-slate-900">Enable Notifications</h4>
-                  <p className="text-xs text-slate-500">Allow the system to send reminders</p>
+                  <h4 className="font-medium text-slate-900 dark:text-white">Enable Notifications</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Allow the system to send reminders</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input 
@@ -204,13 +204,13 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
 
               {/* Timezone */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
                   <Globe className="w-4 h-4" /> Time Zone
                 </label>
                 <select
                   value={settings.timezone}
                   onChange={(e) => setSettings({...settings, timezone: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal text-sm"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal text-sm"
                 >
                   {COMMON_TIMEZONES.map(tz => (
                     <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>
@@ -220,14 +220,14 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
 
               {/* Delivery Channels */}
               <div className="space-y-3">
-                <label className="block text-sm font-medium text-slate-700">Delivery Channels</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Delivery Channels</label>
                 
                 <div 
                   onClick={() => toggleChannel('email')}
                   className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
                     settings.channels.email 
-                      ? 'border-emerald-200 bg-emerald-50' 
-                      : 'border-slate-200 bg-white hover:border-slate-300'
+                      ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20' 
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -236,7 +236,7 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
                     ) : (
                       <Mail className="w-5 h-5 text-slate-400" />
                     )}
-                    <span className={`text-sm font-medium ${settings.channels.email ? 'text-emerald-800' : 'text-slate-700'}`}>
+                    <span className={`text-sm font-medium ${settings.channels.email ? 'text-emerald-800' : 'text-slate-700 dark:text-slate-200'}`}>
                       Email
                     </span>
                   </div>
@@ -246,8 +246,8 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
                   onClick={() => toggleChannel('sms')}
                   className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
                     settings.channels.sms 
-                      ? 'border-emerald-200 bg-emerald-50' 
-                      : 'border-slate-200 bg-white hover:border-slate-300'
+                      ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20' 
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -256,7 +256,7 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
                     ) : (
                       <MessageSquare className="w-5 h-5 text-slate-400" />
                     )}
-                    <span className={`text-sm font-medium ${settings.channels.sms ? 'text-emerald-800' : 'text-slate-700'}`}>
+                    <span className={`text-sm font-medium ${settings.channels.sms ? 'text-emerald-800' : 'text-slate-700 dark:text-slate-200'}`}>
                       SMS / Text
                     </span>
                   </div>
@@ -266,27 +266,27 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
               {/* Phone Number Input (Conditional) */}
               {settings.channels.sms && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Mobile Number</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Mobile Number</label>
                   <input
                     type="tel"
                     placeholder="+1 (555) 000-0000"
                     value={settings.phoneNumber}
                     onChange={(e) => setSettings({...settings, phoneNumber: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal text-sm"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal text-sm"
                   />
-                  <p className="text-xs text-slate-500 mt-1">Standard messaging rates may apply.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Standard messaging rates may apply.</p>
                 </div>
               )}
 
               {/* Summary */}
-              <div className={`p-4 rounded-lg border ${settings.enabled ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`p-4 rounded-lg border ${settings.enabled ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
                 <div className="flex items-center gap-2">
                   {settings.enabled ? (
                     <CheckCircle className="w-5 h-5 text-emerald-600" />
                   ) : (
                     <Bell className="w-5 h-5 text-slate-400" />
                   )}
-                  <span className={`font-medium ${settings.enabled ? 'text-emerald-800' : 'text-slate-600'}`}>
+                  <span className={`font-medium ${settings.enabled ? 'text-emerald-800' : 'text-slate-600 dark:text-slate-300'}`}>
                     {settings.enabled ? 'Notifications Enabled' : 'Notifications Disabled'}
                   </span>
                 </div>
@@ -312,7 +312,7 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors"
+                  className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 rounded-lg font-medium transition-colors"
                 >
                   Cancel
                 </button>

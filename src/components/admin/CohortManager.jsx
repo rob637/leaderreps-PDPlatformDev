@@ -170,7 +170,7 @@ const CohortManager = () => {
             <Users className="w-8 h-8 text-corporate-teal" />
             Cohort Management
           </h1>
-          <p className="text-slate-500">Manage user groups and start dates.</p>
+          <p className="text-slate-500 dark:text-slate-400">Manage user groups and start dates.</p>
         </div>
         <button 
           onClick={() => { setCurrentCohort({}); setIsEditing(true); }}
@@ -187,13 +187,13 @@ const CohortManager = () => {
           {cohorts.map(cohort => (
             <Card key={cohort.id} className="p-5 hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start mb-4">
-                <div className="p-3 bg-slate-100 rounded-lg">
+                <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
                   <Calendar className="w-6 h-6 text-corporate-navy" />
                 </div>
                 <div className="flex gap-2">
                   <button 
                     onClick={() => { setCurrentCohort(cohort); setIsEditing(true); }}
-                    className="p-2 hover:bg-slate-100 rounded-full text-slate-500"
+                    className="p-2 hover:bg-slate-100 rounded-full text-slate-500 dark:text-slate-400"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
@@ -207,11 +207,11 @@ const CohortManager = () => {
               </div>
               
               <h3 className="font-bold text-lg text-corporate-navy mb-1">{cohort.name}</h3>
-              <p className="text-sm text-slate-500 mb-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                 Starts: {cohort.startDate ? new Date(cohort.startDate.seconds * 1000).toLocaleDateString() : 'Not set'}
               </p>
               
-              <div className="flex items-center justify-between text-xs text-slate-500 border-t pt-3">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 border-t pt-3">
                 <button 
                   onClick={() => openAssignModal(cohort)}
                   className="flex items-center gap-1 text-corporate-teal hover:text-teal-700 font-medium"
@@ -219,7 +219,7 @@ const CohortManager = () => {
                   <UserPlus className="w-3 h-3" />
                   {getCohortUsers(cohort.id).length} Members
                 </button>
-                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                <span className="bg-green-100 dark:bg-green-900/30 text-green-700 px-2 py-0.5 rounded-full">
                   Active
                 </span>
               </div>
@@ -231,19 +231,19 @@ const CohortManager = () => {
       {/* Edit Modal */}
       {isEditing && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="p-4 border-b flex justify-between items-center bg-slate-50 dark:bg-slate-800">
               <h3 className="font-bold text-corporate-navy">
                 {currentCohort.id ? 'Edit Cohort' : 'New Cohort'}
               </h3>
               <button onClick={() => setIsEditing(false)} className="p-1 hover:bg-slate-200 rounded-full">
-                <X className="w-5 h-5 text-slate-500" />
+                <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
               </button>
             </div>
             
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">Cohort Name</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Cohort Name</label>
                 <input 
                   type="text" 
                   value={currentCohort.name || ''} 
@@ -254,7 +254,7 @@ const CohortManager = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">Start Date</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Start Date</label>
                 <input 
                   type="date" 
                   value={currentCohort.startDate ? new Date(currentCohort.startDate.seconds * 1000).toISOString().split('T')[0] : ''} 
@@ -269,16 +269,16 @@ const CohortManager = () => {
                   }}
                   className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal"
                 />
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   This date corresponds to Day 1 of the program.
                 </p>
               </div>
             </div>
             
-            <div className="p-4 border-t bg-slate-50 flex justify-end gap-3">
+            <div className="p-4 border-t bg-slate-50 dark:bg-slate-800 flex justify-end gap-3">
               <button 
                 onClick={() => setIsEditing(false)}
-                className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-200 rounded-lg"
+                className="px-4 py-2 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-200 rounded-lg"
               >
                 Cancel
               </button>
@@ -296,14 +296,14 @@ const CohortManager = () => {
       {/* User Assignment Modal */}
       {isAssigning && currentCohort && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="p-4 border-b flex justify-between items-center bg-slate-50 dark:bg-slate-800">
               <div>
                 <h3 className="font-bold text-corporate-navy">Manage Members</h3>
-                <p className="text-xs text-slate-500">{currentCohort.name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{currentCohort.name}</p>
               </div>
               <button onClick={() => setIsAssigning(false)} className="p-1 hover:bg-slate-200 rounded-full">
-                <X className="w-5 h-5 text-slate-500" />
+                <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
               </button>
             </div>
             
@@ -319,7 +319,7 @@ const CohortManager = () => {
                   className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal"
                 />
               </div>
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                 {selectedUsers.length} users selected
               </p>
             </div>
@@ -347,24 +347,24 @@ const CohortManager = () => {
                         }}
                         className={`
                           flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors
-                          ${isSelected ? 'bg-corporate-teal/10 border border-corporate-teal' : 'bg-slate-50 border border-transparent hover:bg-slate-100'}
+                          ${isSelected ? 'bg-corporate-teal/10 border border-corporate-teal' : 'bg-slate-50 dark:bg-slate-800 border border-transparent hover:bg-slate-100'}
                           ${isInOtherCohort ? 'opacity-50 cursor-not-allowed' : ''}
                         `}
                       >
                         <div className={`
                           w-5 h-5 rounded border-2 flex items-center justify-center
-                          ${isSelected ? 'bg-corporate-teal border-corporate-teal' : 'border-slate-300'}
+                          ${isSelected ? 'bg-corporate-teal border-corporate-teal' : 'border-slate-300 dark:border-slate-600'}
                         `}>
                           {isSelected && <Check className="w-3 h-3 text-white" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-slate-800 truncate">
+                          <p className="font-medium text-slate-800 dark:text-slate-200 truncate">
                             {user.displayName || 'No Name'}
                           </p>
-                          <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
                         </div>
                         {isInOtherCohort && (
-                          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">
+                          <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 px-2 py-1 rounded">
                             In other cohort
                           </span>
                         )}
@@ -376,10 +376,10 @@ const CohortManager = () => {
             </div>
             
             {/* Footer */}
-            <div className="p-4 border-t bg-slate-50 flex justify-end gap-3">
+            <div className="p-4 border-t bg-slate-50 dark:bg-slate-800 flex justify-end gap-3">
               <button 
                 onClick={() => setIsAssigning(false)}
-                className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-200 rounded-lg"
+                className="px-4 py-2 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-200 rounded-lg"
               >
                 Cancel
               </button>

@@ -47,7 +47,7 @@ const AccessGate = ({ type, id, children, fallback = null, showDefaultLocked = f
 
   if (showDefaultLocked) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 bg-slate-50 rounded-xl border border-slate-200 text-slate-400">
+      <div className="flex flex-col items-center justify-center p-8 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400">
         <Lock className="w-8 h-8 mb-2" />
         <p className="text-sm font-bold">Content Locked</p>
         <p className="text-xs">Complete previous weeks to unlock.</p>

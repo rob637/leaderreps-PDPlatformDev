@@ -104,7 +104,7 @@ const PullToRefresh = React.forwardRef(({
           transform: `translateY(${pullDistance}px)`
         }}
       >
-        <div className="flex items-center gap-2 text-sm text-slate-600">
+        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
           <RefreshCw 
             className={cn(
               "h-5 w-5 transition-transform duration-200",

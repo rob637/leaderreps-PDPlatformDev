@@ -117,7 +117,7 @@ const SkillDetail = (props) => {
     return (
       <PageLayout title="Skill Not Found" showBack={true}>
         <div className="p-6 text-center">
-          <p className="text-gray-600">The requested skill could not be found.</p>
+          <p className="text-gray-600 dark:text-gray-300">The requested skill could not be found.</p>
           <Button onClick={() => navigate('skills-index')} className="mt-4">
             Back to Skills
           </Button>
@@ -147,29 +147,29 @@ const SkillDetail = (props) => {
                 key={item.id}
                 onClick={() => !isLocked && handleContentClick(item)}
                 className={`
-                  group bg-white border rounded-lg p-4 flex items-center gap-4 transition-all
+                  group bg-white dark:bg-slate-800 border rounded-lg p-4 flex items-center gap-4 transition-all
                   ${isLocked 
-                    ? 'border-slate-200 opacity-60 cursor-not-allowed' 
-                    : 'border-slate-200 hover:border-teal-500 hover:shadow-md cursor-pointer'
+                    ? 'border-slate-200 dark:border-slate-700 opacity-60 cursor-not-allowed' 
+                    : 'border-slate-200 dark:border-slate-700 hover:border-teal-500 hover:shadow-md cursor-pointer'
                   }
                 `}
               >
                 <div className={`
                   flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors
                   ${isLocked 
-                    ? 'bg-slate-100 text-slate-400' 
-                    : 'bg-slate-100 text-slate-500 group-hover:bg-teal-500 group-hover:text-white'
+                    ? 'bg-slate-100 dark:bg-slate-700 text-slate-400' 
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-teal-500 group-hover:text-white'
                   }
                 `}>
                   {isLocked ? <Lock className="w-5 h-5" /> : getIconForType(item.type)}
                 </div>
                 
                 <div className="flex-grow min-w-0">
-                  <h4 className={`font-bold transition-colors ${isLocked ? 'text-slate-400' : 'text-slate-800 group-hover:text-teal-600'}`}>
+                  <h4 className={`font-bold transition-colors ${isLocked ? 'text-slate-400' : 'text-slate-800 dark:text-slate-200 group-hover:text-teal-600'}`}>
                     {item.title}
                   </h4>
                   {item.description && (
-                    <p className="text-sm text-slate-500 line-clamp-1">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">
                       {item.description}
                     </p>
                   )}
@@ -199,17 +199,17 @@ const SkillDetail = (props) => {
       <div className="max-w-5xl mx-auto space-y-8">
         
         {/* Skill Overview Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-8">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
           <div className="flex flex-col md:flex-row gap-8">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-teal-100 dark:bg-teal-900/30 rounded-xl flex items-center justify-center">
                   <Zap className="w-6 h-6 text-teal-600" />
                 </div>
                 <h2 className="text-xl font-bold text-corporate-navy">{skill.label}</h2>
               </div>
               {skill.description && (
-                <p className="text-slate-600 mb-6 leading-relaxed">
+                <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
                   {skill.description}
                 </p>
               )}
@@ -231,7 +231,7 @@ const SkillDetail = (props) => {
           {renderContentSection(groupedContent.tools, 'Tools', Wrench, 'bg-orange-500', 'text-white')}
           
           {content.length === 0 && (
-            <div className="text-center p-8 border-2 border-dashed border-slate-200 rounded-lg text-slate-400">
+            <div className="text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg text-slate-400">
               No content has been tagged with this skill yet.
             </div>
           )}

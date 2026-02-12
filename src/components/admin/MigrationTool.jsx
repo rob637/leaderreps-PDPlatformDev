@@ -86,13 +86,13 @@ const MigrationTool = () => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow max-w-2xl mx-auto mt-8">
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow max-w-2xl mx-auto mt-8">
       <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
         <Play className="text-blue-600" />
         Content Migration Tool
       </h2>
       
-      <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6">
+      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-lg mb-6">
         <div className="flex items-start gap-3">
           <AlertTriangle className="text-yellow-600 mt-1" />
           <div>
@@ -125,7 +125,7 @@ const MigrationTool = () => {
 
       <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-64 overflow-y-auto">
         {logs.length === 0 ? (
-          <span className="text-gray-500">Ready to start...</span>
+          <span className="text-gray-500 dark:text-gray-400">Ready to start...</span>
         ) : (
           logs.map((log, i) => <div key={i}>{log}</div>)
         )}

@@ -296,7 +296,7 @@ const PlanTracker = ({
         <h3 className="text-lg font-semibold mb-2 text-corporate-navy">
           No plan available
         </h3>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Complete your baseline assessment to get started.
         </p>
       </div>
@@ -340,7 +340,7 @@ const PlanTracker = ({
     <div className="space-y-6">
       {/* Navigation Controls */}
       {masterPlan && masterPlan.length > 0 && (
-        <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <button 
             onClick={() => setViewIndex(prev => Math.max(0, prev - 1))}
             disabled={viewIndex === 0}

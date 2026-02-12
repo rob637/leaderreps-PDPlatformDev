@@ -28,7 +28,7 @@ const Heading = React.forwardRef(({
     // Default - standard heading
     default: 'font-bold text-corporate-navy',
     // Subtle - for secondary headings
-    subtle: 'font-semibold text-slate-700',
+    subtle: 'font-semibold text-slate-700 dark:text-slate-200',
   };
 
   return (
@@ -61,15 +61,15 @@ const Text = React.forwardRef(({
 }, ref) => {
   const variants = {
     // Default body text
-    default: 'text-slate-700',
+    default: 'text-slate-700 dark:text-slate-200',
     // Muted/subtle text
-    muted: 'text-slate-500',
+    muted: 'text-slate-500 dark:text-slate-400',
     // Lead paragraph - larger intro text
-    lead: 'text-lg text-slate-600',
+    lead: 'text-lg text-slate-600 dark:text-slate-300',
     // Small text - captions, footnotes
-    small: 'text-sm text-slate-500',
+    small: 'text-sm text-slate-500 dark:text-slate-400',
     // Label text - form labels, badges
-    label: 'text-sm font-semibold text-slate-700',
+    label: 'text-sm font-semibold text-slate-700 dark:text-slate-200',
     // Error text
     error: 'text-sm text-red-600',
     // Success text

@@ -31,7 +31,7 @@ const List = React.forwardRef(({
     ref={ref}
     className={cn(
       'space-y-1',
-      divided && 'divide-y divide-slate-100 space-y-0',
+      divided && 'divide-y divide-slate-100 dark:divide-slate-700 space-y-0',
       className
     )}
     {...props}
@@ -96,7 +96,7 @@ const ListItem = React.forwardRef(({
   
   const variants = {
     default: '',
-    card: 'bg-white border border-slate-200 rounded-xl shadow-sm',
+    card: 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm',
     ghost: '',
   };
 
@@ -124,7 +124,7 @@ const ListItem = React.forwardRef(({
       {!leading && Icon && (
         <div className={cn(
           'flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center',
-          'bg-slate-100'
+          'bg-slate-100 dark:bg-slate-700'
         )}>
           <Icon className={cn('w-5 h-5', iconColor)} />
         </div>
@@ -159,7 +159,7 @@ const ListItem = React.forwardRef(({
         )}
         {description && (
           <p className={cn(
-            'text-slate-500 truncate',
+            'text-slate-500 dark:text-slate-400 truncate',
             compact ? 'text-xs' : 'text-sm'
           )}>
             {description}

@@ -17,7 +17,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
     return (
         <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
             <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-corporate-navy mb-4">Scenario Library: Practice Conversations</h1>
-            <p className="text-lg text-gray-600 mb-6">Select a high-stakes scenario to practice your preparation process. Each scenario includes a unique persona for the AI simulator.</p>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">Select a high-stakes scenario to practice your preparation process. Each scenario includes a unique persona for the AI simulator.</p>
             
             <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
                 <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching
@@ -29,7 +29,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
                 className="mb-6 bg-corporate-navy/10 border-l-4 border-corporate-orange rounded-3xl" 
                 onClick={() => setIsDynamicGeneratorVisible(true)}
             >
-                <p className="text-gray-700 text-sm">Create a custom, adaptive scenario by choosing a core conflict and adding a unique **modifier** (e.g., personality, circumstance, or context).</p>
+                <p className="text-gray-700 dark:text-gray-200 text-sm">Create a custom, adaptive scenario by choosing a core conflict and adding a unique **modifier** (e.g., personality, circumstance, or context).</p>
                 <div className="mt-4 text-corporate-orange font-semibold flex items-center">
                     Launch Generator <CornerRightUp className='w-4 h-4 ml-1'/>
                 </div>
@@ -48,7 +48,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
                             setCoachingLabView('scenario-prep');
                         }}
                     >
-                        <p className="text-sm text-gray-700 mb-3">{scenario.description}</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-200 mb-3">{scenario.description}</p>
                         <div className="text-xs font-semibold text-corporate-navy bg-corporate-navy/10 px-3 py-1 rounded-full inline-block">
                             Persona: {scenario.persona}
                         </div>

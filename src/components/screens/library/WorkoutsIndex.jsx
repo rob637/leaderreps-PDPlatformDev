@@ -12,7 +12,7 @@ const WorkoutsIndex = () => {
       icon={Dumbbell}
       detailRoute="workout-detail"
       color="text-orange-600"
-      bgColor="bg-orange-100"
+      bgColor="bg-orange-100 dark:bg-orange-900/30"
     />
   );
 };

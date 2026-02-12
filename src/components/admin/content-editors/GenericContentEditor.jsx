@@ -173,8 +173,8 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
         return <SkillDetailsEditor details={formData.details} onChange={handleDetailsUpdate} />;
       default:
         return (
-          <div className="bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
-            <p className="text-sm text-gray-500 mb-2">
+          <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
               Raw JSON Details for {type}
             </p>
             <textarea
@@ -196,7 +196,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded-full">
@@ -209,7 +209,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
         <div className="flex gap-2">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+            className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 rounded-lg"
           >
             Cancel
           </button>
@@ -228,7 +228,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
         {/* Core Fields */}
         <div className="grid grid-cols-2 gap-6">
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Title</label>
             <input
               type="text"
               name="title"
@@ -242,7 +242,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
           {/* Special Case: Author for Read & Rep (Moved up for better UX) */}
           {type === CONTENT_TYPES.READ_REP && (
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Author</label>
               <input
                 type="text"
                 value={formData.details?.author || ''}
@@ -254,7 +254,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Status</label>
             <select
               name="status"
               value={formData.status}
@@ -268,7 +268,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Difficulty</label>
             <select
               name="difficulty"
               value={formData.difficulty}
@@ -282,7 +282,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role Level</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Role Level</label>
             <select
               name="roleLevel"
               value={formData.roleLevel || ROLE_LEVELS.ALL}
@@ -296,7 +296,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Est. Time (mins)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Est. Time (mins)</label>
             <input
               type="number"
               name="estimatedTime"
@@ -307,7 +307,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
             />
           </div>
 
-          <div className="col-span-2 flex items-center gap-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="col-span-2 flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <input
               type="checkbox"
               id="isHiddenUntilUnlocked"
@@ -316,9 +316,9 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
               onChange={handleChange}
               className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
             />
-            <label htmlFor="isHiddenUntilUnlocked" className="text-sm font-medium text-gray-700 cursor-pointer">
+            <label htmlFor="isHiddenUntilUnlocked" className="text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer">
               Hide until unlocked (Vault & Key)
-              <p className="text-xs text-gray-500 font-normal mt-0.5">
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5">
                 If checked, this content will only be visible to users who have it assigned in their Development Plan.
                 Uncheck to make it available to everyone in the Library.
               </p>
@@ -326,7 +326,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Description</label>
             <textarea
               name="description"
               value={formData.description}
@@ -337,8 +337,8 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
           </div>
 
           {/* --- NEW: Display In (Visibility) --- */}
-          <div className="col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+          <div className="col-span-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
               <Layout size={16} /> Display In Libraries
             </h3>
             <div className="flex flex-wrap gap-4">
@@ -349,7 +349,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
                   onChange={() => handleVisibilityChange(CONTENT_TYPES.VIDEO)}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">Videos</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">Videos</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -358,7 +358,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
                   onChange={() => handleVisibilityChange(CONTENT_TYPES.TOOL)}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">Tools</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">Tools</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -367,7 +367,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
                   onChange={() => handleVisibilityChange(CONTENT_TYPES.DOCUMENT)}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">Documents</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">Documents</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -376,22 +376,22 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
                   onChange={() => handleVisibilityChange(CONTENT_TYPES.READ_REP)}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">Read & Reps</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">Read & Reps</span>
               </label>
             </div>
           </div>
 
           {/* --- Programs (from LOV) --- */}
-          <div className="col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+          <div className="col-span-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
               <Layout size={16} /> Programs
             </h3>
-            <p className="text-xs text-gray-500 mb-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
               Select which programs this content belongs to.
             </p>
-            <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-md bg-white p-2">
+            <div className="max-h-40 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-800 p-2">
               {availablePrograms.length === 0 ? (
-                <p className="text-xs text-gray-500 p-2">No programs defined. Add programs in LOV Manager.</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 p-2">No programs defined. Add programs in LOV Manager.</p>
               ) : (
                 availablePrograms.map(prog => (
                   <label key={prog.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 cursor-pointer">
@@ -401,7 +401,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
                       onChange={() => handleGroupChange('programs', prog.id)}
                       className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 truncate">{prog.label}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{prog.label}</span>
                   </label>
                 ))
               )}
@@ -409,16 +409,16 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
           </div>
 
           {/* --- Workouts (from LOV) --- */}
-          <div className="col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+          <div className="col-span-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
               <Dumbbell size={16} /> Workouts
             </h3>
-            <p className="text-xs text-gray-500 mb-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
               Select which workouts this content belongs to.
             </p>
-            <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-md bg-white p-2">
+            <div className="max-h-40 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-800 p-2">
               {availableWorkouts.length === 0 ? (
-                <p className="text-xs text-gray-500 p-2">No workouts defined. Add workouts in LOV Manager.</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 p-2">No workouts defined. Add workouts in LOV Manager.</p>
               ) : (
                 availableWorkouts.map(workout => (
                   <label key={workout.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 cursor-pointer">
@@ -428,7 +428,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
                       onChange={() => handleGroupChange('workouts', workout.id)}
                       className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 truncate">{workout.label}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{workout.label}</span>
                   </label>
                 ))
               )}
@@ -436,16 +436,16 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
           </div>
 
           {/* --- Skills (from LOV) --- */}
-          <div className="col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+          <div className="col-span-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
               <BookOpen size={16} /> Skills
             </h3>
-            <p className="text-xs text-gray-500 mb-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
               Tag this content with relevant skills.
             </p>
-            <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-md bg-white p-2">
+            <div className="max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-800 p-2">
               {availableSkills.length === 0 ? (
-                <p className="text-xs text-gray-500 p-2">No skills defined. Add skills in LOV Manager.</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 p-2">No skills defined. Add skills in LOV Manager.</p>
               ) : (
                 availableSkills.map(skill => (
                   <label key={skill.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 cursor-pointer">
@@ -455,7 +455,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
                       onChange={() => handleGroupChange('skills', skill.id)}
                       className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
                     />
-                    <span className="text-sm text-gray-700 truncate">{skill.label}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{skill.label}</span>
                   </label>
                 ))
               )}

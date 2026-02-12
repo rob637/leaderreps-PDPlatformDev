@@ -32,13 +32,13 @@ const MediaPicker = ({ typeFilter, onSelect, onClose }) => {
     switch (type) {
       case MEDIA_TYPES.VIDEO: return <Film size={20} className="text-purple-500" />;
       case MEDIA_TYPES.IMAGE: return <ImageIcon size={20} className="text-blue-500" />;
-      default: return <FileText size={20} className="text-gray-500" />;
+      default: return <FileText size={20} className="text-gray-500 dark:text-gray-400" />;
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
         <div className="p-4 border-b flex justify-between items-center">
           <h3 className="text-lg font-semibold">Select from Vault</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
@@ -61,35 +61,35 @@ const MediaPicker = ({ typeFilter, onSelect, onClose }) => {
 
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading...</div>
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
           ) : (
             <div className="grid grid-cols-1 gap-2">
               {filteredAssets.map(asset => (
                 <div
                   key={asset.id}
                   onClick={() => onSelect(asset)}
-                  className="flex items-center gap-3 p-3 rounded-lg cursor-pointer border hover:bg-gray-50 border-gray-200 transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-lg cursor-pointer border hover:bg-gray-50 border-gray-200 dark:border-gray-700 transition-colors"
                 >
-                  <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+                  <div className="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center">
                      {asset.type === MEDIA_TYPES.IMAGE ? (
                         <img src={asset.url} alt="" className="w-full h-full object-cover rounded" />
                      ) : getIconForType(asset.type)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{asset.title}</div>
-                    <div className="text-xs text-gray-500 flex gap-2">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 flex gap-2">
                       <span>{new Date(asset.createdAt?.seconds * 1000).toLocaleDateString()}</span>
                       <span>•</span>
                       <span>{asset.type}</span>
                     </div>
                   </div>
-                  <button className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100">
+                  <button className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/20 rounded-full hover:bg-blue-100">
                     Select
                   </button>
                 </div>
               ))}
               {filteredAssets.length === 0 && (
-                <div className="text-center py-8 text-gray-500">No matching assets found in Vault</div>
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">No matching assets found in Vault</div>
               )}
             </div>
           )}

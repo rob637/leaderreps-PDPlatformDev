@@ -25,7 +25,7 @@ const DynamicWidgetRenderer = ({ code, scope = {} }) => {
   return (
     <LiveProvider code={cleanCode} scope={defaultScope} noInline={noInline}>
       <div className="dynamic-widget-preview h-full w-full overflow-auto">
-        <LiveError className="bg-red-100 text-red-800 p-4 rounded-lg mb-4 font-mono text-sm whitespace-pre-wrap" />
+        <LiveError className="bg-red-100 dark:bg-red-900/30 text-red-800 p-4 rounded-lg mb-4 font-mono text-sm whitespace-pre-wrap" />
         <SafeWidgetWrapper showDetails={true}>
           <LivePreview />
         </SafeWidgetWrapper>

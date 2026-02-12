@@ -145,7 +145,7 @@ const PWAInstall = ({ collapsed = false }) => {
       {showInstructions && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div
-            className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6"
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-md w-full p-6"
             style={{ backgroundColor: '#FCFCFA' }}
           >
             <div className="flex items-start justify-between mb-4">
@@ -179,7 +179,7 @@ const PWAInstall = ({ collapsed = false }) => {
               ))}
             </div>
 
-            <div className="bg-blue-50 p-3 rounded-lg mb-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-4">
               <div className="flex gap-2">
                 <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                 <div>

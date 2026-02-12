@@ -6,7 +6,7 @@ export const LayoutToggle = () => {
   const { layoutMode, toggleLayoutMode } = useLayout();
 
   return (
-    <div className="flex items-center gap-2 bg-white rounded-full p-1 border border-slate-200 shadow-sm">
+    <div className="flex items-center gap-2 bg-white dark:bg-slate-800 rounded-full p-1 border border-slate-200 dark:border-slate-700 shadow-sm">
       <button
         onClick={() => layoutMode === '2-col' && toggleLayoutMode()}
         className={`p-1.5 rounded-full transition-all duration-200 ${

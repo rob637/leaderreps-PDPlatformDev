@@ -53,7 +53,7 @@ const HapticSlider = ({
       {(label || showValue) && (
         <div className="flex justify-between items-center mb-2">
           {label && (
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
               {label}
             </label>
           )}
@@ -111,7 +111,7 @@ const HapticSlider = ({
         {/* Custom thumb */}
         <motion.div
           className={`
-            absolute w-6 h-6 bg-white rounded-full shadow-lg
+            absolute w-6 h-6 bg-white dark:bg-slate-800 rounded-full shadow-lg
             border-2 border-teal
             ${disabled ? 'opacity-50' : ''}
           `}

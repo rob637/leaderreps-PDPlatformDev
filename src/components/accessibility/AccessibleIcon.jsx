@@ -71,9 +71,9 @@ export const IconButton = ({
   };
 
   const variantClasses = {
-    ghost: 'hover:bg-gray-100 text-gray-600',
+    ghost: 'hover:bg-gray-100 text-gray-600 dark:text-gray-300',
     primary: 'bg-corporate-teal hover:bg-corporate-teal-dark text-white',
-    secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700',
+    secondary: 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 text-gray-700 dark:text-gray-200',
   };
 
   return (

@@ -154,12 +154,12 @@ const CommunityManager = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-slate-50 min-h-screen">
+    <div className="p-6 max-w-7xl mx-auto bg-slate-50 dark:bg-slate-800 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate('admin-content-home')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500"
+          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500 dark:text-slate-400"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Admin
@@ -185,7 +185,7 @@ const CommunityManager = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-200 mb-6">
+        <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6">
           <TabButton 
             active={activeTab === 'sessions'} 
             onClick={() => setActiveTab('sessions')} 
@@ -212,7 +212,7 @@ const CommunityManager = () => {
         <>
           {/* Edit Form */}
           {editingItem && (
-            <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-corporate-teal">
+            <div className="mb-6 p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border-2 border-corporate-teal">
               <h2 className="text-xl font-bold mb-4 text-corporate-navy">
                 {isAddingNew ? 'Add New Seed Post' : 'Edit Post'}
               </h2>
@@ -349,7 +349,7 @@ const CommunityManager = () => {
                       setEditingItem(null);
                       setIsAddingNew(false);
                     }}
-                    className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200"
                   >
                     <X className="w-4 h-4" />
                     Cancel
@@ -366,16 +366,16 @@ const CommunityManager = () => {
                 <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
               </div>
             ) : posts.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-xl">
-                <p className="text-slate-500">No community posts yet. Add some seed content.</p>
+              <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-xl">
+                <p className="text-slate-500 dark:text-slate-400">No community posts yet. Add some seed content.</p>
               </div>
             ) : (
               posts.map((post) => (
                 <div
                   key={post.id}
-                  className={`p-4 bg-white rounded-xl shadow-sm border flex items-start gap-4 ${post.isActive ? 'border-corporate-teal' : 'border-slate-300 opacity-60'}`}
+                  className={`p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border flex items-start gap-4 ${post.isActive ? 'border-corporate-teal' : 'border-slate-300 dark:border-slate-600 opacity-60'}`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600 shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600 dark:text-gray-300 shrink-0">
                     {post.rep}
                   </div>
                   
@@ -384,11 +384,11 @@ const CommunityManager = () => {
                       <div>
                         <h3 className="font-bold text-sm text-corporate-navy">
                           {post.ownerName} 
-                          <span className="ml-2 text-xs font-normal px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                          <span className="ml-2 text-xs font-normal px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                             {post.tier}
                           </span>
                         </h3>
-                        <p className="text-xs text-gray-500">{post.time}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{post.time}</p>
                       </div>
                       
                       <div className="flex items-center gap-2">
@@ -400,7 +400,7 @@ const CommunityManager = () => {
                           {post.isActive ? (
                             <Eye className="w-4 h-4 text-corporate-teal" />
                           ) : (
-                            <EyeOff className="w-4 h-4 text-slate-500" />
+                            <EyeOff className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                           )}
                         </button>
                         <button
@@ -420,9 +420,9 @@ const CommunityManager = () => {
                       </div>
                     </div>
                     
-                    <p className="mt-2 text-sm text-gray-800 whitespace-pre-wrap">{post.content}</p>
+                    <p className="mt-2 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{post.content}</p>
                     
-                    <div className="flex gap-4 mt-3 text-xs text-gray-500">
+                    <div className="flex gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
                       <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> {post.likes}</span>
                       <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /> {post.comments}</span>
                       <span className="flex items-center gap-1"><Share2 className="w-3 h-3" /> {post.shares}</span>

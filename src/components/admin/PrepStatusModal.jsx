@@ -151,9 +151,9 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-          <h3 className="font-bold text-slate-800 flex items-center gap-2">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
+          <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-corporate-teal" />
             Manage Prep Phase
           </h3>
@@ -169,21 +169,21 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
                 <p className="text-sm text-blue-800">
                   Editing Prep Phase for <span className="font-bold">{userName}</span>
                 </p>
               </div>
 
               {error && (
-                <div className="bg-red-50 p-3 rounded-lg border border-red-100 flex items-center gap-2 text-red-700 text-sm">
+                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-100 flex items-center gap-2 text-red-700 text-sm">
                   <AlertTriangle className="w-4 h-4" />
                   {error}
                 </div>
               )}
 
               {/* Progress Summary */}
-              <div className={`p-4 rounded-lg border ${allComplete ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+              <div className={`p-4 rounded-lg border ${allComplete ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {allComplete ? (
@@ -203,11 +203,11 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
 
               {/* Required Prep Items */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-3">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-3">
                   Required Prep Items (from Daily Plan)
                 </label>
                 {requiredPrepItems.length === 0 ? (
-                  <div className="text-center py-4 text-slate-500 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="text-center py-4 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                     <p className="text-sm">No required prep items found in the daily plan.</p>
                     <p className="text-xs mt-1">Configure required prep items in the Daily Plan Manager.</p>
                   </div>
@@ -230,8 +230,8 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
                           className={`
                             w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left
                             ${isComplete 
-                              ? 'bg-emerald-50 border-emerald-200' 
-                              : 'bg-white border-slate-200 hover:border-slate-300'
+                              ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' 
+                              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300'
                             }
                             ${isInteractive ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}
                           `}
@@ -241,11 +241,11 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
                           ) : (
                             <Circle className="w-5 h-5 text-slate-400 flex-shrink-0" />
                           )}
-                          <span className={`flex-1 font-medium ${isComplete ? 'text-emerald-800' : 'text-slate-700'}`}>
+                          <span className={`flex-1 font-medium ${isComplete ? 'text-emerald-800' : 'text-slate-700 dark:text-slate-200'}`}>
                             {item.label || 'Required Item'}
                           </span>
                           {isInteractive && (
-                            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                            <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
                               Read-only
                             </span>
                           )}
@@ -254,7 +254,7 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
                     })}
                   </div>
                 )}
-                <p className="text-xs text-slate-500 mt-3">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
                   Click to toggle completion status. Interactive items (Leader Profile, Baseline Assessment) are determined by actual data.
                 </p>
               </div>
@@ -262,7 +262,7 @@ const PrepStatusModal = ({ isOpen, onClose, userId, userName }) => {
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors"
+                  className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 rounded-lg font-medium transition-colors"
                 >
                   Cancel
                 </button>

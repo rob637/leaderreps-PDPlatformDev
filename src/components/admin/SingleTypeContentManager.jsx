@@ -93,15 +93,15 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
         ]}
         navigate={navigate}
       />
-      <div className="p-6 bg-white rounded-xl shadow-sm border border-slate-200">
+      <div className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            {Icon && <div className="p-2 bg-slate-100 rounded-lg"><Icon className="w-6 h-6 text-slate-600" /></div>}
-            <h2 className="text-2xl font-bold text-slate-800">{title}</h2>
+            {Icon && <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg"><Icon className="w-6 h-6 text-slate-600 dark:text-slate-300" /></div>}
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">{title}</h2>
           </div>
-          <p className="text-slate-500">{description}</p>
+          <p className="text-slate-500 dark:text-slate-400">{description}</p>
         </div>
         <button 
           onClick={handleAddNew}
@@ -120,7 +120,7 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
           placeholder={`Search ${title}...`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+          className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
         />
       </div>
 
@@ -132,8 +132,8 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
       ) : (
         <div className="space-y-2">
           {filteredList.length === 0 ? (
-            <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-              <p className="text-slate-500">No items found.</p>
+            <div className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+              <p className="text-slate-500 dark:text-slate-400">No items found.</p>
               <button onClick={handleAddNew} className="text-corporate-teal font-bold mt-2 hover:underline">
                 Create your first one
               </button>
@@ -142,13 +142,13 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
             filteredList.map(item => (
               <div 
                 key={item.id}
-                className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl hover:border-slate-300 transition-all group"
+                className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 border border-slate-100 rounded-xl hover:border-slate-300 transition-all group"
               >
                 <div>
-                  <h3 className="font-bold text-slate-800">{item.title}</h3>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-200">{item.title}</h3>
                   <div className="flex items-center gap-3 mt-1">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      item.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+                      item.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                     }`}>
                       {item.status}
                     </span>

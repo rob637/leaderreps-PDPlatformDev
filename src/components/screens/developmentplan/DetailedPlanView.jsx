@@ -107,7 +107,7 @@ const DetailedPlanView = ({
         backLabel="Back to Tracker"
       >
         <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center">
-          <p className="text-lg text-gray-600">No development plan found.</p>
+          <p className="text-lg text-gray-600 dark:text-gray-300">No development plan found.</p>
         </div>
       </PageLayout>
     );
@@ -131,7 +131,7 @@ const DetailedPlanView = ({
 
         {/* FIX #4: 18-Month Journey Map Card (RESTORED from OLD version) */}
         <Card title="Your 18-Month Leadership Journey" icon={Calendar} accent="NAVY">
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
             Your complete development path across 6 quarters. Each cycle builds on the previous.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -141,7 +141,7 @@ const DetailedPlanView = ({
                 className={`p-3 rounded-lg border-2 transition-all duration-300 ${
                   item.cycle === currentCycle 
                     ? 'bg-corporate-teal/10 border-corporate-teal shadow-lg scale-105' 
-                    : 'bg-gray-50 border-gray-200'
+                    : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                 } ${item.cycle < currentCycle ? 'opacity-60' : ''}`}
               >
                 {/* Phase Badge */}
@@ -163,7 +163,7 @@ const DetailedPlanView = ({
                 </h4>
                 
                 {/* Focus Areas */}
-                <ul className="text-[10px] text-gray-600 space-y-0.5">
+                <ul className="text-[10px] text-gray-600 dark:text-gray-300 space-y-0.5">
                   <li><strong>Perf:</strong> {item.performance}</li>
                   <li><strong>People:</strong> {item.people}</li>
                   <li><strong>Mindset:</strong> {item.mindset}</li>
@@ -194,7 +194,7 @@ const DetailedPlanView = ({
           {/* Left Column: Radar Chart (RESTORED from OLD version) */}
           <div className="lg:col-span-1">
             <Card title="Leadership Profile Snapshot" icon={BarChart3} accent="TEAL">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                 {latestAssessment 
                   ? `Latest assessment scores (as of ${(() => {
                       const d = new Date(latestAssessment.date);
@@ -229,7 +229,7 @@ const DetailedPlanView = ({
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                   <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p className="text-sm">Complete assessment to view profile</p>
                 </div>
@@ -240,7 +240,7 @@ const DetailedPlanView = ({
           {/* Right Column: 90-Day Focus Plan (RESTORED from OLD version) */}
           <div className="lg:col-span-2">
             <Card title="Your Current 90-Day Focus Plan" icon={Target} accent="ORANGE">
-              <p className="text-sm text-gray-600 mb-6">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
                 Based on your {currentPlan.type === 'Standard Foundation' ? 'standard foundation' : 'latest assessment'}, 
                 focus on these <strong>Top {currentPlan.focusAreas?.length || 0} Growth Areas</strong> for this cycle.
               </p>
@@ -263,7 +263,7 @@ const DetailedPlanView = ({
                       <h3 className="text-lg font-bold" style={{ color: 'var(--corporate-navy)' }}>
                         {area.name}
                         {area.score !== 'N/A' && (
-                          <span className="text-sm font-normal text-gray-500"> (Score: {area.score})</span>
+                          <span className="text-sm font-normal text-gray-500 dark:text-gray-400"> (Score: {area.score})</span>
                         )}
                       </h3>
                       
@@ -273,14 +273,14 @@ const DetailedPlanView = ({
                           <p className="text-xs font-semibold" style={{ color: 'var(--corporate-navy)' }}>
                             💡 WHY IT MATTERS:
                           </p>
-                          <p className="text-sm italic text-gray-600 mt-1">{area.why}</p>
+                          <p className="text-sm italic text-gray-600 dark:text-gray-300 mt-1">{area.why}</p>
                         </div>
                         
                         <div className="p-2 rounded" style={{ backgroundColor: 'var(--corporate-teal-10)' }}>
                           <p className="text-xs font-semibold" style={{ color: 'var(--corporate-teal)' }}>
                             🎯 WHAT GREAT LOOKS LIKE:
                           </p>
-                          <p className="text-sm text-gray-600 mt-1">{area.whatGoodLooksLike}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{area.whatGoodLooksLike}</p>
                         </div>
                       </div>
                       
@@ -288,7 +288,7 @@ const DetailedPlanView = ({
                       <h5 className="text-sm font-bold mt-3 mb-2" style={{ color: 'var(--corporate-navy)' }}>
                         Related Training:
                       </h5>
-                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                      <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-200 space-y-1">
                         {area.courses?.map((course, idx) => (
                           <li key={idx}>Arena Course: <strong>{course}</strong></li>
                         ))}
@@ -303,7 +303,7 @@ const DetailedPlanView = ({
                 
                 {/* 80/20 Model Note (if applicable) */}
                 {currentPlan.type === 'Personalized' && (
-                  <p className="text-xs text-gray-500 mt-4 bg-gray-100 p-3 rounded-lg border flex items-start gap-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 bg-gray-100 dark:bg-gray-700 p-3 rounded-lg border flex items-start gap-2">
                     <Lightbulb className="w-4 h-4 inline-block mr-1 text-blue-500 flex-shrink-0 mt-0.5" />
                     <span>
                       <strong>80/20 Plan:</strong> Includes standard areas for Cycle {currentCycle} from 

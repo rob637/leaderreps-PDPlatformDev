@@ -74,7 +74,7 @@ const MilestoneTimeline = ({ onBack }) => {
               <h4 className="text-xl sm:text-2xl font-bold mt-3" style={{ color: 'var(--corporate-navy)' }}>
                 {currentPhaseObj.name} Phase
               </h4>
-              <p className="text-slate-600 mt-1">
+              <p className="text-slate-600 dark:text-slate-300 mt-1">
                 {currentPhaseObj.description}
               </p>
             </div>
@@ -82,7 +82,7 @@ const MilestoneTimeline = ({ onBack }) => {
               <div className="text-3xl font-bold" style={{ color: currentPhaseObj.color }}>
                 {Math.round((currentWeek / 8) * 100)}%
               </div>
-              <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Complete</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold">Complete</div>
             </div>
           </div>
         </div>
@@ -90,7 +90,7 @@ const MilestoneTimeline = ({ onBack }) => {
         {/* Timeline Visualization */}
         <div className="relative px-2 sm:px-4 py-8">
           {/* Connecting Line */}
-          <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -translate-y-1/2 hidden md:block" />
+          <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-100 dark:bg-slate-700 -translate-y-1/2 hidden md:block" />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-4 relative">
             {DAILY_PLAN_PHASES.map((phase) => (
@@ -113,9 +113,9 @@ const MilestoneTimeline = ({ onBack }) => {
                           className={`
                             w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center z-10 transition-all duration-300
                             ${isCurrent ? 'scale-110 ring-4 ring-offset-2' : ''}
-                            ${isLocked ? 'bg-slate-100 text-slate-400' : ''}
-                            ${isCompleted ? 'bg-white text-white' : ''}
-                            ${isCurrent ? 'bg-white text-white' : ''}
+                            ${isLocked ? 'bg-slate-100 dark:bg-slate-700 text-slate-400' : ''}
+                            ${isCompleted ? 'bg-white dark:bg-slate-800 text-white' : ''}
+                            ${isCurrent ? 'bg-white dark:bg-slate-800 text-white' : ''}
                           `}
                           style={{
                             backgroundColor: isCompleted || isCurrent ? phase.color : undefined,
@@ -133,7 +133,7 @@ const MilestoneTimeline = ({ onBack }) => {
 
                         {/* Label */}
                         <div className="mt-3 text-center">
-                          <div className={`text-xs font-bold ${isCurrent ? 'text-corporate-navy' : 'text-slate-500'}`}>
+                          <div className={`text-xs font-bold ${isCurrent ? 'text-corporate-navy' : 'text-slate-500 dark:text-slate-400'}`}>
                             Week {week}
                           </div>
                           {isCurrent && (

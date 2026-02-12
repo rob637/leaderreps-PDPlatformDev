@@ -78,7 +78,7 @@ const TimeTravelBanner = ({ onMidnightRollover }) => {
             </div>
           )}
           
-          <div className="h-4 w-px bg-white/30" />
+          <div className="h-4 w-px bg-white/30 dark:bg-slate-800/30" />
           
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-indigo-300" />
@@ -115,7 +115,7 @@ const TimeTravelBanner = ({ onMidnightRollover }) => {
             <ChevronRight className="w-4 h-4" />
           </button>
 
-          <div className="h-4 w-px bg-white/30 mx-1" />
+          <div className="h-4 w-px bg-white/30 dark:bg-slate-800/30 mx-1" />
 
           {isTimeTravelActive && (
             <button

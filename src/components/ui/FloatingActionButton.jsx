@@ -22,7 +22,7 @@ const FloatingActionButton = React.forwardRef(({
 }, ref) => {
   const variantClasses = {
     primary: "bg-corporate-navy text-white hover:bg-corporate-navy/90 shadow-lg shadow-corporate-navy/25",
-    secondary: "bg-white text-corporate-navy border-2 border-corporate-navy hover:bg-slate-50 shadow-lg",
+    secondary: "bg-white dark:bg-slate-800 text-corporate-navy border-2 border-corporate-navy hover:bg-slate-50 shadow-lg",
     teal: "bg-corporate-teal text-white hover:bg-corporate-teal/90 shadow-lg shadow-corporate-teal/25",
     orange: "bg-corporate-orange text-white hover:bg-corporate-orange/90 shadow-lg shadow-corporate-orange/25",
   };
@@ -155,7 +155,7 @@ const SpeedDial = React.forwardRef(({
               }}
               className={cn(
                 "h-12 w-12 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-full",
-                "bg-white text-slate-700 border border-slate-200",
+                "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700",
                 "shadow-md hover:shadow-lg",
                 "transition-all duration-200 touch-manipulation",
                 "active:scale-95",

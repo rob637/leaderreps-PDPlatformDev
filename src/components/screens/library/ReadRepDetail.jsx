@@ -8,9 +8,9 @@ import { Loader, BookOpen, Clock, Target, CheckCircle, AlertTriangle, FileText, 
 import { Button } from '../../screens/developmentplan/DevPlanComponents.jsx';
 
 const COMPLEXITY_MAP = {
-  Low:    { label: 'Foundational', color: 'text-green-600', icon: CheckCircle, bg: 'bg-green-50' },
-  Medium: { label: 'Intermediate', color: 'text-amber-600', icon: AlertTriangle, bg: 'bg-amber-50' },
-  High:   { label: 'Advanced',     color: 'text-red-600',   icon: Target, bg: 'bg-red-50' },
+  Low:    { label: 'Foundational', color: 'text-green-600', icon: CheckCircle, bg: 'bg-green-50 dark:bg-green-900/20' },
+  Medium: { label: 'Intermediate', color: 'text-amber-600', icon: AlertTriangle, bg: 'bg-amber-50 dark:bg-amber-900/20' },
+  High:   { label: 'Advanced',     color: 'text-red-600',   icon: Target, bg: 'bg-red-50 dark:bg-red-900/20' },
 };
 
 const ReadRepDetail = (props) => {
@@ -61,7 +61,7 @@ const ReadRepDetail = (props) => {
     return (
       <PageLayout title="Book Not Found" showBack={true}>
         <div className="p-6 text-center">
-          <p className="text-gray-600">The requested book could not be found.</p>
+          <p className="text-gray-600 dark:text-gray-300">The requested book could not be found.</p>
           <Button onClick={() => navigate('read-reps-index')} className="mt-4">
             Back to Library
           </Button>
@@ -74,11 +74,11 @@ const ReadRepDetail = (props) => {
     return (
       <PageLayout title="Content Locked" showBack={true}>
         <div className="flex flex-col items-center justify-center p-12 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-6">
             <Lock className="w-8 h-8 text-slate-400" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">This Book is Locked</h2>
-          <p className="text-slate-500 max-w-md mb-8">
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">This Book is Locked</h2>
+          <p className="text-slate-500 dark:text-slate-400 max-w-md mb-8">
             You haven't unlocked this content yet. Continue your Development Plan to gain access.
           </p>
           <Button onClick={() => navigate('read-reps-index')}>
@@ -129,9 +129,9 @@ const ReadRepDetail = (props) => {
       <div className="max-w-5xl mx-auto">
         
         {/* Header Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6 flex flex-col md:flex-row gap-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6 flex flex-col md:flex-row gap-6">
           {/* Cover Placeholder */}
-          <div className="w-32 h-48 bg-slate-100 rounded-lg flex-shrink-0 flex items-center justify-center text-slate-300 shadow-inner">
+          <div className="w-32 h-48 bg-slate-100 dark:bg-slate-700 rounded-lg flex-shrink-0 flex items-center justify-center text-slate-300 shadow-inner">
             <BookOpen className="w-12 h-12" />
           </div>
 
@@ -141,23 +141,23 @@ const ReadRepDetail = (props) => {
                 <ComplexityIcon className="w-3 h-3" />
                 {complexity.label}
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                 <Clock className="w-3 h-3" />
                 {book.metadata?.durationMin || 200} pages
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-600">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600">
                 <Layers className="w-3 h-3" />
                 {book.metadata?.category || 'General'}
               </span>
             </div>
 
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">{book.title}</h1>
-            <p className="text-slate-600 mb-4">{book.description}</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{book.title}</h1>
+            <p className="text-slate-600 dark:text-slate-300 mb-4">{book.description}</p>
 
             {book.metadata?.focusAreas && (
               <div className="flex flex-wrap gap-2 mt-4">
                 {book.metadata.focusAreas.map((area, i) => (
-                  <span key={i} className="text-xs bg-slate-50 text-slate-500 border border-slate-200 px-2 py-1 rounded">
+                  <span key={i} className="text-xs bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded">
                     {area}
                   </span>
                 ))}
@@ -167,14 +167,14 @@ const ReadRepDetail = (props) => {
         </div>
 
         {/* Content Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden min-h-[500px]">
-          <div className="flex border-b border-slate-200">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[500px]">
+          <div className="flex border-b border-slate-200 dark:border-slate-700">
             <button
               onClick={() => setActiveTab('brief')}
               className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${
                 activeTab === 'brief' 
-                  ? 'border-corporate-teal text-corporate-teal bg-teal-50/30' 
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  ? 'border-corporate-teal text-corporate-teal bg-teal-50/30 dark:bg-teal-900/20/30' 
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
               }`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -186,8 +186,8 @@ const ReadRepDetail = (props) => {
               onClick={() => setActiveTab('flyer')}
               className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${
                 activeTab === 'flyer' 
-                  ? 'border-corporate-teal text-corporate-teal bg-teal-50/30' 
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  ? 'border-corporate-teal text-corporate-teal bg-teal-50/30 dark:bg-teal-900/20/30' 
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
               }`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -199,8 +199,8 @@ const ReadRepDetail = (props) => {
               onClick={() => setActiveTab('action')}
               className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${
                 activeTab === 'action' 
-                  ? 'border-corporate-teal text-corporate-teal bg-teal-50/30' 
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  ? 'border-corporate-teal text-corporate-teal bg-teal-50/30 dark:bg-teal-900/20/30' 
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
               }`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -212,10 +212,10 @@ const ReadRepDetail = (props) => {
 
           <div className="p-8">
             {activeTab === 'brief' && (
-              <div className="prose max-w-none text-slate-700">
+              <div className="prose max-w-none text-slate-700 dark:text-slate-200">
                 {/* Synopsis Section */}
                 {book.details?.synopsis && (
-                  <div className="mb-8 bg-blue-50 p-6 rounded-xl border border-blue-100">
+                  <div className="mb-8 bg-blue-50 dark:bg-blue-900/20 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
                     <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
                       <BookOpen className="w-5 h-5" />
                       Synopsis & Key Takeaways
@@ -241,9 +241,9 @@ const ReadRepDetail = (props) => {
             )}
 
             {activeTab === 'flyer' && (
-              <div className="prose max-w-none text-slate-700 h-full">
+              <div className="prose max-w-none text-slate-700 dark:text-slate-200 h-full">
                 {(book.details?.pdfUrl || book.metadata?.pdfUrl) ? (
-                   <div className="h-[70vh] w-full bg-slate-100 rounded-lg overflow-hidden relative">
+                   <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative">
                      <iframe 
                        src={`https://docs.google.com/gview?url=${encodeURIComponent(book.details?.pdfUrl || book.metadata?.pdfUrl)}&embedded=true`}
                        className="w-full h-full" 
@@ -263,18 +263,18 @@ const ReadRepDetail = (props) => {
 
             {activeTab === 'action' && (
               <div className="max-w-2xl mx-auto text-center py-12">
-                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Zap className="w-8 h-8 text-indigo-600" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">AI Rep Coach</h3>
-                <p className="text-slate-600 mb-8">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">AI Rep Coach</h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-8">
                   Ask the AI coach how to apply the principles from <strong>{book.title}</strong> to your specific leadership challenges.
                 </p>
                 
-                <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 text-left">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">What's your challenge?</label>
+                <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700 text-left">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">What's your challenge?</label>
                   <textarea 
-                    className="w-full p-3 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     rows={4}
                     placeholder="e.g., How can I apply the 'Build-Measure-Learn' loop to my team's weekly meetings?"
                   ></textarea>

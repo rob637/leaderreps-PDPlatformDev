@@ -85,10 +85,10 @@ const formatDuration = (ms) => {
 // Status badge component
 const StatusBadge = ({ status, size = 'md' }) => {
   const styles = {
-    passed: 'bg-green-100 text-green-700 border-green-200',
-    failed: 'bg-red-100 text-red-700 border-red-200',
-    skipped: 'bg-gray-100 text-gray-600 border-gray-200',
-    timedOut: 'bg-amber-100 text-amber-700 border-amber-200'
+    passed: 'bg-green-100 dark:bg-green-900/30 text-green-700 border-green-200 dark:border-green-800',
+    failed: 'bg-red-100 dark:bg-red-900/30 text-red-700 border-red-200 dark:border-red-800',
+    skipped: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700',
+    timedOut: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 border-amber-200 dark:border-amber-800'
   };
   
   const icons = {
@@ -160,7 +160,7 @@ const TestRow = ({ test, expanded, onToggle }) => {
           {test.error && (
             expanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />
           )}
-          <span className={`truncate ${test.status === 'passed' ? 'text-gray-700' : 'text-red-700 font-medium'}`}>
+          <span className={`truncate ${test.status === 'passed' ? 'text-gray-700 dark:text-gray-200' : 'text-red-700 font-medium'}`}>
             {test.name}
           </span>
         </div>
@@ -171,7 +171,7 @@ const TestRow = ({ test, expanded, onToggle }) => {
       </div>
       
       {expanded && test.error && (
-        <div className="px-3 py-2 bg-red-50 border-t border-red-100">
+        <div className="px-3 py-2 bg-red-50 dark:bg-red-900/20 border-t border-red-100">
           <p className="text-sm font-medium text-red-800 mb-1">Error:</p>
           <pre className="text-xs text-red-700 whitespace-pre-wrap overflow-x-auto font-mono">
             {test.error.message}
@@ -208,16 +208,16 @@ const SuitePanel = ({ suite }) => {
   };
   
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden mb-3">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-3">
       <div 
-        className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
+        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-3">
-          {expanded ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronRight className="w-5 h-5 text-gray-500" />}
+          {expanded ? <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-500 dark:text-gray-400" />}
           <Icon className="w-5 h-5 text-blue-600" />
           <span className="font-medium">{suite.name}</span>
-          <span className="text-sm text-gray-500">({suite.tests.length} tests)</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">({suite.tests.length} tests)</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 text-sm">
@@ -226,9 +226,9 @@ const SuitePanel = ({ suite }) => {
             {suite.skipped > 0 && <span className="text-gray-400">{suite.skipped} ○</span>}
           </div>
           <div className={`px-2 py-0.5 rounded text-sm font-medium ${
-            passRate === 100 ? 'bg-green-100 text-green-700' :
-            passRate >= 80 ? 'bg-amber-100 text-amber-700' :
-            'bg-red-100 text-red-700'
+            passRate === 100 ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+            passRate >= 80 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' :
+            'bg-red-100 dark:bg-red-900/30 text-red-700'
           }`}>
             {passRate}%
           </div>
@@ -236,7 +236,7 @@ const SuitePanel = ({ suite }) => {
       </div>
       
       {expanded && (
-        <div className="border-t border-gray-200">
+        <div className="border-t border-gray-200 dark:border-gray-700">
           {suite.tests.map((test, idx) => (
             <TestRow 
               key={idx} 
@@ -354,20 +354,20 @@ export default function E2ETestResults() {
     return (
       <div className="flex items-center justify-center py-12">
         <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
-        <span className="ml-3 text-gray-600">Loading test results...</span>
+        <span className="ml-3 text-gray-600 dark:text-gray-300">Loading test results...</span>
       </div>
     );
   }
   
   if (error && !results) {
     return (
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
         <div className="flex items-center gap-2 text-amber-700">
           <AlertTriangle className="w-5 h-5" />
           <span className="font-medium">No Results Available</span>
         </div>
         <p className="mt-2 text-sm text-amber-600">{error}</p>
-        <div className="mt-4 p-3 bg-amber-100 rounded text-sm font-mono">
+        <div className="mt-4 p-3 bg-amber-100 dark:bg-amber-900/30 rounded text-sm font-mono">
           npx playwright test --project=all-suites
         </div>
       </div>
@@ -403,32 +403,32 @@ export default function E2ETestResults() {
       {/* Summary Cards */}
       {results && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <div className="bg-white border rounded-lg p-3 text-center">
+          <div className="bg-white dark:bg-slate-800 border rounded-lg p-3 text-center">
             <ProgressRing percentage={results.summary.passRate} size={60} />
-            <p className="text-xs text-gray-500 mt-1">Pass Rate</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Pass Rate</p>
           </div>
-          <div className="bg-white border rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-gray-800">{results.summary.total}</p>
-            <p className="text-xs text-gray-500">Total Tests</p>
+          <div className="bg-white dark:bg-slate-800 border rounded-lg p-3 text-center">
+            <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">{results.summary.total}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Total Tests</p>
           </div>
-          <div className="bg-white border rounded-lg p-3 text-center">
+          <div className="bg-white dark:bg-slate-800 border rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-green-600">{results.summary.passed}</p>
-            <p className="text-xs text-gray-500">Passed</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Passed</p>
           </div>
-          <div className="bg-white border rounded-lg p-3 text-center">
+          <div className="bg-white dark:bg-slate-800 border rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-red-600">{results.summary.failed}</p>
-            <p className="text-xs text-gray-500">Failed</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Failed</p>
           </div>
-          <div className="bg-white border rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-gray-600">{formatDuration(results.duration)}</p>
-            <p className="text-xs text-gray-500">Duration</p>
+          <div className="bg-white dark:bg-slate-800 border rounded-lg p-3 text-center">
+            <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">{formatDuration(results.duration)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Duration</p>
           </div>
         </div>
       )}
       
       {/* Meta info */}
       {results && (
-        <div className="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
+        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
           <span className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />
             {new Date(results.startTime).toLocaleString()}
@@ -448,7 +448,7 @@ export default function E2ETestResults() {
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             view === 'latest' 
               ? 'border-blue-500 text-blue-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'
           }`}
         >
           Latest Results
@@ -458,7 +458,7 @@ export default function E2ETestResults() {
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             view === 'history' 
               ? 'border-blue-500 text-blue-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'
           }`}
         >
           History ({history.length})
@@ -497,7 +497,7 @@ export default function E2ETestResults() {
             ))}
             
             {filteredSuites.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
                 <p>No matching test suites</p>
               </div>
@@ -511,7 +511,7 @@ export default function E2ETestResults() {
           {history.map((run) => (
             <div 
               key={run.id}
-              className="flex items-center justify-between p-3 bg-white border rounded-lg hover:bg-gray-50"
+              className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 border rounded-lg hover:bg-gray-50"
             >
               <div className="flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full ${
@@ -521,7 +521,7 @@ export default function E2ETestResults() {
                   <p className="text-sm font-medium">
                     {new Date(run.startTime).toLocaleString()}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {run.environment} • {run.summary.total} tests
                   </p>
                 </div>
@@ -532,9 +532,9 @@ export default function E2ETestResults() {
                   {run.summary.failed > 0 && <span className="text-red-600 ml-2">{run.summary.failed}✗</span>}
                 </div>
                 <div className={`px-2 py-0.5 rounded text-xs font-medium ${
-                  run.summary.passRate === 100 ? 'bg-green-100 text-green-700' :
-                  run.summary.passRate >= 80 ? 'bg-amber-100 text-amber-700' :
-                  'bg-red-100 text-red-700'
+                  run.summary.passRate === 100 ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                  run.summary.passRate >= 80 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' :
+                  'bg-red-100 dark:bg-red-900/30 text-red-700'
                 }`}>
                   {run.summary.passRate}%
                 </div>
@@ -543,7 +543,7 @@ export default function E2ETestResults() {
           ))}
           
           {history.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>No test history available</p>
               <p className="text-xs mt-1">Run tests to start building history</p>

@@ -113,7 +113,7 @@ const AdminPortal = () => {
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
         <ShieldAlert className="w-16 h-16 text-red-500 mb-4" />
         <h1 className="text-2xl font-bold text-corporate-navy mb-2">Access Denied</h1>
-        <p className="text-gray-600">You do not have permission to view this area.</p>
+        <p className="text-gray-600 dark:text-gray-300">You do not have permission to view this area.</p>
       </div>
     );
   }
@@ -232,7 +232,7 @@ const AdminPortal = () => {
               <h1 className="text-xl font-bold text-corporate-navy dark:text-white">
                 Admin Command Center
               </h1>
-              <div className="flex items-center gap-2 text-xs text-slate-500">
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <span>{user.email}</span>
                 <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                 <span className="font-medium text-corporate-teal">v{APP_VERSION}</span>

@@ -142,7 +142,7 @@ const BottomSheet = React.forwardRef(({
       <div
         ref={sheetRef}
         className={cn(
-          "absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl",
+          "absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-800 rounded-t-3xl shadow-2xl",
           "flex flex-col",
           !isDragging && "transition-all duration-300 ease-out",
           className
@@ -168,14 +168,14 @@ const BottomSheet = React.forwardRef(({
         {(title || showCloseButton) && (
           <div className="flex items-center justify-between px-4 pb-3 border-b border-slate-100">
             {title && (
-              <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h2>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
                 className={cn(
                   "p-2 min-h-[44px] min-w-[44px] flex items-center justify-center",
-                  "rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100",
+                  "rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-700 hover:bg-slate-100",
                   "transition-all duration-150 touch-manipulation active:scale-95",
                   !title && "ml-auto"
                 )}
@@ -208,7 +208,7 @@ const BottomSheetActions = React.forwardRef(({ className, children, ...props }, 
   <div
     ref={ref}
     className={cn(
-      "flex flex-col gap-3 p-4 pt-3 border-t border-slate-100 bg-white",
+      "flex flex-col gap-3 p-4 pt-3 border-t border-slate-100 bg-white dark:bg-slate-800",
       "sticky bottom-0",
       className
     )}

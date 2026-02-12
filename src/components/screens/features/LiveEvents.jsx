@@ -19,7 +19,7 @@ const LiveEvents = () => {
       {/* Video Player Area */}
       <div className="bg-slate-900 rounded-xl overflow-hidden aspect-video flex items-center justify-center mb-8">
         <div className="text-center">
-          <Video className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+          <Video className="w-16 h-16 text-slate-600 dark:text-slate-300 mx-auto mb-4" />
           <Text className="text-slate-400">No live event currently broadcasting.</Text>
         </div>
       </div>

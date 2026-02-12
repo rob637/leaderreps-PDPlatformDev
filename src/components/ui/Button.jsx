@@ -17,14 +17,14 @@ const Button = React.forwardRef(({
   const variants = {
     primary: 'bg-corporate-teal text-white hover:bg-corporate-subtle-teal shadow-sm hover:shadow-md border-0',
     secondary: 'bg-corporate-orange text-white hover:bg-orange-700 shadow-sm hover:shadow-md border-0',
-    outline: 'bg-white text-corporate-teal border-2 border-corporate-teal/30 hover:border-corporate-teal hover:bg-teal-50/50',
-    ghost: 'bg-transparent text-slate-600 hover:bg-slate-100/80 hover:text-corporate-navy',
+    outline: 'bg-white dark:bg-slate-800 text-corporate-teal border-2 border-corporate-teal/30 hover:border-corporate-teal hover:bg-teal-50/50',
+    ghost: 'bg-transparent text-slate-600 dark:text-slate-300 hover:bg-slate-100/80 hover:text-corporate-navy',
     danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
     link: 'text-corporate-teal underline-offset-4 hover:underline p-0 h-auto font-medium',
     'nav-active': 'bg-corporate-teal text-white shadow-sm',
     'nav-inactive': 'text-gray-300 hover:bg-white/5 hover:text-white bg-transparent',
-    'nav-back': 'bg-white text-slate-600 border border-slate-200/60 shadow-sm hover:bg-slate-50 hover:shadow-md',
-    soft: 'bg-slate-100/80 text-slate-700 hover:bg-slate-200/80 border-0',
+    'nav-back': 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:bg-slate-50 hover:shadow-md',
+    soft: 'bg-slate-100/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-200/80 border-0',
   };
 
   const sizes = {

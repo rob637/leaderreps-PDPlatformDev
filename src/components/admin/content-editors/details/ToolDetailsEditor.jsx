@@ -22,21 +22,21 @@ const ToolDetailsEditor = ({ details = {}, onChange }) => {
   };
 
   return (
-    <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+    <div className="space-y-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+      <h3 className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
         <Wrench size={18} />
         Tool Details
       </h3>
       
       {/* Source Type Selector */}
-      <div className="flex gap-4 border-b border-gray-200 pb-2">
+      <div className="flex gap-4 border-b border-gray-200 dark:border-gray-700 pb-2">
         <button
           type="button"
           onClick={() => setSourceType('LINK')}
           className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
             sourceType === 'LINK' 
-              ? 'bg-gray-200 text-gray-800' 
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'bg-gray-200 text-gray-800 dark:text-gray-200' 
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100'
           }`}
         >
           <LinkIcon size={14} />
@@ -47,8 +47,8 @@ const ToolDetailsEditor = ({ details = {}, onChange }) => {
           onClick={() => setSourceType('VAULT')}
           className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
             sourceType === 'VAULT' 
-              ? 'bg-gray-200 text-gray-800' 
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'bg-gray-200 text-gray-800 dark:text-gray-200' 
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100'
           }`}
         >
           <Database size={14} />
@@ -58,7 +58,7 @@ const ToolDetailsEditor = ({ details = {}, onChange }) => {
 
       {/* Tool Source Input */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-1">
           {sourceType === 'LINK' ? <ExternalLink size={14} /> : <Database size={14} />}
           {sourceType === 'LINK' ? 'Tool URL' : 'Select Resource from Vault'}
         </label>
@@ -74,11 +74,11 @@ const ToolDetailsEditor = ({ details = {}, onChange }) => {
         ) : (
           <div className="space-y-2">
             {details.url ? (
-              <div className="flex items-center gap-2 p-2 bg-white border rounded-md">
-                <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-gray-600">
+              <div className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border rounded-md">
+                <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center text-gray-600 dark:text-gray-300">
                   <Wrench size={16} />
                 </div>
-                <span className="text-sm text-gray-700 truncate flex-1">{details.url}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200 truncate flex-1">{details.url}</span>
                 <button
                   type="button"
                   onClick={() => handleChange('url', '')}
@@ -91,7 +91,7 @@ const ToolDetailsEditor = ({ details = {}, onChange }) => {
               <button
                 type="button"
                 onClick={() => setShowMediaSelector(true)}
-                className="w-full p-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors flex flex-col items-center justify-center gap-2 text-gray-800"
+                className="w-full p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 transition-colors flex flex-col items-center justify-center gap-2 text-gray-800 dark:text-gray-200"
               >
                 <Database size={24} />
                 <span className="font-medium">Select Resource from Vault</span>
@@ -103,7 +103,7 @@ const ToolDetailsEditor = ({ details = {}, onChange }) => {
 
       {/* Tool Type */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-1">
           <Wrench size={14} />
           Tool Type
         </label>

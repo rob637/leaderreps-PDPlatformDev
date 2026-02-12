@@ -88,48 +88,48 @@ const getStatusConfig = (status) => {
     case TEST_STATUS.PASSED:
       return { 
         color: 'text-green-500', 
-        bg: 'bg-green-50', 
-        border: 'border-green-200',
+        bg: 'bg-green-50 dark:bg-green-900/20', 
+        border: 'border-green-200 dark:border-green-800',
         icon: CheckCircle2,
         label: 'Passed'
       };
     case TEST_STATUS.FAILED:
       return { 
         color: 'text-red-500', 
-        bg: 'bg-red-50', 
-        border: 'border-red-200',
+        bg: 'bg-red-50 dark:bg-red-900/20', 
+        border: 'border-red-200 dark:border-red-800',
         icon: XCircle,
         label: 'Failed'
       };
     case TEST_STATUS.WARNING:
       return { 
         color: 'text-amber-500', 
-        bg: 'bg-amber-50', 
-        border: 'border-amber-200',
+        bg: 'bg-amber-50 dark:bg-amber-900/20', 
+        border: 'border-amber-200 dark:border-amber-800',
         icon: AlertTriangle,
         label: 'Warning'
       };
     case TEST_STATUS.RUNNING:
       return { 
         color: 'text-blue-500', 
-        bg: 'bg-blue-50', 
-        border: 'border-blue-200',
+        bg: 'bg-blue-50 dark:bg-blue-900/20', 
+        border: 'border-blue-200 dark:border-blue-800',
         icon: RefreshCw,
         label: 'Running'
       };
     case TEST_STATUS.SKIPPED:
       return { 
         color: 'text-gray-400', 
-        bg: 'bg-gray-50', 
-        border: 'border-gray-200',
+        bg: 'bg-gray-50 dark:bg-gray-800', 
+        border: 'border-gray-200 dark:border-gray-700',
         icon: SkipForward,
         label: 'Skipped'
       };
     default:
       return { 
         color: 'text-gray-400', 
-        bg: 'bg-gray-50', 
-        border: 'border-gray-200',
+        bg: 'bg-gray-50 dark:bg-gray-800', 
+        border: 'border-gray-200 dark:border-gray-700',
         icon: Clock,
         label: 'Pending'
       };
@@ -1432,36 +1432,36 @@ const TestCenter = () => {
             <Cpu className="w-6 h-6 text-corporate-teal" />
             Test Center
           </h2>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
             Automated backend checks • Manual QA scenarios • Playwright E2E tests
           </p>
         </div>
       </div>
       
       {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setActiveTab('automated')}
           className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
             ${activeTab === 'automated' 
               ? 'border-corporate-teal text-corporate-teal' 
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300'}`}
         >
           <Database className="w-4 h-4" />
           Backend Health
-          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">25</span>
-          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">AUTO</span>
+          <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 text-xs font-bold rounded">25</span>
+          <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 text-xs font-bold rounded">AUTO</span>
         </button>
         <button
           onClick={() => setActiveTab('manual')}
           className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
             ${activeTab === 'manual' 
               ? 'border-corporate-teal text-corporate-teal' 
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300'}`}
         >
           <ClipboardList className="w-4 h-4" />
           Manual Testing
-          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">{TOTAL_TEST_COUNT}</span>
+          <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 text-xs font-bold rounded">{TOTAL_TEST_COUNT}</span>
           <span className="px-1.5 py-0.5 bg-corporate-teal text-white text-xs font-bold rounded">START HERE</span>
         </button>
         <button
@@ -1469,11 +1469,11 @@ const TestCenter = () => {
           className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
             ${activeTab === 'e2e' 
               ? 'border-corporate-teal text-corporate-teal' 
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300'}`}
         >
           <PlayCircle className="w-4 h-4" />
           E2E Tests
-          <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs font-bold rounded">Playwright</span>
+          <span className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 text-xs font-bold rounded">Playwright</span>
         </button>
       </div>
       
@@ -1498,7 +1498,7 @@ const TestCenter = () => {
             className={`px-3 py-2 rounded-lg border text-sm font-medium flex items-center gap-2 transition-colors
               ${autoRefresh 
                 ? 'bg-corporate-teal/10 border-corporate-teal text-corporate-teal' 
-                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50'}`}
           >
             <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
             Auto
@@ -1507,7 +1507,7 @@ const TestCenter = () => {
           {/* Export button */}
           <button
             onClick={exportResults}
-            className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-medium flex items-center gap-2"
+            className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 text-sm font-medium flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
             Export
@@ -1520,11 +1520,11 @@ const TestCenter = () => {
               className={`px-3 py-2 rounded-lg border text-sm font-medium flex items-center gap-2 transition-colors
                 ${showHistory 
                   ? 'bg-corporate-teal/10 border-corporate-teal text-corporate-teal' 
-                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                  : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50'}`}
             >
               <BarChart3 className="w-4 h-4" />
               History
-              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+              <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded">
                 {testHistory.length}
               </span>
             </button>
@@ -1552,31 +1552,31 @@ const TestCenter = () => {
       
       {/* Summary Cards */}
       <div className="grid grid-cols-5 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div className="text-2xl font-bold text-corporate-navy">{summary.total}</div>
-          <div className="text-sm text-gray-500">Total Tests</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">Total Tests</div>
         </div>
-        <div className={`rounded-xl border p-4 ${summary.passed > 0 ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-xl border p-4 ${summary.passed > 0 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700'}`}>
           <div className="text-2xl font-bold text-green-600">{summary.passed}</div>
           <div className="text-sm text-green-700">Passed</div>
         </div>
-        <div className={`rounded-xl border p-4 ${summary.failed > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-xl border p-4 ${summary.failed > 0 ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700'}`}>
           <div className="text-2xl font-bold text-red-600">{summary.failed}</div>
           <div className="text-sm text-red-700">Failed</div>
         </div>
-        <div className={`rounded-xl border p-4 ${summary.warnings > 0 ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-xl border p-4 ${summary.warnings > 0 ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700'}`}>
           <div className="text-2xl font-bold text-amber-600">{summary.warnings}</div>
           <div className="text-sm text-amber-700">Warnings</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div className="text-2xl font-bold text-gray-400">{summary.pending}</div>
-          <div className="text-sm text-gray-500">Pending</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">Pending</div>
         </div>
       </div>
       
       {/* Last Run Time & Progress */}
       {isRunning && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-4">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center gap-4">
           <RefreshCw className="w-5 h-5 text-blue-500 animate-spin" />
           <div className="flex-1">
             <div className="font-medium text-blue-800">Running tests...</div>
@@ -1594,7 +1594,7 @@ const TestCenter = () => {
       )}
       
       {lastRunTime && !isRunning && (
-        <div className="text-sm text-gray-500 flex items-center gap-2">
+        <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
           <Clock className="w-4 h-4" />
           Last run: {lastRunTime.toLocaleTimeString()}
         </div>
@@ -1602,7 +1602,7 @@ const TestCenter = () => {
       
       {/* Test History Panel */}
       {testHistory.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <button
             onClick={() => setShowHistory(!showHistory)}
             className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -1610,7 +1610,7 @@ const TestCenter = () => {
             <div className="flex items-center gap-3">
               <BarChart3 className="w-5 h-5 text-corporate-teal" />
               <span className="font-medium text-corporate-navy">Test History</span>
-              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+              <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">
                 {testHistory.length} runs
               </span>
             </div>
@@ -1618,7 +1618,7 @@ const TestCenter = () => {
           </button>
           
           {showHistory && (
-            <div className="border-t border-gray-200 divide-y divide-gray-100">
+            <div className="border-t border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
               {testHistory.slice(0, 10).map((run, idx) => {
                 const allPassed = run.failed === 0 && run.warnings === 0;
                 const hasFailed = run.failed > 0;
@@ -1627,11 +1627,11 @@ const TestCenter = () => {
                 return (
                   <div 
                     key={idx}
-                    className={`px-4 py-3 flex items-center justify-between ${idx === 0 ? 'bg-gray-50' : ''}`}
+                    className={`px-4 py-3 flex items-center justify-between ${idx === 0 ? 'bg-gray-50 dark:bg-gray-800' : ''}`}
                   >
                     <div className="flex items-center gap-4">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        allPassed ? 'bg-green-100' : hasFailed ? 'bg-red-100' : 'bg-amber-100'
+                        allPassed ? 'bg-green-100 dark:bg-green-900/30' : hasFailed ? 'bg-red-100 dark:bg-red-900/30' : 'bg-amber-100 dark:bg-amber-900/30'
                       }`}>
                         {allPassed ? (
                           <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -1642,26 +1642,26 @@ const TestCenter = () => {
                         )}
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-gray-800">
+                        <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
                           {idx === 0 ? 'Latest Run' : runDate.toLocaleDateString()}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           {runDate.toLocaleTimeString()} {run.runBy && `• ${run.runBy}`}
                         </div>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">
+                      <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 text-xs font-medium rounded">
                         {run.passed} ✓
                       </span>
                       {run.failed > 0 && (
-                        <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded">
+                        <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 text-xs font-medium rounded">
                           {run.failed} ✗
                         </span>
                       )}
                       {run.warnings > 0 && (
-                        <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded">
+                        <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 text-xs font-medium rounded">
                           {run.warnings} ⚠
                         </span>
                       )}
@@ -1675,7 +1675,7 @@ const TestCenter = () => {
       )}
       
       {/* Filters */}
-      <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-4 border border-gray-200">
+      <div className="flex items-center gap-4 bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
@@ -1683,7 +1683,7 @@ const TestCenter = () => {
             placeholder="Search tests..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
           />
         </div>
         
@@ -1692,7 +1692,7 @@ const TestCenter = () => {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
           >
             <option value="all">All Status</option>
             <option value={TEST_STATUS.PASSED}>Passed</option>
@@ -1716,7 +1716,7 @@ const TestCenter = () => {
           };
           
           return (
-            <div key={suite.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div key={suite.id} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
               {/* Suite Header */}
               <div 
                 className="px-5 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
@@ -1728,7 +1728,7 @@ const TestCenter = () => {
                   </div>
                   <div>
                     <div className="font-bold text-corporate-navy">{suite.name}</div>
-                    <div className="text-sm text-gray-500">{suite.description}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{suite.description}</div>
                   </div>
                 </div>
                 
@@ -1736,17 +1736,17 @@ const TestCenter = () => {
                   {/* Suite stats */}
                   <div className="flex items-center gap-2 text-sm">
                     {suiteStats.passed > 0 && (
-                      <span className="px-2 py-1 rounded bg-green-100 text-green-700 font-medium">
+                      <span className="px-2 py-1 rounded bg-green-100 dark:bg-green-900/30 text-green-700 font-medium">
                         {suiteStats.passed} ✓
                       </span>
                     )}
                     {suiteStats.failed > 0 && (
-                      <span className="px-2 py-1 rounded bg-red-100 text-red-700 font-medium">
+                      <span className="px-2 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-700 font-medium">
                         {suiteStats.failed} ✗
                       </span>
                     )}
                     {suiteStats.warnings > 0 && (
-                      <span className="px-2 py-1 rounded bg-amber-100 text-amber-700 font-medium">
+                      <span className="px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 font-medium">
                         {suiteStats.warnings} ⚠
                       </span>
                     )}
@@ -1759,7 +1759,7 @@ const TestCenter = () => {
                       runSuite(suite.id);
                     }}
                     disabled={isRunning}
-                    className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-1"
+                    className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-1"
                   >
                     <PlayCircle className="w-4 h-4" />
                     Run
@@ -1775,7 +1775,7 @@ const TestCenter = () => {
               
               {/* Suite Tests */}
               {isExpanded && (
-                <div className="border-t border-gray-200">
+                <div className="border-t border-gray-200 dark:border-gray-700">
                   {suite.tests.map((test, idx) => {
                     const statusConfig = getStatusConfig(test.status);
                     const StatusIcon = statusConfig.icon;
@@ -1794,16 +1794,16 @@ const TestCenter = () => {
                             />
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className={`font-medium ${test.status === TEST_STATUS.FAILED ? 'text-red-800' : 'text-gray-800'}`}>
+                                <span className={`font-medium ${test.status === TEST_STATUS.FAILED ? 'text-red-800' : 'text-gray-800 dark:text-gray-200'}`}>
                                   {test.name}
                                 </span>
                                 {test.critical && (
-                                  <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded">
+                                  <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 text-xs font-bold rounded">
                                     CRITICAL
                                   </span>
                                 )}
                               </div>
-                              <div className="text-xs text-gray-500 mt-0.5">{test.description}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{test.description}</div>
                             </div>
                           </div>
                           
@@ -1835,15 +1835,15 @@ const TestCenter = () => {
                               disabled={isRunning && runningTestId !== test.id}
                               className="p-1 hover:bg-white/50 rounded disabled:opacity-50"
                             >
-                              <Play className="w-4 h-4 text-gray-500" />
+                              <Play className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                             </button>
                           </div>
                         </div>
                         
                         {/* Test Details */}
                         {isDetailsOpen && test.result?.details && (
-                          <div className="mt-3 p-3 bg-white/80 rounded-lg border border-gray-200">
-                            <pre className="text-xs text-gray-600 overflow-auto max-h-40">
+                          <div className="mt-3 p-3 bg-white/80 dark:bg-slate-800/80 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <pre className="text-xs text-gray-600 dark:text-gray-300 overflow-auto max-h-40">
                               {JSON.stringify(test.result.details, null, 2)}
                             </pre>
                           </div>
@@ -1865,25 +1865,25 @@ const TestCenter = () => {
           Quick System Health
         </h3>
         <div className="grid grid-cols-4 gap-4">
-          <div className="bg-white/10 rounded-lg p-4">
+          <div className="bg-white/10 dark:bg-slate-800/10 rounded-lg p-4">
             <div className="text-2xl font-bold">
               {summary.failed === 0 ? '✓' : '✗'}
             </div>
             <div className="text-sm opacity-80">Critical Tests</div>
           </div>
-          <div className="bg-white/10 rounded-lg p-4">
+          <div className="bg-white/10 dark:bg-slate-800/10 rounded-lg p-4">
             <div className="text-2xl font-bold">
               {testSuites.find(s => s.id === 'connectivity')?.tests.every(t => t.status === TEST_STATUS.PASSED) ? '✓' : '○'}
             </div>
             <div className="text-sm opacity-80">Connectivity</div>
           </div>
-          <div className="bg-white/10 rounded-lg p-4">
+          <div className="bg-white/10 dark:bg-slate-800/10 rounded-lg p-4">
             <div className="text-2xl font-bold">
               {testSuites.find(s => s.id === 'data-integrity')?.tests.every(t => t.status === TEST_STATUS.PASSED || t.status === TEST_STATUS.WARNING) ? '✓' : '○'}
             </div>
             <div className="text-sm opacity-80">Data Integrity</div>
           </div>
-          <div className="bg-white/10 rounded-lg p-4">
+          <div className="bg-white/10 dark:bg-slate-800/10 rounded-lg p-4">
             <div className="text-2xl font-bold">
               {Math.round((summary.passed / Math.max(summary.total - summary.pending, 1)) * 100)}%
             </div>

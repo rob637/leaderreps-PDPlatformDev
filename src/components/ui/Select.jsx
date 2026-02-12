@@ -27,7 +27,7 @@ const Select = React.forwardRef(({
         onChange={onChange}
         disabled={disabled}
         className={cn(
-          'w-full appearance-none rounded-xl border border-slate-300 bg-white pr-10 font-medium text-corporate-navy',
+          'w-full appearance-none rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 pr-10 font-medium text-corporate-navy',
           'transition-all duration-150 touch-manipulation',
           'focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:border-transparent',
           'disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed',

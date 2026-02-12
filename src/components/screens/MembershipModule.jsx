@@ -173,7 +173,7 @@ const MembershipModule = () => {
 
     // --- RENDER ---
     return (
-        <div className="relative space-y-4 sm:space-y-5 lg:space-y-6 p-4 sm:p-3 sm:p-4 lg:p-6" style={{ background: COLORS.BG, color: COLORS.NAVY }}>
+        <div className="relative space-y-4 sm:space-y-5 lg:space-y-6 p-4 sm:p-3 sm:p-4 lg:p-6 bg-[#FCFCFA] dark:bg-slate-900 text-corporate-navy dark:text-white">
             <div>
                 
                 {/* Header */}

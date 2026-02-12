@@ -69,7 +69,7 @@ const PrivacyPolicy = () => {
               performance, and to provide you with offers, promotions, and information.
             </p>
 
-            <blockquote className="border-l-4 border-corporate-teal pl-4 italic text-slate-600">
+            <blockquote className="border-l-4 border-corporate-teal pl-4 italic text-slate-600 dark:text-slate-300">
               "We collect and use your information with your consent, to perform a contract with you, or when we have a legitimate 
               business interest, such as improving our Website and services."
             </blockquote>
@@ -186,7 +186,7 @@ const PrivacyPolicy = () => {
               Therefore, the Company does not respond to "Do Not Track" signals.
             </p>
             
-            <p className="text-sm text-slate-500 mt-8">Effective Date: July 1, 2025</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-8">Effective Date: July 1, 2025</p>
           </div>
         </Card>
       </div>

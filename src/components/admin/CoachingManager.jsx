@@ -229,12 +229,12 @@ const CoachingManager = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-slate-50 min-h-screen">
+    <div className="p-6 max-w-7xl mx-auto bg-slate-50 dark:bg-slate-800 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate('admin-content-home')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500"
+          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500 dark:text-slate-400"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Admin
@@ -246,13 +246,13 @@ const CoachingManager = () => {
             <h1 className="text-3xl font-bold text-corporate-navy">
               Coaching Management
             </h1>
-            <p className="text-slate-500">Manage live sessions, AI scenarios, and coaching data</p>
+            <p className="text-slate-500 dark:text-slate-400">Manage live sessions, AI scenarios, and coaching data</p>
           </div>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex border-b border-slate-200 mb-6 overflow-x-auto">
+      <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto">
         <TabButton 
           active={activeTab === 'sessions'} 
           onClick={() => setActiveTab('sessions')}
@@ -294,7 +294,7 @@ const CoachingManager = () => {
 
           {/* Edit Form */}
           {editingItem && (
-        <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-corporate-teal">
+        <div className="mb-6 p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border-2 border-corporate-teal">
           <h2 className="text-xl font-bold mb-4 text-corporate-navy">
             {isAddingNew ? 'Add New Scenario' : 'Edit Scenario'}
           </h2>
@@ -436,7 +436,7 @@ const CoachingManager = () => {
                   setEditingItem(null);
                   setIsAddingNew(false);
                 }}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold bg-slate-50 text-slate-500"
+                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
               >
                 <X className="w-4 h-4" />
                 Cancel
@@ -449,25 +449,25 @@ const CoachingManager = () => {
       {/* Scenarios List */}
       <div className="space-y-4">
         {scenarios.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl">
-            <p className="text-slate-500">No scenarios yet. Create your first one.</p>
+          <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-xl">
+            <p className="text-slate-500 dark:text-slate-400">No scenarios yet. Create your first one.</p>
           </div>
         ) : (
           scenarios.map((scenario) => (
             <div
               key={scenario.id}
-              className={`p-4 bg-white rounded-xl shadow-sm border flex items-center justify-between ${scenario.isActive ? 'border-corporate-teal' : 'border-slate-300 opacity-60'}`}
+              className={`p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border flex items-center justify-between ${scenario.isActive ? 'border-corporate-teal' : 'border-slate-300 dark:border-slate-600 opacity-60'}`}
             >
               <div className="flex-1">
                 <h3 className="font-bold text-lg text-corporate-navy">
                   {scenario.title}
                 </h3>
-                <p className="text-sm text-gray-600 mb-2">{scenario.description}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{scenario.description}</p>
                 <div className="flex gap-3 text-xs">
-                  <span className="px-2 py-1 rounded bg-blue-50 text-blue-700 font-medium">
+                  <span className="px-2 py-1 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 font-medium">
                     {scenario.persona}
                   </span>
-                  <span className="px-2 py-1 rounded bg-orange-50 text-orange-700 font-medium">
+                  <span className="px-2 py-1 rounded bg-orange-50 dark:bg-orange-900/20 text-orange-700 font-medium">
                     Difficulty: {scenario.difficultyLevel}
                   </span>
                 </div>
@@ -482,7 +482,7 @@ const CoachingManager = () => {
                   {scenario.isActive ? (
                     <Eye className="w-5 h-5 text-corporate-teal" />
                   ) : (
-                    <EyeOff className="w-5 h-5 text-slate-500" />
+                    <EyeOff className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                   )}
                 </button>
                 <button
@@ -509,12 +509,12 @@ const CoachingManager = () => {
 
       {/* Data Tools Tab */}
       {activeTab === 'data' && (
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
           <h3 className="text-lg font-bold text-corporate-navy mb-4">Session Data Tools</h3>
-          <p className="text-slate-500 mb-4">Seed sample coaching sessions for testing, or clear all session data.</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-4">Seed sample coaching sessions for testing, or clear all session data.</p>
           
           {sessionMessage && (
-            <div className={`p-3 rounded-lg mb-4 ${sessionMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+            <div className={`p-3 rounded-lg mb-4 ${sessionMessage.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700' : 'bg-red-50 dark:bg-red-900/20 text-red-700'}`}>
               {sessionMessage.text}
             </div>
           )}

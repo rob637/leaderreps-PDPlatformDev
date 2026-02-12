@@ -9,15 +9,15 @@ import { Clock, BarChart, Lock, Sparkles, Users, Target } from 'lucide-react';
 // ============================================
 export const DifficultyBadge = ({ level, size = 'sm' }) => {
   const configs = {
-    'FOUNDATION': { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Foundation' },
-    'CORE': { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Core' },
-    'PRO': { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Pro' },
-    'MASTERY': { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Mastery' },
+    'FOUNDATION': { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700', label: 'Foundation' },
+    'CORE': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700', label: 'Core' },
+    'PRO': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700', label: 'Pro' },
+    'MASTERY': { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700', label: 'Mastery' },
     // Aliases
-    'Intro': { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Foundation' },
-    'Intermediate': { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Core' },
-    'Advanced': { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Pro' },
-    'Expert': { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Mastery' },
+    'Intro': { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700', label: 'Foundation' },
+    'Intermediate': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700', label: 'Core' },
+    'Advanced': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700', label: 'Pro' },
+    'Expert': { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700', label: 'Mastery' },
   };
 
   const config = configs[level] || configs['FOUNDATION'];
@@ -49,7 +49,7 @@ export const DurationBadge = ({ minutes, size = 'sm' }) => {
   const sizeClasses = size === 'xs' ? 'text-[10px]' : 'text-xs';
 
   return (
-    <span className={`inline-flex items-center gap-1 text-slate-500 ${sizeClasses}`}>
+    <span className={`inline-flex items-center gap-1 text-slate-500 dark:text-slate-400 ${sizeClasses}`}>
       <Clock className={size === 'xs' ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
       {formatDuration(minutes)}
     </span>
@@ -84,7 +84,7 @@ export const SkillTag = ({ skill, size = 'sm', onClick }) => {
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1 font-medium rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors ${sizeClasses} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`inline-flex items-center gap-1 font-medium rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 hover:bg-indigo-100 transition-colors ${sizeClasses} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
     >
       <Target className={size === 'xs' ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
       {skill}
@@ -106,7 +106,7 @@ export const EnrollmentBadge = ({ count, size = 'sm' }) => {
   const sizeClasses = size === 'xs' ? 'text-[10px]' : 'text-xs';
 
   return (
-    <span className={`inline-flex items-center gap-1 text-slate-500 ${sizeClasses}`}>
+    <span className={`inline-flex items-center gap-1 text-slate-500 dark:text-slate-400 ${sizeClasses}`}>
       <Users className={size === 'xs' ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
       {formatCount(count)} enrolled
     </span>
@@ -120,7 +120,7 @@ export const LockedBadge = ({ size = 'sm' }) => {
   const sizeClasses = size === 'xs' ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-1';
 
   return (
-    <span className={`inline-flex items-center gap-1 font-bold rounded-full bg-slate-200 text-slate-500 ${sizeClasses}`}>
+    <span className={`inline-flex items-center gap-1 font-bold rounded-full bg-slate-200 text-slate-500 dark:text-slate-400 ${sizeClasses}`}>
       <Lock className={size === 'xs' ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
       Locked
     </span>

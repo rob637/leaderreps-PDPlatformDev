@@ -27,16 +27,16 @@ const PrepGate = ({ children, showStatus = true }) => {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 sm:p-8 shadow-lg">
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 sm:p-8 shadow-lg">
           <div className="flex items-start gap-4 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
               <Lock className="w-6 h-6 text-amber-600" />
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-corporate-navy mb-2">
                 Complete Your Prep Work
               </h2>
-              <p className="text-slate-600">
+              <p className="text-slate-600 dark:text-slate-300">
                 Before starting the program, please complete these essential setup items.
               </p>
             </div>
@@ -48,12 +48,12 @@ const PrepGate = ({ children, showStatus = true }) => {
               onClick={() => navigate('development-plan')}
               className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
                 prepStatus.hasLeaderProfile 
-                  ? 'bg-emerald-50 border-emerald-200' 
-                  : 'bg-white border-slate-200 hover:border-corporate-teal hover:shadow-md'
+                  ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' 
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-corporate-teal hover:shadow-md'
               }`}
             >
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                prepStatus.hasLeaderProfile ? 'bg-emerald-100' : 'bg-slate-100'
+                prepStatus.hasLeaderProfile ? 'bg-emerald-100' : 'bg-slate-100 dark:bg-slate-700'
               }`}>
                 {prepStatus.hasLeaderProfile ? (
                   <CheckCircle className="w-5 h-5 text-emerald-600" />
@@ -63,7 +63,7 @@ const PrepGate = ({ children, showStatus = true }) => {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-corporate-navy">Leader Profile</h3>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   {prepStatus.hasLeaderProfile 
                     ? 'Completed' 
                     : 'Tell us about yourself and your leadership journey'}
@@ -79,12 +79,12 @@ const PrepGate = ({ children, showStatus = true }) => {
               onClick={() => navigate('development-plan')}
               className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
                 prepStatus.hasBaselineAssessment 
-                  ? 'bg-emerald-50 border-emerald-200' 
-                  : 'bg-white border-slate-200 hover:border-corporate-teal hover:shadow-md'
+                  ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' 
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-corporate-teal hover:shadow-md'
               }`}
             >
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                prepStatus.hasBaselineAssessment ? 'bg-emerald-100' : 'bg-slate-100'
+                prepStatus.hasBaselineAssessment ? 'bg-emerald-100' : 'bg-slate-100 dark:bg-slate-700'
               }`}>
                 {prepStatus.hasBaselineAssessment ? (
                   <CheckCircle className="w-5 h-5 text-emerald-600" />
@@ -94,7 +94,7 @@ const PrepGate = ({ children, showStatus = true }) => {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-corporate-navy">Baseline Assessment</h3>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   {prepStatus.hasBaselineAssessment 
                     ? 'Completed' 
                     : 'Complete the assessment to generate your development plan'}
@@ -107,7 +107,7 @@ const PrepGate = ({ children, showStatus = true }) => {
           </div>
 
           {showStatus && (
-            <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-100/50 rounded-lg p-3">
+            <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-100/50 dark:bg-amber-900/30/50 rounded-lg p-3">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               <span>
                 Complete {prepStatus.missingItems.length === 1 ? 'the item' : 'both items'} above to unlock the full program.

@@ -41,8 +41,8 @@ const HapticButton = forwardRef(({
 
   const variantClasses = {
     primary: 'bg-navy text-white hover:bg-navy/90 focus:ring-navy/50 active:bg-navy/80',
-    secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-300 active:bg-gray-300',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-200 active:bg-gray-200',
+    secondary: 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 focus:ring-gray-300 active:bg-gray-300',
+    ghost: 'bg-transparent text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:ring-gray-200 active:bg-gray-200',
     danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-300 active:bg-red-700',
     teal: 'bg-teal text-white hover:bg-teal/90 focus:ring-teal/50 active:bg-teal/80',
   };

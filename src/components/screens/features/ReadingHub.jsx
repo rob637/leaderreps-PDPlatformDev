@@ -20,7 +20,7 @@ const ReadingHub = () => {
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <Card key={i} variant="interactive" className="hover:shadow-md transition-shadow">
             <div className="p-6">
-              <div className="h-40 bg-slate-100 rounded-lg mb-4 flex items-center justify-center text-slate-400">
+              <div className="h-40 bg-slate-100 dark:bg-slate-700 rounded-lg mb-4 flex items-center justify-center text-slate-400">
                 <BookOpen className="w-12 h-12" />
               </div>
               <h3 className="font-bold text-lg text-corporate-navy mb-2">Leadership Book Title {i}</h3>

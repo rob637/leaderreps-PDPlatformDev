@@ -46,18 +46,18 @@ const SystemWidgets = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-gray-200 pb-4">
-        <div className="p-2 bg-indigo-100 rounded-lg">
+      <div className="flex items-center gap-3 border-b border-gray-200 dark:border-gray-700 pb-4">
+        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
           <Settings className="w-6 h-6 text-indigo-600" />
         </div>
         <div>
           <h2 className="text-xl font-bold text-corporate-navy">System Tools</h2>
-          <p className="text-sm text-gray-500">Administrative widgets for testing and system management</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Administrative widgets for testing and system management</p>
         </div>
       </div>
 
       {/* System Widgets Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
         <div className="flex items-start gap-3">
           <Info className="w-5 h-5 text-blue-600 mt-0.5" />
           <div>
@@ -79,7 +79,7 @@ const SystemWidgets = () => {
       {/* Render Enabled System Widgets */}
       {enabledWidgets.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-gray-900">Active System Widgets</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Active System Widgets</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {enabledWidgets.map(widgetId => (
               <WidgetRenderer key={widgetId} widgetId={widgetId} scope={scope} />
@@ -94,11 +94,11 @@ const SystemWidgets = () => {
         {/* Admin Access Viewer Section */}
         <Card title="Admin Access Viewer" icon={Shield} accent="navy">
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Inspect user progress and unlocked content.
             </p>
             
-            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
               <h4 className="font-semibold text-indigo-900 mb-2">Capabilities:</h4>
               <ul className="text-sm text-indigo-800 space-y-1">
                 <li>• View current week and cumulative access</li>
@@ -118,12 +118,12 @@ const SystemWidgets = () => {
         {/* Time Traveler Section */}
         <Card title="Time Traveler" icon={Clock} accent="navy">
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Test time-sensitive features by simulating different dates and times. 
               When active, a banner will appear at the top of the screen.
             </p>
             
-            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
               <h4 className="font-semibold text-indigo-900 mb-2">Features:</h4>
               <ul className="text-sm text-indigo-800 space-y-1">
                 <li>• Jump to specific dates and times</li>
@@ -147,11 +147,11 @@ const SystemWidgets = () => {
         {/* System Reminders Section */}
         <Card title="System Reminders" icon={Bell} accent="orange">
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Test and manage the notification system infrastructure.
             </p>
             
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
               <h4 className="font-semibold text-orange-900 mb-2">Capabilities:</h4>
               <ul className="text-sm text-orange-800 space-y-1">
                 <li>• Test push notification delivery</li>
@@ -171,19 +171,19 @@ const SystemWidgets = () => {
       </div>
 
       {/* Future Enhancements - Same pattern as FeatureManager */}
-      <div className="mt-8 border-t border-gray-200 pt-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+      <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
           <Lightbulb className="w-6 h-6 text-yellow-500" />
           Future Enhancements: System
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {ENHANCEMENT_IDEAS.system?.map((idea, idx) => (
-            <div key={idx} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
               <div className="flex justify-between items-start mb-1">
-                <h4 className="font-bold text-slate-800 text-sm">{idea.title}</h4>
-                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full uppercase tracking-wider">Planned</span>
+                <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">{idea.title}</h4>
+                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full uppercase tracking-wider">Planned</span>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed">{idea.desc}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{idea.desc}</p>
             </div>
           ))}
         </div>

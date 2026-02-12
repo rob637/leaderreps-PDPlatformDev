@@ -14,7 +14,7 @@ const LoadingSpinner = ({
   };
 
   return (
-    <div className={cn("min-h-[200px] flex items-center justify-center bg-slate-50", className)}>
+    <div className={cn("min-h-[200px] flex items-center justify-center bg-slate-50 dark:bg-slate-800", className)}>
       <div className="flex flex-col items-center">
         <Loader className={cn("animate-spin text-corporate-teal mb-3", sizes[size])} />
         {message && <p className="font-semibold text-corporate-navy">{message}</p>}

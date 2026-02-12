@@ -50,11 +50,11 @@ const ASSESSMENT_QUESTIONS = [
 ];
 
 const RATING_OPTIONS = [
-  { value: 1, label: 'Strongly Disagree', shortLabel: 'SD', color: 'bg-red-100 border-red-300 text-red-700 hover:bg-red-200' },
-  { value: 2, label: 'Disagree', shortLabel: 'D', color: 'bg-orange-100 border-orange-300 text-orange-700 hover:bg-orange-200' },
-  { value: 3, label: 'Neutral', shortLabel: 'N', color: 'bg-yellow-100 border-yellow-300 text-yellow-700 hover:bg-yellow-200' },
-  { value: 4, label: 'Agree', shortLabel: 'A', color: 'bg-teal-100 border-teal-300 text-teal-700 hover:bg-teal-200' },
-  { value: 5, label: 'Strongly Agree', shortLabel: 'SA', color: 'bg-green-100 border-green-300 text-green-700 hover:bg-green-200' }
+  { value: 1, label: 'Strongly Disagree', shortLabel: 'SD', color: 'bg-red-100 dark:bg-red-900/30 border-red-300 text-red-700 hover:bg-red-200' },
+  { value: 2, label: 'Disagree', shortLabel: 'D', color: 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 text-orange-700 hover:bg-orange-200' },
+  { value: 3, label: 'Neutral', shortLabel: 'N', color: 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 text-yellow-700 hover:bg-yellow-200' },
+  { value: 4, label: 'Agree', shortLabel: 'A', color: 'bg-teal-100 dark:bg-teal-900/30 border-teal-300 text-teal-700 hover:bg-teal-200' },
+  { value: 5, label: 'Strongly Agree', shortLabel: 'SA', color: 'bg-green-100 dark:bg-green-900/30 border-green-300 text-green-700 hover:bg-green-200' }
 ];
 
 const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, initialData = null }) => {
@@ -124,13 +124,13 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
   // Generating state
   if (isGenerating) {
     return (
-      <div className="bg-white rounded-2xl shadow-xl">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl">
         <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
           <div className="w-16 h-16 bg-corporate-teal/10 rounded-full flex items-center justify-center mb-4">
             <Loader className="w-8 h-8 text-corporate-teal animate-spin" />
           </div>
           <h3 className="text-xl font-bold text-corporate-navy mb-2">Saving Assessment...</h3>
-          <p className="text-slate-600">Recording your responses.</p>
+          <p className="text-slate-600 dark:text-slate-300">Recording your responses.</p>
         </div>
       </div>
     );
@@ -139,25 +139,25 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
   // Success state - shows briefly before closing
   if (showSuccess) {
     return (
-      <div className="bg-white rounded-2xl shadow-xl">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl">
         <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
             <CheckCircle className="w-10 h-10 text-green-500" />
           </div>
           <h3 className="text-xl font-bold text-corporate-navy mb-2">Assessment Saved!</h3>
-          <p className="text-slate-600">Your baseline has been recorded.</p>
+          <p className="text-slate-600 dark:text-slate-300">Your baseline has been recorded.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div ref={formRef} className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-6rem)] md:max-h-[85vh]">
+    <div ref={formRef} className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-6rem)] md:max-h-[85vh]">
       {/* Header - Fixed */}
       <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-5 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-white/20 dark:bg-slate-800/20 rounded-xl flex items-center justify-center">
               <ClipboardCheck className="w-5 h-5" />
             </div>
             <div>
@@ -181,7 +181,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
           <span>{completedCount} of {totalQuestions} answered</span>
           <span>{Math.round(progress)}%</span>
         </div>
-        <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+        <div className="h-2 bg-white/20 dark:bg-slate-800/20 rounded-full overflow-hidden">
           <div 
             className="h-full bg-corporate-teal transition-all duration-300"
             style={{ width: `${progress}%` }}
@@ -190,19 +190,19 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
       </div>
 
       {/* Action Bar - Fixed at top for mobile accessibility */}
-      <div className="px-5 py-3 bg-slate-50 border-b border-slate-200 flex-shrink-0">
+      <div className="px-5 py-3 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
         <div className="flex items-center justify-between gap-3">
           {onClose && (
             <button
               onClick={onClose}
-              className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium"
+              className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-colors text-sm font-medium"
             >
               Cancel
             </button>
           )}
           <div className="flex-1 text-center">
             {!isComplete && (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {totalQuestions - completedCount} more to go
               </p>
             )}
@@ -227,7 +227,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
       </div>
 
       {/* Rating Scale Legend - Fixed */}
-      <div className="bg-white px-5 py-3 border-b border-slate-200 flex-shrink-0">
+      <div className="bg-white dark:bg-slate-800 px-5 py-3 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
         <div className="flex flex-wrap justify-center gap-2 text-xs">
           {RATING_OPTIONS.map(option => (
             <span key={option.value} className={`px-2 py-1 rounded border ${option.color.split(' hover:')[0]}`}>
@@ -244,8 +244,8 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
             key={question.id}
             className={`p-4 rounded-xl transition-all ${
               responses[question.id] 
-                ? 'bg-slate-50 border border-slate-200' 
-                : 'bg-white border-2 border-slate-100 shadow-sm'
+                ? 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700' 
+                : 'bg-white dark:bg-slate-800 border-2 border-slate-100 shadow-sm'
             }`}
           >
             <div className="flex items-start gap-3 mb-3">
@@ -257,7 +257,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
                 {responses[question.id] ? <CheckCircle className="w-4 h-4" /> : idx + 1}
               </span>
               <div className="flex-1">
-                <p className="text-slate-700 font-medium leading-relaxed text-sm">{question.text}</p>
+                <p className="text-slate-700 dark:text-slate-200 font-medium leading-relaxed text-sm">{question.text}</p>
                 <span className="text-xs text-slate-400 mt-1 inline-block">{question.category}</span>
               </div>
             </div>
@@ -272,7 +272,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all
                     ${responses[question.id] === option.value
                       ? `${option.color.split(' hover:')[0]} ring-2 ring-offset-1 ring-corporate-teal/40 scale-105`
-                      : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                 >
                   <span className="hidden sm:inline">{option.label}</span>

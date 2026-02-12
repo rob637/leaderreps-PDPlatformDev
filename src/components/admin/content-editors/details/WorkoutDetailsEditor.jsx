@@ -35,7 +35,7 @@ const WorkoutDetailsEditor = ({ details, onChange }) => {
         <button
           type="button"
           onClick={() => setShowPicker(true)}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg hover:bg-blue-100"
         >
           <Plus size={16} />
           Add Exercise
@@ -44,11 +44,11 @@ const WorkoutDetailsEditor = ({ details, onChange }) => {
 
       <div className="space-y-2">
         {exercises.map((exercise, index) => (
-          <div key={exercise.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div key={exercise.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <GripVertical className="text-gray-400 cursor-move" size={20} />
             <div className="flex-1">
               <div className="font-medium">{exercise.title}</div>
-              <div className="text-xs text-gray-500">{exercise.description}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{exercise.description}</div>
             </div>
             <button
               onClick={() => removeExercise(index)}
@@ -59,7 +59,7 @@ const WorkoutDetailsEditor = ({ details, onChange }) => {
           </div>
         ))}
         {exercises.length === 0 && (
-          <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-lg">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400 border-2 border-dashed rounded-lg">
             No exercises added yet
           </div>
         )}

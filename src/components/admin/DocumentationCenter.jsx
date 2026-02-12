@@ -638,7 +638,7 @@ Format your response as:
             <BookOpen className="w-6 h-6 text-corporate-teal" />
             Documentation Center
           </h2>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
             Access guides, procedures, and test plans for the LeaderReps platform
           </p>
         </div>
@@ -654,16 +654,16 @@ Format your response as:
       {/* Refresh Modal */}
       {showRefreshModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <h3 className="font-bold text-corporate-navy">Refresh Documentation with AI</h3>
-                  <p className="text-sm text-slate-500">Generate suggestions or copy the prompt for manual use</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Generate suggestions or copy the prompt for manual use</p>
                 </div>
               </div>
               <button
@@ -677,14 +677,14 @@ Format your response as:
             {/* Modal Content */}
             <div className="p-5 overflow-y-auto max-h-[60vh]">
               {/* Mode Toggle */}
-              <div className="flex items-center gap-4 mb-4 p-3 bg-slate-100 rounded-lg">
-                <span className="text-sm font-medium text-slate-700">Mode:</span>
+              <div className="flex items-center gap-4 mb-4 p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Mode:</span>
                 <button
                   onClick={() => setKaizenMode('update')}
                   className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
                     kaizenMode === 'update'
                       ? 'bg-purple-600 text-white shadow-md'
-                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 border border-slate-200 dark:border-slate-700'
                   }`}
                 >
                   🔄 Update Document
@@ -694,19 +694,19 @@ Format your response as:
                   className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
                     kaizenMode === 'suggest'
                       ? 'bg-purple-600 text-white shadow-md'
-                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 border border-slate-200 dark:border-slate-700'
                   }`}
                 >
                   💡 Suggest Only
                 </button>
-                <span className="text-xs text-slate-500 ml-2">
+                <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
                   {kaizenMode === 'update' ? 'AI will generate the complete updated file' : 'AI will provide suggestions only'}
                 </span>
               </div>
               
               {/* GitHub Token Configuration */}
-              <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <span className="text-sm font-medium text-slate-700">⚙️ GitHub:</span>
+              <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">⚙️ GitHub:</span>
                 {hasGitHubToken ? (
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-green-600">✓ Token configured</span>
@@ -727,7 +727,7 @@ Format your response as:
                     <input
                       type="password"
                       placeholder="Enter GitHub Personal Access Token (ghp_...)"
-                      className="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="flex-1 px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && e.target.value) {
                           localStorage.setItem('github_pat', e.target.value);
@@ -747,13 +747,13 @@ Format your response as:
                         }
                       }}
                     />
-                    <span className="text-xs text-slate-500">Press Enter to save</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Press Enter to save</span>
                   </div>
                 )}
               </div>
 
               {/* AI Generation Section */}
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mb-4">
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Wand2 className="w-5 h-5 text-purple-600" />
@@ -766,7 +766,7 @@ Format your response as:
                     disabled={isGenerating || selectedDocId === 'all'}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       isGenerating || selectedDocId === 'all'
-                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        ? 'bg-gray-200 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                         : 'bg-purple-600 text-white hover:bg-purple-700 shadow-md hover:shadow-lg'
                     }`}
                   >
@@ -787,18 +787,18 @@ Format your response as:
                   <p className="text-sm text-purple-700">Select a specific document below to generate AI suggestions.</p>
                 )}
                 {aiSuggestions && !updatedDocContent && (
-                  <div className="mt-3 p-3 bg-white rounded-lg border border-purple-200">
+                  <div className="mt-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-purple-200 dark:border-purple-800">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-purple-600 uppercase">AI Status</span>
                       <button
                         onClick={copySuggestions}
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 rounded hover:bg-purple-200"
                       >
                         <Copy className="w-3 h-3" />
                         Copy
                       </button>
                     </div>
-                    <div className="text-sm text-slate-700 whitespace-pre-wrap max-h-48 overflow-y-auto">
+                    <div className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap max-h-48 overflow-y-auto">
                       {aiSuggestions}
                     </div>
                   </div>
@@ -815,7 +815,7 @@ Format your response as:
                       <div className="flex gap-2 flex-wrap">
                         <button
                           onClick={copyUpdatedDoc}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-200 transition-colors"
                         >
                           <Copy className="w-4 h-4" />
                           Copy
@@ -850,9 +850,9 @@ Format your response as:
                     {/* Commit Status Message */}
                     {commitMessage && (
                       <div className={`p-3 rounded-lg text-sm ${
-                        commitStatus === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
-                        commitStatus === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
-                        'bg-blue-50 text-blue-800 border border-blue-200'
+                        commitStatus === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-800 border border-green-200 dark:border-green-800' :
+                        commitStatus === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-800 border border-red-200 dark:border-red-800' :
+                        'bg-blue-50 dark:bg-blue-900/20 text-blue-800 border border-blue-200 dark:border-blue-800'
                       }`}>
                         {commitMessage}
                         {commitStatus === 'error' && !localStorage.getItem('github_pat') && (
@@ -881,7 +881,7 @@ Format your response as:
                         {updatedDocContent.length > 3000 && '\n\n... (truncated for preview - download for full content)'}
                       </pre>
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       💡 Click "Commit to GitHub" to update the file directly, or download to replace manually.
                     </p>
                   </div>
@@ -890,7 +890,7 @@ Format your response as:
 
               {/* Manual Option - only show in suggest mode */}
               {kaizenMode === 'suggest' && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-800">
@@ -913,8 +913,8 @@ Format your response as:
                     onClick={copyPrompt}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                       copied 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700' 
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
                     }`}
                   >
                     {copied ? (
@@ -933,13 +933,13 @@ Format your response as:
                 <textarea
                   readOnly
                   value={refreshPrompt}
-                  className="w-full h-48 p-4 pr-32 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                  className="w-full h-48 p-4 pr-32 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-mono text-slate-700 dark:text-slate-200 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                 />
               </div>
 
               {/* Quick Doc Links */}
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <p className="text-sm font-medium text-slate-700 mb-2">Quick links to current documentation:</p>
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">Quick links to current documentation:</p>
                 <div className="flex flex-wrap gap-2">
                   {documents.map(doc => (
                     <a
@@ -947,7 +947,7 @@ Format your response as:
                       href={`https://raw.githubusercontent.com/rob637/leaderreps-PDPlatformDev/New-Stuff/${doc.githubPath}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-sm rounded-lg transition-colors"
                     >
                       <FileText className="w-3.5 h-3.5" />
                       {doc.githubPath}
@@ -958,9 +958,9 @@ Format your response as:
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between p-5 border-t border-gray-200 bg-slate-50">
+            <div className="flex items-center justify-between p-5 border-t border-gray-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-800">
               <div className="flex gap-2">
-                <span className="text-sm text-slate-500 mr-2">Select doc:</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400 mr-2">Select doc:</span>
                 {['admin-guide', 'user-guide', 'test-plans', 'app-architecture'].map(docId => (
                   <button
                     key={docId}
@@ -973,8 +973,8 @@ Format your response as:
                     }}
                     className={`px-3 py-1.5 text-sm border rounded-lg transition-colors ${
                       selectedDocId === docId
-                        ? 'bg-purple-100 border-purple-300 text-purple-700'
-                        : 'bg-white border-gray-200 hover:bg-slate-50'
+                        ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 text-purple-700'
+                        : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:bg-slate-50'
                     }`}
                   >
                     {docId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
@@ -1000,7 +1000,7 @@ Format your response as:
           placeholder="Search documentation..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-corporate-teal/20 focus:border-corporate-teal text-sm"
+          className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-corporate-teal/20 focus:border-corporate-teal text-sm"
         />
       </div>
 
@@ -1011,7 +1011,7 @@ Format your response as:
           return (
             <div 
               key={doc.id}
-              className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-shadow"
+              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-lg transition-shadow"
             >
               {/* Header */}
               <div className="flex items-start gap-3 mb-3">
@@ -1023,7 +1023,7 @@ Format your response as:
                     {doc.title}
                   </h3>
                   <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                    <span className="px-1.5 py-0.5 bg-slate-100 rounded">{doc.category}</span>
+                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded">{doc.category}</span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {doc.lastUpdated}
@@ -1033,26 +1033,26 @@ Format your response as:
               </div>
 
               {/* Description */}
-              <p className="text-sm text-slate-600 mb-4 line-clamp-2">
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 line-clamp-2">
                 {doc.description}
               </p>
 
               {/* Sections Preview */}
               <div className="mb-4">
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                   {doc.sections.length} Sections
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {doc.sections.slice(0, 4).map((section, idx) => (
                     <span 
                       key={idx}
-                      className="text-xs px-2 py-0.5 bg-slate-50 text-slate-600 rounded"
+                      className="text-xs px-2 py-0.5 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded"
                     >
                       {section}
                     </span>
                   ))}
                   {doc.sections.length > 4 && (
-                    <span className="text-xs px-2 py-0.5 bg-slate-50 text-slate-400 rounded">
+                    <span className="text-xs px-2 py-0.5 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded">
                       +{doc.sections.length - 4} more
                     </span>
                   )}
@@ -1070,21 +1070,21 @@ Format your response as:
                 </button>
                 <button
                   onClick={() => openInGitHub(doc)}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors"
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors"
                   title="View on GitHub"
                 >
                   <ExternalLink className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => openRefreshModal(doc.id)}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-100 text-purple-700 text-sm font-medium rounded-lg hover:bg-purple-200 transition-colors"
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 text-sm font-medium rounded-lg hover:bg-purple-200 transition-colors"
                   title="Refresh with AI"
                 >
                   <Sparkles className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => downloadMarkdown(doc)}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors"
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors"
                   title="Download Markdown"
                 >
                   <Download className="w-4 h-4" />
@@ -1096,7 +1096,7 @@ Format your response as:
       </div>
 
       {/* Quick Links Section */}
-      <div className="bg-slate-50 rounded-xl p-5 mt-6">
+      <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-5 mt-6">
         <h3 className="font-semibold text-corporate-navy mb-4 flex items-center gap-2">
           <Bookmark className="w-4 h-4 text-corporate-teal" />
           Quick Links
@@ -1108,7 +1108,7 @@ Format your response as:
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-slate-700 hover:border-corporate-teal hover:text-corporate-teal transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:border-corporate-teal hover:text-corporate-teal transition-colors"
             >
               <link.icon className="w-4 h-4" />
               <span className="truncate">{link.title}</span>
@@ -1120,7 +1120,7 @@ Format your response as:
       {/* Additional Resources */}
       <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 rounded-xl p-6 text-white">
         <div className="flex items-start gap-4">
-          <div className="p-3 bg-white/10 rounded-xl">
+          <div className="p-3 bg-white/10 dark:bg-slate-800/10 rounded-xl">
             <FileText className="w-6 h-6" />
           </div>
           <div className="flex-1">
@@ -1133,7 +1133,7 @@ Format your response as:
                 href="https://github.com/rob637/leaderreps-PDPlatformDev/blob/New-Stuff/README.md"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 dark:bg-slate-800/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
               >
                 README.md
                 <ChevronRight className="w-3 h-3" />
@@ -1142,7 +1142,7 @@ Format your response as:
                 href="https://github.com/rob637/leaderreps-PDPlatformDev/blob/New-Stuff/CONTRIBUTING.md"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 dark:bg-slate-800/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
               >
                 CONTRIBUTING.md
                 <ChevronRight className="w-3 h-3" />
@@ -1151,7 +1151,7 @@ Format your response as:
                 href="https://github.com/rob637/leaderreps-PDPlatformDev/blob/New-Stuff/ENVIRONMENTS.md"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 dark:bg-slate-800/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
               >
                 ENVIRONMENTS.md
                 <ChevronRight className="w-3 h-3" />
@@ -1160,7 +1160,7 @@ Format your response as:
                 href="https://github.com/rob637/leaderreps-PDPlatformDev/blob/New-Stuff/LAYOUT-STANDARDS.md"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 dark:bg-slate-800/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
               >
                 LAYOUT-STANDARDS.md
                 <ChevronRight className="w-3 h-3" />
@@ -1179,22 +1179,22 @@ Format your response as:
       {/* Document Viewer Modal */}
       {viewingDoc && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-slate-50">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-800">
               <div className="flex items-center gap-3">
                 <div className={`p-2 ${viewingDoc.color} rounded-lg`}>
                   <viewingDoc.icon className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <h3 className="font-bold text-corporate-navy text-lg">{viewingDoc.title}</h3>
-                  <p className="text-sm text-slate-500">Internal Documentation Viewer</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Internal Documentation Viewer</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => openInGitHub(viewingDoc)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   <ExternalLink className="w-4 h-4" />
                   GitHub
@@ -1203,13 +1203,13 @@ Format your response as:
                   onClick={() => setViewingDoc(null)}
                   className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
                 >
-                  <X className="w-5 h-5 text-slate-500" />
+                  <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 </button>
               </div>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-8 bg-white">
+            <div className="flex-1 overflow-y-auto p-8 bg-white dark:bg-slate-800">
               <div 
                 className="prose prose-slate max-w-none prose-headings:text-corporate-navy prose-a:text-corporate-teal prose-pre:bg-slate-800 prose-pre:text-slate-100"
                 dangerouslySetInnerHTML={{ 

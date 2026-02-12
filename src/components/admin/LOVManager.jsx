@@ -203,12 +203,12 @@ const LOVManager = () => {
   const isObjectMode = editingItem && isContentGroupLov(editingItem);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-slate-50 min-h-screen">
+    <div className="p-6 max-w-7xl mx-auto bg-slate-50 dark:bg-slate-800 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate('admin-content-home')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500"
+          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500 dark:text-slate-400"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Admin
@@ -234,7 +234,7 @@ const LOVManager = () => {
 
       {/* Edit Form */}
       {editingItem && (
-        <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-corporate-teal">
+        <div className="mb-6 p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border-2 border-corporate-teal">
           <h2 className="text-xl font-bold mb-4 text-corporate-navy">
             {isAddingNew ? 'Create New List' : `Edit List: ${editingItem.title}`}
           </h2>
@@ -253,7 +253,7 @@ const LOVManager = () => {
                   placeholder="e.g., Industries"
                   disabled={!isAddingNew}
                 />
-                {!isAddingNew && <p className="text-xs text-gray-500 mt-1">List name cannot be changed once created.</p>}
+                {!isAddingNew && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">List name cannot be changed once created.</p>}
               </div>
 
               <div>
@@ -277,21 +277,21 @@ const LOVManager = () => {
                   List Items ({editingItem.items?.length || 0})
                 </label>
                 {isObjectMode && (
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 px-2 py-1 rounded-full">
                     Content Group Mode
                   </span>
                 )}
               </div>
               
               {editingItem.title === 'System Quotes' && (
-                <p className="text-xs text-orange-600 mb-2 bg-orange-50 p-2 rounded border border-orange-200">
+                <p className="text-xs text-orange-600 mb-2 bg-orange-50 dark:bg-orange-900/20 p-2 rounded border border-orange-200 dark:border-orange-800">
                   Format: <strong>Quote Text | Author Name</strong> (use pipe symbol to separate)
                 </p>
               )}
 
               {/* Object Item Editor Modal */}
               {editingObjectItem && (
-                <div className="mb-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-300">
+                <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-2 border-blue-300">
                   <h4 className="font-bold text-blue-800 mb-3">
                     {editingObjectIndex === editingItem.items.length - 1 && !editingItem.items[editingObjectIndex]?.label 
                       ? 'Add New Item' 
@@ -299,7 +299,7 @@ const LOVManager = () => {
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold mb-1 text-gray-700">Label *</label>
+                      <label className="block text-xs font-semibold mb-1 text-gray-700 dark:text-gray-200">Label *</label>
                       <input
                         type="text"
                         value={editingObjectItem.label || ''}
@@ -309,16 +309,16 @@ const LOVManager = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1 text-gray-700">ID</label>
+                      <label className="block text-xs font-semibold mb-1 text-gray-700 dark:text-gray-200">ID</label>
                       <input
                         type="text"
                         value={editingObjectItem.id || ''}
-                        className="w-full p-2 border rounded-lg text-sm bg-gray-100"
+                        className="w-full p-2 border rounded-lg text-sm bg-gray-100 dark:bg-gray-700"
                         disabled
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold mb-1 text-gray-700">Description</label>
+                      <label className="block text-xs font-semibold mb-1 text-gray-700 dark:text-gray-200">Description</label>
                       <textarea
                         value={editingObjectItem.description || ''}
                         onChange={(e) => setEditingObjectItem({ ...editingObjectItem, description: e.target.value })}
@@ -328,7 +328,7 @@ const LOVManager = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1 text-gray-700">Thumbnail URL</label>
+                      <label className="block text-xs font-semibold mb-1 text-gray-700 dark:text-gray-200">Thumbnail URL</label>
                       <input
                         type="text"
                         value={editingObjectItem.thumbnail || ''}
@@ -338,7 +338,7 @@ const LOVManager = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1 text-gray-700">Display Order</label>
+                      <label className="block text-xs font-semibold mb-1 text-gray-700 dark:text-gray-200">Display Order</label>
                       <input
                         type="number"
                         value={editingObjectItem.displayOrder || 0}
@@ -368,7 +368,7 @@ const LOVManager = () => {
                     </div>
                     {editingObjectItem.isHiddenUntilUnlocked && (
                       <div>
-                        <label className="block text-xs font-semibold mb-1 text-gray-700">Unlock Day</label>
+                        <label className="block text-xs font-semibold mb-1 text-gray-700 dark:text-gray-200">Unlock Day</label>
                         <input
                           type="number"
                           value={editingObjectItem.unlockDay || ''}
@@ -389,7 +389,7 @@ const LOVManager = () => {
                     </button>
                     <button
                       onClick={handleCancelObjectEdit}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-sm"
+                      className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 text-gray-700 dark:text-gray-200 rounded-lg text-sm"
                     >
                       <X className="w-3 h-3" /> Cancel
                     </button>
@@ -398,7 +398,7 @@ const LOVManager = () => {
               )}
 
               {/* Items List */}
-              <div className="space-y-2 max-h-96 overflow-y-auto p-2 border rounded-lg bg-gray-50">
+              <div className="space-y-2 max-h-96 overflow-y-auto p-2 border rounded-lg bg-gray-50 dark:bg-gray-800">
                 {editingItem.items.map((item, index) => {
                   const isObjectItem = typeof item === 'object';
                   
@@ -407,8 +407,8 @@ const LOVManager = () => {
                     return (
                       <div 
                         key={item.id || index} 
-                        className={`flex items-center gap-2 p-2 bg-white rounded-lg border ${
-                          editingObjectIndex === index ? 'border-blue-400 bg-blue-50' : 'border-gray-200'
+                        className={`flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border ${
+                          editingObjectIndex === index ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'
                         }`}
                       >
                         <div className="flex flex-col gap-1">
@@ -434,17 +434,17 @@ const LOVManager = () => {
                         <div className="flex-1 min-w-0">
                           <div className="font-semibold text-sm truncate">{item.label || '(unnamed)'}</div>
                           {item.description && (
-                            <div className="text-xs text-gray-500 truncate">{item.description}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{item.description}</div>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
                           {item.isHiddenUntilUnlocked && (
-                            <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 px-1.5 py-0.5 rounded flex items-center gap-1">
                               <Lock className="w-3 h-3" /> Day {item.unlockDay || '?'}
                             </span>
                           )}
                           {item.isActive === false && (
-                            <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Inactive</span>
+                            <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 px-1.5 py-0.5 rounded">Inactive</span>
                           )}
                           <button
                             onClick={() => handleEditObjectItem(item, index)}
@@ -472,7 +472,7 @@ const LOVManager = () => {
                           type="text"
                           value={item}
                           onChange={(e) => handleItemChange(index, e.target.value)}
-                          className="flex-1 p-2 border rounded-lg bg-white"
+                          className="flex-1 p-2 border rounded-lg bg-white dark:bg-slate-800"
                           placeholder="Value..."
                         />
                         <button
@@ -512,7 +512,7 @@ const LOVManager = () => {
                   setEditingObjectItem(null);
                   setEditingObjectIndex(null);
                 }}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200"
+                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
               >
                 <X className="w-4 h-4" />
                 Cancel
@@ -525,8 +525,8 @@ const LOVManager = () => {
       {/* Lists Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {lovs.length === 0 ? (
-          <div className="col-span-full text-center py-12 bg-white rounded-xl">
-            <p className="text-slate-500">No lists defined yet.</p>
+          <div className="col-span-full text-center py-12 bg-white dark:bg-slate-800 rounded-xl">
+            <p className="text-slate-500 dark:text-slate-400">No lists defined yet.</p>
           </div>
         ) : (
           lovs.map((lov) => {
@@ -534,7 +534,7 @@ const LOVManager = () => {
             return (
               <div
                 key={lov.id}
-                className={`p-6 bg-white rounded-xl shadow-sm border hover:shadow-md transition-all ${
+                className={`p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border hover:shadow-md transition-all ${
                   isContentGroup ? 'border-blue-400' : 'border-corporate-teal'
                 }`}
               >
@@ -545,12 +545,12 @@ const LOVManager = () => {
                         {lov.title}
                       </h3>
                       {isContentGroup && (
-                        <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                        <span className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 px-1.5 py-0.5 rounded-full">
                           Groups
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">{lov.description}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{lov.description}</p>
                   </div>
                   <div className="flex gap-1">
                     <button
@@ -570,7 +570,7 @@ const LOVManager = () => {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600 h-32 overflow-hidden relative">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-300 h-32 overflow-hidden relative">
                   <ul className="space-y-1">
                     {lov.items?.slice(0, 5).map((item, i) => (
                       <li key={i} className="flex items-center gap-2">

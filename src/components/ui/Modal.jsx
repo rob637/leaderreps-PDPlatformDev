@@ -90,7 +90,7 @@ const ModalContent = React.forwardRef(({ className, children, onClose, ...props 
       className={cn(
         'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
         'w-full max-w-lg max-h-[90vh] overflow-y-auto',
-        'bg-white rounded-2xl shadow-2xl border border-slate-100',
+        'bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100',
         'animate-in fade-in-0 zoom-in-95 slide-in-from-left-1/2 slide-in-from-top-[48%]',
         className
       )}
@@ -145,7 +145,7 @@ const ModalFooter = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      'flex items-center justify-end gap-3 p-6 pt-5 border-t border-slate-100 bg-slate-50/50',
+      'flex items-center justify-end gap-3 p-6 pt-5 border-t border-slate-100 bg-slate-50/50 dark:bg-slate-800/50',
       className
     )}
     {...props}

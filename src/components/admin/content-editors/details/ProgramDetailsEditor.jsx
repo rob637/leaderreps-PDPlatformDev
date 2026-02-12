@@ -46,7 +46,7 @@ const ProgramDetailsEditor = ({ details, onChange }) => {
     <div className="space-y-4">
       <div className="flex flex-col gap-2">
         <h3 className="text-lg font-medium">Program Content</h3>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Build your program by adding existing content from the library.
         </p>
         
@@ -54,28 +54,28 @@ const ProgramDetailsEditor = ({ details, onChange }) => {
           <button
             type="button"
             onClick={() => setPickerType(CONTENT_TYPES.VIDEO)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 border border-blue-200"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-700 rounded-lg hover:bg-blue-100 border border-blue-200 dark:border-blue-800"
           >
             <Plus size={14} /> Add Video
           </button>
           <button
             type="button"
             onClick={() => setPickerType(CONTENT_TYPES.TOOL)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 border border-orange-200"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-orange-50 dark:bg-orange-900/20 text-orange-700 rounded-lg hover:bg-orange-100 border border-orange-200 dark:border-orange-800"
           >
             <Plus size={14} /> Add Tool
           </button>
           <button
             type="button"
             onClick={() => setPickerType(CONTENT_TYPES.READ_REP)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 border border-green-200"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-50 dark:bg-green-900/20 text-green-700 rounded-lg hover:bg-green-100 border border-green-200 dark:border-green-800"
           >
             <Plus size={14} /> Add Reading
           </button>
           <button
             type="button"
             onClick={() => setPickerType(CONTENT_TYPES.WORKOUT)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 border border-purple-200"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-50 dark:bg-purple-900/20 text-purple-700 rounded-lg hover:bg-purple-100 border border-purple-200 dark:border-purple-800"
           >
             <Plus size={14} /> Add Workout
           </button>
@@ -84,14 +84,14 @@ const ProgramDetailsEditor = ({ details, onChange }) => {
 
       <div className="space-y-2 mt-4">
         {modules.map((module, index) => (
-          <div key={`${module.id}-${index}`} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div key={`${module.id}-${index}`} className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
             <GripVertical className="text-gray-300 cursor-move" size={20} />
-            <div className="p-2 bg-gray-50 rounded-md">
+            <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
               {getIconForType(module.type)}
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-medium truncate">{module.title}</div>
-              <div className="text-xs text-gray-500 flex items-center gap-2">
+              <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
                 <span className="uppercase tracking-wider font-bold text-[10px]">{module.type}</span>
                 {module.description && <span className="truncate">- {module.description}</span>}
               </div>
@@ -106,7 +106,7 @@ const ProgramDetailsEditor = ({ details, onChange }) => {
         ))}
         
         {modules.length === 0 && (
-          <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800">
             <p>No content added yet.</p>
             <p className="text-sm mt-1">Use the buttons above to add modules to this program.</p>
           </div>

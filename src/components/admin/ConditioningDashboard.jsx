@@ -22,7 +22,7 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
   const { currentWeek, consecutiveMissedWeeks, needsAttention } = summary;
   
   return (
-    <div className={`border-b border-gray-100 last:border-b-0 ${needsAttention ? 'bg-red-50' : ''}`}>
+    <div className={`border-b border-gray-100 last:border-b-0 ${needsAttention ? 'bg-red-50 dark:bg-red-900/20' : ''}`}>
       <button
         onClick={onToggle}
         className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -30,10 +30,10 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
             currentWeek?.requiredRepCompleted 
-              ? 'bg-green-100 text-green-700' 
+              ? 'bg-green-100 dark:bg-green-900/30 text-green-700' 
               : needsAttention 
-              ? 'bg-red-100 text-red-700'
-              : 'bg-amber-100 text-amber-700'
+              ? 'bg-red-100 dark:bg-red-900/30 text-red-700'
+              : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700'
           }`}>
             {currentWeek?.requiredRepCompleted ? (
               <CheckCircle className="w-5 h-5" />
@@ -47,7 +47,7 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
             <div className="font-medium text-corporate-navy">
               {summary.email || summary.userId}
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               {currentWeek?.totalCompleted || 0} completed, {currentWeek?.totalActive || 0} active
             </div>
           </div>
@@ -55,12 +55,12 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
         
         <div className="flex items-center gap-4">
           {consecutiveMissedWeeks > 0 && (
-            <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+            <span className="text-xs px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700">
               {consecutiveMissedWeeks} week{consecutiveMissedWeeks !== 1 ? 's' : ''} missed
             </span>
           )}
           {needsAttention && (
-            <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-medium">
+            <span className="text-xs px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 font-medium">
               Needs Attention
             </span>
           )}
@@ -74,27 +74,27 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
       
       {/* Expanded Details */}
       {isExpanded && currentWeek?.reps && (
-        <div className="px-4 pb-4 pt-2 bg-gray-50">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">This Week's Reps</h4>
+        <div className="px-4 pb-4 pt-2 bg-gray-50 dark:bg-gray-800">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">This Week's Reps</h4>
           {currentWeek.reps.length === 0 ? (
-            <p className="text-sm text-gray-500 italic">No reps committed this week</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 italic">No reps committed this week</p>
           ) : (
             <div className="space-y-2">
               {currentWeek.reps.map((rep) => (
                 <div 
                   key={rep.id}
-                  className="flex items-center justify-between p-2 bg-white rounded border border-gray-200"
+                  className="flex items-center justify-between p-2 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-gray-700"
                 >
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-gray-400" />
                     <span className="text-sm font-medium">{rep.person}</span>
-                    <span className="text-xs text-gray-500">({rep.repType})</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">({rep.repType})</span>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    rep.status === REP_STATUS.COMPLETED ? 'bg-green-100 text-green-700' :
-                    rep.status === REP_STATUS.MISSED ? 'bg-amber-100 text-amber-700' :
-                    rep.status === REP_STATUS.CANCELED ? 'bg-gray-100 text-gray-500' :
-                    'bg-blue-100 text-blue-700'
+                    rep.status === REP_STATUS.COMPLETED ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                    rep.status === REP_STATUS.MISSED ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' :
+                    rep.status === REP_STATUS.CANCELED ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400' :
+                    'bg-blue-100 dark:bg-blue-900/30 text-blue-700'
                   }`}>
                     {rep.status}
                   </span>
@@ -114,11 +114,11 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
 const CohortSelector = ({ cohorts, selectedCohortId, onSelect }) => {
   return (
     <div className="flex items-center gap-2">
-      <label className="text-sm font-medium text-gray-700">Cohort:</label>
+      <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Cohort:</label>
       <select
         value={selectedCohortId || ''}
         onChange={(e) => onSelect(e.target.value)}
-        className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+        className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
       >
         <option value="">Select a cohort...</option>
         {cohorts.map((cohort) => (
@@ -144,48 +144,48 @@ const StatsSummary = ({ cohortSummary }) => {
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       <Card className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
             <Users className="w-5 h-5 text-blue-600" />
           </div>
           <div>
             <div className="text-2xl font-bold text-corporate-navy">{totalUsers}</div>
-            <div className="text-sm text-gray-500">Total Leaders</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Total Leaders</div>
           </div>
         </div>
       </Card>
       
       <Card className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
             <CheckCircle className="w-5 h-5 text-green-600" />
           </div>
           <div>
             <div className="text-2xl font-bold text-green-600">{usersCompleted}</div>
-            <div className="text-sm text-gray-500">Rep Done</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Rep Done</div>
           </div>
         </div>
       </Card>
       
       <Card className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
             <Target className="w-5 h-5 text-amber-600" />
           </div>
           <div>
             <div className="text-2xl font-bold text-amber-600">{completionRate}%</div>
-            <div className="text-sm text-gray-500">Completion Rate</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Completion Rate</div>
           </div>
         </div>
       </Card>
       
       <Card className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
             <AlertTriangle className="w-5 h-5 text-red-600" />
           </div>
           <div>
             <div className="text-2xl font-bold text-red-600">{usersNeedingAttention}</div>
-            <div className="text-sm text-gray-500">Need Attention</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Need Attention</div>
           </div>
         </div>
       </Card>
@@ -220,7 +220,7 @@ const QualityMetrics = ({ cohortQualityStats }) => {
           <BarChart3 className="w-5 h-5 text-corporate-navy" />
           <h3 className="font-semibold text-corporate-navy">Quality Metrics</h3>
         </div>
-        <p className="text-sm text-gray-500 italic">No debriefs submitted yet for this cohort.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 italic">No debriefs submitted yet for this cohort.</p>
       </Card>
     );
   }
@@ -234,22 +234,22 @@ const QualityMetrics = ({ cohortQualityStats }) => {
       
       {/* Overview Stats */}
       <div className="grid grid-cols-3 gap-4 mb-4">
-        <div className="text-center p-3 bg-gray-50 rounded-lg">
+        <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="text-2xl font-bold text-corporate-navy">{totalWithEvidence}</div>
-          <div className="text-xs text-gray-500">Debriefs</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Debriefs</div>
         </div>
-        <div className="text-center p-3 bg-blue-50 rounded-lg">
+        <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
           <div className="text-2xl font-bold text-blue-600">{level1Rate}%</div>
           <div className="text-xs text-blue-600">Level 1 Rate</div>
         </div>
-        <div className="text-center p-3 bg-green-50 rounded-lg">
+        <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
           <div className="text-2xl font-bold text-green-600">{qualityRate}%</div>
           <div className="text-xs text-green-600">Quality Pass</div>
         </div>
       </div>
       
       {/* Dimension Breakdown */}
-      <h4 className="text-sm font-medium text-gray-700 mb-2">Dimension Pass Rates</h4>
+      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Dimension Pass Rates</h4>
       <div className="space-y-2">
         {Object.entries(dimensionStats || {}).map(([dimension, stats]) => {
           const config = DIMENSION_CONFIG[dimension];
@@ -264,9 +264,9 @@ const QualityMetrics = ({ cohortQualityStats }) => {
           
           return (
             <div key={dimension} className="flex items-center gap-3">
-              <Icon className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
               <div className="flex-1">
-                <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 mb-1">
                   <span>{config.label}</span>
                   <span>{stats.passed}/{stats.total} ({stats.rate}%)</span>
                 </div>
@@ -292,18 +292,18 @@ const CohortHealthIndicator = ({ healthData, isLoading }) => {
   if (!healthData && !isLoading) return null;
   
   const getHealthColor = (level) => ({
-    healthy: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300', fill: 'bg-green-500' },
-    caution: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300', fill: 'bg-amber-500' },
-    'at-risk': { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300', fill: 'bg-orange-500' },
-    critical: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300', fill: 'bg-red-500' }
-  })[level] || { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300', fill: 'bg-gray-500' };
+    healthy: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700', border: 'border-green-300', fill: 'bg-green-500' },
+    caution: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700', border: 'border-amber-300', fill: 'bg-amber-500' },
+    'at-risk': { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700', border: 'border-orange-300', fill: 'bg-orange-500' },
+    critical: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700', border: 'border-red-300', fill: 'bg-red-500' }
+  })[level] || { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-700 dark:text-gray-200', border: 'border-gray-300 dark:border-gray-600', fill: 'bg-gray-500' };
   
   if (isLoading) {
     return (
       <Card className="p-4 mb-6">
         <div className="flex items-center gap-3">
           <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
-          <span className="text-sm text-gray-500">Calculating cohort health...</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">Calculating cohort health...</span>
         </div>
       </Card>
     );
@@ -321,7 +321,7 @@ const CohortHealthIndicator = ({ healthData, isLoading }) => {
           </div>
           <div>
             <h3 className="font-semibold text-corporate-navy">Cohort Health</h3>
-            <p className="text-sm text-gray-500">Overall accountability score</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Overall accountability score</p>
           </div>
         </div>
         
@@ -359,19 +359,19 @@ const CohortHealthIndicator = ({ healthData, isLoading }) => {
       
       {/* Breakdown */}
       <div className="grid grid-cols-4 gap-3 text-center">
-        <div className="p-2 bg-green-50 rounded-lg">
+        <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
           <div className="text-lg font-bold text-green-600">{breakdown.completedUserCount}</div>
           <div className="text-xs text-green-600">Complete</div>
         </div>
-        <div className="p-2 bg-blue-50 rounded-lg">
+        <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
           <div className="text-lg font-bold text-blue-600">{breakdown.activeUserCount}</div>
           <div className="text-xs text-blue-600">In Progress</div>
         </div>
-        <div className="p-2 bg-gray-50 rounded-lg">
-          <div className="text-lg font-bold text-gray-600">{breakdown.incompleteUserCount}</div>
-          <div className="text-xs text-gray-600">No Activity</div>
+        <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="text-lg font-bold text-gray-600 dark:text-gray-300">{breakdown.incompleteUserCount}</div>
+          <div className="text-xs text-gray-600 dark:text-gray-300">No Activity</div>
         </div>
-        <div className="p-2 bg-red-50 rounded-lg">
+        <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
           <div className="text-lg font-bold text-red-600">{breakdown.criticalPatternCount}</div>
           <div className="text-xs text-red-600">Critical Flags</div>
         </div>
@@ -381,7 +381,7 @@ const CohortHealthIndicator = ({ healthData, isLoading }) => {
       {(breakdown.criticalPatternCount > 0 || breakdown.highPatternCount > 0) && (
         <div className="mt-4 flex items-center gap-2 text-sm">
           <AlertTriangle className="w-4 h-4 text-amber-500" />
-          <span className="text-gray-600">
+          <span className="text-gray-600 dark:text-gray-300">
             {breakdown.criticalPatternCount + breakdown.highPatternCount} leaders need coaching attention
           </span>
         </div>
@@ -577,10 +577,10 @@ const ConditioningDashboard = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-corporate-navy">Conditioning Dashboard</h1>
-          <p className="text-gray-600">Track leadership rep accountability across your cohort</p>
+          <p className="text-gray-600 dark:text-gray-300">Track leadership rep accountability across your cohort</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
             <Calendar className="w-4 h-4" />
             <span>Week: {currentWeekId}</span>
           </div>
@@ -606,7 +606,7 @@ const ConditioningDashboard = () => {
       
       {/* Error */}
       {error && (
-        <Card className="mb-6 p-4 border-l-4 border-l-red-500 bg-red-50">
+        <Card className="mb-6 p-4 border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900/20">
           <p className="text-red-700">{error}</p>
         </Card>
       )}
@@ -657,14 +657,14 @@ const ConditioningDashboard = () => {
       {!selectedCohortId && (
         <Card className="p-6 text-center">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Select a cohort to view conditioning data</p>
+          <p className="text-gray-600 dark:text-gray-300">Select a cohort to view conditioning data</p>
         </Card>
       )}
       
       {/* User List */}
       {selectedCohortId && (
         <Card>
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="font-semibold text-corporate-navy">
               Leaders ({userSummaries.length})
             </h2>
@@ -673,12 +673,12 @@ const ConditioningDashboard = () => {
           {isLoadingUsers ? (
             <div className="p-8 text-center">
               <RefreshCw className="w-6 h-6 text-gray-400 animate-spin mx-auto mb-2" />
-              <p className="text-sm text-gray-500">Loading leader data...</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Loading leader data...</p>
             </div>
           ) : userSummaries.length === 0 ? (
             <div className="p-8 text-center">
               <Users className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-500">No leaders in this cohort</p>
+              <p className="text-gray-500 dark:text-gray-400">No leaders in this cohort</p>
             </div>
           ) : (
             <div>

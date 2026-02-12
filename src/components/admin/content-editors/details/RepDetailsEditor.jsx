@@ -142,7 +142,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
       {type === CONTENT_TYPES.REP && (
         <>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
               Video URL
             </label>
             <div className="space-y-2">
@@ -158,7 +158,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
                 <button
                   type="button"
                   onClick={() => setShowMediaPicker('VIDEO')}
-                  className="flex items-center gap-2 px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 border border-purple-200"
+                  className="flex items-center gap-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-700 rounded-lg hover:bg-purple-100 border border-purple-200 dark:border-purple-800"
                   title="Select from Vault"
                 >
                   <Database size={18} />
@@ -168,7 +168,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
               Duration (seconds)
             </label>
             <input
@@ -186,7 +186,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
         <>
           {/* Cover Image URL */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
               Cover Image URL
             </label>
             <div className="flex gap-2">
@@ -201,7 +201,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
               <button
                 type="button"
                 onClick={() => setShowMediaPicker('IMAGE')}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 border border-blue-200"
+                className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 rounded-lg hover:bg-blue-100 border border-blue-200 dark:border-blue-800"
                 title="Select from Vault"
               >
                 <ImageIcon size={18} />
@@ -210,7 +210,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
             </div>
             {details.coverUrl && (
               <div className="mt-2">
-                <img src={details.coverUrl} alt="Cover Preview" className="h-32 object-contain rounded border border-gray-200" />
+                <img src={details.coverUrl} alt="Cover Preview" className="h-32 object-contain rounded border border-gray-200 dark:border-gray-700" />
               </div>
             )}
           </div>
@@ -218,7 +218,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
           {/* Author field moved to GenericContentEditor for better visibility */}
 
           {/* AI Prompt Helper */}
-          <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-4">
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 rounded-lg p-4 mb-4">
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-2 text-indigo-800 font-semibold">
                 <Bot size={18} />
@@ -250,7 +250,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
               Synopsis
             </label>
             <textarea
@@ -264,7 +264,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
               Content / Text (Full Text or Additional Notes)
             </label>
             <textarea
@@ -276,7 +276,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
               PDF URL (Optional)
             </label>
             <div className="space-y-2">
@@ -291,7 +291,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
                 <button
                   type="button"
                   onClick={() => setShowMediaPicker('DOCUMENT')}
-                  className="flex items-center gap-2 px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 border border-purple-200"
+                  className="flex items-center gap-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-700 rounded-lg hover:bg-purple-100 border border-purple-200 dark:border-purple-800"
                   title="Select from Vault"
                 >
                   <Database size={18} />
@@ -304,7 +304,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
           Instructions / Notes
         </label>
         <textarea

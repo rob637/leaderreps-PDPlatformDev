@@ -138,7 +138,7 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
   if (!plan || !plan.coreReps) {
     return (
       <Card accent="ORANGE">
-        <p className="text-gray-600">No plan available to edit.</p>
+        <p className="text-gray-600 dark:text-gray-300">No plan available to edit.</p>
       </Card>
     );
   }
@@ -162,7 +162,7 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
             <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: 'var(--corporate-navy)' }}>
               Quick Edit Plan
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               Adjust weeks completed for each skill or add/remove skills.
             </p>
           </div>
@@ -185,14 +185,14 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
             {reps.map((rep) => (
               <div
                 key={rep.originalIndex}
-                className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg"
+                className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
               >
                 <div className="flex-1">
                   <div className="font-medium" style={{ color: 'var(--corporate-navy)' }}>
                     {rep.skillName}
                   </div>
                   {rep.phase && (
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">
                       {rep.phase}
                     </div>
                   )}
@@ -211,7 +211,7 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
                     <div className="font-bold" style={{ color: 'var(--corporate-orange)' }}>
                       {rep.weeksCompleted || 0}
                     </div>
-                    <div className="text-xs text-gray-600">weeks</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-300">weeks</div>
                   </div>
                   
                   <button

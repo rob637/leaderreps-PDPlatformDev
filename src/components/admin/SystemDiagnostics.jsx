@@ -47,7 +47,7 @@ const SystemDiagnostics = () => {
       case 'success': return <CheckCircle2 className="w-5 h-5 text-green-500" />;
       case 'error': return <XCircle className="w-5 h-5 text-red-500" />;
       case 'running': return <RefreshCw className="w-5 h-5 text-blue-500 animate-spin" />;
-      default: return <div className="w-5 h-5 rounded-full border-2 border-gray-300" />;
+      default: return <div className="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600" />;
     }
   };
 
@@ -56,7 +56,7 @@ const SystemDiagnostics = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-corporate-navy font-serif">System Diagnostics</h2>
-          <p className="text-gray-500 text-sm">Real-time health check of platform services.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Real-time health check of platform services.</p>
         </div>
         <button 
           onClick={runDiagnostics}
@@ -67,24 +67,24 @@ const SystemDiagnostics = () => {
         </button>
       </div>
 
-      <div className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {checks.map((check, index) => (
           <div 
             key={check.id} 
-            className={`p-4 flex items-center justify-between ${index !== checks.length - 1 ? 'border-b border-gray-200' : ''}`}
+            className={`p-4 flex items-center justify-between ${index !== checks.length - 1 ? 'border-b border-gray-200 dark:border-gray-700' : ''}`}
           >
             <div className="flex items-center gap-4">
               {getStatusIcon(check.status)}
               <div>
                 <div className="font-bold text-corporate-navy">{check.name}</div>
-                <div className="text-sm text-gray-500">{check.message}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">{check.message}</div>
               </div>
             </div>
             <div className={`
               px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
-              ${check.status === 'success' ? 'bg-green-100 text-green-800' : 
-                check.status === 'error' ? 'bg-red-100 text-red-800' : 
-                'bg-gray-200 text-gray-600'}
+              ${check.status === 'success' ? 'bg-green-100 dark:bg-green-900/30 text-green-800' : 
+                check.status === 'error' ? 'bg-red-100 dark:bg-red-900/30 text-red-800' : 
+                'bg-gray-200 text-gray-600 dark:text-gray-300'}
             `}>
               {check.status}
             </div>
@@ -93,43 +93,43 @@ const SystemDiagnostics = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="p-6 border border-gray-200 rounded-xl">
+        <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl">
           <h3 className="font-bold text-corporate-navy mb-4 flex items-center gap-2">
             <Wifi className="w-5 h-5 text-corporate-teal" />
             Network Status
           </h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Connection Type</span>
+              <span className="text-gray-600 dark:text-gray-300">Connection Type</span>
               <span className="font-medium">Secure (HTTPS)</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Latency</span>
+              <span className="text-gray-600 dark:text-gray-300">Latency</span>
               <span className="font-medium text-green-600">24ms</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Bandwidth</span>
+              <span className="text-gray-600 dark:text-gray-300">Bandwidth</span>
               <span className="font-medium">Optimal</span>
             </div>
           </div>
         </div>
 
-        <div className="p-6 border border-gray-200 rounded-xl">
+        <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl">
           <h3 className="font-bold text-corporate-navy mb-4 flex items-center gap-2">
             <ShieldIcon className="w-5 h-5 text-corporate-teal" />
             Security Status
           </h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Auth Provider</span>
+              <span className="text-gray-600 dark:text-gray-300">Auth Provider</span>
               <span className="font-medium">Firebase Auth</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Encryption</span>
+              <span className="text-gray-600 dark:text-gray-300">Encryption</span>
               <span className="font-medium">TLS 1.3</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Admin Access</span>
+              <span className="text-gray-600 dark:text-gray-300">Admin Access</span>
               <span className="font-medium text-green-600">Verified</span>
             </div>
           </div>

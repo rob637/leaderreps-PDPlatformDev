@@ -122,7 +122,7 @@ const ProgramDetail = (props) => {
     return (
       <PageLayout title="Program Not Found" showBack={true}>
         <div className="p-6 text-center">
-          <p className="text-gray-600">The requested program could not be found.</p>
+          <p className="text-gray-600 dark:text-gray-300">The requested program could not be found.</p>
           <Button onClick={() => navigate('programs-index')} className="mt-4">
             Back to Programs
           </Button>
@@ -135,11 +135,11 @@ const ProgramDetail = (props) => {
     return (
       <PageLayout title="Content Locked" showBack={true}>
         <div className="flex flex-col items-center justify-center p-12 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-6">
             <Lock className="w-8 h-8 text-slate-400" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">This Program is Locked</h2>
-          <p className="text-slate-500 max-w-md mb-8">
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">This Program is Locked</h2>
+          <p className="text-slate-500 dark:text-slate-400 max-w-md mb-8">
             You haven't unlocked this content yet. Continue your Development Plan to gain access.
           </p>
           {program.unlockDay && (
@@ -167,16 +167,16 @@ const ProgramDetail = (props) => {
       <div className="max-w-5xl mx-auto space-y-8">
         
         {/* Program Overview Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-8">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
           <div className="flex flex-col md:flex-row gap-8">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
                   <Layers className="w-6 h-6 text-indigo-600" />
                 </div>
                 <h2 className="text-xl font-bold text-corporate-navy">Program Overview</h2>
               </div>
-              <p className="text-slate-600 mb-6 leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
                 {program.description}
               </p>
               
@@ -188,12 +188,12 @@ const ProgramDetail = (props) => {
             </div>
             
             {/* CTA Section */}
-            <div className="w-full md:w-72 bg-slate-50 rounded-lg p-6 border border-slate-100 flex flex-col justify-center items-center text-center">
+            <div className="w-full md:w-72 bg-slate-50 dark:bg-slate-800 rounded-lg p-6 border border-slate-100 flex flex-col justify-center items-center text-center">
               <div className="w-16 h-16 bg-corporate-teal/10 rounded-full flex items-center justify-center mb-4 text-corporate-teal">
                 <PlayCircle className="w-8 h-8" />
               </div>
-              <h3 className="font-bold text-slate-800 mb-2">Explore This Program</h3>
-              <p className="text-xs text-slate-500 mb-4">
+              <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-2">Explore This Program</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
                 Browse all content in this program to develop your skills.
               </p>
             </div>
@@ -218,18 +218,18 @@ const ProgramDetail = (props) => {
                   key={item.id}
                   onClick={() => !isLocked && handleContentClick(item)}
                   className={`
-                    group bg-white border rounded-lg p-5 flex items-center gap-4 transition-all
+                    group bg-white dark:bg-slate-800 border rounded-lg p-5 flex items-center gap-4 transition-all
                     ${isLocked 
-                      ? 'border-slate-200 opacity-60 cursor-not-allowed' 
-                      : 'border-slate-200 hover:border-corporate-teal hover:shadow-md cursor-pointer'
+                      ? 'border-slate-200 dark:border-slate-700 opacity-60 cursor-not-allowed' 
+                      : 'border-slate-200 dark:border-slate-700 hover:border-corporate-teal hover:shadow-md cursor-pointer'
                     }
                   `}
                 >
                   <div className={`
                     flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors
                     ${isLocked 
-                      ? 'bg-slate-100 text-slate-400' 
-                      : 'bg-slate-100 text-slate-500 group-hover:bg-corporate-teal group-hover:text-white'
+                      ? 'bg-slate-100 dark:bg-slate-700 text-slate-400' 
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-corporate-teal group-hover:text-white'
                     }
                   `}>
                     {isLocked ? <Lock className="w-5 h-5" /> : getIconForType(item.type)}
@@ -241,11 +241,11 @@ const ProgramDetail = (props) => {
                         {item.type?.replace('_', ' ')}
                       </span>
                     </div>
-                    <h4 className={`font-bold transition-colors ${isLocked ? 'text-slate-400' : 'text-slate-800 group-hover:text-corporate-teal'}`}>
+                    <h4 className={`font-bold transition-colors ${isLocked ? 'text-slate-400' : 'text-slate-800 dark:text-slate-200 group-hover:text-corporate-teal'}`}>
                       {item.title}
                     </h4>
                     {item.description && (
-                      <p className="text-sm text-slate-500 line-clamp-1">
+                      <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">
                         {item.description}
                       </p>
                     )}
@@ -256,7 +256,7 @@ const ProgramDetail = (props) => {
                   
                   <div className="flex-shrink-0 flex items-center gap-3">
                     {item.estimatedTime && (
-                      <span className="text-xs font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded">
+                      <span className="text-xs font-medium text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded">
                         {item.estimatedTime} min
                       </span>
                     )}
@@ -266,7 +266,7 @@ const ProgramDetail = (props) => {
             })}
             
             {content.length === 0 && (
-              <div className="text-center p-8 border-2 border-dashed border-slate-200 rounded-lg text-slate-400">
+              <div className="text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg text-slate-400">
                 No content has been added to this program yet.
               </div>
             )}

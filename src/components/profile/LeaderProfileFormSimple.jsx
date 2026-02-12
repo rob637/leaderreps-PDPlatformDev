@@ -76,7 +76,7 @@ const DIRECT_REPORTS_OPTIONS = [
 // Input field component - MOVED OUTSIDE to prevent re-creation on each render
 const InputField = ({ field, label, type = 'text', required = false, placeholder = '', value, onChange, error }) => (
   <div className="space-y-1">
-    <label className="block text-sm font-medium text-slate-700">
+    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <input
@@ -86,8 +86,8 @@ const InputField = ({ field, label, type = 'text', required = false, placeholder
       placeholder={placeholder}
       className={`w-full px-4 py-3 rounded-xl border-2 transition-all
         ${error 
-          ? 'border-red-300 bg-red-50 focus:border-red-500' 
-          : 'border-slate-200 bg-white focus:border-corporate-teal'
+          ? 'border-red-300 bg-red-50 dark:bg-red-900/20 focus:border-red-500' 
+          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-corporate-teal'
         }
         focus:outline-none focus:ring-4 focus:ring-corporate-teal/20`}
     />
@@ -102,14 +102,14 @@ const InputField = ({ field, label, type = 'text', required = false, placeholder
 // Select field component - MOVED OUTSIDE to prevent re-creation on each render
 const SelectField = ({ field, label, options, required = false, placeholder = 'Select...', value, onChange, error }) => (
   <div className="space-y-1">
-    <label className="block text-sm font-medium text-slate-700">
+    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <select
       value={value || ''}
       onChange={e => onChange(field, e.target.value)}
-      className={`w-full px-4 py-3 rounded-xl border-2 transition-all appearance-none bg-white
-        ${error ? 'border-red-300 bg-red-50' : 'border-slate-200 focus:border-corporate-teal'}
+      className={`w-full px-4 py-3 rounded-xl border-2 transition-all appearance-none bg-white dark:bg-slate-800
+        ${error ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700 focus:border-corporate-teal'}
         focus:outline-none focus:ring-4 focus:ring-corporate-teal/20`}
     >
       <option value="">{placeholder}</option>
@@ -272,7 +272,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 bg-white rounded-2xl">
+      <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-800 rounded-2xl">
         <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
       </div>
     );
@@ -280,18 +280,18 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
 
   if (showSuccess) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-center bg-white rounded-2xl">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+      <div className="flex flex-col items-center justify-center h-64 text-center bg-white dark:bg-slate-800 rounded-2xl">
+        <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
           <CheckCircle className="w-10 h-10 text-green-500" />
         </div>
         <h3 className="text-xl font-bold text-corporate-navy mb-2">Profile Complete!</h3>
-        <p className="text-slate-600">Your personalized journey is ready.</p>
+        <p className="text-slate-600 dark:text-slate-300">Your personalized journey is ready.</p>
       </div>
     );
   }
 
   return (
-    <div ref={formRef} className={`${isModal ? 'bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-6rem)] md:max-h-[85vh]' : ''}`}>
+    <div ref={formRef} className={`${isModal ? 'bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-6rem)] md:max-h-[85vh]' : ''}`}>
       {/* Header - Fixed */}
       <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-4 relative flex-shrink-0">
         {isModal && onClose && (
@@ -304,7 +304,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
           </button>
         )}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+          <div className="w-10 h-10 bg-white/20 dark:bg-slate-800/20 rounded-xl flex items-center justify-center">
             <User className="w-5 h-5" />
           </div>
           <div>
@@ -315,11 +315,11 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
       </div>
 
       {/* Action Bar - Fixed at top for mobile accessibility */}
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
         {onClose && (
           <button
             onClick={onClose}
-            className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors font-medium"
+            className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-colors font-medium"
           >
             Cancel
           </button>
@@ -352,7 +352,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
           const phoneRequired = strategy === 'smart_escalation' || strategy === 'full_accountability';
           return (
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
                 Phone Number {phoneRequired ? (
                   <span className="text-red-500">*</span>
                 ) : (
@@ -367,8 +367,8 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
                 placeholder="+1 (555) 123-4567"
                 className={`w-full px-4 py-3 rounded-xl border-2 transition-all
                   ${errors.phoneNumber 
-                    ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200' 
-                    : 'border-slate-200 bg-white focus:border-corporate-teal focus:ring-corporate-teal/20'
+                    ? 'border-red-300 bg-red-50 dark:bg-red-900/20 focus:border-red-500 focus:ring-red-200' 
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-corporate-teal focus:ring-corporate-teal/20'
                   }
                   focus:outline-none focus:ring-4`}
               />
@@ -377,7 +377,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
                   <AlertCircle className="w-3 h-3" /> {errors.phoneNumber}
                 </p>
               ) : (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {phoneRequired 
                     ? 'Required for Smart Escalation to send text reminders on Day 3+.'
                     : 'By providing your phone number, you consent to receive text messages including habit reminders and event notifications.'
@@ -389,7 +389,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
         })()}
 
         {/* Notification Preferences - Enhanced with Visual Escalation */}
-        <div className="bg-gradient-to-br from-slate-50 to-teal-50/30 p-5 rounded-xl space-y-4 border border-slate-200">
+        <div className="bg-gradient-to-br from-slate-50 to-teal-50/30 p-5 rounded-xl space-y-4 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold text-corporate-navy flex items-center gap-2">
               <Bell className="w-4 h-4" /> Stay Accountable
@@ -399,14 +399,14 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
             </span>
           </div>
           
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
             We'll remind you to practice daily. Choose how persistent you want us to be:
           </p>
 
           {/* Visual Escalation Diagram */}
-          <div className="bg-white rounded-lg p-4 border border-slate-200">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Smart Escalation Timeline</span>
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Smart Escalation Timeline</span>
             </div>
             
             {/* Timeline */}
@@ -418,34 +418,34 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
               <div className="relative flex justify-between">
                 {/* Day 1 - Push */}
                 <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-green-100 border-2 border-green-400 flex items-center justify-center z-10">
+                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 border-2 border-green-400 flex items-center justify-center z-10">
                     <Smartphone className="w-5 h-5 text-green-600" />
                   </div>
                   <span className="text-xs font-bold text-green-600 mt-2">Day 1</span>
-                  <span className="text-[10px] text-slate-500">Nudge</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Nudge</span>
                 </div>
                 
                 {/* Day 2 - Email */}
                 <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 border-2 border-amber-400 flex items-center justify-center z-10">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-400 flex items-center justify-center z-10">
                     <Mail className="w-5 h-5 text-amber-600" />
                   </div>
                   <span className="text-xs font-bold text-amber-600 mt-2">Day 2</span>
-                  <span className="text-[10px] text-slate-500">+ Email</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">+ Email</span>
                 </div>
                 
                 {/* Day 3+ - SMS */}
                 <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-red-100 border-2 border-red-400 flex items-center justify-center z-10">
+                  <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 border-2 border-red-400 flex items-center justify-center z-10">
                     <MessageSquare className="w-5 h-5 text-red-600" />
                   </div>
                   <span className="text-xs font-bold text-red-600 mt-2">Day 3+</span>
-                  <span className="text-[10px] text-slate-500">+ Text</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">+ Text</span>
                 </div>
               </div>
             </div>
             
-            <p className="text-xs text-slate-500 mt-3 text-center italic">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center italic">
               Miss a day? We'll gently escalate to help you stay on track.
             </p>
           </div>
@@ -484,16 +484,16 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
                   }}
                   className={`w-full p-3 rounded-lg border-2 transition-all text-left flex items-center gap-3 ${
                     isSelected 
-                      ? 'border-corporate-teal bg-white shadow-sm' 
-                      : 'border-transparent bg-white/50 hover:bg-white hover:border-slate-200'
+                      ? 'border-corporate-teal bg-white dark:bg-slate-800 shadow-sm' 
+                      : 'border-transparent bg-white/50 dark:bg-slate-800/50 hover:bg-white hover:border-slate-200'
                   }`}
                 >
-                  <div className={`p-2 rounded-lg ${isSelected ? 'bg-corporate-teal text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  <div className={`p-2 rounded-lg ${isSelected ? 'bg-corporate-teal text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className={`font-medium text-sm ${isSelected ? 'text-corporate-navy' : 'text-slate-600'}`}>
+                      <span className={`font-medium text-sm ${isSelected ? 'text-corporate-navy' : 'text-slate-600 dark:text-slate-300'}`}>
                         {strategy.name}
                       </span>
                       {strategy.recommended && (
@@ -502,12 +502,12 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
                         </span>
                       )}
                       {needsPhone && (
-                        <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-600 rounded font-medium">
+                        <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded font-medium">
                           NEEDS PHONE
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 truncate">{strategy.description}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{strategy.description}</p>
                   </div>
                   {isSelected && (
                     <Check className="w-5 h-5 text-corporate-teal shrink-0" />
@@ -521,7 +521,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
           {(formData.notificationSettings?.strategy === 'smart_escalation' || 
             formData.notificationSettings?.strategy === 'full_accountability') && 
             !formData.phoneNumber && (
-            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
               <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm text-amber-800 font-medium">Phone number recommended</p>
@@ -533,7 +533,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
           )}
 
           {/* Timezone - Compact */}
-          <div className="flex items-center gap-3 pt-2 border-t border-slate-200">
+          <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
             <Globe className="w-4 h-4 text-slate-400 shrink-0" />
             <select
               value={formData.notificationSettings?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York"}
@@ -546,7 +546,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
                   }
                 }));
               }}
-              className="flex-1 px-3 py-2 rounded-lg border border-slate-200 bg-white
+              className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800
                 focus:border-corporate-teal focus:outline-none focus:ring-2 focus:ring-corporate-teal/20
                 transition-all text-sm"
             >
@@ -556,7 +556,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
             </select>
           </div>
           
-          <p className="text-xs text-slate-500 text-center">
+          <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
             You can change these settings anytime from your Locker.
           </p>
         </div>
@@ -575,7 +575,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
 
         {/* Primary Goal - Optional but helpful */}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-slate-700">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
             What's your main leadership goal? <span className="text-slate-400">(optional)</span>
           </label>
           <textarea
@@ -583,7 +583,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
             onChange={e => handleChange('primaryGoal', e.target.value)}
             placeholder="e.g., Become more confident giving feedback, build a stronger team culture..."
             rows={2}
-            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white
+            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800
               focus:border-corporate-teal focus:outline-none focus:ring-4 focus:ring-corporate-teal/20
               resize-none transition-all"
           />

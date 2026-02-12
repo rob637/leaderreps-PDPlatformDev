@@ -112,7 +112,7 @@ export const PageLayout = ({
           
           {badge && (
             <div className={`mt-3 ${centerHeader ? 'flex justify-center' : ''}`}>
-              <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold">
+              <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold">
                 {badge}
               </span>
             </div>
@@ -178,12 +178,12 @@ export const PageEmptyState = ({
 }) => (
   <div className="flex flex-col items-center justify-center py-16 px-4">
     {Icon && (
-      <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-6">
+      <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-6">
         <Icon className="w-10 h-10 text-slate-400" />
       </div>
     )}
     <h2 className="text-xl font-bold text-corporate-navy mb-2">{title}</h2>
-    <p className="text-slate-500 text-center max-w-md">{message}</p>
+    <p className="text-slate-500 dark:text-slate-400 text-center max-w-md">{message}</p>
   </div>
 );
 
@@ -196,14 +196,14 @@ export const PageEmptyState = ({
  * {enabledWidgets.length === 0 && <NoWidgetsEnabled moduleName="Dashboard" />}
  */
 export const NoWidgetsEnabled = ({ moduleName = 'this module' }) => (
-  <div className="text-center py-16 text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+  <div className="text-center py-16 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
       <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
       </svg>
     </div>
     <p className="text-lg font-medium mb-2 text-corporate-navy">No widgets enabled</p>
-    <p className="text-sm text-slate-500">
+    <p className="text-sm text-slate-500 dark:text-slate-400">
       Go to <span className="font-semibold text-corporate-teal">Widget Lab</span> in Admin Portal to enable {moduleName} widgets.
     </p>
   </div>
@@ -220,7 +220,7 @@ export const NoWidgetsEnabled = ({ moduleName = 'this module' }) => (
 export const PageSection = ({ title, icon: Icon, actions, children }) => (
   <section className="mb-8">
     {(title || actions) && (
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-2">
           {Icon && <Icon className="w-5 h-5 text-corporate-teal" />}
           {title && <h2 className="text-lg sm:text-xl font-bold text-corporate-navy">{title}</h2>}

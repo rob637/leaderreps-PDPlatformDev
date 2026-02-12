@@ -474,12 +474,12 @@ const ContentAdminHome = () => {
   ];
 
   return (
-    <div className="p-6 w-full min-h-screen bg-slate-50">
+    <div className="p-6 w-full min-h-screen bg-slate-50 dark:bg-slate-800">
       {/* Header */}
       <div className="mb-8">
         <button
           onClick={() => navigate('dashboard')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500"
+          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500 dark:text-slate-400"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Dashboard
@@ -492,7 +492,7 @@ const ContentAdminHome = () => {
               <h1 className="text-3xl font-bold text-corporate-navy">
                 Content Wrapper
               </h1>
-              <p className="text-slate-500">
+              <p className="text-slate-500 dark:text-slate-400">
                 Wrap raw media with metadata for use in the Dev Plan
               </p>
             </div>
@@ -515,7 +515,7 @@ const ContentAdminHome = () => {
             <button
               key={type.id}
               onClick={() => navigate(type.route)}
-              className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all text-left border-2 hover:border-opacity-100"
+              className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-xl transition-all text-left border-2 hover:border-opacity-100"
               style={{ borderColor: `${type.color}40` }}
             >
               <div className="flex items-center gap-3 mb-3">
@@ -529,7 +529,7 @@ const ContentAdminHome = () => {
                   {type.label}
                 </h2>
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {type.description}
               </p>
             </button>
@@ -546,7 +546,7 @@ const ContentAdminHome = () => {
             <button
               key={type.id}
               onClick={() => navigate(type.route)}
-              className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all text-left border-2 hover:border-opacity-100"
+              className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-xl transition-all text-left border-2 hover:border-opacity-100"
               style={{ borderColor: `${type.color}40` }}
             >
               <div className="flex items-center gap-3 mb-3">
@@ -560,7 +560,7 @@ const ContentAdminHome = () => {
                   {type.label}
                 </h2>
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {type.description}
               </p>
             </button>
@@ -569,11 +569,11 @@ const ContentAdminHome = () => {
       </div>
 
       {/* Info Box */}
-      <div className="mt-8 p-6 bg-white rounded-xl border-l-4 border-corporate-teal">
+      <div className="mt-8 p-6 bg-white dark:bg-slate-800 rounded-xl border-l-4 border-corporate-teal">
         <h3 className="font-bold mb-2 text-corporate-navy">
           About Content Management
         </h3>
-        <ul className="space-y-2 text-sm text-slate-500">
+        <ul className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
           <li>• Inactive content is hidden from all users but not deleted</li>
           <li>• Changes take effect immediately across all user sessions</li>
         </ul>

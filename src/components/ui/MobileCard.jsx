@@ -57,14 +57,14 @@ const MobileCard = React.forwardRef(({
       onMouseUp={handleTouchEnd}
       onMouseLeave={handleTouchEnd}
       className={cn(
-        "bg-white rounded-xl p-4 border border-slate-100",
+        "bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-100",
         "transition-all duration-150 touch-manipulation",
         onClick && !disabled && [
           "cursor-pointer",
           "hover:border-slate-200 hover:shadow-sm",
           "active:scale-[0.98] active:bg-slate-50"
         ],
-        isPressed && "scale-[0.98] bg-slate-50",
+        isPressed && "scale-[0.98] bg-slate-50 dark:bg-slate-800",
         disabled && "opacity-50 cursor-not-allowed",
         className,
         isPressed && pressedClassName
@@ -107,7 +107,7 @@ const MobileCardTitle = React.forwardRef(({
 }, ref) => (
   <h3
     ref={ref}
-    className={cn("font-semibold text-slate-900 leading-tight", className)}
+    className={cn("font-semibold text-slate-900 dark:text-white leading-tight", className)}
     {...props}
   >
     {children}
@@ -126,7 +126,7 @@ const MobileCardDescription = React.forwardRef(({
 }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-slate-500 mt-1", className)}
+    className={cn("text-sm text-slate-500 dark:text-slate-400 mt-1", className)}
     {...props}
   >
     {children}
@@ -186,12 +186,12 @@ const MobileCardIcon = React.forwardRef(({
   ...props 
 }, ref) => {
   const colorClasses = {
-    slate: "bg-slate-100 text-slate-600",
-    blue: "bg-blue-100 text-blue-600",
-    green: "bg-green-100 text-green-600",
-    orange: "bg-orange-100 text-orange-600",
-    red: "bg-red-100 text-red-600",
-    purple: "bg-purple-100 text-purple-600",
+    slate: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300",
+    blue: "bg-blue-100 dark:bg-blue-900/30 text-blue-600",
+    green: "bg-green-100 dark:bg-green-900/30 text-green-600",
+    orange: "bg-orange-100 dark:bg-orange-900/30 text-orange-600",
+    red: "bg-red-100 dark:bg-red-900/30 text-red-600",
+    purple: "bg-purple-100 dark:bg-purple-900/30 text-purple-600",
     navy: "bg-corporate-navy/10 text-corporate-navy",
     teal: "bg-corporate-teal/10 text-corporate-teal",
   };
@@ -223,11 +223,11 @@ const MobileCardBadge = React.forwardRef(({
   ...props 
 }, ref) => {
   const variantClasses = {
-    default: "bg-slate-100 text-slate-600",
-    success: "bg-green-100 text-green-700",
-    warning: "bg-orange-100 text-orange-700",
-    error: "bg-red-100 text-red-700",
-    info: "bg-blue-100 text-blue-700",
+    default: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300",
+    success: "bg-green-100 dark:bg-green-900/30 text-green-700",
+    warning: "bg-orange-100 dark:bg-orange-900/30 text-orange-700",
+    error: "bg-red-100 dark:bg-red-900/30 text-red-700",
+    info: "bg-blue-100 dark:bg-blue-900/30 text-blue-700",
     premium: "bg-gradient-to-r from-corporate-navy to-corporate-teal text-white",
   };
 

@@ -92,10 +92,10 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
     return (
       <div 
         onClick={() => onEdit(day)}
-        className="relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md bg-white border-slate-200 hover:border-purple-400"
+        className="relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-purple-400"
       >
         <div className="flex justify-between items-start mb-2">
-          <span className="text-xs font-bold px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+          <span className="text-xs font-bold px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700">
             🔓 Explore
           </span>
         </div>
@@ -106,12 +106,12 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
         
         <div className="space-y-2 mt-3">
           {day.focus && (
-            <div className="text-xs text-slate-600 bg-slate-50 p-1.5 rounded border border-slate-100">
+            <div className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 p-1.5 rounded border border-slate-100">
               <span className="font-bold text-purple-600">Focus:</span> {day.focus}
             </div>
           )}
           
-          <div className="flex gap-2 text-xs text-slate-500">
+          <div className="flex gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1">
               <span className="font-bold">{day.actions?.length || 0}</span> Actions
             </span>
@@ -132,19 +132,19 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
       onClick={() => onEdit(day)}
       className={`
         relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md
-        ${isWeekend ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200 hover:border-corporate-teal'}
+        ${isWeekend ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-corporate-teal'}
       `}
     >
       <div className="flex justify-between items-start mb-2">
         <span className={`
           text-xs font-bold px-2 py-1 rounded-full
-          ${isPrepPhase ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}
+          ${isPrepPhase ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}
         `}>
           {isPrepPhase ? 'Item' : 'Day'} {displayDayNumber || day.dayNumber}
         </span>
         <div className="flex items-center gap-1">
           {weeklyResourceCount > 0 && (
-            <span className="text-[10px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-full font-medium">
+            <span className="text-[10px] text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-1.5 py-0.5 rounded-full font-medium">
               {weeklyResourceCount} wk
             </span>
           )}
@@ -159,13 +159,13 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
       <div className="space-y-2 mt-3">
         {/* Focus */}
         {day.focus && (
-          <div className="text-xs text-slate-600 bg-slate-50 p-1.5 rounded border border-slate-100">
+          <div className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 p-1.5 rounded border border-slate-100">
             <span className="font-bold text-corporate-teal">Focus:</span> {day.focus}
           </div>
         )}
 
         {/* Stats */}
-        <div className="flex gap-2 text-xs text-slate-500">
+        <div className="flex gap-2 text-xs text-slate-500 dark:text-slate-400">
           <span className="flex items-center gap-1">
             <span className="font-bold">{day.actions?.length || 0}</span> Actions
           </span>
@@ -330,16 +330,16 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
   };
 
   return (
-    <div className="bg-white border-l border-slate-200 h-full flex flex-col w-96 shadow-xl fixed right-0 top-0 z-50 overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 h-full flex flex-col w-96 shadow-xl fixed right-0 top-0 z-50 overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+      <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
         <div>
           <h3 className="font-bold text-corporate-navy">Edit {formData.weekNumber < 1 ? 'Login' : 'Day'} {displayDayNumber || formData.dayNumber}</h3>
-          <p className="text-xs text-slate-500">Week {formData.weekNumber}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Week {formData.weekNumber}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={onCancel} className="p-2 hover:bg-slate-200 rounded-full">
-            <ChevronRight className="w-5 h-5 text-slate-500" />
+            <ChevronRight className="w-5 h-5 text-slate-500 dark:text-slate-400" />
           </button>
           <button 
             onClick={() => onSave(formData)}
@@ -356,7 +356,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
         {/* Basic Info */}
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Title</label>
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Title</label>
             <input 
               type="text" 
               value={formData.title} 
@@ -365,7 +365,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Daily Focus</label>
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Daily Focus</label>
             <textarea 
               value={formData.focus} 
               onChange={e => handleChange('focus', e.target.value)}
@@ -380,7 +380,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
               onChange={e => handleChange('isWeekend', e.target.checked)}
               id="isWeekend"
             />
-            <label htmlFor="isWeekend" className="text-sm text-slate-700">Is Weekend / Rest Day</label>
+            <label htmlFor="isWeekend" className="text-sm text-slate-700 dark:text-slate-200">Is Weekend / Rest Day</label>
           </div>
         </div>
 
@@ -395,7 +395,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
             <div className="flex gap-1">
               <button 
                 onClick={() => { setPickerType('daily_rep'); setShowContentPicker(true); }}
-                className="text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 px-2 py-1 rounded flex items-center gap-1 border border-teal-100"
+                className="text-xs bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-100 text-teal-700 px-2 py-1 rounded flex items-center gap-1 border border-teal-100"
               >
                 <Plus className="w-3 h-3" /> Add Rep
               </button>
@@ -406,7 +406,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
             {(formData.actions || []).map((action, idx) => ({ action, idx }))
               .filter(({ action }) => action.type === 'daily_rep')
               .map(({ action, idx }, listIdx, listArr) => (
-              <div key={action.id || idx} className={`flex flex-col gap-2 p-2 rounded border ${action.enabled !== false ? 'bg-slate-50 border-slate-100' : 'bg-slate-100 border-slate-200 opacity-60'}`}>
+              <div key={action.id || idx} className={`flex flex-col gap-2 p-2 rounded border ${action.enabled !== false ? 'bg-slate-50 dark:bg-slate-800 border-slate-100' : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-700 opacity-60'}`}>
                 <div className="flex gap-2 items-center">
                   {/* Move Up/Down */}
                   <div className="flex flex-col gap-0.5">
@@ -445,7 +445,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
                     type="text"
                     value={action.label || ''}
                     onChange={e => updateAction(idx, 'label', e.target.value)}
-                    className="flex-1 bg-white text-sm border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-corporate-teal focus:border-corporate-teal min-w-0"
+                    className="flex-1 bg-white dark:bg-slate-800 text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 focus:ring-1 focus:ring-corporate-teal focus:border-corporate-teal min-w-0"
                     placeholder="Rep description..."
                   />
                   
@@ -462,9 +462,9 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
                       type="checkbox"
                       checked={action.optional === true}
                       onChange={e => updateAction(idx, 'optional', e.target.checked)}
-                      className="w-3 h-3 rounded border-slate-300 text-corporate-teal focus:ring-corporate-teal"
+                      className="w-3 h-3 rounded border-slate-300 dark:border-slate-600 text-corporate-teal focus:ring-corporate-teal"
                     />
-                    <span className="text-[10px] text-slate-500 font-medium">Optional (not required)</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Optional (not required)</span>
                   </label>
                 </div>
 
@@ -498,7 +498,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
               </div>
             ))}
             {(formData.actions || []).filter(a => a.type === 'daily_rep').length === 0 && (
-              <div className="text-center p-4 border-2 border-dashed border-slate-200 rounded-lg text-xs text-slate-400">
+              <div className="text-center p-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-400">
                 No daily reps defined
               </div>
             )}
@@ -522,13 +522,13 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
               </button>
               <button 
                 onClick={() => { setPickerType('content'); setShowContentPicker(true); }}
-                className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1 border border-orange-100"
+                className="text-xs bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1 border border-orange-100"
               >
                 <Plus className="w-3 h-3" /> Lib
               </button>
               <button 
                 onClick={() => addAction('content')}
-                className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1 border border-orange-100"
+                className="text-xs bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1 border border-orange-100"
               >
                 <Plus className="w-3 h-3" /> Add Action
               </button>
@@ -539,7 +539,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
             {(formData.actions || []).map((action, idx) => ({ action, idx }))
               .filter(({ action }) => action.type !== 'daily_rep')
               .map(({ action, idx }, listIdx, listArr) => (
-              <div key={action.id || idx} className={`flex flex-col gap-2 p-2 rounded border ${action.enabled !== false ? 'bg-slate-50 border-slate-100' : 'bg-slate-100 border-slate-200 opacity-60'}`}>
+              <div key={action.id || idx} className={`flex flex-col gap-2 p-2 rounded border ${action.enabled !== false ? 'bg-slate-50 dark:bg-slate-800 border-slate-100' : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-700 opacity-60'}`}>
                 <div className="flex gap-2 items-center">
                   {/* Move Up/Down */}
                   <div className="flex flex-col gap-0.5">
@@ -578,7 +578,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
                     type="text"
                     value={action.label || ''}
                     onChange={e => updateAction(idx, 'label', e.target.value)}
-                    className="flex-1 bg-white text-sm border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-corporate-teal focus:border-corporate-teal min-w-0"
+                    className="flex-1 bg-white dark:bg-slate-800 text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 focus:ring-1 focus:ring-corporate-teal focus:border-corporate-teal min-w-0"
                     placeholder="Action description..."
                   />
                   
@@ -595,9 +595,9 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
                       type="checkbox"
                       checked={action.optional === true}
                       onChange={e => updateAction(idx, 'optional', e.target.checked)}
-                      className="w-3 h-3 rounded border-slate-300 text-corporate-teal focus:ring-corporate-teal"
+                      className="w-3 h-3 rounded border-slate-300 dark:border-slate-600 text-corporate-teal focus:ring-corporate-teal"
                     />
-                    <span className="text-[10px] text-slate-500 font-medium">Optional (not required)</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Optional (not required)</span>
                   </label>
                 </div>
 
@@ -633,7 +633,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
               </div>
             ))}
             {(formData.actions || []).filter(a => a.type !== 'daily_rep').length === 0 && (
-              <div className="text-center p-4 border-2 border-dashed border-slate-200 rounded-lg text-xs text-slate-400">
+              <div className="text-center p-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-400">
                 No actions defined
               </div>
             )}
@@ -642,7 +642,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
 
         {/* Linked Resources Summary */}
         {(formData.actions || []).some(a => a.resourceId) && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <label className="text-xs font-bold text-blue-700 uppercase mb-2 block flex items-center gap-1">
               <Link className="w-3 h-3" />
               Unlocked Resources ({(formData.actions || []).filter(a => a.resourceId).length})
@@ -654,7 +654,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
               {(formData.actions || [])
                 .filter(a => a.resourceId)
                 .map((action, idx) => (
-                  <span key={idx} className="bg-white text-blue-700 text-[10px] px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1">
+                  <span key={idx} className="bg-white dark:bg-slate-800 text-blue-700 text-[10px] px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800 flex items-center gap-1">
                     {action.resourceType === 'video' && <Video className="w-2.5 h-2.5" />}
                     {action.resourceType === 'document' && <FileText className="w-2.5 h-2.5" />}
                     {action.resourceType === 'book' && <BookOpen className="w-2.5 h-2.5" />}
@@ -668,7 +668,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
 
         {/* Weekly Resources (from Legacy Plan) */}
         {formData.weeklyResources && (
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+          <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
             <label className="text-xs font-bold text-purple-700 uppercase mb-2 block flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               Week {formData.weekNumber} Resources (from Legacy Plan)
@@ -724,7 +724,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
 
         {/* Dashboard Config */}
         <div>
-          <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Dashboard Widgets</label>
+          <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 block">Dashboard Widgets</label>
           <p className="text-xs text-slate-400 mb-3">Toggle which Dashboard widgets are visible on this specific day.</p>
           <div className="space-y-2">
             {/* Only show widgets that appear on the Dashboard screen and are globally enabled */}
@@ -734,7 +734,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
               .map(key => {
                 const meta = FEATURE_METADATA[key];
                 return (
-                  <label key={key} className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer bg-white">
+                  <label key={key} className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer bg-white dark:bg-slate-800">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">{meta.name}</span>
                       <span className="text-[10px] text-slate-400">{meta.category}</span>
@@ -783,7 +783,7 @@ const DailyPlanManager = () => {
       emoji: '📋',
       description: 'Get ready for your leadership journey (no time limit)',
       weekRange: [-2, 0], // Weeks -2 to 0
-      bgColor: 'bg-amber-50',
+      bgColor: 'bg-amber-50 dark:bg-amber-900/20',
       textColor: 'text-amber-700',
       borderColor: 'border-amber-300',
       activeColor: 'bg-amber-500',
@@ -796,7 +796,7 @@ const DailyPlanManager = () => {
       emoji: '🎯',
       description: '8-Week Core Program (Days 1-56)',
       weekRange: [1, 8], // Weeks 1-8
-      bgColor: 'bg-teal-50',
+      bgColor: 'bg-teal-50 dark:bg-teal-900/20',
       textColor: 'text-corporate-teal',
       borderColor: 'border-corporate-teal',
       activeColor: 'bg-corporate-teal',
@@ -808,7 +808,7 @@ const DailyPlanManager = () => {
       emoji: '🚀',
       description: 'Continue your leadership journey (ongoing)',
       weekRange: [9, 99], // Weeks 9+ (indefinite)
-      bgColor: 'bg-purple-50',
+      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
       textColor: 'text-purple-700',
       borderColor: 'border-purple-300',
       activeColor: 'bg-purple-500',
@@ -824,7 +824,7 @@ const DailyPlanManager = () => {
       name: 'Preparation',
       emoji: '⚡',
       description: 'Required items that must be completed to unlock app features',
-      bgColor: 'bg-amber-50',
+      bgColor: 'bg-amber-50 dark:bg-amber-900/20',
       textColor: 'text-amber-700',
       borderColor: 'border-amber-300',
       activeColor: 'bg-amber-500'
@@ -834,7 +834,7 @@ const DailyPlanManager = () => {
       name: 'Explore',
       emoji: '🔓',
       description: 'Optional content unlocked after completing Preparation',
-      bgColor: 'bg-purple-50',
+      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
       textColor: 'text-purple-700',
       borderColor: 'border-purple-300',
       activeColor: 'bg-purple-500'
@@ -1006,16 +1006,16 @@ const DailyPlanManager = () => {
   }
 
   return (
-    <div className="h-full flex flex-col bg-slate-50 relative">
+    <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-800 relative">
       {/* Header with Phase Selector */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4">
         <div className="flex justify-between items-start mb-4">
           <div>
             <h2 className="text-2xl font-bold text-corporate-navy flex items-center gap-2">
               <Calendar className="w-6 h-6" />
               Daily Plan Manager
             </h2>
-            <p className="text-slate-500 text-sm">
+            <p className="text-slate-500 dark:text-slate-400 text-sm">
               Manage the day-by-day journey. {days.length} days defined.
             </p>
           </div>
@@ -1045,7 +1045,7 @@ const DailyPlanManager = () => {
                 {showWeekCount && (
                   <span className={`
                     text-xs px-1.5 py-0.5 rounded-full
-                    ${selectedPhase === phase.id ? 'bg-white/20' : 'bg-black/5'}
+                    ${selectedPhase === phase.id ? 'bg-white/20 dark:bg-slate-800/20' : 'bg-black/5'}
                   `}>
                     {weekCount} wks
                   </span>
@@ -1060,7 +1060,7 @@ const DailyPlanManager = () => {
           // PREPARATION PHASE: Section selector (Preparation vs Explore)
           <div className="flex items-center gap-4">
             <span className="text-xs font-bold text-slate-400 uppercase">SECTION:</span>
-            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
               {Object.values(PREP_SECTIONS).map(section => (
                 <button
                   key={section.id}
@@ -1069,7 +1069,7 @@ const DailyPlanManager = () => {
                     flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-semibold transition-all
                     ${selectedPrepSection === section.id 
                       ? `${section.activeColor} text-white` 
-                      : 'hover:bg-white text-slate-600'
+                      : 'hover:bg-white text-slate-600 dark:text-slate-300'
                     }
                   `}
                 >
@@ -1083,7 +1083,7 @@ const DailyPlanManager = () => {
           // DEV/POST PHASE: Week-based selector
           <div className="flex items-center gap-4">
             <span className="text-xs font-bold text-slate-400 uppercase">Week:</span>
-            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
               <button 
                 onClick={() => {
                   const currentIdx = phaseWeekNumbers.indexOf(selectedWeek);
@@ -1106,7 +1106,7 @@ const DailyPlanManager = () => {
                         px-3 py-1 rounded-md text-xs font-bold transition-all
                         ${selectedWeek === weekNum 
                           ? `${currentPhase.activeColor} text-white` 
-                          : 'hover:bg-white text-slate-600'
+                          : 'hover:bg-white text-slate-600 dark:text-slate-300'
                         }
                       `}
                     >

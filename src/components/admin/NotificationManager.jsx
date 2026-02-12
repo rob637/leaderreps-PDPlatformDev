@@ -187,7 +187,7 @@ const NotificationManager = () => {
     if (formData.linkText && formData.message.includes(formData.linkText)) {
       const parts = formData.message.split(formData.linkText);
       return (
-        <div className="text-sm text-gray-600 mt-2 p-2 bg-gray-100 rounded">
+        <div className="text-sm text-gray-600 dark:text-gray-300 mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded">
           <span className="text-xs text-gray-400 block mb-1">Preview:</span>
           {parts[0]}
           <span className="text-blue-600 underline font-medium">{formData.linkText}</span>
@@ -207,8 +207,8 @@ const NotificationManager = () => {
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Notification Manager</h1>
-          <p className="text-gray-500">Manage system-wide scheduled notifications</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Notification Manager</h1>
+          <p className="text-gray-500 dark:text-gray-400">Manage system-wide scheduled notifications</p>
         </div>
         <Button onClick={() => { setIsEditing(true); setCurrentRule(null); resetForm(); }}>
           <Plus className="w-4 h-4 mr-2" />
@@ -217,17 +217,17 @@ const NotificationManager = () => {
       </div>
 
       {/* Test Notification Section */}
-      <Card className="p-6 bg-blue-50 border-blue-200">
+      <Card className="p-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Send className="w-5 h-5" />
           Test Notifications
         </h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
           Send a test email and/or SMS to verify the notification system is working properly.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-1">
               <Mail className="w-4 h-4" /> Email Address
             </label>
             <Input 
@@ -238,7 +238,7 @@ const NotificationManager = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-1">
               <MessageSquare className="w-4 h-4" /> Phone Number
             </label>
             <Input 
@@ -249,7 +249,7 @@ const NotificationManager = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Test Message</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Test Message</label>
             <Input 
               value={testMessage} 
               onChange={(e) => setTestMessage(e.target.value)}
@@ -273,11 +273,11 @@ const NotificationManager = () => {
       </Card>
 
       {isEditing && (
-        <Card className="p-6 bg-gray-50 border-blue-200">
+        <Card className="p-6 bg-gray-50 dark:bg-gray-800 border-blue-200 dark:border-blue-800">
           <h3 className="text-lg font-semibold mb-4">{currentRule ? 'Edit Rule' : 'New Notification Rule'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rule Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Rule Name</label>
               <Input 
                 value={formData.name} 
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -285,7 +285,7 @@ const NotificationManager = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Trigger Time (Local User Time)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Trigger Time (Local User Time)</label>
               <Input 
                 type="time"
                 value={formData.time} 
@@ -293,7 +293,7 @@ const NotificationManager = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Criteria</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Criteria</label>
               <Select 
                 value={formData.criteria} 
                 onChange={(e) => setFormData({...formData, criteria: e.target.value})}
@@ -304,7 +304,7 @@ const NotificationManager = () => {
               </Select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Status</label>
               <div className="flex items-center mt-2">
                 <input 
                   type="checkbox" 
@@ -312,30 +312,30 @@ const NotificationManager = () => {
                   onChange={(e) => setFormData({...formData, enabled: e.target.checked})}
                   className="mr-2 h-4 w-4 text-blue-600"
                 />
-                <span className="text-sm text-gray-600">Enabled</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">Enabled</span>
               </div>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notification Message</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Notification Message</label>
               <Input 
                 ref={messageInputRef}
                 value={formData.message} 
                 onChange={(e) => setFormData({...formData, message: e.target.value})}
                 placeholder="Message to send to user..."
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Select text above, then click "Set as Link" to make it a hyperlink.
               </p>
             </div>
             
             {/* Hyperlink Configuration */}
-            <div className="md:col-span-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+            <div className="md:col-span-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
                 <Link2 className="w-4 h-4" /> Hyperlink Settings
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-1">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Link Text</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Link Text</label>
                   <div className="flex gap-2">
                     <Input 
                       value={formData.linkText} 
@@ -353,12 +353,12 @@ const NotificationManager = () => {
                       Set
                     </Button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     The exact text in the message to make clickable
                   </p>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Link Destination (URL or Path)</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Link Destination (URL or Path)</label>
                   <div className="flex items-center gap-2">
                     <Input 
                       value={formData.linkUrl} 
@@ -368,7 +368,7 @@ const NotificationManager = () => {
                     />
                     <ExternalLink className="w-4 h-4 text-gray-400" />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     App paths like /dashboard, /bookends, or full URLs like https://...
                   </p>
                 </div>
@@ -387,19 +387,19 @@ const NotificationManager = () => {
         {[...rules].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00')).map(rule => (
           <Card key={rule.id} className="p-4 flex justify-between items-center">
             <div className="flex items-start gap-4">
-              <div className={`p-2 rounded-full ${rule.enabled ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
+              <div className={`p-2 rounded-full ${rule.enabled ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>
                 <Bell className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-gray-900">{rule.name}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">{rule.name}</h3>
                   {!rule.enabled && <Badge variant="secondary">Disabled</Badge>}
                 </div>
-                <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mt-1">
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {rule.time}</span>
                   <span className="flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {CRITERIA_OPTIONS.find(c => c.value === rule.criteria)?.label || rule.criteria}</span>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                   {/* Render message with hyperlink text highlighted */}
                   {rule.linkText && rule.message.includes(rule.linkText) ? (
                     <>
@@ -430,7 +430,7 @@ const NotificationManager = () => {
           </Card>
         ))}
         {rules.length === 0 && !loading && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             No notification rules defined. Create one to get started.
           </div>
         )}

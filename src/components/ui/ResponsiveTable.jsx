@@ -26,7 +26,7 @@ const ResponsiveTable = React.forwardRef(({
     <MobileCard 
       key={row[keyField] || index}
       onClick={onRowClick ? () => onRowClick(row) : undefined}
-      className="bg-white"
+      className="bg-white dark:bg-slate-800"
     >
       <div className="space-y-2">
         {columns.map((col, colIndex) => {
@@ -44,10 +44,10 @@ const ResponsiveTable = React.forwardRef(({
           
           return (
             <div key={col.accessor || colIndex} className="flex justify-between items-start gap-4">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 {col.Header}
               </span>
-              <span className="text-sm text-slate-900 text-right">
+              <span className="text-sm text-slate-900 dark:text-white text-right">
                 {cellContent}
               </span>
             </div>
@@ -68,7 +68,7 @@ const ResponsiveTable = React.forwardRef(({
             {data.map((row, index) => cardRenderer(row, index))}
           </MobileCardStack>
         ) : (
-          <div className="text-center py-8 text-slate-500 text-sm">
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-sm">
             {emptyMessage}
           </div>
         )}
@@ -76,15 +76,15 @@ const ResponsiveTable = React.forwardRef(({
 
       {/* Desktop View - Table */}
       <div className={`hidden ${mobileBreakpoint}:block`}>
-        <div className="overflow-x-auto border border-gray-300 rounded-lg">
+        <div className="overflow-x-auto border border-gray-300 dark:border-gray-600 rounded-lg">
           <table className="min-w-full border-collapse text-sm">
             <thead>
-              <tr className="bg-gray-100">
+              <tr className="bg-gray-100 dark:bg-gray-700">
                 {columns.map((col, index) => (
                   <th 
                     key={col.accessor || index}
                     className={cn(
-                      "border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap",
+                      "border border-gray-300 dark:border-gray-600 px-3 py-2 text-left font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider whitespace-nowrap",
                       col.headerClassName
                     )}
                     style={col.width ? { width: col.width } : undefined}
@@ -94,7 +94,7 @@ const ResponsiveTable = React.forwardRef(({
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white">
+            <tbody className="bg-white dark:bg-slate-800">
               {data.length > 0 ? (
                 data.map((row, rowIndex) => (
                   <tr 
@@ -117,7 +117,7 @@ const ResponsiveTable = React.forwardRef(({
                         <td 
                           key={col.accessor || colIndex}
                           className={cn(
-                            "border border-gray-300 px-3 py-2",
+                            "border border-gray-300 dark:border-gray-600 px-3 py-2",
                             col.cellClassName
                           )}
                         >
@@ -131,7 +131,7 @@ const ResponsiveTable = React.forwardRef(({
                 <tr>
                   <td 
                     colSpan={columns.length} 
-                    className="border border-gray-300 px-3 py-8 text-center text-slate-500"
+                    className="border border-gray-300 dark:border-gray-600 px-3 py-8 text-center text-slate-500 dark:text-slate-400"
                   >
                     {emptyMessage}
                   </td>
@@ -165,24 +165,24 @@ const MobileHistoryCard = React.forwardRef(({
   ...props
 }, ref) => {
   const statusColors = {
-    success: "bg-green-100 text-green-700",
-    warning: "bg-orange-100 text-orange-700",
-    error: "bg-red-100 text-red-700",
-    info: "bg-blue-100 text-blue-700",
-    slate: "bg-slate-100 text-slate-700",
+    success: "bg-green-100 dark:bg-green-900/30 text-green-700",
+    warning: "bg-orange-100 dark:bg-orange-900/30 text-orange-700",
+    error: "bg-red-100 dark:bg-red-900/30 text-red-700",
+    info: "bg-blue-100 dark:bg-blue-900/30 text-blue-700",
+    slate: "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200",
   };
 
   return (
     <MobileCard ref={ref} onClick={onClick} className={className} {...props}>
       <div className="flex items-start gap-3">
         {Icon && (
-          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-            <Icon className="w-5 h-5 text-slate-600" />
+          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+            <Icon className="w-5 h-5 text-slate-600 dark:text-slate-300" />
           </div>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="text-sm font-semibold text-slate-900 truncate">
+            <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
               {title || date}
             </span>
             {status && (
@@ -195,15 +195,15 @@ const MobileHistoryCard = React.forwardRef(({
             )}
           </div>
           {subtitle && (
-            <p className="text-xs text-slate-500 mb-2">{subtitle}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">{subtitle}</p>
           )}
           {details.length > 0 && (
             <div className="space-y-1">
               {details.map((detail, index) => (
-                <div key={index} className="flex items-center gap-2 text-xs text-slate-600">
+                <div key={index} className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                   {detail.icon && <detail.icon className="w-3 h-3 text-slate-400" />}
                   <span className="text-slate-400">{detail.label}:</span>
-                  <span className="text-slate-700">{detail.value}</span>
+                  <span className="text-slate-700 dark:text-slate-200">{detail.value}</span>
                 </div>
               ))}
             </div>

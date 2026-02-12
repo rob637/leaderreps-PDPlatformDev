@@ -108,7 +108,7 @@ const FAQItem = ({ question, answer, isOpen, onToggle }) => (
       onClick={onToggle}
       className="w-full flex items-center justify-between py-4 text-left hover:bg-slate-50 transition-colors px-4 -mx-4"
     >
-      <span className="font-medium text-slate-900 pr-4">{question}</span>
+      <span className="font-medium text-slate-900 dark:text-white pr-4">{question}</span>
       {isOpen ? (
         <ChevronUp className="w-5 h-5 text-slate-400 flex-shrink-0" />
       ) : (
@@ -117,7 +117,7 @@ const FAQItem = ({ question, answer, isOpen, onToggle }) => (
     </button>
     {isOpen && (
       <div className="pb-4 px-4 -mx-4">
-        <p className="text-slate-600 leading-relaxed">{answer}</p>
+        <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{answer}</p>
       </div>
     )}
   </div>
@@ -185,9 +185,9 @@ const HelpCenter = () => {
             placeholder="Search for answers..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 bg-white
+            className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800
               focus:border-corporate-teal focus:outline-none focus:ring-4 focus:ring-corporate-teal/20
-              transition-all text-slate-900 placeholder-slate-400"
+              transition-all text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
           />
         </div>
 
@@ -209,8 +209,8 @@ const HelpCenter = () => {
           <Card>
             <div className="p-8 text-center">
               <HelpCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-700 mb-2">No results found</h3>
-              <p className="text-slate-500">
+              <h3 className="text-lg font-medium text-slate-700 dark:text-slate-200 mb-2">No results found</h3>
+              <p className="text-slate-500 dark:text-slate-400">
                 Try adjusting your search terms or browse the categories above.
               </p>
             </div>
@@ -219,9 +219,9 @@ const HelpCenter = () => {
 
         {/* Still need help? */}
         <Card>
-          <div className="p-6 text-center bg-slate-50 rounded-xl">
+          <div className="p-6 text-center bg-slate-50 dark:bg-slate-800 rounded-xl">
             <h3 className="text-lg font-semibold text-corporate-navy mb-2">Still have questions?</h3>
-            <p className="text-slate-600 mb-4">
+            <p className="text-slate-600 dark:text-slate-300 mb-4">
               Can't find what you're looking for? Our team is happy to help.
             </p>
             <a

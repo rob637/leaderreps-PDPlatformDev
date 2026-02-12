@@ -18,7 +18,7 @@ class SafeWidgetWrapper extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-4 border border-red-200 bg-red-50 rounded-lg flex items-start gap-3">
+        <div className="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5" />
           <div className="flex-1">
             <h3 className="text-sm font-bold text-red-800">Widget Error</h3>
@@ -26,7 +26,7 @@ class SafeWidgetWrapper extends React.Component {
               This widget crashed. Please check the code.
             </p>
             {this.props.showDetails && (
-               <pre className="mt-2 p-2 bg-red-100 rounded text-[10px] text-red-800 overflow-auto max-h-20">
+               <pre className="mt-2 p-2 bg-red-100 dark:bg-red-900/30 rounded text-[10px] text-red-800 overflow-auto max-h-20">
                  {this.state.error?.toString()}
                </pre>
             )}

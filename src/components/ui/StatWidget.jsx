@@ -125,7 +125,7 @@ const StatWidget = React.forwardRef(({
   
   // Trend display
   const TrendIcon = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : Minus;
-  const trendColor = trend > 0 ? 'text-green-600 bg-green-50' : trend < 0 ? 'text-red-600 bg-red-50' : 'text-slate-400 bg-slate-50';
+  const trendColor = trend > 0 ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : trend < 0 ? 'text-red-600 bg-red-50' : 'text-slate-400 bg-slate-50 dark:bg-slate-800';
   const showTrend = typeof trend === 'number';
 
   const Component = onClick ? 'button' : 'div';
@@ -142,7 +142,7 @@ const StatWidget = React.forwardRef(({
       ref={ref}
       onClick={onClick}
       className={cn(
-        'relative rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden text-left w-full',
+        'relative rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden text-left w-full',
         'border-t-4',
         colors.border,
         onClick && 'hover:shadow-md cursor-pointer transition-shadow group',
@@ -188,7 +188,7 @@ const StatWidget = React.forwardRef(({
           
           {/* Label */}
           <p className={cn(
-            "font-medium text-slate-500 truncate mt-1",
+            "font-medium text-slate-500 dark:text-slate-400 truncate mt-1",
             variant === 'compact' ? 'text-xs' : 'text-sm'
           )}>
             {label}

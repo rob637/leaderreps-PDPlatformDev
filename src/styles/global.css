@@ -183,13 +183,14 @@
 .text-slate-900 { color: #121212 !important; }
 
 /* DARK MODE: Reverse the crisp overrides - lighter text on dark bg */
-.dark .text-gray-300, .dark .text-slate-300 { color: #94A3B8 !important; }
-.dark .text-gray-400, .dark .text-slate-400 { color: #94A3B8 !important; }
-.dark .text-gray-500, .dark .text-slate-500 { color: #CBD5E1 !important; }
-.dark .text-gray-600, .dark .text-slate-600 { color: #CBD5E1 !important; }
-.dark .text-gray-700, .dark .text-slate-700 { color: #E2E8F0 !important; }
-.dark .text-gray-800, .dark .text-slate-800 { color: #F1F5F9 !important; }
-.dark .text-gray-900, .dark .text-slate-900 { color: #F8FAFC !important; }
+/* User requirement: "no dark greys" — all text must be clearly bright and readable */
+.dark .text-gray-300, .dark .text-slate-300 { color: #CBD5E1 !important; }
+.dark .text-gray-400, .dark .text-slate-400 { color: #CBD5E1 !important; }
+.dark .text-gray-500, .dark .text-slate-500 { color: #E2E8F0 !important; }
+.dark .text-gray-600, .dark .text-slate-600 { color: #E2E8F0 !important; }
+.dark .text-gray-700, .dark .text-slate-700 { color: #F1F5F9 !important; }
+.dark .text-gray-800, .dark .text-slate-800 { color: #F8FAFC !important; }
+.dark .text-gray-900, .dark .text-slate-900 { color: #FFFFFF !important; }
 
 /* Ensure body text is crisp */
 body {
@@ -214,10 +215,10 @@ body {
   border-color: rgba(0, 0, 0, 0.12) !important; 
 }
 
-/* DARK MODE: Softer borders */
+/* DARK MODE: Softer but visible borders */
 .dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300,
 .dark .border-gray-100, .dark .border-gray-200, .dark .border-gray-300 {
-  border-color: rgba(148, 163, 184, 0.15) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
 }
 
 /* DARK MODE: Gray-200 backgrounds (progress bar tracks, badges etc.) */
@@ -227,7 +228,7 @@ body {
 
 /* DARK MODE: Text gray-500 / slate-500 boost for readability */
 .dark .text-gray-500, .dark .text-slate-500 {
-  color: #94A3B8 !important;
+  color: #E2E8F0 !important;
 }
 
 /* DARK MODE: Shadows for dark surfaces */
@@ -368,15 +369,88 @@ body {
 .dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
 .dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
 .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
-  border-color: rgba(148, 163, 184, 0.15) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
 }
 
 /* Hover states */
-.dark .hover\:bg-slate-50:hover { background-color: rgba(148, 163, 184, 0.08) !important; }
-.dark .hover\:bg-gray-50:hover { background-color: rgba(148, 163, 184, 0.08) !important; }
-.dark .hover\:bg-slate-100:hover { background-color: rgba(148, 163, 184, 0.12) !important; }
-.dark .hover\:bg-gray-100:hover { background-color: rgba(148, 163, 184, 0.12) !important; }
-.dark .hover\:bg-slate-200:hover { background-color: rgba(148, 163, 184, 0.15) !important; }
+.dark .hover\:bg-slate-50:hover { background-color: rgba(148, 163, 184, 0.1) !important; }
+.dark .hover\:bg-gray-50:hover { background-color: rgba(148, 163, 184, 0.1) !important; }
+.dark .hover\:bg-slate-100:hover { background-color: rgba(148, 163, 184, 0.15) !important; }
+.dark .hover\:bg-gray-100:hover { background-color: rgba(148, 163, 184, 0.15) !important; }
+.dark .hover\:bg-slate-200:hover { background-color: rgba(148, 163, 184, 0.2) !important; }
+.dark .hover\:bg-blue-50:hover { background-color: rgba(59, 130, 246, 0.12) !important; }
+.dark .hover\:bg-blue-100:hover { background-color: rgba(59, 130, 246, 0.18) !important; }
+.dark .hover\:bg-teal-50:hover { background-color: rgba(20, 184, 166, 0.12) !important; }
+.dark .hover\:bg-emerald-50:hover { background-color: rgba(16, 185, 129, 0.12) !important; }
+.dark .hover\:bg-amber-50:hover { background-color: rgba(245, 158, 11, 0.12) !important; }
+
+/* Gradient backgrounds — dark mode versions */
+.dark .from-emerald-50 { --tw-gradient-from: rgba(16, 185, 129, 0.15) !important; }
+.dark .to-emerald-50 { --tw-gradient-to: rgba(16, 185, 129, 0.1) !important; }
+.dark .from-teal-50 { --tw-gradient-from: rgba(20, 184, 166, 0.15) !important; }
+.dark .to-teal-50 { --tw-gradient-to: rgba(20, 184, 166, 0.1) !important; }
+.dark .from-amber-50 { --tw-gradient-from: rgba(245, 158, 11, 0.15) !important; }
+.dark .to-amber-50 { --tw-gradient-to: rgba(245, 158, 11, 0.1) !important; }
+.dark .from-blue-50 { --tw-gradient-from: rgba(59, 130, 246, 0.15) !important; }
+.dark .to-blue-50 { --tw-gradient-to: rgba(59, 130, 246, 0.1) !important; }
+.dark .from-orange-50 { --tw-gradient-from: rgba(249, 115, 22, 0.15) !important; }
+.dark .to-orange-50 { --tw-gradient-to: rgba(249, 115, 22, 0.1) !important; }
+.dark .from-red-50 { --tw-gradient-from: rgba(239, 68, 68, 0.15) !important; }
+.dark .to-red-50 { --tw-gradient-to: rgba(239, 68, 68, 0.1) !important; }
+.dark .from-emerald-100 { --tw-gradient-from: rgba(16, 185, 129, 0.2) !important; }
+.dark .to-emerald-100 { --tw-gradient-to: rgba(16, 185, 129, 0.15) !important; }
+.dark .from-teal-100 { --tw-gradient-from: rgba(20, 184, 166, 0.2) !important; }
+.dark .to-teal-100 { --tw-gradient-to: rgba(20, 184, 166, 0.15) !important; }
+/* Hover gradient states */
+.dark .hover\:from-emerald-100:hover { --tw-gradient-from: rgba(16, 185, 129, 0.25) !important; }
+.dark .hover\:to-teal-100:hover { --tw-gradient-to: rgba(20, 184, 166, 0.2) !important; }
+
+/* Missing accent text colors */
+.dark .text-teal-800 { color: #5EEAD4 !important; }
+.dark .text-teal-700 { color: #5EEAD4 !important; }
+.dark .text-teal-600 { color: #2DD4BF !important; }
+.dark .text-cyan-800 { color: #67E8F9 !important; }
+.dark .text-cyan-700 { color: #67E8F9 !important; }
+.dark .text-cyan-600 { color: #22D3EE !important; }
+.dark .text-emerald-500 { color: #34D399 !important; }
+.dark .text-emerald-400 { color: #6EE7B7 !important; }
+.dark .text-emerald-300 { color: #A7F3D0 !important; }
+.dark .text-amber-500 { color: #F59E0B !important; }
+.dark .text-amber-400 { color: #FBBF24 !important; }
+.dark .text-blue-500 { color: #3B82F6 !important; }
+.dark .text-blue-400 { color: #60A5FA !important; }
+.dark .text-purple-800 { color: #C084FC !important; }
+.dark .text-purple-700 { color: #C084FC !important; }
+.dark .text-purple-600 { color: #A855F7 !important; }
+.dark .text-indigo-800 { color: #A5B4FC !important; }
+.dark .text-indigo-700 { color: #A5B4FC !important; }
+.dark .text-indigo-600 { color: #818CF8 !important; }
+
+/* Missing accent borders */
+.dark .border-teal-200 { border-color: rgba(20, 184, 166, 0.3) !important; }
+.dark .border-teal-100 { border-color: rgba(20, 184, 166, 0.2) !important; }
+.dark .border-purple-200 { border-color: rgba(168, 85, 247, 0.3) !important; }
+.dark .border-indigo-200 { border-color: rgba(99, 102, 241, 0.3) !important; }
+.dark .border-yellow-200 { border-color: rgba(234, 179, 8, 0.3) !important; }
+.dark .border-cyan-200 { border-color: rgba(6, 182, 212, 0.3) !important; }
+
+/* Missing accent backgrounds */
+.dark .bg-cyan-50 { background-color: rgba(6, 182, 212, 0.1) !important; }
+.dark .bg-cyan-100 { background-color: rgba(6, 182, 212, 0.15) !important; }
+.dark .bg-rose-50 { background-color: rgba(244, 63, 94, 0.1) !important; }
+.dark .bg-rose-100 { background-color: rgba(244, 63, 94, 0.15) !important; }
+
+/* shadow-2xl (used by uiKit Card) */
+.dark .shadow-2xl { box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(148, 163, 184, 0.1) !important; }
+
+/* Ring colors for focus states */
+.dark .ring-slate-200 { --tw-ring-color: rgba(148, 163, 184, 0.25) !important; }
+.dark .ring-gray-200 { --tw-ring-color: rgba(148, 163, 184, 0.25) !important; }
+
+/* Placeholder text */
+.dark .placeholder-slate-400::placeholder, .dark .placeholder-gray-400::placeholder {
+  color: #64748B !important;
+}
 
 /* Hardcoded #FAFBFC backgrounds */
 .dark [class*="bg-[#FAFBFC]"] { background-color: #0F172A !important; }

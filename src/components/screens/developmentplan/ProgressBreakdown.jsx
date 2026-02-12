@@ -71,7 +71,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
     return (
       <div>
         <Card accent="BLUE">
-          <p className="text-gray-600">No skills to display. Complete your baseline assessment to get started.</p>
+          <p className="text-gray-600 dark:text-gray-300">No skills to display. Complete your baseline assessment to get started.</p>
         </Card>
       </div>
     );
@@ -98,7 +98,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
             <h2 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--corporate-navy)' }}>
               Overall Progress
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               {skillProgress.length} skills across {Object.keys(skillsByFocusArea).length} focus areas
             </p>
           </div>
@@ -106,7 +106,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
             <div className="text-xl sm:text-2xl sm:text-3xl font-bold" style={{ color: 'var(--corporate-navy)' }}>
               {overallProgress}%
             </div>
-            <p className="text-sm text-gray-600">complete</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">complete</p>
           </div>
         </div>
         <ProgressBar progress={overallProgress} color={'var(--corporate-navy)'} />
@@ -128,7 +128,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
                 <Badge variant="primary" style={{ backgroundColor: areaColor }}>
                   {area}
                 </Badge>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
                   {skills.length} {skills.length === 1 ? 'skill' : 'skills'}
                 </span>
               </div>
@@ -159,7 +159,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
                           {skill.skillName}
                         </h3>
                         {skill.phase && (
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
                             Current phase: {skill.phase}
                           </p>
                         )}
@@ -190,7 +190,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
             Key Insights
           </h3>
         </div>
-        <ul className="space-y-2 text-sm text-gray-600">
+        <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
           <li>• You have {skillProgress.filter(s => s.progress >= 100).length} skills at or above 100% completion</li>
           <li>• {skillProgress.filter(s => s.weeksCompleted >= 12).length} skills have reached mastery (12+ weeks)</li>
           <li>• Focus area with most progress: {

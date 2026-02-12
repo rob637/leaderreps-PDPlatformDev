@@ -79,12 +79,12 @@ const VideoDetail = (props) => {
       navigate={navigate}
     >
       <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="p-6">
             <UniversalResourceViewer resource={videoWithUrl} inline={true} />
             <div className="mt-6">
               <h2 className="text-xl font-bold mb-2">{video.title}</h2>
-              <p className="text-slate-600">{video.description}</p>
+              <p className="text-slate-600 dark:text-slate-300">{video.description}</p>
             </div>
           </div>
         </div>

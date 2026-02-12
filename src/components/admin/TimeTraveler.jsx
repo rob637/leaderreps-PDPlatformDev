@@ -42,9 +42,9 @@ const TimeTraveler = () => {
   };
 
   return (
-    <div className={`fixed bottom-4 right-4 z-50 p-4 rounded-xl shadow-2xl border-2 transition-all duration-300 ${isTimeTravelActive ? 'bg-indigo-900 border-indigo-400 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
+    <div className={`fixed bottom-4 right-4 z-50 p-4 rounded-xl shadow-2xl border-2 transition-all duration-300 ${isTimeTravelActive ? 'bg-indigo-900 border-indigo-400 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'}`}>
       <div className="flex items-center gap-2 mb-3 border-b border-white/20 pb-2">
-        <Clock className={`w-5 h-5 ${isTimeTravelActive ? 'text-indigo-300' : 'text-slate-500'}`} />
+        <Clock className={`w-5 h-5 ${isTimeTravelActive ? 'text-indigo-300' : 'text-slate-500 dark:text-slate-400'}`} />
         <h3 className="font-bold text-sm uppercase tracking-wider">Time Traveler</h3>
         {isTimeTravelActive && (
           <span className="ml-auto text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full animate-pulse">ACTIVE</span>
@@ -63,7 +63,7 @@ const TimeTraveler = () => {
         </div>
 
         {/* Day-by-Day Navigation */}
-        <div className={`p-2 rounded-lg ${isTimeTravelActive ? 'bg-indigo-800/50' : 'bg-slate-50'}`}>
+        <div className={`p-2 rounded-lg ${isTimeTravelActive ? 'bg-indigo-800/50' : 'bg-slate-50 dark:bg-slate-800'}`}>
           <div className="text-[10px] uppercase font-bold opacity-70 mb-1 text-center">Day-by-Day Navigation</div>
           <div className="flex items-center justify-center gap-1">
             <button 
@@ -101,14 +101,14 @@ const TimeTraveler = () => {
         <div className="grid grid-cols-2 gap-2">
           <button 
             onClick={jumpToTonight}
-            className={`p-2 rounded-lg text-xs font-bold flex flex-col items-center gap-1 transition-colors ${isTimeTravelActive ? 'bg-indigo-800 hover:bg-indigo-700' : 'bg-slate-100 hover:bg-slate-200'}`}
+            className={`p-2 rounded-lg text-xs font-bold flex flex-col items-center gap-1 transition-colors ${isTimeTravelActive ? 'bg-indigo-800 hover:bg-indigo-700' : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200'}`}
           >
             <Moon className="w-4 h-4" />
             Tonight 11:58 PM
           </button>
           <button 
             onClick={jumpToTomorrowMorning}
-            className={`p-2 rounded-lg text-xs font-bold flex flex-col items-center gap-1 transition-colors ${isTimeTravelActive ? 'bg-indigo-800 hover:bg-indigo-700' : 'bg-slate-100 hover:bg-slate-200'}`}
+            className={`p-2 rounded-lg text-xs font-bold flex flex-col items-center gap-1 transition-colors ${isTimeTravelActive ? 'bg-indigo-800 hover:bg-indigo-700' : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200'}`}
           >
             <Sun className="w-4 h-4" />
             Tomorrow 6 AM
@@ -117,7 +117,7 @@ const TimeTraveler = () => {
         
         <button 
             onClick={jumpToNextWeek}
-            className={`w-full p-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors ${isTimeTravelActive ? 'bg-indigo-800 hover:bg-indigo-700' : 'bg-slate-100 hover:bg-slate-200'}`}
+            className={`w-full p-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors ${isTimeTravelActive ? 'bg-indigo-800 hover:bg-indigo-700' : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200'}`}
           >
             <FastForward className="w-4 h-4" />
             Jump +1 Week
@@ -127,12 +127,12 @@ const TimeTraveler = () => {
           <div className="flex gap-2 mb-2">
             <input 
               type="date" 
-              className={`flex-1 p-1 text-xs rounded border ${isTimeTravelActive ? 'bg-indigo-800 border-indigo-600 text-white' : 'bg-white border-slate-300'}`}
+              className={`flex-1 p-1 text-xs rounded border ${isTimeTravelActive ? 'bg-indigo-800 border-indigo-600 text-white' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}
               onChange={(e) => setTargetDateStr(e.target.value)}
             />
             <input 
               type="time" 
-              className={`w-20 p-1 text-xs rounded border ${isTimeTravelActive ? 'bg-indigo-800 border-indigo-600 text-white' : 'bg-white border-slate-300'}`}
+              className={`w-20 p-1 text-xs rounded border ${isTimeTravelActive ? 'bg-indigo-800 border-indigo-600 text-white' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}
               onChange={(e) => setTargetTimeStr(e.target.value)}
             />
           </div>

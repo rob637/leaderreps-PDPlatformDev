@@ -78,7 +78,7 @@ const MediaSelector = ({ value, onChange, mediaType = 'ALL', onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex justify-between items-center">
           <h3 className="font-bold text-lg text-corporate-navy flex items-center gap-2">
@@ -91,7 +91,7 @@ const MediaSelector = ({ value, onChange, mediaType = 'ALL', onClose }) => {
         </div>
 
         {/* Search */}
-        <div className="p-4 border-b border-slate-100 bg-slate-50">
+        <div className="p-4 border-b border-slate-100 bg-slate-50 dark:bg-slate-800">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input 
@@ -99,7 +99,7 @@ const MediaSelector = ({ value, onChange, mediaType = 'ALL', onClose }) => {
               placeholder="Search by filename or title..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-corporate-teal/20 focus:border-corporate-teal"
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-corporate-teal/20 focus:border-corporate-teal"
               autoFocus
             />
           </div>
@@ -137,13 +137,13 @@ const MediaSelector = ({ value, onChange, mediaType = 'ALL', onClose }) => {
                       ${isSelected 
                         ? 'border-corporate-teal bg-corporate-teal/5 ring-1 ring-corporate-teal' 
                         : isUsedByOther
-                          ? 'border-slate-200 bg-slate-50 opacity-75 cursor-not-allowed'
-                          : 'border-slate-200 hover:border-corporate-teal/50 hover:bg-slate-50'}
+                          ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 opacity-75 cursor-not-allowed'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-corporate-teal/50 hover:bg-slate-50'}
                     `}
                   >
                     <div className={`
                       p-2 rounded-lg flex-shrink-0
-                      ${isSelected ? 'bg-white text-corporate-teal' : 'bg-slate-100 text-slate-500'}
+                      ${isSelected ? 'bg-white dark:bg-slate-800 text-corporate-teal' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}
                     `}>
                       <Icon className="w-5 h-5" />
                     </div>
@@ -157,7 +157,7 @@ const MediaSelector = ({ value, onChange, mediaType = 'ALL', onClose }) => {
                         <span className="uppercase">{asset.type}</span>
                       </div>
                       {isUsedByOther && (
-                        <div className="mt-2 text-xs text-amber-600 flex items-center gap-1 bg-amber-50 p-1 rounded">
+                        <div className="mt-2 text-xs text-amber-600 flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 p-1 rounded">
                           <AlertCircle size={12} />
                           <span className="truncate">Used in: {isUsed}</span>
                         </div>

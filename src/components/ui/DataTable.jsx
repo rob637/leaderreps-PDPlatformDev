@@ -76,9 +76,9 @@ const DataTable = React.forwardRef(({
   };
 
   const variants = {
-    default: 'border border-slate-200 rounded-xl overflow-hidden',
+    default: 'border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden',
     flat: '',
-    card: 'bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden',
+    card: 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden',
   };
 
   const cellPadding = compact ? 'px-3 py-2' : 'px-4 py-3';
@@ -91,9 +91,9 @@ const DataTable = React.forwardRef(({
       {...props}
     >
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200">
+        <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
           {/* Header */}
-          <thead className="bg-slate-50">
+          <thead className="bg-slate-50 dark:bg-slate-800">
             <tr>
               {columns.map((col) => (
                 <th
@@ -101,7 +101,7 @@ const DataTable = React.forwardRef(({
                   scope="col"
                   className={cn(
                     headerPadding,
-                    'text-left text-xs font-bold text-slate-500 uppercase tracking-wider',
+                    'text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider',
                     sortable && col.sortable !== false && 'cursor-pointer hover:bg-slate-100 select-none',
                     col.align === 'center' && 'text-center',
                     col.align === 'right' && 'text-right',
@@ -124,12 +124,12 @@ const DataTable = React.forwardRef(({
           </thead>
           
           {/* Body */}
-          <tbody className="bg-white divide-y divide-slate-200">
+          <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
             {/* Loading State */}
             {isLoading && (
               <tr>
                 <td colSpan={columns.length} className={cn(cellPadding, 'text-center py-8')}>
-                  <div className="flex items-center justify-center gap-2 text-slate-500">
+                  <div className="flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
                     <Loader className="w-5 h-5 animate-spin" />
                     <span>Loading...</span>
                   </div>
@@ -195,7 +195,7 @@ DataTable.displayName = 'DataTable';
 const TableCellText = ({ children, className, muted = false }) => (
   <span className={cn(
     'text-sm',
-    muted ? 'text-slate-500' : 'text-slate-900 font-medium',
+    muted ? 'text-slate-500' : 'text-slate-900 dark:text-white font-medium',
     className
   )}>
     {children}
@@ -204,11 +204,11 @@ const TableCellText = ({ children, className, muted = false }) => (
 
 const TableCellBadge = ({ children, variant = 'default', className }) => {
   const variants = {
-    default: 'bg-slate-100 text-slate-800',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-orange-100 text-orange-800',
-    danger: 'bg-red-100 text-red-800',
-    info: 'bg-blue-100 text-blue-800',
+    default: 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200',
+    success: 'bg-green-100 dark:bg-green-900/30 text-green-800',
+    warning: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800',
+    danger: 'bg-red-100 dark:bg-red-900/30 text-red-800',
+    info: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800',
   };
 
   return (

@@ -221,21 +221,21 @@ const FeatureManager = () => {
       onClick={!disabled ? onChange : undefined}
       className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
         checked 
-          ? 'bg-teal-50 border-teal-500' 
-          : 'bg-white border-gray-200 hover:border-teal-300'
+          ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-500' 
+          : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:border-teal-300'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <div className={`mt-0.5 w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${
-        checked ? 'bg-teal-500 border-teal-500' : 'bg-white border-gray-300'
+        checked ? 'bg-teal-500 border-teal-500' : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-gray-600'
       }`}>
         {checked && <CheckSquare className="w-4 h-4 text-white" />}
       </div>
       <div className="flex-1">
-        <p className={`font-semibold ${checked ? 'text-teal-900' : 'text-gray-700'}`}>
+        <p className={`font-semibold ${checked ? 'text-teal-900' : 'text-gray-700 dark:text-gray-200'}`}>
           {label}
         </p>
         {subLabel && (
-          <p className="text-xs text-gray-500 mt-0.5">{subLabel}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{subLabel}</p>
         )}
       </div>
     </div>
@@ -804,7 +804,7 @@ const FeatureManager = () => {
 
     await saveFeature(newWidget.id, {
       ...newWidget,
-      code: '<div className="p-4 bg-white rounded-lg shadow border border-gray-200"><h3>New Widget</h3><p>Start editing...</p></div>',
+      code: '<div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"><h3>New Widget</h3><p>Start editing...</p></div>',
       enabled: true,
       order: maxOrder + 10
     });
@@ -957,8 +957,8 @@ const FeatureManager = () => {
       {/* Compact Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Widget Manager</h1>
-          <p className="text-xs text-gray-500">Manage and customize your dashboard widgets.</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Widget Manager</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Manage and customize your dashboard widgets.</p>
         </div>
         <div className="flex gap-2">
           {/* Global Toggle Button */}
@@ -990,7 +990,7 @@ const FeatureManager = () => {
             className={`px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all whitespace-nowrap
               ${activeGroup === key 
                 ? 'bg-blue-600 text-white shadow-md' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200'
               }`}
           >
             {groupTitles[key]}
@@ -1002,7 +1002,7 @@ const FeatureManager = () => {
       <div>
         {/* Group Header */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <h2 className="text-lg font-bold text-gray-900 mr-auto">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mr-auto">
             {groupTitles[activeGroup]} Widgets
           </h2>
           <button 
@@ -1024,12 +1024,12 @@ const FeatureManager = () => {
         {/* Widgets List */}
         <div className="space-y-2">
           {(groups[activeGroup] || []).map((feature, index) => (
-            <div key={feature.id} className="p-3 bg-white rounded-lg shadow border border-gray-200">
+            <div key={feature.id} className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
               {/* Widget Header */}
               <div className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-semibold text-gray-800 text-left truncate">{feature.name}</h3>
-                  <p className="text-xs text-gray-500 truncate">{feature.description}</p>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 text-left truncate">{feature.name}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{feature.description}</p>
                 </div>
                 <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                   {/* Move Up/Down Buttons */}
@@ -1037,14 +1037,14 @@ const FeatureManager = () => {
                     <button 
                       onClick={() => handleMove(activeGroup, index, 'up')} 
                       disabled={index === 0}
-                      className="p-1.5 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-50"
+                      className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 transition-all disabled:opacity-50"
                     >
                       <ArrowUp className="w-3 h-3" />
                     </button>
                     <button 
                       onClick={() => handleMove(activeGroup, index, 'down')} 
                       disabled={index === (groups[activeGroup].length - 1)}
-                      className="p-1.5 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-50"
+                      className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 transition-all disabled:opacity-50"
                     >
                       <ArrowDown className="w-3 h-3" />
                     </button>
@@ -1054,8 +1054,8 @@ const FeatureManager = () => {
                     onClick={() => toggleFeature(feature.id, !feature.enabled)} 
                     className={`p-1.5 rounded-full transition-all 
                       ${feature.enabled 
-                        ? 'bg-green-100 text-green-500 hover:bg-green-200' 
-                        : 'bg-red-100 text-red-500 hover:bg-red-200'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-500 hover:bg-green-200' 
+                        : 'bg-red-100 dark:bg-red-900/30 text-red-500 hover:bg-red-200'
                       }`}
                   >
                     {feature.enabled ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
@@ -1063,14 +1063,14 @@ const FeatureManager = () => {
                   {/* Settings Button */}
                   <button 
                     onClick={() => setExpandedSettingsId(expandedSettingsId === feature.id ? null : feature.id)} 
-                    className={`p-1.5 rounded-full transition-all ${expandedSettingsId === feature.id ? 'bg-gray-300 text-gray-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                    className={`p-1.5 rounded-full transition-all ${expandedSettingsId === feature.id ? 'bg-gray-300 text-gray-700 dark:text-gray-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200'}`}
                   >
                     <Settings className="w-3 h-3" />
                   </button>
                   {/* Delete Button */}
                   <button 
                     onClick={() => handleDelete(feature.id)} 
-                    className="p-1.5 rounded-full bg-red-100 text-red-500 hover:bg-red-200 transition-all"
+                    className="p-1.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 hover:bg-red-200 transition-all"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -1078,13 +1078,13 @@ const FeatureManager = () => {
               </div>
               {/* Settings Panel */}
               {expandedSettingsId === feature.id && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2">
-                  <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-top-2">
+                  <h4 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
                     <Settings className="w-4 h-4" /> Widget Options
                   </h4>
 
                   {/* User-Facing Help Text */}
-                  <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex items-center gap-2 mb-2">
                       <Lightbulb className="w-4 h-4 text-blue-600" />
                       <label className="text-sm font-bold text-blue-800">Widget Help Text</label>
@@ -1109,17 +1109,17 @@ const FeatureManager = () => {
 
                   {/* Predefined Options (Schema Based) */}
                   {WIDGET_CONFIG_SCHEMA[feature.id] && (
-                    <div className="mb-4 space-y-3 border-b border-gray-200 pb-4">
+                    <div className="mb-4 space-y-3 border-b border-gray-200 dark:border-gray-700 pb-4">
                       {WIDGET_CONFIG_SCHEMA[feature.id].map((config) => {
                         const currentValue = feature.options?.[config.key];
                         // Handle boolean types (stored as strings usually, but let's handle both)
                         const isChecked = String(currentValue) === 'true';
 
                         return (
-                          <div key={config.key} className="flex items-center justify-between bg-white p-3 rounded border border-gray-200">
+                          <div key={config.key} className="flex items-center justify-between bg-white dark:bg-slate-800 p-3 rounded border border-gray-200 dark:border-gray-700">
                             <div>
-                              <p className="text-sm font-bold text-gray-800">{config.label}</p>
-                              <p className="text-xs text-gray-500">{config.description}</p>
+                              <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{config.label}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{config.description}</p>
                             </div>
                             {config.type === 'boolean' && (
                               <button
@@ -1129,7 +1129,7 @@ const FeatureManager = () => {
                                 }`}
                               >
                                 <span
-                                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                  className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${
                                     isChecked ? 'translate-x-6' : 'translate-x-1'
                                   }`}
                                 />
@@ -1143,30 +1143,30 @@ const FeatureManager = () => {
                   
                   {/* Documentation Viewer */}
                   {FEATURE_METADATA[feature.id] && (
-                    <div className="mb-4 space-y-3 border-b border-gray-200 pb-4">
-                      <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <div className="mb-4 space-y-3 border-b border-gray-200 dark:border-gray-700 pb-4">
+                      <h5 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                         <BookOpen className="w-3 h-3" /> Documentation
                       </h5>
                       
-                      <div className="bg-white p-3 rounded border border-gray-200 space-y-3">
+                      <div className="bg-white dark:bg-slate-800 p-3 rounded border border-gray-200 dark:border-gray-700 space-y-3">
                         <div>
-                          <span className="text-xs font-bold text-gray-700 block mb-1">Purpose</span>
-                          <span className="text-xs text-gray-600 block">{FEATURE_METADATA[feature.id].purpose}</span>
+                          <span className="text-xs font-bold text-gray-700 dark:text-gray-200 block mb-1">Purpose</span>
+                          <span className="text-xs text-gray-600 dark:text-gray-300 block">{FEATURE_METADATA[feature.id].purpose}</span>
                         </div>
                         
                         {FEATURE_METADATA[feature.id].extendedDescription && (
                           <div>
-                            <span className="text-xs font-bold text-gray-700 block mb-1">Description</span>
-                            <span className="text-xs text-gray-600 block">{FEATURE_METADATA[feature.id].extendedDescription}</span>
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200 block mb-1">Description</span>
+                            <span className="text-xs text-gray-600 dark:text-gray-300 block">{FEATURE_METADATA[feature.id].extendedDescription}</span>
                           </div>
                         )}
 
                         {FEATURE_METADATA[feature.id].inputs && FEATURE_METADATA[feature.id].inputs.length > 0 && (
                           <div>
-                            <span className="text-xs font-bold text-gray-700 block mb-1">Inputs (Scope)</span>
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200 block mb-1">Inputs (Scope)</span>
                             <div className="flex flex-wrap gap-1">
                               {FEATURE_METADATA[feature.id].inputs.map(input => (
-                                <span key={input} className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-mono">
+                                <span key={input} className="text-[10px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800 font-mono">
                                   {input}
                                 </span>
                               ))}
@@ -1176,10 +1176,10 @@ const FeatureManager = () => {
 
                         {FEATURE_METADATA[feature.id].outputs && FEATURE_METADATA[feature.id].outputs.length > 0 && (
                           <div>
-                            <span className="text-xs font-bold text-gray-700 block mb-1">Outputs (Actions)</span>
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200 block mb-1">Outputs (Actions)</span>
                             <div className="flex flex-wrap gap-1">
                               {FEATURE_METADATA[feature.id].outputs.map(output => (
-                                <span key={output} className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 font-mono">
+                                <span key={output} className="text-[10px] bg-green-50 dark:bg-green-900/20 text-green-600 px-1.5 py-0.5 rounded border border-green-100 font-mono">
                                   {output}
                                 </span>
                               ))}
@@ -1189,15 +1189,15 @@ const FeatureManager = () => {
 
                         {FEATURE_METADATA[feature.id].componentPath && (
                           <div>
-                            <span className="text-xs font-bold text-gray-700 block mb-1">Component Source</span>
-                            <span className="text-[10px] text-gray-500 font-mono break-all">{FEATURE_METADATA[feature.id].componentPath}</span>
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200 block mb-1">Component Source</span>
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono break-all">{FEATURE_METADATA[feature.id].componentPath}</span>
                           </div>
                         )}
 
                         {WIDGET_TEMPLATES[feature.id] && (
                           <div>
-                            <span className="text-xs font-bold text-gray-700 block mb-1">Template Code</span>
-                            <pre className="text-[10px] bg-slate-50 p-2 rounded border border-slate-200 overflow-x-auto font-mono text-slate-600 max-h-40">
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200 block mb-1">Template Code</span>
+                            <pre className="text-[10px] bg-slate-50 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 overflow-x-auto font-mono text-slate-600 dark:text-slate-300 max-h-40">
                               {WIDGET_TEMPLATES[feature.id]}
                             </pre>
                           </div>
@@ -1215,9 +1215,9 @@ const FeatureManager = () => {
                         if (WIDGET_CONFIG_SCHEMA[feature.id]?.some(c => c.key === key)) return null;
 
                         return (
-                          <div key={key} className="flex items-center gap-2 bg-white p-2 rounded border border-gray-200">
-                            <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">{key}</span>
-                            <span className="text-sm text-gray-600 flex-1 truncate">{String(value)}</span>
+                          <div key={key} className="flex items-center gap-2 bg-white dark:bg-slate-800 p-2 rounded border border-gray-200 dark:border-gray-700">
+                            <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">{key}</span>
+                            <span className="text-sm text-gray-600 dark:text-gray-300 flex-1 truncate">{String(value)}</span>
                             <button 
                               onClick={() => handleDeleteOption(feature.id, key)}
                               className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
@@ -1235,7 +1235,7 @@ const FeatureManager = () => {
                   {/* Add New Option */}
                   <div className="flex gap-2 items-end">
                     <div className="flex-1">
-                      <label className="block text-xs font-bold text-gray-500 mb-1">Key</label>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Key</label>
                       <input 
                         type="text" 
                         placeholder="e.g. scrollMode"
@@ -1245,7 +1245,7 @@ const FeatureManager = () => {
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-xs font-bold text-gray-500 mb-1">Value</label>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Value</label>
                       <input 
                         type="text" 
                         placeholder="e.g. true"
@@ -1270,27 +1270,27 @@ const FeatureManager = () => {
 
         {/* No features message */}
         {groups[activeGroup]?.length === 0 && (
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
-            <p className="text-sm text-gray-500">
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               No widgets found in this group. Widgets that you add will appear here.
             </p>
           </div>
         )}
 
         {/* Future Enhancements List */}
-        <div className="mt-12 border-t border-gray-200 pt-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+        <div className="mt-12 border-t border-gray-200 dark:border-gray-700 pt-8">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
             <Lightbulb className="w-6 h-6 text-yellow-500" />
             Future Enhancements: {groupTitles[activeGroup]}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {ENHANCEMENT_IDEAS[activeGroup]?.map((idea, idx) => (
-              <div key={idx} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                 <div className="flex justify-between items-start mb-1">
-                  <h4 className="font-bold text-slate-800 text-sm">{idea.title}</h4>
-                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full uppercase tracking-wider">Planned</span>
+                  <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">{idea.title}</h4>
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full uppercase tracking-wider">Planned</span>
                 </div>
-                <p className="text-xs text-slate-500 leading-relaxed">{idea.desc}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{idea.desc}</p>
               </div>
             ))}
           </div>
@@ -1300,10 +1300,10 @@ const FeatureManager = () => {
       {/* Add Widget Modal */}
       {isAdding && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 max-w-sm w-full">
             <h3 className="text-lg font-semibold mb-4">Add New Widget</h3>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Widget Name
               </label>
               <input 
@@ -1315,7 +1315,7 @@ const FeatureManager = () => {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Widget ID
               </label>
               <input 
@@ -1327,7 +1327,7 @@ const FeatureManager = () => {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Description
               </label>
               <textarea 
@@ -1341,7 +1341,7 @@ const FeatureManager = () => {
             <div className="flex justify-end gap-2">
               <button 
                 onClick={() => setIsAdding(false)} 
-                className="px-4 py-2 text-sm font-semibold rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
+                className="px-4 py-2 text-sm font-semibold rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 transition-all"
               >
                 Cancel
               </button>

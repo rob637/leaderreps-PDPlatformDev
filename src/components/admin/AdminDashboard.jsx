@@ -300,11 +300,11 @@ const AdminDashboard = () => {
               primary: (
                 <div className="flex flex-col">
                   <span className="font-bold text-corporate-navy">{data.displayName}</span>
-                  <span className="text-xs text-gray-500">{data.email}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{data.email}</span>
                 </div>
               ),
               secondary: (
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   <div>Joined: {joinedDate}</div>
                   <div>Active: {lastActiveDate}</div>
                 </div>
@@ -400,7 +400,7 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="p-8 flex flex-col items-center justify-center gap-3 text-gray-500">
+      <div className="p-8 flex flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
         <div className="w-8 h-8 border-3 border-corporate-teal/30 border-t-corporate-teal rounded-full animate-spin" />
         <p className="text-sm font-medium">Loading dashboard data...</p>
       </div>
@@ -417,14 +417,14 @@ const AdminDashboard = () => {
             Admin Command Center
           </h1>
         </div>
-        <p className="text-slate-500 text-sm sm:text-base max-w-2xl mx-auto">
+        <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
           Monitor system health, manage administrators, and view activity logs.
         </p>
       </header>
 
       {/* System Status Bar */}
       <div className="flex items-center justify-center">
-        <span className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 ${stats.pendingIssues > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+        <span className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 ${stats.pendingIssues > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 dark:bg-green-900/30 text-green-800'}`}>
           <div className={`w-2 h-2 rounded-full animate-pulse ${stats.pendingIssues > 0 ? 'bg-red-500' : 'bg-green-500'}`}></div>
           System Status: {stats.systemStatus}
         </span>
@@ -435,10 +435,10 @@ const AdminDashboard = () => {
         {/* Users Card */}
         <div 
           onClick={() => handleCardClick('users')}
-          className={`bg-gray-50 p-6 rounded-xl border transition-all cursor-pointer hover:shadow-md ${selectedMetric === 'users' ? 'border-corporate-teal ring-2 ring-corporate-teal/20' : 'border-gray-200'}`}
+          className={`bg-gray-50 dark:bg-gray-800 p-6 rounded-xl border transition-all cursor-pointer hover:shadow-md ${selectedMetric === 'users' ? 'border-corporate-teal ring-2 ring-corporate-teal/20' : 'border-gray-200 dark:border-gray-700'}`}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-lg">
               <Users className="w-6 h-6" />
             </div>
             <span className="text-xs font-bold text-gray-400 uppercase">Total Active Users</span>
@@ -452,25 +452,25 @@ const AdminDashboard = () => {
         {/* Content Card */}
         <div 
           onClick={() => handleCardClick('content')}
-          className={`bg-gray-50 p-6 rounded-xl border transition-all cursor-pointer hover:shadow-md ${selectedMetric === 'content' ? 'border-corporate-teal ring-2 ring-corporate-teal/20' : 'border-gray-200'}`}
+          className={`bg-gray-50 dark:bg-gray-800 p-6 rounded-xl border transition-all cursor-pointer hover:shadow-md ${selectedMetric === 'content' ? 'border-corporate-teal ring-2 ring-corporate-teal/20' : 'border-gray-200 dark:border-gray-700'}`}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-100 text-purple-600 rounded-lg">
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-lg">
               <FileText className="w-6 h-6" />
             </div>
             <span className="text-xs font-bold text-gray-400 uppercase">Content Items</span>
           </div>
           <div className="text-3xl font-bold text-corporate-navy">{stats.contentItems}</div>
-          <div className="text-sm text-gray-500 mt-2">Readings, Videos, Courses</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">Readings, Videos, Courses</div>
         </div>
 
         {/* Issues Card */}
         <div 
           onClick={() => handleCardClick('issues')}
-          className={`bg-gray-50 p-6 rounded-xl border transition-all cursor-pointer hover:shadow-md ${selectedMetric === 'issues' ? 'border-corporate-teal ring-2 ring-corporate-teal/20' : 'border-gray-200'}`}
+          className={`bg-gray-50 dark:bg-gray-800 p-6 rounded-xl border transition-all cursor-pointer hover:shadow-md ${selectedMetric === 'issues' ? 'border-corporate-teal ring-2 ring-corporate-teal/20' : 'border-gray-200 dark:border-gray-700'}`}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-orange-100 text-orange-600 rounded-lg">
+            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-lg">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <span className="text-xs font-bold text-gray-400 uppercase">Issues</span>
@@ -482,22 +482,22 @@ const AdminDashboard = () => {
         </div>
 
         {/* Database Card (Static for now as we can't easily get storage usage from client SDK) */}
-        <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 opacity-75">
+        <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 opacity-75">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-teal-100 text-teal-600 rounded-lg">
+            <div className="p-3 bg-teal-100 dark:bg-teal-900/30 text-teal-600 rounded-lg">
               <Server className="w-6 h-6" />
             </div>
             <span className="text-xs font-bold text-gray-400 uppercase">Database</span>
           </div>
           <div className="text-3xl font-bold text-corporate-navy">Online</div>
-          <div className="text-sm text-gray-500 mt-2">Firestore Connected</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">Firestore Connected</div>
         </div>
       </div>
 
       {/* Detail View Section */}
       {selectedMetric && (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50 dark:bg-gray-800">
             <h3 className="font-bold text-corporate-navy capitalize">{selectedMetric} Details</h3>
             <button onClick={() => setSelectedMetric(null)} className="text-gray-400 hover:text-gray-600">
               <X className="w-5 h-5" />
@@ -506,23 +506,23 @@ const AdminDashboard = () => {
           
           <div className="p-0">
             {detailLoading ? (
-              <div className="p-8 text-center text-gray-500">Loading details...</div>
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading details...</div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {detailData.length > 0 ? (
                   detailData.map((item) => (
                     <div key={item.id} className="p-4 hover:bg-gray-50 flex items-center justify-between">
                       <div>
                         <div className="font-medium text-corporate-navy">{item.primary}</div>
-                        <div className="text-sm text-gray-500">{item.secondary}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{item.secondary}</div>
                       </div>
-                      <div className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">
+                      <div className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs font-bold">
                         {item.status}
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="p-8 text-center text-gray-500">No data available.</div>
+                  <div className="p-8 text-center text-gray-500 dark:text-gray-400">No data available.</div>
                 )}
               </div>
             )}
@@ -533,25 +533,25 @@ const AdminDashboard = () => {
       {/* Admin Management Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Admin List */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-corporate-navy font-serif flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-corporate-teal" />
               Authorized Admins
             </h3>
-            <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
+            <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-500 dark:text-gray-400">
               {admins.length} Users
             </span>
           </div>
           
           <div className="space-y-3 mb-6">
             {admins.map((email) => (
-              <div key={email} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+              <div key={email} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-corporate-navy text-white flex items-center justify-center font-bold text-xs">
                     {email.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-sm font-medium text-gray-700">{email}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{email}</span>
                 </div>
                 {/* Prevent removing self */}
                 {email !== user?.email && (
@@ -571,7 +571,7 @@ const AdminDashboard = () => {
             <input 
               type="email" 
               placeholder="Enter email to grant access..." 
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
               value={newAdminEmail}
               onChange={(e) => setNewAdminEmail(e.target.value)}
             />
@@ -587,7 +587,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Recent Activity - Enhanced */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-corporate-navy font-serif">Recent System Activity</h3>
             <button 
@@ -608,19 +608,19 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-4 gap-2 mb-4 p-3 bg-gradient-to-r from-slate-50 to-blue-50 rounded-lg border border-slate-100">
             <div className="text-center">
               <div className="text-lg font-bold text-green-600">{activitySummary.signups}</div>
-              <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Sign-ups</div>
+              <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Sign-ups</div>
             </div>
-            <div className="text-center border-l border-slate-200">
+            <div className="text-center border-l border-slate-200 dark:border-slate-700">
               <div className="text-lg font-bold text-blue-600">{activitySummary.logins}</div>
-              <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Logins</div>
+              <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Logins</div>
             </div>
-            <div className="text-center border-l border-slate-200">
+            <div className="text-center border-l border-slate-200 dark:border-slate-700">
               <div className="text-lg font-bold text-purple-600">{activitySummary.completions}</div>
-              <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Completions</div>
+              <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Completions</div>
             </div>
-            <div className="text-center border-l border-slate-200">
-              <div className="text-lg font-bold text-slate-600">{activitySummary.adminActions}</div>
-              <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Admin</div>
+            <div className="text-center border-l border-slate-200 dark:border-slate-700">
+              <div className="text-lg font-bold text-slate-600 dark:text-slate-300">{activitySummary.adminActions}</div>
+              <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Admin</div>
             </div>
           </div>
           
@@ -630,14 +630,14 @@ const AdminDashboard = () => {
               recentActivity.map((activity) => {
                 const meta = getActivityMeta(activity.type);
                 return (
-                  <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className={`w-9 h-9 rounded-full ${meta.bgColor} ${meta.textColor} flex items-center justify-center`}>
                         <ActivityIcon type={activity.type} className="w-4 h-4" />
                       </div>
                       <div>
                         <div className="font-medium text-corporate-navy text-sm">{activity.action || 'Unknown Action'}</div>
-                        <div className="text-xs text-gray-500 flex items-center gap-2">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
                           <span>{activity.user || 'System'}</span>
                           {activity.details && (
                             <>
@@ -656,7 +656,7 @@ const AdminDashboard = () => {
                 );
               })
             ) : (
-              <div className="text-gray-500 italic text-center py-8">
+              <div className="text-gray-500 dark:text-gray-400 italic text-center py-8">
                 <Zap className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                 <div>No recent activity logs found.</div>
                 <div className="text-xs mt-1">Activity will appear here as users interact with the platform.</div>

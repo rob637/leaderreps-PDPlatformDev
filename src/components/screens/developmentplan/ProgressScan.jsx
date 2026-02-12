@@ -56,7 +56,7 @@ const RadioButtonInput = ({ question, options, value, onChange }) => {
                 value={option.value}
                 checked={value === option.value}
                 onChange={() => onChange(question.id, option.value)}
-                className="h-5 w-5 border-gray-300"
+                className="h-5 w-5 border-gray-300 dark:border-gray-600"
                 style={{ color: 'var(--corporate-teal)', accentColor: 'var(--corporate-teal)' }}
               />
               <label 
@@ -194,10 +194,9 @@ const ProgressScan = ({
               return (
                 <div
                   key={question.id}
-                  className="p-4 rounded-xl border-2"
-                  style={{ borderColor: 'var(--corporate-teal)', background: 'white' }}
+                  className="p-4 rounded-xl border-2 border-corporate-teal bg-white dark:bg-slate-800"
                 >
-                  <p className="text-base font-semibold mb-3" style={{ color: 'var(--corporate-navy)' }}>
+                  <p className="text-base font-semibold mb-3 text-corporate-navy dark:text-white">
                     {question.text}
                   </p>
                   <div className="flex items-center gap-4">

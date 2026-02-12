@@ -92,7 +92,7 @@ const HorizontalScroll = ({
               onClick={() => scroll('left')}
               className="
                 absolute left-0 top-1/2 -translate-y-1/2 z-10
-                w-10 h-10 rounded-full bg-white shadow-lg
+                w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-lg
                 flex items-center justify-center
                 opacity-0 group-hover:opacity-100 transition-opacity
                 hover:bg-gray-50 active:scale-95
@@ -100,7 +100,7 @@ const HorizontalScroll = ({
               "
               aria-label="Scroll left"
             >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
+              <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </motion.button>
           )}
           
@@ -112,7 +112,7 @@ const HorizontalScroll = ({
               onClick={() => scroll('right')}
               className="
                 absolute right-0 top-1/2 -translate-y-1/2 z-10
-                w-10 h-10 rounded-full bg-white shadow-lg
+                w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-lg
                 flex items-center justify-center
                 opacity-0 group-hover:opacity-100 transition-opacity
                 hover:bg-gray-50 active:scale-95
@@ -120,7 +120,7 @@ const HorizontalScroll = ({
               "
               aria-label="Scroll right"
             >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
+              <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </motion.button>
           )}
         </>

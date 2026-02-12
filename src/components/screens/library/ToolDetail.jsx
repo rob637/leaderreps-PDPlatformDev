@@ -56,7 +56,7 @@ const ToolDetail = (props) => {
     return (
       <PageLayout title="Tool Not Found" showBack={true}>
         <div className="p-6 text-center">
-          <p className="text-gray-600">The requested tool could not be found.</p>
+          <p className="text-gray-600 dark:text-gray-300">The requested tool could not be found.</p>
           <Button onClick={() => navigate('tools-index')} className="mt-4">
             Back to Tools
           </Button>
@@ -69,11 +69,11 @@ const ToolDetail = (props) => {
     return (
       <PageLayout title="Content Locked" showBack={true}>
         <div className="flex flex-col items-center justify-center p-12 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-6">
             <Lock className="w-8 h-8 text-slate-400" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">This Tool is Locked</h2>
-          <p className="text-slate-500 max-w-md mb-8">
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">This Tool is Locked</h2>
+          <p className="text-slate-500 dark:text-slate-400 max-w-md mb-8">
             You haven't unlocked this content yet. Continue your Development Plan to gain access.
           </p>
           <Button onClick={() => navigate('tools-index')}>
@@ -91,9 +91,9 @@ const ToolDetail = (props) => {
   };
 
   const getColor = (toolType) => {
-    if (toolType === 'VIDEO_RESOURCE') return { bg: 'bg-red-50', text: 'text-red-600' };
-    if (toolType === 'ARTICLE') return { bg: 'bg-green-50', text: 'text-green-600' };
-    return { bg: 'bg-blue-50', text: 'text-blue-600' };
+    if (toolType === 'VIDEO_RESOURCE') return { bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-600' };
+    if (toolType === 'ARTICLE') return { bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-600' };
+    return { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600' };
   };
 
   const colors = getColor(tool.metadata?.toolType);
@@ -123,18 +123,18 @@ const ToolDetail = (props) => {
         />
       )}
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="p-8">
             <div className="flex items-start gap-6 mb-6">
               <div className={`w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 ${colors.bg} ${colors.text}`}>
                 {getIcon(tool.metadata?.toolType)}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-800 mb-2">{tool.title}</h1>
+                <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">{tool.title}</h1>
                 <div className="flex flex-wrap gap-2">
                   {tool.tier && <TierBadge tier={tool.tier} />}
                   {tool.metadata?.toolType && (
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 uppercase tracking-wide">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 uppercase tracking-wide">
                       {tool.metadata.toolType.replace('_', ' ')}
                     </span>
                   )}
@@ -143,7 +143,7 @@ const ToolDetail = (props) => {
             </div>
 
             <div className="prose prose-slate max-w-none mb-8">
-              <p className="text-lg text-slate-600 leading-relaxed">
+              <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
                 {tool.description}
               </p>
             </div>

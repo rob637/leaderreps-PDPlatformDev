@@ -20,7 +20,7 @@ const AnimatedCard = forwardRef(({
   const reducedMotion = useReducedMotion();
 
   const baseClasses = `
-    rounded-xl bg-white shadow-sm
+    rounded-xl bg-white dark:bg-slate-800 shadow-sm
     transition-shadow
     ${onClick && !disabled ? 'cursor-pointer' : ''}
     ${disabled ? 'opacity-60' : ''}

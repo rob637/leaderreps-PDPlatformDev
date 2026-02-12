@@ -153,12 +153,12 @@ const DailyRepsLibrary = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-purple-100 rounded-lg">
+          <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
             <Dumbbell className="w-6 h-6 text-purple-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-corporate-navy">Daily Reps Library</h1>
-            <p className="text-sm text-slate-500">Define reusable daily reps with descriptions</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Define reusable daily reps with descriptions</p>
           </div>
         </div>
         <button
@@ -172,7 +172,7 @@ const DailyRepsLibrary = () => {
 
       {/* Editor Panel */}
       {editingItem && (
-        <div className="bg-white rounded-xl border-2 border-purple-200 shadow-lg p-6 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-purple-200 dark:border-purple-800 shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-corporate-navy">
               {isAddingNew ? 'Create New Daily Rep' : 'Edit Daily Rep'}
@@ -185,7 +185,7 @@ const DailyRepsLibrary = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -193,17 +193,17 @@ const DailyRepsLibrary = () => {
                 value={editingItem.title || ''}
                 onChange={e => setEditingItem({ ...editingItem, title: e.target.value })}
                 placeholder="e.g., Practice Active Listening"
-                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               />
             </div>
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Category</label>
               <select
                 value={editingItem.category || 'Challenge'}
                 onChange={e => setEditingItem({ ...editingItem, category: e.target.value })}
-                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               >
                 {categories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -214,7 +214,7 @@ const DailyRepsLibrary = () => {
 
           {/* Description */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               Description
               <span className="text-slate-400 font-normal ml-2">(shown when user taps the rep)</span>
             </label>
@@ -223,21 +223,21 @@ const DailyRepsLibrary = () => {
               onChange={e => setEditingItem({ ...editingItem, description: e.target.value })}
               placeholder="Provide context, instructions, or tips for this daily rep..."
               rows={4}
-              className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+              className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* Start Day */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                 <Calendar className="w-4 h-4 inline mr-1" />
                 Available From Day
               </label>
               <select
                 value={editingItem.startDay || 'Any'}
                 onChange={e => setEditingItem({ ...editingItem, startDay: e.target.value })}
-                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               >
                 {days.map(day => (
                   <option key={day} value={day}>{day === 'Any' ? 'Any day (all week)' : day}</option>
@@ -247,15 +247,15 @@ const DailyRepsLibrary = () => {
 
             {/* Active Toggle */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Status</label>
+              <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer">
                 <input
                   type="checkbox"
                   checked={editingItem.isActive !== false}
                   onChange={e => setEditingItem({ ...editingItem, isActive: e.target.checked })}
                   className="w-5 h-5 rounded text-purple-600"
                 />
-                <span className="text-sm text-slate-700">Active (available for selection)</span>
+                <span className="text-sm text-slate-700 dark:text-slate-200">Active (available for selection)</span>
               </label>
             </div>
           </div>
@@ -264,7 +264,7 @@ const DailyRepsLibrary = () => {
           <div className="flex justify-end gap-3">
             <button
               onClick={handleCancel}
-              className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-600 font-medium"
+              className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 text-slate-600 dark:text-slate-300 font-medium"
             >
               Cancel
             </button>
@@ -288,12 +288,12 @@ const DailyRepsLibrary = () => {
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="Search daily reps..."
-          className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+          className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
         />
       </div>
 
       {/* Stats */}
-      <div className="flex items-center gap-4 mb-4 text-sm text-slate-500">
+      <div className="flex items-center gap-4 mb-4 text-sm text-slate-500 dark:text-slate-400">
         <span>{reps.length} total reps</span>
         <span>•</span>
         <span>{reps.filter(r => r.isActive !== false).length} active</span>
@@ -308,9 +308,9 @@ const DailyRepsLibrary = () => {
       {/* Reps List */}
       <div className="space-y-3">
         {filteredReps.length === 0 ? (
-          <div className="text-center py-12 bg-slate-50 rounded-xl">
+          <div className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-xl">
             <Dumbbell className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500">
+            <p className="text-slate-500 dark:text-slate-400">
               {searchQuery ? 'No daily reps match your search' : 'No daily reps defined yet'}
             </p>
             {!searchQuery && (
@@ -326,8 +326,8 @@ const DailyRepsLibrary = () => {
           filteredReps.map(rep => (
             <div
               key={rep.id}
-              className={`bg-white rounded-xl border p-4 transition-all hover:shadow-md ${
-                rep.isActive === false ? 'opacity-60 border-slate-200' : 'border-purple-100'
+              className={`bg-white dark:bg-slate-800 rounded-xl border p-4 transition-all hover:shadow-md ${
+                rep.isActive === false ? 'opacity-60 border-slate-200 dark:border-slate-700' : 'border-purple-100'
               }`}
             >
               <div className="flex items-start justify-between gap-4">
@@ -335,36 +335,36 @@ const DailyRepsLibrary = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-bold text-corporate-navy truncate">{rep.title}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      rep.category === 'Challenge' ? 'bg-orange-100 text-orange-700' :
-                      rep.category === 'Practice' ? 'bg-blue-100 text-blue-700' :
-                      rep.category === 'Reflection' ? 'bg-purple-100 text-purple-700' :
-                      rep.category === 'Habit' ? 'bg-green-100 text-green-700' :
-                      rep.category === 'Skill' ? 'bg-teal-100 text-teal-700' :
-                      'bg-slate-100 text-slate-700'
+                      rep.category === 'Challenge' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700' :
+                      rep.category === 'Practice' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700' :
+                      rep.category === 'Reflection' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700' :
+                      rep.category === 'Habit' ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                      rep.category === 'Skill' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-700' :
+                      'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
                     }`}>
                       {rep.category || 'Uncategorized'}
                     </span>
                     {rep.startDay && rep.startDay !== 'Any' && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                         From {rep.startDay}
                       </span>
                     )}
                     {rep.isActive === false && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600">
                         Inactive
                       </span>
                     )}
                   </div>
                   
                   {rep.description ? (
-                    <p className="text-sm text-slate-600 line-clamp-2">{rep.description}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">{rep.description}</p>
                   ) : (
                     <p className="text-sm text-slate-400 italic">No description</p>
                   )}
 
                   {/* ID for reference */}
                   <div className="flex items-center gap-2 mt-2">
-                    <code className="text-xs text-slate-400 bg-slate-50 px-2 py-0.5 rounded font-mono">
+                    <code className="text-xs text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded font-mono">
                       {rep.id}
                     </code>
                     <button
@@ -405,7 +405,7 @@ const DailyRepsLibrary = () => {
       </div>
 
       {/* Help Text */}
-      <div className="mt-8 p-4 bg-purple-50 rounded-xl border border-purple-100">
+      <div className="mt-8 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100">
         <div className="flex gap-3">
           <AlertCircle className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-purple-800">

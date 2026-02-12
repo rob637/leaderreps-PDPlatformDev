@@ -648,13 +648,13 @@ const UserManagement = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">User Management <span className="text-xs text-slate-400 font-normal">(v1.2.1)</span></h2>
-          <p className="text-slate-500">Manage users, cohorts, and invitations</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">User Management <span className="text-xs text-slate-400 font-normal">(v1.2.1)</span></h2>
+          <p className="text-slate-500 dark:text-slate-400">Manage users, cohorts, and invitations</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setIsCohortModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
           >
             <Users className="w-4 h-4" />
             New Cohort
@@ -670,13 +670,13 @@ const UserManagement = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-slate-200 dark:border-slate-700">
         <button
           onClick={() => setActiveTab('users')}
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'users'
               ? 'border-corporate-teal text-corporate-teal'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
           Users
@@ -686,7 +686,7 @@ const UserManagement = () => {
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'cohorts'
               ? 'border-corporate-teal text-corporate-teal'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
           Cohorts
@@ -696,7 +696,7 @@ const UserManagement = () => {
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'invites'
               ? 'border-corporate-teal text-corporate-teal'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
           Invitations
@@ -706,7 +706,7 @@ const UserManagement = () => {
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'templates'
               ? 'border-corporate-teal text-corporate-teal'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
           <span className="flex items-center gap-1.5">
@@ -725,7 +725,7 @@ const UserManagement = () => {
             placeholder={`Search ${activeTab}...`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20 focus:border-corporate-teal"
+            className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20 focus:border-corporate-teal"
           />
         </div>
       )}
@@ -734,40 +734,40 @@ const UserManagement = () => {
       {loading ? (
         <div className="text-center py-12">
           <RefreshCw className="w-8 h-8 animate-spin text-slate-300 mx-auto mb-2" />
-          <p className="text-slate-500">Loading data...</p>
+          <p className="text-slate-500 dark:text-slate-400">Loading data...</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <tr>
                 {activeTab === 'users' ? (
                   <>
-                    <th className="px-6 py-3 font-semibold text-slate-700">User</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700">Role</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700">Cohort</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700">Status</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700 text-right">Actions</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">User</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Role</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Cohort</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Status</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 text-right">Actions</th>
                   </>
                 ) : activeTab === 'cohorts' ? (
                   <>
-                    <th className="px-6 py-3 font-semibold text-slate-700">Cohort Name</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700">Start Date</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700">Members</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700 text-right">Actions</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Cohort Name</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Start Date</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Members</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 text-right">Actions</th>
                   </>
                 ) : (
                   <>
-                    <th className="px-6 py-3 font-semibold text-slate-700">Recipient</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700">Role</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700">Cohort</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700">Status</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700 text-right">Actions</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Recipient</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Role</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Cohort</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Status</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 text-right">Actions</th>
                   </>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {activeTab === 'users' && (
                 filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => (
@@ -778,8 +778,8 @@ const UserManagement = () => {
                             {user.displayName?.[0] || user.email?.[0] || '?'}
                           </div>
                           <div>
-                            <p className="font-medium text-slate-900">{user.displayName || 'No Name'}</p>
-                            <p className="text-slate-500 text-xs">{user.email}</p>
+                            <p className="font-medium text-slate-900 dark:text-white">{user.displayName || 'No Name'}</p>
+                            <p className="text-slate-500 dark:text-slate-400 text-xs">{user.email}</p>
                           </div>
                         </div>
                       </td>
@@ -789,8 +789,8 @@ const UserManagement = () => {
                           onChange={(e) => handleChangeRole(user.id, e.target.value)}
                           className={`text-xs px-2.5 py-1 rounded-md border-0 font-medium cursor-pointer ${
                             adminEmails.some(e => e.toLowerCase() === user.email?.toLowerCase()) || user.role === 'admin'
-                              ? 'bg-purple-100 text-purple-800' 
-                              : 'bg-blue-100 text-blue-800'
+                              ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800' 
+                              : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800'
                           }`}
                         >
                           <option value="user">User</option>
@@ -801,7 +801,7 @@ const UserManagement = () => {
                         <select
                           value={user.cohortId || ''}
                           onChange={(e) => handleAssignCohort(user.id, e.target.value)}
-                          className="text-xs border-slate-200 rounded-md focus:ring-corporate-teal focus:border-corporate-teal"
+                          className="text-xs border-slate-200 dark:border-slate-700 rounded-md focus:ring-corporate-teal focus:border-corporate-teal"
                         >
                           <option value="">No Cohort</option>
                           {cohorts.map(c => (
@@ -811,15 +811,15 @@ const UserManagement = () => {
                       </td>
                       <td className="px-6 py-4">
                         {user.status === 'Pending' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800">
                             <Clock className="w-3 h-3" /> Pending
                           </span>
                         ) : user.disabled ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800">
                             <XCircle className="w-3 h-3" /> Disabled
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800">
                             <CheckCircle className="w-3 h-3" /> Active
                           </span>
                         )}
@@ -830,7 +830,7 @@ const UserManagement = () => {
                             <>
                               <button
                                 onClick={() => setSelectedUserForNotifications(user)}
-                                className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"
+                                className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100"
                               >
                                 Notifications
                               </button>
@@ -838,8 +838,8 @@ const UserManagement = () => {
                                 onClick={() => handleToggleUserStatus(user.id, user.disabled)}
                                 className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
                                   user.disabled 
-                                    ? 'bg-green-50 text-green-600 hover:bg-green-100' 
-                                    : 'bg-red-50 text-red-600 hover:bg-red-100'
+                                    ? 'bg-green-50 dark:bg-green-900/20 text-green-600 hover:bg-green-100' 
+                                    : 'bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100'
                                 }`}
                               >
                                 {user.disabled ? 'Enable' : 'Disable'}
@@ -849,14 +849,14 @@ const UserManagement = () => {
                             <>
                               <button
                                 onClick={() => handleResendInvite(user)}
-                                className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center gap-1"
+                                className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 flex items-center gap-1"
                                 title="Resend Invite"
                               >
                                 <Send className="w-3 h-3" /> Resend
                               </button>
                               <button
                                 onClick={() => handleDeleteInvite(user.id)}
-                                className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-red-50 text-red-600 hover:bg-red-100"
+                                className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100"
                               >
                                 Delete Invite
                               </button>
@@ -868,14 +868,14 @@ const UserManagement = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
                       {fetchError ? (
                         <div className="text-red-600">
                           <p className="font-medium">Error loading users</p>
                           <p className="text-sm mt-1">{fetchError}</p>
                           <button 
                             onClick={() => fetchData()} 
-                            className="mt-2 px-3 py-1 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                            className="mt-2 px-3 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 rounded-lg hover:bg-red-200"
                           >
                             Retry
                           </button>
@@ -892,14 +892,14 @@ const UserManagement = () => {
                 cohorts.length > 0 ? (
                   cohorts.map((cohort) => (
                     <tr key={cohort.id} className="hover:bg-slate-50/50">
-                      <td className="px-6 py-4 font-medium text-slate-900">
+                      <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                         {cohort.name}
                       </td>
-                      <td className="px-6 py-4 text-slate-500">
+                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
                         {cohort.startDate?.toDate ? cohort.startDate.toDate().toLocaleDateString() : 'Unknown'}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
                           {users.filter(u => u.cohortId === cohort.id).length} Users
                         </span>
                       </td>
@@ -925,7 +925,7 @@ const UserManagement = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan="4" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
                       No cohorts defined. Create one to get started.
                     </td>
                   </tr>
@@ -938,32 +938,32 @@ const UserManagement = () => {
                     <tr key={invite.id} className="hover:bg-slate-50/50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold">
+                          <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 font-bold">
                             <Mail className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="font-medium text-slate-900">
+                            <p className="font-medium text-slate-900 dark:text-white">
                               {invite.firstName || invite.lastName 
                                 ? `${invite.firstName || ''} ${invite.lastName || ''}`.trim()
                                 : 'No Name'}
                             </p>
-                            <p className="text-slate-500 text-xs">{invite.email}</p>
+                            <p className="text-slate-500 dark:text-slate-400 text-xs">{invite.email}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800">
                           {invite.role || 'User'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-xs text-slate-500">
+                      <td className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400">
                         {cohorts.find(c => c.id === invite.cohortId)?.name || '-'}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           invite.status === 'accepted' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-amber-100 text-amber-800'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800' 
+                            : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800'
                         }`}>
                           {invite.status === 'accepted' ? <CheckCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
                           {invite.status || 'Pending'}
@@ -994,7 +994,7 @@ const UserManagement = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
                       No invitations found.
                     </td>
                   </tr>
@@ -1007,13 +1007,13 @@ const UserManagement = () => {
 
       {/* Email Templates Section */}
       {activeTab === 'templates' && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="p-6 border-b border-slate-100">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-lg text-slate-800">Invitation Email Template</h3>
-                <p className="text-sm text-slate-500 mt-1">
-                  Customize the email sent when inviting new users. Use variables like <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{firstName}}'}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{lastName}}'}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{email}}'}</code>.
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">Invitation Email Template</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Customize the email sent when inviting new users. Use variables like <code className="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-xs">{'{{firstName}}'}</code>, <code className="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-xs">{'{{lastName}}'}</code>, <code className="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-xs">{'{{email}}'}</code>.
                 </p>
               </div>
               <button
@@ -1021,7 +1021,7 @@ const UserManagement = () => {
                 className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                   showTemplatePreview 
                     ? 'bg-corporate-teal text-white' 
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
                 }`}
               >
                 <Eye className="w-4 h-4" />
@@ -1033,79 +1033,79 @@ const UserManagement = () => {
           <div className="p-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email Subject</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Email Subject</label>
                 <input
                   type="text"
                   value={emailTemplate.subject}
                   onChange={e => setEmailTemplate({...emailTemplate, subject: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                   placeholder="You're invited to LeaderReps PD Platform"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Headline</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Headline</label>
                 <input
                   type="text"
                   value={emailTemplate.headline}
                   onChange={e => setEmailTemplate({...emailTemplate, headline: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                   placeholder="Welcome to LeaderReps!"
                 />
               </div>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                 Body Text <span className="text-slate-400 text-xs">(Can be overridden per-invite with Custom Message)</span>
               </label>
               <textarea
                 rows="3"
                 value={emailTemplate.bodyText}
                 onChange={e => setEmailTemplate({...emailTemplate, bodyText: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                 placeholder="You have been invited to join the LeaderReps Professional Development Platform."
               />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Button Text</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Button Text</label>
                 <input
                   type="text"
                   value={emailTemplate.buttonText}
                   onChange={e => setEmailTemplate({...emailTemplate, buttonText: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                   placeholder="Accept Invitation"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Expiry Text</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Expiry Text</label>
                 <input
                   type="text"
                   value={emailTemplate.expiryText}
                   onChange={e => setEmailTemplate({...emailTemplate, expiryText: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                   placeholder="This invitation will expire in 7 days."
                 />
               </div>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Footer Text</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Footer Text</label>
               <input
                 type="text"
                 value={emailTemplate.footerText}
                 onChange={e => setEmailTemplate({...emailTemplate, footerText: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                 placeholder="If you did not expect this invitation, please ignore this email."
               />
             </div>
             
             {/* Preview */}
             {showTemplatePreview && (
-              <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <h4 className="text-sm font-medium text-slate-700 mb-3">Email Preview</h4>
-                <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
+              <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-3">Email Preview</h4>
+                <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
                   <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: '600px', margin: '0 auto' }}>
                     <h2 style={{ color: '#0f172a', marginBottom: '16px' }}>{emailTemplate.headline || 'Welcome to LeaderReps!'}</h2>
                     <p style={{ color: '#475569', marginBottom: '16px' }}>{emailTemplate.bodyText || 'You have been invited...'}</p>
@@ -1150,9 +1150,9 @@ const UserManagement = () => {
       {/* Invite Modal */}
       {isInviteModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-lg text-slate-800">Invite New User</h3>
+              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">Invite New User</h3>
               <button 
                 onClick={() => setIsInviteModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600"
@@ -1163,37 +1163,37 @@ const UserManagement = () => {
             
             <form onSubmit={handleSendInvite} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Email Address</label>
                 <input
                   type="email"
                   required
                   value={inviteForm.email}
                   onChange={e => setInviteForm({...inviteForm, email: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                   placeholder="colleague@company.com"
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">First Name *</label>
                   <input
                     type="text"
                     required
                     value={inviteForm.firstName}
                     onChange={e => setInviteForm({...inviteForm, firstName: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                     placeholder="John"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Last Name *</label>
                   <input
                     type="text"
                     required
                     value={inviteForm.lastName}
                     onChange={e => setInviteForm({...inviteForm, lastName: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                     placeholder="Doe"
                   />
                 </div>
@@ -1201,23 +1201,23 @@ const UserManagement = () => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Role</label>
                   <select
                     value={inviteForm.role}
                     onChange={e => setInviteForm({...inviteForm, role: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                   >
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Cohort *</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Cohort *</label>
                   <select
                     required
                     value={inviteForm.cohortId}
                     onChange={e => setInviteForm({...inviteForm, cohortId: e.target.value})}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 ${!inviteForm.cohortId ? 'border-amber-300 bg-amber-50' : 'border-slate-300'}`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 ${!inviteForm.cohortId ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/20' : 'border-slate-300 dark:border-slate-600'}`}
                   >
                     <option value="">-- Select Cohort --</option>
                     {cohorts.map(c => (
@@ -1228,30 +1228,30 @@ const UserManagement = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Custom Message</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Custom Message</label>
                 <textarea
                   rows="3"
                   value={inviteForm.customMessage}
                   onChange={e => setInviteForm({...inviteForm, customMessage: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                 ></textarea>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2 mb-2">
                   <input
                     type="checkbox"
                     id="isTest"
                     checked={inviteForm.isTest || false}
                     onChange={e => setInviteForm({...inviteForm, isTest: e.target.checked})}
-                    className="rounded border-slate-300 text-corporate-teal focus:ring-corporate-teal"
+                    className="rounded border-slate-300 dark:border-slate-600 text-corporate-teal focus:ring-corporate-teal"
                   />
-                  <label htmlFor="isTest" className="text-sm font-medium text-slate-700">Send as Test Invite</label>
+                  <label htmlFor="isTest" className="text-sm font-medium text-slate-700 dark:text-slate-200">Send as Test Invite</label>
                 </div>
                 
                 {inviteForm.isTest && (
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">
+                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
                       Override Email <span className="text-red-500">*</span>
                       <span className="text-slate-400 ml-1">(Required for test invites)</span>
                     </label>
@@ -1260,7 +1260,7 @@ const UserManagement = () => {
                       required
                       value={inviteForm.testRecipient || ''}
                       onChange={e => setInviteForm({...inviteForm, testRecipient: e.target.value})}
-                      className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-corporate-teal"
+                      className="w-full px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-1 focus:ring-corporate-teal"
                       placeholder="Enter the real email to receive notifications"
                     />
                     <p className="text-xs text-amber-600 mt-1">
@@ -1274,7 +1274,7 @@ const UserManagement = () => {
                 <button
                   type="button"
                   onClick={() => setIsInviteModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium"
+                  className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 font-medium"
                 >
                   Cancel
                 </button>
@@ -1304,9 +1304,9 @@ const UserManagement = () => {
       {/* Create Cohort Modal */}
       {isCohortModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-lg text-slate-800">{cohortForm.id ? 'Edit Cohort' : 'Create New Cohort'}</h3>
+              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">{cohortForm.id ? 'Edit Cohort' : 'Create New Cohort'}</h3>
               <button 
                 onClick={() => setIsCohortModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600"
@@ -1318,52 +1318,52 @@ const UserManagement = () => {
             <form onSubmit={handleCreateCohort} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
               {/* Basic Info */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Cohort Name *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Cohort Name *</label>
                 <input
                   type="text"
                   required
                   value={cohortForm.name}
                   onChange={e => setCohortForm({...cohortForm, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                   placeholder="e.g., Spring 2025 Leaders"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Description</label>
                 <textarea
                   value={cohortForm.description}
                   onChange={e => setCohortForm({...cohortForm, description: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                   placeholder="Brief description of this cohort..."
                   rows={2}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Start Date & Time *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Start Date & Time *</label>
                 <input
                   type="datetime-local"
                   required
                   value={cohortForm.startDate}
                   onChange={e => setCohortForm({...cohortForm, startDate: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                 />
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   Development Plan starts on this date. The time will be used for session scheduling.
                 </p>
               </div>
 
               {/* Cohort Timezone */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1 flex items-center gap-2">
                   <Globe className="w-4 h-4" /> Cohort Timezone *
                 </label>
                 <select
                   required
                   value={cohortForm.timezone}
                   onChange={e => setCohortForm({...cohortForm, timezone: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 bg-white"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 bg-white dark:bg-slate-800"
                 >
                   {COMMON_TIMEZONES.map(tz => (
                     <option key={tz.value} value={tz.value}>
@@ -1371,18 +1371,18 @@ const UserManagement = () => {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   All cohort members will see the same "Day 1", "Day 2", etc. based on this timezone.
                 </p>
               </div>
 
               {/* Facilitator */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Facilitator</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Facilitator</label>
                 <select
                   value={cohortForm.facilitatorId}
                   onChange={e => setCohortForm({...cohortForm, facilitatorId: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 bg-white"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 bg-white dark:bg-slate-800"
                 >
                   <option value="">Select a facilitator...</option>
                   {facilitators.map(f => (
@@ -1391,72 +1391,72 @@ const UserManagement = () => {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   The facilitator will be shown to cohort members as their point of contact.
                 </p>
               </div>
 
               {/* Facilitator Profile Details - Show when a facilitator is selected */}
               {cohortForm.facilitatorId && (
-                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 space-y-3">
-                  <h4 className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700 space-y-3">
+                  <h4 className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2">
                     <User className="w-4 h-4" />
                     Facilitator Profile (Visible to Participants)
                   </h4>
                   
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Title</label>
+                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Title</label>
                       <input
                         type="text"
                         placeholder="Leadership Facilitator"
                         value={cohortForm.facilitatorTitle}
                         onChange={e => setCohortForm({...cohortForm, facilitatorTitle: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Photo URL</label>
+                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Photo URL</label>
                       <input
                         type="url"
                         placeholder="https://..."
                         value={cohortForm.facilitatorPhotoUrl}
                         onChange={e => setCohortForm({...cohortForm, facilitatorPhotoUrl: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Bio / Introduction</label>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Bio / Introduction</label>
                     <textarea
                       placeholder="A short introduction about the facilitator that will help participants connect with them..."
                       value={cohortForm.facilitatorBio}
                       onChange={e => setCohortForm({...cohortForm, facilitatorBio: e.target.value})}
                       rows={3}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm resize-none"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm resize-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Phone (optional)</label>
+                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Phone (optional)</label>
                       <input
                         type="tel"
                         placeholder="+1 (555) 123-4567"
                         value={cohortForm.facilitatorPhone}
                         onChange={e => setCohortForm({...cohortForm, facilitatorPhone: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">LinkedIn (optional)</label>
+                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">LinkedIn (optional)</label>
                       <input
                         type="text"
                         placeholder="linkedin.com/in/username or just username"
                         value={cohortForm.facilitatorLinkedIn}
                         onChange={e => setCohortForm({...cohortForm, facilitatorLinkedIn: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
                       />
                     </div>
                   </div>
@@ -1464,31 +1464,31 @@ const UserManagement = () => {
               )}
 
               {/* Cohort Settings */}
-              <div className="pt-2 border-t border-slate-200">
-                <h4 className="text-sm font-medium text-slate-700 mb-3">Cohort Settings</h4>
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-3">Cohort Settings</h4>
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Max Capacity</label>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Max Capacity</label>
                     <input
                       type="number"
                       min="1"
                       max="100"
                       value={cohortForm.maxCapacity}
                       onChange={e => setCohortForm({...cohortForm, maxCapacity: e.target.value})}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Late Join Cutoff (days)</label>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Late Join Cutoff (days)</label>
                     <input
                       type="number"
                       min="0"
                       max="14"
                       value={cohortForm.lateJoinCutoff}
                       onChange={e => setCohortForm({...cohortForm, lateJoinCutoff: e.target.value})}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
                       disabled={!cohortForm.allowLateJoins}
                     />
                   </div>
@@ -1500,11 +1500,11 @@ const UserManagement = () => {
                       type="checkbox"
                       checked={cohortForm.allowLateJoins}
                       onChange={e => setCohortForm({...cohortForm, allowLateJoins: e.target.checked})}
-                      className="w-4 h-4 text-corporate-teal border-slate-300 rounded focus:ring-corporate-teal"
+                      className="w-4 h-4 text-corporate-teal border-slate-300 dark:border-slate-600 rounded focus:ring-corporate-teal"
                     />
-                    <span className="text-sm text-slate-700">Allow late joins</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-200">Allow late joins</span>
                   </label>
-                  <p className="text-xs text-slate-500 mt-1 ml-6">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 ml-6">
                     {cohortForm.allowLateJoins 
                       ? `Users can join up to ${cohortForm.lateJoinCutoff} days after start date`
                       : 'No new members after start date'
@@ -1517,7 +1517,7 @@ const UserManagement = () => {
                 <button
                   type="button"
                   onClick={() => setIsCohortModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium"
+                  className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 font-medium"
                 >
                   Cancel
                 </button>

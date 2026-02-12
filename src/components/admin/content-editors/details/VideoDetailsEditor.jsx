@@ -20,21 +20,21 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
   };
 
   return (
-    <div className="space-y-4 bg-orange-50 p-4 rounded-lg border border-orange-200">
+    <div className="space-y-4 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
       <h3 className="font-semibold text-orange-800 flex items-center gap-2">
         <Film size={18} />
         Video Details
       </h3>
       
       {/* Source Type Selector */}
-      <div className="flex gap-4 border-b border-orange-200 pb-2">
+      <div className="flex gap-4 border-b border-orange-200 dark:border-orange-800 pb-2">
         <button
           type="button"
           onClick={() => setSourceType('LINK')}
           className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
             sourceType === 'LINK' 
-              ? 'bg-orange-100 text-orange-800' 
-              : 'text-gray-600 hover:bg-orange-50'
+              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800' 
+              : 'text-gray-600 dark:text-gray-300 hover:bg-orange-50'
           }`}
         >
           <LinkIcon size={14} />
@@ -45,8 +45,8 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
           onClick={() => setSourceType('VAULT')}
           className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
             sourceType === 'VAULT' 
-              ? 'bg-orange-100 text-orange-800' 
-              : 'text-gray-600 hover:bg-orange-50'
+              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800' 
+              : 'text-gray-600 dark:text-gray-300 hover:bg-orange-50'
           }`}
         >
           <Database size={14} />
@@ -56,7 +56,7 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
       
       {/* Video Source Input */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-1">
           {sourceType === 'LINK' ? <ExternalLink size={14} /> : <Database size={14} />}
           {sourceType === 'LINK' ? 'Video URL' : 'Select Video from Vault'}
         </label>
@@ -70,18 +70,18 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
               placeholder="https://youtube.com/watch?v=..."
               className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Paste the full URL. YouTube thumbnails will be auto-extracted.
             </p>
           </>
         ) : (
           <div className="space-y-2">
             {details.externalUrl ? (
-              <div className="flex items-center gap-2 p-2 bg-white border rounded-md">
-                <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center text-orange-600">
+              <div className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border rounded-md">
+                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded flex items-center justify-center text-orange-600">
                   <Film size={16} />
                 </div>
-                <span className="text-sm text-gray-700 truncate flex-1">{details.externalUrl}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200 truncate flex-1">{details.externalUrl}</span>
                 <button
                   type="button"
                   onClick={() => handleChange('externalUrl', '')}
@@ -94,13 +94,13 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
               <button
                 type="button"
                 onClick={() => setShowMediaSelector(true)}
-                className="w-full p-8 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors flex flex-col items-center justify-center gap-2 text-orange-800"
+                className="w-full p-8 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 transition-colors flex flex-col items-center justify-center gap-2 text-orange-800"
               >
                 <Database size={24} />
                 <span className="font-medium">Select Video from Vault</span>
               </button>
             )}
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Select a video file previously uploaded to the Media Vault.
             </p>
           </div>
@@ -118,7 +118,7 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
 
       {/* Speaker */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-1">
           <User size={14} />
           Speaker / Presenter
         </label>
@@ -133,7 +133,7 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
 
       {/* Source */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-1">
           <Tag size={14} />
           Source
         </label>
@@ -148,7 +148,7 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
 
       {/* Category */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
           Category
         </label>
         <select
@@ -171,7 +171,7 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
 
       {/* Duration */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-1">
           <Clock size={14} />
           Duration (minutes)
         </label>
@@ -186,7 +186,7 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
 
       {/* Custom Thumbnail URL */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
           Custom Thumbnail URL (optional)
         </label>
         <input
@@ -196,14 +196,14 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
           placeholder="https://..."
           className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
         />
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           Leave blank to auto-extract from YouTube. Use for Vimeo or custom thumbnails.
         </p>
       </div>
 
       {/* Key Takeaways */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
           Key Takeaways (one per line)
         </label>
         <textarea

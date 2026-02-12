@@ -21,9 +21,9 @@ const ProgressBar = React.forwardRef(({
 
   const trackColors = {
     default: 'bg-slate-200',
-    success: 'bg-green-100',
+    success: 'bg-green-100 dark:bg-green-900/30',
     warning: 'bg-orange-100',
-    danger: 'bg-red-100',
+    danger: 'bg-red-100 dark:bg-red-900/30',
     navy: 'bg-slate-200',
   };
 

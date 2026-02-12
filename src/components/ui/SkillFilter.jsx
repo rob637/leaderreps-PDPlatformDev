@@ -8,9 +8,9 @@ import { Target, X, ChevronDown } from 'lucide-react';
 
 // Pillar colors (matching SkillsIndex)
 const PILLAR_COLORS = {
-  'Lead Self': { bg: 'bg-teal-50', text: 'text-teal-700', border: 'border-teal-200', activeBg: 'bg-teal-600' },
-  'Lead Work': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', activeBg: 'bg-blue-600' },
-  'Lead People': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', activeBg: 'bg-purple-600' },
+  'Lead Self': { bg: 'bg-teal-50 dark:bg-teal-900/20', text: 'text-teal-700', border: 'border-teal-200 dark:border-teal-800', activeBg: 'bg-teal-600' },
+  'Lead Work': { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700', border: 'border-blue-200 dark:border-blue-800', activeBg: 'bg-blue-600' },
+  'Lead People': { bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-700', border: 'border-purple-200 dark:border-purple-800', activeBg: 'bg-purple-600' },
 };
 
 const SkillFilter = ({ db, selectedSkills = [], onSkillsChange, compact = false }) => {
@@ -87,8 +87,8 @@ const SkillFilter = ({ db, selectedSkills = [], onSkillsChange, compact = false 
           onClick={() => setIsExpanded(!isExpanded)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
             selectedSkills.length > 0 
-              ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
-              : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+              ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700' 
+              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300'
           }`}
         >
           <Target className="w-4 h-4" />
@@ -101,9 +101,9 @@ const SkillFilter = ({ db, selectedSkills = [], onSkillsChange, compact = false 
         </button>
 
         {isExpanded && (
-          <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 p-4">
+          <div className="absolute top-full left-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-bold text-slate-800">Filter by Skills</span>
+              <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Filter by Skills</span>
               {selectedSkills.length > 0 && (
                 <button 
                   onClick={clearAll}
@@ -160,11 +160,11 @@ const SkillFilter = ({ db, selectedSkills = [], onSkillsChange, compact = false 
 
   // Full view - show all skills inline
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Target className="w-5 h-5 text-indigo-600" />
-          <span className="font-bold text-slate-800">Filter by Skills</span>
+          <span className="font-bold text-slate-800 dark:text-slate-200">Filter by Skills</span>
         </div>
         {selectedSkills.length > 0 && (
           <button 

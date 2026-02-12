@@ -213,12 +213,12 @@ const ContentManager = ({ contentType, title, description }) => {
   }
 
   return (
-    <div className="p-6 w-full bg-slate-50 min-h-screen">
+    <div className="p-6 w-full bg-slate-50 dark:bg-slate-800 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate('admin-content-home')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500"
+          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500 dark:text-slate-400"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Content Wrapper
@@ -231,7 +231,7 @@ const ContentManager = ({ contentType, title, description }) => {
               <h1 className="text-3xl font-bold text-corporate-navy">
                 {displayTitle}
               </h1>
-              <p className="text-slate-500">
+              <p className="text-slate-500 dark:text-slate-400">
                 {displayDesc}
               </p>
             </div>
@@ -249,7 +249,7 @@ const ContentManager = ({ contentType, title, description }) => {
 
       {/* Edit Form */}
       {editingItem && (
-        <div ref={editFormRef} className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-corporate-teal">
+        <div ref={editFormRef} className="mb-6 p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border-2 border-corporate-teal">
           <h2 className="text-xl font-bold mb-4 text-corporate-navy">
             {isAddingNew ? 'Add New Item' : `Edit: ${editingItem.title || 'Untitled'}`}
           </h2>
@@ -292,7 +292,7 @@ const ContentManager = ({ contentType, title, description }) => {
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
                       editingItem.resourceType === 'link'
                         ? 'bg-corporate-teal text-white border-corporate-teal'
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
                     }`}
                   >
                     <LinkIcon className="w-4 h-4" />
@@ -303,7 +303,7 @@ const ContentManager = ({ contentType, title, description }) => {
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
                       editingItem.resourceType === 'file'
                         ? 'bg-corporate-teal text-white border-corporate-teal'
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
                     }`}
                   >
                     <Database className="w-4 h-4" />
@@ -312,10 +312,10 @@ const ContentManager = ({ contentType, title, description }) => {
                 </div>
 
                 {editingItem.resourceType === 'file' ? (
-                  <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center bg-slate-50 hover:bg-slate-100 transition-colors relative">
+                  <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 text-center bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 transition-colors relative">
                     <div className="flex flex-col items-center justify-center">
                       <Database className="w-10 h-10 text-slate-400 mb-2" />
-                      <p className="text-sm font-medium text-slate-700">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
                         Select content from Media Vault
                       </p>
                       <button
@@ -327,8 +327,8 @@ const ContentManager = ({ contentType, title, description }) => {
                     </div>
                     
                     {editingItem.url && editingItem.resourceType === 'file' && (
-                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3 text-left">
-                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3 text-left">
+                        <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center flex-shrink-0">
                           <FileText className="w-4 h-4 text-green-600" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -342,7 +342,7 @@ const ContentManager = ({ contentType, title, description }) => {
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
                       External URL *
                     </label>
                     <input
@@ -385,13 +385,13 @@ const ContentManager = ({ contentType, title, description }) => {
               />
             </div>
 
-            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
               <input
                 type="checkbox"
                 id="isHiddenUntilUnlocked"
                 checked={editingItem.isHiddenUntilUnlocked || false}
                 onChange={(e) => setEditingItem({ ...editingItem, isHiddenUntilUnlocked: e.target.checked })}
-                className="w-4 h-4 text-corporate-teal border-gray-300 rounded focus:ring-corporate-teal"
+                className="w-4 h-4 text-corporate-teal border-gray-300 dark:border-gray-600 rounded focus:ring-corporate-teal"
               />
               <label htmlFor="isHiddenUntilUnlocked" className="text-sm font-medium text-corporate-navy cursor-pointer select-none">
                 Hide from Library until Unlocked via Development Plan
@@ -628,7 +628,7 @@ const ContentManager = ({ contentType, title, description }) => {
                   setEditingItem(null);
                   setIsAddingNew(false);
                 }}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold bg-slate-100 text-slate-500 hover:bg-slate-200"
+                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200"
               >
                 <X className="w-4 h-4" />
                 Cancel
@@ -641,20 +641,20 @@ const ContentManager = ({ contentType, title, description }) => {
       {/* Content List */}
       <div className="space-y-3">
         {content.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl">
-            <p className="text-slate-500">No {config.label.toLowerCase()} yet. Click "Add New" to create one.</p>
+          <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-xl">
+            <p className="text-slate-500 dark:text-slate-400">No {config.label.toLowerCase()} yet. Click "Add New" to create one.</p>
           </div>
         ) : (
           content.map((item) => (
             <div
               key={item.id}
-              className={`p-4 bg-white rounded-xl shadow-sm border flex items-center justify-between ${item.isActive ? 'border-corporate-teal' : 'border-slate-300 opacity-60'}`}
+              className={`p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border flex items-center justify-between ${item.isActive ? 'border-corporate-teal' : 'border-slate-300 dark:border-slate-600 opacity-60'}`}
             >
               <div className="flex-1">
                 <h3 className="font-bold text-corporate-navy">
                   {item.title}
                 </h3>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   {item.description?.substring(0, 100)}
                   {item.description?.length > 100 ? '...' : ''}
                 </p>
@@ -676,7 +676,7 @@ const ContentManager = ({ contentType, title, description }) => {
                   {item.isActive ? (
                     <Eye className="w-5 h-5 text-corporate-teal" />
                   ) : (
-                    <EyeOff className="w-5 h-5 text-slate-500" />
+                    <EyeOff className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                   )}
                 </button>
                 <button

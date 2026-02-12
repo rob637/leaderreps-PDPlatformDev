@@ -104,14 +104,14 @@ const LeaderProfileReports = () => {
           placeholder="Search by name, email, or company..."
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
+          className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20"
         />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+            <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="px-4 py-3">User</th>
                 <th className="px-4 py-3">Company</th>
@@ -121,43 +121,43 @@ const LeaderProfileReports = () => {
                 <th className="px-4 py-3">Updated</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {filteredProfiles.map(profile => (
                 <tr key={profile.userId} className="hover:bg-slate-50">
                   <td className="px-4 py-3">
                     <div className="font-medium text-corporate-navy">{profile.userName}</div>
-                    <div className="text-xs text-slate-500">{profile.userEmail}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">{profile.userEmail}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div>{profile.companyName}</div>
-                    <div className="text-xs text-slate-500">{profile.companySize}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">{profile.companySize}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div>{profile.jobTitle}</div>
-                    <div className="text-xs text-slate-500">{profile.department}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">{profile.department}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div>{profile.yearsManaging} managing</div>
-                    <div className="text-xs text-slate-500">{profile.directReports} reports</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">{profile.directReports} reports</div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs" title="Receiving">
+                      <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 rounded text-xs" title="Receiving">
                         R: {profile.feedbackReceptionScore || '-'}
                       </span>
-                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs" title="Giving">
+                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 rounded text-xs" title="Giving">
                         G: {profile.feedbackGivingScore || '-'}
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-slate-500 text-xs">
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">
                     {profile.updatedAt?.toDate ? profile.updatedAt.toDate().toLocaleDateString() : 'N/A'}
                   </td>
                 </tr>
               ))}
               {filteredProfiles.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan="6" className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
                     No profiles found matching your search.
                   </td>
                 </tr>

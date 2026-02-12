@@ -78,7 +78,7 @@ const FilterSearch = React.forwardRef(({
       placeholder={placeholder}
       className={cn(
         'w-full pl-10 pr-8 py-2 text-sm',
-        'border border-slate-200 rounded-lg',
+        'border border-slate-200 dark:border-slate-700 rounded-lg',
         'focus:outline-none focus:ring-2 focus:ring-corporate-teal/20 focus:border-corporate-teal',
         'placeholder:text-slate-400'
       )}
@@ -116,7 +116,7 @@ const FilterSelect = React.forwardRef(({
 }, ref) => (
   <div className={cn('relative', className)}>
     {label && (
-      <label className="block text-xs font-medium text-slate-500 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{label}</label>
     )}
     <div className="relative">
       {Icon && (
@@ -129,7 +129,7 @@ const FilterSelect = React.forwardRef(({
         className={cn(
           'appearance-none py-2 pr-8 text-sm',
           Icon ? 'pl-10' : 'pl-3',
-          'border border-slate-200 rounded-lg bg-white',
+          'border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800',
           'focus:outline-none focus:ring-2 focus:ring-corporate-teal/20 focus:border-corporate-teal',
           'cursor-pointer'
         )}
@@ -175,7 +175,7 @@ const FilterChips = React.forwardRef(({
   return (
     <div ref={ref} className={cn('flex flex-col gap-2', className)} {...props}>
       {label && (
-        <span className="text-xs font-medium text-slate-500">{label}</span>
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</span>
       )}
       <div className="flex flex-wrap gap-2">
         {options.map((opt) => {
@@ -189,7 +189,7 @@ const FilterChips = React.forwardRef(({
                 'px-3 py-1.5 text-sm font-medium rounded-full transition-all',
                 isSelected
                   ? 'bg-corporate-teal text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
               )}
             >
               {opt.label}
@@ -224,7 +224,7 @@ const FilterToggle = React.forwardRef(({
   <div
     ref={ref}
     className={cn(
-      'inline-flex rounded-lg bg-slate-100 p-1',
+      'inline-flex rounded-lg bg-slate-100 dark:bg-slate-700 p-1',
       className
     )}
     {...props}
@@ -237,8 +237,8 @@ const FilterToggle = React.forwardRef(({
         className={cn(
           'px-4 py-1.5 text-sm font-medium rounded-md transition-all',
           value === opt.value
-            ? 'bg-white text-corporate-navy shadow-sm'
-            : 'text-slate-600 hover:text-corporate-navy'
+            ? 'bg-white dark:bg-slate-800 text-corporate-navy shadow-sm'
+            : 'text-slate-600 dark:text-slate-300 hover:text-corporate-navy'
         )}
       >
         {opt.icon && <opt.icon className="w-4 h-4 mr-1.5 inline" />}
@@ -288,7 +288,7 @@ const ActiveFilters = React.forwardRef(({
         <button
           type="button"
           onClick={onClearAll}
-          className="text-sm text-slate-500 hover:text-corporate-navy"
+          className="text-sm text-slate-500 dark:text-slate-400 hover:text-corporate-navy"
         >
           Clear all
         </button>

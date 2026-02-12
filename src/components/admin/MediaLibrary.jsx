@@ -226,7 +226,7 @@ const MediaLibrary = () => {
     switch (type) {
       case MEDIA_TYPES.VIDEO: return <Film size={24} className="text-purple-500" />;
       case MEDIA_TYPES.IMAGE: return <ImageIcon size={24} className="text-blue-500" />;
-      default: return <FileText size={24} className="text-gray-500" />;
+      default: return <FileText size={24} className="text-gray-500 dark:text-gray-400" />;
     }
   };
 
@@ -252,12 +252,12 @@ const MediaLibrary = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-800">
       {/* Header */}
-      <div className="bg-white border-b px-6 py-4 flex justify-between items-center">
+      <div className="bg-white dark:bg-slate-800 border-b px-6 py-4 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Media Vault</h1>
-          <p className="text-sm text-gray-500">Manage digital assets (Videos, PDFs, Images)</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Media Vault</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Manage digital assets (Videos, PDFs, Images)</p>
         </div>
         <div className="flex gap-2">
           <input 
@@ -283,7 +283,7 @@ const MediaLibrary = () => {
 
       {/* Upload Progress Bar */}
       {uploading && (
-        <div className="bg-blue-50 px-6 py-2 border-b border-blue-100">
+        <div className="bg-blue-50 dark:bg-blue-900/20 px-6 py-2 border-b border-blue-100 dark:border-blue-800">
           <div className="flex justify-between text-xs text-blue-700 mb-1">
             <span>Uploading...</span>
             <span>{Math.round(uploadProgress)}%</span>
@@ -307,7 +307,7 @@ const MediaLibrary = () => {
               className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap ${
                 filterType === type 
                   ? 'bg-gray-900 text-white' 
-                  : 'bg-white border text-gray-600 hover:bg-gray-50'
+                  : 'bg-white dark:bg-slate-800 border text-gray-600 dark:text-gray-300 hover:bg-gray-50'
               }`}
             >
               {type === 'ALL' ? 'All Assets' : type + 's'}
@@ -326,16 +326,16 @@ const MediaLibrary = () => {
               className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div className="flex border rounded-lg bg-white">
+          <div className="flex border rounded-lg bg-white dark:bg-slate-800">
             <button 
               onClick={() => setViewMode('GRID')}
-              className={`p-2 ${viewMode === 'GRID' ? 'bg-gray-100 text-blue-600' : 'text-gray-400'}`}
+              className={`p-2 ${viewMode === 'GRID' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600' : 'text-gray-400'}`}
             >
               <Grid size={18} />
             </button>
             <button 
               onClick={() => setViewMode('LIST')}
-              className={`p-2 ${viewMode === 'LIST' ? 'bg-gray-100 text-blue-600' : 'text-gray-400'}`}
+              className={`p-2 ${viewMode === 'LIST' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600' : 'text-gray-400'}`}
             >
               <List size={18} />
             </button>
@@ -362,18 +362,18 @@ const MediaLibrary = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         ) : filteredAssets.length === 0 ? (
-          <div className="text-center py-20 border-2 border-dashed border-gray-300 rounded-xl bg-white">
+          <div className="text-center py-20 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-slate-800">
             <div className="mx-auto h-16 w-16 text-gray-300 mb-4">
               <Upload size={64} />
             </div>
-            <h3 className="text-lg font-medium text-gray-900">Vault is empty</h3>
-            <p className="text-gray-500 mt-1">Upload assets to get started</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Vault is empty</h3>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Upload assets to get started</p>
           </div>
         ) : viewMode === 'GRID' ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {filteredAssets.map(asset => (
-              <div key={asset.id} className="group bg-white border rounded-lg overflow-hidden hover:shadow-md transition-shadow relative">
-                <div className="aspect-video bg-gray-100 flex items-center justify-center relative overflow-hidden">
+              <div key={asset.id} className="group bg-white dark:bg-slate-800 border rounded-lg overflow-hidden hover:shadow-md transition-shadow relative">
+                <div className="aspect-video bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
                   {asset.type === MEDIA_TYPES.IMAGE ? (
                     <img src={asset.url} alt={asset.title} className="w-full h-full object-cover" />
                   ) : asset.type === MEDIA_TYPES.VIDEO ? (
@@ -388,14 +388,14 @@ const MediaLibrary = () => {
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button 
                       onClick={() => handleReplaceClick(asset)}
-                      className="p-2 bg-white/20 text-white rounded-full hover:bg-white/40"
+                      className="p-2 bg-white/20 dark:bg-slate-800/20 text-white rounded-full hover:bg-white/40"
                       title="Replace File"
                     >
                       <RefreshCw size={18} />
                     </button>
                     <button 
                       onClick={() => handleEditClick(asset)}
-                      className="p-2 bg-white/20 text-white rounded-full hover:bg-white/40"
+                      className="p-2 bg-white/20 dark:bg-slate-800/20 text-white rounded-full hover:bg-white/40"
                       title="Rename"
                     >
                       <Edit size={18} />
@@ -411,12 +411,12 @@ const MediaLibrary = () => {
                 </div>
                 <div className="p-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="truncate font-medium text-sm text-gray-900" title={asset.title}>
+                    <div className="truncate font-medium text-sm text-gray-900 dark:text-gray-100" title={asset.title}>
                       {asset.title}
                     </div>
                     {getIconForType(asset.type)}
                   </div>
-                  <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+                  <div className="flex justify-between items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
                     <span>{formatSize(asset.size)}</span>
                     <span className="uppercase">{asset.type}</span>
                   </div>
@@ -425,23 +425,23 @@ const MediaLibrary = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-lg border overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="bg-white dark:bg-slate-800 rounded-lg border overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Size</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredAssets.map(asset => (
                   <tr key={asset.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded flex items-center justify-center relative">
+                        <div className="flex-shrink-0 h-10 w-10 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center relative">
                           {asset.type === MEDIA_TYPES.IMAGE ? (
                             <img src={asset.url} alt="" className="h-10 w-10 rounded object-cover" />
                           ) : getIconForType(asset.type)}
@@ -452,20 +452,20 @@ const MediaLibrary = () => {
                           )}
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{asset.title}</div>
-                          <div className="text-xs text-gray-500 truncate max-w-xs">{asset.fileName}</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{asset.title}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">{asset.fileName}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                         {asset.type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {formatSize(asset.size)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {asset.createdAt?.toDate().toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -492,16 +492,16 @@ const MediaLibrary = () => {
       {/* Edit Modal */}
       {editingAsset && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-gray-900">Rename Asset</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Rename Asset</h3>
               <button onClick={() => setEditingAsset(null)} className="text-gray-400 hover:text-gray-600">
                 <X size={24} />
               </button>
             </div>
             
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Asset Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Asset Name</label>
               <input
                 type="text"
                 value={editTitle}
@@ -514,7 +514,7 @@ const MediaLibrary = () => {
             <div className="flex justify-end gap-2">
               <button 
                 onClick={() => setEditingAsset(null)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 rounded-lg"
               >
                 Cancel
               </button>

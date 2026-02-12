@@ -38,7 +38,7 @@ const AccessibleButton = forwardRef(({
       disabled:bg-gray-300 disabled:text-gray-500
     `,
     secondary: `
-      bg-white text-corporate-navy border border-corporate-navy
+      bg-white dark:bg-slate-800 text-corporate-navy border border-corporate-navy
       hover:bg-gray-50
       disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-300
     `,

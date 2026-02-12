@@ -153,7 +153,7 @@ const UpdateNotification = () => {
       
       {/* Google-style centered bottom toast */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-md animate-slide-up">
-        <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           {/* Accent bar */}
           <div className="h-1 bg-gradient-to-r from-corporate-teal to-emerald-400" />
           
@@ -165,13 +165,13 @@ const UpdateNotification = () => {
               </div>
               
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-lg text-slate-900 mb-1">
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-1">
                   Update Available
                 </h3>
                 
                 {newVersion && (
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-mono bg-slate-100 text-slate-500 px-2 py-0.5 rounded">
+                    <span className="text-xs font-mono bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded">
                       v{APP_VERSION}
                     </span>
                     <span className="text-slate-400">→</span>
@@ -181,7 +181,7 @@ const UpdateNotification = () => {
                   </div>
                 )}
                 
-                <p className="text-sm text-slate-500 leading-relaxed">
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                   A new version with improvements is ready.
                 </p>
               </div>
@@ -217,7 +217,7 @@ const UpdateNotification = () => {
               
               <button
                 onClick={handleDismiss}
-                className="px-5 py-3 text-slate-600 font-medium rounded-xl hover:bg-slate-100 transition-colors"
+                className="px-5 py-3 text-slate-600 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-100 transition-colors"
               >
                 Later
               </button>

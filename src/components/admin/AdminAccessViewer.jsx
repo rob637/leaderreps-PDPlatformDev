@@ -117,7 +117,7 @@ const AdminAccessViewer = () => {
   };
 
   return (
-    <div className="p-6 bg-white rounded-xl shadow-sm border border-slate-200">
+    <div className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
       <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
         <User className="w-5 h-5" /> Admin Access Viewer
       </h3>
@@ -126,7 +126,7 @@ const AdminAccessViewer = () => {
         <select
             value={targetUserId}
             onChange={e => setTargetUserId(e.target.value)}
-            className="border p-2 rounded flex-1 bg-white text-sm"
+            className="border p-2 rounded flex-1 bg-white dark:bg-slate-800 text-sm"
         >
             <option value="">Select a User...</option>
             {usersList.map(user => (
@@ -148,7 +148,7 @@ const AdminAccessViewer = () => {
 
       {userData && accessReport && (
         <div className="space-y-4">
-          <div className="bg-slate-50 p-4 rounded border">
+          <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded border">
             <p><strong>User:</strong> {userData.displayName || userData.id}</p>
             <p><strong>Current Week:</strong> {accessReport.currentWeek}</p>
             <p><strong>Unlocked Items:</strong> {accessReport.items.length}</p>
@@ -156,7 +156,7 @@ const AdminAccessViewer = () => {
 
           <div className="h-64 overflow-y-auto border rounded">
             <table className="w-full text-sm text-left">
-              <thead className="bg-slate-100 sticky top-0">
+              <thead className="bg-slate-100 dark:bg-slate-700 sticky top-0">
                 <tr>
                   <th className="p-2">Week</th>
                   <th className="p-2">Type</th>
@@ -169,12 +169,12 @@ const AdminAccessViewer = () => {
                   <tr key={i} className="border-b hover:bg-slate-50">
                     <td className="p-2">{item.week}</td>
                     <td className="p-2">
-                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${item.type === 'Rep' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${item.type === 'Rep' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700'}`}>
                         {item.type}
                       </span>
                     </td>
                     <td className="p-2">{item.repLabel || item.contentItemLabel}</td>
-                    <td className="p-2 font-mono text-xs text-slate-500">{item.repId || item.contentItemId}</td>
+                    <td className="p-2 font-mono text-xs text-slate-500 dark:text-slate-400">{item.repId || item.contentItemId}</td>
                   </tr>
                 ))}
               </tbody>

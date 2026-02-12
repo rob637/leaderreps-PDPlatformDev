@@ -421,7 +421,7 @@ const ArenaDashboard = () => {
                   {otherTasks.map((task, idx) => (
                     <div key={task.id || idx} className="flex items-center gap-3">
                       <div className={`flex-1 p-3 rounded-xl border ${
-                        task.completed ? 'bg-slate-50 border-slate-200 dark:border-slate-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                        task.completed ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
                       }`}>
                         <input
                           type="text"

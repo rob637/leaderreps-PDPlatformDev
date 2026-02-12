@@ -13,22 +13,22 @@ const Alert = React.forwardRef(({
   
   const variants = {
     info: {
-      container: 'bg-blue-50/80 border-blue-100 text-blue-800',
+      container: 'bg-blue-50/80 dark:bg-blue-900/20/80 border-blue-100 dark:border-blue-800 text-blue-800',
       icon: Info,
       iconColor: 'text-blue-500',
     },
     success: {
-      container: 'bg-emerald-50/80 border-emerald-100 text-emerald-800',
+      container: 'bg-emerald-50/80 dark:bg-emerald-900/20/80 border-emerald-100 text-emerald-800',
       icon: CheckCircle,
       iconColor: 'text-emerald-500',
     },
     warning: {
-      container: 'bg-amber-50/80 border-amber-100 text-amber-800',
+      container: 'bg-amber-50/80 dark:bg-amber-900/20/80 border-amber-100 text-amber-800',
       icon: AlertTriangle,
       iconColor: 'text-amber-500',
     },
     error: {
-      container: 'bg-red-50/80 border-red-100 text-red-800',
+      container: 'bg-red-50/80 dark:bg-red-900/20/80 border-red-100 text-red-800',
       icon: AlertCircle,
       iconColor: 'text-red-500',
     },
