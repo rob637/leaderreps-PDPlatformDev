@@ -61,11 +61,6 @@ const ConditioningWidget = ({ helpText }) => {
     loadStatus();
   }, [loadStatus]);
 
-  // Handle navigation to conditioning screen
-  const handleNavigate = () => {
-    navigate?.('conditioning');
-  };
-
   // No cohort = show enrollment prompt
   if (!cohortId) {
     return (
@@ -91,6 +86,13 @@ const ConditioningWidget = ({ helpText }) => {
   
   const requiredMet = weeklyStatus?.requiredRepCompleted || false;
   const completedCount = weeklyStatus?.totalCompleted || 0;
+
+  // Handle navigation to conditioning screen
+  // Skip straight to commit form when no active reps and requirement not met
+  const handleNavigate = () => {
+    const shouldOpenCommitForm = !requiredMet && activeCount === 0;
+    navigate?.('conditioning', shouldOpenCommitForm ? { openCommitForm: true } : undefined);
+  };
   
   // Status subtitle text
   const statusSubtext = requiredMet 
