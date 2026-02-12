@@ -164,7 +164,13 @@
 }
 
 /* === DARK MODE: Prevent browser default white on buttons === */
-.dark button:not([class*="bg-"]) {
+/* Uses :where() for zero specificity so any Tailwind bg-* class naturally overrides */
+:where(.dark button) {
+  background-color: transparent;
+}
+/* Also catch <select> and <input> elements that may inherit white defaults */
+:where(.dark select),
+:where(.dark input) {
   background-color: transparent;
 }
 

@@ -182,7 +182,7 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
             {cohortData?.facilitator && (
               <button
                 onClick={() => setShowFacilitatorModal(true)}
-                className="w-full flex items-center gap-3 mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-600/60 hover:bg-corporate-teal/5 rounded-lg p-2 -mx-2 transition-all group text-left"
+                className="w-full flex items-center gap-3 mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-600/60 bg-transparent hover:bg-corporate-teal/5 dark:hover:bg-corporate-teal/10 rounded-lg p-2 -mx-2 transition-all group text-left"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-corporate-navy to-corporate-teal flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0">
                   {cohortData.facilitator.photoUrl ? (
