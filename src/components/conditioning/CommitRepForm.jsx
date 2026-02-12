@@ -332,8 +332,13 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
     
     let deadline = null;
     if (useCustomDeadline && customDeadline) {
-      const deadlineDate = new Date(customDeadline);
-      deadlineDate.setHours(23, 59, 59, 999);
+      // Parse as local date (not UTC) — new Date('YYYY-MM-DD') creates UTC midnight
+      // which becomes previous evening in local time zones behind UTC
+      const parts = customDeadline.split('-');
+      const deadlineDate = new Date(
+        parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]),
+        23, 59, 59, 999
+      );
       deadline = Timestamp.fromDate(deadlineDate);
     }
     

@@ -903,10 +903,15 @@ export const conditioningService = {
     // Check all actionable statuses, not just legacy 'active'
     const actionableStatuses = ['committed', 'prepared', 'scheduled', 'active'];
     
+    // Only mark missed if the deadline DAY has fully passed (not same day)
+    // A rep due today should not be missed until tomorrow
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    
     const overdueReps = activeReps.filter(rep => {
       if (!actionableStatuses.includes(rep.status)) return false;
       const deadline = rep.deadline?.toDate ? rep.deadline.toDate() : new Date(rep.deadline);
-      return deadline < now;
+      return deadline < startOfToday;
     });
     
     const markedMissed = [];
