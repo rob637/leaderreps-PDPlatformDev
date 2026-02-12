@@ -7,7 +7,7 @@ import {
 } from '../../services/conditioningService.js';
 import { Card } from '../ui';
 import { 
-  CheckCircle, XCircle, AlertTriangle, 
+  CheckCircle, XCircle, AlertTriangle, Send,
   MessageSquare, Target, Handshake, Lightbulb, ChevronDown
 } from 'lucide-react';
 
@@ -35,15 +35,53 @@ const DIMENSION_CONFIG = {
   }
 };
 
+// Practice prompts for each dimension
+const PRACTICE_PROMPTS = {
+  [QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE]: 
+    'Rewrite what you said using the exact words you used or would use. Put your language in quotes.',
+  [QUALITY_DIMENSIONS.CLEAR_REQUEST]: 
+    'Write out a clear request or ask that you could make in this situation. Be specific about what you want the other person to do.',
+  [QUALITY_DIMENSIONS.NAMED_COMMITMENT]: 
+    'What specific commitment would you ask for? Write it as: "I\'d like you to commit to [specific action] by [specific time]."',
+  [QUALITY_DIMENSIONS.REFLECTION]: 
+    'What did you learn from this rep that you can apply next time? Be specific about what you would do differently.'
+};
+
 // ============================================
 // DIMENSION ROW
 // ============================================
 const DimensionRow = ({ dimension, assessment, onPractice }) => {
+  const [isPracticing, setIsPracticing] = useState(false);
+  const [practiceResponse, setPracticeResponse] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  
   const config = DIMENSION_CONFIG[dimension];
   if (!config || !assessment) return null;
   
   const Icon = config.icon;
   const { passed, feedback } = assessment;
+  
+  const handlePracticeClick = (e) => {
+    e.stopPropagation();
+    setIsPracticing(true);
+  };
+  
+  const handleSubmitPractice = async (e) => {
+    e.stopPropagation();
+    if (!practiceResponse.trim() || !onPractice) return;
+    
+    setIsSubmitting(true);
+    try {
+      await onPractice(dimension, practiceResponse.trim());
+      setSubmitted(true);
+      setIsPracticing(false);
+    } catch (err) {
+      console.error('Error submitting practice:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   
   return (
     <div className={`p-3 rounded-lg border ${
@@ -62,7 +100,7 @@ const DimensionRow = ({ dimension, assessment, onPractice }) => {
         
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-corporate-navy">{config.label}</span>
+            <span className="font-medium text-corporate-navy dark:text-white">{config.label}</span>
             {passed ? (
               <CheckCircle className="w-4 h-4 text-green-600" />
             ) : (
@@ -71,14 +109,59 @@ const DimensionRow = ({ dimension, assessment, onPractice }) => {
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{feedback}</p>
           
-          {/* Practice button for failed dimensions */}
-          {!passed && onPractice && (
+          {/* Practice button or submitted confirmation for failed dimensions */}
+          {!passed && onPractice && !isPracticing && !submitted && (
             <button
-              onClick={() => onPractice(dimension)}
-              className="mt-2 text-xs font-medium text-corporate-navy hover:underline"
+              onClick={handlePracticeClick}
+              className="mt-2 text-xs font-medium text-corporate-teal hover:underline"
             >
               Practice this →
             </button>
+          )}
+          
+          {/* Submitted confirmation */}
+          {submitted && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-green-600">
+              <CheckCircle className="w-3.5 h-3.5" />
+              <span className="font-medium">Practice saved!</span>
+            </div>
+          )}
+          
+          {/* Inline practice prompt */}
+          {isPracticing && (
+            <div className="mt-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+              <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                {PRACTICE_PROMPTS[dimension]}
+              </p>
+              <textarea
+                autoFocus
+                value={practiceResponse}
+                onChange={(e) => setPracticeResponse(e.target.value)}
+                placeholder="Type your practice response..."
+                rows={3}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 
+                  bg-white dark:bg-gray-800 text-gray-900 dark:text-white 
+                  focus:ring-2 focus:ring-corporate-teal focus:border-transparent resize-none"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSubmitPractice}
+                  disabled={!practiceResponse.trim() || isSubmitting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
+                    bg-corporate-teal text-white hover:bg-corporate-teal/90 
+                    disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Send className="w-3 h-3" />
+                  {isSubmitting ? 'Saving...' : 'Submit'}
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setIsPracticing(false); setPracticeResponse(''); }}
+                  className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

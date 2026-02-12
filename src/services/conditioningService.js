@@ -1384,25 +1384,19 @@ export const conditioningService = {
     const originalRep = await conditioningService.getRep(db, userId, originalRepId);
     
     if (!originalRep) throw new Error('Original rep not found');
-    if (!originalRep.qualityAssessment) {
-      throw new Error('Original rep has not been assessed');
-    }
     
     const retryId = `retry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     const practiceRetry = {
       id: retryId,
       originalRepId,
-      targetDimension, // The specific dimension to focus on
-      status: 'pending', // 'pending' | 'completed'
+      targetDimension,
+      status: 'pending',
       createdAt: serverTimestamp(),
-      // Copy context from original rep
       person: originalRep.person,
       repType: originalRep.repType,
-      originalEvidence: originalRep.evidence,
-      // Retry prompt based on dimension
       prompt: conditioningService.getPracticePrompt(targetDimension),
-      response: null, // User's practice response
+      response: null,
       completedAt: null
     };
     
