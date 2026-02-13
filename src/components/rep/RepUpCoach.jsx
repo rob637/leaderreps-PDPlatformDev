@@ -12,7 +12,7 @@ import { doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, server
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
-import { conditioningService } from '../../services/conditioningService';
+import conditioningService from '../../services/conditioningService';
 
 // Quick prompts for different scenarios - diverse leadership topics
 const QUICK_PROMPTS = [
