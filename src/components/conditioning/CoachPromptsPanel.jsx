@@ -8,7 +8,7 @@ import { Card, Button } from '../ui';
 import { 
   Brain, AlertTriangle, TrendingDown, Clock, Target,
   ChevronDown, ChevronUp, MessageSquare, RefreshCw,
-  User, Lightbulb, Send
+  User, Lightbulb, Send, CheckCircle
 } from 'lucide-react';
 
 // ============================================
@@ -69,8 +69,22 @@ const getPriorityBadge = (priority) => {
 // SINGLE PATTERN CARD
 // ============================================
 const PatternCard = ({ pattern, onSendNudge }) => {
+  const [isSending, setIsSending] = useState(false);
+  const [wasSent, setWasSent] = useState(false);
   const config = getPatternConfig(pattern.id);
   const Icon = config.icon;
+  
+  const handleSendNudge = async () => {
+    setIsSending(true);
+    try {
+      await onSendNudge(pattern);
+      setWasSent(true);
+    } catch (err) {
+      console.error('Error sending nudge:', err);
+    } finally {
+      setIsSending(false);
+    }
+  };
   
   return (
     <div className={`p-3 rounded-lg border ${config.borderColor} ${config.bgColor}`}>
@@ -102,13 +116,25 @@ const PatternCard = ({ pattern, onSendNudge }) => {
           </div>
           
           {/* Action Button */}
-          <button
-            onClick={() => onSendNudge(pattern)}
-            className="flex items-center gap-1 text-xs text-corporate-navy hover:text-corporate-blue transition-colors"
-          >
-            <Send className="w-3 h-3" />
-            Send coaching nudge
-          </button>
+          {wasSent ? (
+            <span className="flex items-center gap-1 text-xs text-green-600">
+              <CheckCircle className="w-3 h-3" />
+              Nudge sent
+            </span>
+          ) : (
+            <button
+              onClick={handleSendNudge}
+              disabled={isSending}
+              className="flex items-center gap-1 text-xs text-corporate-navy hover:text-corporate-blue transition-colors disabled:opacity-50"
+            >
+              {isSending ? (
+                <RefreshCw className="w-3 h-3 animate-spin" />
+              ) : (
+                <Send className="w-3 h-3" />
+              )}
+              {isSending ? 'Sending...' : 'Send coaching nudge'}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -165,7 +191,7 @@ const UserPatternsRow = ({ userResult, userEmail, onSendNudge, isExpanded, onTog
             <PatternCard 
               key={pattern.id + idx}
               pattern={pattern}
-              onSendNudge={() => onSendNudge(userResult.userId, pattern)}
+              onSendNudge={async () => await onSendNudge(userResult.userId, pattern)}
             />
           ))}
         </div>
@@ -222,10 +248,10 @@ export const CoachPromptsPanel = ({
     loadPatterns();
   }, [loadPatterns]);
   
-  // Handle send nudge
-  const handleSendNudge = (userId, pattern) => {
+  // Handle send nudge - returns promise for async feedback
+  const handleSendNudge = async (userId, pattern) => {
     if (onSendNudge) {
-      onSendNudge(userId, pattern.nudgeMessage, pattern);
+      await onSendNudge(userId, pattern.nudgeMessage, pattern);
     }
   };
   

@@ -666,9 +666,22 @@ const ConditioningDashboard = () => {
             cohortId={selectedCohortId}
             userIds={userSummaries.map(u => u.userId)}
             userEmails={userSummaries.reduce((acc, u) => ({ ...acc, [u.userId]: u.email }), {})}
-            onSendNudge={(userId, message, pattern) => {
-              // Use training nudge panel's functionality
-              console.log('Coach prompt nudge:', { userId, message, pattern: pattern.name });
+            onSendNudge={async (userId, message, pattern) => {
+              try {
+                // Send coaching nudge using the conditioningService
+                const result = await conditioningService.sendBulkNudges(
+                  db,
+                  trainerId,
+                  [userId],
+                  selectedCohortId,
+                  'coach_prompt', // nudge type for patterns
+                  message
+                );
+                console.log('Coach prompt nudge sent:', { userId, pattern: pattern.name, result });
+                // Could add a toast notification here for user feedback
+              } catch (err) {
+                console.error('Error sending coach prompt nudge:', err);
+              }
             }}
           />
         </div>
