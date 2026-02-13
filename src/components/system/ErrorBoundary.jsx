@@ -74,60 +74,34 @@ export default class ErrorBoundary extends React.Component {
       const isReactError130 = errorString.includes('error #130') || errorString.includes('Minified React error');
       
       return (
-        <div style={{ padding: 24, maxWidth: 900, margin: '48px auto', fontFamily: 'system-ui' }}>
-          <h2 style={{ color: 'var(--corporate-orange)' }}>❌ Something went wrong</h2>
-          
-          {isReactError130 && (
-            <div style={{ 
-              background: '#FFF3CD', 
-              border: '2px solid #FFC107', 
-              padding: 16, 
-              borderRadius: 8, 
-              marginBottom: 16 
-            }}>
-              <strong>🔍 React Error #130 Detected</strong>
-              <p style={{ margin: '8px 0' }}>
-                This error means a component is trying to render <code>undefined</code>. 
-                Check the component stack below to identify which component is undefined.
-              </p>
-            </div>
-          )}
-          
-          <details style={{ marginBottom: 16 }}>
-            <summary style={{ 
-              cursor: 'pointer', 
-              padding: 12, 
-              background: '#f6f8fa', 
-              borderRadius: 8,
-              fontWeight: 'bold'
-            }}>
+        <div className="min-h-screen bg-slate-900 dark:bg-slate-900 p-6">
+          <div style={{ maxWidth: 900, margin: '48px auto', fontFamily: 'system-ui' }}>
+            <h2 className="text-2xl font-bold text-red-500 mb-4">❌ Something went wrong</h2>
+            
+            {isReactError130 && (
+              <div className="bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-500 p-4 rounded-lg mb-4">
+                <strong className="text-amber-800 dark:text-amber-200">🔍 React Error #130 Detected</strong>
+                <p className="text-amber-700 dark:text-amber-300 mt-2">
+                  This error means a component is trying to render <code className="bg-amber-200 dark:bg-amber-800 px-1 rounded">undefined</code>. 
+                  Check the component stack below to identify which component is undefined.
+                </p>
+              </div>
+            )}
+            
+            <details className="mb-4">
+              <summary className="cursor-pointer p-3 bg-slate-800 dark:bg-slate-800 rounded-lg text-slate-200 font-semibold">
               📋 Error Details (Click to expand)
             </summary>
-            <div style={{ padding: 12, background: '#fff', border: '1px solid #ddd', marginTop: 8 }}>
-              <h3>Error Message:</h3>
-              <pre style={{ 
-                whiteSpace: 'pre-wrap', 
-                background: '#f6f8fa', 
-                padding: 12, 
-                borderRadius: 8,
-                fontSize: 14,
-                overflow: 'auto'
-              }}>
+            <div className="p-3 bg-slate-700 dark:bg-slate-800 border border-slate-600 mt-2 rounded-lg">
+              <h3 className="text-slate-200 font-semibold mb-2">Error Message:</h3>
+              <pre className="whitespace-pre-wrap bg-slate-800 dark:bg-slate-900 p-3 rounded-lg text-sm overflow-auto text-red-400">
                 {errorString}
               </pre>
               
               {this.state.errorInfo?.componentStack && (
                 <>
-                  <h3 style={{ marginTop: 16 }}>Component Stack:</h3>
-                  <pre style={{ 
-                    whiteSpace: 'pre-wrap', 
-                    background: '#fff3f3', 
-                    padding: 12, 
-                    borderRadius: 8,
-                    fontSize: 12,
-                    overflow: 'auto',
-                    color: '#c00'
-                  }}>
+                  <h3 className="text-slate-200 font-semibold mt-4 mb-2">Component Stack:</h3>
+                  <pre className="whitespace-pre-wrap bg-red-900/30 dark:bg-red-900/40 p-3 rounded-lg text-xs overflow-auto text-red-300">
                     {this.state.errorInfo.componentStack}
                   </pre>
                 </>
@@ -137,19 +111,11 @@ export default class ErrorBoundary extends React.Component {
           
           <button 
             onClick={() => window.location.reload()}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#47A88D',
-              color: 'white',
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontSize: 16
-            }}
+            className="px-6 py-3 bg-corporate-teal text-white rounded-lg font-semibold hover:bg-corporate-teal/90 transition-colors"
           >
             🔄 Reload Page
           </button>
+        </div>
         </div>
       );
     }
