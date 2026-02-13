@@ -152,7 +152,7 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
           </div>
           <div className="flex items-center gap-2 text-white/80 text-sm mt-1">
             <Target className="w-3 h-3" />
-            <span>{repTypeConfig?.name || rep.repType}</span>
+            <span>{repTypeConfig?.label || repTypeConfig?.name || rep.repType}</span>
           </div>
         </div>
         
