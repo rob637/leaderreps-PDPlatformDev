@@ -753,9 +753,11 @@ export const conditioningService = {
     const snapshot = await getDocs(q);
     let reps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    // Filter to completed and canceled
+    // Filter to completed states (debriefed, loop_closed, completed) and canceled
+    // This matches the completedStates in getWeeklyStatus
+    const completedStates = ['debriefed', 'loop_closed', 'completed'];
     reps = reps.filter(rep => 
-      rep.status === REP_STATUS.COMPLETED || rep.status === REP_STATUS.CANCELED
+      completedStates.includes(rep.status) || rep.status === REP_STATUS.CANCELED
     );
     
     // Filter by cohort if specified
