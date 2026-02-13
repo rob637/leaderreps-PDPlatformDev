@@ -6,7 +6,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import conditioningService, { REP_STATUS, getCurrentWeekId, QUALITY_DIMENSIONS, COACH_PROMPTS } from '../../services/conditioningService';
 import { Card } from '../ui';
-import { TrainerNudgePanel, CoachPromptsPanel } from '../conditioning';
+import { TrainerNudgePanel, CoachPromptsPanel, RepDetailModal } from '../conditioning';
+import { getRepType } from '../../services/repTaxonomy';
 import { 
   Users, CheckCircle, AlertTriangle, Clock, RefreshCw,
   Target, ChevronDown, ChevronUp, User, Calendar,
@@ -20,6 +21,12 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 // ============================================
 const UserRow = ({ summary, isExpanded, onToggle }) => {
   const { currentWeek, consecutiveMissedWeeks, needsAttention } = summary;
+  const [selectedRep, setSelectedRep] = useState(null);
+  
+  const getRepTypeFriendlyName = (repTypeId) => {
+    const repTypeConfig = getRepType(repTypeId);
+    return repTypeConfig?.label || repTypeConfig?.shortLabel || repTypeId;
+  };
   
   return (
     <div className={`border-b border-gray-100 last:border-b-0 ${needsAttention ? 'bg-red-50 dark:bg-red-900/20' : ''}`}>
@@ -81,14 +88,15 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
           ) : (
             <div className="space-y-2">
               {currentWeek.reps.map((rep) => (
-                <div 
+                <button 
                   key={rep.id}
-                  className="flex items-center justify-between p-2 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-gray-700"
+                  onClick={() => setSelectedRep(rep)}
+                  className="flex items-center justify-between w-full p-2 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-gray-700 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-colors cursor-pointer text-left"
                 >
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-gray-400" />
                     <span className="text-sm font-medium">{rep.person}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">({rep.repType})</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">({getRepTypeFriendlyName(rep.repType)})</span>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
                     rep.status === REP_STATUS.COMPLETED ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
@@ -98,10 +106,17 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
                   }`}>
                     {rep.status}
                   </span>
-                </div>
+                </button>
               ))}
             </div>
           )}
+          
+          {/* Rep Detail Modal */}
+          <RepDetailModal
+            isOpen={!!selectedRep}
+            onClose={() => setSelectedRep(null)}
+            rep={selectedRep}
+          />
         </div>
       )}
     </div>
@@ -478,13 +493,19 @@ const ConditioningDashboard = () => {
         }
       }
       
-      // Sort: needs attention first, then by completion status
+      // Sort: completed first, then needs attention, then by email
       summaries.sort((a, b) => {
+        // Primary: completed users first
+        const aCompleted = a.currentWeek?.requiredRepCompleted ? 1 : 0;
+        const bCompleted = b.currentWeek?.requiredRepCompleted ? 1 : 0;
+        if (aCompleted !== bCompleted) return bCompleted - aCompleted;
+        
+        // Secondary: needs attention (within non-completed group)
         if (a.needsAttention && !b.needsAttention) return -1;
         if (!a.needsAttention && b.needsAttention) return 1;
-        if (!a.currentWeek?.requiredRepCompleted && b.currentWeek?.requiredRepCompleted) return -1;
-        if (a.currentWeek?.requiredRepCompleted && !b.currentWeek?.requiredRepCompleted) return 1;
-        return 0;
+        
+        // Tertiary: alphabetical by email
+        return (a.email || '').localeCompare(b.email || '');
       });
       
       setUserSummaries(summaries);
