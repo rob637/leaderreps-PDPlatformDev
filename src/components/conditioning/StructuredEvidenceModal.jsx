@@ -113,7 +113,7 @@ const WhenField = ({ value, onChange, showError = false }) => {
 // ============================================
 // CONTEXT/MOMENT FIELD
 // ============================================
-const ContextField = ({ value, onChange, showError = false, showError = false }) => {
+const ContextField = ({ value, onChange, showError = false }) => {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-corporate-navy">
