@@ -14,7 +14,8 @@ import {
   Timestamp,
   limit as firestoreLimit
 } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../lib/firebase';
 import { timeService } from './timeService';
 import { REP_TYPES, getRepType, isPrepRequired, LEGACY_REP_TYPE_MAPPING } from './repTaxonomy';
 
@@ -1349,7 +1350,6 @@ export const conditioningService = {
    */
   assessQualityWithAI: async (evidence, rep) => {
     try {
-      const functions = getFunctions();
       const assessRepQuality = httpsCallable(functions, 'assessRepQuality');
       
       const result = await assessRepQuality({
@@ -1521,11 +1521,17 @@ export const conditioningService = {
         if (text.length < 15) {
           return { passed: false, feedback: 'Too brief — dig deeper into what you learned.' };
         }
-        if (/next time|would do|differently|learned|realized|noticed|insight/i.test(text) && text.length >= 30) {
+        // Check for reflection keywords
+        const hasReflectionKeywords = /next time|would do|differently|learned|realized|noticed|insight/i.test(text);
+        if (hasReflectionKeywords && text.length >= 30) {
           return { passed: true, feedback: 'Thoughtful reflection. This kind of self-awareness is what drives growth.' };
         }
         if (text.length >= 40) {
           return { passed: true, feedback: 'Good depth. Try connecting what you learned to a specific future action.' };
+        }
+        // User has the right idea but needs more detail
+        if (hasReflectionKeywords) {
+          return { passed: false, feedback: 'Good start — add more detail about what you learned or would do differently.' };
         }
         return { passed: false, feedback: 'Say what you\'d do differently — "Next time I would..." helps lock in learning.' };
         
