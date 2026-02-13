@@ -2,48 +2,46 @@
 // Phase 2: Displays quality assessment results after evidence submission
 
 import React, { useState } from 'react';
-import { 
-  QUALITY_DIMENSIONS, conditioningService
-} from '../../services/conditioningService.js';
+import conditioningService from '../../services/conditioningService.js';
 import { Card } from '../ui';
 import { 
   CheckCircle, XCircle, AlertTriangle, Send, RotateCcw,
   MessageSquare, Target, Handshake, Lightbulb, ChevronDown
 } from 'lucide-react';
 
-// Dimension icons and labels
+// Dimension icons and labels - use string keys to avoid module initialization order issues
 const DIMENSION_CONFIG = {
-  [QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE]: {
+  specific_language: {
     icon: MessageSquare,
     label: 'Specific Language',
     description: 'Used actual words or close paraphrase'
   },
-  [QUALITY_DIMENSIONS.CLEAR_REQUEST]: {
+  clear_request: {
     icon: Target,
     label: 'Clear Request',
     description: 'Made a clear ask or request'
   },
-  [QUALITY_DIMENSIONS.NAMED_COMMITMENT]: {
+  named_commitment: {
     icon: Handshake,
     label: 'Named Commitment',
     description: 'Got or noted a specific commitment'
   },
-  [QUALITY_DIMENSIONS.REFLECTION]: {
+  reflection: {
     icon: Lightbulb,
     label: 'Reflection',
     description: 'Reflected on lessons learned'
   }
 };
 
-// Practice prompts for each dimension
+// Practice prompts for each dimension - use string keys to avoid module initialization order issues
 const PRACTICE_PROMPTS = {
-  [QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE]: 
+  specific_language: 
     'Rewrite what you said using the exact words you used or would use. Put your language in quotes.',
-  [QUALITY_DIMENSIONS.CLEAR_REQUEST]: 
+  clear_request: 
     'Write out a clear request or ask that you could make in this situation. Be specific about what you want the other person to do.',
-  [QUALITY_DIMENSIONS.NAMED_COMMITMENT]: 
+  named_commitment: 
     'What specific commitment would you ask for? Write it as: "I\'d like you to commit to [specific action] by [specific time]."',
-  [QUALITY_DIMENSIONS.REFLECTION]: 
+  reflection: 
     'What did you learn from this rep that you can apply next time? Be specific about what you would do differently.'
 };
 

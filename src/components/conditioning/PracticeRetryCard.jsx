@@ -2,28 +2,26 @@
 // Phase 2: Practice Retry Flow for dimension improvement
 
 import React, { useState } from 'react';
-import conditioningService, { 
-  QUALITY_DIMENSIONS
-} from '../../services/conditioningService.js';
+import conditioningService from '../../services/conditioningService.js';
 import { Card, Button } from '../ui';
 import { 
   RefreshCw, CheckCircle, Target, ChevronRight, 
   MessageSquare, Handshake, Lightbulb, AlertCircle
 } from 'lucide-react';
 
-// Dimension icons
+// Dimension icons - use string keys to avoid module initialization order issues
 const DIMENSION_ICONS = {
-  [QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE]: MessageSquare,
-  [QUALITY_DIMENSIONS.CLEAR_REQUEST]: Target,
-  [QUALITY_DIMENSIONS.NAMED_COMMITMENT]: Handshake,
-  [QUALITY_DIMENSIONS.REFLECTION]: Lightbulb
+  specific_language: MessageSquare,
+  clear_request: Target,
+  named_commitment: Handshake,
+  reflection: Lightbulb
 };
 
 const DIMENSION_LABELS = {
-  [QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE]: 'Specific Language',
-  [QUALITY_DIMENSIONS.CLEAR_REQUEST]: 'Clear Request',
-  [QUALITY_DIMENSIONS.NAMED_COMMITMENT]: 'Named Commitment',
-  [QUALITY_DIMENSIONS.REFLECTION]: 'Reflection'
+  specific_language: 'Specific Language',
+  clear_request: 'Clear Request',
+  named_commitment: 'Named Commitment',
+  reflection: 'Reflection'
 };
 
 // ============================================
