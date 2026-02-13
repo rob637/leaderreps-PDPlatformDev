@@ -253,7 +253,10 @@ service cloud.firestore {
     // Trainers (admins) can create and read all nudges for their cohorts
     // Target users can read their own nudges
     match /conditioning_nudges/{nudgeId} {
-      allow read: if request.auth != null && (
+      // Admins can list/query all nudges
+      allow list: if isAdmin();
+      // Individual document reads: admin, target user, or trainer who sent it
+      allow get: if request.auth != null && (
         isAdmin() || 
         request.auth.uid == resource.data.targetUserId ||
         request.auth.uid == resource.data.trainerId
