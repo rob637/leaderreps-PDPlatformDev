@@ -416,6 +416,202 @@ exports.geminiProxy = onRequest(
 );
 
 /**
+ * ASSESS REP QUALITY (Gen 2 - HTTPS Callable)
+ * Uses AI to evaluate the semantic quality of leadership rep evidence.
+ * Analyzes whether the rep demonstrates genuine constructive leadership behavior.
+ * 
+ * Input: {
+ *   repType: string (e.g., "public_praise", "direct_feedback", etc.),
+ *   person: string (who the rep was with),
+ *   responses: {
+ *     what_said: string,      // What the user said/did
+ *     commitment: string,     // Commitment obtained 
+ *     next_time: string       // Reflection on next time
+ *   }
+ * }
+ * 
+ * Returns: {
+ *   dimensions: {
+ *     specific_language: { passed: boolean, feedback: string, quote: string },
+ *     clear_request: { passed: boolean, feedback: string },
+ *     named_commitment: { passed: boolean, feedback: string },
+ *     reflection: { passed: boolean, feedback: string }
+ *   },
+ *   passedCount: number,
+ *   totalDimensions: number,
+ *   meetsStandard: boolean,
+ *   isConstructive: boolean,
+ *   summary: string,
+ *   coachingTip: string
+ * }
+ */
+exports.assessRepQuality = onCall(
+  { cors: true, region: "us-central1" },
+  async (request) => {
+    const { repType, person, responses } = request.data;
+    
+    if (!responses || !repType) {
+      throw new HttpsError('invalid-argument', 'repType and responses are required');
+    }
+    
+    const whatSaid = responses.what_said || responses.what_happened || '';
+    const commitment = responses.commitment || responses.outcome || '';
+    const nextTime = responses.next_time || responses.learning || '';
+    
+    // Get the API key
+    const apiKey = process.env.GEMINI_API_KEY || 
+                  (require("firebase-functions").config().gemini?.apikey);
+    
+    if (!apiKey) {
+      logger.error("GEMINI_API_KEY is not configured for assessRepQuality");
+      throw new HttpsError('internal', 'AI service not configured');
+    }
+    
+    // Rep type descriptions for context
+    const repTypeDescriptions = {
+      'public_praise': 'Reinforcing behavior in public - recognizing someone\'s positive contribution in front of others',
+      'direct_feedback': 'Providing honest, direct feedback to help someone improve',
+      'difficult_conversation': 'Having a challenging but necessary conversation with someone',
+      'delegation': 'Delegating responsibility with clear expectations and accountability',
+      'boundary_setting': 'Setting or maintaining a professional boundary',
+      'vision_casting': 'Articulating vision, direction, or inspiring others',
+      'coaching': 'Coaching or mentoring someone to develop their skills',
+      'recognition': 'Recognizing or appreciating someone\'s contribution',
+      'tough_request': 'Making a tough or uncomfortable ask of someone'
+    };
+    
+    const repDescription = repTypeDescriptions[repType] || repType;
+    
+    const prompt = `You are evaluating a leadership practice exercise ("rep") for quality and constructiveness.
+
+CONTEXT:
+- Rep Type: ${repDescription}
+- Person involved: ${person || 'Not specified'}
+
+USER'S EVIDENCE:
+1. What they said/did: "${whatSaid}"
+2. Commitment obtained: "${commitment}"
+3. Reflection/next time: "${nextTime}"
+
+EVALUATION CRITERIA:
+Evaluate this leadership rep on 4 dimensions. For each dimension, determine if it PASSES or FAILS based on these criteria:
+
+1. SPECIFIC_LANGUAGE: Did they use specific, quoted language showing what they actually said?
+   - PASS: Contains actual words/phrases they used, ideally in quotes
+   - FAIL: Vague descriptions, no specific language, or clearly made-up generic phrases
+
+2. CLEAR_REQUEST: Did they make a clear, constructive ask or request?
+   - PASS: Clear request for action, commitment, or change that is professional and constructive
+   - FAIL: No clear request, OR the request is inappropriate, hostile, or non-constructive
+   
+3. NAMED_COMMITMENT: Did they obtain or explicitly note a commitment outcome?
+   - PASS: Named a specific commitment received, OR explicitly noted no commitment was sought/obtained with valid reason
+   - FAIL: Vague or missing commitment information
+
+4. REFLECTION: Did they reflect meaningfully on the experience?
+   - PASS: Genuine insight about what they learned or would do differently
+   - FAIL: Superficial, generic, or missing reflection
+
+CRITICAL QUALITY CHECK - IS_CONSTRUCTIVE:
+Determine if this rep demonstrates CONSTRUCTIVE leadership behavior:
+- A constructive rep builds relationships, develops people, or advances team/org goals professionally
+- A NON-constructive rep is hostile, threatening, unprofessional, or harmful
+- Examples of NON-constructive: threats, insults, firing threats used as intimidation, personal attacks, manipulation
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "dimensions": {
+    "specific_language": {
+      "passed": boolean,
+      "feedback": "brief explanation",
+      "quote": "the specific language they used if any, or null"
+    },
+    "clear_request": {
+      "passed": boolean,
+      "feedback": "brief explanation"
+    },
+    "named_commitment": {
+      "passed": boolean,
+      "feedback": "brief explanation"
+    },
+    "reflection": {
+      "passed": boolean,
+      "feedback": "brief explanation"
+    }
+  },
+  "isConstructive": boolean,
+  "constructiveFeedback": "if not constructive, explain why and how to improve",
+  "summary": "2-sentence overall assessment",
+  "coachingTip": "one actionable tip for their next rep"
+}`;
+
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-2.0-flash',
+        generationConfig: {
+          responseMimeType: 'application/json'
+        }
+      });
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      
+      // Parse the JSON response
+      let assessment;
+      try {
+        assessment = JSON.parse(text);
+      } catch (parseErr) {
+        logger.error("Failed to parse AI response as JSON", { text, error: parseErr });
+        throw new HttpsError('internal', 'AI response was not valid JSON');
+      }
+      
+      // Calculate passed count
+      const dimensions = assessment.dimensions || {};
+      let passedCount = 0;
+      const totalDimensions = 4;
+      
+      if (dimensions.specific_language?.passed) passedCount++;
+      if (dimensions.clear_request?.passed) passedCount++;
+      if (dimensions.named_commitment?.passed) passedCount++;
+      if (dimensions.reflection?.passed) passedCount++;
+      
+      // Overall assessment - must be constructive AND pass 3/4 dimensions
+      const isConstructive = assessment.isConstructive !== false;
+      const meetsStandard = isConstructive && passedCount >= 3;
+      
+      logger.info("Rep quality assessment completed", { 
+        repType, 
+        passedCount, 
+        isConstructive, 
+        meetsStandard 
+      });
+      
+      return {
+        dimensions,
+        passedCount,
+        totalDimensions,
+        meetsStandard,
+        isConstructive,
+        constructiveFeedback: assessment.constructiveFeedback || null,
+        summary: assessment.summary || (meetsStandard 
+          ? 'This rep meets the quality standard'
+          : `This rep needs improvement in ${totalDimensions - passedCount} area(s)`),
+        coachingTip: assessment.coachingTip || null,
+        assessedAt: new Date().toISOString(),
+        assessedBy: 'ai'
+      };
+      
+    } catch (error) {
+      logger.error("Error in assessRepQuality", error);
+      if (error.code) throw error;
+      throw new HttpsError('internal', 'Failed to assess rep quality');
+    }
+  }
+);
+
+/**
  * MANUAL ROLLOVER (HTTP Trigger)
  * Allows manually triggering the rollover for a specific user.
  * Useful for debugging or fixing missed rollovers.

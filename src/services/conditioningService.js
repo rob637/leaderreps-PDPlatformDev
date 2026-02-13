@@ -14,8 +14,9 @@ import {
   Timestamp,
   limit as firestoreLimit
 } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { timeService } from './timeService';
-import { REP_TYPES, getRepType, isPrepRequired } from './repTaxonomy';
+import { REP_TYPES, getRepType, isPrepRequired, LEGACY_REP_TYPE_MAPPING } from './repTaxonomy';
 
 // Re-export REP_TYPES from repTaxonomy for backward compatibility
 export { REP_TYPES };
@@ -469,10 +470,17 @@ export const conditioningService = {
       throw new Error('Can only roll forward missed reps');
     }
     
+    // Map legacy rep types to canonical types
+    let repType = missedRep.repType;
+    if (LEGACY_REP_TYPE_MAPPING[repType]) {
+      console.log(`[Conditioning] Mapping legacy rep type "${repType}" to "${LEGACY_REP_TYPE_MAPPING[repType]}"`);
+      repType = LEGACY_REP_TYPE_MAPPING[repType];
+    }
+    
     // Create new rep with reference to original
     const newRepId = await conditioningService.commitRep(db, userId, {
       person: missedRep.person,
-      repType: missedRep.repType,
+      repType,
       cohortId,
       notes: missedRep.notes,
       rolledForwardFrom: missedRepId
@@ -1100,8 +1108,8 @@ export const conditioningService = {
       updatedAt: serverTimestamp()
     });
     
-    // Run quality assessment
-    const quality = conditioningService.assessQuality(evidence, currentRep);
+    // Run AI-powered quality assessment
+    const quality = await conditioningService.assessQualityWithAI(evidence, currentRep);
     
     // Store quality assessment
     await updateDoc(repRef, {
@@ -1261,10 +1269,10 @@ export const conditioningService = {
   // ============================================
   
   /**
-   * Assess the quality of submitted evidence
+   * Basic rule-based quality assessment (fallback when AI is unavailable)
    * Returns dimension scores and overall assessment
    */
-  assessQuality: (evidence, _rep) => {
+  assessQualityBasic: (evidence, _rep) => {
     const responses = evidence.responses || {};
     const dimensions = {};
     let passedCount = 0;
@@ -1278,7 +1286,7 @@ export const conditioningService = {
         ? 'Try to include the actual words you used'
         : !/["']/.test(whatSaid)
         ? 'Include the specific language you used (in quotes)'
-        : 'Good - you included specific language'
+        : 'Great — you used specific, quoted language. This is what makes reps real.'
     };
     if (dimensions[QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE].passed) passedCount++;
     
@@ -1288,7 +1296,7 @@ export const conditioningService = {
     dimensions[QUALITY_DIMENSIONS.CLEAR_REQUEST] = {
       passed: hasRequest || whatSaid.length >= 50,
       feedback: hasRequest 
-        ? 'Good - you made a clear request or ask'
+        ? 'Good detail. Make sure this comes across as a direct ask in conversation.'
         : 'Consider making a more explicit request in future reps'
     };
     if (dimensions[QUALITY_DIMENSIONS.CLEAR_REQUEST].passed) passedCount++;
@@ -1325,11 +1333,47 @@ export const conditioningService = {
       passedCount,
       totalDimensions,
       meetsStandard,
+      isConstructive: true, // Can't determine this with basic rules
       assessedAt: new Date().toISOString(),
+      assessedBy: 'rules',
       summary: meetsStandard 
         ? 'This rep meets the quality standard'
         : `This rep needs improvement in ${totalDimensions - passedCount} area(s)`
     };
+  },
+  
+  /**
+   * AI-powered quality assessment using Cloud Function
+   * Evaluates semantic quality and constructiveness of leadership rep evidence
+   * Falls back to basic rule-based assessment on error
+   */
+  assessQualityWithAI: async (evidence, rep) => {
+    try {
+      const functions = getFunctions();
+      const assessRepQuality = httpsCallable(functions, 'assessRepQuality');
+      
+      const result = await assessRepQuality({
+        repType: rep.repType,
+        person: rep.person,
+        responses: evidence.responses || {}
+      });
+      
+      return result.data;
+    } catch (err) {
+      console.error('AI quality assessment failed, falling back to basic:', err);
+      // Fall back to basic rule-based assessment
+      return conditioningService.assessQualityBasic(evidence, rep);
+    }
+  },
+  
+  /**
+   * Main quality assessment function - uses AI by default
+   * @deprecated Use assessQualityWithAI for async assessment
+   */
+  assessQuality: (evidence, rep) => {
+    // Keep synchronous version for backward compatibility
+    // This is just the basic assessment - async callers should use assessQualityWithAI
+    return conditioningService.assessQualityBasic(evidence, rep);
   },
   
   /**

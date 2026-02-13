@@ -59,6 +59,20 @@ export const RISK_LEVELS = {
 };
 
 /**
+ * Legacy rep type mapping - maps old rep type IDs to new canonical types
+ * Used to support rolling forward reps created before the 16-type taxonomy
+ */
+export const LEGACY_REP_TYPE_MAPPING = {
+  '1:1': 'redirect_prepared',        // 1:1 conversations → prepared redirect
+  'feedback': 'redirect_prepared',   // Generic feedback → prepared redirect
+  'coaching': 'whats_going_on',      // Coaching conversations → what's going on
+  'praise': 'reinforce_public',      // Praise → public reinforcement
+  'redirect': 'redirect_moment',     // Generic redirect → in-the-moment redirect
+  'difficult': 'hold_line',          // Difficult conversations → hold the line
+  'delegation': 'delegate_clean',    // Delegation → clean delegation
+};
+
+/**
  * The 16 Canonical Rep Types
  * Each type includes: id, category, labels, difficulty, risk, and micro-rubric
  */
@@ -588,9 +602,22 @@ export const sortByDifficulty = (repTypes) => {
 
 /**
  * Get rep type by ID
+ * Supports legacy rep type IDs via LEGACY_REP_TYPE_MAPPING
  */
 export const getRepType = (repTypeId) => {
-  return REP_TYPES.find(t => t.id === repTypeId) || null;
+  // First try direct match
+  let repType = REP_TYPES.find(t => t.id === repTypeId);
+  
+  // If not found, check legacy mapping
+  if (!repType && LEGACY_REP_TYPE_MAPPING[repTypeId]) {
+    const mappedId = LEGACY_REP_TYPE_MAPPING[repTypeId];
+    repType = REP_TYPES.find(t => t.id === mappedId);
+    if (repType) {
+      console.log(`[RepTaxonomy] Mapped legacy rep type "${repTypeId}" to "${mappedId}"`);
+    }
+  }
+  
+  return repType || null;
 };
 
 /**
@@ -662,6 +689,7 @@ export default {
   RISK_LEVELS,
   UNIVERSAL_REP_FIELDS,
   HIGH_RISK_PREP_QUESTIONS,
+  LEGACY_REP_TYPE_MAPPING,
   getRepType,
   getRepTypesByCategory,
   getCategory,

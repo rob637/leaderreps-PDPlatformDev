@@ -3,7 +3,7 @@
 // Based on Ryan's Conditioning Layer specs (020726)
 // UX v2: Uses ConditioningModal + VoiceTextarea for consistency
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AlertTriangle, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../ui';
 import RepTypePicker from './RepTypePicker';
@@ -210,6 +210,16 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
   const [errors, setErrors] = useState({});
   const [defineRepForceOpen, setDefineRepForceOpen] = useState(false);
   const personInputRef = useRef(null);
+  
+  // Auto-focus person input when rep type is selected
+  useEffect(() => {
+    if (selectedRepType && personInputRef.current) {
+      // Small delay to ensure the field is rendered
+      setTimeout(() => {
+        personInputRef.current?.focus();
+      }, 100);
+    }
+  }, [selectedRepType]);
   
   // Get selected rep type info
   const selectedRepType = useMemo(() => {

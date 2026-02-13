@@ -49,13 +49,19 @@ const EvidenceCaptureModal = ({ rep, onClose, onSubmit, isLoading }) => {
   const [debriefText, setDebriefText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [showValidation, setShowValidation] = useState(false);
   
   // V1: Require at least 20 characters for a meaningful debrief
   const isValid = debriefText.trim().length >= 20;
   
   const handleSubmit = async () => {
+    setShowValidation(true);
+    
     if (!isValid) {
       setError('Please add a bit more detail (at least 20 characters)');
+      // Focus the textarea
+      const textarea = document.querySelector('textarea');
+      if (textarea) textarea.focus();
       return;
     }
     
@@ -128,10 +134,12 @@ const EvidenceCaptureModal = ({ rep, onClose, onSubmit, isLoading }) => {
         placeholder="I said... They responded... The outcome was..."
         minLength={20}
         rows={6}
+        required
+        error={showValidation && !isValid ? 'Please add a bit more detail (at least 20 characters)' : null}
       />
       
-      {/* Error Message */}
-      {error && (
+      {/* Error Message - show submission errors */}
+      {error && error !== 'Please add a bit more detail (at least 20 characters)' && (
         <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-2 text-red-700 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>

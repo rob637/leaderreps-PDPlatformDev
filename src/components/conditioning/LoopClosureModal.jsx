@@ -56,11 +56,11 @@ const OUTCOME_OPTIONS = [
 // ============================================
 // OUTCOME SELECTOR
 // ============================================
-const OutcomeSelector = ({ value, onChange }) => {
+const OutcomeSelector = ({ value, onChange, showError = false }) => {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-corporate-navy">
-        What happened after the conversation?
+        What happened after the conversation? <span className="text-red-500">*</span>
       </label>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
         Close the loop on this rep by recording the follow-up outcome.
@@ -171,11 +171,14 @@ const LoopClosureModal = ({
       }
     >
       {/* Outcome Selection */}
-      <OutcomeSelector value={outcome} onChange={setOutcome} />
+      <OutcomeSelector value={outcome} onChange={setOutcome} showError={showValidation} />
       
       {/* Validation Error */}
       {showValidation && !outcome && (
-        <p className="text-sm text-red-600 mt-2">Please select an outcome</p>
+        <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
+          <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+          Please select an outcome
+        </p>
       )}
       
       {/* Behavior Observed (for positive outcomes) */}

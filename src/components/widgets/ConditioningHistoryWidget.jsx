@@ -309,6 +309,7 @@ const ConditioningHistoryWidget = ({ helpText }) => {
       {/* Rep Detail Modal */}
       {selectedRep && (
         <RepDetailModal
+          isOpen={!!selectedRep}
           rep={selectedRep}
           onClose={() => setSelectedRep(null)}
         />

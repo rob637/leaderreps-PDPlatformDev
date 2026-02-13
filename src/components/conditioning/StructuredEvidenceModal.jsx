@@ -3,7 +3,7 @@
 // Per Ryan's 020726 notes: Concrete specifics that are hard to fake
 // UX v2: Uses ConditioningModal + VoiceTextarea, voice-first approach
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import conditioningService, { EVIDENCE_LEVEL } from '../../services/conditioningService.js';
 import { getRepType } from '../../services/repTaxonomy.js';
@@ -67,14 +67,27 @@ const EvidenceLevelBadge = ({ level }) => {
 };
 
 // ============================================
+// REQUIRED FIELD MESSAGE
+// ============================================
+const RequiredMessage = ({ show, message = 'This field is required' }) => {
+  if (!show) return null;
+  return (
+    <p className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center gap-1">
+      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+      {message}
+    </p>
+  );
+};
+
+// ============================================
 // WHEN FIELD
 // ============================================
-const WhenField = ({ value, onChange }) => {
+const WhenField = ({ value, onChange, showError = false }) => {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-corporate-navy">
         <Calendar className="w-4 h-4 inline mr-2" />
-        When did this happen?
+        When did this happen? <span className="text-red-500">*</span>
       </label>
       <div className="grid grid-cols-3 gap-2">
         {WHEN_OPTIONS.map(option => (
@@ -92,6 +105,7 @@ const WhenField = ({ value, onChange }) => {
           </button>
         ))}
       </div>
+      <RequiredMessage show={showError && !value} message="Please select when this happened" />
     </div>
   );
 };
@@ -99,12 +113,12 @@ const WhenField = ({ value, onChange }) => {
 // ============================================
 // CONTEXT/MOMENT FIELD
 // ============================================
-const ContextField = ({ value, onChange }) => {
+const ContextField = ({ value, onChange, showError = false, showError = false }) => {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-corporate-navy">
         <Target className="w-4 h-4 inline mr-2" />
-        Which moment was this tied to?
+        Which moment was this tied to? <span className="text-red-500">*</span>
       </label>
       <div className="grid grid-cols-2 gap-2">
         {CONTEXT_OPTIONS.map(option => (
@@ -122,6 +136,7 @@ const ContextField = ({ value, onChange }) => {
           </button>
         ))}
       </div>
+      <RequiredMessage show={showError && !value} message="Please select a context" />
     </div>
   );
 };
@@ -129,7 +144,7 @@ const ContextField = ({ value, onChange }) => {
 // ============================================
 // RESPONSE FIELD (Their response)
 // ============================================
-const ResponseField = ({ value = [], note, onChange, onNoteChange }) => {
+const ResponseField = ({ value = [], note, onChange, onNoteChange, showError = false }) => {
   const selected = Array.isArray(value) ? value : (value ? [value] : []);
   
   const toggleOption = (id) => {
@@ -144,7 +159,7 @@ const ResponseField = ({ value = [], note, onChange, onNoteChange }) => {
     <div className="space-y-3">
       <label className="block text-sm font-medium text-corporate-navy">
         <ArrowRight className="w-4 h-4 inline mr-2" />
-        How did they respond?
+        How did they respond? <span className="text-red-500">*</span>
       </label>
       <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">Select all that apply</p>
       
@@ -185,6 +200,7 @@ const ResponseField = ({ value = [], note, onChange, onNoteChange }) => {
           className="mt-2"
         />
       )}
+      <RequiredMessage show={showError && selected.length === 0} message="Please select at least one response" />
     </div>
   );
 };
@@ -192,12 +208,14 @@ const ResponseField = ({ value = [], note, onChange, onNoteChange }) => {
 // ============================================
 // COMMITMENT FIELD
 // ============================================
-const CommitmentField = ({ value, hasNone, onChange, onHasNoneChange }) => {
+const CommitmentField = ({ value, hasNone, onChange, onHasNoneChange, showError = false }) => {
+  const isValid = (value && value.length > 0) || hasNone;
+  
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-corporate-navy">
         <CheckCircle className="w-4 h-4 inline mr-2" />
-        What commitment was made?
+        What commitment was made? <span className="text-red-500">*</span>
       </label>
       
       {!hasNone ? (
@@ -207,6 +225,7 @@ const CommitmentField = ({ value, hasNone, onChange, onHasNoneChange }) => {
             onChange={onChange}
             placeholder="e.g., They agreed to notify me before missing meetings going forward..."
             rows={3}
+            error={showError && !isValid ? 'Please enter a commitment or mark "no commitment"' : null}
           />
           <button
             onClick={() => onHasNoneChange(true)}
@@ -259,6 +278,12 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   
+  // Track which steps have been visited (to show validation after interaction)
+  const [visitedSteps, setVisitedSteps] = useState(new Set([0]));
+  
+  // Ref for focusing text inputs
+  const whatSaidRef = useRef(null);
+  
   // Total steps
   const TOTAL_STEPS = 5;
   
@@ -284,6 +309,20 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
     }
   }, [currentStep, when, context, whatSaid, theirResponse, commitment, commitmentNone]);
   
+  // Show validation for current step if it's been visited
+  const showStepValidation = visitedSteps.has(currentStep);
+  
+  // Focus text input on step 2 (What You Said)
+  useEffect(() => {
+    if (currentStep === 2) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        const textarea = document.getElementById('debrief-what-said');
+        if (textarea) textarea.focus();
+      }, 100);
+    }
+  }, [currentStep]);
+  
   // Completed steps
   const completedSteps = useMemo(() => {
     const completed = [];
@@ -297,7 +336,9 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
   
   const handleNext = () => {
     if (currentStep < TOTAL_STEPS - 1 && isStepValid) {
-      setCurrentStep(prev => prev + 1);
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      setVisitedSteps(prev => new Set([...prev, nextStep]));
     }
   };
   
@@ -368,9 +409,9 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
-        return <WhenField value={when} onChange={setWhen} />;
+        return <WhenField value={when} onChange={setWhen} showError={showStepValidation} />;
       case 1:
-        return <ContextField value={context} onChange={setContext} />;
+        return <ContextField value={context} onChange={setContext} showError={showStepValidation} />;
       case 2:
         return (
           <VoiceTextarea
@@ -383,6 +424,8 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
             minLength={20}
             rows={6}
             autoFocus
+            required={true}
+            error={showStepValidation && whatSaid.trim().length < 20 ? 'Please add more detail (at least 20 characters)' : null}
           />
         );
       case 3:
@@ -391,6 +434,7 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
           note={responseNote}
           onChange={setTheirResponse} 
           onNoteChange={setResponseNote}
+          showError={showStepValidation}
         />;
       case 4:
         return (
@@ -400,6 +444,7 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
               hasNone={commitmentNone}
               onChange={setCommitment} 
               onHasNoneChange={setCommitmentNone}
+              showError={showStepValidation}
             />
             <div className="mt-4 pt-4 border-t border-gray-100">
               <VoiceTextarea

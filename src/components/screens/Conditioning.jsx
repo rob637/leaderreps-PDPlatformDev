@@ -424,12 +424,12 @@ const RepCard = ({
             </div>
           )}
           
-          {/* Completed/Debriefed Rep - Show AI feedback */}
+          {/* Completed/Debriefed Rep - Show RepUp feedback */}
           {(rep.status === 'debriefed' || rep.status === 'completed') && (
             <div className="pt-2 border-t border-gray-100 space-y-2">
               {evidence ? (
                 <>
-                  {/* Full Quality Assessment - AI reviewed feedback */}
+                  {/* Full Quality Assessment - RepUp reviewed feedback */}
                   {evidence.qualityAssessment && (
                     <QualityAssessmentCard 
                       qualityAssessment={evidence.qualityAssessment}
@@ -468,7 +468,7 @@ const RepCard = ({
           {/* Follow-Up Pending - Show Close Loop option */}
           {rep.status === 'follow_up_pending' && (
             <div className="pt-2 border-t border-gray-100 space-y-2">
-              {/* AI Review */}
+              {/* RepUp Review */}
               {evidence?.qualityAssessment && (
                 <QualityAssessmentCard 
                   qualityAssessment={evidence.qualityAssessment}
@@ -494,7 +494,7 @@ const RepCard = ({
           {/* Loop Closed - Show completion */}
           {rep.status === 'loop_closed' && (
             <div className="pt-2 border-t border-gray-100 space-y-2">
-              {/* AI Review */}
+              {/* RepUp Review */}
               {evidence?.qualityAssessment && (
                 <QualityAssessmentCard 
                   qualityAssessment={evidence.qualityAssessment}
