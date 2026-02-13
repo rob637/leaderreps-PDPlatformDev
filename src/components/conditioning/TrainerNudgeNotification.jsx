@@ -1,7 +1,9 @@
 // src/components/conditioning/TrainerNudgeNotification.jsx
 // Phase 3: Display nudge notifications from trainer to leader
+// Uses real-time subscription for instant notification delivery
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { collection, query, orderBy, limit as firestoreLimit, onSnapshot } from 'firebase/firestore';
 import conditioningService from '../../services/conditioningService.js';
 import { Card } from '../ui';
 import { 
@@ -14,23 +16,23 @@ const NUDGE_TYPES = {
   reminder: {
     label: 'Reminder',
     icon: Clock,
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    textColor: 'text-blue-700',
-    borderColor: 'border-l-blue-500'
+    bgColor: 'bg-corporate-navy/10 dark:bg-corporate-navy/30',
+    textColor: 'text-corporate-navy',
+    borderColor: 'border-l-corporate-navy'
   },
   encouragement: {
     label: 'From Your Trainer',
     icon: Heart,
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
-    textColor: 'text-green-700',
-    borderColor: 'border-l-green-500'
+    bgColor: 'bg-corporate-teal/10 dark:bg-corporate-teal/30',
+    textColor: 'text-corporate-teal',
+    borderColor: 'border-l-corporate-teal'
   },
   check_in: {
     label: 'Check-In',
     icon: HelpCircle,
-    bgColor: 'bg-sky-100',
-    textColor: 'text-sky-700',
-    borderColor: 'border-l-sky-500'
+    bgColor: 'bg-corporate-teal/10',
+    textColor: 'text-corporate-teal',
+    borderColor: 'border-l-corporate-teal'
   },
   escalation: {
     label: 'Important',
@@ -115,30 +117,40 @@ const TrainerNudgeNotification = ({ db, userId, showAll = false }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(showAll);
   
-  const loadNudges = useCallback(async () => {
-    if (!db || !userId) return;
-    
-    try {
-      setIsLoading(true);
-      const userNudges = await conditioningService.getUserNudges(db, userId, false);
-      setNudges(userNudges);
-    } catch (err) {
-      console.error('Error loading nudges:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [db, userId]);
-  
+  // Real-time subscription for instant nudge notifications
   useEffect(() => {
-    loadNudges();
-  }, [loadNudges]);
+    if (!db || !userId) {
+      setIsLoading(false);
+      return;
+    }
+    
+    // Subscribe to user's conditioning notifications in real-time
+    const notifsRef = collection(db, 'users', userId, 'conditioning_notifications');
+    const q = query(notifsRef, orderBy('sentAt', 'desc'), firestoreLimit(20));
+    
+    const unsubscribe = onSnapshot(q, 
+      (snapshot) => {
+        const userNudges = snapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data() 
+        }));
+        setNudges(userNudges);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('Error subscribing to nudges:', error);
+        setIsLoading(false);
+      }
+    );
+    
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [db, userId]);
   
   const handleMarkRead = async (notificationId) => {
     try {
       await conditioningService.markNudgeAsRead(db, userId, notificationId);
-      setNudges(prev => prev.map(n => 
-        n.id === notificationId ? { ...n, status: 'read', readAt: new Date() } : n
-      ));
+      // Real-time subscription will update the state automatically
     } catch (err) {
       console.error('Error marking nudge as read:', err);
     }

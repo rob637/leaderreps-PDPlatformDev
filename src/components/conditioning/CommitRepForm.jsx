@@ -4,7 +4,7 @@
 // UX v2: Uses ConditioningModal + VoiceTextarea for consistency
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { AlertTriangle, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertTriangle, Info, Lock, CheckCircle } from 'lucide-react';
 import { Button } from '../ui';
 import RepTypePicker from './RepTypePicker';
 import ConditioningModal from './ConditioningModal';
@@ -23,7 +23,7 @@ import { Timestamp } from 'firebase/firestore';
 // ============================================
 // FIELD INPUT COMPONENT — wraps VoiceTextarea
 // ============================================
-const FieldInput = ({ field, value, onChange, disabled = false, error = null, showError = false }) => {
+const FieldInput = ({ field, value, onChange, disabled = false, error = null, showError = false, autoFocus = false }) => {
   return (
     <VoiceTextarea
       id={`field-${field.id}`}
@@ -36,6 +36,7 @@ const FieldInput = ({ field, value, onChange, disabled = false, error = null, sh
       disabled={disabled}
       required={field.required}
       error={error && showError ? error : null}
+      autoFocus={autoFocus}
     />
   );
 };
@@ -145,41 +146,6 @@ const DifficultySelector = ({ value, onChange, repType }) => {
 };
 
 // ============================================
-// COLLAPSIBLE SECTION
-// ============================================
-const CollapsibleSection = ({ title, children, defaultOpen = false, helpText, forceOpen = false }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const effectiveOpen = forceOpen || isOpen;
-  
-  return (
-    <div className="border border-gray-200 dark:border-slate-600 rounded-xl overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!effectiveOpen)}
-        className="w-full p-3 bg-gray-50 dark:bg-slate-700 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-sm text-corporate-navy dark:text-white">{title}</span>
-          {helpText && (
-            <span className="text-xs text-gray-400 dark:text-slate-500">({helpText})</span>
-          )}
-        </div>
-        {effectiveOpen ? (
-          <ChevronUp className="w-4 h-4 text-gray-500 dark:text-slate-400" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
-        )}
-      </button>
-      {effectiveOpen && (
-        <div className="p-4 space-y-4 bg-white dark:bg-slate-800">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ============================================
 // MAIN FORM COMPONENT
 // ============================================
 const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) => {
@@ -188,6 +154,15 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
   const [person, setPerson] = useState('');
   const [riskLevel, setRiskLevel] = useState('medium');
   const [difficulty, setDifficulty] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [pendingCategory, setPendingCategory] = useState(null);
+  
+  // Step tracking - manual state like Debrief modal
+  // Steps: 0=Type, 1=Who, 2=Details, 3=Commit
+  const TOTAL_STEPS = 4;
+  const STEP_LABELS = ['Type', 'Who', 'Details', 'Commit'];
+  const [currentStep, setCurrentStep] = useState(0);
+  const [visitedSteps, setVisitedSteps] = useState(new Set([0]));
   
   // Universal structure fields
   const [universalFields, setUniversalFields] = useState({
@@ -201,14 +176,17 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
   // Optional notes
   const [notes, setNotes] = useState('');
   
+  // Prep preference (null = use default based on risk level)
+  const [wantsPrep, setWantsPrep] = useState(null);
+  
   // Deadline
   const [useCustomDeadline, setUseCustomDeadline] = useState(false);
   const [customDeadline, setCustomDeadline] = useState('');
   
   // V1 UX: Validation feedback state
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [nextAttempted, setNextAttempted] = useState(false);
   const [errors, setErrors] = useState({});
-  const [defineRepForceOpen, setDefineRepForceOpen] = useState(false);
   const personInputRef = useRef(null);
   
   // Get selected rep type info
@@ -216,33 +194,94 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
     return repTypeId ? getRepType(repTypeId) : null;
   }, [repTypeId]);
 
-  // Auto-focus person input and scroll to top when rep type is selected
-  useEffect(() => {
-    if (selectedRepType && personInputRef.current) {
-      // Small delay to ensure the field is rendered
+  // Step validation - is current step complete?
+  const isStepValid = useMemo(() => {
+    switch (currentStep) {
+      case 0: return !!repTypeId;
+      case 1: return person.trim().length > 0;
+      case 2: return !!difficulty;
+      case 3: {
+        // Check required universal fields
+        const requiredFields = Object.values(UNIVERSAL_REP_FIELDS).filter(f => f.required);
+        return requiredFields.every(f => universalFields[f.id]?.trim());
+      }
+      default: return true;
+    }
+  }, [currentStep, repTypeId, person, difficulty, universalFields]);
+
+  // Show validation for current step if it's been visited
+  const showStepValidation = visitedSteps.has(currentStep);
+
+  // Navigation handlers
+  const handleNext = () => {
+    // Mark that user attempted to proceed (for validation display)
+    if (!isStepValid) {
+      setNextAttempted(true);
+      return;
+    }
+    
+    if (currentStep < TOTAL_STEPS - 1) {
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      setVisitedSteps(prev => new Set([...prev, nextStep]));
+      setNextAttempted(false); // Reset for next step
+      // Scroll modal to top on step change
       setTimeout(() => {
-        // Find the modal body container by data attribute and scroll to top
         const modalBody = document.querySelector('[data-modal-body="true"]');
-        if (modalBody) {
-          modalBody.scrollTop = 0;
-        }
-        // Then focus the input without causing scroll
+        if (modalBody) modalBody.scrollTop = 0;
+      }, 50);
+    }
+  };
+
+  const handlePrevious = () => {
+    // On step 0, handle internal picker navigation
+    if (currentStep === 0) {
+      if (selectedCategory) {
+        // Go back from type list to category list (one click)
+        setSelectedCategory(null);
+        setRepTypeId(null);
+        setDifficulty(null);
+      }
+      return;
+    }
+    // Otherwise go to previous step
+    setCurrentStep(prev => prev - 1);
+  };
+
+  // Auto-focus person input when reaching step 1
+  useEffect(() => {
+    if (currentStep === 1 && personInputRef.current) {
+      setTimeout(() => {
         personInputRef.current?.focus({ preventScroll: true });
       }, 150);
     }
-  }, [selectedRepType]);
+  }, [currentStep]);
   
   // Set default difficulty when rep type changes
+  // Only auto-advance on FIRST selection (not when revisiting/editing)
   const handleRepTypeSelect = (id) => {
+    const isFirstSelection = !repTypeId; // No previous value
     setRepTypeId(id);
     const repType = getRepType(id);
     if (repType) {
       setDifficulty(repType.defaultDifficulty);
       setRiskLevel(repType.defaultRisk);
     }
-    // Clear rep type error when selected
+    // Clear validation feedback when selected
+    setNextAttempted(false);
     if (errors.repType) {
       setErrors(prev => ({ ...prev, repType: null }));
+    }
+    
+    // Auto-advance to Step 2 (Who) only if first time selecting
+    if (isFirstSelection) {
+      setCurrentStep(1);
+      setVisitedSteps(prev => new Set([...prev, 1]));
+      // Scroll modal to top
+      setTimeout(() => {
+        const modalBody = document.querySelector('[data-modal-body="true"]');
+        if (modalBody) modalBody.scrollTop = 0;
+      }, 50);
     }
   };
   
@@ -291,21 +330,6 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
     return newErrors;
   };
   
-  // Form validation (for button state)
-  const isValid = useMemo(() => {
-    if (!repTypeId) return false;
-    if (!person.trim()) return false;
-    if (!difficulty) return false;
-    
-    // Check required universal fields
-    const requiredFields = Object.values(UNIVERSAL_REP_FIELDS).filter(f => f.required);
-    for (const field of requiredFields) {
-      if (!universalFields[field.id]?.trim()) return false;
-    }
-    
-    return true;
-  }, [repTypeId, person, difficulty, universalFields]);
-  
   // Handle submit
   const handleSubmit = () => {
     setSubmitAttempted(true);
@@ -315,32 +339,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
     setErrors(validationErrors);
     
     if (Object.keys(validationErrors).length > 0) {
-      // Build ordered list of fields for focus priority
-      const universalFieldIds = Object.values(UNIVERSAL_REP_FIELDS).map(f => f.id);
-      const fieldOrder = ['repType', 'person', 'difficulty', ...universalFieldIds];
-      const firstErrorField = fieldOrder.find(id => validationErrors[id]);
-      
-      // Force open "Define Your Rep" section if it has errors
-      if (universalFieldIds.some(id => validationErrors[id])) {
-        setDefineRepForceOpen(true);
-      }
-      
-      // Scroll to first error and focus its input
-      setTimeout(() => {
-        if (firstErrorField) {
-          const fieldEl = document.querySelector(`[data-field="${firstErrorField}"]`);
-          if (fieldEl) {
-            fieldEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // Focus the input/textarea inside after scroll animation
-            setTimeout(() => {
-              const focusable = fieldEl.querySelector('input, textarea');
-              if (focusable) {
-                focusable.focus();
-              }
-            }, 400);
-          }
-        }
-      }, 100);
+      // Validation errors exist - step navigation handles this
       return;
     }
     
@@ -372,7 +371,8 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
       },
       notes: notes.trim() || null,
       deadline,
-      prepRequired: isPrepRequired(repTypeId, riskLevel)
+      // Prep required if: 1) forced by risk/type, or 2) user opted in
+      prepRequired: isPrepRequired(repTypeId, riskLevel) || wantsPrep === true
     });
   };
   
@@ -381,36 +381,12 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
   const maxDeadline = weekEnd.toISOString().split('T')[0];
   const today = new Date().toISOString().split('T')[0];
   
-  return (
-    <ConditioningModal
-      isOpen={true}
-      onClose={onClose}
-      title="Commit to a Rep"
-      subtitle={selectedRepType ? `${selectedRepType.label}` : 'Select a rep type to begin'}
-      footer={
-        <div>
-          <Button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="w-full bg-corporate-teal hover:bg-corporate-teal-dark text-white py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Committing...' : 'Commit to This Rep'}
-          </Button>
-          {submitAttempted && Object.keys(errors).length > 0 && (
-            <p className="text-xs text-red-600 text-center mt-2">
-              Please fill in all required fields above
-            </p>
-          )}
-          {!submitAttempted && !isValid && repTypeId && (
-            <p className="text-xs text-gray-500 dark:text-slate-400 text-center mt-2">
-              Fill in all required fields to continue
-            </p>
-          )}
-        </div>
-      }
-    >
-          {/* Form Body */}
-          <div className="space-y-5">
+  // Render step content - one step at a time like Debrief modal
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 0:
+        return (
+          <div className="space-y-4">
             {/* V1 UX: Soft warning when active rep exists */}
             {activeRepsCount > 0 && (
               <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl">
@@ -425,135 +401,221 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                 </div>
               </div>
             )}
-            
-            {/* Step 1: Rep Type */}
-            <div data-field="repType" className={errors.repType ? 'field-error' : ''}>
-              <RepTypePicker
-                selectedRepTypeId={repTypeId}
-                onSelect={handleRepTypeSelect}
-                showDetails={true}
-              />
-              {errors.repType && submitAttempted && (
-                <p className="text-sm text-red-600 mt-2">{errors.repType}</p>
-              )}
-            </div>
-            
-            {/* Only show rest of form once rep type is selected */}
-            {selectedRepType && (
-              <>
-                {/* Step 2: Who */}
-                <div data-field="person" className={errors.person ? 'field-error' : ''}>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">
-                    Who is this rep with? <span className="text-red-500">*</span>
-                  </label>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
-                    Be specific - name, not "someone on my team"
-                  </p>
-                  <input
-                    ref={personInputRef}
-                    type="text"
-                    value={person}
-                    onChange={(e) => handlePersonChange(e.target.value)}
-                    placeholder="e.g., Maya, Jordan, Chris"
-                    className="w-full p-3 border rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all dark:bg-slate-800 dark:text-white border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500"
-                    required
-                  />
-                  {errors.person && submitAttempted && (
-                    <p className="text-sm text-red-600 mt-1">{errors.person}</p>
-                  )}
-                </div>
-                
-                {/* Step 3: Risk & Difficulty */}
-                <div className="space-y-4">
-                  <RiskSelector 
-                    value={riskLevel} 
-                    onChange={setRiskLevel}
-                    repType={selectedRepType}
-                  />
-                  <div data-field="difficulty">
-                    <DifficultySelector 
-                      value={difficulty} 
-                      onChange={setDifficulty}
-                      repType={selectedRepType}
-                    />
-                  </div>
-                </div>
-                
-                {/* Step 4: Universal Structure Fields */}
-                <CollapsibleSection 
-                  title="Define Your Rep" 
-                  defaultOpen={true}
-                  helpText="What makes this a real rep"
-                  forceOpen={defineRepForceOpen}
-                >
-                  {Object.values(UNIVERSAL_REP_FIELDS).map((field) => (
-                    <div key={field.id} data-field={field.id}>
-                      <FieldInput
-                        field={field}
-                        value={universalFields[field.id]}
-                        onChange={(value) => handleUniversalFieldChange(field.id, value)}
-                        error={errors[field.id]}
-                        showError={submitAttempted}
-                      />
-                    </div>
-                  ))}
-                </CollapsibleSection>
-                
-                {/* Step 5: Optional Settings */}
-                <CollapsibleSection title="Additional Options" defaultOpen={false}>
-                  {/* Notes */}
-                  <VoiceTextarea
-                    label="Additional notes (optional)"
-                    value={notes}
-                    onChange={setNotes}
-                    placeholder="Any other context..."
-                    rows={3}
-                  />
-                  
-                  {/* Custom Deadline */}
-                  <div>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={useCustomDeadline}
-                        onChange={(e) => setUseCustomDeadline(e.target.checked)}
-                        className="rounded"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-slate-300">
-                        Set custom deadline (default: end of week)
-                      </span>
-                    </label>
-                    
-                    {useCustomDeadline && (
-                      <input
-                        type="date"
-                        value={customDeadline}
-                        onChange={(e) => setCustomDeadline(e.target.value)}
-                        min={today}
-                        max={maxDeadline}
-                        className="mt-2 w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 dark:bg-slate-800 dark:text-white dark:[color-scheme:dark]"
-                      />
-                    )}
-                  </div>
-                </CollapsibleSection>
-                
-                {/* Prep Required Warning */}
-                {isPrepRequired(repTypeId, riskLevel) && (
-                  <div className="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Prep Required</p>
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                          You'll need to complete prep before marking this rep as executed.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
+            <RepTypePicker
+              selectedRepTypeId={repTypeId}
+              onSelect={handleRepTypeSelect}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              pendingCategory={pendingCategory}
+              onPendingCategoryChange={setPendingCategory}
+              showDetails={true}
+            />
+            {nextAttempted && !repTypeId && (
+              <p className="text-sm text-red-600 mt-2">Please select a rep type to continue</p>
             )}
           </div>
+        );
+        
+      case 1:
+        return (
+          <div className="space-y-4">
+            <label className="block text-sm font-medium text-corporate-navy dark:text-slate-200 mb-1">
+              Who is this rep with? <span className="text-red-500">*</span>
+            </label>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+              Be specific - name, not "someone on my team"
+            </p>
+            <input
+              ref={personInputRef}
+              type="text"
+              value={person}
+              onChange={(e) => handlePersonChange(e.target.value)}
+              placeholder="e.g., Maya, Jordan, Chris"
+              className="w-full p-3 border rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all dark:bg-slate-800 dark:text-white border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500"
+              required
+            />
+            {showStepValidation && !person.trim() && (
+              <p className="text-sm text-red-600 mt-1">Please enter who this rep is with</p>
+            )}
+          </div>
+        );
+        
+      case 2:
+        return (
+          <div className="space-y-4">
+            <RiskSelector 
+              value={riskLevel} 
+              onChange={setRiskLevel}
+              repType={selectedRepType}
+            />
+            <DifficultySelector 
+              value={difficulty} 
+              onChange={setDifficulty}
+              repType={selectedRepType}
+            />
+            {showStepValidation && !difficulty && (
+              <p className="text-sm text-red-600 mt-2">Please select a difficulty level</p>
+            )}
+          </div>
+        );
+        
+      case 3:
+        return (
+          <div className="space-y-4">
+            {/* Universal Structure Fields */}
+            {Object.values(UNIVERSAL_REP_FIELDS).map((field, index) => (
+              <div key={field.id}>
+                <FieldInput
+                  field={field}
+                  value={universalFields[field.id]}
+                  onChange={(value) => handleUniversalFieldChange(field.id, value)}
+                  error={errors[field.id]}
+                  showError={submitAttempted}
+                  autoFocus={index === 0}
+                />
+              </div>
+            ))}
+            
+            {/* Optional Settings - inline on final step */}
+            <div className="pt-4 border-t border-gray-100 space-y-4">
+              <VoiceTextarea
+                label="Additional notes (optional)"
+                value={notes}
+                onChange={setNotes}
+                placeholder="Any other context..."
+                rows={3}
+              />
+              
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useCustomDeadline}
+                    onChange={(e) => setUseCustomDeadline(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-slate-300">
+                    Set custom deadline (default: end of week)
+                  </span>
+                </label>
+                
+                {useCustomDeadline && (
+                  <input
+                    type="date"
+                    value={customDeadline}
+                    onChange={(e) => setCustomDeadline(e.target.value)}
+                    min={today}
+                    max={maxDeadline}
+                    className="mt-2 w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 dark:bg-slate-800 dark:text-white dark:[color-scheme:dark]"
+                  />
+                )}
+              </div>
+            </div>
+            
+            {/* Prep Checkbox */}
+            {(() => {
+              const prepIsRequired = isPrepRequired(repTypeId, riskLevel);
+              const prepEnabled = wantsPrep !== null ? wantsPrep : prepIsRequired;
+              
+              return (
+                <div className={`p-3 rounded-xl border ${
+                  prepIsRequired 
+                    ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700'
+                    : prepEnabled
+                    ? 'bg-corporate-teal/5 dark:bg-corporate-teal/10 border-corporate-teal/30'
+                    : 'bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-600'
+                }`}>
+                  <label className={`flex items-start gap-3 ${prepIsRequired ? '' : 'cursor-pointer'}`}>
+                    <input
+                      type="checkbox"
+                      checked={prepEnabled}
+                      onChange={(e) => !prepIsRequired && setWantsPrep(e.target.checked)}
+                      disabled={prepIsRequired}
+                      className={`mt-0.5 rounded ${
+                        prepIsRequired 
+                          ? 'text-amber-600 cursor-not-allowed' 
+                          : 'text-corporate-teal cursor-pointer'
+                      }`}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        {prepIsRequired ? (
+                          <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        ) : prepEnabled ? (
+                          <CheckCircle className="w-4 h-4 text-corporate-teal" />
+                        ) : null}
+                        <span className={`text-sm font-medium ${
+                          prepIsRequired 
+                            ? 'text-amber-800 dark:text-amber-300'
+                            : prepEnabled
+                            ? 'text-corporate-teal'
+                            : 'text-gray-700 dark:text-slate-300'
+                        }`}>
+                          {prepIsRequired ? 'Prep required before execution' : 'Prep before execution'}
+                        </span>
+                      </div>
+                      <p className="text-xs mt-0.5 ${
+                        prepIsRequired 
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-gray-500 dark:text-slate-400'
+                      }">
+                        {prepIsRequired 
+                          ? 'High-risk reps require preparation to unlock execution.'
+                          : 'Think through risks and recovery before the conversation.'}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              );
+            })()}
+          </div>
+        );
+        
+      default:
+        return null;
+    }
+  };
+  
+  return (
+    <ConditioningModal
+      isOpen={true}
+      onClose={onClose}
+      title="Commit to a Rep"
+      subtitle={selectedRepType ? `${selectedRepType.label}` : 'Select a rep type to begin'}
+      currentStep={currentStep}
+      totalSteps={TOTAL_STEPS}
+      stepLabels={STEP_LABELS}
+      footer={
+        <div className="flex items-center justify-between">
+          <Button
+            onClick={handlePrevious}
+            disabled={currentStep === 0 && !selectedCategory && !repTypeId && !pendingCategory}
+            variant="outline"
+          >
+            Previous
+          </Button>
+          
+          {currentStep < TOTAL_STEPS - 1 ? (
+            <Button
+              onClick={handleNext}
+              disabled={!isStepValid}
+              className="bg-corporate-navy hover:bg-corporate-navy/90 text-white"
+            >
+              Next →
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              disabled={!isStepValid || isLoading}
+              className="bg-corporate-teal hover:bg-corporate-teal-dark text-white"
+            >
+              {isLoading ? 'Committing...' : 'Commit to This Rep'}
+            </Button>
+          )}
+        </div>
+      }
+    >
+      {renderStepContent()}
     </ConditioningModal>
   );
 };

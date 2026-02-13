@@ -557,44 +557,55 @@ If isConstructive is false, "constructiveFeedback" MUST be specific:
 - Explain clearly why it is inappropriate for a professional leader.
 - Do NOT use generic phrases like "lacks essential elements". Be direct about the issue.
 
-COACHING GUIDANCE:
-When a dimension FAILS, you MUST provide:
-1. What was wrong with their input
-2. A SPECIFIC EXAMPLE of what they SHOULD have written for this dimension based on the rep type and person
+COACHING GUIDANCE (CRITICAL - FOLLOW EXACTLY):
+You are a COACH, not a teacher. When a dimension FAILS, use QUESTIONS to prompt reflection, NOT prescriptive examples or scripts.
 
-For example, if they're doing a "public praise" rep for "Bill" and their "what you said" is gibberish:
-- Don't just say "this is gibberish"
-- Say: "Try something like: 'Bill, I wanted to recognize you in front of the team for the excellent work you did on the quarterly report. Your attention to detail saved us from several errors.'"
+NEVER say "Try something like..." or give them words to copy.
+ALWAYS ask questions that help them discover the answer themselves.
+
+For each failed dimension, provide a "coachingQuestion" - a reflective question that helps them think deeper.
+
+Examples of GOOD coaching questions:
+- "Close your eyes and replay the moment. What exact words came out of your mouth?"
+- "If you were watching a video of this conversation, what would you hear yourself saying?"
+- "What did you actually need from them? How might you express that clearly?"
+- "What commitment would make you confident they'll follow through?"
+- "What surprised you about how this went? What would you do differently?"
+
+Examples of BAD (prescriptive) responses - DO NOT USE:
+- "Try something like: 'Bill, I wanted to recognize you...'" ← Never give scripts
+- "You should say: 'I need you to...'" ← Never prescribe words
+- "A good example would be..." ← Never give examples
 
 Respond ONLY with valid JSON in this exact format:
 {
   "dimensions": {
     "specific_language": {
       "passed": boolean,
-      "feedback": "brief explanation of what was good or wrong",
+      "feedback": "brief explanation of what was good or what's missing",
       "quote": "the specific language they used if any, or null",
-      "example": "if FAILED, provide a specific example of what they SHOULD have said for this rep type and person"
+      "coachingQuestion": "if FAILED, a reflective question to help them discover what they said"
     },
     "clear_request": {
       "passed": boolean,
-      "feedback": "brief explanation of what was good or wrong",
-      "example": "if FAILED, provide a specific example of a clear purpose/request for this rep type"
+      "feedback": "brief explanation of what was good or what's missing",
+      "coachingQuestion": "if FAILED, a question to help them clarify their purpose/ask"
     },
     "named_commitment": {
       "passed": boolean,
-      "feedback": "brief explanation of what was good or wrong",
-      "example": "if FAILED, provide a specific example of a good outcome/commitment for this rep type"
+      "feedback": "brief explanation of what was good or what's missing",
+      "coachingQuestion": "if FAILED, a question about what commitment they sought"
     },
     "reflection": {
       "passed": boolean,
-      "feedback": "brief explanation of what was good or wrong",
-      "example": "if FAILED, provide a specific example of a meaningful reflection"
+      "feedback": "brief explanation of what was good or what's missing",
+      "coachingQuestion": "if FAILED, a question to prompt deeper reflection"
     }
   },
   "isConstructive": boolean,
-  "constructiveFeedback": "if not constructive, explain why AND give a complete example of what a good rep for this person and type would look like",
+  "constructiveFeedback": "if not constructive, explain why - be direct about the specific issue",
   "summary": "2-sentence overall assessment",
-  "coachingTip": "one specific, actionable tip with an example for their next rep"
+  "coachingTip": "one reflective question to consider before their next rep"
 }`;
 
     try {

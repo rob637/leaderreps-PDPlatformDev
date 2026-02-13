@@ -323,7 +323,7 @@ const RepPrepModal = ({ rep, existingPrep, onClose, onSave, isLoading }) => {
               <Button
                 onClick={handleSave}
                 disabled={!hasAnyContent || isSubmitting || isLoading}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+                className="flex items-center gap-2 bg-corporate-teal hover:bg-corporate-teal/90 text-white"
               >
                 {isSubmitting ? (
                   <>Saving...</>

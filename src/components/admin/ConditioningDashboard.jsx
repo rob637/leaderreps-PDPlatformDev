@@ -3,6 +3,7 @@
 // Shows all cohort members' rep status, completion rates, and flags
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useAppServices } from '../../services/useAppServices';
 import conditioningService, { REP_STATUS, getCurrentWeekId, COACH_PROMPTS } from '../../services/conditioningService';
 import { Card } from '../ui';
@@ -113,12 +114,15 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
         </div>
       )}
       
-      {/* Rep Detail Modal - OUTSIDE the isExpanded block to prevent flickering */}
-      <RepDetailModal
-        isOpen={!!selectedRep}
-        onClose={() => setSelectedRep(null)}
-        rep={selectedRep}
-      />
+      {/* Rep Detail Modal - rendered via Portal to prevent hover flickering */}
+      {selectedRep && createPortal(
+        <RepDetailModal
+          isOpen={!!selectedRep}
+          onClose={() => setSelectedRep(null)}
+          rep={selectedRep}
+        />,
+        document.body
+      )}
     </div>
   );
 };
@@ -152,7 +156,7 @@ const CohortSelector = ({ cohorts, selectedCohortId, onSelect }) => {
 const StatsSummary = ({ cohortSummary }) => {
   if (!cohortSummary) return null;
   
-  const { totalUsers, usersCompleted, usersNeedingAttention } = cohortSummary;
+  const { totalUsers, usersCompleted, usersNeedingAttention, totalRepsCompleted = 0 } = cohortSummary;
   const completionRate = totalUsers > 0 ? Math.round((usersCompleted / totalUsers) * 100) : 0;
   
   return (
@@ -175,8 +179,13 @@ const StatsSummary = ({ cohortSummary }) => {
             <CheckCircle className="w-5 h-5 text-green-600" />
           </div>
           <div>
-            <div className="text-2xl font-bold text-green-600">{usersCompleted}</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Rep Done</div>
+            <div className="text-2xl font-bold text-green-600">
+              {totalRepsCompleted}
+              <span className="text-sm font-normal text-gray-400 ml-1">reps</span>
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              by {usersCompleted} leader{usersCompleted !== 1 ? 's' : ''}
+            </div>
           </div>
         </div>
       </Card>
@@ -304,7 +313,7 @@ const QualityMetrics = ({ cohortQualityStats }) => {
 // ============================================
 // COHORT HEALTH INDICATOR (Sprint 6)
 // ============================================
-const CohortHealthIndicator = ({ healthData, isLoading }) => {
+const CohortHealthIndicator = ({ healthData, isLoading, cohortSummary }) => {
   if (!healthData && !isLoading) return null;
   
   const getHealthColor = (level) => ({
@@ -337,7 +346,7 @@ const CohortHealthIndicator = ({ healthData, isLoading }) => {
           </div>
           <div>
             <h3 className="font-semibold text-corporate-navy">Cohort Health</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Overall accountability score</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Leader participation this week</p>
           </div>
         </div>
         
@@ -373,11 +382,11 @@ const CohortHealthIndicator = ({ healthData, isLoading }) => {
         </div>
       </div>
       
-      {/* Breakdown */}
+      {/* Breakdown - per leader counts */}
       <div className="grid grid-cols-4 gap-3 text-center">
         <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
           <div className="text-lg font-bold text-green-600">{breakdown.completedUserCount}</div>
-          <div className="text-xs text-green-600">Complete</div>
+          <div className="text-xs text-green-600">Leaders Done</div>
         </div>
         <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
           <div className="text-lg font-bold text-blue-600">{breakdown.activeUserCount}</div>
@@ -385,20 +394,20 @@ const CohortHealthIndicator = ({ healthData, isLoading }) => {
         </div>
         <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="text-lg font-bold text-gray-600 dark:text-gray-300">{breakdown.incompleteUserCount}</div>
-          <div className="text-xs text-gray-600 dark:text-gray-300">No Activity</div>
+          <div className="text-xs text-gray-600 dark:text-gray-300">No Reps Yet</div>
         </div>
         <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
-          <div className="text-lg font-bold text-red-600">{breakdown.criticalPatternCount}</div>
-          <div className="text-xs text-red-600">Critical Flags</div>
+          <div className="text-lg font-bold text-red-600">{cohortSummary?.usersNeedingAttention || 0}</div>
+          <div className="text-xs text-red-600">Need Attention</div>
         </div>
       </div>
       
       {/* Pattern alerts */}
-      {(breakdown.criticalPatternCount > 0 || breakdown.highPatternCount > 0) && (
+      {cohortSummary?.usersNeedingAttention > 0 && (
         <div className="mt-4 flex items-center gap-2 text-sm">
           <AlertTriangle className="w-4 h-4 text-amber-500" />
           <span className="text-gray-600 dark:text-gray-300">
-            {breakdown.criticalPatternCount + breakdown.highPatternCount} leaders need coaching attention
+            {cohortSummary.usersNeedingAttention} leader{cohortSummary.usersNeedingAttention !== 1 ? 's' : ''} need{cohortSummary.usersNeedingAttention === 1 ? 's' : ''} coaching attention
           </span>
         </div>
       )}
@@ -512,12 +521,17 @@ const ConditioningDashboard = () => {
       setUserSummaries(summaries);
       
       // Calculate cohort summary
+      const totalRepsCompleted = summaries.reduce((sum, s) => sum + (s.currentWeek?.totalCompleted || 0), 0);
+      const totalRepsActive = summaries.reduce((sum, s) => sum + (s.currentWeek?.totalActive || 0), 0);
+      
       setCohortSummary({
         cohortId: selectedCohortId,
         weekId: getCurrentWeekId(),
         totalUsers: summaries.length,
         usersCompleted: summaries.filter(s => s.currentWeek?.requiredRepCompleted).length,
-        usersNeedingAttention: summaries.filter(s => s.needsAttention).length
+        usersNeedingAttention: summaries.filter(s => s.needsAttention).length,
+        totalRepsCompleted,
+        totalRepsActive
       });
       
       // Phase 2: Calculate cohort-wide quality stats
@@ -640,7 +654,8 @@ const ConditioningDashboard = () => {
       {selectedCohortId && (
         <CohortHealthIndicator 
           healthData={cohortHealth} 
-          isLoading={isLoadingHealth} 
+          isLoading={isLoadingHealth}
+          cohortSummary={cohortSummary} 
         />
       )}
       

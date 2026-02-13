@@ -3,6 +3,7 @@
 // V1 UX: Added drill-down to view rep details
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Dumbbell, CheckCircle, Clock, Target, Calendar,
   ChevronDown, ChevronUp, AlertTriangle, XCircle, ChevronRight
@@ -33,11 +34,15 @@ const ConditioningHistoryWidget = ({ helpText }) => {
     }
 
     try {
-      // Get all completed and canceled reps
+      // Get all completed and canceled reps (not executed - those are still active)
       const history = await conditioningService.getRepHistory(db, userId, cohortId, 100);
       
       // Group by weekId
       const weekMap = new Map();
+      
+      // States that count as "done" for history purposes
+      // NOTE: 'executed' is NOT included because those are still active (awaiting debrief)
+      const doneStates = ['debriefed', 'follow_up_pending', 'loop_closed', 'completed'];
       
       for (const rep of history) {
         const weekId = rep.weekId || 'unknown';
@@ -51,7 +56,7 @@ const ConditioningHistoryWidget = ({ helpText }) => {
         }
         const week = weekMap.get(weekId);
         week.reps.push(rep);
-        if (rep.status === REP_STATUS.COMPLETED) {
+        if (doneStates.includes(rep.status)) {
           week.completedCount++;
         } else if (rep.status === REP_STATUS.CANCELED) {
           week.canceledCount++;
@@ -306,13 +311,14 @@ const ConditioningHistoryWidget = ({ helpText }) => {
         </div>
       )}
       
-      {/* Rep Detail Modal */}
-      {selectedRep && (
+      {/* Rep Detail Modal - rendered via Portal to avoid Card hover issues */}
+      {selectedRep && createPortal(
         <RepDetailModal
           isOpen={!!selectedRep}
           rep={selectedRep}
           onClose={() => setSelectedRep(null)}
-        />
+        />,
+        document.body
       )}
     </Card>
   );

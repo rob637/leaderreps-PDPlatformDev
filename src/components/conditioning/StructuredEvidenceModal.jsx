@@ -10,7 +10,8 @@ import { getRepType } from '../../services/repTaxonomy.js';
 import { Button } from '../ui';
 import { 
   Clock, CheckCircle, AlertCircle, Send,
-  Calendar, ArrowRight, Target
+  Calendar, ArrowRight, Target, Users, MessageSquare,
+  ArrowLeftRight, AlertTriangle, MoreHorizontal
 } from 'lucide-react';
 import ConditioningModal from './ConditioningModal';
 import VoiceTextarea from './VoiceTextarea';
@@ -25,12 +26,12 @@ const WHEN_OPTIONS = [
 ];
 
 const CONTEXT_OPTIONS = [
-  { id: 'scheduled_1on1', label: 'Scheduled 1:1', icon: '📅' },
-  { id: 'team_meeting', label: 'Team meeting', icon: '👥' },
-  { id: 'hallway_slack', label: 'Hallway / Slack', icon: '💬' },
-  { id: 'handoff_transition', label: 'Handoff / Transition', icon: '🔄' },
-  { id: 'issue_incident', label: 'Issue / Incident response', icon: '🚨' },
-  { id: 'other', label: 'Other', icon: '📋' }
+  { id: 'scheduled_1on1', label: 'Scheduled 1:1', Icon: Calendar },
+  { id: 'team_meeting', label: 'Team meeting', Icon: Users },
+  { id: 'hallway_slack', label: 'Hallway / Slack', Icon: MessageSquare },
+  { id: 'handoff_transition', label: 'Handoff / Transition', Icon: ArrowLeftRight },
+  { id: 'issue_incident', label: 'Issue / Incident response', Icon: AlertTriangle },
+  { id: 'other', label: 'Other', Icon: MoreHorizontal }
 ];
 
 const RESPONSE_OPTIONS = [
@@ -121,20 +122,29 @@ const ContextField = ({ value, onChange, showError = false }) => {
         Which moment was this tied to? <span className="text-red-500">*</span>
       </label>
       <div className="grid grid-cols-2 gap-2">
-        {CONTEXT_OPTIONS.map(option => (
-          <button
-            key={option.id}
-            onClick={() => onChange(option.id)}
-            className={`p-3 rounded-xl border-2 text-left transition-all ${
-              value === option.id
-                ? 'border-corporate-teal bg-corporate-teal/5'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <span className="mr-2">{option.icon}</span>
-            <span className="text-sm">{option.label}</span>
-          </button>
-        ))}
+        {CONTEXT_OPTIONS.map(option => {
+          const IconComponent = option.Icon;
+          return (
+            <button
+              key={option.id}
+              onClick={() => onChange(option.id)}
+              className={`p-3 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
+                value === option.id
+                  ? 'border-corporate-teal bg-corporate-teal/5 ring-2 ring-corporate-teal'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-corporate-teal hover:shadow-sm'
+              }`}
+            >
+              <div className={`p-2 rounded-lg ${
+                value === option.id 
+                  ? 'bg-corporate-teal/20' 
+                  : 'bg-corporate-teal/10'
+              }`}>
+                <IconComponent className="w-4 h-4 text-corporate-navy" />
+              </div>
+              <span className="text-sm font-medium text-corporate-navy dark:text-white">{option.label}</span>
+            </button>
+          );
+        })}
       </div>
       <RequiredMessage show={showError && !value} message="Please select a context" />
     </div>
@@ -339,6 +349,37 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       setVisitedSteps(prev => new Set([...prev, nextStep]));
+      // Scroll modal to top
+      setTimeout(() => {
+        const modalBody = document.querySelector('[data-modal-body="true"]');
+        if (modalBody) modalBody.scrollTop = 0;
+      }, 50);
+    }
+  };
+  
+  // Auto-advance handlers for single-select fields
+  // Only auto-advance on FIRST selection (not when revisiting/editing)
+  const handleWhenSelect = (value) => {
+    const isFirstSelection = !when; // No previous value
+    setWhen(value);
+    // Auto-advance only if this is the first time selecting
+    if (isFirstSelection) {
+      setTimeout(() => {
+        setCurrentStep(1);
+        setVisitedSteps(prev => new Set([...prev, 1]));
+      }, 150);
+    }
+  };
+  
+  const handleContextSelect = (value) => {
+    const isFirstSelection = !context; // No previous value
+    setContext(value);
+    // Auto-advance only if this is the first time selecting
+    if (isFirstSelection) {
+      setTimeout(() => {
+        setCurrentStep(2);
+        setVisitedSteps(prev => new Set([...prev, 2]));
+      }, 150);
     }
   };
   
@@ -409,9 +450,9 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
-        return <WhenField value={when} onChange={setWhen} showError={showStepValidation} />;
+        return <WhenField value={when} onChange={handleWhenSelect} showError={showStepValidation} />;
       case 1:
-        return <ContextField value={context} onChange={setContext} showError={showStepValidation} />;
+        return <ContextField value={context} onChange={handleContextSelect} showError={showStepValidation} />;
       case 2:
         return (
           <VoiceTextarea

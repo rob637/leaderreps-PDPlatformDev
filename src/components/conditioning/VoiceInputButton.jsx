@@ -18,9 +18,9 @@ const VoiceInputButton = ({
   onPartialTranscription,
   disabled = false,
   size = 'default',
-  continuous = false,
+  continuous = true, // Changed: Default to continuous for longer recordings
   autoStop = true,
-  autoStopDelay = 1500 // ms of silence before auto-stop
+  autoStopDelay = 3000 // Changed: 3 seconds of silence before auto-stop (was 1500)
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
@@ -30,8 +30,17 @@ const VoiceInputButton = ({
   const recognitionRef = useRef(null);
   const autoStopTimerRef = useRef(null);
   const transcriptRef = useRef('');
+  // Store callbacks in refs to avoid re-creating recognition on every render
+  const onTranscriptionRef = useRef(onTranscription);
+  const onPartialTranscriptionRef = useRef(onPartialTranscription);
   
-  // Initialize speech recognition
+  // Update callback refs when props change
+  useEffect(() => {
+    onTranscriptionRef.current = onTranscription;
+    onPartialTranscriptionRef.current = onPartialTranscription;
+  }, [onTranscription, onPartialTranscription]);
+  
+  // Initialize speech recognition (only once)
   useEffect(() => {
     if (!SpeechRecognition) {
       setIsSupported(false);
@@ -62,7 +71,7 @@ const VoiceInputButton = ({
       
       // Send final transcription if we have content
       if (transcriptRef.current.trim()) {
-        onTranscription?.(transcriptRef.current.trim());
+        onTranscriptionRef.current?.(transcriptRef.current.trim());
       }
     };
     
@@ -70,32 +79,41 @@ const VoiceInputButton = ({
       let finalTranscript = '';
       let interimTranscript = '';
       
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript;
+      // Process all results from the beginning to build complete transcript
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        const transcript = result[0].transcript;
+        if (result.isFinal) {
+          finalTranscript += transcript + ' ';
         } else {
           interimTranscript += transcript;
         }
       }
       
-      // Update transcript ref with final results
-      if (finalTranscript) {
-        transcriptRef.current += (transcriptRef.current ? ' ' : '') + finalTranscript;
+      // Store the complete final transcript (rebuilt each time)
+      if (finalTranscript.trim()) {
+        transcriptRef.current = finalTranscript.trim();
       }
       
-      // Send partial transcription for live preview
-      if (onPartialTranscription) {
-        onPartialTranscription(transcriptRef.current + (interimTranscript ? ' ' + interimTranscript : ''));
+      // Send partial transcription for live preview (final + interim)
+      const fullText = (finalTranscript + interimTranscript).trim();
+      if (onPartialTranscriptionRef.current && fullText) {
+        onPartialTranscriptionRef.current(fullText);
       }
       
-      // Auto-stop after silence
-      if (autoStop && finalTranscript) {
+      // Auto-stop after silence (reset timer on any new result)
+      if (autoStop) {
         if (autoStopTimerRef.current) {
           clearTimeout(autoStopTimerRef.current);
         }
         autoStopTimerRef.current = setTimeout(() => {
-          recognition.stop();
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.stop();
+            } catch (e) {
+              // Ignore - may already be stopped
+            }
+          }
         }, autoStopDelay);
       }
     };
@@ -104,6 +122,12 @@ const VoiceInputButton = ({
       console.error('Speech recognition error:', event.error);
       setIsRecording(false);
       setIsProcessing(false);
+      
+      // Clear auto-stop timer on error
+      if (autoStopTimerRef.current) {
+        clearTimeout(autoStopTimerRef.current);
+        autoStopTimerRef.current = null;
+      }
       
       switch (event.error) {
         case 'no-speech':
@@ -117,6 +141,9 @@ const VoiceInputButton = ({
           break;
         case 'network':
           setError('Network error. Check your connection.');
+          break;
+        case 'aborted':
+          // Don't show error for user-initiated stops
           break;
         default:
           setError('Speech recognition error.');
@@ -138,7 +165,7 @@ const VoiceInputButton = ({
         clearTimeout(autoStopTimerRef.current);
       }
     };
-  }, [continuous, autoStop, autoStopDelay, onTranscription, onPartialTranscription]);
+  }, [continuous, autoStop, autoStopDelay]); // Removed callback dependencies
   
   // Handle toggle recording
   const handleToggleRecording = useCallback(() => {

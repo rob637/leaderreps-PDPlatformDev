@@ -226,6 +226,21 @@
       ]
     },
     {
+      "target": "team-sales",
+      "public": "team-sales/dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
       "site": "leaderreps-reppy",
       "public": "reppy/dist",
       "ignore": [

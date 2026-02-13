@@ -267,8 +267,8 @@ export const conditioningService = {
     const weekId = getCurrentWeekId();
     const { weekEnd } = getWeekBoundaries(weekId);
     
-    // Determine if prep is required based on rep type and risk level
-    const prepRequired = isPrepRequired(repData.repType, repData.riskLevel);
+    // Prep required if: 1) user opted in via form, OR 2) forced by rep type/risk level
+    const prepRequired = repData.prepRequired || isPrepRequired(repData.repType, repData.riskLevel);
     
     const repDoc = {
       id: repId,
@@ -753,11 +753,11 @@ export const conditioningService = {
     const snapshot = await getDocs(q);
     let reps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    // Filter to completed states (debriefed, loop_closed, completed) and canceled
-    // This matches the completedStates in getWeeklyStatus
-    const completedStates = ['debriefed', 'loop_closed', 'completed'];
+    // Filter to truly finished states: debriefed, follow_up_pending, loop_closed, completed, and canceled
+    // NOTE: 'executed' is NOT included because those reps are still active (awaiting debrief)
+    const historyStates = ['debriefed', 'follow_up_pending', 'loop_closed', 'completed'];
     reps = reps.filter(rep => 
-      completedStates.includes(rep.status) || rep.status === REP_STATUS.CANCELED
+      historyStates.includes(rep.status) || rep.status === REP_STATUS.CANCELED
     );
     
     // Filter by cohort if specified
@@ -1282,24 +1282,26 @@ export const conditioningService = {
     
     // Check for specific language
     const whatSaid = responses.what_said || responses.what_happened || '';
+    const hasSpecificLanguage = whatSaid.length >= 20 && /["']/.test(whatSaid);
     dimensions[QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE] = {
-      passed: whatSaid.length >= 20 && /["']/.test(whatSaid), // Has quotes = specific language
-      feedback: whatSaid.length < 20 
-        ? 'Try to include the actual words you used'
-        : !/["']/.test(whatSaid)
-        ? 'Include the specific language you used (in quotes)'
-        : 'Great — you used specific, quoted language. This is what makes reps real.'
+      passed: hasSpecificLanguage,
+      feedback: hasSpecificLanguage 
+        ? 'You captured specific language. What made you choose those words?'
+        : 'Can you remember the exact words you used? Close your eyes and replay the moment.',
+      coachingQuestion: hasSpecificLanguage ? null : 'If you were watching a video of this conversation, what exact words would you hear yourself saying?'
     };
     if (dimensions[QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE].passed) passedCount++;
     
     // Check for clear request
     const commitment = responses.commitment || responses.outcome || '';
     const hasRequest = /ask|request|commit|agree|will you|can you|would you/i.test(whatSaid);
+    const clearRequestPassed = hasRequest || whatSaid.length >= 50;
     dimensions[QUALITY_DIMENSIONS.CLEAR_REQUEST] = {
-      passed: hasRequest || whatSaid.length >= 50,
-      feedback: hasRequest 
-        ? 'Good detail. Make sure this comes across as a direct ask in conversation.'
-        : 'Consider making a more explicit request in future reps'
+      passed: clearRequestPassed,
+      feedback: clearRequestPassed 
+        ? 'Your request came through. How do you think it landed?'
+        : 'What was your actual ask? What did you need from them?',
+      coachingQuestion: clearRequestPassed ? null : 'If someone asked "what did you actually request?", what would you tell them?'
     };
     if (dimensions[QUALITY_DIMENSIONS.CLEAR_REQUEST].passed) passedCount++;
     
@@ -1307,23 +1309,27 @@ export const conditioningService = {
     const hasCommitment = commitment.length >= 10 && 
       !/no commitment|none|n\/a|nothing/i.test(commitment);
     const explicitlyNoCommitment = /no commitment|chose not to|decided against/i.test(commitment);
+    const commitmentPassed = hasCommitment || explicitlyNoCommitment;
     dimensions[QUALITY_DIMENSIONS.NAMED_COMMITMENT] = {
-      passed: hasCommitment || explicitlyNoCommitment,
+      passed: commitmentPassed,
       feedback: hasCommitment 
-        ? 'Good - you named a specific commitment'
+        ? 'You named a commitment. How confident are you they\'ll follow through?'
         : explicitlyNoCommitment
-        ? 'Good - you explicitly noted no commitment was made'
-        : 'Try to get a specific commitment or note explicitly that none was made'
+        ? 'You made a conscious choice about commitment. What drove that decision?'
+        : 'Did you get a commitment? If not, what held you back from asking?',
+      coachingQuestion: commitmentPassed ? null : 'What specific commitment would you want from them? What would make it real?'
     };
     if (dimensions[QUALITY_DIMENSIONS.NAMED_COMMITMENT].passed) passedCount++;
     
     // Check for reflection
     const nextTime = responses.next_time || responses.learning || '';
+    const reflectionPassed = nextTime.length >= 15;
     dimensions[QUALITY_DIMENSIONS.REFLECTION] = {
-      passed: nextTime.length >= 15,
-      feedback: nextTime.length >= 15
-        ? 'Good - you reflected on the experience'
-        : 'Add more detail about what you learned or would do differently'
+      passed: reflectionPassed,
+      feedback: reflectionPassed
+        ? 'Good reflection. How will you remember this lesson next time?'
+        : 'What surprised you? What would you do differently?',
+      coachingQuestion: reflectionPassed ? null : 'If you could replay this moment, what would you change and why?'
     };
     if (dimensions[QUALITY_DIMENSIONS.REFLECTION].passed) passedCount++;
     
@@ -1454,25 +1460,30 @@ export const conditioningService = {
   },
   
   /**
-   * Get practice prompt for a specific dimension
+   * Get coaching question prompt for a specific dimension
+   * Uses questions to prompt reflection, not prescriptive examples
    */
   getPracticePrompt: (dimension) => {
     const prompts = {
       [QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE]: 
-        'Rewrite what you said using the exact words you used or would use. Put your language in quotes.',
+        'Think back to that moment. If you were watching a video replay, what exact words would you hear yourself saying?',
       [QUALITY_DIMENSIONS.CLEAR_REQUEST]: 
-        'Write out a clear request or ask that you could make in this situation. Be specific about what you want the other person to do.',
+        'What do you actually need from this person? How might you say that in a way that makes the ask crystal clear?',
       [QUALITY_DIMENSIONS.NAMED_COMMITMENT]: 
-        'What specific commitment would you ask for? Write it as: "I\'d like you to commit to [specific action] by [specific time]."',
+        'What would a real commitment sound like from them? What specific action and timeline would you want them to agree to?',
       [QUALITY_DIMENSIONS.REFLECTION]: 
-        'What did you learn from this rep that you can apply next time? Be specific about what you would do differently.'
+        'What surprised you about how this went? If you could go back and do it again, what would you do differently and why?'
     };
-    return prompts[dimension] || 'Practice this dimension again with more specific detail.';
+    return prompts[dimension] || 'What did you notice about this dimension? Where could you grow?';
   },
   
   /**
    * Assess a practice response for a specific dimension
    * Returns { passed, feedback } for the dimension
+   */
+  /**
+   * Assess a practice response using coaching philosophy
+   * Responds with questions that prompt deeper thinking, not prescriptive answers
    */
   assessPracticeResponse: (dimension, response) => {
     const text = (response || '').trim();
@@ -1480,66 +1491,64 @@ export const conditioningService = {
     switch (dimension) {
       case QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE:
         if (text.length < 10) {
-          return { passed: false, feedback: 'Too brief — try writing out the actual words you would say.' };
+          return { passed: false, feedback: 'What exact words did you use? Can you hear yourself saying them?' };
         }
         if (/["']/.test(text) && text.length >= 20) {
-          return { passed: true, feedback: 'Great — you used specific, quoted language. This is what makes reps real.' };
+          return { passed: true, feedback: 'You captured the specific language. What made you choose those words?' };
         }
         if (/["']/.test(text)) {
-          return { passed: true, feedback: 'Good — you included quotes. Try making it a bit more detailed next time.' };
+          return { passed: true, feedback: 'Good start with the quotes. What else do you remember saying?' };
         }
         if (text.length >= 30) {
-          return { passed: false, feedback: 'Good detail, but put the exact words in quotes to make it specific.' };
+          return { passed: false, feedback: 'Good detail. Can you put the exact phrase in quotes so it\'s clear what you said?' };
         }
-        return { passed: false, feedback: 'Put the actual words you\'d say in quotes — e.g., "I need you to..."' };
+        return { passed: false, feedback: 'Close your eyes and replay the moment. What words came out of your mouth?' };
         
       case QUALITY_DIMENSIONS.CLEAR_REQUEST:
         if (text.length < 10) {
-          return { passed: false, feedback: 'Too brief — write out the specific request you would make.' };
+          return { passed: false, feedback: 'What specifically did you need them to do? What was the ask?' };
         }
         if (/ask|request|need you to|want you to|commit|will you|can you|would you|I('d| would) like/i.test(text) && text.length >= 20) {
-          return { passed: true, feedback: 'Strong — that\'s a clear, actionable request. Use this in your next rep.' };
+          return { passed: true, feedback: 'Clear ask. How do you think it landed with them?' };
         }
         if (text.length >= 30) {
-          return { passed: true, feedback: 'Good detail. Make sure this comes across as a direct ask in conversation.' };
+          return { passed: true, feedback: 'Good context. Was your request clear to them in the moment?' };
         }
-        return { passed: false, feedback: 'Be more explicit — start with "I need you to..." or "Will you..."' };
+        return { passed: false, feedback: 'If someone asked "what did you actually ask for?", what would you tell them?' };
         
       case QUALITY_DIMENSIONS.NAMED_COMMITMENT:
         if (text.length < 10) {
-          return { passed: false, feedback: 'Too brief — write the specific commitment you would ask for.' };
+          return { passed: false, feedback: 'What commitment did you seek? Or did you choose not to ask for one?' };
         }
         if (/commit|by .*(monday|tuesday|wednesday|thursday|friday|end of|tomorrow|next week)/i.test(text)) {
-          return { passed: true, feedback: 'Excellent — a specific commitment with a timeline. That\'s the standard.' };
+          return { passed: true, feedback: 'Specific commitment with timeline. How confident are you they\'ll follow through?' };
         }
         if (/commit|agree|will do|promise|plan to/i.test(text) && text.length >= 20) {
-          return { passed: true, feedback: 'Good commitment. Try adding a specific deadline next time.' };
+          return { passed: true, feedback: 'You got a commitment. What would make you even more confident about follow-through?' };
         }
         if (/no commitment|chose not to|decided against|not appropriate/i.test(text)) {
-          return { passed: true, feedback: 'Good — explicitly noting no commitment is valid and shows awareness.' };
+          return { passed: true, feedback: 'You made a conscious choice about commitment. What drove that decision?' };
         }
-        return { passed: false, feedback: 'Name the specific commitment and deadline — e.g., "Commit to X by Friday."' };
+        return { passed: false, feedback: 'Did they agree to anything specific? If not, why did you choose not to push for a commitment?' };
         
       case QUALITY_DIMENSIONS.REFLECTION:
         if (text.length < 15) {
-          return { passed: false, feedback: 'Too brief — dig deeper into what you learned.' };
+          return { passed: false, feedback: 'What surprised you? What would you do differently?' };
         }
-        // Check for reflection keywords
         const hasReflectionKeywords = /next time|would do|differently|learned|realized|noticed|insight/i.test(text);
         if (hasReflectionKeywords && text.length >= 30) {
-          return { passed: true, feedback: 'Thoughtful reflection. This kind of self-awareness is what drives growth.' };
+          return { passed: true, feedback: 'Thoughtful reflection. How will you remember this lesson next time the moment arrives?' };
         }
         if (text.length >= 40) {
-          return { passed: true, feedback: 'Good depth. Try connecting what you learned to a specific future action.' };
+          return { passed: true, feedback: 'Good depth. What\'s one thing you\'ll do differently in your next rep?' };
         }
-        // User has the right idea but needs more detail
         if (hasReflectionKeywords) {
-          return { passed: false, feedback: 'Good start — add more detail about what you learned or would do differently.' };
+          return { passed: false, feedback: 'Good start. Can you get more specific about what you\'d change?' };
         }
-        return { passed: false, feedback: 'Say what you\'d do differently — "Next time I would..." helps lock in learning.' };
+        return { passed: false, feedback: 'Think about this: if you replayed this moment, what would you do differently and why?' };
         
       default:
-        return { passed: text.length >= 20, feedback: text.length >= 20 ? 'Practice response recorded.' : 'Try adding more detail.' };
+        return { passed: text.length >= 20, feedback: text.length >= 20 ? 'Noted. What else comes to mind?' : 'Can you say more?' };
     }
   },
 

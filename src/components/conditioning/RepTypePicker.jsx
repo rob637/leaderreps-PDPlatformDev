@@ -5,7 +5,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   MessageSquare, Heart, Shield, AlertTriangle,
-  ChevronRight, ChevronLeft, Check, Info
+  ChevronRight, Check, Info
 } from 'lucide-react';
 import { 
   getCategoriesArray, 
@@ -23,12 +23,12 @@ const CATEGORY_ICONS = {
   escalation_decisions: AlertTriangle
 };
 
-// Color mapping for categories
+// Color mapping for categories - consistent corporate styling
 const CATEGORY_COLORS = {
-  reinforcing_redirecting: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', ring: 'ring-blue-500' },
-  ambiguous_emotional: { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700', ring: 'ring-teal-500' },
-  standards_authority: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', ring: 'ring-amber-500' },
-  escalation_decisions: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', ring: 'ring-orange-500' }
+  reinforcing_redirecting: { bg: 'bg-corporate-teal/10', border: 'border-corporate-teal/30', text: 'text-corporate-navy', ring: 'ring-corporate-teal' },
+  ambiguous_emotional: { bg: 'bg-corporate-teal/10', border: 'border-corporate-teal/30', text: 'text-corporate-navy', ring: 'ring-corporate-teal' },
+  standards_authority: { bg: 'bg-corporate-teal/10', border: 'border-corporate-teal/30', text: 'text-corporate-navy', ring: 'ring-corporate-teal' },
+  escalation_decisions: { bg: 'bg-corporate-teal/10', border: 'border-corporate-teal/30', text: 'text-corporate-navy', ring: 'ring-corporate-teal' }
 };
 
 // ============================================
@@ -42,15 +42,15 @@ const CategoryCard = ({ category, onClick, repCount }) => {
     <button
       type="button"
       onClick={onClick}
-      className={`w-full p-4 rounded-lg border-2 ${colors.bg} ${colors.border} text-left transition-all hover:shadow-md active:scale-[0.98]`}
+      className="w-full p-4 rounded-lg border-2 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-left transition-all hover:border-corporate-teal hover:shadow-md active:scale-[0.98]"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg bg-white shadow-sm`}>
+          <div className={`p-2 rounded-lg ${colors.bg} border ${colors.border}`}>
             <Icon className={`w-5 h-5 ${colors.text}`} />
           </div>
           <div>
-            <div className={`font-semibold ${colors.text}`}>{category.shortLabel}</div>
+            <div className="font-semibold text-corporate-navy dark:text-white">{category.shortLabel}</div>
             <div className="text-xs text-gray-500 dark:text-slate-400">{category.description}</div>
           </div>
         </div>
@@ -67,8 +67,6 @@ const CategoryCard = ({ category, onClick, repCount }) => {
 // REP TYPE CARD
 // ============================================
 const RepTypeCard = ({ repType, isSelected, onClick }) => {
-  const colors = CATEGORY_COLORS[repType.category] || CATEGORY_COLORS.reinforcing_redirecting;
-  
   const difficultyLabel = repType.defaultDifficulty === 'level_3' ? 'Hard' : 
                           repType.defaultDifficulty === 'level_2' ? 'Medium' : 'Easier';
   const difficultyColor = repType.defaultDifficulty === 'level_3' ? 'text-red-600' : 
@@ -80,8 +78,8 @@ const RepTypeCard = ({ repType, isSelected, onClick }) => {
       onClick={onClick}
       className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
         isSelected 
-          ? `${colors.bg} ${colors.border} ring-2 ${colors.ring}` 
-          : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 hover:shadow-sm'
+          ? 'bg-corporate-teal/5 border-corporate-teal ring-2 ring-corporate-teal' 
+          : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 hover:border-corporate-teal hover:shadow-sm'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -98,8 +96,8 @@ const RepTypeCard = ({ repType, isSelected, onClick }) => {
         </div>
         
         {isSelected && (
-          <div className={`p-1 rounded-full ${colors.bg}`}>
-            <Check className={`w-4 h-4 ${colors.text}`} />
+          <div className="p-1 rounded-full bg-corporate-teal/10">
+            <Check className="w-4 h-4 text-corporate-teal" />
           </div>
         )}
       </div>
@@ -117,21 +115,23 @@ const SelectedRepSummary = ({ repType, onClear }) => {
   const Icon = CATEGORY_ICONS[repType.category] || MessageSquare;
   
   return (
-    <div className={`p-3 rounded-lg ${colors.bg} ${colors.border} border`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Icon className={`w-4 h-4 ${colors.text}`} />
-          <span className={`font-medium ${colors.text}`}>{repType.shortLabel}</span>
-        </div>
+    <div className="space-y-2">
+      {/* Back button + selected type - consistent with category drill-down */}
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onClear}
-          className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 underline"
+          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+          aria-label="Change rep type"
         >
-          Change
+          <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-slate-300" />
         </button>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${colors.bg} ${colors.border} border`}>
+          <Icon className={`w-4 h-4 ${colors.text}`} />
+          <span className={`font-medium ${colors.text}`}>{repType.shortLabel}</span>
+        </div>
       </div>
-      <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">{repType.description}</p>
+      <p className="text-xs text-gray-500 dark:text-slate-400 ml-9">{repType.description}</p>
     </div>
   );
 };
@@ -143,10 +143,19 @@ const RepTypePicker = ({
   selectedRepTypeId, 
   onSelect, 
   showDetails = true,
+  // Lifted category state for parent control
+  selectedCategory: selectedCategoryProp,
+  onCategoryChange,
   // eslint-disable-next-line no-unused-vars
   compact = false // Reserved for future compact mode styling
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  // Internal state as fallback if not controlled by parent
+  const [internalCategory, setInternalCategory] = useState(null);
+  
+  // Use controlled or internal state
+  const selectedCategory = selectedCategoryProp !== undefined ? selectedCategoryProp : internalCategory;
+  const setSelectedCategory = onCategoryChange || setInternalCategory;
+  
   const categories = useMemo(() => getCategoriesArray(), []);
   
   const selectedRepType = useMemo(() => {
@@ -194,15 +203,8 @@ const RepTypePicker = ({
   
   return (
     <div className="space-y-3">
-      {/* Back button + category header */}
+      {/* Category badge (no back button - use Previous in footer) */}
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setSelectedCategory(null)}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-slate-300" />
-        </button>
         <div className={`px-2 py-1 rounded-lg ${colors.bg}`}>
           <span className={`text-sm font-medium ${colors.text}`}>{categoryInfo?.shortLabel}</span>
         </div>
@@ -221,9 +223,7 @@ const RepTypePicker = ({
             isSelected={selectedRepTypeId === repType.id}
             onClick={() => {
               onSelect(repType.id);
-              // V1 UX: Auto-collapse after selection to bring form fields into view
-              // Small delay to show the selection animation
-              setTimeout(() => setSelectedCategory(null), 150);
+              // Parent handles auto-advancing to next step
             }}
           />
         ))}

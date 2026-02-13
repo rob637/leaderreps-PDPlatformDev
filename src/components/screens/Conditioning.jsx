@@ -31,7 +31,7 @@ import {
   Plus, Check, X, AlertTriangle, Clock, User, 
   ChevronRight, RefreshCw, MessageSquare, Users,
   Target, Calendar, CheckCircle, XCircle, AlertCircle,
-  FileText, Lightbulb, Dumbbell, Sparkles, HelpCircle
+  FileText, Lightbulb, Dumbbell, Sparkles, HelpCircle, ArrowRight
 } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 
@@ -60,8 +60,8 @@ const StatusBadge = ({ status }) => {
       icon: Calendar
     },
     [REP_STATUS.EXECUTED]: { 
-      bg: 'bg-teal-100 dark:bg-teal-900/30', 
-      text: 'text-teal-700', 
+      bg: 'bg-green-100 dark:bg-green-900/30', 
+      text: 'text-green-700', 
       label: 'Executed',
       icon: Check
     },
@@ -218,11 +218,7 @@ const TodaysFocusCard = ({ activeReps, onOpenPrep, onViewDetail, onAskCoach }) =
           </div>
           <button
             onClick={() => needsPrep ? onOpenPrep?.(focusRep) : onViewDetail?.(focusRep)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
-              needsPrep 
-                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                : 'bg-corporate-teal hover:bg-corporate-teal/90 text-white'
-            }`}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 bg-corporate-teal hover:bg-corporate-teal/90 text-white"
           >
             {needsPrep ? 'Prep Now' : 'Take Action'}
           </button>
@@ -278,8 +274,10 @@ const RepCard = ({
   // Check if prep is required but not done
   const needsPrep = useMemo(() => {
     if (rep.status !== 'committed') return false;
-    return isPrepRequired(rep.repType, rep.riskLevel) && !rep.preparedAt;
-  }, [rep.repType, rep.riskLevel, rep.status, rep.preparedAt]);
+    // Check both: 1) user opted-in via prepRequired field, or 2) forced by risk/type
+    const prepIsRequired = rep.prepRequired || isPrepRequired(rep.repType, rep.riskLevel);
+    return prepIsRequired && !rep.preparedAt;
+  }, [rep.prepRequired, rep.repType, rep.riskLevel, rep.status, rep.preparedAt]);
   
   const handleCancelSubmit = () => {
     if (cancelReason.trim()) {
@@ -384,7 +382,7 @@ const RepCard = ({
                 <Button
                   onClick={() => onOpenPrep?.(rep)}
                   disabled={isLoading}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2"
+                  className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
                 >
                   <FileText className="w-4 h-4 mr-1" />
                   Complete Prep First
@@ -393,7 +391,7 @@ const RepCard = ({
                 <Button
                   onClick={() => handleStateChange(rep.id, 'executed')}
                   disabled={isLoading}
-                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2"
+                  className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
                 >
                   <Check className="w-4 h-4 mr-1" />
                   Mark Executed
@@ -412,14 +410,22 @@ const RepCard = ({
           
           {/* Executed Rep - Needs Debrief */}
           {rep.status === 'executed' && (
-            <div className="pt-2 border-t border-gray-100">
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
               <Button
                 onClick={() => onAddDebrief?.(rep)}
                 disabled={isLoading}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-2"
+                className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
               >
                 <FileText className="w-4 h-4 mr-2" />
                 Add Debrief to Complete
+              </Button>
+              <Button
+                onClick={() => setShowCancelModal(true)}
+                disabled={isLoading}
+                variant="outline"
+                className="py-2"
+              >
+                <X className="w-4 h-4" />
               </Button>
             </div>
           )}
@@ -438,18 +444,18 @@ const RepCard = ({
                     />
                   )}
                   
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-green-600">
-                      <CheckCircle className="w-4 h-4" />
-                      <span className="font-medium">Debrief submitted</span>
+                  <div className="flex items-center gap-2 text-xs text-green-600 mb-2">
+                      <CheckCircle className="w-3 h-3" />
+                      <span>Debrief submitted</span>
                     </div>
-                    <button
+                    <Button
                       onClick={() => onCloseLoop?.(rep)}
-                      className="text-xs text-corporate-teal hover:underline"
+                      disabled={isLoading}
+                      className="w-full bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
                     >
-                      Close the loop →
-                    </button>
-                  </div>
+                      <ArrowRight className="w-4 h-4 mr-2" />
+                      Close the Loop
+                    </Button>
                 </>
               ) : (
                 <Button
@@ -483,7 +489,7 @@ const RepCard = ({
               <Button
                 onClick={() => onCloseLoop?.(rep)}
                 disabled={isLoading}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2"
+                className="w-full bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Close the Loop
@@ -597,7 +603,7 @@ const MissedRepsSection = ({ missedReps, onOpenDebrief, onRescueRep, isLoading }
                   onClick={() => onRescueRep(rep)}
                   disabled={isLoading}
                   size="sm"
-                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white"
+                  className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white"
                 >
                   <Check className="w-3 h-3 mr-1" />
                   I did it
@@ -1016,14 +1022,18 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
         {/* Compact Week Status */}
         <WeekStatusStrip weeklyStatus={weeklyStatus} />
         
-        {/* Today's Focus Card - Only shown when 3+ active reps to help prioritize */}
-        {activeReps.length >= 3 && (
-          <TodaysFocusCard 
-            activeReps={activeReps}
-            onOpenPrep={handleOpenPrep}
-            onViewDetail={handleOpenRepDetail}
-            onAskCoach={onAskCoach}
-          />
+        {/* Add Rep button - prominent placement when user has active reps */}
+        {activeReps.length > 0 && (
+          <div className="flex justify-center mb-4">
+            <Button
+              onClick={() => setShowCommitForm(true)}
+              variant="outline"
+              className="border-corporate-teal text-corporate-teal hover:bg-corporate-teal/5 px-6"
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Add Another Rep
+            </Button>
+          </div>
         )}
         
         {/* Trainer Nudge Notifications */}
@@ -1060,25 +1070,17 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
                 </Button>
               </div>
             ) : (
-              // First-time user - show introductory messaging
-              <Card className="p-8 text-center border-dashed border-2 border-corporate-teal/30 bg-gradient-to-br from-corporate-teal/5 to-transparent">
-                <div className="w-16 h-16 mx-auto mb-4 bg-corporate-teal/10 rounded-full flex items-center justify-center">
-                  <Dumbbell className="w-8 h-8 text-corporate-teal" />
-                </div>
-                <h3 className="font-bold text-lg text-corporate-navy mb-2">Ready to Build Your Leadership Muscle?</h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-2 max-w-sm mx-auto">
-                  A "rep" is a real leadership moment you commit to practicing — 
-                  like giving feedback, having a tough conversation, or delegating effectively.
-                </p>
-                <p className="text-sm text-corporate-teal font-medium mb-4">
-                  Just 1 rep per week builds the habit.
+              // First-time user - simple, inviting prompt
+              <div className="py-6 text-center">
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  Start with one leadership conversation this week.
                 </p>
                 <Button
                   onClick={() => setShowCommitForm(true)}
                   className="bg-corporate-navy hover:bg-corporate-navy/90 text-white px-6"
                 >
                   <Plus className="w-4 h-4 mr-1" />
-                  Commit to Your First Rep
+                  Commit to a Rep
                 </Button>
                 {onAskCoach && (
                   <button
@@ -1086,10 +1088,10 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
                     className="mt-3 text-sm text-corporate-teal hover:underline flex items-center gap-1 mx-auto"
                   >
                     <HelpCircle className="w-4 h-4" />
-                    Not sure where to start? Ask your coach
+                    Not sure? Ask your coach
                   </button>
                 )}
-              </Card>
+              </div>
             )
           ) : (
             activeReps.map((rep) => (
