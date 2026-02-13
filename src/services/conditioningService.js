@@ -1357,7 +1357,8 @@ export const conditioningService = {
       const result = await assessRepQuality({
         repType: rep.repType,
         person: rep.person,
-        responses: evidence.responses || {}
+        responses: evidence.responses || {},
+        structured: evidence.structured || {}  // Include structured evidence data
       });
       
       return result.data;

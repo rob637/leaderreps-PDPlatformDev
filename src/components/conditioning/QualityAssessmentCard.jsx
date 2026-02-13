@@ -122,6 +122,19 @@ const DimensionRow = ({ dimension, assessment, onPractice }) => {
             </div>
           )}
           
+          {/* Show example of what they SHOULD do for failed dimensions */}
+          {!passed && assessment.example && (
+            <div className="mt-2 px-3 py-2 rounded-lg bg-corporate-teal/10 dark:bg-corporate-teal/20 border border-corporate-teal/20 dark:border-corporate-teal/30">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-corporate-teal dark:text-corporate-teal mb-1">
+                <CheckCircle className="w-3.5 h-3.5" />
+                Try something like this:
+              </div>
+              <p className="text-sm text-gray-700 dark:text-gray-200 italic">
+                {assessment.example}
+              </p>
+            </div>
+          )}
+          
           {/* Practice button for failed dimensions - before any practice attempt */}
           {!passed && onPractice && !isPracticing && !practiceFeedback && (
             <button
@@ -283,25 +296,6 @@ const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false,
           }`} />
         </button>
         
-        {/* Non-constructive Warning Banner */}
-        {showWarning && (
-          <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <div className="flex items-start gap-2">
-              <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-red-700 dark:text-red-400">
-                  This rep may not reflect constructive leadership
-                </p>
-                {constructiveFeedback && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-300">
-                    {constructiveFeedback}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        
         {/* Score Bar - always visible (hide if not constructive) */}
         {!showWarning && (
           <div className="mt-3">
@@ -318,6 +312,25 @@ const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false,
         
         {/* Expandable Detail */}
         {expanded && (
+          <>
+            {/* Non-constructive Warning Banner - only when expanded */}
+            {showWarning && (
+              <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-red-700 dark:text-red-400">
+                      This rep may not reflect constructive leadership
+                    </p>
+                    {constructiveFeedback && (
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-300">
+                        {constructiveFeedback}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           <div className="mt-4 space-y-3">
             {Object.entries(dimensions || {}).map(([dimension, assessment]) => (
               <DimensionRow
@@ -348,10 +361,11 @@ const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false,
             {/* Show assessment source */}
             {assessedBy && (
               <p className="text-xs text-gray-400 dark:text-gray-500 text-right mt-2">
-                Assessed by {assessedBy === 'ai' ? 'AI' : 'system'}
+                Assessed by {assessedBy === 'ai' ? 'RepUp' : 'system'}
               </p>
             )}
           </div>
+          </>
         )}
       </div>
     </Card>

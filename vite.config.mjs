@@ -191,22 +191,6 @@ export default defineConfig({
             return 'vendor';
           }
           
-          // CRITICAL: Services must be in their own chunk to prevent initialization order issues
-          // This prevents TDZ errors when services are used across multiple chunks
-          if (id.includes('/services/') && !id.includes('node_modules')) {
-            return 'services';
-          }
-          
-          // Hooks - shared primitives, separate chunk
-          if (id.includes('/hooks/') && !id.includes('node_modules')) {
-            return 'hooks';
-          }
-          
-          // Providers - React context providers
-          if (id.includes('/providers/') && !id.includes('node_modules')) {
-            return 'providers';
-          }
-          
           // Admin screens - only loaded when needed
           if (id.includes('/admin/') || id.includes('AdminPortal') || id.includes('AdminFunctions')) {
             return 'admin';

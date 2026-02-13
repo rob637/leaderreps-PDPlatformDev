@@ -211,20 +211,26 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
   const [defineRepForceOpen, setDefineRepForceOpen] = useState(false);
   const personInputRef = useRef(null);
   
-  // Auto-focus person input when rep type is selected
-  useEffect(() => {
-    if (selectedRepType && personInputRef.current) {
-      // Small delay to ensure the field is rendered
-      setTimeout(() => {
-        personInputRef.current?.focus();
-      }, 100);
-    }
-  }, [selectedRepType]);
-  
   // Get selected rep type info
   const selectedRepType = useMemo(() => {
     return repTypeId ? getRepType(repTypeId) : null;
   }, [repTypeId]);
+
+  // Auto-focus person input and scroll to top when rep type is selected
+  useEffect(() => {
+    if (selectedRepType && personInputRef.current) {
+      // Small delay to ensure the field is rendered
+      setTimeout(() => {
+        // Find the modal body container by data attribute and scroll to top
+        const modalBody = document.querySelector('[data-modal-body="true"]');
+        if (modalBody) {
+          modalBody.scrollTop = 0;
+        }
+        // Then focus the input without causing scroll
+        personInputRef.current?.focus({ preventScroll: true });
+      }, 150);
+    }
+  }, [selectedRepType]);
   
   // Set default difficulty when rep type changes
   const handleRepTypeSelect = (id) => {

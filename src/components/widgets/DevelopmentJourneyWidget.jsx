@@ -751,16 +751,26 @@ const DevelopmentJourneyWidget = () => {
     }
   };
   
-  // Always start scrolled to the left on mount - user can scroll to see later segments
+  // Scroll to center the current week/segment on mount
   useEffect(() => {
-    if (scrollContainerRef.current && journeyData.segments.length > 0) {
-      // Explicitly scroll to start
+    if (scrollContainerRef.current && journeyData.segments.length > 0 && currentSegmentId) {
       setTimeout(() => {
-        scrollContainerRef.current?.scrollTo({ left: 0, behavior: 'auto' });
+        // Find the current segment element by data attribute
+        const currentElement = scrollContainerRef.current?.querySelector(`[data-segment-id="${currentSegmentId}"]`);
+        if (currentElement) {
+          // Calculate scroll position to center the current element
+          const container = scrollContainerRef.current;
+          const containerWidth = container.clientWidth;
+          const elementLeft = currentElement.offsetLeft;
+          const elementWidth = currentElement.offsetWidth;
+          const scrollPosition = elementLeft - (containerWidth / 2) + (elementWidth / 2);
+          
+          container.scrollTo({ left: Math.max(0, scrollPosition), behavior: 'auto' });
+        }
         handleScroll();
       }, 100);
     }
-  }, [journeyData.segments.length]);
+  }, [journeyData.segments.length, currentSegmentId]);
   
   // Calculate initial scroll state on mount and when segments change
   useEffect(() => {
@@ -846,6 +856,7 @@ const DevelopmentJourneyWidget = () => {
                 transition={{ delay: idx * 0.05 }}
               >
                 <div
+                  data-segment-id={segment.id}
                   onClick={() => isClickable && handleSelectSegment(segment.id)}
                   className={`
                     relative w-[140px] flex-shrink-0 rounded-2xl p-4 cursor-pointer transition-all duration-300

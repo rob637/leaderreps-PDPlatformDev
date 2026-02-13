@@ -448,15 +448,23 @@ exports.geminiProxy = onRequest(
 exports.assessRepQuality = onCall(
   { cors: true, region: "us-central1" },
   async (request) => {
-    const { repType, person, responses } = request.data;
+    const { repType, person, responses, structured } = request.data;
     
-    if (!responses || !repType) {
-      throw new HttpsError('invalid-argument', 'repType and responses are required');
+    if ((!responses && !structured) || !repType) {
+      throw new HttpsError('invalid-argument', 'repType and (responses or structured) are required');
     }
     
-    const whatSaid = responses.what_said || responses.what_happened || '';
-    const commitment = responses.commitment || responses.outcome || '';
-    const nextTime = responses.next_time || responses.learning || '';
+    // Support both old "responses" format and new "structured" format
+    // Structured format has: what_said, commitment, reflection, context_moment, their_response, etc.
+    const data = structured || responses || {};
+    
+    const whatSaid = data.what_said || data.what_happened || '';
+    const commitment = data.commitment || data.outcome || '';
+    const reflection = data.reflection || data.next_time || data.learning || '';
+    const theirResponse = Array.isArray(data.their_response) ? data.their_response.join(', ') : (data.their_response || '');
+    const contextMoment = data.context_moment || data.when_happened || '';
+    
+    logger.info("assessRepQuality input", { repType, person, whatSaid: whatSaid.substring(0, 100), commitment: commitment.substring(0, 100), reflection: reflection.substring(0, 100) });
     
     // Get the API key
     const apiKey = process.env.GEMINI_API_KEY || 
@@ -469,15 +477,17 @@ exports.assessRepQuality = onCall(
     
     // Rep type descriptions for context
     const repTypeDescriptions = {
-      'public_praise': 'Reinforcing behavior in public - recognizing someone\'s positive contribution in front of others',
+      'reinforce_public': 'Reinforcing behavior in public - recognizing someone\'s positive contribution in front of others. NOTE: This rep type is about GIVING praise/recognition, not asking for something.',
+      'public_praise': 'Reinforcing behavior in public - recognizing someone\'s positive contribution in front of others. NOTE: This rep type is about GIVING praise/recognition, not asking for something.',
       'direct_feedback': 'Providing honest, direct feedback to help someone improve',
       'difficult_conversation': 'Having a challenging but necessary conversation with someone',
       'delegation': 'Delegating responsibility with clear expectations and accountability',
       'boundary_setting': 'Setting or maintaining a professional boundary',
       'vision_casting': 'Articulating vision, direction, or inspiring others',
       'coaching': 'Coaching or mentoring someone to develop their skills',
-      'recognition': 'Recognizing or appreciating someone\'s contribution',
-      'tough_request': 'Making a tough or uncomfortable ask of someone'
+      'recognition': 'Recognizing or appreciating someone\'s contribution. NOTE: This rep type is about GIVING praise/recognition, not asking for something.',
+      'tough_request': 'Making a tough or uncomfortable ask of someone',
+      'redirect_private': 'Redirecting behavior privately - giving constructive feedback one-on-one'
     };
     
     const repDescription = repTypeDescriptions[repType] || repType;
@@ -487,62 +497,104 @@ exports.assessRepQuality = onCall(
 CONTEXT:
 - Rep Type: ${repDescription}
 - Person involved: ${person || 'Not specified'}
+- Context/When: ${contextMoment || 'Not specified'}
 
 USER'S EVIDENCE:
 1. What they said/did: "${whatSaid}"
-2. Commitment obtained: "${commitment}"
-3. Reflection/next time: "${nextTime}"
+2. Their response: "${theirResponse}"
+3. Commitment/Outcome: "${commitment}"
+4. Reflection: "${reflection}"
+
+CRITICAL QUALITY REQUIREMENTS - READ FIRST:
+You must evaluate whether the content represents a REAL, PROFESSIONAL LEADERSHIP interaction.
+FAIL any dimension if the content is:
+- Gibberish, random characters, or keyboard mashing (e.g., "asdf", "qwerty", "jjjj", random letters)
+- Placeholder text (e.g., "test", "xxx", "lorem ipsum", single words repeated)
+- Too vague to represent actual communication (e.g., just "thanks" with no context)
+- NOT RELATED TO PROFESSIONAL LEADERSHIP (e.g., personal relationships, marriage proposals, non-work topics)
+- Clearly fake, joke content, or nonsensical (doesn't describe a real workplace interaction)
+
+A PASS requires evidence of a GENUINE PROFESSIONAL LEADERSHIP interaction - something that would happen in a workplace, team, or professional context.
 
 EVALUATION CRITERIA:
-Evaluate this leadership rep on 4 dimensions. For each dimension, determine if it PASSES or FAILS based on these criteria:
+Evaluate this leadership rep on 4 dimensions. For each dimension, determine if it PASSES or FAILS:
 
-1. SPECIFIC_LANGUAGE: Did they use specific, quoted language showing what they actually said?
-   - PASS: Contains actual words/phrases they used, ideally in quotes
-   - FAIL: Vague descriptions, no specific language, or clearly made-up generic phrases
+1. SPECIFIC_LANGUAGE: Did they use specific, MEANINGFUL language showing what they actually said IN A PROFESSIONAL CONTEXT?
+   - PASS: Contains actual words/phrases that form coherent sentences showing real WORKPLACE communication
+   - FAIL: Gibberish, random characters, non-professional content, or empty
 
-2. CLEAR_REQUEST: Did they make a clear, constructive ask or request?
-   - PASS: Clear request for action, commitment, or change that is professional and constructive
-   - FAIL: No clear request, OR the request is inappropriate, hostile, or non-constructive
+2. CLEAR_REQUEST: Did they have a clear PROFESSIONAL purpose or make a WORK-RELATED request?
+   - For reinforce_public/recognition/public_praise: A clear, PROFESSIONAL statement of praise for work/contribution counts as a PASS
+   - For other rep types: A clear work-related ask, request, or expectation being set
+   - FAIL: No clear purpose, gibberish, non-professional content, OR inappropriate content
    
-3. NAMED_COMMITMENT: Did they obtain or explicitly note a commitment outcome?
-   - PASS: Named a specific commitment received, OR explicitly noted no commitment was sought/obtained with valid reason
-   - FAIL: Vague or missing commitment information
+3. NAMED_COMMITMENT: Did they obtain or note a MEANINGFUL PROFESSIONAL outcome/commitment?
+   - PASS: Named what the other person agreed to DO AT WORK, their professional response
+   - For recognition reps: Noting the person's genuine response to workplace recognition counts as a PASS
+   - FAIL: Missing, gibberish, non-professional commitments (e.g., "marry me"), or placeholder text
 
-4. REFLECTION: Did they reflect meaningfully on the experience?
-   - PASS: Genuine insight about what they learned or would do differently
-   - FAIL: Superficial, generic, or missing reflection
+4. REFLECTION: Did they reflect MEANINGFULLY on the LEADERSHIP experience?
+   - PASS: Genuine insight about the leadership interaction, what they learned about leading others
+   - FAIL: Empty, gibberish, unrelated reflections, or generic platitudes without substance
+
+SPECIAL RULES FOR REP TYPES:
+- For reinforce_public, public_praise, recognition: These are about GIVING appreciation FOR PROFESSIONAL CONTRIBUTIONS. Don't fail "clear_request" just because there's no ask - the praise itself IS the purpose.
+- Be generous in interpretation - if they provided real PROFESSIONAL details, give credit even if format isn't perfect.
 
 CRITICAL QUALITY CHECK - IS_CONSTRUCTIVE:
-Determine if this rep demonstrates CONSTRUCTIVE leadership behavior:
-- A constructive rep builds relationships, develops people, or advances team/org goals professionally
-- A NON-constructive rep is hostile, threatening, unprofessional, or harmful
-- Examples of NON-constructive: threats, insults, firing threats used as intimidation, personal attacks, manipulation
+Determine if this rep demonstrates CONSTRUCTIVE, PROFESSIONAL leadership behavior.
+Mark as isConstructive: false if ANY of the following are present:
+- Gibberish, random characters, or meaningless text (e.g., "asdf", "qwer", random letters)
+- Content unrelated to professional leadership (e.g., personal relationships, romantic proposals, non-work topics)
+- Hostility, threats, or intimidation (including threats of firing or physical harm)
+- Unprofessional, morbid, or violent language (e.g., references to death, killing, violence)
+- Insults, personal attacks, or manipulation
+- Joke or trolling content that clearly isn't a real leadership exercise
+- Placeholder or test content (e.g., "test", "xxx", repeated characters)
+
+If isConstructive is false, "constructiveFeedback" MUST be specific:
+- Quote the specific part of the evidence that triggered the flag.
+- Explain clearly why it is inappropriate for a professional leader.
+- Do NOT use generic phrases like "lacks essential elements". Be direct about the issue.
+
+COACHING GUIDANCE:
+When a dimension FAILS, you MUST provide:
+1. What was wrong with their input
+2. A SPECIFIC EXAMPLE of what they SHOULD have written for this dimension based on the rep type and person
+
+For example, if they're doing a "public praise" rep for "Bill" and their "what you said" is gibberish:
+- Don't just say "this is gibberish"
+- Say: "Try something like: 'Bill, I wanted to recognize you in front of the team for the excellent work you did on the quarterly report. Your attention to detail saved us from several errors.'"
 
 Respond ONLY with valid JSON in this exact format:
 {
   "dimensions": {
     "specific_language": {
       "passed": boolean,
-      "feedback": "brief explanation",
-      "quote": "the specific language they used if any, or null"
+      "feedback": "brief explanation of what was good or wrong",
+      "quote": "the specific language they used if any, or null",
+      "example": "if FAILED, provide a specific example of what they SHOULD have said for this rep type and person"
     },
     "clear_request": {
       "passed": boolean,
-      "feedback": "brief explanation"
+      "feedback": "brief explanation of what was good or wrong",
+      "example": "if FAILED, provide a specific example of a clear purpose/request for this rep type"
     },
     "named_commitment": {
       "passed": boolean,
-      "feedback": "brief explanation"
+      "feedback": "brief explanation of what was good or wrong",
+      "example": "if FAILED, provide a specific example of a good outcome/commitment for this rep type"
     },
     "reflection": {
       "passed": boolean,
-      "feedback": "brief explanation"
+      "feedback": "brief explanation of what was good or wrong",
+      "example": "if FAILED, provide a specific example of a meaningful reflection"
     }
   },
   "isConstructive": boolean,
-  "constructiveFeedback": "if not constructive, explain why and how to improve",
+  "constructiveFeedback": "if not constructive, explain why AND give a complete example of what a good rep for this person and type would look like",
   "summary": "2-sentence overall assessment",
-  "coachingTip": "one actionable tip for their next rep"
+  "coachingTip": "one specific, actionable tip with an example for their next rep"
 }`;
 
     try {

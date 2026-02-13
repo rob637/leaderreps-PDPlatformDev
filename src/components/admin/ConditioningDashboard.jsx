@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
-import conditioningService, { REP_STATUS, getCurrentWeekId, QUALITY_DIMENSIONS, COACH_PROMPTS } from '../../services/conditioningService';
+import conditioningService, { REP_STATUS, getCurrentWeekId, COACH_PROMPTS } from '../../services/conditioningService';
 import { Card } from '../ui';
 import { TrainerNudgePanel, CoachPromptsPanel, RepDetailModal } from '../conditioning';
 import { getRepType } from '../../services/repTaxonomy';
@@ -110,15 +110,15 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
               ))}
             </div>
           )}
-          
-          {/* Rep Detail Modal */}
-          <RepDetailModal
-            isOpen={!!selectedRep}
-            onClose={() => setSelectedRep(null)}
-            rep={selectedRep}
-          />
         </div>
       )}
+      
+      {/* Rep Detail Modal - OUTSIDE the isExpanded block to prevent flickering */}
+      <RepDetailModal
+        isOpen={!!selectedRep}
+        onClose={() => setSelectedRep(null)}
+        rep={selectedRep}
+      />
     </div>
   );
 };
@@ -211,11 +211,12 @@ const StatsSummary = ({ cohortSummary }) => {
 // ============================================
 // QUALITY METRICS (Phase 2)
 // ============================================
+// Using string keys directly to avoid TDZ issues with computed property keys at module level
 const DIMENSION_CONFIG = {
-  [QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE]: { icon: MessageSquare, label: 'Specific Language', color: 'blue' },
-  [QUALITY_DIMENSIONS.CLEAR_REQUEST]: { icon: Target, label: 'Clear Request', color: 'green' },
-  [QUALITY_DIMENSIONS.NAMED_COMMITMENT]: { icon: Handshake, label: 'Named Commitment', color: 'amber' },
-  [QUALITY_DIMENSIONS.REFLECTION]: { icon: Lightbulb, label: 'Reflection', color: 'purple' }
+  'specific_language': { icon: MessageSquare, label: 'Specific Language', color: 'blue' },
+  'clear_request': { icon: Target, label: 'Clear Request', color: 'green' },
+  'named_commitment': { icon: Handshake, label: 'Named Commitment', color: 'amber' },
+  'reflection': { icon: Lightbulb, label: 'Reflection', color: 'purple' }
 };
 
 const QualityMetrics = ({ cohortQualityStats }) => {

@@ -3,7 +3,7 @@
 // Enforces consistent: navy gradient header, white close X, numbered steps,
 // gray footer, focus trap, ESC handling, corporate color palette
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { cn } from '../../lib/utils';
 import { X, Check } from 'lucide-react';
 
@@ -83,6 +83,16 @@ const ConditioningModal = ({
   className,
   maxWidth = 'max-w-lg',
 }) => {
+  // Ref for scrollable content area
+  const contentRef = useRef(null);
+
+  // Scroll to top when modal opens or step changes
+  useEffect(() => {
+    if (isOpen && contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+  }, [isOpen, currentStep]);
+
   if (!isOpen) return null;
 
   // Handle ESC key
@@ -147,7 +157,7 @@ const ConditioningModal = ({
         )}
 
         {/* ====== BODY — scrollable content ====== */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div ref={contentRef} data-modal-body="true" className="flex-1 overflow-y-auto p-5">
           {children}
         </div>
 
