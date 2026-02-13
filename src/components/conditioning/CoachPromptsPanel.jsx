@@ -232,9 +232,9 @@ export const CoachPromptsPanel = ({
       setResults(cohortResults);
       setLastRefresh(new Date());
       
-      // Auto-expand first user if any patterns found
-      if (cohortResults.length > 0 && !expandedUserId) {
-        setExpandedUserId(cohortResults[0].userId);
+      // Auto-expand first user if any patterns found (only if nothing expanded yet)
+      if (cohortResults.length > 0) {
+        setExpandedUserId(prev => prev || cohortResults[0].userId);
       }
     } catch (err) {
       console.error('Error loading coach prompts:', err);
@@ -242,7 +242,7 @@ export const CoachPromptsPanel = ({
     } finally {
       setLoading(false);
     }
-  }, [db, cohortId, userIds, expandedUserId]);
+  }, [db, cohortId, userIds]);
   
   useEffect(() => {
     loadPatterns();
