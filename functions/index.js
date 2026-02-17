@@ -206,9 +206,9 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
   // Configure Nodemailer transporter
   // Note: For production, use a dedicated email service like SendGrid, Mailgun, or AWS SES.
   // For development/testing with Gmail, you need an App Password.
-  // Set config: firebase functions:config:set email.user="your-email@gmail.com" email.pass="your-app-password"
-  const emailUser = process.env.EMAIL_USER || (require("firebase-functions").config().email?.user);
-  const emailPass = process.env.EMAIL_PASS || (require("firebase-functions").config().email?.pass);
+  // Set EMAIL_USER and EMAIL_PASS in functions/.env
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
 
   if (!emailUser || !emailPass) {
     logger.error("Email credentials not configured. Set email.user and email.pass.");
@@ -347,7 +347,7 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
  * Secure endpoint for making Gemini API calls from the frontend
  * Keeps the API key secure on the server side
  * 
- * Set the API key using: firebase functions:config:set gemini.apikey="YOUR_API_KEY"
+ * Set GEMINI_API_KEY in functions/.env
  */
 exports.geminiProxy = onRequest(
   {
@@ -375,12 +375,11 @@ exports.geminiProxy = onRequest(
         return;
       }
 
-      // Get the API key from environment variable or functions config
-      const apiKey = process.env.GEMINI_API_KEY || 
-                    (require("firebase-functions").config().gemini?.apikey);
+      // Get the API key from environment variable (functions/.env)
+      const apiKey = process.env.GEMINI_API_KEY;
       
       if (!apiKey) {
-        logger.error("GEMINI_API_KEY is not configured. Set with: firebase functions:config:set gemini.apikey=\"YOUR_KEY\"");
+        logger.error("GEMINI_API_KEY is not configured. Set it in functions/.env");
         res.status(500).json({ error: "AI service not configured" });
         return;
       }
@@ -466,12 +465,11 @@ exports.assessRepQuality = onCall(
     
     logger.info("assessRepQuality input", { repType, person, whatSaid: whatSaid.substring(0, 100), commitment: commitment.substring(0, 100), reflection: reflection.substring(0, 100) });
     
-    // Get the API key
-    const apiKey = process.env.GEMINI_API_KEY || 
-                  (require("firebase-functions").config().gemini?.apikey);
+    // Get the API key from environment variable (functions/.env)
+    const apiKey = process.env.GEMINI_API_KEY;
     
     if (!apiKey) {
-      logger.error("GEMINI_API_KEY is not configured for assessRepQuality");
+      logger.error("GEMINI_API_KEY is not configured. Set it in functions/.env");
       throw new HttpsError('internal', 'AI service not configured');
     }
     
@@ -1635,8 +1633,8 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
 // Helper to send email
 // Options can include: { linkText, linkUrl } to specify custom hyperlink
 async function sendEmailNotification(email, subject, message, options = {}) {
-  const emailUser = process.env.EMAIL_USER || (require("firebase-functions").config().email?.user);
-  const emailPass = process.env.EMAIL_PASS || (require("firebase-functions").config().email?.pass);
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
 
   if (!emailUser || !emailPass) return;
 
@@ -2870,8 +2868,8 @@ exports.sendReppyInvite = onCall({ cors: true, region: "us-central1" }, async (r
         logger.info(`Reppy invitation created for ${email}`, { inviteId: inviteRef.id });
 
         // Send invitation email
-        const emailUser = process.env.EMAIL_USER || (require("firebase-functions").config().email?.user);
-        const emailPass = process.env.EMAIL_PASS || (require("firebase-functions").config().email?.pass);
+        const emailUser = process.env.EMAIL_USER;
+        const emailPass = process.env.EMAIL_PASS;
 
         if (!emailUser || !emailPass) {
             logger.warn("Email credentials not configured - invitation created but email not sent");
