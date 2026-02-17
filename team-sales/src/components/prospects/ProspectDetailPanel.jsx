@@ -115,6 +115,9 @@ const ProspectDetailPanel = () => {
   // New note
   const [newNote, setNewNote] = useState('');
   const [noteType, setNoteType] = useState('note');
+  
+  // Activity timeline filter
+  const [activityFilter, setActivityFilter] = useState('all'); // all, email, linkedin, call, other
 
   // Subscribe to activities when prospect changes
   useEffect(() => {
@@ -135,7 +138,26 @@ const ProspectDetailPanel = () => {
   const sequenceStatus = getApolloSequenceStatus(selectedProspect.apolloSequenceStatus);
   const prospectTags = selectedProspect.tags || [];
   const prospectTasks = tasks.filter(t => t.prospectId === selectedProspect.id);
-  const activities = activitiesByProspect[selectedProspect.id] || [];
+  const allActivities = activitiesByProspect[selectedProspect.id] || [];
+  
+  // Filter activities by channel
+  const activities = allActivities.filter(a => {
+    if (activityFilter === 'all') return true;
+    if (activityFilter === 'email') return a.type === 'email_sent' || a.type === 'email_received';
+    if (activityFilter === 'linkedin') return a.type?.includes('linkedin');
+    if (activityFilter === 'call') return a.type === 'call';
+    // 'other' = meeting, sms, note, stage_change, task
+    return !['email_sent', 'email_received', 'call'].includes(a.type) && !a.type?.includes('linkedin');
+  });
+  
+  // Calculate days since last touch (excluding system activities)
+  const userActivities = allActivities.filter(a => !['stage_change', 'task_completed'].includes(a.type));
+  const lastTouchDate = userActivities.length > 0
+    ? new Date(Math.max(...userActivities.map(a => new Date(a.createdAt).getTime())))
+    : null;
+  const daysSinceTouch = lastTouchDate
+    ? Math.floor((Date.now() - lastTouchDate.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -934,15 +956,61 @@ const ProspectDetailPanel = () => {
 
         {/* Activity/Notes Section */}
         <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
-          <SectionHeader 
-            title="Activity Log" 
-            section="activity" 
-            icon={MessageSquare}
-            badge={activities.length || null}
-          />
+          <div className="flex items-center justify-between">
+            <SectionHeader 
+              title="Activity Log" 
+              section="activity" 
+              icon={MessageSquare}
+              badge={allActivities.length || null}
+            />
+            {/* Days since last touch indicator */}
+            {daysSinceTouch !== null && (
+              <div className={`text-xs px-2 py-0.5 rounded-full ${
+                daysSinceTouch === 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                daysSinceTouch <= 3 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                daysSinceTouch <= 7 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+              }`}>
+                {daysSinceTouch === 0 ? 'Today' : `${daysSinceTouch}d ago`}
+              </div>
+            )}
+          </div>
           
           {expandedSections.activity && (
             <div className="space-y-2 mt-2">
+              {/* Channel Filter Tabs */}
+              <div className="flex gap-1 flex-wrap">
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'email', label: 'Email' },
+                  { id: 'linkedin', label: 'LinkedIn' },
+                  { id: 'call', label: 'Calls' },
+                  { id: 'other', label: 'Other' },
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActivityFilter(tab.id)}
+                    className={`px-2 py-1 text-xs rounded-full transition ${
+                      activityFilter === tab.id
+                        ? 'bg-brand-teal text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
+                    }`}
+                  >
+                    {tab.label}
+                    {tab.id !== 'all' && (
+                      <span className="ml-1 opacity-70">
+                        {allActivities.filter(a => {
+                          if (tab.id === 'email') return a.type === 'email_sent' || a.type === 'email_received';
+                          if (tab.id === 'linkedin') return a.type?.includes('linkedin');
+                          if (tab.id === 'call') return a.type === 'call';
+                          return !['email_sent', 'email_received', 'call'].includes(a.type) && !a.type?.includes('linkedin');
+                        }).length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              
               {/* Add Note Form */}
               {showAddNote ? (
                 <div className="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg space-y-2">

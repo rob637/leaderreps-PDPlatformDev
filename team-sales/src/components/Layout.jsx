@@ -14,7 +14,8 @@ import {
   Settings,
   Bell,
   Mail,
-  Activity
+  Activity,
+  BarChart3
 } from 'lucide-react';
 
 const navItems = [
@@ -22,6 +23,7 @@ const navItems = [
   { path: '/apollo', icon: Sparkles, label: 'Apollo Search' },
   { path: '/outreach', icon: Mail, label: 'Outreach' },
   { path: '/activities', icon: Activity, label: 'Activities' },
+  { path: '/analytics', icon: BarChart3, label: 'Analytics' },
   { path: '/tasks', icon: Bell, label: 'Tasks' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];

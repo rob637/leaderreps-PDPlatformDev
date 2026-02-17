@@ -10,6 +10,7 @@ import ApolloSearchPage from './pages/ApolloSearchPage';
 import TasksPage from './pages/TasksPage';
 import OutreachPage from './pages/OutreachPage';
 import ActivitiesPage from './pages/ActivitiesPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
 import InstantlyPushModal from './components/instantly/InstantlyPushModal';
 import LinkedHelperPushModal from './components/linkedhelper/LinkedHelperPushModal';
@@ -58,6 +59,7 @@ function AppRoutes() {
         <Route path="apollo" element={<ApolloSearchPage />} />
         <Route path="outreach" element={<OutreachPage />} />
         <Route path="activities" element={<ActivitiesPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="settings" element={<SettingsPage />} />
         
