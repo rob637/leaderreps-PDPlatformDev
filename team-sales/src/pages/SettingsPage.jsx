@@ -1,51 +1,165 @@
 import { useState, useEffect } from 'react';
 import { 
   Settings, Key, Sparkles, ExternalLink, Eye, EyeOff, 
-  Check, AlertCircle, HelpCircle, Loader2, CreditCard
+  Check, AlertCircle, HelpCircle, Loader2, CreditCard,
+  Sun, Moon, Mail, Linkedin, MailCheck, RefreshCw
 } from 'lucide-react';
 import { useApolloStore } from '../stores/apolloStore';
+import { useInstantlyStore } from '../stores/instantlyStore';
+import { useLinkedHelperStore } from '../stores/linkedHelperStore';
+import { useGmailStore } from '../stores/gmailStore';
 import { useAuthStore } from '../stores/authStore';
+import { useThemeStore } from '../stores/themeStore';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
+  
+  // Apollo store
   const { 
-    apiKey, 
-    apiKeyLoaded, 
+    apiKey: apolloApiKey, 
+    apiKeyLoaded: apolloKeyLoaded, 
     creditsUsed, 
     creditsLimit,
-    loadApiKey, 
-    saveApiKey 
+    loadApiKey: loadApolloKey, 
+    saveApiKey: saveApolloKey 
   } = useApolloStore();
   
-  const [newApiKey, setNewApiKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+  // Instantly store
+  const {
+    apiKey: instantlyApiKey,
+    apiKeyLoaded: instantlyKeyLoaded,
+    loadApiKey: loadInstantlyKey,
+    saveApiKey: saveInstantlyKey,
+    removeApiKey: removeInstantlyKey
+  } = useInstantlyStore();
   
+  // LinkedHelper store
+  const {
+    apiKey: linkedHelperApiKey,
+    apiKeyLoaded: linkedHelperKeyLoaded,
+    loadApiKey: loadLinkedHelperKey,
+    saveApiKey: saveLinkedHelperKey,
+    removeApiKey: removeLinkedHelperKey
+  } = useLinkedHelperStore();
+  
+  // Gmail store
+  const {
+    isConnected: gmailConnected,
+    connectedEmail: gmailEmail,
+    connectedAt: gmailConnectedAt,
+    tokensLoaded: gmailTokensLoaded,
+    loadTokens: loadGmailTokens,
+    getConnectUrl: getGmailConnectUrl,
+    disconnect: disconnectGmail
+  } = useGmailStore();
+  
+  // Apollo state
+  const [newApolloKey, setNewApolloKey] = useState('');
+  const [showApolloKey, setShowApolloKey] = useState(false);
+  const [savingApollo, setSavingApollo] = useState(false);
+  const [showApolloHelp, setShowApolloHelp] = useState(false);
+  
+  // Instantly state
+  const [newInstantlyKey, setNewInstantlyKey] = useState('');
+  const [showInstantlyKey, setShowInstantlyKey] = useState(false);
+  const [savingInstantly, setSavingInstantly] = useState(false);
+  const [showInstantlyHelp, setShowInstantlyHelp] = useState(false);
+  
+  // LinkedHelper state
+  const [newLinkedHelperKey, setNewLinkedHelperKey] = useState('');
+  const [showLinkedHelperKey, setShowLinkedHelperKey] = useState(false);
+  const [savingLinkedHelper, setSavingLinkedHelper] = useState(false);
+  const [showLinkedHelperHelp, setShowLinkedHelperHelp] = useState(false);
+  
+  // Gmail OAuth state
+  const [showGmailHelp, setShowGmailHelp] = useState(false);
+  const [disconnectingGmail, setDisconnectingGmail] = useState(false);
+  
+  // Load all API keys on mount
   useEffect(() => {
     if (user?.uid) {
-      loadApiKey(user.uid);
+      loadApolloKey(user.uid);
+      loadInstantlyKey(user.uid);
+      loadLinkedHelperKey(user.uid);
+      loadGmailTokens(user.uid);
     }
-  }, [user?.uid, loadApiKey]);
+  }, [user?.uid, loadApolloKey, loadInstantlyKey, loadLinkedHelperKey, loadGmailTokens]);
   
-  const handleSaveKey = async () => {
-    if (!newApiKey.trim()) {
+  // Gmail OAuth handlers
+  const handleConnectGmail = () => {
+    const url = getGmailConnectUrl(user.uid);
+    if (url) {
+      window.open(url, '_blank', 'width=500,height=700');
+    } else {
+      toast.error('Gmail OAuth not configured. Contact support.');
+    }
+  };
+  
+  const handleDisconnectGmail = async () => {
+    if (confirm('Disconnect Gmail? Your email sync history will be preserved.')) {
+      setDisconnectingGmail(true);
+      await disconnectGmail(user.uid);
+      setDisconnectingGmail(false);
+    }
+  };
+  
+  // Apollo handlers
+  const handleSaveApolloKey = async () => {
+    if (!newApolloKey.trim()) {
       toast.error('Please enter an API key');
       return;
     }
-    
-    setSaving(true);
-    await saveApiKey(user.uid, newApiKey.trim());
-    setNewApiKey('');
-    setShowKey(false);
-    setSaving(false);
+    setSavingApollo(true);
+    await saveApolloKey(user.uid, newApolloKey.trim());
+    setNewApolloKey('');
+    setShowApolloKey(false);
+    setSavingApollo(false);
   };
   
-  const handleRemoveKey = async () => {
+  const handleRemoveApolloKey = async () => {
     if (confirm('Remove your Apollo API key? You can add it back anytime.')) {
-      await saveApiKey(user.uid, '');
+      await saveApolloKey(user.uid, '');
       toast.success('API key removed');
+    }
+  };
+  
+  // Instantly handlers
+  const handleSaveInstantlyKey = async () => {
+    if (!newInstantlyKey.trim()) {
+      toast.error('Please enter an API key');
+      return;
+    }
+    setSavingInstantly(true);
+    await saveInstantlyKey(user.uid, newInstantlyKey.trim());
+    setNewInstantlyKey('');
+    setShowInstantlyKey(false);
+    setSavingInstantly(false);
+  };
+  
+  const handleRemoveInstantlyKey = async () => {
+    if (confirm('Remove your Instantly API key? You can add it back anytime.')) {
+      await removeInstantlyKey(user.uid);
+    }
+  };
+  
+  // LinkedHelper handlers
+  const handleSaveLinkedHelperKey = async () => {
+    if (!newLinkedHelperKey.trim()) {
+      toast.error('Please enter an API key');
+      return;
+    }
+    setSavingLinkedHelper(true);
+    await saveLinkedHelperKey(user.uid, newLinkedHelperKey.trim());
+    setNewLinkedHelperKey('');
+    setShowLinkedHelperKey(false);
+    setSavingLinkedHelper(false);
+  };
+  
+  const handleRemoveLinkedHelperKey = async () => {
+    if (confirm('Remove your LinkedHelper API key? You can add it back anytime.')) {
+      await removeLinkedHelperKey(user.uid);
     }
   };
   
@@ -59,63 +173,77 @@ export default function SettingsPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600">Manage your account and integrations</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Settings</h1>
+        <p className="text-gray-600 dark:text-slate-400">Manage your account and integrations</p>
       </div>
       
       {/* Apollo Integration Card */}
-      <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-        <div className="p-6 border-b bg-gradient-to-r from-amber-50 to-orange-50">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="p-6 border-b dark:border-slate-700 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-amber-100 rounded-xl">
-              <Sparkles className="w-6 h-6 text-amber-600" />
+            <div className="p-3 bg-amber-100 dark:bg-amber-900/40 rounded-xl">
+              <Sparkles className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Apollo.io Integration</h2>
-              <p className="text-sm text-gray-600">Search and enrich prospect data</p>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Apollo.io Integration</h2>
+              <p className="text-sm text-gray-600 dark:text-slate-400">Search and enrich prospect data</p>
             </div>
           </div>
         </div>
         
         <div className="p-6 space-y-6">
           {/* Status */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
             <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${apiKey ? 'bg-green-500' : 'bg-gray-300'}`} />
-              <span className="font-medium text-gray-900">
-                {apiKey ? 'Connected' : 'Not Connected'}
+              <div className={`w-3 h-3 rounded-full ${apolloApiKey ? 'bg-green-500' : 'bg-gray-300 dark:bg-slate-500'}`} />
+              <span className="font-medium text-gray-900 dark:text-slate-100">
+                {apolloApiKey ? 'Connected' : 'Not Connected'}
               </span>
             </div>
-            {apiKey && (
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-1.5 text-gray-600">
-                  <CreditCard className="w-4 h-4" />
-                  <span>{creditsUsed} credits used</span>
-                </div>
-              </div>
+            {apolloApiKey && (
+              <a 
+                href="https://app.apollo.io/#/settings/credits/current"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 hover:underline"
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>View Credits in Apollo</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             )}
           </div>
           
+          {/* Usage Stats */}
+          {apolloApiKey && creditsUsed > 0 && (
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+                <Sparkles className="w-4 h-4" />
+                <span><strong>{creditsUsed}</strong> searches/enrichments made through Sales Hub</span>
+              </div>
+            </div>
+          )}
+          
           {/* Current Key Display */}
-          {apiKey && (
+          {apolloApiKey && (
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                 Your API Key
               </label>
               <div className="flex items-center gap-2">
-                <div className="flex-1 flex items-center justify-between px-4 py-3 bg-gray-100 rounded-lg font-mono text-sm">
-                  <span>{showKey ? apiKey : maskApiKey(apiKey)}</span>
+                <div className="flex-1 flex items-center justify-between px-4 py-3 bg-gray-100 dark:bg-slate-700 rounded-lg font-mono text-sm text-gray-900 dark:text-slate-200">
+                  <span>{showApolloKey ? apolloApiKey : maskApiKey(apolloApiKey)}</span>
                   <button
-                    onClick={() => setShowKey(!showKey)}
-                    className="p-1 hover:bg-gray-200 rounded"
+                    onClick={() => setShowApolloKey(!showApolloKey)}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-slate-600 rounded text-gray-600 dark:text-slate-300"
                   >
-                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showApolloKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
               <button
-                onClick={handleRemoveKey}
-                className="text-sm text-red-600 hover:text-red-700 hover:underline"
+                onClick={handleRemoveApolloKey}
+                className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:underline"
               >
                 Remove API key
               </button>
@@ -124,23 +252,23 @@ export default function SettingsPage() {
           
           {/* Add/Update Key Form */}
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">
-              {apiKey ? 'Update API Key' : 'Add Your API Key'}
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
+              {apolloApiKey ? 'Update API Key' : 'Add Your API Key'}
             </label>
             <div className="flex gap-2">
               <input
                 type="password"
-                value={newApiKey}
-                onChange={(e) => setNewApiKey(e.target.value)}
+                value={newApolloKey}
+                onChange={(e) => setNewApolloKey(e.target.value)}
                 placeholder="Paste your Apollo API key here"
-                className="flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="flex-1 px-4 py-3 border dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
               />
               <button
-                onClick={handleSaveKey}
-                disabled={saving || !newApiKey.trim()}
+                onClick={handleSaveApolloKey}
+                disabled={savingApollo || !newApolloKey.trim()}
                 className="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
               >
-                {saving ? (
+                {savingApollo ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <Check className="w-4 h-4" />
@@ -151,31 +279,31 @@ export default function SettingsPage() {
           </div>
           
           {/* Help Section */}
-          <div className="border-t pt-6">
+          <div className="border-t dark:border-slate-700 pt-6">
             <button
-              onClick={() => setShowHelp(!showHelp)}
-              className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+              onClick={() => setShowApolloHelp(!showApolloHelp)}
+              className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100"
             >
               <HelpCircle className="w-4 h-4" />
               How do I get an Apollo API key?
             </button>
             
-            {showHelp && (
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg space-y-4">
+            {showApolloHelp && (
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg space-y-4">
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
                       1
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Go to Apollo.io</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Go to Apollo.io</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
                         Sign up for a free account at{' '}
                         <a 
                           href="https://app.apollo.io" 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
+                          className="text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           app.apollo.io
                         </a>
@@ -188,8 +316,8 @@ export default function SettingsPage() {
                       2
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Open API Settings</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Open API Settings</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
                         Click Settings → Integrations → API Keys
                       </p>
                     </div>
@@ -200,8 +328,8 @@ export default function SettingsPage() {
                       3
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Create a New API Key</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Create a New API Key</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
                         Click "Create New Key", name it "LeaderReps Sales Hub", and copy the key
                       </p>
                     </div>
@@ -212,8 +340,8 @@ export default function SettingsPage() {
                       4
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Paste it here</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Paste it here</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
                         Paste your key in the field above and click Save
                       </p>
                     </div>
@@ -230,11 +358,11 @@ export default function SettingsPage() {
                   Open Apollo API Settings
                 </a>
                 
-                <div className="flex items-start gap-2 p-3 bg-amber-100 rounded-lg">
-                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                   <div className="text-sm">
-                    <p className="font-medium text-amber-800">Free Plan Includes:</p>
-                    <p className="text-amber-700">
+                    <p className="font-medium text-amber-800 dark:text-amber-300">Free Plan Includes:</p>
+                    <p className="text-amber-700 dark:text-amber-400">
                       200 email credits/month • Unlimited search • Basic enrichment
                     </p>
                   </div>
@@ -245,17 +373,525 @@ export default function SettingsPage() {
         </div>
       </div>
       
+      {/* Instantly.ai Integration Card */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="p-6 border-b dark:border-slate-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/40 rounded-xl">
+              <Mail className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Instantly.ai Integration</h2>
+              <p className="text-sm text-gray-600 dark:text-slate-400">Cold email campaigns and outreach</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6 space-y-6">
+          {/* Status */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className={`w-3 h-3 rounded-full ${instantlyApiKey ? 'bg-green-500' : 'bg-gray-300 dark:bg-slate-500'}`} />
+              <span className="font-medium text-gray-900 dark:text-slate-100">
+                {instantlyApiKey ? 'Connected' : 'Not Connected'}
+              </span>
+            </div>
+            {instantlyApiKey && (
+              <a 
+                href="https://app.instantly.ai/app/settings/api"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                <span>Open Instantly Dashboard</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+          
+          {/* Current Key Display */}
+          {instantlyApiKey && (
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
+                Your API Key
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center justify-between px-4 py-3 bg-gray-100 dark:bg-slate-700 rounded-lg font-mono text-sm text-gray-900 dark:text-slate-200">
+                  <span>{showInstantlyKey ? instantlyApiKey : maskApiKey(instantlyApiKey)}</span>
+                  <button
+                    onClick={() => setShowInstantlyKey(!showInstantlyKey)}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-slate-600 rounded text-gray-600 dark:text-slate-300"
+                  >
+                    {showInstantlyKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={handleRemoveInstantlyKey}
+                className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:underline"
+              >
+                Remove API key
+              </button>
+            </div>
+          )}
+          
+          {/* Add/Update Key Form */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
+              {instantlyApiKey ? 'Update API Key' : 'Add Your API Key'}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={newInstantlyKey}
+                onChange={(e) => setNewInstantlyKey(e.target.value)}
+                placeholder="Paste your Instantly API key here"
+                className="flex-1 px-4 py-3 border dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
+              />
+              <button
+                onClick={handleSaveInstantlyKey}
+                disabled={savingInstantly || !newInstantlyKey.trim()}
+                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+              >
+                {savingInstantly ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
+                Save
+              </button>
+            </div>
+          </div>
+          
+          {/* Help Section */}
+          <div className="border-t dark:border-slate-700 pt-6">
+            <button
+              onClick={() => setShowInstantlyHelp(!showInstantlyHelp)}
+              className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100"
+            >
+              <HelpCircle className="w-4 h-4" />
+              How do I get an Instantly API key?
+            </button>
+            
+            {showInstantlyHelp && (
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                      1
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Log in to Instantly.ai</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
+                        Access your Instantly dashboard at{' '}
+                        <a 
+                          href="https://app.instantly.ai" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          app.instantly.ai
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                      2
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Go to Settings → API</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
+                        Navigate to Settings and find the API section
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                      3
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Copy Your API Key</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
+                        Copy the API key and paste it above
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <a
+                  href="https://app.instantly.ai/app/settings/api"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open Instantly API Settings
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* LinkedHelper Integration Card */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="p-6 border-b dark:border-slate-700 bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/20 dark:to-cyan-900/20">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-sky-100 dark:bg-sky-900/40 rounded-xl">
+              <Linkedin className="w-6 h-6 text-sky-600 dark:text-sky-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">LinkedHelper Integration</h2>
+              <p className="text-sm text-gray-600 dark:text-slate-400">LinkedIn automation and outreach</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6 space-y-6">
+          {/* Status */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className={`w-3 h-3 rounded-full ${linkedHelperApiKey ? 'bg-green-500' : 'bg-gray-300 dark:bg-slate-500'}`} />
+              <span className="font-medium text-gray-900 dark:text-slate-100">
+                {linkedHelperApiKey ? 'Connected' : 'Not Connected'}
+              </span>
+            </div>
+            {linkedHelperApiKey && (
+              <a 
+                href="https://www.linkedhelper.com/account"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-sm text-sky-600 dark:text-sky-400 hover:underline"
+              >
+                <span>Open LinkedHelper Account</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+          
+          {/* Current Key Display */}
+          {linkedHelperApiKey && (
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
+                Your API Key
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center justify-between px-4 py-3 bg-gray-100 dark:bg-slate-700 rounded-lg font-mono text-sm text-gray-900 dark:text-slate-200">
+                  <span>{showLinkedHelperKey ? linkedHelperApiKey : maskApiKey(linkedHelperApiKey)}</span>
+                  <button
+                    onClick={() => setShowLinkedHelperKey(!showLinkedHelperKey)}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-slate-600 rounded text-gray-600 dark:text-slate-300"
+                  >
+                    {showLinkedHelperKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={handleRemoveLinkedHelperKey}
+                className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:underline"
+              >
+                Remove API key
+              </button>
+            </div>
+          )}
+          
+          {/* Add/Update Key Form */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
+              {linkedHelperApiKey ? 'Update API Key' : 'Add Your API Key'}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={newLinkedHelperKey}
+                onChange={(e) => setNewLinkedHelperKey(e.target.value)}
+                placeholder="Paste your LinkedHelper API key here"
+                className="flex-1 px-4 py-3 border dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
+              />
+              <button
+                onClick={handleSaveLinkedHelperKey}
+                disabled={savingLinkedHelper || !newLinkedHelperKey.trim()}
+                className="px-6 py-3 bg-sky-500 text-white rounded-lg hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+              >
+                {savingLinkedHelper ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
+                Save
+              </button>
+            </div>
+          </div>
+          
+          {/* Help Section */}
+          <div className="border-t dark:border-slate-700 pt-6">
+            <button
+              onClick={() => setShowLinkedHelperHelp(!showLinkedHelperHelp)}
+              className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100"
+            >
+              <HelpCircle className="w-4 h-4" />
+              How do I get a LinkedHelper API key?
+            </button>
+            
+            {showLinkedHelperHelp && (
+              <div className="mt-4 p-4 bg-sky-50 dark:bg-sky-900/20 rounded-lg space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-sky-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                      1
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Open LinkedHelper 2</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
+                        Launch the LinkedHelper 2 desktop application
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-sky-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                      2
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Go to Settings → API</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
+                        Navigate to the Settings menu and find the API section
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-sky-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                      3
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Enable API Access</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
+                        Enable the API and copy your API key or token
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <a
+                  href="https://docs.linkedhelper.com/api/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 text-sm font-medium"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  View LinkedHelper API Docs
+                </a>
+                
+                <div className="flex items-start gap-2 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-amber-800 dark:text-amber-300">Note:</p>
+                    <p className="text-amber-700 dark:text-amber-400">
+                      LinkedHelper 2 must be running on your computer for campaigns to execute
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* Gmail Integration Card */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="p-6 border-b dark:border-slate-700 bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-red-100 dark:bg-red-900/40 rounded-xl">
+              <MailCheck className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Gmail Integration</h2>
+              <p className="text-sm text-gray-600 dark:text-slate-400">Auto-sync emails with prospects</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6 space-y-6">
+          {/* Status */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className={`w-3 h-3 rounded-full ${gmailConnected ? 'bg-green-500' : 'bg-gray-300 dark:bg-slate-500'}`} />
+              <div>
+                <span className="font-medium text-gray-900 dark:text-slate-100">
+                  {gmailConnected ? 'Connected' : 'Not Connected'}
+                </span>
+                {gmailConnected && gmailEmail && (
+                  <p className="text-sm text-gray-500 dark:text-slate-400">{gmailEmail}</p>
+                )}
+              </div>
+            </div>
+            {gmailConnected && (
+              <a 
+                href="https://mail.google.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 hover:underline"
+              >
+                <span>Open Gmail</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+          
+          {/* Connected State */}
+          {gmailConnected ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300">
+                  <Check className="w-4 h-4" />
+                  <span>Gmail is connected and syncing emails automatically</span>
+                </div>
+                {gmailConnectedAt && (
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    Connected {new Date(gmailConnectedAt).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+              
+              <button
+                onClick={handleDisconnectGmail}
+                disabled={disconnectingGmail}
+                className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:underline flex items-center gap-2"
+              >
+                {disconnectingGmail && <Loader2 className="w-3 h-3 animate-spin" />}
+                Disconnect Gmail
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 dark:text-slate-400">
+                Connect your Gmail account to automatically sync emails with prospects and track all communication.
+              </p>
+              
+              <button
+                onClick={handleConnectGmail}
+                className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium"
+              >
+                <MailCheck className="w-5 h-5" />
+                Connect Gmail Account
+              </button>
+            </div>
+          )}
+          
+          {/* Help Section */}
+          <div className="border-t dark:border-slate-700 pt-6">
+            <button
+              onClick={() => setShowGmailHelp(!showGmailHelp)}
+              className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100"
+            >
+              <HelpCircle className="w-4 h-4" />
+              How does Gmail sync work?
+            </button>
+            
+            {showGmailHelp && (
+              <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                      1
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Connect your Gmail</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
+                        Click the button above to authorize Sales Hub to access your Gmail
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                      2
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Automatic Syncing</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
+                        Emails to and from your prospects are automatically logged to their timeline
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                      3
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-slate-100">Send from App</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
+                        Compose and send emails directly from prospect profiles
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-2 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-amber-800 dark:text-amber-300">Privacy First:</p>
+                    <p className="text-amber-700 dark:text-amber-400">
+                      Only emails matching your tracked prospects are synced. We never read your personal emails.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* Display Settings */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border dark:border-slate-700 p-6">
+        <h3 className="font-semibold text-gray-900 dark:text-slate-100 mb-4">Display</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {theme === 'light' ? (
+              <Sun className="w-5 h-5 text-amber-500" />
+            ) : (
+              <Moon className="w-5 h-5 text-indigo-400" />
+            )}
+            <div>
+              <p className="font-medium text-gray-900 dark:text-slate-100">
+                {theme === 'light' ? 'Light Mode' : 'Dark Mode'}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">
+                Toggle between light and dark themes
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={toggleTheme}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              theme === 'dark' ? 'bg-indigo-600' : 'bg-gray-200'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+      
       {/* Account Info */}
-      <div className="bg-white rounded-xl border p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Account</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border dark:border-slate-700 p-6">
+        <h3 className="font-semibold text-gray-900 dark:text-slate-100 mb-4">Account</h3>
         <div className="space-y-3 text-sm">
-          <div className="flex items-center justify-between py-2 border-b">
-            <span className="text-gray-600">Email</span>
-            <span className="font-medium text-gray-900">{user?.email}</span>
+          <div className="flex items-center justify-between py-2 border-b dark:border-slate-700">
+            <span className="text-gray-600 dark:text-slate-400">Email</span>
+            <span className="font-medium text-gray-900 dark:text-slate-100">{user?.email}</span>
           </div>
           <div className="flex items-center justify-between py-2">
-            <span className="text-gray-600">Name</span>
-            <span className="font-medium text-gray-900">{user?.displayName || '—'}</span>
+            <span className="text-gray-600 dark:text-slate-400">Name</span>
+            <span className="font-medium text-gray-900 dark:text-slate-100">{user?.displayName || '—'}</span>
           </div>
         </div>
       </div>

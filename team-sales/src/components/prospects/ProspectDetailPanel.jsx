@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useProspectsStore, PIPELINE_STAGES } from '../../stores/prospectsStore';
 import { useTasksStore, TASK_TYPES, TASK_PRIORITIES } from '../../stores/tasksStore';
 import { useActivitiesStore } from '../../stores/prospectActivitiesStore';
+import { useInstantlyStore } from '../../stores/instantlyStore';
+import { useLinkedHelperStore } from '../../stores/linkedHelperStore';
 import { TEAM_MEMBERS, getStageInfo } from '../../config/team';
 import { 
   LINKEDIN_STATUSES, 
@@ -10,11 +12,15 @@ import {
   ACTIVITY_TYPES,
   getLinkedInStatus,
   getApolloSequenceStatus,
-  getActivityType
+  getActivityType,
+  getCallOutcome,
+  getMeetingOutcome,
+  getUserActivityTypes
 } from '../../config/prospectMeta';
 import { useAuthStore } from '../../stores/authStore';
 import { formatDistanceToNow, format } from 'date-fns';
 import toast from 'react-hot-toast';
+import QuickLogModal from './QuickLogModal';
 import {
   X,
   Building2,
@@ -43,8 +49,18 @@ import {
   Sparkles,
   FileText,
   Bell,
-  MoreHorizontal
+  MoreHorizontal,
+  Inbox,
+  Zap
 } from 'lucide-react';
+
+// Format phone number as (XXX) XXX-XXXX
+const formatPhoneNumber = (value) => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+};
 
 const ProspectDetailPanel = () => {
   const { user } = useAuthStore();
@@ -60,6 +76,12 @@ const ProspectDetailPanel = () => {
     subscribeToProspectActivities, 
     addActivity 
   } = useActivitiesStore();
+  const { openPushModal, isProspectSynced, getProspectSyncStatus } = useInstantlyStore();
+  const { 
+    openPushModal: openLinkedHelperModal, 
+    isProspectSynced: isLinkedHelperSynced, 
+    hasLinkedInUrl 
+  } = useLinkedHelperStore();
   
   const [isEditing, setIsEditing] = useState(false);
   const [showStageDropdown, setShowStageDropdown] = useState(false);
@@ -70,6 +92,8 @@ const ProspectDetailPanel = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
+  const [showQuickLog, setShowQuickLog] = useState(false);
+  const [quickLogType, setQuickLogType] = useState(null);
   const [editData, setEditData] = useState({});
   
   // Collapsible sections
@@ -204,7 +228,12 @@ const ProspectDetailPanel = () => {
 
   const handleSaveEdit = async () => {
     try {
-      await updateProspect(selectedProspect.id, editData);
+      const updateData = {
+        ...editData,
+        // Also update combined name for backwards compatibility
+        name: `${editData.firstName || ''} ${editData.lastName || ''}`.trim(),
+      };
+      await updateProspect(selectedProspect.id, updateData);
       toast.success('Prospect updated');
       setIsEditing(false);
       setEditData({});
@@ -254,7 +283,8 @@ const ProspectDetailPanel = () => {
 
   const startEditing = () => {
     setEditData({
-      name: selectedProspect.name || '',
+      firstName: selectedProspect.firstName || '',
+      lastName: selectedProspect.lastName || '',
       email: selectedProspect.email || '',
       phone: selectedProspect.phone || '',
       company: selectedProspect.company || '',
@@ -275,8 +305,8 @@ const ProspectDetailPanel = () => {
       className="w-full flex items-center justify-between py-2 group"
     >
       <div className="flex items-center gap-2">
-        <Icon className="w-4 h-4 text-slate-400" />
-        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{title}</span>
+        <Icon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{title}</span>
         {badge && (
           <span className="px-1.5 py-0.5 bg-brand-teal/10 text-brand-teal text-xs rounded-full font-medium">
             {badge}
@@ -284,40 +314,40 @@ const ProspectDetailPanel = () => {
         )}
       </div>
       {expandedSections[section] ? (
-        <ChevronUp className="w-4 h-4 text-slate-400" />
+        <ChevronUp className="w-4 h-4 text-slate-400 dark:text-slate-500" />
       ) : (
-        <ChevronDown className="w-4 h-4 text-slate-400" />
+        <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />
       )}
     </button>
   );
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 h-full flex flex-col slide-in-right">
+    <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 h-full flex flex-col slide-in-right">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-200">
-        <h3 className="font-semibold text-slate-900">Prospect Details</h3>
+      <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+        <h3 className="font-semibold text-slate-900 dark:text-slate-100">Prospect Details</h3>
         <div className="flex items-center gap-1">
           {!isEditing && (
             <button
               onClick={startEditing}
-              className="p-1.5 hover:bg-slate-100 rounded-lg transition"
+              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
               title="Edit"
             >
-              <Edit2 className="w-4 h-4 text-slate-500" />
+              <Edit2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
             </button>
           )}
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="p-1.5 hover:bg-red-50 rounded-lg transition"
+            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
             title="Delete"
           >
-            <Trash2 className="w-4 h-4 text-slate-500 hover:text-red-500" />
+            <Trash2 className="w-4 h-4 text-slate-500 dark:text-slate-400 hover:text-red-500" />
           </button>
           <button
             onClick={clearSelectedProspect}
-            className="p-1.5 hover:bg-slate-100 rounded-lg transition"
+            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
           >
-            <X className="w-4 h-4 text-slate-500" />
+            <X className="w-4 h-4 text-slate-500 dark:text-slate-400" />
           </button>
         </div>
       </div>
@@ -327,15 +357,23 @@ const ProspectDetailPanel = () => {
         {/* Name & Title */}
         <div>
           {isEditing ? (
-            <input
-              value={editData.name}
-              onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-              className="text-xl font-semibold text-slate-900 w-full border-b border-slate-300 focus:border-brand-teal outline-none pb-1"
-              placeholder="Name"
-            />
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <input
+                value={editData.firstName}
+                onChange={(e) => setEditData({ ...editData, firstName: e.target.value })}
+                className="text-lg font-semibold text-slate-900 dark:text-slate-100 bg-transparent w-full border-b border-slate-300 dark:border-slate-600 focus:border-brand-teal outline-none pb-1"
+                placeholder="First Name"
+              />
+              <input
+                value={editData.lastName}
+                onChange={(e) => setEditData({ ...editData, lastName: e.target.value })}
+                className="text-lg font-semibold text-slate-900 dark:text-slate-100 bg-transparent w-full border-b border-slate-300 dark:border-slate-600 focus:border-brand-teal outline-none pb-1"
+                placeholder="Last Name"
+              />
+            </div>
           ) : (
-            <h2 className="text-xl font-semibold text-slate-900 mb-1">
-              {selectedProspect.name || 'Unnamed Prospect'}
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-1">
+              {selectedProspect.firstName || selectedProspect.name || 'Unnamed'} {selectedProspect.lastName || ''}
             </h2>
           )}
           
@@ -343,12 +381,12 @@ const ProspectDetailPanel = () => {
             <input
               value={editData.title}
               onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-              className="text-sm text-slate-500 w-full border-b border-slate-200 focus:border-brand-teal outline-none pb-1 mt-2"
+              className="text-sm text-slate-500 dark:text-slate-400 bg-transparent w-full border-b border-slate-200 dark:border-slate-600 focus:border-brand-teal outline-none pb-1 mt-2"
               placeholder="Title"
             />
           ) : (
             selectedProspect.title && (
-              <p className="text-sm text-slate-500">{selectedProspect.title}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{selectedProspect.title}</p>
             )
           )}
         </div>
@@ -373,7 +411,7 @@ const ProspectDetailPanel = () => {
           <div className="relative">
             <button
               onClick={() => setShowTagDropdown(!showTagDropdown)}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition"
             >
               <Plus className="w-3 h-3" />
               Tag
@@ -381,13 +419,13 @@ const ProspectDetailPanel = () => {
             {showTagDropdown && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowTagDropdown(false)} />
-                <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-elevated z-20 py-1 w-40 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-elevated z-20 py-1 w-40 max-h-48 overflow-y-auto">
                   {DEFAULT_TAGS.map(tag => (
                     <button
                       key={tag.id}
                       onClick={() => handleToggleTag(tag.id)}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50 ${
-                        prospectTags.includes(tag.id) ? 'bg-slate-100' : ''
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 ${
+                        prospectTags.includes(tag.id) ? 'bg-slate-100 dark:bg-slate-700' : ''
                       }`}
                     >
                       <div 
@@ -410,10 +448,10 @@ const ProspectDetailPanel = () => {
         <div className="grid grid-cols-2 gap-3">
           {/* Stage */}
           <div className="relative">
-            <label className="text-xs text-slate-500 mb-1 block">Stage</label>
+            <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">Stage</label>
             <button
               onClick={() => setShowStageDropdown(!showStageDropdown)}
-              className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm hover:bg-slate-100 transition"
+              className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600 transition"
             >
               <div className="flex items-center gap-2">
                 <div 
@@ -428,13 +466,13 @@ const ProspectDetailPanel = () => {
             {showStageDropdown && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowStageDropdown(false)} />
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-elevated z-20 py-1 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-elevated z-20 py-1 max-h-48 overflow-y-auto">
                   {PIPELINE_STAGES.map(stage => (
                     <button
                       key={stage.id}
                       onClick={() => handleStageChange(stage.id)}
-                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 ${
-                        selectedProspect.stage === stage.id ? 'bg-slate-100' : ''
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 ${
+                        selectedProspect.stage === stage.id ? 'bg-slate-100 dark:bg-slate-700' : ''
                       }`}
                     >
                       <div 
@@ -451,10 +489,10 @@ const ProspectDetailPanel = () => {
 
           {/* Owner */}
           <div className="relative">
-            <label className="text-xs text-slate-500 mb-1 block">Owner</label>
+            <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">Owner</label>
             <button
               onClick={() => setShowOwnerDropdown(!showOwnerDropdown)}
-              className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm hover:bg-slate-100 transition"
+              className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600 transition"
             >
               <div className="flex items-center gap-2">
                 {ownerMember ? (
@@ -470,7 +508,7 @@ const ProspectDetailPanel = () => {
                 ) : (
                   <>
                     <User className="w-4 h-4 text-slate-400" />
-                    <span className="text-slate-500">Unassigned</span>
+                    <span className="text-slate-500 dark:text-slate-400">Unassigned</span>
                   </>
                 )}
               </div>
@@ -480,13 +518,13 @@ const ProspectDetailPanel = () => {
             {showOwnerDropdown && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowOwnerDropdown(false)} />
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-elevated z-20 py-1">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-elevated z-20 py-1">
                   {TEAM_MEMBERS.map(member => (
                     <button
                       key={member.email}
                       onClick={() => handleOwnerChange(member.email)}
-                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 ${
-                        ownerEmail?.toLowerCase() === member.email.toLowerCase() ? 'bg-slate-100' : ''
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 ${
+                        ownerEmail?.toLowerCase() === member.email.toLowerCase() ? 'bg-slate-100 dark:bg-slate-700' : ''
                       }`}
                     >
                       <div 
@@ -505,17 +543,17 @@ const ProspectDetailPanel = () => {
         </div>
 
         {/* Tracking Section - LinkedIn & Apollo */}
-        <div className="border-t border-slate-200 pt-3">
+        <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
           <SectionHeader title="Tracking" section="tracking" icon={Sparkles} />
           
           {expandedSections.tracking && (
             <div className="space-y-3 mt-2">
               {/* LinkedIn Status */}
               <div className="relative">
-                <label className="text-xs text-slate-500 mb-1 block">LinkedIn Status</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">LinkedIn Status</label>
                 <button
                   onClick={() => setShowLinkedInDropdown(!showLinkedInDropdown)}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm hover:bg-slate-100 transition"
+                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600 transition"
                 >
                   <div className="flex items-center gap-2">
                     <div 
@@ -530,13 +568,13 @@ const ProspectDetailPanel = () => {
                 {showLinkedInDropdown && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setShowLinkedInDropdown(false)} />
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-elevated z-20 py-1">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-elevated z-20 py-1">
                       {LINKEDIN_STATUSES.map(status => (
                         <button
                           key={status.id}
                           onClick={() => handleLinkedInStatusChange(status.id)}
-                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 ${
-                            selectedProspect.linkedinStatus === status.id ? 'bg-slate-100' : ''
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 ${
+                            selectedProspect.linkedinStatus === status.id ? 'bg-slate-100 dark:bg-slate-700' : ''
                           }`}
                         >
                           <div 
@@ -567,10 +605,10 @@ const ProspectDetailPanel = () => {
 
               {/* Apollo Sequence Status */}
               <div className="relative">
-                <label className="text-xs text-slate-500 mb-1 block">Apollo Sequence</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">Apollo Sequence</label>
                 <button
                   onClick={() => setShowSequenceDropdown(!showSequenceDropdown)}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm hover:bg-slate-100 transition"
+                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600 transition"
                 >
                   <div className="flex items-center gap-2">
                     <div 
@@ -585,13 +623,13 @@ const ProspectDetailPanel = () => {
                 {showSequenceDropdown && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setShowSequenceDropdown(false)} />
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-elevated z-20 py-1 max-h-48 overflow-y-auto">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-elevated z-20 py-1 max-h-48 overflow-y-auto">
                       {APOLLO_SEQUENCE_STATUSES.map(status => (
                         <button
                           key={status.id}
                           onClick={() => handleSequenceStatusChange(status.id)}
-                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 ${
-                            selectedProspect.apolloSequenceStatus === status.id ? 'bg-slate-100' : ''
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 ${
+                            selectedProspect.apolloSequenceStatus === status.id ? 'bg-slate-100 dark:bg-slate-700' : ''
                           }`}
                         >
                           <div 
@@ -609,17 +647,17 @@ const ProspectDetailPanel = () => {
               {/* Sequence Name */}
               {isEditing ? (
                 <div>
-                  <label className="text-xs text-slate-500 mb-1 block">Sequence Name</label>
+                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">Sequence Name</label>
                   <input
                     value={editData.apolloSequenceName}
                     onChange={(e) => setEditData({ ...editData, apolloSequenceName: e.target.value })}
-                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
+                    className="w-full text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
                     placeholder="e.g., Cold Outreach Q1"
                   />
                 </div>
               ) : selectedProspect.apolloSequenceName && (
-                <div className="text-sm text-slate-600">
-                  <span className="text-slate-400">Sequence: </span>
+                <div className="text-sm text-slate-600 dark:text-slate-400">
+                  <span className="text-slate-400 dark:text-slate-500">Sequence: </span>
                   {selectedProspect.apolloSequenceName}
                 </div>
               )}
@@ -628,7 +666,7 @@ const ProspectDetailPanel = () => {
         </div>
 
         {/* Contact Info Section */}
-        <div className="border-t border-slate-200 pt-3">
+        <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
           <SectionHeader title="Contact Info" section="contact" icon={User} />
           
           {expandedSections.contact && (
@@ -640,7 +678,7 @@ const ProspectDetailPanel = () => {
                     <input
                       value={editData.email}
                       onChange={(e) => setEditData({ ...editData, email: e.target.value })}
-                      className="flex-1 text-sm border-b border-slate-200 focus:border-brand-teal outline-none py-1"
+                      className="flex-1 text-sm bg-transparent text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-600 focus:border-brand-teal outline-none py-1"
                       placeholder="Email"
                     />
                   </div>
@@ -649,7 +687,7 @@ const ProspectDetailPanel = () => {
                     <input
                       value={editData.phone}
                       onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
-                      className="flex-1 text-sm border-b border-slate-200 focus:border-brand-teal outline-none py-1"
+                      className="flex-1 text-sm bg-transparent text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-600 focus:border-brand-teal outline-none py-1"
                       placeholder="Phone"
                     />
                   </div>
@@ -658,7 +696,7 @@ const ProspectDetailPanel = () => {
                     <input
                       value={editData.company}
                       onChange={(e) => setEditData({ ...editData, company: e.target.value })}
-                      className="flex-1 text-sm border-b border-slate-200 focus:border-brand-teal outline-none py-1"
+                      className="flex-1 text-sm bg-transparent text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-600 focus:border-brand-teal outline-none py-1"
                       placeholder="Company"
                     />
                   </div>
@@ -667,7 +705,7 @@ const ProspectDetailPanel = () => {
                     <input
                       value={editData.linkedin}
                       onChange={(e) => setEditData({ ...editData, linkedin: e.target.value })}
-                      className="flex-1 text-sm border-b border-slate-200 focus:border-brand-teal outline-none py-1"
+                      className="flex-1 text-sm bg-transparent text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-600 focus:border-brand-teal outline-none py-1"
                       placeholder="LinkedIn URL"
                     />
                   </div>
@@ -676,7 +714,7 @@ const ProspectDetailPanel = () => {
                     <input
                       value={editData.website}
                       onChange={(e) => setEditData({ ...editData, website: e.target.value })}
-                      className="flex-1 text-sm border-b border-slate-200 focus:border-brand-teal outline-none py-1"
+                      className="flex-1 text-sm bg-transparent text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-600 focus:border-brand-teal outline-none py-1"
                       placeholder="Website"
                     />
                   </div>
@@ -685,7 +723,7 @@ const ProspectDetailPanel = () => {
                     <input
                       value={editData.location}
                       onChange={(e) => setEditData({ ...editData, location: e.target.value })}
-                      className="flex-1 text-sm border-b border-slate-200 focus:border-brand-teal outline-none py-1"
+                      className="flex-1 text-sm bg-transparent text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-600 focus:border-brand-teal outline-none py-1"
                       placeholder="Location"
                     />
                   </div>
@@ -695,7 +733,7 @@ const ProspectDetailPanel = () => {
                   {selectedProspect.email && (
                     <a 
                       href={`mailto:${selectedProspect.email}`}
-                      className="flex items-center gap-2 text-sm text-slate-700 hover:text-brand-teal transition"
+                      className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 hover:text-brand-teal transition"
                     >
                       <Mail className="w-4 h-4 text-slate-400" />
                       <span>{selectedProspect.email}</span>
@@ -704,14 +742,14 @@ const ProspectDetailPanel = () => {
                   {selectedProspect.phone && (
                     <a 
                       href={`tel:${selectedProspect.phone}`}
-                      className="flex items-center gap-2 text-sm text-slate-700 hover:text-brand-teal transition"
+                      className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 hover:text-brand-teal transition"
                     >
                       <Phone className="w-4 h-4 text-slate-400" />
                       <span>{selectedProspect.phone}</span>
                     </a>
                   )}
                   {selectedProspect.company && (
-                    <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
                       <Building2 className="w-4 h-4 text-slate-400" />
                       <span>{selectedProspect.company}</span>
                     </div>
@@ -721,7 +759,7 @@ const ProspectDetailPanel = () => {
                       href={selectedProspect.website.startsWith('http') ? selectedProspect.website : `https://${selectedProspect.website}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-slate-700 hover:text-brand-teal transition"
+                      className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 hover:text-brand-teal transition"
                     >
                       <Globe className="w-4 h-4 text-slate-400" />
                       <span>{selectedProspect.website}</span>
@@ -729,7 +767,7 @@ const ProspectDetailPanel = () => {
                     </a>
                   )}
                   {selectedProspect.location && (
-                    <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
                       <MapPin className="w-4 h-4 text-slate-400" />
                       <span>{selectedProspect.location}</span>
                     </div>
@@ -739,8 +777,8 @@ const ProspectDetailPanel = () => {
 
               {/* Deal Value */}
               {(selectedProspect.value || isEditing) && (
-                <div className="pt-2 border-t border-slate-100 mt-2">
-                  <label className="text-xs text-slate-500 mb-1 block">Deal Value</label>
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700 mt-2">
+                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">Deal Value</label>
                   {isEditing ? (
                     <div className="flex items-center gap-2">
                       <DollarSign className="w-4 h-4 text-slate-400" />
@@ -748,7 +786,7 @@ const ProspectDetailPanel = () => {
                         type="number"
                         value={editData.value}
                         onChange={(e) => setEditData({ ...editData, value: Number(e.target.value) })}
-                        className="flex-1 text-sm border-b border-slate-200 focus:border-brand-teal outline-none py-1"
+                        className="flex-1 text-sm bg-transparent text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-600 focus:border-brand-teal outline-none py-1"
                         placeholder="Deal value"
                       />
                     </div>
@@ -764,7 +802,7 @@ const ProspectDetailPanel = () => {
         </div>
 
         {/* Tasks Section */}
-        <div className="border-t border-slate-200 pt-3">
+        <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
           <SectionHeader 
             title="Follow-up Tasks" 
             section="tasks" 
@@ -775,7 +813,7 @@ const ProspectDetailPanel = () => {
           {expandedSections.tasks && (
             <div className="space-y-2 mt-2">
               {prospectTasks.length === 0 && !showAddTask ? (
-                <p className="text-sm text-slate-500 italic">No tasks yet</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 italic">No tasks yet</p>
               ) : (
                 <div className="space-y-1">
                   {prospectTasks.map(task => {
@@ -785,7 +823,7 @@ const ProspectDetailPanel = () => {
                       <div 
                         key={task.id}
                         className={`flex items-start gap-2 p-2 rounded-lg ${
-                          task.completed ? 'bg-slate-50 opacity-60' : isOverdue ? 'bg-red-50' : 'bg-slate-50'
+                          task.completed ? 'bg-slate-50 dark:bg-slate-700/50 opacity-60' : isOverdue ? 'bg-red-50 dark:bg-red-900/20' : 'bg-slate-50 dark:bg-slate-700'
                         }`}
                       >
                         <button
@@ -795,11 +833,11 @@ const ProspectDetailPanel = () => {
                           {task.completed ? (
                             <CheckCircle className="w-4 h-4 text-brand-teal" />
                           ) : (
-                            <Circle className="w-4 h-4 text-slate-300 hover:text-brand-teal" />
+                            <Circle className="w-4 h-4 text-slate-300 dark:text-slate-500 hover:text-brand-teal" />
                           )}
                         </button>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm ${task.completed ? 'line-through text-slate-500' : 'text-slate-700'}`}>
+                          <p className={`text-sm ${task.completed ? 'line-through text-slate-500 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
                             {task.title}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5">
@@ -820,7 +858,7 @@ const ProspectDetailPanel = () => {
                         </div>
                         <button
                           onClick={() => deleteTask(task.id)}
-                          className="p-1 hover:bg-white rounded"
+                          className="p-1 hover:bg-white dark:hover:bg-slate-600 rounded"
                         >
                           <X className="w-3 h-3 text-slate-400" />
                         </button>
@@ -832,11 +870,11 @@ const ProspectDetailPanel = () => {
 
               {/* Add Task Form */}
               {showAddTask ? (
-                <div className="p-3 bg-slate-50 rounded-lg space-y-2">
+                <div className="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg space-y-2">
                   <input
                     value={newTask.title}
                     onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
+                    className="w-full text-sm bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
                     placeholder="Task description..."
                     autoFocus
                   />
@@ -844,7 +882,7 @@ const ProspectDetailPanel = () => {
                     <select
                       value={newTask.type}
                       onChange={(e) => setNewTask({ ...newTask, type: e.target.value })}
-                      className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 outline-none"
+                      className="text-sm bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg px-2 py-1.5 text-slate-900 dark:text-slate-100 outline-none"
                     >
                       {TASK_TYPES.map(type => (
                         <option key={type.id} value={type.id}>{type.label}</option>
@@ -853,7 +891,7 @@ const ProspectDetailPanel = () => {
                     <select
                       value={newTask.priority}
                       onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                      className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 outline-none"
+                      className="text-sm bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg px-2 py-1.5 text-slate-900 dark:text-slate-100 outline-none"
                     >
                       {TASK_PRIORITIES.map(p => (
                         <option key={p.id} value={p.id}>{p.label}</option>
@@ -864,12 +902,12 @@ const ProspectDetailPanel = () => {
                     type="date"
                     value={newTask.dueDate}
                     onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none"
+                    className="w-full text-sm bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg px-3 py-2 text-slate-900 dark:text-slate-100 outline-none"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={() => setShowAddTask(false)}
-                      className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-100"
+                      className="flex-1 px-3 py-1.5 border border-slate-200 dark:border-slate-500 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
                     >
                       Cancel
                     </button>
@@ -895,7 +933,7 @@ const ProspectDetailPanel = () => {
         </div>
 
         {/* Activity/Notes Section */}
-        <div className="border-t border-slate-200 pt-3">
+        <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
           <SectionHeader 
             title="Activity Log" 
             section="activity" 
@@ -907,11 +945,11 @@ const ProspectDetailPanel = () => {
             <div className="space-y-2 mt-2">
               {/* Add Note Form */}
               {showAddNote ? (
-                <div className="p-3 bg-slate-50 rounded-lg space-y-2">
+                <div className="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg space-y-2">
                   <select
                     value={noteType}
                     onChange={(e) => setNoteType(e.target.value)}
-                    className="w-full text-sm border border-slate-200 rounded-lg px-2 py-1.5 outline-none"
+                    className="w-full text-sm bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg px-2 py-1.5 text-slate-900 dark:text-slate-100 outline-none"
                   >
                     {ACTIVITY_TYPES.map(type => (
                       <option key={type.id} value={type.id}>{type.label}</option>
@@ -920,14 +958,14 @@ const ProspectDetailPanel = () => {
                   <textarea
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
-                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none min-h-16 resize-none"
+                    className="w-full text-sm bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none min-h-16 resize-none"
                     placeholder="Add a note..."
                     autoFocus
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={() => { setShowAddNote(false); setNewNote(''); }}
-                      className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-100"
+                      className="flex-1 px-3 py-1.5 border border-slate-200 dark:border-slate-500 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
                     >
                       Cancel
                     </button>
@@ -951,32 +989,66 @@ const ProspectDetailPanel = () => {
 
               {/* Activity List */}
               {activities.length > 0 && (
-                <div className="space-y-2 mt-3">
+                <div className="space-y-3 mt-3">
                   {activities.map(activity => {
                     const actType = getActivityType(activity.type);
+                    const callOutcome = activity.outcome && activity.type === 'call' ? getCallOutcome(activity.outcome) : null;
+                    const meetingOutcome = activity.outcome && activity.type === 'meeting' ? getMeetingOutcome(activity.outcome) : null;
+                    
+                    // Get the appropriate icon component
+                    const IconComponent = 
+                      activity.type === 'call' ? Phone :
+                      activity.type === 'email_sent' ? Send :
+                      activity.type === 'email_received' ? Inbox :
+                      activity.type === 'meeting' ? Calendar :
+                      activity.type === 'linkedin_connect' || activity.type === 'linkedin_message' || activity.type === 'linkedin_inmail' ? Linkedin :
+                      activity.type === 'sms' ? MessageSquare :
+                      FileText;
+                    
                     return (
-                      <div key={activity.id} className="flex gap-2 text-sm">
+                      <div key={activity.id} className="flex gap-3 text-sm border-l-2 pl-3 py-1" style={{ borderColor: actType.color }}>
                         <div 
-                          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                          style={{ backgroundColor: `${actType.color}20` }}
+                          className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: `${actType.color}15` }}
                         >
-                          <FileText className="w-3 h-3" style={{ color: actType.color }} />
+                          <IconComponent className="w-3.5 h-3.5" style={{ color: actType.color }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-slate-700">{activity.userName}</span>
-                            <span className="text-slate-400">·</span>
-                            <span className="text-slate-400 text-xs">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-slate-800 dark:text-slate-200">{actType.label}</span>
+                            {/* Call outcome badge */}
+                            {callOutcome && (
+                              <span 
+                                className="text-xs px-1.5 py-0.5 rounded font-medium text-white"
+                                style={{ backgroundColor: callOutcome.color }}
+                              >
+                                {callOutcome.label}
+                              </span>
+                            )}
+                            {/* Meeting outcome badge */}
+                            {meetingOutcome && (
+                              <span 
+                                className="text-xs px-1.5 py-0.5 rounded font-medium text-white"
+                                style={{ backgroundColor: meetingOutcome.color }}
+                              >
+                                {meetingOutcome.label}
+                              </span>
+                            )}
+                            {/* Duration */}
+                            {activity.duration && (
+                              <span className="text-xs text-slate-400">
+                                {activity.duration} min
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap mt-1">{activity.content}</p>
+                          <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-400 dark:text-slate-500">
+                            <span>{activity.userName}</span>
+                            <span>·</span>
+                            <span>
                               {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
                             </span>
                           </div>
-                          <p className="text-slate-600 whitespace-pre-wrap">{activity.content}</p>
-                          <span 
-                            className="text-xs px-1.5 py-0.5 rounded mt-1 inline-block"
-                            style={{ backgroundColor: `${actType.color}20`, color: actType.color }}
-                          >
-                            {actType.label}
-                          </span>
                         </div>
                       </div>
                     );
@@ -988,8 +1060,8 @@ const ProspectDetailPanel = () => {
         </div>
 
         {/* Timestamps */}
-        <div className="space-y-2 pt-4 border-t border-slate-200">
-          <div className="flex items-center justify-between text-xs text-slate-500">
+        <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Created</span>
             <span>
               {selectedProspect.createdAt 
@@ -997,7 +1069,7 @@ const ProspectDetailPanel = () => {
                 : '—'}
             </span>
           </div>
-          <div className="flex items-center justify-between text-xs text-slate-500">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Last updated</span>
             <span>
               {selectedProspect.updatedAt 
@@ -1010,10 +1082,10 @@ const ProspectDetailPanel = () => {
 
       {/* Edit Actions */}
       {isEditing && (
-        <div className="p-4 border-t border-slate-200 flex gap-2">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex gap-2">
           <button
             onClick={() => { setIsEditing(false); setEditData({}); }}
-            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition"
+            className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
           >
             Cancel
           </button>
@@ -1028,34 +1100,104 @@ const ProspectDetailPanel = () => {
 
       {/* Quick Actions */}
       {!isEditing && (
-        <div className="p-4 border-t border-slate-200 grid grid-cols-2 gap-2">
-          <button 
-            onClick={() => { setExpandedSections(prev => ({ ...prev, activity: true })); setShowAddNote(true); }}
-            className="flex items-center justify-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition"
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Log Activity</span>
-          </button>
-          <button 
-            onClick={() => { setExpandedSections(prev => ({ ...prev, tasks: true })); setShowAddTask(true); }}
-            className="flex items-center justify-center gap-2 px-3 py-2 bg-brand-teal text-white rounded-lg text-sm font-medium hover:bg-brand-teal/90 transition"
-          >
-            <Bell className="w-4 h-4" />
-            <span>Add Task</span>
-          </button>
+        <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-2">
+          {/* Primary quick action buttons */}
+          <div className="grid grid-cols-4 gap-2">
+            <button 
+              onClick={() => { setQuickLogType('call'); setShowQuickLog(true); }}
+              className="flex flex-col items-center gap-1 px-2 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-xs text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-200 dark:hover:border-purple-700 transition"
+            >
+              <Phone className="w-4 h-4 text-purple-500" />
+              <span>Call</span>
+            </button>
+            <button 
+              onClick={() => { setQuickLogType('email_sent'); setShowQuickLog(true); }}
+              className="flex flex-col items-center gap-1 px-2 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-xs text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-200 dark:hover:border-blue-700 transition"
+            >
+              <Send className="w-4 h-4 text-blue-500" />
+              <span>Email</span>
+            </button>
+            <button 
+              onClick={() => { setQuickLogType('meeting'); setShowQuickLog(true); }}
+              className="flex flex-col items-center gap-1 px-2 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-xs text-slate-700 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:border-amber-200 dark:hover:border-amber-700 transition"
+            >
+              <Calendar className="w-4 h-4 text-amber-500" />
+              <span>Meeting</span>
+            </button>
+            <button 
+              onClick={() => { setQuickLogType('note'); setShowQuickLog(true); }}
+              className="flex flex-col items-center gap-1 px-2 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-500 transition"
+            >
+              <FileText className="w-4 h-4 text-slate-500" />
+              <span>Note</span>
+            </button>
+          </div>
+          {/* Secondary actions */}
+          <div className="grid grid-cols-4 gap-2">
+            <button 
+              onClick={() => { setQuickLogType(null); setShowQuickLog(true); }}
+              className="flex flex-col items-center gap-1 px-2 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+            >
+              <Plus className="w-4 h-4 text-slate-500" />
+              <span>Log</span>
+            </button>
+            <button 
+              onClick={() => openPushModal(selectedProspect)}
+              className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg text-xs font-medium transition ${
+                isProspectSynced(selectedProspect.id)
+                  ? 'border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30'
+                  : 'border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-200 dark:hover:border-purple-700'
+              }`}
+              title={isProspectSynced(selectedProspect.id) ? 'Already in Instantly' : 'Push to Instantly'}
+            >
+              <Zap className="w-4 h-4 text-purple-500" />
+              <span>Email</span>
+            </button>
+            <button 
+              onClick={() => openLinkedHelperModal(selectedProspect)}
+              disabled={!hasLinkedInUrl(selectedProspect)}
+              className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg text-xs font-medium transition ${
+                !hasLinkedInUrl(selectedProspect)
+                  ? 'border border-slate-200 dark:border-slate-600 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-60'
+                  : isLinkedHelperSynced(selectedProspect.id)
+                    ? 'border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30'
+                    : 'border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-200 dark:hover:border-blue-700'
+              }`}
+              title={!hasLinkedInUrl(selectedProspect) ? 'Add LinkedIn URL first' : isLinkedHelperSynced(selectedProspect.id) ? 'Already in LinkedHelper' : 'Push to LinkedHelper'}
+            >
+              <Linkedin className="w-4 h-4 text-blue-600" />
+              <span>LinkedIn</span>
+            </button>
+            <button 
+              onClick={() => { setExpandedSections(prev => ({ ...prev, tasks: true })); setShowAddTask(true); }}
+              className="flex flex-col items-center gap-1 px-2 py-2.5 bg-brand-teal text-white rounded-lg text-xs font-medium hover:bg-brand-teal/90 transition"
+            >
+              <Bell className="w-4 h-4" />
+              <span>Task</span>
+            </button>
+          </div>
         </div>
+      )}
+
+      {/* QuickLogModal */}
+      {showQuickLog && (
+        <QuickLogModal 
+          prospect={selectedProspect}
+          initialType={quickLogType}
+          onClose={() => { setShowQuickLog(false); setQuickLogType(null); }}
+        />
       )}
 
       {/* Delete Confirmation */}
       {showDeleteConfirm && (
-        <div className="absolute inset-0 bg-white rounded-lg flex items-center justify-center z-30">
+        <div className="absolute inset-0 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center z-30">
           <div className="text-center p-6">
-            <p className="text-slate-900 font-medium mb-2">Delete this prospect?</p>
-            <p className="text-sm text-slate-500 mb-4">This action cannot be undone.</p>
+            <p className="text-slate-900 dark:text-slate-100 font-medium mb-2">Delete this prospect?</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">This action cannot be undone.</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition"
+                className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
               >
                 Cancel
               </button>

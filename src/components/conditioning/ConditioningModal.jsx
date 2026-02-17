@@ -111,12 +111,20 @@ const ConditioningModal = ({
         aria-label={title}
         onKeyDown={handleKeyDown}
         className={cn(
-          'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
-          'w-full max-h-[90vh] overflow-hidden flex flex-col',
+          'fixed left-1/2 z-50 -translate-x-1/2',
+          // Mobile: Position higher to account for bottom nav (~80px + safe area)
+          // Use bottom positioning on mobile for better visibility of footer buttons
+          'bottom-20 md:bottom-auto md:top-1/2 md:-translate-y-1/2',
+          // Mobile: Reduce max height to account for bottom nav + top spacing
+          'w-full max-h-[calc(100vh-6rem)] md:max-h-[90vh] overflow-hidden flex flex-col',
           'bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700',
           maxWidth,
           className
         )}
+        style={{
+          // Add safe area bottom padding for notched devices when on mobile
+          marginBottom: 'env(safe-area-inset-bottom, 0px)'
+        }}
       >
         {/* ====== HEADER — Navy gradient, always consistent ====== */}
         <div className="p-5 pb-4 bg-gradient-to-r from-corporate-navy to-corporate-navy/90 flex-shrink-0">
@@ -161,9 +169,15 @@ const ConditioningModal = ({
           {children}
         </div>
 
-        {/* ====== FOOTER — consistent gray bar ====== */}
+        {/* ====== FOOTER — consistent gray bar with mobile-safe padding ====== */}
         {footer && (
-          <div className="px-5 py-4 border-t border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 flex-shrink-0">
+          <div 
+            className="px-5 py-4 border-t border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 flex-shrink-0"
+            style={{
+              // Add extra padding on mobile for safe area and better touch targets
+              paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))'
+            }}
+          >
             {footer}
           </div>
         )}

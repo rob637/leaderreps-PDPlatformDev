@@ -131,11 +131,11 @@ const TasksPage = () => {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-slate-200 bg-white">
+      <div className="p-6 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Tasks</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               Manage your follow-up tasks and reminders
             </p>
           </div>
@@ -151,13 +151,13 @@ const TasksPage = () => {
         {/* Quick Stats */}
         <div className="flex gap-4">
           {overdueTasks.length > 0 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium">
               <AlertTriangle className="w-4 h-4" />
               {overdueTasks.length} overdue
             </div>
           )}
           {todayTasks.length > 0 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-sm font-medium">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg text-sm font-medium">
               <Bell className="w-4 h-4" />
               {todayTasks.length} due today
             </div>
@@ -179,7 +179,7 @@ const TasksPage = () => {
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
                 filter === f.id 
                   ? 'bg-brand-teal text-white' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
               }`}
             >
               {f.label}
@@ -192,11 +192,11 @@ const TasksPage = () => {
       <div className="flex-1 overflow-y-auto p-6">
         {filteredTasks.length === 0 ? (
           <div className="text-center py-12">
-            <Bell className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-medium text-slate-700 mb-1">
+            <Bell className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+            <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-1">
               {filter === 'completed' ? 'No completed tasks' : 'No tasks'}
             </h3>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {filter === 'completed' 
                 ? 'Completed tasks will appear here' 
                 : 'Create a task to stay on top of your follow-ups'}
@@ -214,10 +214,10 @@ const TasksPage = () => {
                   key={task.id}
                   className={`flex items-start gap-3 p-4 rounded-lg border transition ${
                     task.completed 
-                      ? 'bg-slate-50 border-slate-200 opacity-60' 
+                      ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-60' 
                       : isOverdue 
-                        ? 'bg-red-50 border-red-200' 
-                        : 'bg-white border-slate-200 hover:border-brand-teal/30'
+                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' 
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-brand-teal/30'
                   }`}
                 >
                   <button
@@ -234,7 +234,7 @@ const TasksPage = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className={`font-medium ${task.completed ? 'line-through text-slate-500' : 'text-slate-900'}`}>
+                        <p className={`font-medium ${task.completed ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-slate-100'}`}>
                           {task.title}
                         </p>
                         {prospect && (

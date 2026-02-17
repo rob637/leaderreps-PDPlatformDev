@@ -44,32 +44,69 @@ const UpdateNotification = () => {
   const [newVersion, setNewVersion] = useState(null);
   const [dismissed, setDismissed] = useState(false);
 
-  // Check version when update is available
+  // Helper to fetch and check version
+  const checkForNewVersion = useCallback(async () => {
+    try {
+      // Always use origin for version.json (works regardless of current path)
+      const versionUrl = `${window.location.origin}/version.json?t=${Date.now()}`;
+      
+      const res = await fetch(versionUrl, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      const data = await res.json();
+      console.log(`[PWA] Version check - Current: v${APP_VERSION}, Server: v${data.version}`);
+      
+      if (data.version !== APP_VERSION) {
+        setNewVersion(data.version);
+        return true; // New version available
+      }
+      return false;
+    } catch (err) {
+      console.warn('[PWA] Version check failed:', err);
+      return false;
+    }
+  }, []);
+
+  // Check version when service worker signals update available
   useEffect(() => {
     if (needRefresh && !dismissed) {
-      // Fetch the new version info with cache bust
-      // Use relative path to support subdirectories
-      const versionUrl = new URL('version.json', window.location.href).href;
-      
-      fetch(`${versionUrl}?t=${Date.now()}`)
-        .then(res => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.json();
-        })
-        .then(data => {
-          console.log(`[PWA] Current: v${APP_VERSION}, Available: v${data.version}`);
-          if (data.version !== APP_VERSION) {
-            setNewVersion(data.version);
-            setShowNotification(true);
-          }
-        })
-        .catch(err => {
-          console.warn('[PWA] Version check failed, showing generic update prompt:', err);
-          // Still show notification even if version check fails
+      console.log('[PWA] Service worker detected update, checking version...');
+      checkForNewVersion().then(hasNewVersion => {
+        if (hasNewVersion) {
           setShowNotification(true);
-        });
+        } else {
+          // SW says there's an update but version same - still show (asset changes)
+          setShowNotification(true);
+        }
+      });
     }
-  }, [needRefresh, dismissed]);
+  }, [needRefresh, dismissed, checkForNewVersion]);
+
+  // ALSO check on mount and periodically (catches cases where SW didn't signal)
+  useEffect(() => {
+    // Initial check after a short delay
+    const initialCheck = setTimeout(async () => {
+      const hasNewVersion = await checkForNewVersion();
+      if (hasNewVersion && !dismissed) {
+        console.log('[PWA] Manual version check found update');
+        setShowNotification(true);
+      }
+    }, 3000); // Check 3 seconds after mount
+
+    // Periodic check every 5 minutes
+    const periodicCheck = setInterval(async () => {
+      const hasNewVersion = await checkForNewVersion();
+      if (hasNewVersion && !dismissed) {
+        console.log('[PWA] Periodic version check found update');
+        setShowNotification(true);
+      }
+    }, 5 * 60 * 1000);
+
+    return () => {
+      clearTimeout(initialCheck);
+      clearInterval(periodicCheck);
+    };
+  }, [dismissed, checkForNewVersion]);
 
   // Handle controller change - LOG only, don't auto-reload
   // User should click "Update Now" to reload and get the new version

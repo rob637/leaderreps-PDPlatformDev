@@ -6,33 +6,40 @@
 - **Purpose**: Active development and testing
 - **Firebase Project**: `leaderreps-pd-platform`
 - **URL**: https://leaderreps-pd-platform.web.app/
-- **Config File**: `.env.local` (gitignored, for local dev)
-- **Deploy Script**: `./deploy.sh "commit message"` or `./deploy-dev.sh "commit message"`
+- **Config File**: `.env.dev` (committed) / `.env.local` (gitignored, for local dev)
+- **Deploy Command**: `npm run deploy:dev`
 
 ### 🧪 Test (leaderreps-test)
 - **Purpose**: QA testing and stakeholder demos
 - **Firebase Project**: `leaderreps-test`
 - **URL**: https://leaderreps-test.web.app/
 - **Config File**: `.env.test`
-- **Deploy Script**: `./deploy-test.sh "commit message"`
+- **Deploy Command**: `npm run deploy:test`
 
-### 🚀 Production (Coming Soon)
+### 🚀 Production (leaderreps-prod)
 - **Purpose**: Live production environment
-- **Status**: To be created in a few weeks
-- **Deploy Script**: Will be `./deploy-prod.sh`
+- **Firebase Project**: `leaderreps-prod`
+- **URL**: https://leaderreps-prod.web.app/
+- **Config File**: `.env.prod`
+- **Deploy Command**: `npm run deploy:prod` (requires confirmation)
+- **See Also**: [PRODUCTION-CHECKLIST.md](./PRODUCTION-CHECKLIST.md)
 
 ## Deployment Commands
 
 ### Deploy to Development
 ```bash
-./deploy.sh "your commit message"
-# or
-./deploy-dev.sh "your commit message"
+npm run deploy:dev
 ```
 
 ### Deploy to Test
 ```bash
-./deploy-test.sh "your commit message"
+npm run deploy:test
+```
+
+### Deploy to Production
+```bash
+npm run deploy:prod
+# Type 'DEPLOY PROD' when prompted to confirm
 ```
 
 ## Firebase Project Switching
@@ -44,27 +51,34 @@ firebase projects:list
 # Switch to test
 firebase use test
 
+# Switch to prod
+firebase use prod
+
 # Switch to dev (default)
 firebase use default
 ```
 
 ## Environment Variables
 
-- `.env.test` - Test environment configuration
-- `.env.local` - Local development (gitignored)
-- `.env.example` - Template for environment variables
+| File | Purpose | Committed |
+|------|---------|-----------|
+| `.env.dev` | Development environment | ✅ Yes |
+| `.env.test` | Test environment | ✅ Yes |
+| `.env.prod` | Production environment | ✅ Yes |
+| `.env.local` | Local overrides (API keys) | ❌ No (gitignored) |
+| `.env.secrets` | Shared secrets (API keys) | ❌ No (gitignored) |
+| `.env.example` | Template for new devs | ✅ Yes |
 
 ## What Gets Deployed
 
-Both deployment scripts will:
-1. Commit and push changes to GitHub
-2. Build the project with the appropriate environment config
-3. Deploy to Firebase Hosting
-4. Deploy Firestore rules and indexes
-5. Clean up temporary files
+All deployment scripts will:
+1. Copy the environment-specific .env file to .env.local
+2. Build the project with Vite (which bakes in env vars)
+3. Deploy to the appropriate Firebase Hosting site
+4. Restore .env.local to DEV for local development
 
 ## Current Setup
 
 - ✅ Development environment active
-- ✅ Test environment created and deployed
-- ⏳ Production environment (coming soon)
+- ✅ Test environment active
+- ✅ Production environment ready

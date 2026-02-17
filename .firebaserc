@@ -28,6 +28,19 @@
           "repup-dev"
         ]
       }
+    },
+    "leaderreps-prod": {
+      "hosting": {
+        "main": [
+          "leaderreps-prod"
+        ],
+        "repup": [
+          "repup-prod"
+        ],
+        "corporate": [
+          "leaderrepscorp-prod"
+        ]
+      }
     }
   },
   "etags": {}

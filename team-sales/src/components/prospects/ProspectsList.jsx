@@ -24,9 +24,9 @@ const ProspectsList = ({ prospects }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden h-full">
+    <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden h-full">
       {/* Table Header */}
-      <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-slate-50 border-b border-slate-200 text-xs font-medium text-slate-600 uppercase tracking-wider">
+      <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">
         <div className="col-span-4">Contact</div>
         <div className="col-span-2">Company</div>
         <div className="col-span-2">Stage</div>
@@ -46,8 +46,8 @@ const ProspectsList = ({ prospects }) => {
             <div
               key={prospect.id}
               onClick={() => setSelectedProspect(prospect)}
-              className={`grid grid-cols-12 gap-4 px-4 py-3 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition ${
-                isSelected ? 'bg-brand-teal/5 border-l-2 border-l-brand-teal' : ''
+              className={`grid grid-cols-12 gap-4 px-4 py-3 border-b border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition ${
+                isSelected ? 'bg-brand-teal/5 dark:bg-brand-teal/10 border-l-2 border-l-brand-teal' : ''
               }`}
             >
               {/* Contact */}
@@ -56,19 +56,34 @@ const ProspectsList = ({ prospects }) => {
                   className="w-9 h-9 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0"
                   style={{ backgroundColor: ownerMember?.color || '#64748B' }}
                 >
-                  {prospect.name?.charAt(0).toUpperCase() || '?'}
+                  {(prospect.firstName || prospect.name)?.charAt(0).toUpperCase() || '?'}
                 </div>
-                <div className="min-w-0">
-                  <p className="font-medium text-slate-900 truncate">{prospect.name || 'Unnamed'}</p>
-                  <p className="text-sm text-slate-500 truncate">{prospect.title || 'No title'}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
+                    {prospect.firstName ? `${prospect.firstName} ${prospect.lastName || ''}`.trim() : prospect.name || 'Unnamed'}
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{prospect.title || 'No title'}</p>
                 </div>
+                {/* Quick Actions: LinkedIn */}
+                {prospect.linkedin && (
+                  <a
+                    href={prospect.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1.5 rounded-lg hover:bg-[#0077b5]/10 text-[#0077b5] transition flex-shrink-0"
+                    title="View LinkedIn Profile"
+                  >
+                    <Linkedin className="w-4 h-4" />
+                  </a>
+                )}
               </div>
 
               {/* Company */}
               <div className="col-span-2 flex items-center min-w-0">
                 <div className="flex items-center gap-2 min-w-0">
                   <Building2 className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                  <span className="text-sm text-slate-700 truncate">{prospect.company || '—'}</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-300 truncate">{prospect.company || '—'}</span>
                 </div>
               </div>
 
@@ -92,15 +107,15 @@ const ProspectsList = ({ prospects }) => {
                     >
                       {ownerMember.initials}
                     </div>
-                    <span className="text-sm text-slate-700">{ownerMember.name}</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">{ownerMember.name}</span>
                   </div>
                 ) : (
-                  <span className="text-sm text-slate-500">Unassigned</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Unassigned</span>
                 )}
               </div>
 
               {/* Last Activity */}
-              <div className="col-span-2 flex items-center text-sm text-slate-500">
+              <div className="col-span-2 flex items-center text-sm text-slate-500 dark:text-slate-400">
                 {prospect.updatedAt ? (
                   formatDistanceToNow(new Date(prospect.updatedAt), { addSuffix: true })
                 ) : prospect.createdAt ? (

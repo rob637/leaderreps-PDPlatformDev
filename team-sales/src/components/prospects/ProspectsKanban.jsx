@@ -16,7 +16,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useProspectsStore, PIPELINE_STAGES } from '../../stores/prospectsStore';
 import { TEAM_MEMBERS, getStageInfo } from '../../config/team';
-import { Building2, User } from 'lucide-react';
+import { Building2, User, Linkedin } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Individual prospect card for Kanban
@@ -29,21 +29,37 @@ const ProspectCard = ({ prospect, isDragging = false }) => {
   return (
     <div
       onClick={() => !isDragging && setSelectedProspect(prospect)}
-      className={`bg-white rounded-lg border border-slate-200 p-3 cursor-pointer hover:shadow-card transition ${
+      className={`bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 cursor-pointer hover:shadow-card transition ${
         isDragging ? 'shadow-elevated opacity-90' : ''
       }`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <p className="font-medium text-sm text-slate-900 line-clamp-1">{prospect.name || 'Unnamed'}</p>
-        {ownerMember && (
-          <div 
-            className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0"
-            style={{ backgroundColor: ownerMember.color }}
-            title={ownerMember.name}
-          >
-            {ownerMember.initials}
-          </div>
-        )}
+        <p className="font-medium text-sm text-slate-900 dark:text-slate-100 line-clamp-1">
+          {prospect.firstName ? `${prospect.firstName} ${prospect.lastName || ''}`.trim() : prospect.name || 'Unnamed'}
+        </p>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {prospect.linkedin && (
+            <a
+              href={prospect.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="p-0.5 rounded hover:bg-[#0077b5]/10 text-[#0077b5] transition"
+              title="View LinkedIn Profile"
+            >
+              <Linkedin className="w-3.5 h-3.5" />
+            </a>
+          )}
+          {ownerMember && (
+            <div 
+              className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-medium"
+              style={{ backgroundColor: ownerMember.color }}
+              title={ownerMember.name}
+            >
+              {ownerMember.initials}
+            </div>
+          )}
+        </div>
       </div>
       
       {prospect.company && (

@@ -10,6 +10,15 @@ const SpeechRecognition = typeof window !== 'undefined' && (
   window.SpeechRecognition || window.webkitSpeechRecognition
 );
 
+// Detect iOS for special handling
+const isIOS = typeof navigator !== 'undefined' && 
+  /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+  !window.MSStream;
+
+// Detect Safari
+const isSafari = typeof navigator !== 'undefined' &&
+  /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
 // ============================================
 // VOICE INPUT BUTTON COMPONENT
 // ============================================
@@ -26,9 +35,11 @@ const VoiceInputButton = ({
   const [isSupported, setIsSupported] = useState(true);
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
   
   const recognitionRef = useRef(null);
   const autoStopTimerRef = useRef(null);
+  const startupTimerRef = useRef(null);
   const transcriptRef = useRef('');
   // Store callbacks in refs to avoid re-creating recognition on every render
   const onTranscriptionRef = useRef(onTranscription);
@@ -40,6 +51,9 @@ const VoiceInputButton = ({
     onPartialTranscriptionRef.current = onPartialTranscription;
   }, [onTranscription, onPartialTranscription]);
   
+  // iOS doesn't support continuous mode well - disable it
+  const effectiveContinuous = isIOS || isSafari ? false : continuous;
+  
   // Initialize speech recognition (only once)
   useEffect(() => {
     if (!SpeechRecognition) {
@@ -48,12 +62,18 @@ const VoiceInputButton = ({
     }
     
     const recognition = new SpeechRecognition();
-    recognition.continuous = continuous;
+    recognition.continuous = effectiveContinuous;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;
     
     recognition.onstart = () => {
+      // Clear startup timer - recognition started successfully
+      if (startupTimerRef.current) {
+        clearTimeout(startupTimerRef.current);
+        startupTimerRef.current = null;
+      }
+      setIsStarting(false);
       setIsRecording(true);
       setError(null);
       transcriptRef.current = '';
@@ -62,11 +82,16 @@ const VoiceInputButton = ({
     recognition.onend = () => {
       setIsRecording(false);
       setIsProcessing(false);
+      setIsStarting(false);
       
-      // Clear auto-stop timer
+      // Clear timers
       if (autoStopTimerRef.current) {
         clearTimeout(autoStopTimerRef.current);
         autoStopTimerRef.current = null;
+      }
+      if (startupTimerRef.current) {
+        clearTimeout(startupTimerRef.current);
+        startupTimerRef.current = null;
       }
       
       // Send final transcription if we have content
@@ -122,11 +147,16 @@ const VoiceInputButton = ({
       console.error('Speech recognition error:', event.error);
       setIsRecording(false);
       setIsProcessing(false);
+      setIsStarting(false);
       
-      // Clear auto-stop timer on error
+      // Clear timers on error
       if (autoStopTimerRef.current) {
         clearTimeout(autoStopTimerRef.current);
         autoStopTimerRef.current = null;
+      }
+      if (startupTimerRef.current) {
+        clearTimeout(startupTimerRef.current);
+        startupTimerRef.current = null;
       }
       
       switch (event.error) {
@@ -146,7 +176,7 @@ const VoiceInputButton = ({
           // Don't show error for user-initiated stops
           break;
         default:
-          setError('Speech recognition error.');
+          setError('Speech recognition error. Please try again.');
       }
     };
     
@@ -164,27 +194,66 @@ const VoiceInputButton = ({
       if (autoStopTimerRef.current) {
         clearTimeout(autoStopTimerRef.current);
       }
+      if (startupTimerRef.current) {
+        clearTimeout(startupTimerRef.current);
+      }
     };
-  }, [continuous, autoStop, autoStopDelay]); // Removed callback dependencies
+  }, [effectiveContinuous, autoStop, autoStopDelay]);
   
   // Handle toggle recording
   const handleToggleRecording = useCallback(() => {
-    if (!recognitionRef.current || disabled) return;
+    if (!recognitionRef.current || disabled || isStarting) return;
     
     if (isRecording) {
       setIsProcessing(true);
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // Ignore - may already be stopped
+        setIsRecording(false);
+        setIsProcessing(false);
+      }
     } else {
       transcriptRef.current = '';
       setError(null);
+      setIsStarting(true);
+      
+      // Set a timeout to detect if recognition stalls (common on iOS)
+      // If onstart doesn't fire within 5 seconds, show error and reset
+      startupTimerRef.current = setTimeout(() => {
+        if (!isRecording) {
+          setIsStarting(false);
+          setError(isIOS 
+            ? 'Voice input timed out. On iOS, try closing Safari and reopening, or use the keyboard instead.'
+            : 'Voice input timed out. Please try again.'
+          );
+          // Try to stop any pending recognition
+          try {
+            recognitionRef.current?.stop();
+          } catch (e) {
+            // Ignore
+          }
+        }
+      }, 5000);
+      
       try {
         recognitionRef.current.start();
       } catch (e) {
         console.error('Failed to start recognition:', e);
-        setError('Failed to start recording.');
+        setIsStarting(false);
+        if (startupTimerRef.current) {
+          clearTimeout(startupTimerRef.current);
+          startupTimerRef.current = null;
+        }
+        // Check for specific iOS error
+        if (e.message?.includes('already started')) {
+          setError('Voice input is busy. Please wait a moment and try again.');
+        } else {
+          setError('Failed to start recording. Please try again.');
+        }
       }
     }
-  }, [isRecording, disabled]);
+  }, [isRecording, isStarting, disabled]);
   
   // Size classes
   const sizeClasses = {
@@ -218,18 +287,18 @@ const VoiceInputButton = ({
       <button
         type="button"
         onClick={handleToggleRecording}
-        disabled={disabled}
+        disabled={disabled || isStarting}
         className={`${sizeClasses[size]} rounded-full transition-all ${
           isRecording 
             ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50' 
-            : isProcessing
+            : isProcessing || isStarting
             ? 'bg-amber-500 text-white'
             : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-        aria-label={isRecording ? 'Stop recording' : 'Start recording'}
-        title={isRecording ? 'Click to stop' : 'Click to record'}
+        } ${disabled || isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
+        aria-label={isRecording ? 'Stop recording' : isStarting ? 'Starting...' : 'Start recording'}
+        title={isRecording ? 'Click to stop' : isStarting ? 'Waiting for microphone...' : 'Click to record'}
       >
-        {isProcessing ? (
+        {isProcessing || isStarting ? (
           <Loader2 className={`${iconSizes[size]} animate-spin`} />
         ) : isRecording ? (
           <Square className={`${iconSizes[size]} fill-current`} />
@@ -237,6 +306,13 @@ const VoiceInputButton = ({
           <Mic className={iconSizes[size]} />
         )}
       </button>
+      
+      {/* Starting indicator */}
+      {isStarting && (
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs text-amber-600 whitespace-nowrap">
+          Starting...
+        </div>
+      )}
       
       {/* Recording indicator */}
       {isRecording && (

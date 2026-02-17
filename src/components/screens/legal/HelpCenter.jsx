@@ -225,8 +225,9 @@ const HelpCenter = () => {
               Can't find what you're looking for? Our team is happy to help.
             </p>
             <a
-              href="mailto:ryan@leaderreps.com"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-corporate-teal text-white rounded-xl font-medium hover:bg-corporate-teal/90 transition-colors"
+              href="mailto:team@leaderreps.com"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-corporate-teal rounded-xl font-medium hover:bg-corporate-teal/90 transition-colors no-underline"
+              style={{ color: 'white' }}
             >
               Contact Support
             </a>

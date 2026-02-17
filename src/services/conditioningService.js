@@ -1531,7 +1531,7 @@ export const conditioningService = {
         }
         return { passed: false, feedback: 'Did they agree to anything specific? If not, why did you choose not to push for a commitment?' };
         
-      case QUALITY_DIMENSIONS.REFLECTION:
+      case QUALITY_DIMENSIONS.REFLECTION: {
         if (text.length < 15) {
           return { passed: false, feedback: 'What surprised you? What would you do differently?' };
         }
@@ -1546,6 +1546,7 @@ export const conditioningService = {
           return { passed: false, feedback: 'Good start. Can you get more specific about what you\'d change?' };
         }
         return { passed: false, feedback: 'Think about this: if you replayed this moment, what would you do differently and why?' };
+      }
         
       default:
         return { passed: text.length >= 20, feedback: text.length >= 20 ? 'Noted. What else comes to mind?' : 'Can you say more?' };

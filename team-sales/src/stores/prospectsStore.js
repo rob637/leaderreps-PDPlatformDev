@@ -50,6 +50,8 @@ export const useProspectsStore = create((set, get) => ({
         const search = filters.search.toLowerCase();
         const matchesSearch = 
           p.name?.toLowerCase().includes(search) ||
+          p.firstName?.toLowerCase().includes(search) ||
+          p.lastName?.toLowerCase().includes(search) ||
           p.company?.toLowerCase().includes(search) ||
           p.email?.toLowerCase().includes(search) ||
           p.title?.toLowerCase().includes(search);
@@ -66,6 +68,12 @@ export const useProspectsStore = create((set, get) => ({
         // Show only current user's prospects (using alias-aware comparison)
         const ownerEmail = p.owner || p.ownerEmail;
         if (!isSameUser(ownerEmail, currentUserEmail)) {
+          return false;
+        }
+      } else if (filters.owner === 'unassigned') {
+        // Show only prospects without an owner
+        const ownerEmail = p.owner || p.ownerEmail;
+        if (ownerEmail) {
           return false;
         }
       } else if (filters.owner === 'all') {
@@ -195,11 +203,7 @@ export const useProspectsStore = create((set, get) => ({
       };
       const docRef = await addDoc(collection(db, COLLECTION), newProspect);
       
-      // Optimistically update local state
-      set(state => ({
-        prospects: [{ id: docRef.id, ...newProspect }, ...state.prospects]
-      }));
-      
+      // Real-time listener will update the UI automatically
       return { id: docRef.id, ...newProspect };
     } catch (error) {
       console.error('Error adding prospect:', error);

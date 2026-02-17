@@ -15,9 +15,10 @@ import {
 } from 'lucide-react';
 
 const ConditioningCard = ({ onNavigate }) => {
-  const { user, userProfile, db } = useAppServices();
+  const { user, db } = useAppServices();
   const userId = user?.uid;
-  const cohortId = userProfile?.cohortId;
+  // Note: user object includes merged userProfile data from DataProvider, so user.cohortId works
+  const cohortId = user?.cohortId;
   
   const [weeklyStatus, setWeeklyStatus] = useState(null);
   const [nudgeStatus, setNudgeStatus] = useState(null);

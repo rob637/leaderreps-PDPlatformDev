@@ -80,8 +80,8 @@ const FIREBASE_PROJECTS = {
     serviceAccountPath: './leaderreps-test-firebase-adminsdk.json'
   },
   prod: {
-    projectId: 'leaderreps-production', // Update when created
-    serviceAccountPath: './leaderreps-production-firebase-adminsdk.json'
+    projectId: 'leaderreps-prod',
+    serviceAccountPath: './leaderreps-prod-firebase-adminsdk.json'
   }
 };
 

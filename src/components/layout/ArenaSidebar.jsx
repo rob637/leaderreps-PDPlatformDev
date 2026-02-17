@@ -5,7 +5,6 @@ import {
   BookOpen, 
   Megaphone, 
   User, 
-  Lock,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -18,13 +17,13 @@ import {
   AlertTriangle,
   Sparkles
 } from 'lucide-react';
-import { CommunityIcon } from '../icons';
+import { CommunityIcon, LockerIcon } from '../icons';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) => {
-  const { identityStatement, habitAnchor, whyStatement, isAdmin, userProfile, developmentPlanData } = useAppServices();
+  const { identityStatement, habitAnchor, whyStatement, isAdmin, user, developmentPlanData } = useAppServices();
   const { prepRequirementsComplete, cohortData } = useDailyPlan();
   const [showAnchors, setShowAnchors] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -82,7 +81,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     { id: 'coaching-hub', label: 'Coaching', icon: Megaphone, flag: 'enableLabs', devModeOnly: true },
     
     { type: 'section', label: 'Personal' },
-    { id: 'locker', label: 'Your Locker', icon: Lock },
+    { id: 'locker', label: 'Your Locker', icon: LockerIcon },
   ];
 
   // Filter Menu Items
@@ -103,7 +102,8 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
 
     // 3. COHORT CHECK: Filter out items that require a cohort if user doesn't have one
     // Check both developmentPlanData.cohortId and cohortData from useDailyPlan
-    const hasCohort = developmentPlanData?.cohortId || cohortData?.id || userProfile?.cohortId;
+    // Note: user object includes merged userProfile data from DataProvider
+    const hasCohort = developmentPlanData?.cohortId || cohortData?.id || user?.cohortId;
     if (item.requiresCohort && !hasCohort) {
       return false;
     }

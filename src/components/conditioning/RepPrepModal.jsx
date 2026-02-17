@@ -215,8 +215,11 @@ const RepPrepModal = ({ rep, existingPrep, onClose, onSave, isLoading }) => {
   const currentPrompt = PREP_PROMPTS[currentPromptIndex];
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 p-4 pb-20 md:pb-4">
+      <Card 
+        className="w-full max-w-lg max-h-[calc(100vh-6rem)] md:max-h-[90vh] overflow-hidden flex flex-col"
+        style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-corporate-navy to-corporate-navy/90">
           <div className="flex items-center justify-between mb-2">
@@ -296,8 +299,11 @@ const RepPrepModal = ({ rep, existingPrep, onClose, onSave, isLoading }) => {
           )}
         </div>
         
-        {/* Footer - Navigation & Save */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        {/* Footer - Navigation & Save - Mobile-safe padding */}
+        <div 
+          className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+          style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
+        >
           <div className="flex items-center justify-between">
             {/* Previous Button */}
             <Button

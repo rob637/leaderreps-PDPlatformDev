@@ -1813,6 +1813,839 @@ exports.apolloSearchProxy = onCall({ cors: true, region: "us-central1" }, async 
 });
 
 /**
+ * INSTANTLY.AI API PROXY (Callable - Gen 2)
+ * Proxies Instantly.ai API calls for cold email campaign management.
+ * Supports campaign listing, lead management, and status syncing.
+ * API Docs: https://developer.instantly.ai/
+ */
+exports.instantlyProxy = onCall({ cors: true, region: "us-central1" }, async (request) => {
+  // Check authentication
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be authenticated to use Instantly API.');
+  }
+
+  // Check if user is admin or team member
+  const userEmail = request.auth.token.email?.toLowerCase();
+  const teamEmails = [
+    'rob@sagecg.com', 'rob@leaderreps.com', 
+    'ryan@leaderreps.com', 
+    'jeff@leaderreps.com', 
+    'cristina@leaderreps.com'
+  ];
+  
+  let isAuthorized = teamEmails.includes(userEmail);
+  
+  if (!isAuthorized) {
+    // Check dynamic admin list
+    try {
+      const configDoc = await db.collection('metadata').doc('config').get();
+      if (configDoc.exists) {
+        const adminEmails = configDoc.data().adminemails || [];
+        isAuthorized = adminEmails.map(e => e.toLowerCase()).includes(userEmail);
+      }
+    } catch (err) {
+      logger.error('Error checking authorization status', err);
+    }
+  }
+
+  if (!isAuthorized) {
+    throw new HttpsError('permission-denied', 'Not authorized to use Instantly API.');
+  }
+
+  const { action, apiKey: userApiKey } = request.data;
+  
+  // Get API key from request (user settings) or fall back to environment/config
+  const apiKey = userApiKey || 
+    process.env.INSTANTLY_API_KEY || 
+    (functionsV1.config().instantly && functionsV1.config().instantly.api_key);
+  
+  if (!apiKey) {
+    throw new HttpsError('failed-precondition', 'Instantly API key not configured. Please add your API key in Settings.');
+  }
+
+  const INSTANTLY_BASE_URL = 'https://api.instantly.ai/api/v1';
+
+  // Helper for Instantly API calls
+  async function instantlyFetch(endpoint, method = 'GET', body = null) {
+    const url = `${INSTANTLY_BASE_URL}${endpoint}`;
+    const options = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    };
+    
+    // Instantly uses api_key as query param for most endpoints
+    const urlWithKey = url.includes('?') ? `${url}&api_key=${apiKey}` : `${url}?api_key=${apiKey}`;
+    
+    if (body) {
+      // Add api_key to body as well (some endpoints need it)
+      options.body = JSON.stringify({ ...body, api_key: apiKey });
+    }
+    
+    const response = await fetch(urlWithKey, options);
+    const responseText = await response.text();
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      logger.error('Instantly API returned non-JSON response', { 
+        status: response.status, 
+        responseText: responseText.substring(0, 200) 
+      });
+      throw new HttpsError('internal', `Instantly API error: ${responseText.substring(0, 100)}`);
+    }
+    
+    if (!response.ok) {
+      logger.error('Instantly API error', { status: response.status, endpoint, data });
+      throw new HttpsError('internal', data.error || data.message || 'Instantly API request failed.');
+    }
+    
+    return data;
+  }
+
+  try {
+    switch (action) {
+      // ========== CAMPAIGN OPERATIONS ==========
+      case 'listCampaigns': {
+        const result = await instantlyFetch('/campaign/list', 'GET');
+        logger.info('Instantly: Listed campaigns', { count: result?.length || 0 });
+        return result;
+      }
+      
+      case 'getCampaign': {
+        const { campaignId } = request.data;
+        if (!campaignId) throw new HttpsError('invalid-argument', 'Campaign ID is required.');
+        const result = await instantlyFetch(`/campaign/get?id=${campaignId}`, 'GET');
+        return result;
+      }
+      
+      case 'getCampaignAnalytics': {
+        const { campaignId } = request.data;
+        if (!campaignId) throw new HttpsError('invalid-argument', 'Campaign ID is required.');
+        const result = await instantlyFetch(`/analytics/campaign/summary?campaign_id=${campaignId}`, 'GET');
+        return result;
+      }
+      
+      // ========== LEAD OPERATIONS ==========
+      case 'addLead': {
+        const { campaignId, lead } = request.data;
+        if (!campaignId) throw new HttpsError('invalid-argument', 'Campaign ID is required.');
+        if (!lead?.email) throw new HttpsError('invalid-argument', 'Lead email is required.');
+        
+        const result = await instantlyFetch('/lead/add', 'POST', {
+          campaign_id: campaignId,
+          ...lead
+        });
+        
+        logger.info('Instantly: Added lead', { email: lead.email, campaignId });
+        return result;
+      }
+      
+      case 'addLeads': {
+        const { campaignId, leads } = request.data;
+        if (!campaignId) throw new HttpsError('invalid-argument', 'Campaign ID is required.');
+        if (!leads?.length) throw new HttpsError('invalid-argument', 'At least one lead is required.');
+        
+        // Instantly supports bulk add with /lead/add/bulk
+        const result = await instantlyFetch('/lead/add/bulk', 'POST', {
+          campaign_id: campaignId,
+          leads: leads.map(lead => ({
+            ...lead,
+            campaign_id: campaignId
+          }))
+        });
+        
+        logger.info('Instantly: Added leads batch', { count: leads.length, campaignId });
+        return result;
+      }
+      
+      case 'getLeadStatus': {
+        const { email } = request.data;
+        if (!email) throw new HttpsError('invalid-argument', 'Email is required.');
+        
+        const result = await instantlyFetch(`/lead/get?email=${encodeURIComponent(email)}`, 'GET');
+        return result;
+      }
+      
+      case 'getCampaignLeads': {
+        const { campaignId, limit = 100, skip = 0 } = request.data;
+        if (!campaignId) throw new HttpsError('invalid-argument', 'Campaign ID is required.');
+        
+        const result = await instantlyFetch(
+          `/lead/list?campaign_id=${campaignId}&limit=${limit}&skip=${skip}`, 
+          'GET'
+        );
+        return result;
+      }
+      
+      case 'pauseLead': {
+        const { campaignId, email } = request.data;
+        if (!campaignId || !email) {
+          throw new HttpsError('invalid-argument', 'Campaign ID and email are required.');
+        }
+        
+        const result = await instantlyFetch('/lead/update/status', 'POST', {
+          campaign_id: campaignId,
+          email: email,
+          status: 'paused'
+        });
+        
+        logger.info('Instantly: Paused lead', { email, campaignId });
+        return result;
+      }
+      
+      case 'resumeLead': {
+        const { campaignId, email } = request.data;
+        if (!campaignId || !email) {
+          throw new HttpsError('invalid-argument', 'Campaign ID and email are required.');
+        }
+        
+        const result = await instantlyFetch('/lead/update/status', 'POST', {
+          campaign_id: campaignId,
+          email: email,
+          status: 'active'
+        });
+        
+        logger.info('Instantly: Resumed lead', { email, campaignId });
+        return result;
+      }
+      
+      case 'removeLead': {
+        const { campaignId, email } = request.data;
+        if (!campaignId || !email) {
+          throw new HttpsError('invalid-argument', 'Campaign ID and email are required.');
+        }
+        
+        const result = await instantlyFetch('/lead/delete', 'POST', {
+          campaign_id: campaignId,
+          delete_list: [email]
+        });
+        
+        logger.info('Instantly: Removed lead', { email, campaignId });
+        return result;
+      }
+      
+      default:
+        throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
+    }
+  } catch (error) {
+    logger.error('Instantly proxy error', { action, error: error.message });
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError('internal', error.message || 'Failed to call Instantly API.');
+  }
+});
+
+/**
+ * INSTANTLY WEBHOOK HANDLER (Gen 2 HTTP Request)
+ * Receives webhook events from Instantly.ai (replies, bounces, opens, etc.)
+ * and updates prospect status in Firestore.
+ * 
+ * Configure webhook URL in Instantly: https://us-central1-{PROJECT_ID}.cloudfunctions.net/instantlyWebhook
+ */
+exports.instantlyWebhook = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  // Only accept POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
+  }
+  
+  const event = req.body;
+  logger.info('Instantly webhook received', { eventType: event.event_type, email: event.email });
+  
+  try {
+    const { event_type, email, campaign_id, timestamp } = event;
+    
+    if (!email) {
+      logger.warn('Instantly webhook missing email');
+      return res.status(400).json({ error: 'Missing email' });
+    }
+    
+    // Find the prospect by email
+    const prospectsRef = db.collection('corporate_prospects');
+    const snapshot = await prospectsRef.where('email', '==', email.toLowerCase()).limit(1).get();
+    
+    if (snapshot.empty) {
+      logger.info('Prospect not found for Instantly webhook', { email });
+      return res.status(200).json({ message: 'Prospect not found, event ignored' });
+    }
+    
+    const prospectDoc = snapshot.docs[0];
+    const prospectId = prospectDoc.id;
+    
+    // Map Instantly event to prospect update
+    const updates = {
+      instantlyLastEvent: event_type,
+      instantlyLastEventAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    // Update status based on event type
+    switch (event_type) {
+      case 'email_replied':
+      case 'replied':
+        updates.instantlyStatus = 'replied';
+        // Optionally move to different pipeline stage
+        updates.stage = 'contacted';
+        break;
+        
+      case 'email_bounced':
+      case 'bounced':
+        updates.instantlyStatus = 'bounced';
+        break;
+        
+      case 'email_opened':
+      case 'opened':
+        // Don't overwrite more important statuses
+        const currentData = prospectDoc.data();
+        if (!['replied', 'meeting_booked'].includes(currentData.instantlyStatus)) {
+          updates.instantlyStatus = 'opened';
+        }
+        break;
+        
+      case 'lead_unsubscribed':
+      case 'unsubscribed':
+        updates.instantlyStatus = 'unsubscribed';
+        break;
+        
+      case 'lead_interested':
+      case 'interested':
+        updates.instantlyStatus = 'interested';
+        updates.stage = 'qualified';
+        break;
+        
+      case 'meeting_booked':
+        updates.instantlyStatus = 'meeting_booked';
+        updates.stage = 'demo';
+        break;
+        
+      default:
+        logger.info('Unhandled Instantly event type', { event_type });
+    }
+    
+    // Add to activity log
+    const activity = {
+      type: 'instantly_event',
+      event: event_type,
+      campaignId: campaign_id || null,
+      timestamp: new Date(timestamp || Date.now()),
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    // Update prospect and add activity
+    await prospectDoc.ref.update(updates);
+    await prospectDoc.ref.collection('activities').add(activity);
+    
+    logger.info('Instantly webhook processed', { prospectId, event_type });
+    return res.status(200).json({ success: true, prospectId });
+    
+  } catch (error) {
+    logger.error('Instantly webhook error', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * LINKEDHELPER API PROXY (Callable - Gen 2)
+ * Proxies LinkedHelper 2 API calls for LinkedIn automation management.
+ * Supports campaign listing, contact management, and status syncing.
+ * API Docs: https://docs.linkedhelper.com/api/
+ */
+exports.linkedHelperProxy = onCall({ cors: true, region: "us-central1" }, async (request) => {
+  // Check authentication
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be authenticated to use LinkedHelper API.');
+  }
+
+  // Check if user is admin or team member
+  const userEmail = request.auth.token.email?.toLowerCase();
+  const teamEmails = [
+    'rob@sagecg.com', 'rob@leaderreps.com', 
+    'ryan@leaderreps.com', 
+    'jeff@leaderreps.com', 
+    'cristina@leaderreps.com'
+  ];
+  
+  let isAuthorized = teamEmails.includes(userEmail);
+  
+  if (!isAuthorized) {
+    // Check dynamic admin list
+    try {
+      const configDoc = await db.collection('metadata').doc('config').get();
+      if (configDoc.exists) {
+        const adminEmails = configDoc.data().adminemails || [];
+        isAuthorized = adminEmails.map(e => e.toLowerCase()).includes(userEmail);
+      }
+    } catch (err) {
+      logger.error('Error checking authorization status', err);
+    }
+  }
+
+  if (!isAuthorized) {
+    throw new HttpsError('permission-denied', 'Not authorized to use LinkedHelper API.');
+  }
+
+  const { action, apiKey: userApiKey } = request.data;
+  
+  // Get API key from request (user settings) or fall back to environment/config
+  const apiKey = userApiKey || 
+    process.env.LINKEDHELPER_API_KEY || 
+    (functionsV1.config().linkedhelper && functionsV1.config().linkedhelper.api_key);
+  
+  if (!apiKey) {
+    throw new HttpsError('failed-precondition', 'LinkedHelper API key not configured. Please add your API key in Settings.');
+  }
+
+  // LinkedHelper 2 uses localhost API when running
+  // For cloud integration, we use their cloud API endpoint
+  const LINKEDHELPER_BASE_URL = 'https://api.linkedhelper.com/v1';
+
+  // Helper for LinkedHelper API calls
+  async function linkedHelperFetch(endpoint, method = 'GET', body = null) {
+    const url = `${LINKEDHELPER_BASE_URL}${endpoint}`;
+    const options = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      }
+    };
+    
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+    
+    const response = await fetch(url, options);
+    const responseText = await response.text();
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      logger.error('LinkedHelper API returned non-JSON response', { 
+        status: response.status, 
+        responseText: responseText.substring(0, 200) 
+      });
+      throw new HttpsError('internal', `LinkedHelper API error: ${responseText.substring(0, 100)}`);
+    }
+    
+    if (!response.ok) {
+      logger.error('LinkedHelper API error', { status: response.status, endpoint, data });
+      throw new HttpsError('internal', data.error || data.message || 'LinkedHelper API request failed.');
+    }
+    
+    return data;
+  }
+
+  try {
+    switch (action) {
+      // ========== CAMPAIGN OPERATIONS ==========
+      case 'listCampaigns': {
+        const result = await linkedHelperFetch('/campaigns', 'GET');
+        logger.info('LinkedHelper: Listed campaigns', { count: result?.campaigns?.length || 0 });
+        return result.campaigns || result;
+      }
+      
+      case 'getCampaign': {
+        const { campaignId } = request.data;
+        if (!campaignId) throw new HttpsError('invalid-argument', 'Campaign ID is required.');
+        const result = await linkedHelperFetch(`/campaigns/${campaignId}`, 'GET');
+        return result;
+      }
+      
+      case 'getCampaignStats': {
+        const { campaignId } = request.data;
+        if (!campaignId) throw new HttpsError('invalid-argument', 'Campaign ID is required.');
+        const result = await linkedHelperFetch(`/campaigns/${campaignId}/stats`, 'GET');
+        return result;
+      }
+      
+      // ========== CONTACT OPERATIONS ==========
+      case 'addContact': {
+        const { campaignId, contact } = request.data;
+        if (!campaignId) throw new HttpsError('invalid-argument', 'Campaign ID is required.');
+        if (!contact?.linkedinUrl && !contact?.profileUrl) {
+          throw new HttpsError('invalid-argument', 'LinkedIn URL is required.');
+        }
+        
+        const result = await linkedHelperFetch(`/campaigns/${campaignId}/contacts`, 'POST', {
+          linkedin_url: contact.linkedinUrl || contact.profileUrl,
+          first_name: contact.firstName || '',
+          last_name: contact.lastName || '',
+          company: contact.company || '',
+          title: contact.title || '',
+          email: contact.email || '',
+          custom_data: contact.customData || {}
+        });
+        
+        logger.info('LinkedHelper: Added contact', { 
+          linkedinUrl: contact.linkedinUrl || contact.profileUrl, 
+          campaignId 
+        });
+        return result;
+      }
+      
+      case 'addContacts': {
+        const { campaignId, contacts } = request.data;
+        if (!campaignId) throw new HttpsError('invalid-argument', 'Campaign ID is required.');
+        if (!contacts?.length) throw new HttpsError('invalid-argument', 'At least one contact is required.');
+        
+        const formattedContacts = contacts.map(c => ({
+          linkedin_url: c.linkedinUrl || c.profileUrl || c.linkedin,
+          first_name: c.firstName || c.name?.split(' ')[0] || '',
+          last_name: c.lastName || c.name?.split(' ').slice(1).join(' ') || '',
+          company: c.company || '',
+          title: c.title || '',
+          email: c.email || '',
+          custom_data: c.customData || {}
+        }));
+        
+        const result = await linkedHelperFetch(`/campaigns/${campaignId}/contacts/bulk`, 'POST', {
+          contacts: formattedContacts
+        });
+        
+        logger.info('LinkedHelper: Added contacts batch', { count: contacts.length, campaignId });
+        return result;
+      }
+      
+      case 'getContactStatus': {
+        const { linkedinUrl, email } = request.data;
+        if (!linkedinUrl && !email) {
+          throw new HttpsError('invalid-argument', 'LinkedIn URL or email is required.');
+        }
+        
+        // Search by LinkedIn URL or email
+        const searchParam = linkedinUrl 
+          ? `linkedin_url=${encodeURIComponent(linkedinUrl)}`
+          : `email=${encodeURIComponent(email)}`;
+        
+        const result = await linkedHelperFetch(`/contacts/search?${searchParam}`, 'GET');
+        return result;
+      }
+      
+      case 'getCampaignContacts': {
+        const { campaignId, limit = 100, offset = 0, status } = request.data;
+        if (!campaignId) throw new HttpsError('invalid-argument', 'Campaign ID is required.');
+        
+        let endpoint = `/campaigns/${campaignId}/contacts?limit=${limit}&offset=${offset}`;
+        if (status) {
+          endpoint += `&status=${status}`;
+        }
+        
+        const result = await linkedHelperFetch(endpoint, 'GET');
+        return result;
+      }
+      
+      case 'updateContactStatus': {
+        const { campaignId, contactId, status } = request.data;
+        if (!campaignId || !contactId) {
+          throw new HttpsError('invalid-argument', 'Campaign ID and contact ID are required.');
+        }
+        
+        const result = await linkedHelperFetch(`/campaigns/${campaignId}/contacts/${contactId}`, 'PATCH', {
+          status: status
+        });
+        
+        logger.info('LinkedHelper: Updated contact status', { contactId, status, campaignId });
+        return result;
+      }
+      
+      case 'removeContact': {
+        const { campaignId, contactId } = request.data;
+        if (!campaignId || !contactId) {
+          throw new HttpsError('invalid-argument', 'Campaign ID and contact ID are required.');
+        }
+        
+        const result = await linkedHelperFetch(`/campaigns/${campaignId}/contacts/${contactId}`, 'DELETE');
+        
+        logger.info('LinkedHelper: Removed contact', { contactId, campaignId });
+        return result;
+      }
+      
+      // ========== SYNC OPERATIONS ==========
+      case 'syncCampaignResults': {
+        // Fetch all contacts with updated statuses for syncing back to CRM
+        const { campaignId, since } = request.data;
+        if (!campaignId) throw new HttpsError('invalid-argument', 'Campaign ID is required.');
+        
+        let endpoint = `/campaigns/${campaignId}/contacts?limit=500`;
+        if (since) {
+          endpoint += `&updated_since=${since}`;
+        }
+        
+        const result = await linkedHelperFetch(endpoint, 'GET');
+        logger.info('LinkedHelper: Synced campaign results', { 
+          campaignId, 
+          count: result?.contacts?.length || 0 
+        });
+        return result;
+      }
+      
+      default:
+        throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
+    }
+  } catch (error) {
+    logger.error('LinkedHelper proxy error', { action, error: error.message });
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError('internal', error.message || 'Failed to call LinkedHelper API.');
+  }
+});
+
+/**
+ * LINKEDHELPER WEBHOOK HANDLER (Gen 2 HTTP Request)
+ * Receives webhook events from LinkedHelper (connection accepted, message replied, etc.)
+ * and updates prospect status in Firestore.
+ * 
+ * Configure webhook URL in LinkedHelper: https://us-central1-{PROJECT_ID}.cloudfunctions.net/linkedHelperWebhook
+ */
+exports.linkedHelperWebhook = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  // Only accept POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
+  }
+  
+  const event = req.body;
+  logger.info('LinkedHelper webhook received', { eventType: event.event_type, linkedinUrl: event.linkedin_url });
+  
+  try {
+    const { event_type, linkedin_url, email, campaign_id, timestamp, contact_data } = event;
+    
+    if (!linkedin_url && !email) {
+      logger.warn('LinkedHelper webhook missing identifier');
+      return res.status(400).json({ error: 'Missing linkedin_url or email' });
+    }
+    
+    // Find the prospect by LinkedIn URL or email
+    const prospectsRef = db.collection('corporate_prospects');
+    let snapshot;
+    
+    if (linkedin_url) {
+      // Try to match LinkedIn URL (may have variations)
+      const normalizedUrl = linkedin_url.toLowerCase().replace(/\/$/, '');
+      snapshot = await prospectsRef
+        .where('linkedin', '>=', normalizedUrl.split('/in/')[0])
+        .limit(10)
+        .get();
+      
+      // Filter for exact match
+      const matchingDocs = snapshot.docs.filter(doc => {
+        const prospectLinkedin = (doc.data().linkedin || '').toLowerCase().replace(/\/$/, '');
+        return prospectLinkedin.includes(normalizedUrl.split('/in/')[1] || normalizedUrl);
+      });
+      
+      if (matchingDocs.length > 0) {
+        snapshot = { empty: false, docs: matchingDocs };
+      } else {
+        snapshot = { empty: true, docs: [] };
+      }
+    }
+    
+    // Fallback to email search
+    if ((!snapshot || snapshot.empty) && email) {
+      snapshot = await prospectsRef.where('email', '==', email.toLowerCase()).limit(1).get();
+    }
+    
+    if (!snapshot || snapshot.empty) {
+      logger.info('Prospect not found for LinkedHelper webhook', { linkedin_url, email });
+      return res.status(200).json({ message: 'Prospect not found, event ignored' });
+    }
+    
+    const prospectDoc = snapshot.docs[0];
+    const prospectId = prospectDoc.id;
+    
+    // Map LinkedHelper event to prospect update
+    const updates = {
+      linkedHelperLastEvent: event_type,
+      linkedHelperLastEventAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    // Update status based on event type
+    switch (event_type) {
+      case 'connection_sent':
+        updates.linkedHelperStatus = 'pending';
+        break;
+        
+      case 'connection_accepted':
+      case 'connected':
+        updates.linkedHelperStatus = 'connected';
+        updates.linkedinStatus = 'connected'; // Update main LinkedIn status too
+        break;
+        
+      case 'message_sent':
+        updates.linkedHelperStatus = 'messaged';
+        break;
+        
+      case 'message_replied':
+      case 'replied':
+        updates.linkedHelperStatus = 'replied';
+        updates.stage = 'contacted'; // Move to contacted stage
+        break;
+        
+      case 'connection_declined':
+      case 'declined':
+        updates.linkedHelperStatus = 'declined';
+        break;
+        
+      case 'profile_visited':
+        // Don't overwrite more important statuses
+        const currentData = prospectDoc.data();
+        if (!['connected', 'replied', 'messaged'].includes(currentData.linkedHelperStatus)) {
+          updates.linkedHelperStatus = 'visited';
+        }
+        break;
+        
+      case 'withdrawn':
+        updates.linkedHelperStatus = 'withdrawn';
+        break;
+        
+      default:
+        logger.info('Unhandled LinkedHelper event type', { event_type });
+    }
+    
+    // Add to activity log
+    const activity = {
+      type: 'linkedin_event',
+      event: event_type,
+      campaignId: campaign_id || null,
+      linkedinUrl: linkedin_url || null,
+      timestamp: new Date(timestamp || Date.now()),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      details: contact_data || null
+    };
+    
+    // Update prospect and add activity
+    await prospectDoc.ref.update(updates);
+    await prospectDoc.ref.collection('activities').add(activity);
+    
+    logger.info('LinkedHelper webhook processed', { prospectId, event_type });
+    return res.status(200).json({ success: true, prospectId });
+    
+  } catch (error) {
+    logger.error('LinkedHelper webhook error', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * LINKEDHELPER SYNC JOB (Scheduled - runs every 15 minutes)
+ * Pulls latest status updates from LinkedHelper campaigns and syncs to Firestore.
+ * This provides a backup sync mechanism in case webhooks are missed.
+ */
+exports.linkedHelperSyncJob = onSchedule({
+  schedule: "every 15 minutes",
+  region: "us-central1",
+  timeoutSeconds: 300
+}, async (event) => {
+  logger.info("LinkedHelper sync job started");
+  
+  const apiKey = process.env.LINKEDHELPER_API_KEY || 
+    (functionsV1.config().linkedhelper && functionsV1.config().linkedhelper.api_key);
+  
+  if (!apiKey) {
+    logger.warn("LinkedHelper API key not configured, skipping sync");
+    return;
+  }
+  
+  try {
+    // Get the last sync timestamp
+    const syncMetaRef = db.collection('metadata').doc('linkedhelper_sync');
+    const syncMeta = await syncMetaRef.get();
+    const lastSync = syncMeta.exists ? syncMeta.data().lastSync?.toDate() : null;
+    const lastSyncISO = lastSync ? lastSync.toISOString() : null;
+    
+    // Get all prospects that have been pushed to LinkedHelper
+    const prospectsRef = db.collection('corporate_prospects');
+    const linkedProspects = await prospectsRef
+      .where('linkedHelperCampaignId', '!=', null)
+      .get();
+    
+    if (linkedProspects.empty) {
+      logger.info("No prospects linked to LinkedHelper campaigns");
+      return;
+    }
+    
+    // Group prospects by campaign
+    const prospectsByCampaign = {};
+    linkedProspects.docs.forEach(doc => {
+      const data = doc.data();
+      const campaignId = data.linkedHelperCampaignId;
+      if (!prospectsByCampaign[campaignId]) {
+        prospectsByCampaign[campaignId] = [];
+      }
+      prospectsByCampaign[campaignId].push({ id: doc.id, ...data });
+    });
+    
+    let syncedCount = 0;
+    
+    // For each campaign, fetch latest statuses
+    for (const [campaignId, prospects] of Object.entries(prospectsByCampaign)) {
+      try {
+        let endpoint = `https://api.linkedhelper.com/v1/campaigns/${campaignId}/contacts?limit=500`;
+        if (lastSyncISO) {
+          endpoint += `&updated_since=${lastSyncISO}`;
+        }
+        
+        const response = await fetch(endpoint, {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          logger.warn(`Failed to fetch campaign ${campaignId} contacts`, { status: response.status });
+          continue;
+        }
+        
+        const data = await response.json();
+        const contacts = data.contacts || [];
+        
+        // Match and update prospects
+        for (const contact of contacts) {
+          const linkedinUrl = (contact.linkedin_url || '').toLowerCase();
+          const email = (contact.email || '').toLowerCase();
+          
+          // Find matching prospect
+          const matchingProspect = prospects.find(p => {
+            const pLinkedin = (p.linkedin || '').toLowerCase();
+            const pEmail = (p.email || '').toLowerCase();
+            return (linkedinUrl && pLinkedin.includes(linkedinUrl.split('/in/')[1] || linkedinUrl)) ||
+                   (email && pEmail === email);
+          });
+          
+          if (matchingProspect && contact.status !== matchingProspect.linkedHelperStatus) {
+            await prospectsRef.doc(matchingProspect.id).update({
+              linkedHelperStatus: contact.status,
+              linkedHelperLastSync: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            syncedCount++;
+          }
+        }
+      } catch (err) {
+        logger.error(`Error syncing campaign ${campaignId}`, err);
+      }
+    }
+    
+    // Update last sync time
+    await syncMetaRef.set({
+      lastSync: admin.firestore.FieldValue.serverTimestamp(),
+      syncedCount
+    }, { merge: true });
+    
+    logger.info("LinkedHelper sync job completed", { syncedCount });
+    
+  } catch (error) {
+    logger.error("LinkedHelper sync job error", error);
+  }
+});
+
+/**
  * SEND OUTREACH EMAIL (Callable)
  * Sends an email via Nodemailer for the Outreach module.
  * Can be used for live campaigns or test emails.
@@ -2250,4 +3083,636 @@ IMPORTANT:
 - If they say something doesn't make sense or seems off, acknowledge it and ask for clarification
 - Be authentically curious - you're learning about them as you coach them
 - Use their actual words back to them to show you're listening`;
+}
+
+// ================================================================================
+// GMAIL INTEGRATION
+// ================================================================================
+
+/**
+ * GMAIL PROXY
+ * Handles Gmail API calls using OAuth tokens from user settings.
+ * Supports: listing messages, getting message details, sending emails, syncing threads.
+ */
+exports.gmailProxy = onCall({ 
+  cors: true, 
+  region: "us-central1",
+  secrets: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
+}, async (request) => {
+  // Check authentication
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be authenticated to use Gmail API.');
+  }
+
+  // Check if user is admin or team member
+  const userEmail = request.auth.token.email?.toLowerCase();
+  const teamEmails = [
+    'rob@sagecg.com', 'rob@leaderreps.com', 
+    'ryan@leaderreps.com', 
+    'jeff@leaderreps.com', 
+    'cristina@leaderreps.com'
+  ];
+  
+  let isAuthorized = teamEmails.includes(userEmail);
+  
+  if (!isAuthorized) {
+    try {
+      const configDoc = await db.collection('metadata').doc('config').get();
+      if (configDoc.exists) {
+        const adminEmails = configDoc.data().adminemails || [];
+        isAuthorized = adminEmails.map(e => e.toLowerCase()).includes(userEmail);
+      }
+    } catch (err) {
+      logger.error('Error checking authorization status', err);
+    }
+  }
+
+  if (!isAuthorized) {
+    throw new HttpsError('permission-denied', 'Not authorized to use Gmail API.');
+  }
+
+  const { action, accessToken, refreshToken } = request.data;
+  
+  // Get tokens from request (user provides from their settings)
+  if (!accessToken && !refreshToken) {
+    throw new HttpsError('failed-precondition', 'Gmail not connected. Please connect Gmail in Settings.');
+  }
+
+  // If we have a refresh token but no access token, exchange it
+  let activeAccessToken = accessToken;
+  
+  if (!activeAccessToken && refreshToken) {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    
+    if (!clientId || !clientSecret) {
+      throw new HttpsError('failed-precondition', 'Google OAuth not configured.');
+    }
+    
+    try {
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token'
+        })
+      });
+      
+      const tokenData = await tokenResponse.json();
+      
+      if (!tokenData.access_token) {
+        throw new HttpsError('unauthenticated', 'Gmail token expired. Please reconnect Gmail in Settings.');
+      }
+      
+      activeAccessToken = tokenData.access_token;
+      
+      // Save the new access token back to user settings (fire and forget)
+      try {
+        const userId = request.auth.uid;
+        const settingsRef = db.collection('users').doc(userId).collection('settings').doc('gmail');
+        await settingsRef.update({ 
+          accessToken: activeAccessToken,
+          tokenUpdatedAt: new Date().toISOString()
+        });
+      } catch (e) {
+        logger.warn('Could not update access token in settings', e);
+      }
+    } catch (error) {
+      logger.error('Error refreshing Gmail token', error);
+      throw new HttpsError('unauthenticated', 'Failed to refresh Gmail token. Please reconnect Gmail.');
+    }
+  }
+
+  const GMAIL_API_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
+
+  // Helper for Gmail API calls
+  async function gmailFetch(endpoint, method = 'GET', body = null) {
+    const url = `${GMAIL_API_BASE}${endpoint}`;
+    const options = {
+      method,
+      headers: {
+        'Authorization': `Bearer ${activeAccessToken}`,
+        'Content-Type': 'application/json'
+      }
+    };
+    
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+    
+    const response = await fetch(url, options);
+    const responseText = await response.text();
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      logger.error('Gmail API returned non-JSON response', { 
+        status: response.status, 
+        responseText: responseText.substring(0, 200) 
+      });
+      throw new HttpsError('internal', `Gmail API error: ${responseText.substring(0, 100)}`);
+    }
+    
+    if (!response.ok) {
+      logger.error('Gmail API error', { status: response.status, endpoint, data });
+      
+      if (response.status === 401) {
+        throw new HttpsError('unauthenticated', 'Gmail token expired. Please reconnect Gmail.');
+      }
+      
+      throw new HttpsError('internal', data.error?.message || 'Gmail API request failed.');
+    }
+    
+    return data;
+  }
+
+  try {
+    switch (action) {
+      // ========== EMAIL LISTING ==========
+      case 'listMessages': {
+        const { maxResults = 50, pageToken, query } = request.data;
+        let endpoint = `/messages?maxResults=${maxResults}`;
+        if (pageToken) endpoint += `&pageToken=${pageToken}`;
+        if (query) endpoint += `&q=${encodeURIComponent(query)}`;
+        
+        const result = await gmailFetch(endpoint, 'GET');
+        logger.info('Gmail: Listed messages', { count: result.messages?.length || 0 });
+        return result;
+      }
+      
+      case 'getMessage': {
+        const { messageId, format = 'full' } = request.data;
+        if (!messageId) throw new HttpsError('invalid-argument', 'Message ID is required.');
+        
+        const result = await gmailFetch(`/messages/${messageId}?format=${format}`, 'GET');
+        return result;
+      }
+      
+      case 'getThread': {
+        const { threadId, format = 'full' } = request.data;
+        if (!threadId) throw new HttpsError('invalid-argument', 'Thread ID is required.');
+        
+        const result = await gmailFetch(`/threads/${threadId}?format=${format}`, 'GET');
+        return result;
+      }
+      
+      // ========== SEND EMAIL ==========
+      case 'sendEmail': {
+        const { to, subject, body, cc, bcc, replyToMessageId, threadId } = request.data;
+        if (!to || !subject || !body) {
+          throw new HttpsError('invalid-argument', 'To, subject, and body are required.');
+        }
+        
+        // Build raw email
+        let rawEmail = `To: ${to}\r\n`;
+        if (cc) rawEmail += `Cc: ${cc}\r\n`;
+        if (bcc) rawEmail += `Bcc: ${bcc}\r\n`;
+        rawEmail += `Subject: ${subject}\r\n`;
+        rawEmail += `Content-Type: text/html; charset=UTF-8\r\n`;
+        if (replyToMessageId) rawEmail += `In-Reply-To: ${replyToMessageId}\r\n`;
+        rawEmail += `\r\n${body}`;
+        
+        // Base64 URL encode
+        const encodedEmail = Buffer.from(rawEmail)
+          .toString('base64')
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/, '');
+        
+        const requestBody = { raw: encodedEmail };
+        if (threadId) requestBody.threadId = threadId;
+        
+        const result = await gmailFetch('/messages/send', 'POST', requestBody);
+        logger.info('Gmail: Email sent', { to, subject: subject.substring(0, 50) });
+        return result;
+      }
+      
+      // ========== LABELS ==========
+      case 'listLabels': {
+        const result = await gmailFetch('/labels', 'GET');
+        return result;
+      }
+      
+      // ========== PROFILE ==========
+      case 'getProfile': {
+        const result = await gmailFetch('/profile', 'GET');
+        return result;
+      }
+      
+      // ========== SYNC OPERATIONS ==========
+      case 'syncSentEmails': {
+        // Get sent emails in the last N days
+        const { daysBack = 7, prospectEmails = [] } = request.data;
+        const afterDate = new Date();
+        afterDate.setDate(afterDate.getDate() - daysBack);
+        const afterTimestamp = Math.floor(afterDate.getTime() / 1000);
+        
+        // Build query for sent emails to specific contacts
+        let query = `in:sent after:${afterTimestamp}`;
+        if (prospectEmails.length > 0) {
+          // Gmail query for multiple recipients: (to:a@b.com OR to:c@d.com)
+          const toClause = prospectEmails.map(e => `to:${e}`).join(' OR ');
+          query += ` (${toClause})`;
+        }
+        
+        const result = await gmailFetch(`/messages?maxResults=100&q=${encodeURIComponent(query)}`, 'GET');
+        
+        // Get full details for each message
+        const messages = result.messages || [];
+        const fullMessages = [];
+        
+        for (const msg of messages.slice(0, 50)) { // Limit to 50 to avoid timeout
+          try {
+            const fullMsg = await gmailFetch(`/messages/${msg.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`, 'GET');
+            fullMessages.push(fullMsg);
+          } catch (e) {
+            logger.warn('Could not fetch message details', { id: msg.id, error: e.message });
+          }
+        }
+        
+        logger.info('Gmail: Synced sent emails', { count: fullMessages.length });
+        return { messages: fullMessages };
+      }
+      
+      case 'syncReceivedEmails': {
+        // Get received emails from specific contacts
+        const { daysBack = 7, prospectEmails = [] } = request.data;
+        const afterDate = new Date();
+        afterDate.setDate(afterDate.getDate() - daysBack);
+        const afterTimestamp = Math.floor(afterDate.getTime() / 1000);
+        
+        let query = `in:inbox after:${afterTimestamp}`;
+        if (prospectEmails.length > 0) {
+          const fromClause = prospectEmails.map(e => `from:${e}`).join(' OR ');
+          query += ` (${fromClause})`;
+        }
+        
+        const result = await gmailFetch(`/messages?maxResults=100&q=${encodeURIComponent(query)}`, 'GET');
+        
+        const messages = result.messages || [];
+        const fullMessages = [];
+        
+        for (const msg of messages.slice(0, 50)) {
+          try {
+            const fullMsg = await gmailFetch(`/messages/${msg.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`, 'GET');
+            fullMessages.push(fullMsg);
+          } catch (e) {
+            logger.warn('Could not fetch message details', { id: msg.id, error: e.message });
+          }
+        }
+        
+        logger.info('Gmail: Synced received emails', { count: fullMessages.length });
+        return { messages: fullMessages };
+      }
+      
+      default:
+        throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
+    }
+  } catch (error) {
+    logger.error('Gmail API error', { action, error: error.message });
+    if (error.code) throw error;
+    throw new HttpsError('internal', error.message || 'Gmail API request failed.');
+  }
+});
+
+
+/**
+ * GMAIL OAUTH CALLBACK
+ * HTTP endpoint that handles the OAuth redirect from Google.
+ * Exchanges the auth code for tokens and saves them to user settings.
+ */
+exports.gmailOAuthCallback = onRequest({ 
+  cors: true, 
+  region: "us-central1",
+  secrets: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
+}, async (req, res) => {
+  const { code, state, error } = req.query;
+  
+  if (error) {
+    logger.error('Gmail OAuth error', { error });
+    return res.redirect(`${getAppUrl()}/settings?gmail_error=${encodeURIComponent(error)}`);
+  }
+  
+  if (!code || !state) {
+    return res.redirect(`${getAppUrl()}/settings?gmail_error=missing_params`);
+  }
+  
+  // Decode state (contains userId)
+  let userId;
+  try {
+    const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+    userId = stateData.userId;
+  } catch (e) {
+    logger.error('Invalid OAuth state', { state });
+    return res.redirect(`${getAppUrl()}/settings?gmail_error=invalid_state`);
+  }
+  
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const redirectUri = `https://us-central1-leaderreps-pd-platform.cloudfunctions.net/gmailOAuthCallback`;
+  
+  if (!clientId || !clientSecret) {
+    logger.error('Google OAuth not configured');
+    return res.redirect(`${getAppUrl()}/settings?gmail_error=not_configured`);
+  }
+  
+  try {
+    // Exchange code for tokens
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code'
+      })
+    });
+    
+    const tokenData = await tokenResponse.json();
+    
+    if (!tokenData.access_token) {
+      logger.error('Failed to get access token', tokenData);
+      return res.redirect(`${getAppUrl()}/settings?gmail_error=token_exchange_failed`);
+    }
+    
+    // Get user's email from Gmail profile
+    const profileResponse = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+    });
+    const profileData = await profileResponse.json();
+    
+    // Save tokens to user settings
+    const settingsRef = db.collection('users').doc(userId).collection('settings').doc('gmail');
+    await settingsRef.set({
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+      tokenType: tokenData.token_type,
+      expiresIn: tokenData.expires_in,
+      scope: tokenData.scope,
+      email: profileData.emailAddress,
+      connectedAt: new Date().toISOString(),
+      tokenUpdatedAt: new Date().toISOString()
+    }, { merge: true });
+    
+    logger.info('Gmail OAuth completed', { userId, email: profileData.emailAddress });
+    
+    // Redirect back to app
+    return res.redirect(`${getAppUrl()}/settings?gmail_connected=true`);
+    
+  } catch (error) {
+    logger.error('Gmail OAuth callback error', error);
+    return res.redirect(`${getAppUrl()}/settings?gmail_error=callback_failed`);
+  }
+});
+
+// Helper to get the app URL based on environment
+function getAppUrl() {
+  // Default to team-sales app URL
+  return process.env.APP_URL || 'https://leaderreps-pd-platform.web.app/team-sales';
+}
+
+
+/**
+ * GMAIL SYNC JOB
+ * Scheduled function that syncs Gmail activity for all connected users.
+ * Runs every 15 minutes.
+ */
+exports.gmailSyncJob = onSchedule({
+  schedule: "every 15 minutes",
+  region: "us-central1",
+  timeoutSeconds: 300,
+  memory: "512MiB",
+  secrets: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
+}, async (event) => {
+  logger.info("Gmail sync job started");
+  
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  
+  if (!clientId || !clientSecret) {
+    logger.warn('Google OAuth not configured, skipping Gmail sync');
+    return;
+  }
+  
+  try {
+    // Find all users with Gmail connected
+    const usersSnapshot = await db.collectionGroup('settings')
+      .where('refreshToken', '!=', null)
+      .get();
+    
+    const gmailUsers = [];
+    usersSnapshot.forEach(doc => {
+      if (doc.ref.parent.parent && doc.id === 'gmail') {
+        gmailUsers.push({
+          userId: doc.ref.parent.parent.id,
+          ...doc.data()
+        });
+      }
+    });
+    
+    logger.info(`Found ${gmailUsers.length} users with Gmail connected`);
+    
+    for (const gmailUser of gmailUsers) {
+      try {
+        await syncGmailForUser(gmailUser, clientId, clientSecret);
+      } catch (error) {
+        logger.error(`Gmail sync failed for user ${gmailUser.userId}`, error);
+      }
+    }
+    
+    logger.info("Gmail sync job completed");
+    
+  } catch (error) {
+    logger.error("Gmail sync job error", error);
+  }
+});
+
+/**
+ * Helper: Sync Gmail messages for a single user
+ */
+async function syncGmailForUser(gmailUser, clientId, clientSecret) {
+  const { userId, refreshToken, email: gmailEmail } = gmailUser;
+  
+  // Refresh the access token
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token'
+    })
+  });
+  
+  const tokenData = await tokenResponse.json();
+  
+  if (!tokenData.access_token) {
+    logger.warn(`Could not refresh token for user ${userId}`, tokenData);
+    return;
+  }
+  
+  const accessToken = tokenData.access_token;
+  
+  // Get the user's tracked prospects (those with email tracking enabled)
+  const prospectsSnapshot = await db.collection('corporate_prospects')
+    .where('emailTracking', '==', true)
+    .limit(100)
+    .get();
+  
+  if (prospectsSnapshot.empty) {
+    logger.info(`No tracked prospects for user ${userId}`);
+    return;
+  }
+  
+  const prospectEmails = [];
+  const prospectsByEmail = {};
+  
+  prospectsSnapshot.forEach(doc => {
+    const data = doc.data();
+    if (data.email) {
+      const email = data.email.toLowerCase();
+      prospectEmails.push(email);
+      prospectsByEmail[email] = { id: doc.id, ...data };
+    }
+  });
+  
+  // Get last sync time (default to 1 day ago)
+  const settingsRef = db.collection('users').doc(userId).collection('settings').doc('gmail');
+  const settingsSnap = await settingsRef.get();
+  const lastSyncTime = settingsSnap.data()?.lastSyncAt 
+    ? new Date(settingsSnap.data().lastSyncAt)
+    : new Date(Date.now() - 24 * 60 * 60 * 1000);
+  
+  const afterTimestamp = Math.floor(lastSyncTime.getTime() / 1000);
+  
+  // Query for sent emails
+  const sentQuery = `in:sent after:${afterTimestamp} (${prospectEmails.slice(0, 20).map(e => `to:${e}`).join(' OR ')})`;
+  
+  const sentResponse = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=${encodeURIComponent(sentQuery)}`,
+    { headers: { 'Authorization': `Bearer ${accessToken}` } }
+  );
+  const sentData = await sentResponse.json();
+  
+  let syncedCount = 0;
+  
+  // Process sent messages
+  for (const msg of (sentData.messages || []).slice(0, 25)) {
+    try {
+      const msgDetailResponse = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
+        { headers: { 'Authorization': `Bearer ${accessToken}` } }
+      );
+      const msgDetail = await msgDetailResponse.json();
+      
+      // Extract headers
+      const headers = {};
+      (msgDetail.payload?.headers || []).forEach(h => {
+        headers[h.name.toLowerCase()] = h.value;
+      });
+      
+      // Find matching prospect
+      const toEmail = extractEmail(headers.to || '');
+      const prospect = prospectsByEmail[toEmail.toLowerCase()];
+      
+      if (prospect) {
+        // Create activity entry
+        const activityRef = db.collection('corporate_prospects').doc(prospect.id)
+          .collection('activities').doc(`gmail_${msg.id}`);
+        
+        const existingActivity = await activityRef.get();
+        if (!existingActivity.exists) {
+          await activityRef.set({
+            type: 'email_sent',
+            source: 'gmail_sync',
+            messageId: msg.id,
+            threadId: msgDetail.threadId,
+            subject: headers.subject || '(No subject)',
+            snippet: msgDetail.snippet || '',
+            from: gmailEmail,
+            to: toEmail,
+            timestamp: headers.date ? new Date(headers.date).toISOString() : new Date().toISOString(),
+            syncedAt: new Date().toISOString()
+          });
+          syncedCount++;
+        }
+      }
+    } catch (e) {
+      logger.warn(`Could not process sent message ${msg.id}`, e);
+    }
+  }
+  
+  // Query for received emails
+  const receivedQuery = `in:inbox after:${afterTimestamp} (${prospectEmails.slice(0, 20).map(e => `from:${e}`).join(' OR ')})`;
+  
+  const receivedResponse = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=${encodeURIComponent(receivedQuery)}`,
+    { headers: { 'Authorization': `Bearer ${accessToken}` } }
+  );
+  const receivedData = await receivedResponse.json();
+  
+  // Process received messages
+  for (const msg of (receivedData.messages || []).slice(0, 25)) {
+    try {
+      const msgDetailResponse = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
+        { headers: { 'Authorization': `Bearer ${accessToken}` } }
+      );
+      const msgDetail = await msgDetailResponse.json();
+      
+      const headers = {};
+      (msgDetail.payload?.headers || []).forEach(h => {
+        headers[h.name.toLowerCase()] = h.value;
+      });
+      
+      const fromEmail = extractEmail(headers.from || '');
+      const prospect = prospectsByEmail[fromEmail.toLowerCase()];
+      
+      if (prospect) {
+        const activityRef = db.collection('corporate_prospects').doc(prospect.id)
+          .collection('activities').doc(`gmail_${msg.id}`);
+        
+        const existingActivity = await activityRef.get();
+        if (!existingActivity.exists) {
+          await activityRef.set({
+            type: 'email_received',
+            source: 'gmail_sync',
+            messageId: msg.id,
+            threadId: msgDetail.threadId,
+            subject: headers.subject || '(No subject)',
+            snippet: msgDetail.snippet || '',
+            from: fromEmail,
+            to: gmailEmail,
+            timestamp: headers.date ? new Date(headers.date).toISOString() : new Date().toISOString(),
+            syncedAt: new Date().toISOString()
+          });
+          syncedCount++;
+        }
+      }
+    } catch (e) {
+      logger.warn(`Could not process received message ${msg.id}`, e);
+    }
+  }
+  
+  // Update last sync time
+  await settingsRef.update({ lastSyncAt: new Date().toISOString() });
+  
+  logger.info(`Gmail sync completed for user ${userId}`, { syncedCount });
+}
+
+/**
+ * Helper: Extract email address from "Name <email>" format
+ */
+function extractEmail(emailString) {
+  const match = emailString.match(/<([^>]+)>/);
+  if (match) return match[1];
+  // If no angle brackets, assume the whole string is the email
+  return emailString.trim();
 }

@@ -1,7 +1,7 @@
 // src/components/layout/MobileBottomNav.jsx
 import React from 'react';
-import { LayoutDashboard, BookOpen, Megaphone, Lock } from 'lucide-react';
-import { CommunityIcon } from '../icons';
+import { LayoutDashboard, BookOpen, Megaphone } from 'lucide-react';
+import { CommunityIcon, LockerIcon } from '../icons';
 import { useAppServices } from '../../services/useAppServices.jsx';
 
 const MobileBottomNav = ({ currentScreen }) => {
@@ -38,7 +38,7 @@ const MobileBottomNav = ({ currentScreen }) => {
     {
       id: 'locker',
       label: 'Locker',
-      icon: Lock,
+      icon: LockerIcon,
       screen: 'locker'
     }
   ];

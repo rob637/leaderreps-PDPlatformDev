@@ -1,23 +1,24 @@
 {
   "name": "leader-reps-pdp",
   "private": true,
-  "version": "1.5.45",
+  "version": "1.5.50",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "echo '❌ BLOCKED: Use deploy:dev or deploy:test to prevent env mixup' && exit 1",
+    "build": "echo '❌ BLOCKED: Use deploy:dev, deploy:test, or deploy:prod to prevent env mixup' && exit 1",
     "_build:called-by-deploy-script-only": "vite build",
     "visualize": "VISUALIZE=true vite build",
     "build:debug": "vite build --debug",
     "preview": "vite preview --port 4173",
     "clean": "rimraf build",
-    "rebuild": "echo '❌ BLOCKED: Use deploy:dev or deploy:test' && exit 1",
+    "rebuild": "echo '❌ BLOCKED: Use deploy:dev, deploy:test, or deploy:prod' && exit 1",
     "deploy:dev": "bash ./scripts/deploy.sh dev",
     "deploy:test": "bash ./scripts/deploy.sh test",
     "deploy:repup:dev": "bash ./scripts/deploy-repup.sh dev",
     "deploy:repup:test": "bash ./scripts/deploy-repup.sh test",
-    "deploy": "echo '❌ Use deploy:dev or deploy:test instead' && exit 1",
-    "deploy:quick": "echo '❌ Use deploy:dev or deploy:test instead' && exit 1",
+    "deploy:prod": "bash ./scripts/deploy.sh prod",
+    "deploy": "echo '❌ Use deploy:dev, deploy:test, or deploy:prod instead' && exit 1",
+    "deploy:quick": "echo '❌ Use deploy:dev, deploy:test, or deploy:prod instead' && exit 1",
     "sync:test": "./scripts/deploy/sync-dev-to-test.sh",
     "lint": "eslint .",
     "lint:ui": "bash ./scripts/ui-architecture-check.sh",
@@ -51,7 +52,8 @@
     "cleanup:dev-preview": "node scripts/cleanup-test-users.cjs dev --dry-run",
     "cleanup:dev-execute": "node scripts/cleanup-test-users.cjs dev --execute",
     "cleanup:test-preview": "node scripts/cleanup-test-users.cjs test --dry-run",
-    "cleanup:test-execute": "node scripts/cleanup-test-users.cjs test --execute"
+    "cleanup:test-execute": "node scripts/cleanup-test-users.cjs test --execute",
+    "verify:prod": "bash ./scripts/verify-prod-setup.sh"
   },
   "engines": {
     "node": ">=20.x"

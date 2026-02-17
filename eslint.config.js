@@ -6,7 +6,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default [
   {
-    ignores: ['**/dist/**', '**/build/**', 'google-cloud-sdk/**', 'corporate/**', 'reppy/**', 'passcpa/**', 'e2e-tests/**', 'functions/**', 'debug-*.js'],
+    ignores: ['**/dist/**', '**/build/**', 'google-cloud-sdk/**', 'corporate/**', 'reppy/**', 'passcpa/**', 'e2e-tests/**', 'functions/**', 'debug-*.js', 'team-sales/chrome-extension/**'],
   },
   {
     files: ['**/*.{js,jsx}'],

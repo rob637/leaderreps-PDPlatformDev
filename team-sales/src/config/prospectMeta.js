@@ -34,15 +34,48 @@ export const APOLLO_SEQUENCE_STATUSES = [
 
 // Activity types for logging
 export const ACTIVITY_TYPES = [
-  { id: 'note', label: 'Note', icon: 'FileText', color: '#64748b' },
-  { id: 'email_sent', label: 'Email Sent', icon: 'Send', color: '#3b82f6' },
-  { id: 'email_received', label: 'Email Received', icon: 'Inbox', color: '#22c55e' },
-  { id: 'call', label: 'Phone Call', icon: 'Phone', color: '#8b5cf6' },
-  { id: 'meeting', label: 'Meeting', icon: 'Calendar', color: '#f59e0b' },
-  { id: 'linkedin_connect', label: 'LinkedIn Connect', icon: 'Linkedin', color: '#0077b5' },
+  { id: 'call', label: 'Phone Call', icon: 'Phone', color: '#8b5cf6', hasOutcome: true, hasDuration: true },
+  { id: 'email_sent', label: 'Email Sent', icon: 'Send', color: '#3b82f6', hasSubject: true },
+  { id: 'email_received', label: 'Email Received', icon: 'Inbox', color: '#22c55e', hasSubject: true },
+  { id: 'meeting', label: 'Meeting', icon: 'Calendar', color: '#f59e0b', hasOutcome: true, hasDuration: true },
+  { id: 'linkedin_connect', label: 'LinkedIn Connect', icon: 'UserPlus', color: '#0077b5' },
   { id: 'linkedin_message', label: 'LinkedIn Message', icon: 'MessageCircle', color: '#0077b5' },
-  { id: 'stage_change', label: 'Stage Changed', icon: 'ArrowRight', color: '#6366f1' },
-  { id: 'task_completed', label: 'Task Completed', icon: 'CheckCircle', color: '#10b981' },
+  { id: 'linkedin_inmail', label: 'LinkedIn InMail', icon: 'Mail', color: '#0077b5' },
+  { id: 'sms', label: 'Text Message', icon: 'MessageSquare', color: '#10b981' },
+  { id: 'note', label: 'Note', icon: 'FileText', color: '#64748b' },
+  { id: 'stage_change', label: 'Stage Changed', icon: 'ArrowRight', color: '#6366f1', system: true },
+  { id: 'task_completed', label: 'Task Completed', icon: 'CheckCircle', color: '#10b981', system: true },
+];
+
+// Call outcomes
+export const CALL_OUTCOMES = [
+  { id: 'connected', label: 'Connected', color: '#22c55e', icon: 'PhoneCall' },
+  { id: 'voicemail', label: 'Left Voicemail', color: '#f59e0b', icon: 'Voicemail' },
+  { id: 'no_answer', label: 'No Answer', color: '#94a3b8', icon: 'PhoneMissed' },
+  { id: 'busy', label: 'Busy', color: '#ef4444', icon: 'PhoneOff' },
+  { id: 'wrong_number', label: 'Wrong Number', color: '#6b7280', icon: 'XCircle' },
+  { id: 'callback_scheduled', label: 'Callback Scheduled', color: '#3b82f6', icon: 'Calendar' },
+];
+
+// Meeting outcomes
+export const MEETING_OUTCOMES = [
+  { id: 'completed', label: 'Completed', color: '#22c55e' },
+  { id: 'no_show', label: 'No Show', color: '#ef4444' },
+  { id: 'rescheduled', label: 'Rescheduled', color: '#f59e0b' },
+  { id: 'cancelled', label: 'Cancelled', color: '#6b7280' },
+  { id: 'follow_up_needed', label: 'Follow-up Needed', color: '#3b82f6' },
+];
+
+// Meeting types
+export const MEETING_TYPES = [
+  { id: 'discovery', label: 'Discovery Call' },
+  { id: 'demo', label: 'Demo' },
+  { id: 'follow_up', label: 'Follow-up' },
+  { id: 'proposal', label: 'Proposal Review' },
+  { id: 'negotiation', label: 'Negotiation' },
+  { id: 'onboarding', label: 'Onboarding' },
+  { id: 'check_in', label: 'Check-in' },
+  { id: 'other', label: 'Other' },
 ];
 
 // Helper functions
@@ -59,5 +92,22 @@ export const getApolloSequenceStatus = (id) => {
 };
 
 export const getActivityType = (id) => {
-  return ACTIVITY_TYPES.find(t => t.id === id) || ACTIVITY_TYPES[0];
+  return ACTIVITY_TYPES.find(t => t.id === id) || ACTIVITY_TYPES.find(t => t.id === 'note');
+};
+
+export const getCallOutcome = (id) => {
+  return CALL_OUTCOMES.find(o => o.id === id);
+};
+
+export const getMeetingOutcome = (id) => {
+  return MEETING_OUTCOMES.find(o => o.id === id);
+};
+
+export const getMeetingType = (id) => {
+  return MEETING_TYPES.find(t => t.id === id);
+};
+
+// Get user-selectable activity types (exclude system types)
+export const getUserActivityTypes = () => {
+  return ACTIVITY_TYPES.filter(t => !t.system);
 };

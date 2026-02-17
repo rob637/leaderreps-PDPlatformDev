@@ -171,8 +171,27 @@ export const useApolloStore = create((set, get) => ({
     }
   },
   
+  // Increment and persist credits used
+  incrementCreditsUsed: async (userId, amount = 1) => {
+    const newCreditsUsed = get().creditsUsed + amount;
+    set({ creditsUsed: newCreditsUsed });
+    
+    // Persist to Firestore (fire and forget)
+    if (userId) {
+      try {
+        const settingsRef = doc(db, 'users', userId, 'settings', 'apollo');
+        await setDoc(settingsRef, { 
+          creditsUsed: newCreditsUsed,
+          lastUsedAt: new Date().toISOString() 
+        }, { merge: true });
+      } catch (error) {
+        console.error('Error saving credits used:', error);
+      }
+    }
+  },
+  
   // Search Apollo
-  search: async () => {
+  search: async (userId) => {
     const { apiKey, searchMode, searchCriteria } = get();
     
     if (!apiKey) {
@@ -265,31 +284,61 @@ export const useApolloStore = create((set, get) => ({
           })),
         });
       } else if (data.people) {
+        // Debug: log first result to see Apollo's actual response structure
+        if (data.people.length > 0) {
+          console.log('Apollo sample response:', JSON.stringify(data.people[0], null, 2));
+        }
         set({
-          searchResults: data.people.map(person => ({
-            id: person.id,
-            type: 'person',
-            name: person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim() || 'Unknown',
-            title: person.title || person.headline || '',
-            company: person.organization?.name || person.organization_name || '',
-            companyId: person.organization?.id,
-            email: person.email || (person.has_email ? '(available)' : ''),
-            phone: person.phone_numbers?.[0]?.sanitized_number || '',
-            linkedin: person.linkedin_url,
-            location: person.city ? `${person.city}, ${person.state}` : (person.country || ''),
-            companySize: person.organization?.estimated_num_employees,
-            industry: person.organization?.industry,
-            website: person.organization?.website_url,
-            photo: person.photo_url,
-            original: person,
-          })),
+          searchResults: data.people.map(person => {
+            // Parse first/last name - Apollo may return them separately or combined
+            let firstName = person.first_name || '';
+            let lastName = person.last_name || '';
+            
+            // Fallback: parse from full name if first/last not provided
+            if (!firstName && !lastName && person.name) {
+              const nameParts = person.name.trim().split(/\s+/);
+              firstName = nameParts[0] || '';
+              lastName = nameParts.slice(1).join(' ') || '';
+            }
+            
+            const fullName = person.name || `${firstName} ${lastName}`.trim() || 'Unknown';
+            
+            return {
+              id: person.id,
+              type: 'person',
+              name: fullName,
+              firstName,
+              lastName,
+              title: person.title || person.headline || '',
+              company: person.organization?.name || person.organization_name || '',
+              companyId: person.organization?.id,
+              email: person.email || (person.has_email ? '(available)' : ''),
+              phone: person.phone_numbers?.[0]?.sanitized_number || '',
+              linkedin: person.linkedin_url || '',
+              twitter: person.twitter_url || '',
+              location: person.city ? `${person.city}, ${person.state}` : (person.country || ''),
+              city: person.city || '',
+              state: person.state || '',
+              country: person.country || '',
+              companySize: person.organization?.estimated_num_employees,
+              industry: person.organization?.industry,
+              website: person.organization?.website_url,
+              companyLinkedin: person.organization?.linkedin_url || '',
+              companyTwitter: person.organization?.twitter_url || '',
+              seniority: person.seniority || '',
+              departments: person.departments || [],
+              hasEmail: person.has_email || false,
+              photo: person.photo_url,
+              original: person,
+            };
+          }),
         });
       } else {
         toast('No results found');
       }
       
-      // Track credit usage
-      set((state) => ({ creditsUsed: state.creditsUsed + 1 }));
+      // Track credit usage and persist
+      get().incrementCreditsUsed(userId, 1);
       
     } catch (error) {
       console.error('Apollo search error:', error);
@@ -306,7 +355,7 @@ export const useApolloStore = create((set, get) => ({
   },
   
   // Enrich a single person (reveal email/phone)
-  enrichPerson: async (personId) => {
+  enrichPerson: async (personId, userId) => {
     const { apiKey } = get();
     
     if (!apiKey) {
@@ -327,21 +376,50 @@ export const useApolloStore = create((set, get) => ({
       const enrichedPerson = result.data?.person;
       
       if (enrichedPerson) {
+        // Debug: log enriched response to see Apollo's full structure
+        console.log('Apollo enriched response:', JSON.stringify(enrichedPerson, null, 2));
+        
+        // Parse first/last name from enriched data
+        let firstName = enrichedPerson.first_name || '';
+        let lastName = enrichedPerson.last_name || '';
+        
+        // Fallback: parse from full name if first/last not provided
+        if (!firstName && !lastName && enrichedPerson.name) {
+          const nameParts = enrichedPerson.name.trim().split(/\s+/);
+          firstName = nameParts[0] || '';
+          lastName = nameParts.slice(1).join(' ') || '';
+        }
+        
+        const fullName = enrichedPerson.name || `${firstName} ${lastName}`.trim();
+        
         // Update the search result with enriched data
         set((state) => ({
           searchResults: state.searchResults.map(r =>
             r.id === personId
               ? {
                   ...r,
+                  name: fullName || r.name,
+                  firstName: firstName || r.firstName,
+                  lastName: lastName || r.lastName,
                   email: enrichedPerson.email || r.email,
                   phone: enrichedPerson.phone_numbers?.[0]?.sanitized_number || r.phone,
                   linkedin: enrichedPerson.linkedin_url || r.linkedin,
+                  twitter: enrichedPerson.twitter_url || r.twitter,
+                  title: enrichedPerson.title || enrichedPerson.headline || r.title,
+                  seniority: enrichedPerson.seniority || r.seniority,
+                  city: enrichedPerson.city || r.city,
+                  state: enrichedPerson.state || r.state,
+                  country: enrichedPerson.country || r.country,
+                  location: enrichedPerson.city ? `${enrichedPerson.city}, ${enrichedPerson.state}` : r.location,
+                  personalEmails: enrichedPerson.personal_emails || [],
                   enriched: true,
                 }
               : r
           ),
-          creditsUsed: state.creditsUsed + 1,
         }));
+        
+        // Track credit usage and persist
+        get().incrementCreditsUsed(userId, 1);
         
         toast.success('Contact enriched');
         return enrichedPerson;

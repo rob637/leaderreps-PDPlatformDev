@@ -295,6 +295,16 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
+    // Prospect Activities (Sales Team interaction logs)
+    match /prospect_activities/{document} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Team Tasks (Sales Team task management)
+    match /team_tasks/{document} {
+      allow read, write: if isAdmin();
+    }
+    
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

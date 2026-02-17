@@ -16,10 +16,11 @@ import conditioningService, { REP_STATUS, getWeekBoundaries } from '../../servic
 // CONDITIONING WIDGET
 // ============================================
 const ConditioningWidget = ({ helpText }) => {
-  const { user, db, developmentPlanData, userProfile, navigate } = useAppServices();
+  const { user, db, developmentPlanData, navigate } = useAppServices();
   const { cohortData } = useDailyPlan();
   const userId = user?.uid;
-  const cohortId = developmentPlanData?.cohortId || cohortData?.id || userProfile?.cohortId;
+  // Note: user object includes merged userProfile data from DataProvider, so user.cohortId works
+  const cohortId = developmentPlanData?.cohortId || cohortData?.id || user?.cohortId;
   
   const [weeklyStatus, setWeeklyStatus] = useState(null);
   const [activeCount, setActiveCount] = useState(0);

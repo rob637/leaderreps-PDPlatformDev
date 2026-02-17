@@ -4,7 +4,6 @@ import { useAuthStore } from '../stores/authStore';
 import { useUIStore } from '../stores/uiStore';
 import CommandPalette from './CommandPalette';
 import {
-  LayoutDashboard,
   Users,
   LogOut,
   Menu,
@@ -17,8 +16,7 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-  { path: '/prospects', icon: Users, label: 'Prospects' },
+  { path: '/prospects', icon: Users, label: 'Prospects', exact: true },
   { path: '/apollo', icon: Sparkles, label: 'Apollo Search' },
   { path: '/tasks', icon: Bell, label: 'Tasks' },
   { path: '/settings', icon: Settings, label: 'Settings' },
@@ -53,7 +51,7 @@ const Layout = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
       {/* Sidebar */}
       <aside
         className={`${
@@ -123,9 +121,9 @@ const Layout = () => {
       {/* Main Content */}
       <div className={`flex-1 ${sidebarCollapsed ? 'ml-16' : 'ml-56'} transition-all duration-200`}>
         {/* Top Bar */}
-        <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10">
+        <header className="h-14 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 sticky top-0 z-10">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold text-slate-900">
+            <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               {currentPage?.label || 'Dashboard'}
             </h1>
           </div>
@@ -134,11 +132,11 @@ const Layout = () => {
             {/* Command Palette Trigger */}
             <button
               onClick={openCommandPalette}
-              className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm text-slate-600 transition"
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-sm text-slate-600 dark:text-slate-300 transition"
             >
               <Search className="w-4 h-4" />
               <span className="hidden sm:inline">Search</span>
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-white rounded text-xs text-slate-500 border">
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-white dark:bg-slate-600 rounded text-xs text-slate-500 dark:text-slate-300 border dark:border-slate-500">
                 <Command className="w-3 h-3" />K
               </kbd>
             </button>

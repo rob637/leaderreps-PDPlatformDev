@@ -25,7 +25,8 @@ const AddProspectModal = ({ onClose }) => {
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     company: '',
@@ -43,8 +44,8 @@ const AddProspectModal = ({ onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.name.trim()) {
-      toast.error('Name is required');
+    if (!formData.firstName.trim()) {
+      toast.error('First name is required');
       return;
     }
     
@@ -52,6 +53,8 @@ const AddProspectModal = ({ onClose }) => {
     try {
       await addProspect({
         ...formData,
+        // Also store combined name for backwards compatibility/display
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
         value: formData.value ? Number(formData.value) : null,
       });
       toast.success('Prospect added');
@@ -65,6 +68,26 @@ const AddProspectModal = ({ onClose }) => {
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Format phone number as (XXX) XXX-XXXX
+  const formatPhoneNumber = (value) => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, '');
+    
+    // Handle different lengths
+    if (digits.length <= 3) {
+      return digits;
+    } else if (digits.length <= 6) {
+      return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    } else {
+      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    handleChange('phone', formatted);
   };
 
   const selectedOwner = TEAM_MEMBERS.find(m => m.email === formData.owner);
@@ -93,34 +116,46 @@ const AddProspectModal = ({ onClose }) => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {/* Name & Title */}
+            {/* First Name & Last Name */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Name <span className="text-red-500">*</span>
+                  First Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    value={formData.name}
-                    onChange={(e) => handleChange('name', e.target.value)}
+                    value={formData.firstName}
+                    onChange={(e) => handleChange('firstName', e.target.value)}
                     className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
-                    placeholder="John Smith"
+                    placeholder="John"
                     required
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
                 <input
                   type="text"
-                  value={formData.title}
-                  onChange={(e) => handleChange('title', e.target.value)}
+                  value={formData.lastName}
+                  onChange={(e) => handleChange('lastName', e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
-                  placeholder="VP of Sales"
+                  placeholder="Smith"
                 />
               </div>
+            </div>
+
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => handleChange('title', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
+                placeholder="VP of Sales"
+              />
             </div>
 
             {/* Company */}
@@ -160,9 +195,9 @@ const AddProspectModal = ({ onClose }) => {
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => handleChange('phone', e.target.value)}
+                    onChange={handlePhoneChange}
                     className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
-                    placeholder="+1 555 123 4567"
+                    placeholder="(555) 123-4567"
                   />
                 </div>
               </div>

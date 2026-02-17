@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '../stores/uiStore';
 import { useProspectsStore } from '../stores/prospectsStore';
 import {
-  LayoutDashboard,
   Users,
   UserPlus,
   Search,
@@ -58,13 +57,6 @@ const CommandPalette = () => {
             </Command.Empty>
 
             <Command.Group heading="Navigation">
-              <Command.Item 
-                onSelect={() => runCommand(() => navigate('/'))}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer data-[selected=true]:bg-slate-100"
-              >
-                <LayoutDashboard className="w-4 h-4 text-slate-500" />
-                <span>Go to Dashboard</span>
-              </Command.Item>
               <Command.Item 
                 onSelect={() => runCommand(() => navigate('/prospects'))}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer data-[selected=true]:bg-slate-100"

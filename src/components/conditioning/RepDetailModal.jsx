@@ -131,11 +131,14 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
   
   return (
     <div 
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 p-4 pb-20 md:pb-4"
       onClick={onClose}
     >
       <div onClick={(e) => e.stopPropagation()}>
-        <Card className="w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+        <Card 
+          className="w-full max-w-lg max-h-[calc(100vh-6rem)] md:max-h-[90vh] overflow-hidden flex flex-col"
+          style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-corporate-navy to-corporate-navy/90">
           <div className="flex items-center justify-between mb-2">
@@ -321,8 +324,11 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
           </Section>
         </div>
         
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
+        {/* Footer - Mobile-safe padding */}
+        <div 
+          className="p-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50"
+          style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
+        >
           <Button
             onClick={onClose}
             className="w-full bg-corporate-navy hover:bg-corporate-navy/90 text-white"

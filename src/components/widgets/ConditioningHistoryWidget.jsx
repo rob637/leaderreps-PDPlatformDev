@@ -15,10 +15,11 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
 import conditioningService, { REP_STATUS, REP_TYPES, getCurrentWeekId, getWeekBoundaries } from '../../services/conditioningService';
 
 const ConditioningHistoryWidget = ({ helpText }) => {
-  const { user, db, developmentPlanData, userProfile } = useAppServices();
+  const { user, db, developmentPlanData } = useAppServices();
   const { cohortData } = useDailyPlan();
   const userId = user?.uid;
-  const cohortId = developmentPlanData?.cohortId || cohortData?.id || userProfile?.cohortId;
+  // Note: user object includes merged userProfile data from DataProvider, so user.cohortId works
+  const cohortId = developmentPlanData?.cohortId || cohortData?.id || user?.cohortId;
 
   const [isLoading, setIsLoading] = useState(true);
   const [weeklyHistory, setWeeklyHistory] = useState([]);

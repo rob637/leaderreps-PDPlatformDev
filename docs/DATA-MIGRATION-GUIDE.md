@@ -90,7 +90,7 @@ Each environment needs a service account key file:
 3. Save as:
    - Dev: `leaderreps-pd-platform-firebase-adminsdk.json`
    - Test: `leaderreps-test-firebase-adminsdk.json`
-   - Prod: `leaderreps-production-firebase-adminsdk.json`
+   - Prod: `leaderreps-prod-firebase-adminsdk.json`
 
 4. Add to `.gitignore` (already should be):
    ```

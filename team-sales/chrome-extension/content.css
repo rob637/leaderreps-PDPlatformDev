@@ -1,0 +1,97 @@
+/**
+ * LeaderReps Sales Hub - Gmail Content Styles
+ * Styles for injected elements into Gmail
+ */
+
+/* Sidebar iframe */
+#leaderreps-sidebar {
+  position: fixed;
+  top: 0;
+  right: -320px;
+  width: 320px;
+  height: 100vh;
+  border: none;
+  border-left: 1px solid #e5e7eb;
+  background: #fff;
+  z-index: 9999;
+  transition: right 0.3s ease;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+#leaderreps-sidebar.visible {
+  right: 0;
+}
+
+/* Toggle button in Gmail toolbar */
+#leaderreps-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-left: 8px;
+  padding: 8px;
+  border: none;
+  border-radius: 50%;
+  background: #47A88D;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#leaderreps-toggle:hover {
+  background: #3d9078;
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+#leaderreps-toggle:active {
+  transform: scale(0.98);
+}
+
+#leaderreps-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Tooltip for toggle button */
+#leaderreps-toggle::after {
+  content: attr(title);
+  position: absolute;
+  bottom: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  background: #1f2937;
+  color: white;
+  font-size: 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#leaderreps-toggle:hover::after {
+  opacity: 1;
+}
+
+/* Dark mode support (Gmail dark theme) */
+@media (prefers-color-scheme: dark) {
+  #leaderreps-sidebar {
+    border-left-color: #3f3f46;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* High contrast mode */
+@media (forced-colors: active) {
+  #leaderreps-toggle {
+    border: 2px solid currentColor;
+  }
+  
+  #leaderreps-sidebar {
+    border-left: 2px solid currentColor;
+  }
+}

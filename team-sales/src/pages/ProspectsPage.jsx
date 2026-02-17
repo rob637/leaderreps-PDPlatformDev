@@ -17,6 +17,7 @@ import {
   Filter,
   Users,
   User,
+  UserX,
   ChevronDown,
   Upload
 } from 'lucide-react';
@@ -62,6 +63,7 @@ const ProspectsPage = () => {
   const getOwnerFilterLabel = () => {
     if (filters.owner === 'me') return 'My Prospects';
     if (filters.owner === 'all') return 'All Team';
+    if (filters.owner === 'unassigned') return 'Unassigned';
     const member = TEAM_MEMBERS.find(m => m.email === filters.owner);
     return member ? `${member.name}'s` : filters.owner;
   };
@@ -79,7 +81,7 @@ const ProspectsPage = () => {
               placeholder="Search prospects..."
               value={filters.search}
               onChange={(e) => setFilter('search', e.target.value)}
-              className="pl-9 pr-4 py-2 w-64 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
+              className="pl-9 pr-4 py-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
             />
           </div>
 
@@ -87,7 +89,7 @@ const ProspectsPage = () => {
           <div className="relative">
             <button
               onClick={() => setShowOwnerDropdown(!showOwnerDropdown)}
-              className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition"
+              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
             >
               {filters.owner === 'me' ? (
                 <User className="w-4 h-4 text-slate-500" />
@@ -104,10 +106,10 @@ const ProspectsPage = () => {
                   className="fixed inset-0 z-10"
                   onClick={() => setShowOwnerDropdown(false)}
                 />
-                <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-elevated z-20 py-1">
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-elevated z-20 py-1">
                   <button
                     onClick={() => { setFilter('owner', 'me'); setShowOwnerDropdown(false); }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 ${filters.owner === 'me' ? 'bg-slate-100' : ''}`}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 ${filters.owner === 'me' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                   >
                     <User className="w-4 h-4" />
                     <span>My Prospects</span>
@@ -115,20 +117,27 @@ const ProspectsPage = () => {
                   
                   {userIsAdmin && (
                     <>
-                      <div className="border-t border-slate-200 my-1" />
+                      <div className="border-t border-slate-200 dark:border-slate-600 my-1" />
                       <button
                         onClick={() => { setFilter('owner', 'all'); setShowOwnerDropdown(false); }}
-                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 ${filters.owner === 'all' ? 'bg-slate-100' : ''}`}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 ${filters.owner === 'all' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                       >
                         <Users className="w-4 h-4" />
                         <span>All Team</span>
                       </button>
-                      <div className="border-t border-slate-200 my-1" />
+                      <button
+                        onClick={() => { setFilter('owner', 'unassigned'); setShowOwnerDropdown(false); }}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 ${filters.owner === 'unassigned' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                      >
+                        <UserX className="w-4 h-4 text-amber-500" />
+                        <span>Unassigned</span>
+                      </button>
+                      <div className="border-t border-slate-200 dark:border-slate-600 my-1" />
                       {TEAM_MEMBERS.map(member => (
                         <button
                           key={member.email}
                           onClick={() => { setFilter('owner', member.email); setShowOwnerDropdown(false); }}
-                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 ${filters.owner === member.email ? 'bg-slate-100' : ''}`}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 ${filters.owner === member.email ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                         >
                           <div 
                             className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-medium"
@@ -150,7 +159,7 @@ const ProspectsPage = () => {
           <select
             value={filters.stage}
             onChange={(e) => setFilter('stage', e.target.value)}
-            className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
+            className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
           >
             <option value="all">All Stages</option>
             {PIPELINE_STAGES.map(stage => (
@@ -161,17 +170,17 @@ const ProspectsPage = () => {
 
         <div className="flex items-center gap-2">
           {/* View Toggle */}
-          <div className="flex bg-white border border-slate-200 rounded-lg p-1">
+          <div className="flex bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1">
             <button
               onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
+              className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
               title="List view"
             >
               <List className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('kanban')}
-              className={`p-1.5 rounded ${viewMode === 'kanban' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
+              className={`p-1.5 rounded ${viewMode === 'kanban' ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
               title="Pipeline view"
             >
               <LayoutGrid className="w-4 h-4" />
@@ -181,7 +190,7 @@ const ProspectsPage = () => {
           {/* Add Prospect */}
           <button
             onClick={() => setShowCSVImport(true)}
-            className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-medium transition"
+            className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition"
           >
             <Upload className="w-4 h-4" />
             <span>Import CSV</span>
