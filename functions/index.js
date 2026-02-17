@@ -2644,6 +2644,234 @@ exports.linkedHelperSyncJob = onSchedule({
 });
 
 /**
+ * LINKEDHELPER QUEUE POLL (HTTP Request)
+ * Called by Chrome extension to fetch pending LinkedHelper push tasks.
+ * The extension polls this endpoint and processes tasks via localhost API.
+ */
+exports.linkedHelperQueuePoll = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  // Verify auth token from header
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const token = authHeader.split('Bearer ')[1];
+  let decodedToken;
+  try {
+    decodedToken = await admin.auth().verifyIdToken(token);
+  } catch (error) {
+    logger.error('Invalid auth token for queue poll', error);
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+  
+  const userEmail = decodedToken.email?.toLowerCase();
+  
+  // Check if user is authorized
+  const teamEmails = [
+    'rob@sagecg.com', 'rob@leaderreps.com', 
+    'ryan@leaderreps.com', 
+    'jeff@leaderreps.com', 
+    'cristina@leaderreps.com'
+  ];
+  
+  if (!teamEmails.includes(userEmail)) {
+    return res.status(403).json({ error: 'Not authorized' });
+  }
+  
+  try {
+    // Fetch pending queue items
+    const queueRef = db.collection('linkedhelper_queue');
+    const pendingItems = await queueRef
+      .where('status', '==', 'pending')
+      .orderBy('createdAt', 'asc')
+      .limit(10)
+      .get();
+    
+    const items = [];
+    
+    for (const doc of pendingItems.docs) {
+      const item = { id: doc.id, ...doc.data() };
+      
+      // Fetch prospect data
+      const prospectDoc = await db.collection('corporate_prospects').doc(item.prospectId).get();
+      if (prospectDoc.exists) {
+        item.prospect = { id: prospectDoc.id, ...prospectDoc.data() };
+      }
+      
+      // Mark as processing to prevent duplicate processing
+      await doc.ref.update({
+        status: 'processing',
+        processingStartedAt: admin.firestore.FieldValue.serverTimestamp(),
+        processingBy: userEmail
+      });
+      
+      items.push(item);
+    }
+    
+    logger.info('LinkedHelper queue poll', { count: items.length, user: userEmail });
+    return res.status(200).json({ items });
+    
+  } catch (error) {
+    logger.error('LinkedHelper queue poll error', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * LINKEDHELPER QUEUE COMPLETE (HTTP Request)
+ * Called by Chrome extension to report completion of a queue task.
+ */
+exports.linkedHelperQueueComplete = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  // Verify auth token from header
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const token = authHeader.split('Bearer ')[1];
+  try {
+    await admin.auth().verifyIdToken(token);
+  } catch (error) {
+    logger.error('Invalid auth token for queue complete', error);
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+  
+  const { queueItemId, status, result, error: errorMsg } = req.body;
+  
+  if (!queueItemId || !status) {
+    return res.status(400).json({ error: 'Missing queueItemId or status' });
+  }
+  
+  try {
+    const queueItemRef = db.collection('linkedhelper_queue').doc(queueItemId);
+    const queueItem = await queueItemRef.get();
+    
+    if (!queueItem.exists) {
+      return res.status(404).json({ error: 'Queue item not found' });
+    }
+    
+    const itemData = queueItem.data();
+    
+    // Update queue item
+    await queueItemRef.update({
+      status: status,
+      completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      result: result || null,
+      error: errorMsg || null
+    });
+    
+    // If successful, update the prospect
+    if (status === 'completed' && itemData.prospectId) {
+      await db.collection('corporate_prospects').doc(itemData.prospectId).update({
+        linkedHelperStatus: 'pending',
+        linkedHelperCampaignId: itemData.campaignId,
+        linkedHelperPushedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      
+      // Add activity
+      await db.collection('corporate_prospects').doc(itemData.prospectId)
+        .collection('activities').add({
+          type: 'linkedin_push',
+          campaignId: itemData.campaignId,
+          message: 'Pushed to LinkedHelper campaign',
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      
+      logger.info('LinkedHelper queue item completed', { queueItemId, prospectId: itemData.prospectId });
+    } else if (status === 'failed') {
+      logger.warn('LinkedHelper queue item failed', { queueItemId, error: errorMsg });
+    }
+    
+    return res.status(200).json({ success: true });
+    
+  } catch (error) {
+    logger.error('LinkedHelper queue complete error', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * LINKEDHELPER QUEUE ADD (Callable)
+ * Adds a prospect to the LinkedHelper push queue.
+ * Called from Team Sales Hub UI.
+ */
+exports.linkedHelperQueueAdd = onCall({ cors: true, region: "us-central1" }, async (request) => {
+  // Check authentication
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be authenticated');
+  }
+
+  const userEmail = request.auth.token.email?.toLowerCase();
+  const { prospectId, campaignId, campaignName } = request.data;
+  
+  if (!prospectId || !campaignId) {
+    throw new HttpsError('invalid-argument', 'prospectId and campaignId are required');
+  }
+  
+  // Check authorization
+  const teamEmails = [
+    'rob@sagecg.com', 'rob@leaderreps.com', 
+    'ryan@leaderreps.com', 
+    'jeff@leaderreps.com', 
+    'cristina@leaderreps.com'
+  ];
+  
+  if (!teamEmails.includes(userEmail)) {
+    throw new HttpsError('permission-denied', 'Not authorized');
+  }
+  
+  try {
+    // Check prospect exists
+    const prospectDoc = await db.collection('corporate_prospects').doc(prospectId).get();
+    if (!prospectDoc.exists) {
+      throw new HttpsError('not-found', 'Prospect not found');
+    }
+    
+    const prospect = prospectDoc.data();
+    if (!prospect.linkedin) {
+      throw new HttpsError('failed-precondition', 'Prospect has no LinkedIn URL');
+    }
+    
+    // Check if already in queue
+    const existingQueue = await db.collection('linkedhelper_queue')
+      .where('prospectId', '==', prospectId)
+      .where('status', 'in', ['pending', 'processing'])
+      .limit(1)
+      .get();
+    
+    if (!existingQueue.empty) {
+      throw new HttpsError('already-exists', 'Prospect already queued for LinkedHelper');
+    }
+    
+    // Add to queue
+    const queueItem = await db.collection('linkedhelper_queue').add({
+      prospectId,
+      campaignId,
+      campaignName: campaignName || null,
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: userEmail,
+      prospectName: prospect.name,
+      prospectLinkedin: prospect.linkedin
+    });
+    
+    logger.info('LinkedHelper queue item added', { queueItemId: queueItem.id, prospectId });
+    
+    return { 
+      success: true, 
+      queueItemId: queueItem.id,
+      message: 'Prospect added to LinkedHelper queue. It will be pushed when the extension processes the queue.'
+    };
+    
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    logger.error('LinkedHelper queue add error', error);
+    throw new HttpsError('internal', error.message);
+  }
+});
+
+/**
  * SEND OUTREACH EMAIL (Callable)
  * Sends an email via Nodemailer for the Outreach module.
  * Can be used for live campaigns or test emails.

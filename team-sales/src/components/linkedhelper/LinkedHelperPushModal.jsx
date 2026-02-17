@@ -71,11 +71,12 @@ export default function LinkedHelperPushModal() {
     setPushResult(null);
     
     try {
-      const result = await pushProspects(withLinkedIn, localSelectedCampaign);
+      const selectedCampaignInfo = campaigns.find(c => c.id === localSelectedCampaign);
+      const result = await pushProspects(withLinkedIn, localSelectedCampaign, selectedCampaignInfo?.name);
       setSelectedCampaign(localSelectedCampaign);
       setPushResult({ 
         success: true, 
-        pushed: result.pushed || withLinkedIn.length,
+        queued: result.queued || withLinkedIn.length,
         skipped: withoutLinkedIn.length
       });
       
@@ -147,7 +148,10 @@ export default function LinkedHelperPushModal() {
                     <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
                     <div className="text-green-700">
                       <p className="font-medium">
-                        Pushed {pushResult.pushed} prospect{pushResult.pushed !== 1 ? 's' : ''} to LinkedHelper!
+                        Queued {pushResult.queued} prospect{pushResult.queued !== 1 ? 's' : ''} for LinkedHelper!
+                      </p>
+                      <p className="text-sm text-green-600 mt-1">
+                        The Chrome extension will push them when LinkedHelper is running.
                       </p>
                       {pushResult.skipped > 0 && (
                         <p className="text-sm mt-1">

@@ -175,23 +175,18 @@ export const useLinkedHelperStore = create(
       },
       
       /**
-       * Push a single prospect to LinkedHelper campaign
+       * Push a single prospect to LinkedHelper campaign (via queue)
+       * This adds the prospect to a queue that the Chrome extension will process.
        */
-      pushProspect: async (prospect, campaignId) => {
-        const apiKey = get().apiKey;
-        if (!apiKey) {
-          throw new Error('LinkedHelper API key not configured. Please add it in Settings.');
-        }
-        
+      pushProspect: async (prospect, campaignId, campaignName = null) => {
         // Validate LinkedIn URL
         if (!prospect.linkedin && !prospect.linkedinUrl) {
           throw new Error('Prospect must have a LinkedIn URL');
         }
         
-        const contact = linkedHelper.prospectToLinkedHelperContact(prospect);
-        
         try {
-          const result = await linkedHelper.addContactToCampaign(campaignId, contact, apiKey);
+          // Use the queue-based approach
+          const result = await linkedHelper.queueProspectPush(prospect.id, campaignId, campaignName);
           
           // Update sync status
           set(state => ({
@@ -199,9 +194,8 @@ export const useLinkedHelperStore = create(
               ...state.syncStatus,
               [prospect.id]: {
                 campaignId,
-                contactId: result.contact_id || result.id,
                 status: 'queued',
-                lastSyncAt: new Date().toISOString(),
+                queuedAt: new Date().toISOString(),
                 linkedinUrl: prospect.linkedin || prospect.linkedinUrl
               }
             }
@@ -209,20 +203,15 @@ export const useLinkedHelperStore = create(
           
           return result;
         } catch (error) {
-          console.error('Failed to push prospect to LinkedHelper:', error);
+          console.error('Failed to queue prospect for LinkedHelper:', error);
           throw error;
         }
       },
       
       /**
-       * Push multiple prospects to LinkedHelper campaign
+       * Push multiple prospects to LinkedHelper campaign (via queue)
        */
-      pushProspects: async (prospects, campaignId) => {
-        const apiKey = get().apiKey;
-        if (!apiKey) {
-          throw new Error('LinkedHelper API key not configured. Please add it in Settings.');
-        }
-        
+      pushProspects: async (prospects, campaignId, campaignName = null) => {
         // Filter to only prospects with LinkedIn URLs
         const validProspects = prospects.filter(p => p.linkedin || p.linkedinUrl);
         
@@ -230,19 +219,18 @@ export const useLinkedHelperStore = create(
           throw new Error('No prospects have LinkedIn URLs');
         }
         
-        const contacts = validProspects.map(linkedHelper.prospectToLinkedHelperContact);
+        const prospectIds = validProspects.map(p => p.id);
         
         try {
-          const result = await linkedHelper.addContactsToCampaign(campaignId, contacts, apiKey);
+          const result = await linkedHelper.queueProspectsPush(prospectIds, campaignId, campaignName);
           
           // Update sync status for all valid prospects
           const updates = {};
-          validProspects.forEach((p, idx) => {
+          validProspects.forEach(p => {
             updates[p.id] = {
               campaignId,
-              contactId: result.contacts?.[idx]?.id || null,
               status: 'queued',
-              lastSyncAt: new Date().toISOString(),
+              queuedAt: new Date().toISOString(),
               linkedinUrl: p.linkedin || p.linkedinUrl
             };
           });

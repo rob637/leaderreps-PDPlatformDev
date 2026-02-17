@@ -13,8 +13,9 @@ import { app } from './firebase';
 // Initialize Firebase Functions
 const functions = getFunctions(app, 'us-central1');
 
-// Cloud Function callable
+// Cloud Function callables
 const linkedHelperProxyFn = httpsCallable(functions, 'linkedHelperProxy');
+const linkedHelperQueueAddFn = httpsCallable(functions, 'linkedHelperQueueAdd');
 
 /**
  * Base API wrapper for LinkedHelper operations
@@ -196,6 +197,64 @@ export async function removeContact(campaignId, contactId, apiKey) {
  */
 export async function syncCampaignResults(campaignId, since = null, apiKey) {
   return callLinkedHelper('syncCampaignResults', { campaignId, since }, apiKey);
+}
+
+// ========================================
+// QUEUE OPERATIONS (Chrome Extension Bridge)
+// ========================================
+
+/**
+ * Add a prospect to the LinkedHelper queue.
+ * Instead of calling LinkedHelper API directly (which requires localhost access),
+ * we queue the request for the Chrome extension to process.
+ * 
+ * @param {string} prospectId - The prospect's Firestore document ID
+ * @param {string} campaignId - Target LinkedHelper campaign ID
+ * @param {string} campaignName - Campaign name (for display)
+ * @returns {Promise<Object>} Queue item with ID
+ */
+export async function queueProspectPush(prospectId, campaignId, campaignName = null) {
+  if (!prospectId) throw new Error('Prospect ID is required');
+  if (!campaignId) throw new Error('Campaign ID is required');
+  
+  try {
+    const result = await linkedHelperQueueAddFn({ prospectId, campaignId, campaignName });
+    return result.data;
+  } catch (error) {
+    console.error('Failed to queue prospect for LinkedHelper:', error);
+    throw new Error(error.message || 'Failed to add to queue');
+  }
+}
+
+/**
+ * Add multiple prospects to the LinkedHelper queue
+ * @param {Array<string>} prospectIds - Array of prospect IDs
+ * @param {string} campaignId - Target LinkedHelper campaign ID
+ * @param {string} campaignName - Campaign name (for display)
+ * @returns {Promise<Object>} Results with success/failure counts
+ */
+export async function queueProspectsPush(prospectIds, campaignId, campaignName = null) {
+  if (!prospectIds?.length) throw new Error('At least one prospect ID is required');
+  if (!campaignId) throw new Error('Campaign ID is required');
+  
+  const results = {
+    queued: 0,
+    failed: 0,
+    errors: []
+  };
+  
+  // Queue each prospect (could batch this in future)
+  for (const prospectId of prospectIds) {
+    try {
+      await linkedHelperQueueAddFn({ prospectId, campaignId, campaignName });
+      results.queued++;
+    } catch (error) {
+      results.failed++;
+      results.errors.push({ prospectId, error: error.message });
+    }
+  }
+  
+  return results;
 }
 
 // ========================================
