@@ -12,12 +12,16 @@ import {
   Command,
   Sparkles,
   Settings,
-  Bell
+  Bell,
+  Mail,
+  Activity
 } from 'lucide-react';
 
 const navItems = [
   { path: '/prospects', icon: Users, label: 'Prospects', exact: true },
   { path: '/apollo', icon: Sparkles, label: 'Apollo Search' },
+  { path: '/outreach', icon: Mail, label: 'Outreach' },
+  { path: '/activities', icon: Activity, label: 'Activities' },
   { path: '/tasks', icon: Bell, label: 'Tasks' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];

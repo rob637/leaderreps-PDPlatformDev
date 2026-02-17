@@ -8,6 +8,8 @@ import LoginPage from './pages/LoginPage';
 import ProspectsPage from './pages/ProspectsPage';
 import ApolloSearchPage from './pages/ApolloSearchPage';
 import TasksPage from './pages/TasksPage';
+import OutreachPage from './pages/OutreachPage';
+import ActivitiesPage from './pages/ActivitiesPage';
 import SettingsPage from './pages/SettingsPage';
 import InstantlyPushModal from './components/instantly/InstantlyPushModal';
 import LinkedHelperPushModal from './components/linkedhelper/LinkedHelperPushModal';
@@ -54,6 +56,8 @@ function AppRoutes() {
         <Route index element={<Navigate to="/prospects" replace />} />
         <Route path="prospects" element={<ProspectsPage />} />
         <Route path="apollo" element={<ApolloSearchPage />} />
+        <Route path="outreach" element={<OutreachPage />} />
+        <Route path="activities" element={<ActivitiesPage />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="settings" element={<SettingsPage />} />
         

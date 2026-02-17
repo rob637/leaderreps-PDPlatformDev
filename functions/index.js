@@ -3716,3 +3716,347 @@ function extractEmail(emailString) {
   // If no angle brackets, assume the whole string is the email
   return emailString.trim();
 }
+
+
+// ========================================
+// CHROME EXTENSION API ENDPOINTS
+// ========================================
+
+/**
+ * PROSPECT LOOKUP (Gen 2 - HTTP Request)
+ * Chrome Extension API: Look up a prospect by email address.
+ * Used by the Gmail sidebar to find prospects when viewing emails.
+ */
+exports.prospectLookup = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  // Verify Authorization header
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const token = authHeader.substring(7);
+  
+  try {
+    // Verify the Firebase ID token
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+    
+    const { email, userId } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+    
+    // Verify the userId matches the token
+    if (userId && userId !== uid) {
+      return res.status(403).json({ error: 'User ID mismatch' });
+    }
+    
+    // Look up prospect by email
+    const prospectsRef = db.collection('corporate_prospects');
+    const snapshot = await prospectsRef
+      .where('email', '==', email.toLowerCase())
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) {
+      logger.info('Prospect not found', { email, uid });
+      return res.json({ found: false });
+    }
+    
+    const prospectDoc = snapshot.docs[0];
+    const prospectData = prospectDoc.data();
+    
+    // Fetch recent activities
+    const activitiesSnapshot = await prospectsRef
+      .doc(prospectDoc.id)
+      .collection('activities')
+      .orderBy('timestamp', 'desc')
+      .limit(10)
+      .get();
+    
+    const activities = activitiesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    logger.info('Prospect found', { email, prospectId: prospectDoc.id, uid });
+    
+    return res.json({
+      found: true,
+      prospect: {
+        id: prospectDoc.id,
+        name: prospectData.name || '',
+        email: prospectData.email || '',
+        phone: prospectData.phone || '',
+        company: prospectData.company || '',
+        title: prospectData.title || '',
+        status: prospectData.stage || 'lead',
+        linkedinUrl: prospectData.linkedinUrl || prospectData.linkedin || '',
+        owner: prospectData.owner || '',
+        value: prospectData.value || 0,
+        notes: prospectData.notes || '',
+        activities
+      }
+    });
+  } catch (error) {
+    logger.error('prospectLookup error', { error: error.message });
+    if (error.code === 'auth/id-token-expired' || error.code === 'auth/argument-error') {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET PROSPECT (Gen 2 - HTTP Request)
+ * Chrome Extension API: Get full prospect data by ID.
+ */
+exports.getProspect = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  // Verify Authorization header
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const token = authHeader.substring(7);
+  
+  try {
+    // Verify the Firebase ID token
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+    
+    const { prospectId, userId } = req.body;
+    
+    if (!prospectId) {
+      return res.status(400).json({ error: 'Prospect ID is required' });
+    }
+    
+    // Verify the userId matches the token
+    if (userId && userId !== uid) {
+      return res.status(403).json({ error: 'User ID mismatch' });
+    }
+    
+    // Get prospect document
+    const prospectDoc = await db.collection('corporate_prospects').doc(prospectId).get();
+    
+    if (!prospectDoc.exists) {
+      return res.status(404).json({ error: 'Prospect not found' });
+    }
+    
+    const prospectData = prospectDoc.data();
+    
+    // Fetch all activities
+    const activitiesSnapshot = await db.collection('corporate_prospects')
+      .doc(prospectId)
+      .collection('activities')
+      .orderBy('timestamp', 'desc')
+      .limit(50)
+      .get();
+    
+    const activities = activitiesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    logger.info('getProspect success', { prospectId, uid });
+    
+    return res.json({
+      success: true,
+      prospect: {
+        id: prospectDoc.id,
+        name: prospectData.name || '',
+        email: prospectData.email || '',
+        phone: prospectData.phone || '',
+        company: prospectData.company || '',
+        title: prospectData.title || '',
+        status: prospectData.stage || 'lead',
+        linkedinUrl: prospectData.linkedinUrl || prospectData.linkedin || '',
+        owner: prospectData.owner || '',
+        ownerEmail: prospectData.ownerEmail || '',
+        value: prospectData.value || 0,
+        notes: prospectData.notes || '',
+        createdAt: prospectData.createdAt?.toDate?.()?.toISOString() || '',
+        updatedAt: prospectData.updatedAt?.toDate?.()?.toISOString() || '',
+        activities
+      }
+    });
+  } catch (error) {
+    logger.error('getProspect error', { error: error.message });
+    if (error.code === 'auth/id-token-expired' || error.code === 'auth/argument-error') {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * LOG ACTIVITY (Gen 2 - HTTP Request)
+ * Chrome Extension API: Log an activity to a prospect's timeline.
+ */
+exports.logActivity = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  // Verify Authorization header
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const token = authHeader.substring(7);
+  
+  try {
+    // Verify the Firebase ID token
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+    const userEmail = decodedToken.email || '';
+    
+    const { prospectId, activity, userId } = req.body;
+    
+    if (!prospectId) {
+      return res.status(400).json({ error: 'Prospect ID is required' });
+    }
+    
+    if (!activity || !activity.type) {
+      return res.status(400).json({ error: 'Activity with type is required' });
+    }
+    
+    // Verify the userId matches the token
+    if (userId && userId !== uid) {
+      return res.status(403).json({ error: 'User ID mismatch' });
+    }
+    
+    // Verify prospect exists
+    const prospectDoc = await db.collection('corporate_prospects').doc(prospectId).get();
+    
+    if (!prospectDoc.exists) {
+      return res.status(404).json({ error: 'Prospect not found' });
+    }
+    
+    // Create activity document
+    const activityData = {
+      type: activity.type,
+      title: activity.title || '',
+      description: activity.description || '',
+      notes: activity.notes || '',
+      outcome: activity.outcome || '',
+      duration: activity.duration || 0,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: userEmail,
+      createdByUid: uid,
+      source: 'chrome_extension'
+    };
+    
+    const activityRef = await db.collection('corporate_prospects')
+      .doc(prospectId)
+      .collection('activities')
+      .add(activityData);
+    
+    // Update prospect's updatedAt
+    await db.collection('corporate_prospects').doc(prospectId).update({
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastActivityAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastActivityType: activity.type
+    });
+    
+    logger.info('Activity logged', { prospectId, activityId: activityRef.id, type: activity.type, uid });
+    
+    return res.json({
+      success: true,
+      activityId: activityRef.id
+    });
+  } catch (error) {
+    logger.error('logActivity error', { error: error.message });
+    if (error.code === 'auth/id-token-expired' || error.code === 'auth/argument-error') {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * UPDATE PROSPECT STATUS (Gen 2 - HTTP Request)
+ * Chrome Extension API: Update a prospect's pipeline stage/status.
+ */
+exports.updateProspectStatus = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  // Verify Authorization header
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const token = authHeader.substring(7);
+  
+  try {
+    // Verify the Firebase ID token
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+    const userEmail = decodedToken.email || '';
+    
+    const { prospectId, status, userId } = req.body;
+    
+    if (!prospectId) {
+      return res.status(400).json({ error: 'Prospect ID is required' });
+    }
+    
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+    
+    // Valid statuses
+    const validStatuses = ['new', 'contacted', 'qualified', 'demo', 'proposal', 'negotiation', 'won', 'lost'];
+    if (!validStatuses.includes(status.toLowerCase())) {
+      return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+    }
+    
+    // Verify the userId matches the token
+    if (userId && userId !== uid) {
+      return res.status(403).json({ error: 'User ID mismatch' });
+    }
+    
+    // Verify prospect exists
+    const prospectRef = db.collection('corporate_prospects').doc(prospectId);
+    const prospectDoc = await prospectRef.get();
+    
+    if (!prospectDoc.exists) {
+      return res.status(404).json({ error: 'Prospect not found' });
+    }
+    
+    const previousStatus = prospectDoc.data().stage || 'new';
+    
+    // Update prospect status
+    await prospectRef.update({
+      stage: status.toLowerCase(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastStatusChangeAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastStatusChangedBy: userEmail
+    });
+    
+    // Log status change as an activity
+    await prospectRef.collection('activities').add({
+      type: 'status_change',
+      title: `Status changed to ${status}`,
+      description: `Pipeline stage changed from ${previousStatus} to ${status}`,
+      previousStatus,
+      newStatus: status.toLowerCase(),
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: userEmail,
+      createdByUid: uid,
+      source: 'chrome_extension'
+    });
+    
+    logger.info('Prospect status updated', { prospectId, previousStatus, newStatus: status, uid });
+    
+    return res.json({
+      success: true,
+      previousStatus,
+      newStatus: status.toLowerCase()
+    });
+  } catch (error) {
+    logger.error('updateProspectStatus error', { error: error.message });
+    if (error.code === 'auth/id-token-expired' || error.code === 'auth/argument-error') {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
