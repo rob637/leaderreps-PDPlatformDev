@@ -3086,15 +3086,17 @@ IMPORTANT:
 }
 
 // ================================================================================
-// GMAIL INTEGRATION
+// GMAIL INTEGRATION (DISABLED - requires Google OAuth secrets)
+// TODO: Set up GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET secrets, then change
+//       _disabled_gmailProxy back to exports.gmailProxy (and same for other two)
 // ================================================================================
 
 /**
- * GMAIL PROXY
+ * GMAIL PROXY (DISABLED - requires Google OAuth secrets)
  * Handles Gmail API calls using OAuth tokens from user settings.
  * Supports: listing messages, getting message details, sending emails, syncing threads.
  */
-exports.gmailProxy = onCall({ 
+const _disabled_gmailProxy = onCall({ 
   cors: true, 
   region: "us-central1",
   secrets: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
@@ -3381,11 +3383,11 @@ exports.gmailProxy = onCall({
 
 
 /**
- * GMAIL OAUTH CALLBACK
+ * GMAIL OAUTH CALLBACK (DISABLED - requires Google OAuth secrets)
  * HTTP endpoint that handles the OAuth redirect from Google.
  * Exchanges the auth code for tokens and saves them to user settings.
  */
-exports.gmailOAuthCallback = onRequest({ 
+const _disabled_gmailOAuthCallback = onRequest({ 
   cors: true, 
   region: "us-central1",
   secrets: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
@@ -3479,11 +3481,11 @@ function getAppUrl() {
 
 
 /**
- * GMAIL SYNC JOB
+ * GMAIL SYNC JOB (DISABLED - requires Google OAuth secrets)
  * Scheduled function that syncs Gmail activity for all connected users.
  * Runs every 15 minutes.
  */
-exports.gmailSyncJob = onSchedule({
+const _disabled_gmailSyncJob = onSchedule({
   schedule: "every 15 minutes",
   region: "us-central1",
   timeoutSeconds: 300,
@@ -3716,7 +3718,6 @@ function extractEmail(emailString) {
   // If no angle brackets, assume the whole string is the email
   return emailString.trim();
 }
-
 
 // ========================================
 // CHROME EXTENSION API ENDPOINTS
