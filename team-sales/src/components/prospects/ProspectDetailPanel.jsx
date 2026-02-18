@@ -330,7 +330,11 @@ const ProspectDetailPanel = () => {
     
     if (enrichedData) {
       try {
-        await updateProspect(selectedProspect.id, enrichedData);
+        // Filter out undefined values - Firestore doesn't accept them
+        const cleanedData = Object.fromEntries(
+          Object.entries(enrichedData).filter(([_, v]) => v !== undefined)
+        );
+        await updateProspect(selectedProspect.id, cleanedData);
         // Log the enrichment as an activity
         await addActivity({
           prospectId: selectedProspect.id,
