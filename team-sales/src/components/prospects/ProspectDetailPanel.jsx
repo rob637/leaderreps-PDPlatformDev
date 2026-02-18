@@ -85,7 +85,7 @@ const ProspectDetailPanel = () => {
     hasLinkedInUrl 
   } = useLinkedHelperStore();
   const { getProspectEnrollments } = useSequenceStore();
-  const { enrichProspect, enriching, apiKey: apolloApiKey } = useApolloStore();
+  const { enrichProspect, enriching, apiKey: apolloApiKey, loadApiKey: loadApolloKey } = useApolloStore();
   
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   
@@ -132,6 +132,13 @@ const ProspectDetailPanel = () => {
       return () => unsubscribe();
     }
   }, [selectedProspect?.id, subscribeToProspectActivities]);
+
+  // Load Apollo API key if not already loaded
+  useEffect(() => {
+    if (user?.uid && !apolloApiKey) {
+      loadApolloKey(user.uid);
+    }
+  }, [user?.uid, apolloApiKey, loadApolloKey]);
 
   if (!selectedProspect) return null;
 
