@@ -137,3 +137,4 @@ google-cloud-sdk/**/__pycache__/
 # Browser-Use Audit Reports
 # -------------------------
 scripts/browser-use/reports/
+data-exports/env-backup/
