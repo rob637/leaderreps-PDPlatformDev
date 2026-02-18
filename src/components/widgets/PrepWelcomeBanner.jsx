@@ -189,11 +189,11 @@ const PrepWelcomeBanner = () => {
   return (
     <div className={`relative overflow-hidden rounded-2xl shadow-md border ${
       isLaunch 
-        ? 'bg-corporate-light-gray border-corporate-teal/40' 
-        : 'bg-corporate-light-gray border-corporate-teal/20'
+        ? 'bg-white dark:bg-slate-800 border-corporate-teal/40' 
+        : 'bg-white dark:bg-slate-800 border-corporate-teal/20 dark:border-slate-700'
     }`}>
       {/* Simplified Background Pattern - Clean and minimal */}
-      <div className="absolute inset-0 opacity-10">
+      <div className="absolute inset-0 opacity-10 dark:opacity-5">
         <div className="absolute top-0 right-0 w-64 h-64 bg-corporate-teal rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
       </div>
 
@@ -222,7 +222,7 @@ const PrepWelcomeBanner = () => {
             </div>
             
             {/* Dynamic Headline - Clean and direct */}
-            <h2 className="text-2xl sm:text-3xl font-bold text-corporate-navy font-heading leading-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold text-corporate-navy dark:text-white font-heading leading-tight">
               {getPersonalizedHeadline()}
             </h2>
             
@@ -234,7 +234,7 @@ const PrepWelcomeBanner = () => {
             {facilitator && (
               <button
                 onClick={() => setShowFacilitatorModal(true)}
-                className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 rounded-lg px-4 py-3 border border-slate-200 dark:border-slate-700 hover:border-slate-300 transition-all group text-left"
+                className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg px-4 py-3 border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 transition-all group text-left"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-corporate-teal to-corporate-navy flex items-center justify-center text-white font-bold text-sm overflow-hidden">
                   {facilitator.photoUrl ? (
@@ -248,7 +248,7 @@ const PrepWelcomeBanner = () => {
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="text-corporate-navy font-medium text-sm group-hover:text-corporate-teal transition-colors">{facilitator.name}</p>
+                  <p className="text-corporate-navy dark:text-white font-medium text-sm group-hover:text-corporate-teal transition-colors">{facilitator.name}</p>
                   <p className="text-slate-500 dark:text-slate-400 text-xs">Your Facilitator • Tap for details</p>
                 </div>
                 <Info className="w-4 h-4 text-slate-400 group-hover:text-corporate-teal transition-colors" />

@@ -4,6 +4,9 @@ import { useTasksStore, TASK_TYPES, TASK_PRIORITIES } from '../../stores/tasksSt
 import { useActivitiesStore } from '../../stores/prospectActivitiesStore';
 import { useInstantlyStore } from '../../stores/instantlyStore';
 import { useLinkedHelperStore } from '../../stores/linkedHelperStore';
+import { useSequenceStore } from '../../stores/sequenceStore';
+import { useApolloStore } from '../../stores/apolloStore';
+import { EnrollInSequenceModal } from '../sequences';
 import { TEAM_MEMBERS, getStageInfo } from '../../config/team';
 import { 
   LINKEDIN_STATUSES, 
@@ -51,7 +54,8 @@ import {
   Bell,
   MoreHorizontal,
   Inbox,
-  Zap
+  Zap,
+  PlayCircle
 } from 'lucide-react';
 
 // Format phone number as (XXX) XXX-XXXX
@@ -82,6 +86,10 @@ const ProspectDetailPanel = () => {
     isProspectSynced: isLinkedHelperSynced, 
     hasLinkedInUrl 
   } = useLinkedHelperStore();
+  const { getProspectEnrollments } = useSequenceStore();
+  const { enrichProspect, enriching, apiKey: apolloApiKey } = useApolloStore();
+  
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
   
   const [isEditing, setIsEditing] = useState(false);
   const [showStageDropdown, setShowStageDropdown] = useState(false);
@@ -300,6 +308,35 @@ const ProspectDetailPanel = () => {
       setShowAddNote(false);
     } catch (error) {
       toast.error('Failed to log activity');
+    }
+  };
+
+  const handleEnrichWithApollo = async () => {
+    if (!apolloApiKey) {
+      toast.error('Configure Apollo API key in Settings first');
+      return;
+    }
+    if (!selectedProspect.email && !selectedProspect.linkedin) {
+      toast.error('Prospect needs email or LinkedIn URL for enrichment');
+      return;
+    }
+    
+    const enrichedData = await enrichProspect(selectedProspect, user?.uid);
+    
+    if (enrichedData) {
+      try {
+        await updateProspect(selectedProspect.id, enrichedData);
+        // Log the enrichment as an activity
+        await addActivity({
+          prospectId: selectedProspect.id,
+          prospectName: selectedProspect.name,
+          type: 'note',
+          content: 'Prospect enriched with Apollo data'
+        }, user.email, user.displayName || user.email.split('@')[0]);
+      } catch (error) {
+        console.error('Error saving enriched data:', error);
+        toast.error('Failed to save enriched data');
+      }
     }
   };
 
@@ -1201,7 +1238,7 @@ const ProspectDetailPanel = () => {
             </button>
           </div>
           {/* Secondary actions */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-2">
             <button 
               onClick={() => { setQuickLogType(null); setShowQuickLog(true); }}
               className="flex flex-col items-center gap-1 px-2 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
@@ -1210,16 +1247,19 @@ const ProspectDetailPanel = () => {
               <span>Log</span>
             </button>
             <button 
-              onClick={() => openPushModal(selectedProspect)}
+              onClick={() => setShowEnrollModal(true)}
+              disabled={!selectedProspect.email}
               className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg text-xs font-medium transition ${
-                isProspectSynced(selectedProspect.id)
-                  ? 'border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30'
-                  : 'border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-200 dark:hover:border-purple-700'
+                !selectedProspect.email
+                  ? 'border border-slate-200 dark:border-slate-600 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-60'
+                  : getProspectEnrollments(selectedProspect.id).some(e => e.status === 'active')
+                    ? 'border border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30'
+                    : 'border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:border-emerald-200 dark:hover:border-emerald-700'
               }`}
-              title={isProspectSynced(selectedProspect.id) ? 'Already in Instantly' : 'Push to Instantly'}
+              title={!selectedProspect.email ? 'Add email first' : getProspectEnrollments(selectedProspect.id).some(e => e.status === 'active') ? 'In Sequence' : 'Add to Sequence'}
             >
-              <Zap className="w-4 h-4 text-purple-500" />
-              <span>Email</span>
+              <PlayCircle className="w-4 h-4 text-emerald-500" />
+              <span>Sequence</span>
             </button>
             <button 
               onClick={() => openLinkedHelperModal(selectedProspect)}
@@ -1235,6 +1275,27 @@ const ProspectDetailPanel = () => {
             >
               <Linkedin className="w-4 h-4 text-blue-600" />
               <span>LinkedIn</span>
+            </button>
+            <button 
+              onClick={handleEnrichWithApollo}
+              disabled={enriching || (!selectedProspect.email && !selectedProspect.linkedin)}
+              className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg text-xs font-medium transition ${
+                !selectedProspect.email && !selectedProspect.linkedin
+                  ? 'border border-slate-200 dark:border-slate-600 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-60'
+                  : selectedProspect.apolloEnrichedAt
+                    ? 'border border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30'
+                    : 'border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:border-amber-200 dark:hover:border-amber-700'
+              }`}
+              title={
+                !selectedProspect.email && !selectedProspect.linkedin 
+                  ? 'Add email or LinkedIn first' 
+                  : selectedProspect.apolloEnrichedAt 
+                    ? `Enriched ${formatDistanceToNow(new Date(selectedProspect.apolloEnrichedAt))} ago` 
+                    : 'Enrich with Apollo data'
+              }
+            >
+              <Sparkles className={`w-4 h-4 text-amber-500 ${enriching ? 'animate-pulse' : ''}`} />
+              <span>{enriching ? '...' : 'Enrich'}</span>
             </button>
             <button 
               onClick={() => { setExpandedSections(prev => ({ ...prev, tasks: true })); setShowAddTask(true); }}
@@ -1253,6 +1314,18 @@ const ProspectDetailPanel = () => {
           prospect={selectedProspect}
           initialType={quickLogType}
           onClose={() => { setShowQuickLog(false); setQuickLogType(null); }}
+        />
+      )}
+
+      {/* Enroll in Sequence Modal */}
+      {showEnrollModal && (
+        <EnrollInSequenceModal
+          prospect={selectedProspect}
+          onClose={() => setShowEnrollModal(false)}
+          onSuccess={() => {
+            toast.success('Prospect enrolled in sequence!');
+            setShowEnrollModal(false);
+          }}
         />
       )}
 

@@ -191,16 +191,16 @@ export default function ApolloSearchPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Apollo Search</h1>
-          <p className="text-gray-600 dark:text-slate-400">Find and import prospects from Apollo.io</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100">Apollo Search</h1>
+          <p className="text-slate-600 dark:text-slate-400 dark:text-slate-400">Find and import prospects from Apollo.io</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-500 dark:text-slate-400">
+          <span className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">
             Credits used: {creditsUsed}
           </span>
           <button
             onClick={() => setShowApiKeyModal(true)}
-            className="p-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+            className="p-2 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-200 hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-700 rounded-lg"
             title="API Settings"
           >
             <Settings className="w-5 h-5" />
@@ -215,7 +215,7 @@ export default function ApolloSearchPage() {
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
             searchMode === 'people'
               ? 'bg-brand-navy text-white'
-              : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600'
+              : 'bg-slate-100 dark:bg-slate-700 dark:bg-slate-700 text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600'
           }`}
         >
           <Users className="w-4 h-4" />
@@ -226,7 +226,7 @@ export default function ApolloSearchPage() {
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
             searchMode === 'companies'
               ? 'bg-brand-navy text-white'
-              : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600'
+              : 'bg-slate-100 dark:bg-slate-700 dark:bg-slate-700 text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600'
           }`}
         >
           <Building2 className="w-4 h-4" />
@@ -240,7 +240,7 @@ export default function ApolloSearchPage() {
           {searchMode === 'people' ? (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">
                   Job Titles
                 </label>
                 <input
@@ -252,7 +252,7 @@ export default function ApolloSearchPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">
                   Companies
                 </label>
                 <input
@@ -266,7 +266,7 @@ export default function ApolloSearchPage() {
             </>
           ) : (
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">
                 Company Name
               </label>
               <input
@@ -280,7 +280,7 @@ export default function ApolloSearchPage() {
           )}
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">
               Location
             </label>
             <input
@@ -293,7 +293,7 @@ export default function ApolloSearchPage() {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">
               Industry
             </label>
             <input
@@ -306,7 +306,7 @@ export default function ApolloSearchPage() {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">
               Company Size
             </label>
             <select
@@ -322,7 +322,7 @@ export default function ApolloSearchPage() {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">
               Keywords
             </label>
             <input
@@ -340,7 +340,7 @@ export default function ApolloSearchPage() {
           <>
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200"
+              className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 dark:hover:text-slate-200"
             >
               <Filter className="w-4 h-4" />
               Advanced Filters
@@ -350,7 +350,7 @@ export default function ApolloSearchPage() {
             {showAdvancedFilters && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t dark:border-slate-600">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">
                     Seniority Level
                   </label>
                   <select
@@ -365,11 +365,11 @@ export default function ApolloSearchPage() {
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Hold Ctrl/Cmd to select multiple</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 mt-1">Hold Ctrl/Cmd to select multiple</p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">
                     Department
                   </label>
                   <select
@@ -387,7 +387,7 @@ export default function ApolloSearchPage() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">
                     Email Status
                   </label>
                   <select
@@ -440,7 +440,7 @@ export default function ApolloSearchPage() {
           
           <button
             onClick={resetSearchCriteria}
-            className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+            className="flex items-center gap-2 px-4 py-2 text-slate-600 dark:text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 dark:hover:text-slate-200 hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-700 rounded-lg"
           >
             <RotateCcw className="w-4 h-4" />
             Reset
@@ -483,7 +483,7 @@ export default function ApolloSearchPage() {
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-slate-700">
           <div className="p-4 border-b dark:border-slate-700 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h2 className="font-semibold text-gray-900 dark:text-slate-100">
+              <h2 className="font-semibold text-slate-900 dark:text-slate-100 dark:text-slate-100">
                 {searchResults.length} Results
               </h2>
               <button
@@ -538,9 +538,9 @@ export default function ApolloSearchPage() {
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-slate-600 flex items-center justify-center">
                       {result.type === 'company' ? (
-                        <Building2 className="w-6 h-6 text-gray-500 dark:text-slate-400" />
+                        <Building2 className="w-6 h-6 text-slate-500 dark:text-slate-400 dark:text-slate-400" />
                       ) : (
-                        <span className="text-lg font-medium text-gray-600 dark:text-slate-300">
+                        <span className="text-lg font-medium text-slate-600 dark:text-slate-400 dark:text-slate-300">
                           {result.name?.charAt(0) || '?'}
                         </span>
                       )}
@@ -551,7 +551,7 @@ export default function ApolloSearchPage() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-medium text-gray-900 dark:text-slate-100 truncate">{result.name}</h3>
+                    <h3 className="font-medium text-slate-900 dark:text-slate-100 dark:text-slate-100 truncate">{result.name}</h3>
                     {alreadyImported && (
                       <span className="px-2 py-0.5 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" />
@@ -595,18 +595,18 @@ export default function ApolloSearchPage() {
                   </div>
                   
                   {result.type === 'person' && (
-                    <p className="text-sm text-gray-600 dark:text-slate-400 truncate">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 truncate">
                       {result.title} {result.company && `at ${result.company}`}
                     </p>
                   )}
                   
                   {result.type === 'company' && (
-                    <p className="text-sm text-gray-600 dark:text-slate-400 truncate">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 truncate">
                       {result.industry} • {result.companySize ? `${result.companySize} employees` : 'Size unknown'}
                     </p>
                   )}
                   
-                  <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-500 dark:text-slate-400">
+                  <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">
                     {result.location && (
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
@@ -614,7 +614,7 @@ export default function ApolloSearchPage() {
                       </span>
                     )}
                     {result.seniority && (
-                      <span className="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-slate-600 text-gray-600 dark:text-slate-300 rounded capitalize">
+                      <span className="px-1.5 py-0.5 text-xs bg-slate-100 dark:bg-slate-700 dark:bg-slate-600 text-slate-600 dark:text-slate-400 dark:text-slate-300 rounded capitalize">
                         {result.seniority.replace('_', ' ')}
                       </span>
                     )}
@@ -659,7 +659,7 @@ export default function ApolloSearchPage() {
                       href={result.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                      className="p-2 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-700 rounded-lg"
                     >
                       <Globe className="w-4 h-4" />
                     </a>
@@ -697,7 +697,7 @@ export default function ApolloSearchPage() {
               <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Apollo API Settings</h2>
               <button
                 onClick={() => setShowApiKeyModal(false)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400"
+                className="p-1 hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -705,7 +705,7 @@ export default function ApolloSearchPage() {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">
                   API Key
                 </label>
                 <input
@@ -715,7 +715,7 @@ export default function ApolloSearchPage() {
                   placeholder={apiKey ? '••••••••' : 'Enter your Apollo API key'}
                   className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-brand-teal focus:border-transparent"
                 />
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 mt-1">
                   Get your API key from{' '}
                   <a
                     href="https://app.apollo.io/#/settings/integrations/api"

@@ -12,7 +12,7 @@ const PrivacyPolicy = () => {
     >
       <div className="max-w-4xl mx-auto space-y-6">
         <Card>
-          <div className="prose prose-slate max-w-none p-6">
+          <div className="prose prose-slate dark:prose-invert max-w-none p-6">
             <p>
               LeaderReps (the "Company") respects your privacy and is committed to protecting it through this Privacy Policy. 
               This Policy governs your access to and use of leaderreps.com (the "Website"), including any products or services 

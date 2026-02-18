@@ -212,16 +212,16 @@ const ReadRepDetail = (props) => {
 
           <div className="p-8">
             {activeTab === 'brief' && (
-              <div className="prose max-w-none text-slate-700 dark:text-slate-200">
+              <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-200">
                 {/* Synopsis Section */}
                 {book.details?.synopsis && (
-                  <div className="mb-8 bg-blue-50 dark:bg-blue-900/20 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
-                    <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
+                  <div className="mb-8 bg-blue-50 dark:bg-slate-700/50 p-6 rounded-xl border border-blue-100 dark:border-slate-600">
+                    <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300 mb-3 flex items-center gap-2">
                       <BookOpen className="w-5 h-5" />
                       Synopsis & Key Takeaways
                     </h3>
                     <div 
-                      className="text-blue-900 text-sm leading-relaxed prose-sm prose-blue max-w-none [&>h3]:text-blue-800 [&>h3]:font-bold [&>h3]:mt-4 [&>h3]:mb-2 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>p]:mb-3"
+                      className="text-blue-900 dark:text-slate-200 text-sm leading-relaxed prose-sm prose-blue dark:prose-invert max-w-none [&>h3]:text-blue-800 dark:[&>h3]:text-blue-300 [&>h3]:font-bold [&>h3]:mt-4 [&>h3]:mb-2 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>p]:mb-3"
                       dangerouslySetInnerHTML={{ __html: book.details.synopsis }}
                     />
                   </div>
@@ -241,7 +241,7 @@ const ReadRepDetail = (props) => {
             )}
 
             {activeTab === 'flyer' && (
-              <div className="prose max-w-none text-slate-700 dark:text-slate-200 h-full">
+              <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-200 h-full">
                 {(book.details?.pdfUrl || book.metadata?.pdfUrl) ? (
                    <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative">
                      <iframe 

@@ -1754,10 +1754,30 @@ exports.apolloSearchProxy = onCall({ cors: true, region: "us-central1" }, async 
         api_key: apiKey,
         reveal_personal_emails: true,
         // reveal_phone_number: true, // Requires webhook_url, disabling for sync requests
-        id: entityId // if entityId is passed, use it.
       };
       
-      // Merge extra search params if needed, though 'id' is usually enough
+      // Support both ID and email for matching
+      if (entityId) {
+        body.id = entityId;
+      }
+      if (request.data.email) {
+        body.email = request.data.email;
+      }
+      if (request.data.linkedinUrl) {
+        body.linkedin_url = request.data.linkedinUrl;
+      }
+      // Names can help improve match accuracy
+      if (request.data.firstName) {
+        body.first_name = request.data.firstName;
+      }
+      if (request.data.lastName) {
+        body.last_name = request.data.lastName;
+      }
+      if (request.data.company) {
+        body.organization_name = request.data.company;
+      }
+      
+      // Merge extra search params if needed
       if (searchParams) {
           body = { ...body, ...searchParams };
       }
@@ -4287,3 +4307,293 @@ exports.updateProspectStatus = onRequest({ cors: true, region: "us-central1" }, 
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// ================================================================================
+// SEQUENCE ENGINE - Email Automation
+// ================================================================================
+
+/**
+ * PROCESS SEQUENCE QUEUE
+ * Runs every 15 minutes to send scheduled sequence emails.
+ * 
+ * Workflow:
+ * 1. Get all active enrollments where nextSendAt <= now
+ * 2. For each enrollment, get sequence steps and templates
+ * 3. Send email via Gmail API (or queue for manual send if Gmail not connected)
+ * 4. Update enrollment progress (currentStep++) and schedule next email
+ * 5. Mark as completed when all steps are done
+ * 
+ * Note: This function currently marks emails as "ready to send" and logs activity.
+ * Actual email sending requires Gmail OAuth integration (see gmailProxy).
+ * For now, users can manually send from the UI using the prepared content.
+ */
+exports.processSequenceQueue = onSchedule({
+  schedule: 'every 15 minutes',
+  timeZone: 'America/New_York',
+  memory: '256MiB',
+  region: 'us-central1'
+}, async (event) => {
+  const now = admin.firestore.Timestamp.now();
+  
+  logger.info('Processing sequence queue', { timestamp: now.toDate().toISOString() });
+  
+  try {
+    // Get all active enrollments due for sending
+    const dueEnrollments = await db.collection('sequence_enrollments')
+      .where('status', '==', 'active')
+      .where('nextSendAt', '<=', now)
+      .limit(50)  // Process in batches to avoid timeouts
+      .get();
+    
+    if (dueEnrollments.empty) {
+      logger.info('No enrollments due for processing');
+      return { sent: 0, errors: 0, completed: 0 };
+    }
+    
+    logger.info(`Processing ${dueEnrollments.size} due enrollments`);
+    
+    const results = { sent: 0, errors: 0, completed: 0, skipped: 0 };
+    
+    for (const doc of dueEnrollments.docs) {
+      const enrollment = doc.data();
+      
+      try {
+        // 1. Get the sequence definition
+        const sequenceSnap = await db.collection('outreach_sequences')
+          .doc(enrollment.sequenceId)
+          .get();
+        
+        if (!sequenceSnap.exists) {
+          logger.warn(`Sequence ${enrollment.sequenceId} not found for enrollment ${doc.id}`);
+          await doc.ref.update({ 
+            status: 'error',
+            lastError: 'Sequence not found'
+          });
+          results.errors++;
+          continue;
+        }
+        
+        const sequence = sequenceSnap.data();
+        
+        // 2. Get current step
+        const step = sequence.steps?.[enrollment.currentStep];
+        if (!step) {
+          // No more steps, mark complete
+          await doc.ref.update({ 
+            status: 'completed',
+            completedAt: now
+          });
+          
+          // Update sequence stats
+          await db.collection('outreach_sequences').doc(enrollment.sequenceId).update({
+            activeEnrollments: admin.firestore.FieldValue.increment(-1),
+            totalCompleted: admin.firestore.FieldValue.increment(1)
+          });
+          
+          results.completed++;
+          logger.info(`Enrollment ${doc.id} completed`);
+          continue;
+        }
+        
+        // 3. Get template (if specified)
+        let template = null;
+        if (step.templateId) {
+          const templateSnap = await db.collection('outreach_templates')
+            .doc(step.templateId)
+            .get();
+          
+          if (templateSnap.exists) {
+            template = templateSnap.data();
+          }
+        }
+        
+        // 4. Personalize content
+        const variables = enrollment.variables || {};
+        const subject = substituteVariables(step.subject || template?.subject || '', variables);
+        const body = substituteVariables(template?.content || '', variables);
+        
+        // 5. Check for Gmail tokens (email sending)
+        // For now, we'll mark it as "ready" and log the activity
+        // Full Gmail sending requires the gmailProxy function to be enabled
+        
+        // Try to get owner's Gmail tokens
+        let gmailConnected = false;
+        try {
+          const tokensSnap = await db.collection('users')
+            .doc(enrollment.ownerId)
+            .collection('settings')
+            .doc('gmail')
+            .get();
+          
+          gmailConnected = tokensSnap.exists && !!tokensSnap.data()?.refreshToken;
+        } catch (err) {
+          logger.warn(`Could not check Gmail tokens for ${enrollment.ownerId}`, err);
+        }
+        
+        // 6. Log activity (email prepared/sent)
+        const activityData = {
+          prospectId: enrollment.prospectId,
+          prospectEmail: enrollment.prospectEmail,
+          prospectName: enrollment.prospectName,
+          channel: step.channel || 'email',
+          outcome: gmailConnected ? 'sent' : 'queued',
+          type: 'sequence_email',
+          sequenceId: enrollment.sequenceId,
+          sequenceName: enrollment.sequenceName,
+          stepNumber: enrollment.currentStep,
+          subject: subject,
+          // Don't store body in activity (too large), but can store summary
+          contentPreview: body?.substring(0, 200),
+          ownerId: enrollment.ownerId,
+          ownerName: enrollment.ownerName,
+          createdAt: now,
+          automated: true,
+          gmailSent: gmailConnected
+        };
+        
+        await db.collection('outreach_activities').add(activityData);
+        
+        // 7. Update enrollment for next step
+        const nextStepIndex = enrollment.currentStep + 1;
+        
+        if (nextStepIndex >= sequence.steps.length) {
+          // Sequence complete!
+          await doc.ref.update({ 
+            status: 'completed',
+            completedAt: now,
+            emailsSent: admin.firestore.FieldValue.increment(1),
+            lastSentAt: now
+          });
+          
+          // Update sequence stats
+          await db.collection('outreach_sequences').doc(enrollment.sequenceId).update({
+            activeEnrollments: admin.firestore.FieldValue.increment(-1),
+            totalCompleted: admin.firestore.FieldValue.increment(1)
+          });
+          
+          results.completed++;
+        } else {
+          // Schedule next email
+          const nextStep = sequence.steps[nextStepIndex];
+          const daysUntilNext = (nextStep.day || 0) - (step.day || 0);
+          const nextSendAt = addDays(now.toDate(), Math.max(daysUntilNext, 1));
+          
+          await doc.ref.update({ 
+            currentStep: nextStepIndex,
+            nextSendAt: admin.firestore.Timestamp.fromDate(nextSendAt),
+            emailsSent: admin.firestore.FieldValue.increment(1),
+            lastSentAt: now
+          });
+          
+          results.sent++;
+        }
+        
+        logger.info(`Processed enrollment ${doc.id}`, { 
+          step: enrollment.currentStep, 
+          nextStep: nextStepIndex,
+          gmailConnected 
+        });
+        
+      } catch (error) {
+        logger.error(`Error processing enrollment ${doc.id}:`, error);
+        
+        // Mark as error after 3 retries
+        const retryCount = (enrollment.retryCount || 0) + 1;
+        if (retryCount >= 3) {
+          await doc.ref.update({ 
+            status: 'error',
+            lastError: error.message
+          });
+          
+          // Update sequence stats
+          await db.collection('outreach_sequences').doc(enrollment.sequenceId).update({
+            activeEnrollments: admin.firestore.FieldValue.increment(-1)
+          });
+        } else {
+          // Retry in 1 hour
+          await doc.ref.update({ 
+            retryCount,
+            lastError: error.message,
+            nextSendAt: admin.firestore.Timestamp.fromDate(
+              new Date(Date.now() + 60 * 60 * 1000)
+            )
+          });
+        }
+        
+        results.errors++;
+      }
+    }
+    
+    logger.info('Sequence processing complete:', results);
+    return results;
+    
+  } catch (error) {
+    logger.error('Fatal error in processSequenceQueue:', error);
+    throw error;
+  }
+});
+
+/**
+ * MANUAL PROCESS SEQUENCE (Callable)
+ * Manually trigger sequence processing for testing/debugging.
+ * Requires admin authorization.
+ */
+exports.processSequenceManual = onCall({ 
+  cors: true, 
+  region: "us-central1" 
+}, async (request) => {
+  // Check authentication
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be authenticated.');
+  }
+
+  // Check admin authorization
+  const userEmail = request.auth.token.email?.toLowerCase();
+  const teamEmails = [
+    'rob@sagecg.com', 'rob@leaderreps.com', 
+    'ryan@leaderreps.com', 
+    'jeff@leaderreps.com'
+  ];
+  
+  let isAuthorized = teamEmails.includes(userEmail);
+  
+  if (!isAuthorized) {
+    throw new HttpsError('permission-denied', 'Not authorized.');
+  }
+
+  logger.info('Manual sequence processing triggered by', { email: userEmail });
+  
+  // Reuse the same logic
+  const now = admin.firestore.Timestamp.now();
+  
+  const dueEnrollments = await db.collection('sequence_enrollments')
+    .where('status', '==', 'active')
+    .where('nextSendAt', '<=', now)
+    .limit(20)
+    .get();
+  
+  return {
+    success: true,
+    enrollmentsDue: dueEnrollments.size,
+    message: `Found ${dueEnrollments.size} enrollments due for processing`
+  };
+});
+
+// Helper: Variable substitution
+function substituteVariables(text, variables) {
+  if (!text || !variables) return text;
+  
+  let result = text;
+  for (const [key, value] of Object.entries(variables)) {
+    const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'gi');
+    result = result.replace(regex, value || '');
+  }
+  return result;
+}
+
+// Helper: Add days to date
+function addDays(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}

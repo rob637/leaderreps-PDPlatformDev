@@ -17,7 +17,8 @@ import {
   List,
   Dumbbell,
   Bell,
-  Eye
+  Eye,
+  PlaySquare
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
@@ -39,6 +40,7 @@ import LeaderProfileReports from './LeaderProfileReports';
 import NotificationManager from './NotificationManager';
 import ConditioningDashboard from './ConditioningDashboard';
 import UxAuditPanel from './UxAuditPanel';
+import VideoSeriesManager from './VideoSeriesManager';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
@@ -133,6 +135,7 @@ const AdminPortal = () => {
         { id: 'daily-plan', label: 'Daily Plan (New)', icon: Calendar },
         { id: 'content', label: 'Content Library', icon: FileText },
         { id: 'media', label: 'Media Vault', icon: Database },
+        { id: 'video-series', label: 'Video Series', icon: PlaySquare },
         { id: 'notifications', label: 'Notifications', icon: Bell }
       ]
     },
@@ -214,6 +217,8 @@ const AdminPortal = () => {
         return <ConditioningDashboard />;
       case 'ux-audit':
         return <UxAuditPanel />;
+      case 'video-series':
+        return <VideoSeriesManager />;
       default:
         return <AdminDashboard />;
     }

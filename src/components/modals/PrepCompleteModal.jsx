@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, BookOpen, CheckCircle, X } from 'lucide-react';
+import { BookOpen, CheckCircle, X, Unlock, Library } from 'lucide-react';
 
 /**
  * PrepCompleteModal - Informs user about new features after completing prep
@@ -31,32 +31,6 @@ const PrepCompleteModal = ({ isOpen, onClose }) => {
 
         {/* Content */}
         <div className="p-5 space-y-4">
-          {/* AM Bookend */}
-          <div className="flex gap-3">
-            <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Sun className="w-4 h-4 text-amber-600" />
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Win the Day</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                Set your top 3 priorities each morning.
-              </p>
-            </div>
-          </div>
-
-          {/* PM Bookend */}
-          <div className="flex gap-3">
-            <div className="w-8 h-8 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Moon className="w-4 h-4 text-indigo-600" />
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Daily Reflection</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                Review your day and plan for tomorrow.
-              </p>
-            </div>
-          </div>
-
           {/* Content Library */}
           <div className="flex gap-3">
             <div className="w-8 h-8 bg-corporate-teal/10 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -65,7 +39,33 @@ const PrepCompleteModal = ({ isOpen, onClose }) => {
             <div>
               <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Content Library</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                Videos, articles, and exercises are now accessible.
+                Your prep videos and documents are in the Content section. Use the left navigation to access them anytime.
+              </p>
+            </div>
+          </div>
+
+          {/* Progressive Unlocks */}
+          <div className="flex gap-3">
+            <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Unlock className="w-4 h-4 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">More Content Unlocking</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                Additional videos, exercises, and resources will unlock as you progress through the program.
+              </p>
+            </div>
+          </div>
+
+          {/* Foundation Starts */}
+          <div className="flex gap-3">
+            <div className="w-8 h-8 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Library className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Foundation Begins Soon</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                Explore the content library while you wait for Session 1 to begin.
               </p>
             </div>
           </div>

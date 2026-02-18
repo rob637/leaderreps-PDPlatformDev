@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useProspectsStore } from '../../stores/prospectsStore';
-import { getStageInfo, TEAM_MEMBERS } from '../../config/team';
+import { getStageInfo, TEAM_MEMBERS, PIPELINE_STAGES } from '../../config/team';
 import { formatDistanceToNow } from 'date-fns';
 import {
   Building2,
@@ -8,11 +8,70 @@ import {
   Phone,
   Linkedin,
   MoreHorizontal,
-  ExternalLink
+  ExternalLink,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown
 } from 'lucide-react';
 
 const ProspectsList = ({ prospects }) => {
   const { setSelectedProspect, selectedProspect } = useProspectsStore();
+  const [sortBy, setSortBy] = useState('lastName');
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  // Handle column header click for sorting
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // Sort prospects
+  const sortedProspects = useMemo(() => {
+    return [...prospects].sort((a, b) => {
+      let aVal, bVal;
+
+      switch (sortBy) {
+        case 'lastName':
+          aVal = (a.lastName || a.name?.split(' ').pop() || '').toLowerCase();
+          bVal = (b.lastName || b.name?.split(' ').pop() || '').toLowerCase();
+          break;
+        case 'company':
+          aVal = (a.company || '').toLowerCase();
+          bVal = (b.company || '').toLowerCase();
+          break;
+        case 'stage':
+          // Sort by stage order in pipeline
+          const stageOrder = PIPELINE_STAGES.reduce((acc, s, i) => ({ ...acc, [s.id]: i }), {});
+          aVal = stageOrder[a.stage] ?? 999;
+          bVal = stageOrder[b.stage] ?? 999;
+          break;
+        case 'lastActivity':
+          aVal = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+          bVal = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+          break;
+        default:
+          return 0;
+      }
+
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [prospects, sortBy, sortDirection]);
+
+  // Sort indicator component
+  const SortIcon = ({ column }) => {
+    if (sortBy !== column) {
+      return <ChevronsUpDown className="w-3 h-3 text-slate-400" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ChevronUp className="w-3 h-3 text-brand-teal" />
+      : <ChevronDown className="w-3 h-3 text-brand-teal" />;
+  };
 
   if (prospects.length === 0) {
     return (
@@ -27,16 +86,36 @@ const ProspectsList = ({ prospects }) => {
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden h-full">
       {/* Table Header */}
       <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-        <div className="col-span-4">Contact</div>
-        <div className="col-span-2">Company</div>
-        <div className="col-span-2">Stage</div>
+        <button 
+          onClick={() => handleSort('lastName')}
+          className="col-span-4 flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 transition text-left"
+        >
+          Contact <SortIcon column="lastName" />
+        </button>
+        <button 
+          onClick={() => handleSort('company')}
+          className="col-span-2 flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 transition text-left"
+        >
+          Company <SortIcon column="company" />
+        </button>
+        <button 
+          onClick={() => handleSort('stage')}
+          className="col-span-2 flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 transition text-left"
+        >
+          Stage <SortIcon column="stage" />
+        </button>
         <div className="col-span-2">Owner</div>
-        <div className="col-span-2">Last Activity</div>
+        <button 
+          onClick={() => handleSort('lastActivity')}
+          className="col-span-2 flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 transition text-left"
+        >
+          Last Activity <SortIcon column="lastActivity" />
+        </button>
       </div>
 
       {/* Table Body */}
       <div className="overflow-y-auto h-[calc(100%-2.75rem)]">
-        {prospects.map((prospect) => {
+        {sortedProspects.map((prospect) => {
           const stageInfo = getStageInfo(prospect.stage);
           const ownerEmail = prospect.owner || prospect.ownerEmail;
           const ownerMember = TEAM_MEMBERS.find(m => m.email.toLowerCase() === ownerEmail?.toLowerCase());
@@ -56,11 +135,17 @@ const ProspectsList = ({ prospects }) => {
                   className="w-9 h-9 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0"
                   style={{ backgroundColor: ownerMember?.color || '#64748B' }}
                 >
-                  {(prospect.firstName || prospect.name)?.charAt(0).toUpperCase() || '?'}
+                  {(prospect.lastName || prospect.firstName || prospect.name)?.charAt(0).toUpperCase() || '?'}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
-                    {prospect.firstName ? `${prospect.firstName} ${prospect.lastName || ''}`.trim() : prospect.name || 'Unnamed'}
+                    {prospect.lastName 
+                      ? `${prospect.lastName}, ${prospect.firstName || ''}`.trim().replace(/,$/, '')
+                      : prospect.name 
+                        ? prospect.name.includes(' ') 
+                          ? `${prospect.name.split(' ').slice(-1)[0]}, ${prospect.name.split(' ').slice(0, -1).join(' ')}`
+                          : prospect.name
+                        : 'Unnamed'}
                   </p>
                   <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{prospect.title || 'No title'}</p>
                 </div>

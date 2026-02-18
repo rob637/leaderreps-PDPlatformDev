@@ -12,7 +12,7 @@ const TermsOfService = () => {
     >
       <div className="max-w-4xl mx-auto space-y-6">
         <Card>
-          <div className="prose prose-slate max-w-none p-6">
+          <div className="prose prose-slate dark:prose-invert max-w-none p-6">
             <p>
               The following terms and conditions, together with our Privacy Policy and any other documents or policies 
               that these terms or the Privacy Policy expressly incorporate by reference (collectively, these "Terms of Use"), 

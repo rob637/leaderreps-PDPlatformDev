@@ -568,6 +568,7 @@ const Dashboard = () => {
       'lis-maker',
       'grounding-rep',
       'win-the-day',
+      'conditioning',
       'daily-leader-reps',
       'pm-bookend-header',
       'pm-bookend',
@@ -626,7 +627,7 @@ const Dashboard = () => {
     'grounding-rep': () => shouldShow('grounding-rep', false) ? <WidgetRenderer widgetId="grounding-rep" scope={scope} /> : null,
     'win-the-day': () => shouldShow('win-the-day', true) ? <div data-repup-step="win-the-day"><WidgetRenderer widgetId="win-the-day" scope={scope} /></div> : null,
     'daily-plan': () => currentDayNumber >= 1 ? <WidgetRenderer widgetId="daily-plan" scope={scope} /> : null,
-    'conditioning': () => <ConditioningWidget helpText={getWidgetHelpText('conditioning')} />,  // NEW: Conditioning with slide-in panel
+    'conditioning': () => shouldShow('conditioning', true) ? <ConditioningWidget helpText={getWidgetHelpText('conditioning')} /> : null,  // Gated until Foundation starts
     'daily-leader-reps': () => null,  // DISABLED - replaced by conditioning widget
     'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <div data-repup-step="this-weeks-actions"><WidgetRenderer widgetId="this-weeks-actions" scope={scope} /></div> : null,
     'notifications': () => shouldShow('notifications', false) ? <WidgetRenderer widgetId="notifications" scope={scope} /> : null,

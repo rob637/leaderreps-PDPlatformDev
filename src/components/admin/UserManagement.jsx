@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Users, 
   UserPlus, 
@@ -16,7 +16,10 @@ import {
   Globe,
   FileText,
   Save,
-  Eye
+  Eye,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { 
   collection, 
@@ -39,6 +42,31 @@ import { buildModulePath } from '../../services/pathUtils';
 import { COMMON_TIMEZONES, DEFAULT_TIMEZONE } from '../../services/dateUtils';
 import NotificationSettingsModal from './NotificationSettingsModal';
 
+// Predefined Facilitator Profiles
+// These are the official LeaderReps facilitators with their profile info pre-populated
+const FACILITATOR_PROFILES = {
+  'ryan@leaderreps.com': {
+    id: 'ryan-yeoman',
+    email: 'ryan@leaderreps.com',
+    displayName: 'Ryan Yeoman',
+    title: 'Founder & Lead Facilitator',
+    bio: 'Ryan is the founder of LeaderReps and has spent over 15 years helping leaders develop the habits and mindsets that drive exceptional performance. His approach combines practical leadership science with real-world application.',
+    photoUrl: 'https://firebasestorage.googleapis.com/v0/b/leaderreps-pd-platform.appspot.com/o/facilitators%2Fryan-yeoman.jpg?alt=media',
+    phone: '',
+    linkedIn: 'ryanyeoman'
+  },
+  'cristina@leaderreps.com': {
+    id: 'cristina-stensvaag',
+    email: 'cristina@leaderreps.com',
+    displayName: 'Cristina Stensvaag',
+    title: 'Leadership Facilitator',
+    bio: 'Cristina brings a wealth of experience in leadership development and executive coaching. She is passionate about helping leaders unlock their full potential through structured practice and reflection.',
+    photoUrl: 'https://firebasestorage.googleapis.com/v0/b/leaderreps-pd-platform.appspot.com/o/facilitators%2Fcristina-stensvaag.jpg?alt=media',
+    phone: '',
+    linkedIn: 'cristinastensvaag'
+  }
+};
+
 const UserManagement = () => {
   const { db, user } = useAppServices();
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'invites', 'cohorts'
@@ -48,6 +76,10 @@ const UserManagement = () => {
   const [cohorts, setCohorts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Sorting state
+  const [sortColumn, setSortColumn] = useState('displayName'); // 'displayName', 'role', 'cohort', 'status'
+  const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
   
   // Invite Form State
   const [inviteForm, setInviteForm] = useState({
@@ -80,8 +112,36 @@ const UserManagement = () => {
   });
   const [isCohortModalOpen, setIsCohortModalOpen] = useState(false);
   const [savingCohort, setSavingCohort] = useState(false);
-  const [facilitators, setFacilitators] = useState([]);
   const [fetchError, setFetchError] = useState(null);
+
+  // Handler to select a facilitator and auto-populate their profile
+  const handleFacilitatorSelect = (facilitatorId) => {
+    // Check if it's a predefined facilitator (by email key)
+    const predefinedFacilitator = Object.values(FACILITATOR_PROFILES).find(f => f.id === facilitatorId);
+    
+    if (predefinedFacilitator) {
+      setCohortForm(prev => ({
+        ...prev,
+        facilitatorId: predefinedFacilitator.id,
+        facilitatorTitle: predefinedFacilitator.title,
+        facilitatorBio: predefinedFacilitator.bio,
+        facilitatorPhotoUrl: predefinedFacilitator.photoUrl,
+        facilitatorPhone: predefinedFacilitator.phone,
+        facilitatorLinkedIn: predefinedFacilitator.linkedIn
+      }));
+    } else {
+      // Clear facilitator fields if no match or empty selection
+      setCohortForm(prev => ({
+        ...prev,
+        facilitatorId: facilitatorId,
+        facilitatorTitle: '',
+        facilitatorBio: '',
+        facilitatorPhotoUrl: '',
+        facilitatorPhone: '',
+        facilitatorLinkedIn: ''
+      }));
+    }
+  };
 
   // Email Template State
   const [emailTemplate, setEmailTemplate] = useState({
@@ -116,17 +176,8 @@ const UserManagement = () => {
       }
       setAdminEmails(admins);
 
-      // Fetch users who can be facilitators (admins + any users with role 'facilitator' or 'admin')
-      try {
-        const usersRef = collection(db, 'users');
-        const allUsersSnap = await getDocs(usersRef);
-        const potentialFacilitators = allUsersSnap.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(u => admins.some(a => a.toLowerCase() === u.email?.toLowerCase()) || u.role === 'admin' || u.role === 'facilitator');
-        setFacilitators(potentialFacilitators);
-      } catch (e) {
-        console.error("Error fetching facilitators:", e);
-      }
+      // Note: Facilitators are now defined in FACILITATOR_PROFILES constant
+      // No need to fetch from database
 
       if (activeTab === 'users') {
         // Fetch Users
@@ -556,17 +607,17 @@ const UserManagement = () => {
       const startDate = new Date(cohortForm.startDate);
       // Note: We preserve the time selected by the user for session scheduling
       
-      // Build facilitator object from selected facilitator
-      const selectedFacilitator = facilitators.find(f => f.id === cohortForm.facilitatorId);
+      // Build facilitator object from predefined facilitator profiles
+      const selectedFacilitator = Object.values(FACILITATOR_PROFILES).find(f => f.id === cohortForm.facilitatorId);
       const facilitatorData = selectedFacilitator ? {
         id: selectedFacilitator.id,
-        name: selectedFacilitator.displayName || selectedFacilitator.email,
+        name: selectedFacilitator.displayName,
         email: selectedFacilitator.email,
-        title: cohortForm.facilitatorTitle || 'Leadership Facilitator',
-        bio: cohortForm.facilitatorBio || '',
-        photoUrl: cohortForm.facilitatorPhotoUrl || '',
-        phone: cohortForm.facilitatorPhone || '',
-        linkedIn: cohortForm.facilitatorLinkedIn || ''
+        title: cohortForm.facilitatorTitle || selectedFacilitator.title || 'Leadership Facilitator',
+        bio: cohortForm.facilitatorBio || selectedFacilitator.bio || '',
+        photoUrl: cohortForm.facilitatorPhotoUrl || selectedFacilitator.photoUrl || '',
+        phone: cohortForm.facilitatorPhone || selectedFacilitator.phone || '',
+        linkedIn: cohortForm.facilitatorLinkedIn || selectedFacilitator.linkedIn || ''
       } : null;
 
       const cohortData = {
@@ -633,10 +684,72 @@ const UserManagement = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Helper to get cohort name for sorting
+  const getCohortName = useCallback((user) => {
+    const cohort = cohorts.find(c => c.id === user.cohortId);
+    return cohort?.name || '';
+  }, [cohorts]);
+
+  // Sort toggle handler
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // Render sort icon
+  const SortIcon = ({ column }) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="w-3.5 h-3.5 text-corporate-teal" />
+      : <ArrowDown className="w-3.5 h-3.5 text-corporate-teal" />;
+  };
+
+  const filteredUsers = useMemo(() => {
+    // First filter
+    let result = users.filter(user => 
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    // Then sort
+    result.sort((a, b) => {
+      let aVal, bVal;
+      
+      switch (sortColumn) {
+        case 'displayName':
+          aVal = (a.displayName || a.email || '').toLowerCase();
+          bVal = (b.displayName || b.email || '').toLowerCase();
+          break;
+        case 'role':
+          aVal = (a.role || 'user').toLowerCase();
+          bVal = (b.role || 'user').toLowerCase();
+          break;
+        case 'cohort':
+          aVal = getCohortName(a).toLowerCase();
+          bVal = getCohortName(b).toLowerCase();
+          break;
+        case 'status':
+          aVal = a.disabled ? 'disabled' : 'active';
+          bVal = b.disabled ? 'disabled' : 'active';
+          break;
+        default:
+          aVal = '';
+          bVal = '';
+      }
+      
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    return result;
+  }, [users, searchTerm, sortColumn, sortDirection, getCohortName]);
 
   const filteredInvites = invites.filter(invite => 
     invite.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -743,10 +856,42 @@ const UserManagement = () => {
               <tr>
                 {activeTab === 'users' ? (
                   <>
-                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">User</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Role</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Cohort</th>
-                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Status</th>
+                    <th 
+                      className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none"
+                      onClick={() => handleSort('displayName')}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        User
+                        <SortIcon column="displayName" />
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none"
+                      onClick={() => handleSort('role')}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        Role
+                        <SortIcon column="role" />
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none"
+                      onClick={() => handleSort('cohort')}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        Cohort
+                        <SortIcon column="cohort" />
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none"
+                      onClick={() => handleSort('status')}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        Status
+                        <SortIcon column="status" />
+                      </div>
+                    </th>
                     <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 text-right">Actions</th>
                   </>
                 ) : activeTab === 'cohorts' ? (
@@ -1381,13 +1526,13 @@ const UserManagement = () => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Facilitator</label>
                 <select
                   value={cohortForm.facilitatorId}
-                  onChange={e => setCohortForm({...cohortForm, facilitatorId: e.target.value})}
+                  onChange={e => handleFacilitatorSelect(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 bg-white dark:bg-slate-800"
                 >
                   <option value="">Select a facilitator...</option>
-                  {facilitators.map(f => (
+                  {Object.values(FACILITATOR_PROFILES).map(f => (
                     <option key={f.id} value={f.id}>
-                      {f.displayName || f.email} {f.displayName ? `(${f.email})` : ''}
+                      {f.displayName} ({f.email})
                     </option>
                   ))}
                 </select>

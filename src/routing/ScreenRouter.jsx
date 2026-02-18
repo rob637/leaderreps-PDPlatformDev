@@ -94,6 +94,9 @@ const ScreenMap = {
   'video-detail': lazy(() =>
     import('../components/screens/library/VideoDetail.jsx')
   ),
+  'video-series-index': lazy(() =>
+    import('../components/screens/library/VideoSeriesIndex.jsx')
+  ),
   'documents-index': lazy(() =>
     import('../components/screens/library/DocumentsIndex.jsx')
   ),

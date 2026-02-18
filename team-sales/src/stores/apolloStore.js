@@ -49,6 +49,9 @@ export const useApolloStore = create((set, get) => ({
   creditsUsed: 0,
   creditsLimit: 200,
   
+  // Enrichment state
+  enriching: false,
+  
   // Search state
   searchMode: 'people', // 'people' or 'companies'
   searchResults: [],
@@ -431,6 +434,106 @@ export const useApolloStore = create((set, get) => ({
       console.error('Enrichment error:', error);
       toast.error('Enrichment failed');
       return null;
+    }
+  },
+  
+  /**
+   * Enrich an existing CRM prospect with Apollo data
+   * Returns the enriched data to be saved by the caller
+   */
+  enrichProspect: async (prospect, userId) => {
+    const { apiKey } = get();
+    
+    if (!apiKey) {
+      toast.error('Apollo API key not configured');
+      return null;
+    }
+    
+    if (!prospect.email && !prospect.linkedin && !prospect.apolloId) {
+      toast.error('Prospect needs email or LinkedIn URL for enrichment');
+      return null;
+    }
+    
+    set({ enriching: true });
+    
+    try {
+      const functions = getFunctions(app, 'us-central1');
+      const apolloSearch = httpsCallable(functions, 'apolloSearchProxy');
+      
+      const result = await apolloSearch({
+        apiKey,
+        mode: 'enrich',
+        entityId: prospect.apolloId || null,
+        email: prospect.email || null,
+        linkedinUrl: prospect.linkedin || null,
+        firstName: prospect.firstName || null,
+        lastName: prospect.lastName || null,
+        company: prospect.company || null,
+      });
+      
+      const enrichedPerson = result.data?.person;
+      
+      if (enrichedPerson) {
+        console.log('Apollo enriched prospect:', JSON.stringify(enrichedPerson, null, 2));
+        
+        // Track credit usage
+        get().incrementCreditsUsed(userId, 1);
+        
+        // Map Apollo response to our prospect fields
+        const enrichedData = {
+          // Basic info
+          firstName: enrichedPerson.first_name || prospect.firstName,
+          lastName: enrichedPerson.last_name || prospect.lastName,
+          name: enrichedPerson.name || `${enrichedPerson.first_name || ''} ${enrichedPerson.last_name || ''}`.trim() || prospect.name,
+          title: enrichedPerson.title || enrichedPerson.headline || prospect.title,
+          
+          // Contact info (only update if better data available)
+          email: enrichedPerson.email || prospect.email,
+          phone: enrichedPerson.phone_numbers?.[0]?.sanitized_number || prospect.phone,
+          personalEmails: enrichedPerson.personal_emails || [],
+          
+          // Social
+          linkedin: enrichedPerson.linkedin_url || prospect.linkedin,
+          twitter: enrichedPerson.twitter_url || prospect.twitter,
+          
+          // Company
+          company: enrichedPerson.organization?.name || enrichedPerson.organization_name || prospect.company,
+          companyWebsite: enrichedPerson.organization?.website_url || prospect.companyWebsite,
+          companySize: enrichedPerson.organization?.estimated_num_employees || prospect.companySize,
+          industry: enrichedPerson.organization?.industry || prospect.industry,
+          companyLinkedin: enrichedPerson.organization?.linkedin_url || prospect.companyLinkedin,
+          
+          // Location
+          city: enrichedPerson.city || prospect.city,
+          state: enrichedPerson.state || prospect.state,
+          country: enrichedPerson.country || prospect.country,
+          location: enrichedPerson.city 
+            ? `${enrichedPerson.city}${enrichedPerson.state ? ', ' + enrichedPerson.state : ''}` 
+            : prospect.location,
+          
+          // Apollo metadata
+          apolloId: enrichedPerson.id || prospect.apolloId,
+          apolloEnrichedAt: new Date().toISOString(),
+          seniority: enrichedPerson.seniority || prospect.seniority,
+          departments: enrichedPerson.departments || prospect.departments,
+        };
+        
+        toast.success('Prospect enriched with Apollo data');
+        return enrichedData;
+      }
+      
+      toast.error('No match found in Apollo');
+      return null;
+    } catch (error) {
+      console.error('Prospect enrichment error:', error);
+      if (error.message?.includes('Invalid')) {
+        toast.error('Invalid Apollo API key');
+      } else {
+        toast.error('Enrichment failed: ' + (error.message || 'Unknown error'));
+      }
+      return null;
+    } finally {
+      set({ enriching: false });
     }
   },
 }));

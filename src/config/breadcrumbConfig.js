@@ -137,6 +137,15 @@ export const BREADCRUMB_MAP = {
   ],
 
   // ============================================
+  // LIBRARY - Video Series
+  // ============================================
+  'video-series-index': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Library', path: 'library' },
+    { label: 'Video Series', path: null }
+  ],
+
+  // ============================================
   // LIBRARY - Documents
   // ============================================
   'documents-index': [
