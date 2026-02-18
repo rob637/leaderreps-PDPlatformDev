@@ -219,7 +219,7 @@ export default function SettingsPage() {
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
                 <Sparkles className="w-4 h-4" />
-                <span><strong>{creditsUsed}</strong> searches/enrichments made through Sales Hub</span>
+                <span><strong>{creditsUsed}</strong> searches/enrichments made through LR-HubSpot</span>
               </div>
             </div>
           )}
@@ -330,7 +330,7 @@ export default function SettingsPage() {
                     <div>
                       <p className="font-medium text-slate-900 dark:text-white dark:text-slate-100">Create a New API Key</p>
                       <p className="text-sm text-slate-600 dark:text-slate-300 dark:text-slate-400">
-                        Click "Create New Key", name it "LeaderReps Sales Hub", and copy the key
+                        Click "Create New Key", name it "LR-HubSpot", and copy the key
                       </p>
                     </div>
                   </div>
@@ -657,7 +657,7 @@ export default function SettingsPage() {
                     <div>
                       <p className="font-medium text-slate-900 dark:text-white dark:text-slate-100">Connect your Gmail</p>
                       <p className="text-sm text-slate-600 dark:text-slate-300 dark:text-slate-400">
-                        Click the button above to authorize Sales Hub to access your Gmail
+                        Click the button above to authorize LR-HubSpot to access your Gmail
                       </p>
                     </div>
                   </div>

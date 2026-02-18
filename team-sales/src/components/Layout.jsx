@@ -71,7 +71,7 @@ const Layout = () => {
               <div className="w-7 h-7 bg-brand-teal rounded-lg flex items-center justify-center">
                 <Users className="w-4 h-4" />
               </div>
-              <span className="font-semibold text-sm">Sales Hub</span>
+              <span className="font-semibold text-sm">LR-HubSpot</span>
             </div>
           )}
           <button

@@ -1,7 +1,7 @@
 {
-  "name": "chrome-extension",
+  "name": "lr-hubspot-chrome-extension",
   "version": "1.0.0",
-  "description": "Gmail integration for the LeaderReps Sales Hub CRM. View prospect data directly in Gmail without switching tabs.",
+  "description": "Gmail integration for LR-HubSpot CRM. View prospect data directly in Gmail.",
   "main": "background.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

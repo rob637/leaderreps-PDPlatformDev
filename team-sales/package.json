@@ -1,8 +1,8 @@
 {
-  "name": "team-sales-hub",
+  "name": "lr-hubspot",
   "version": "1.0.0",
   "type": "module",
-  "description": "LeaderReps Team Sales Hub - CRM & Sales Navigation",
+  "description": "LR-HubSpot - Sales CRM & Pipeline Management",
   "scripts": {
     "dev": "vite --port 5175",
     "build": "vite build",

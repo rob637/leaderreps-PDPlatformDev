@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useProspectsStore, PIPELINE_STAGES } from '../../stores/prospectsStore';
 import { useTasksStore, TASK_TYPES, TASK_PRIORITIES } from '../../stores/tasksStore';
 import { useActivitiesStore } from '../../stores/prospectActivitiesStore';
-import { useInstantlyStore } from '../../stores/instantlyStore';
 import { useLinkedHelperStore } from '../../stores/linkedHelperStore';
 import { useSequenceStore } from '../../stores/sequenceStore';
 import { useApolloStore } from '../../stores/apolloStore';
@@ -80,7 +79,6 @@ const ProspectDetailPanel = () => {
     subscribeToProspectActivities, 
     addActivity 
   } = useActivitiesStore();
-  const { openPushModal, isProspectSynced, getProspectSyncStatus } = useInstantlyStore();
   const { 
     openPushModal: openLinkedHelperModal, 
     isProspectSynced: isLinkedHelperSynced, 
