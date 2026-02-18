@@ -124,6 +124,9 @@ const ProspectDetailPanel = () => {
   
   // Activity timeline filter
   const [activityFilter, setActivityFilter] = useState('all'); // all, email, linkedin, call, other
+  
+  // Expanded activity card (for showing full content)
+  const [expandedActivityId, setExpandedActivityId] = useState(null);
 
   // Subscribe to activities when prospect changes
   useEffect(() => {
@@ -611,7 +614,7 @@ const ProspectDetailPanel = () => {
         </div>
 
         {/* Tracking Section - LinkedIn & Apollo */}
-        <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
+        <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-1">
           <SectionHeader title="Tracking" section="tracking" icon={Sparkles} />
           
           {expandedSections.tracking && (
@@ -734,7 +737,7 @@ const ProspectDetailPanel = () => {
         </div>
 
         {/* Contact Info Section */}
-        <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
+        <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-1">
           <SectionHeader title="Contact Info" section="contact" icon={User} />
           
           {expandedSections.contact && (
@@ -817,10 +820,19 @@ const ProspectDetailPanel = () => {
                     </a>
                   )}
                   {selectedProspect.company && (
-                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                    <a 
+                      href={selectedProspect.companyWebsite 
+                        ? (selectedProspect.companyWebsite.startsWith('http') ? selectedProspect.companyWebsite : `https://${selectedProspect.companyWebsite}`)
+                        : `https://www.google.com/search?q=${encodeURIComponent(selectedProspect.company)}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 hover:text-brand-teal transition group"
+                    >
                       <Building2 className="w-4 h-4 text-slate-400" />
                       <span>{selectedProspect.company}</span>
-                    </div>
+                      <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition" />
+                    </a>
                   )}
                   {selectedProspect.website && (
                     <a 
@@ -870,7 +882,7 @@ const ProspectDetailPanel = () => {
         </div>
 
         {/* Tasks Section */}
-        <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
+        <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-1">
           <SectionHeader 
             title="Follow-up Tasks" 
             section="tasks" 
@@ -1001,7 +1013,7 @@ const ProspectDetailPanel = () => {
         </div>
 
         {/* Activity/Notes Section */}
-        <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
+        <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-1">
           <div className="flex items-center justify-between">
             <SectionHeader 
               title="Activity Log" 
@@ -1103,7 +1115,7 @@ const ProspectDetailPanel = () => {
 
               {/* Activity List */}
               {activities.length > 0 && (
-                <div className="space-y-3 mt-3">
+                <div className="space-y-2 mt-3">
                   {activities.map(activity => {
                     const actType = getActivityType(activity.type);
                     const callOutcome = activity.outcome && activity.type === 'call' ? getCallOutcome(activity.outcome) : null;
@@ -1119,49 +1131,82 @@ const ProspectDetailPanel = () => {
                       activity.type === 'sms' ? MessageSquare :
                       FileText;
                     
+                    const isExpanded = expandedActivityId === activity.id;
+                    const contentLength = activity.content?.length || 0;
+                    const shouldTruncate = contentLength > 120 && !isExpanded;
+                    
                     return (
-                      <div key={activity.id} className="flex gap-3 text-sm border-l-2 pl-3 py-1" style={{ borderColor: actType.color }}>
-                        <div 
-                          className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: `${actType.color}15` }}
-                        >
-                          <IconComponent className="w-3.5 h-3.5" style={{ color: actType.color }} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-slate-800 dark:text-slate-200">{actType.label}</span>
-                            {/* Call outcome badge */}
-                            {callOutcome && (
-                              <span 
-                                className="text-xs px-1.5 py-0.5 rounded font-medium text-white"
-                                style={{ backgroundColor: callOutcome.color }}
+                      <div 
+                        key={activity.id} 
+                        className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden hover:border-slate-300 dark:hover:border-slate-600 transition cursor-pointer"
+                        onClick={() => setExpandedActivityId(isExpanded ? null : activity.id)}
+                      >
+                        {/* Left accent bar */}
+                        <div className="flex">
+                          <div 
+                            className="w-1 flex-shrink-0"
+                            style={{ backgroundColor: actType.color }}
+                          />
+                          <div className="flex-1 p-3">
+                            <div className="flex items-start gap-3">
+                              <div 
+                                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: `${actType.color}15` }}
                               >
-                                {callOutcome.label}
-                              </span>
-                            )}
-                            {/* Meeting outcome badge */}
-                            {meetingOutcome && (
-                              <span 
-                                className="text-xs px-1.5 py-0.5 rounded font-medium text-white"
-                                style={{ backgroundColor: meetingOutcome.color }}
-                              >
-                                {meetingOutcome.label}
-                              </span>
-                            )}
-                            {/* Duration */}
-                            {activity.duration && (
-                              <span className="text-xs text-slate-400">
-                                {activity.duration} min
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap mt-1">{activity.content}</p>
-                          <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-400 dark:text-slate-500">
-                            <span>{activity.userName}</span>
-                            <span>·</span>
-                            <span>
-                              {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
-                            </span>
+                                <IconComponent className="w-4 h-4" style={{ color: actType.color }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-medium text-slate-800 dark:text-slate-200">{actType.label}</span>
+                                    {/* Call outcome badge */}
+                                    {callOutcome && (
+                                      <span 
+                                        className="text-xs px-1.5 py-0.5 rounded font-medium text-white"
+                                        style={{ backgroundColor: callOutcome.color }}
+                                      >
+                                        {callOutcome.label}
+                                      </span>
+                                    )}
+                                    {/* Meeting outcome badge */}
+                                    {meetingOutcome && (
+                                      <span 
+                                        className="text-xs px-1.5 py-0.5 rounded font-medium text-white"
+                                        style={{ backgroundColor: meetingOutcome.color }}
+                                      >
+                                        {meetingOutcome.label}
+                                      </span>
+                                    )}
+                                    {/* Duration */}
+                                    {activity.duration && (
+                                      <span className="text-xs text-slate-400">
+                                        {activity.duration} min
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                                    {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                                  </span>
+                                </div>
+                                {activity.content && (
+                                  <p className={`text-sm text-slate-600 dark:text-slate-400 mt-2 whitespace-pre-wrap ${shouldTruncate ? 'line-clamp-2' : ''}`}>
+                                    {activity.content}
+                                  </p>
+                                )}
+                                {shouldTruncate && (
+                                  <button className="text-xs text-brand-teal hover:text-brand-teal/80 mt-1 font-medium">
+                                    Show more
+                                  </button>
+                                )}
+                                <div className="flex items-center gap-2 mt-2 text-xs text-slate-400 dark:text-slate-500">
+                                  <span className="font-medium">{activity.userName}</span>
+                                  <span>·</span>
+                                  <span>
+                                    {format(new Date(activity.createdAt), 'MMM d, yyyy \u2022 h:mm a')}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
