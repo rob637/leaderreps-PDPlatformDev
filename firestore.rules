@@ -305,6 +305,21 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
+    // Outreach Templates (Sales Team email/LinkedIn templates)
+    match /outreach_templates/{document} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Outreach Sequences (Sales Team multi-step outreach sequences)
+    match /outreach_sequences/{document} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Outreach Activities (Sales Team activity logs)
+    match /outreach_activities/{document} {
+      allow read, write: if isAdmin();
+    }
+    
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;
