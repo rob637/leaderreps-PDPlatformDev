@@ -89,8 +89,8 @@ export default function OutreachPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Outreach Center</h1>
-          <p className="text-slate-600 dark:text-slate-400">Templates, sequences, and tracking</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">LR-Instantly</h1>
+          <p className="text-slate-600 dark:text-slate-400">Email automation engine — templates, sequences, and enrollments</p>
         </div>
       </div>
       
@@ -173,7 +173,7 @@ export default function OutreachPage() {
           }`}
         >
           <Zap className="w-4 h-4" />
-          LR-Instantly
+          Automations
           {enrollmentStats.active > 0 && (
             <span className="px-1.5 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full">
               {enrollmentStats.active}

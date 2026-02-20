@@ -21,7 +21,7 @@ import {
 const navItems = [
   { path: '/prospects', icon: Users, label: 'Prospects', exact: true },
   { path: '/apollo', icon: Sparkles, label: 'Apollo Search' },
-  { path: '/outreach', icon: Mail, label: 'Outreach' },
+  { path: '/outreach', icon: Mail, label: 'LR-Instantly' },
   { path: '/activities', icon: Activity, label: 'Activities' },
   { path: '/analytics', icon: BarChart3, label: 'Analytics' },
   { path: '/tasks', icon: Bell, label: 'Tasks' },
