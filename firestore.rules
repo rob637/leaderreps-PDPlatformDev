@@ -320,6 +320,11 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
+    // Sequence Enrollments (LR-Instantly email automation engine)
+    match /sequence_enrollments/{document} {
+      allow read, write: if isAdmin();
+    }
+    
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;
