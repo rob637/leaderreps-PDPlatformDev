@@ -76,6 +76,7 @@ export default function SettingsPage() {
   
   // Gmail OAuth state
   const [showGmailHelp, setShowGmailHelp] = useState(false);
+  const [connectingGmail, setConnectingGmail] = useState(false);
   const [disconnectingGmail, setDisconnectingGmail] = useState(false);
   
   // Load all API keys on mount
@@ -89,12 +90,20 @@ export default function SettingsPage() {
   }, [user?.uid, loadApolloKey, loadLinkedHelperKey, loadGmailTokens]);
   
   // Gmail OAuth handlers
-  const handleConnectGmail = () => {
-    const url = getGmailConnectUrl(user.uid);
-    if (url) {
-      window.open(url, '_blank', 'width=500,height=700');
-    } else {
-      toast.error('Gmail OAuth not configured. Contact support.');
+  const handleConnectGmail = async () => {
+    setConnectingGmail(true);
+    try {
+      const url = await getGmailConnectUrl(user.uid);
+      if (url) {
+        window.open(url, '_blank', 'width=500,height=700');
+      } else {
+        toast.error('Gmail OAuth not configured. Contact support.');
+      }
+    } catch (error) {
+      console.error('Error getting OAuth URL:', error);
+      toast.error('Failed to start Gmail connection');
+    } finally {
+      setConnectingGmail(false);
     }
   };
   
@@ -629,10 +638,15 @@ export default function SettingsPage() {
               
               <button
                 onClick={handleConnectGmail}
-                className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium"
+                disabled={connectingGmail}
+                className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <MailCheck className="w-5 h-5" />
-                Connect Gmail Account
+                {connectingGmail ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <MailCheck className="w-5 h-5" />
+                )}
+                {connectingGmail ? 'Connecting...' : 'Connect Gmail Account'}
               </button>
             </div>
           )}

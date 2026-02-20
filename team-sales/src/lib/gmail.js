@@ -14,8 +14,9 @@ import { app } from './firebase';
 // Initialize Firebase Functions
 const functions = getFunctions(app, 'us-central1');
 
-// Cloud Function callable
+// Cloud Function callables
 const gmailProxyFn = httpsCallable(functions, 'gmailProxy');
+const gmailGetAuthUrlFn = httpsCallable(functions, 'gmailGetAuthUrl');
 
 /**
  * Base API wrapper for Gmail operations
@@ -48,19 +49,19 @@ async function callGmail(action, payload = {}, tokens = {}) {
 // ========================================
 
 /**
- * Get the Gmail OAuth URL to start connection flow
+ * Get the Gmail OAuth URL to start connection flow.
+ * Calls Cloud Function which has access to OAuth secrets.
  * @param {string} userId - Current user's UID
- * @returns {string} OAuth URL to redirect to
+ * @returns {Promise<string>} OAuth URL to redirect to
  */
-export function getOAuthUrl(userId) {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  const redirectUri = 'https://us-central1-leaderreps-pd-platform.cloudfunctions.net/gmailOAuthCallback';
-  const scope = encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.compose');
-  
-  // Encode state with userId
-  const state = btoa(JSON.stringify({ userId }));
-  
-  return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&state=${state}`;
+export async function getOAuthUrl(userId) {
+  try {
+    const result = await gmailGetAuthUrlFn({ userId });
+    return result.data.url;
+  } catch (error) {
+    console.error('Error getting OAuth URL:', error);
+    return null;
+  }
 }
 
 // ========================================

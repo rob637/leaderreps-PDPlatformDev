@@ -75,10 +75,10 @@ export const useGmailStore = create(
       },
       
       /**
-       * Get the OAuth URL to start Gmail connection
+       * Get the OAuth URL to start Gmail connection (async)
        */
-      getConnectUrl: (userId) => {
-        return gmail.getOAuthUrl(userId);
+      getConnectUrl: async (userId) => {
+        return await gmail.getOAuthUrl(userId);
       },
       
       /**

@@ -3332,20 +3332,62 @@ IMPORTANT:
 }
 
 // ================================================================================
-// GMAIL INTEGRATION (DISABLED - requires Google OAuth secrets)
-// TODO: Set up GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET secrets, then change
-//       _disabled_gmailProxy back to exports.gmailProxy (and same for other two)
+// GMAIL INTEGRATION - LR-Instantly Email Sending
+// Uses Gmail OAuth to send emails from connected @leaderreps.biz accounts
 // ================================================================================
 
 /**
- * GMAIL PROXY (DISABLED - requires Google OAuth secrets)
+ * GET GMAIL AUTH URL
+ * Returns the OAuth URL for connecting a Gmail account.
+ * User clicks this to authorize LR-Instantly to send emails on their behalf.
+ */
+exports.gmailGetAuthUrl = onCall({ 
+  cors: true, 
+  region: "us-central1",
+  secrets: ["GMAIL_CLIENT_ID"]
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be authenticated.');
+  }
+
+  const clientId = process.env.GMAIL_CLIENT_ID;
+  if (!clientId) {
+    throw new HttpsError('failed-precondition', 'Gmail OAuth not configured.');
+  }
+
+  const userId = request.auth.uid;
+  const redirectUri = 'https://us-central1-leaderreps-pd-platform.cloudfunctions.net/gmailOAuthCallback';
+  
+  // Encode state with userId so we know who to save tokens for
+  const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
+  
+  const scopes = [
+    'https://www.googleapis.com/auth/gmail.send',
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/userinfo.email'
+  ].join(' ');
+  
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${clientId}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&response_type=code` +
+    `&scope=${encodeURIComponent(scopes)}` +
+    `&access_type=offline` +
+    `&prompt=consent` +
+    `&state=${state}`;
+  
+  return { authUrl };
+});
+
+/**
+ * GMAIL PROXY
  * Handles Gmail API calls using OAuth tokens from user settings.
  * Supports: listing messages, getting message details, sending emails, syncing threads.
  */
-const _disabled_gmailProxy = onCall({ 
+exports.gmailProxy = onCall({ 
   cors: true, 
   region: "us-central1",
-  secrets: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
+  secrets: ["GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET"]
 }, async (request) => {
   // Check authentication
   if (!request.auth) {
@@ -3390,11 +3432,11 @@ const _disabled_gmailProxy = onCall({
   let activeAccessToken = accessToken;
   
   if (!activeAccessToken && refreshToken) {
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const clientId = process.env.GMAIL_CLIENT_ID;
+    const clientSecret = process.env.GMAIL_CLIENT_SECRET;
     
     if (!clientId || !clientSecret) {
-      throw new HttpsError('failed-precondition', 'Google OAuth not configured.');
+      throw new HttpsError('failed-precondition', 'Gmail OAuth not configured.');
     }
     
     try {
@@ -3629,14 +3671,14 @@ const _disabled_gmailProxy = onCall({
 
 
 /**
- * GMAIL OAUTH CALLBACK (DISABLED - requires Google OAuth secrets)
+ * GMAIL OAUTH CALLBACK
  * HTTP endpoint that handles the OAuth redirect from Google.
  * Exchanges the auth code for tokens and saves them to user settings.
  */
-const _disabled_gmailOAuthCallback = onRequest({ 
+exports.gmailOAuthCallback = onRequest({ 
   cors: true, 
   region: "us-central1",
-  secrets: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
+  secrets: ["GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET"]
 }, async (req, res) => {
   const { code, state, error } = req.query;
   
@@ -3659,12 +3701,12 @@ const _disabled_gmailOAuthCallback = onRequest({
     return res.redirect(`${getAppUrl()}/settings?gmail_error=invalid_state`);
   }
   
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const clientId = process.env.GMAIL_CLIENT_ID;
+  const clientSecret = process.env.GMAIL_CLIENT_SECRET;
   const redirectUri = `https://us-central1-leaderreps-pd-platform.cloudfunctions.net/gmailOAuthCallback`;
   
   if (!clientId || !clientSecret) {
-    logger.error('Google OAuth not configured');
+    logger.error('Gmail OAuth not configured');
     return res.redirect(`${getAppUrl()}/settings?gmail_error=not_configured`);
   }
   
@@ -3721,30 +3763,30 @@ const _disabled_gmailOAuthCallback = onRequest({
 
 // Helper to get the app URL based on environment
 function getAppUrl() {
-  // Default to team-sales app URL
-  return process.env.APP_URL || 'https://leaderreps-pd-platform.web.app/team-sales';
+  // LR-HubSpot / Team Sales app URL
+  return process.env.APP_URL || 'https://leaderreps-team.web.app';
 }
 
 
 /**
- * GMAIL SYNC JOB (DISABLED - requires Google OAuth secrets)
+ * GMAIL SYNC JOB
  * Scheduled function that syncs Gmail activity for all connected users.
  * Runs every 15 minutes.
  */
-const _disabled_gmailSyncJob = onSchedule({
+exports.gmailSyncJob = onSchedule({
   schedule: "every 15 minutes",
   region: "us-central1",
   timeoutSeconds: 300,
   memory: "512MiB",
-  secrets: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
+  secrets: ["GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET"]
 }, async (event) => {
   logger.info("Gmail sync job started");
   
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const clientId = process.env.GMAIL_CLIENT_ID;
+  const clientSecret = process.env.GMAIL_CLIENT_SECRET;
   
   if (!clientId || !clientSecret) {
-    logger.warn('Google OAuth not configured, skipping Gmail sync');
+    logger.warn('Gmail OAuth not configured, skipping Gmail sync');
     return;
   }
   
