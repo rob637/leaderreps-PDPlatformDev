@@ -325,6 +325,11 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
+    // Team Settings (Gmail accounts for LR-Instantly)
+    match /team_settings/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

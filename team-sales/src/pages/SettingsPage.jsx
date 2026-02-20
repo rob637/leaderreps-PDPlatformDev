@@ -45,15 +45,14 @@ export default function SettingsPage() {
     removeApiKey: removeLinkedHelperKey
   } = useLinkedHelperStore();
   
-  // Gmail store
+  // Gmail store (team-level accounts)
   const {
-    isConnected: gmailConnected,
-    connectedEmail: gmailEmail,
-    connectedAt: gmailConnectedAt,
-    tokensLoaded: gmailTokensLoaded,
-    loadTokens: loadGmailTokens,
+    connectedAccounts,
+    accountsLoaded,
+    accountsLoading,
+    loadConnectedAccounts,
     getConnectUrl: getGmailConnectUrl,
-    disconnect: disconnectGmail
+    disconnectAccount
   } = useGmailStore();
   
   // Apollo state
@@ -85,9 +84,9 @@ export default function SettingsPage() {
       loadApolloKey(user.uid);
       // loadInstantlyKey(user.uid); // DEPRECATED: replaced by LR-Instantly
       loadLinkedHelperKey(user.uid);
-      loadGmailTokens(user.uid);
+      loadConnectedAccounts(); // Team-level Gmail accounts
     }
-  }, [user?.uid, loadApolloKey, loadLinkedHelperKey, loadGmailTokens]);
+  }, [user?.uid, loadApolloKey, loadLinkedHelperKey, loadConnectedAccounts]);
   
   // Gmail OAuth handlers
   const handleConnectGmail = async () => {
@@ -565,97 +564,103 @@ export default function SettingsPage() {
         </div>
       </div>
       
-      {/* Gmail Integration Card */}
-      <div className="bg-white dark:bg-slate-800 dark:bg-slate-800 rounded-xl border dark:border-slate-700 shadow-sm overflow-hidden">
+      {/* Gmail Integration Card - Team Level */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-6 border-b dark:border-slate-700 bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-red-100 dark:bg-red-900/40 rounded-xl">
-              <MailCheck className="w-6 h-6 text-red-600 dark:text-red-400" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-red-100 dark:bg-red-900/40 rounded-xl">
+                <MailCheck className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">LR-Instantly Gmail Accounts</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Team sending accounts for cold outreach</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white dark:text-slate-100">Gmail Integration</h2>
-              <p className="text-sm text-slate-600 dark:text-slate-300 dark:text-slate-400">Auto-sync emails with prospects</p>
-            </div>
+            <button
+              onClick={() => loadConnectedAccounts()}
+              disabled={accountsLoading}
+              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${accountsLoading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
         
         <div className="p-6 space-y-6">
-          {/* Status */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${gmailConnected ? 'bg-green-500' : 'bg-gray-300 dark:bg-slate-500'}`} />
-              <div>
-                <span className="font-medium text-slate-900 dark:text-white dark:text-slate-100">
-                  {gmailConnected ? 'Connected' : 'Not Connected'}
-                </span>
-                {gmailConnected && gmailEmail && (
-                  <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">{gmailEmail}</p>
-                )}
-              </div>
+          {/* Connected Accounts List */}
+          {accountsLoading && !accountsLoaded ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
             </div>
-            {gmailConnected && (
-              <a 
-                href="https://mail.google.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 hover:underline"
-              >
-                <span>Open Gmail</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </div>
-          
-          {/* Connected State */}
-          {gmailConnected ? (
-            <div className="space-y-4">
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300">
-                  <Check className="w-4 h-4" />
-                  <span>Gmail is connected and syncing emails automatically</span>
+          ) : connectedAccounts.length > 0 ? (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Connected Accounts ({connectedAccounts.length})
+              </p>
+              {connectedAccounts.map((account) => (
+                <div 
+                  key={account.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${account.isActive ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    <div>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">{account.email}</span>
+                      {account.connectedAt && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Connected {new Date(account.connectedAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (confirm(`Disconnect ${account.email}?`)) {
+                        disconnectAccount(account.id);
+                      }
+                    }}
+                    className="text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                  >
+                    Disconnect
+                  </button>
                 </div>
-                {gmailConnectedAt && (
-                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                    Connected {new Date(gmailConnectedAt).toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-              
-              <button
-                onClick={handleDisconnectGmail}
-                disabled={disconnectingGmail}
-                className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:underline flex items-center gap-2"
-              >
-                {disconnectingGmail && <Loader2 className="w-3 h-3 animate-spin" />}
-                Disconnect Gmail
-              </button>
+              ))}
             </div>
           ) : (
-            <div className="space-y-4">
-              <p className="text-sm text-slate-600 dark:text-slate-300 dark:text-slate-400">
-                Connect your Gmail account to automatically sync emails with prospects and track all communication.
-              </p>
-              
-              <button
-                onClick={handleConnectGmail}
-                disabled={connectingGmail}
-                className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {connectingGmail ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <MailCheck className="w-5 h-5" />
-                )}
-                {connectingGmail ? 'Connecting...' : 'Connect Gmail Account'}
-              </button>
+            <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+                <AlertCircle className="w-4 h-4" />
+                <span>No Gmail accounts connected yet</span>
+              </div>
             </div>
           )}
+          
+          {/* Connect Another Account */}
+          <div className="pt-4 border-t dark:border-slate-700">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Connect @leaderreps.biz Gmail accounts for cold outreach. Each account can send emails through LR-Instantly sequences.
+            </p>
+            <button
+              onClick={handleConnectGmail}
+              disabled={connectingGmail}
+              className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {connectingGmail ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Mail className="w-5 h-5" />
+              )}
+              {connectingGmail ? 'Connecting...' : 'Connect Gmail Account'}
+            </button>
+          </div>
           
           {/* Help Section */}
           <div className="border-t dark:border-slate-700 pt-6">
             <button
               onClick={() => setShowGmailHelp(!showGmailHelp)}
-              className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200 dark:text-slate-300 hover:text-slate-900 dark:text-white dark:hover:text-slate-100"
+              className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-slate-100"
             >
               <HelpCircle className="w-4 h-4" />
               How does Gmail sync work?

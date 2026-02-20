@@ -1,13 +1,13 @@
 /**
  * Gmail Integration Store
  * 
- * Manages state for Gmail OAuth connection, email sync, and settings.
- * Unlike API key integrations, Gmail uses OAuth tokens stored in Firestore.
+ * Manages state for Gmail OAuth connection at TEAM level.
+ * All admins can see and use connected Gmail accounts for sending.
  */
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import toast from 'react-hot-toast';
 import * as gmail from '../lib/gmail';
@@ -15,63 +15,57 @@ import * as gmail from '../lib/gmail';
 export const useGmailStore = create(
   persist(
     (set, get) => ({
-      // OAuth token management
+      // Team-level connected accounts
+      connectedAccounts: [],
+      accountsLoaded: false,
+      accountsLoading: false,
+      
+      // Legacy single-user state (kept for backward compat)
       accessToken: '',
       refreshToken: '',
       connectedEmail: '',
       connectedAt: null,
       tokensLoaded: false,
-      
-      // Connection state
       isConnected: false,
       isConnecting: false,
       connectionError: null,
-      
-      // Sync state
       lastSyncAt: null,
       syncing: false,
       syncError: null,
-      
-      // Cached email data (for quick access)
       recentEmails: [],
       emailsLoading: false,
       
       // ========================================
-      // TOKEN MANAGEMENT
+      // TEAM-LEVEL ACCOUNT MANAGEMENT
       // ========================================
       
       /**
-       * Load Gmail tokens from user's settings in Firestore
+       * Load all connected Gmail accounts (team-level)
+       */
+      loadConnectedAccounts: async () => {
+        set({ accountsLoading: true });
+        try {
+          const accounts = await gmail.listConnectedAccounts();
+          set({
+            connectedAccounts: accounts,
+            accountsLoaded: true,
+            accountsLoading: false,
+            // Update legacy state based on accounts
+            isConnected: accounts.length > 0,
+            tokensLoaded: true
+          });
+        } catch (error) {
+          console.error('Error loading Gmail accounts:', error);
+          set({ accountsLoaded: true, accountsLoading: false });
+        }
+      },
+      
+      /**
+       * Load Gmail tokens from user's settings in Firestore (legacy)
        */
       loadTokens: async (userId) => {
-        if (!userId) {
-          set({ tokensLoaded: true });
-          return;
-        }
-        
-        try {
-          const settingsRef = doc(db, 'users', userId, 'settings', 'gmail');
-          const settingsSnap = await getDoc(settingsRef);
-          
-          if (settingsSnap.exists()) {
-            const data = settingsSnap.data();
-            set({
-              accessToken: data.accessToken || '',
-              refreshToken: data.refreshToken || '',
-              connectedEmail: data.email || '',
-              connectedAt: data.connectedAt || null,
-              lastSyncAt: data.lastSyncAt || null,
-              isConnected: !!(data.refreshToken),
-              tokensLoaded: true,
-            });
-            return;
-          }
-          
-          set({ tokensLoaded: true, isConnected: false });
-        } catch (error) {
-          console.error('Error loading Gmail settings:', error);
-          set({ tokensLoaded: true, isConnected: false });
-        }
+        // Now just loads team accounts
+        await get().loadConnectedAccounts();
       },
       
       /**
@@ -82,30 +76,28 @@ export const useGmailStore = create(
       },
       
       /**
-       * Disconnect Gmail (remove tokens)
+       * Disconnect a Gmail account (team-level)
        */
-      disconnect: async (userId) => {
-        if (!userId) return;
-        
+      disconnectAccount: async (emailDocId) => {
         try {
-          const settingsRef = doc(db, 'users', userId, 'settings', 'gmail');
-          await deleteDoc(settingsRef);
+          const accountRef = doc(db, 'team_settings', 'gmail_accounts', 'accounts', emailDocId);
+          await deleteDoc(accountRef);
           
-          set({
-            accessToken: '',
-            refreshToken: '',
-            connectedEmail: '',
-            connectedAt: null,
-            isConnected: false,
-            lastSyncAt: null,
-            recentEmails: []
-          });
-          
-          toast.success('Gmail disconnected');
+          // Refresh the list
+          await get().loadConnectedAccounts();
+          toast.success('Gmail account disconnected');
         } catch (error) {
           console.error('Error disconnecting Gmail:', error);
-          toast.error('Failed to disconnect Gmail');
+          toast.error('Failed to disconnect account');
         }
+      },
+      
+      /**
+       * Legacy disconnect (single user)
+       */
+      disconnect: async (userId) => {
+        // No longer used for team accounts
+        console.warn('Use disconnectAccount for team accounts');
       },
       
       /**

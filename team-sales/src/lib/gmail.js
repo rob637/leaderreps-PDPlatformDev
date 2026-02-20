@@ -3,7 +3,7 @@
  * 
  * Handles all interactions with Gmail for email sync and sending.
  * API calls are proxied through Cloud Functions for security.
- * OAuth tokens are stored in user settings.
+ * OAuth tokens are stored at team level for shared access.
  * 
  * API Docs: https://developers.google.com/gmail/api/reference/rest
  */
@@ -17,6 +17,21 @@ const functions = getFunctions(app, 'us-central1');
 // Cloud Function callables
 const gmailProxyFn = httpsCallable(functions, 'gmailProxy');
 const gmailGetAuthUrlFn = httpsCallable(functions, 'gmailGetAuthUrl');
+const gmailListAccountsFn = httpsCallable(functions, 'gmailListAccounts');
+
+/**
+ * List all connected Gmail accounts (team-level)
+ * @returns {Promise<Array>} Array of connected accounts
+ */
+export async function listConnectedAccounts() {
+  try {
+    const result = await gmailListAccountsFn();
+    return result.data.accounts || [];
+  } catch (error) {
+    console.error('Error listing Gmail accounts:', error);
+    return [];
+  }
+}
 
 /**
  * Base API wrapper for Gmail operations
@@ -57,7 +72,7 @@ async function callGmail(action, payload = {}, tokens = {}) {
 export async function getOAuthUrl(userId) {
   try {
     const result = await gmailGetAuthUrlFn({ userId });
-    return result.data.url;
+    return result.data.authUrl;
   } catch (error) {
     console.error('Error getting OAuth URL:', error);
     return null;

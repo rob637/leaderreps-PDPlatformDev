@@ -3337,6 +3337,54 @@ IMPORTANT:
 // ================================================================================
 
 /**
+ * LIST CONNECTED GMAIL ACCOUNTS
+ * Returns all Gmail accounts connected for team-level sending.
+ * Only accessible by admin users.
+ */
+exports.gmailListAccounts = onCall({ 
+  cors: true, 
+  region: "us-central1"
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be authenticated.');
+  }
+
+  // Check if user is admin
+  const userEmail = request.auth.token.email?.toLowerCase();
+  const adminEmails = [
+    'rob@sagecg.com', 'rob@leaderreps.com', 
+    'cristina@leaderreps.com', 'cristina@leaderreps.biz',
+    'ryan@leaderreps.com', 'ryan@leaderreps.biz',
+    'jeff@leaderreps.com', 'jeff@leaderreps.biz'
+  ];
+  
+  if (!adminEmails.includes(userEmail)) {
+    throw new HttpsError('permission-denied', 'Admin access required.');
+  }
+
+  try {
+    const accountsSnap = await db.collection('team_settings').doc('gmail_accounts').collection('accounts').get();
+    const accounts = [];
+    
+    accountsSnap.forEach(doc => {
+      const data = doc.data();
+      accounts.push({
+        id: doc.id,
+        email: data.email,
+        connectedAt: data.connectedAt,
+        isActive: data.isActive !== false,
+        // Don't expose tokens to client
+      });
+    });
+    
+    return { accounts };
+  } catch (error) {
+    logger.error('Error listing Gmail accounts', error);
+    throw new HttpsError('internal', 'Failed to list accounts');
+  }
+});
+
+/**
  * GET GMAIL AUTH URL
  * Returns the OAuth URL for connecting a Gmail account.
  * User clicks this to authorize LR-Instantly to send emails on their behalf.
@@ -3356,7 +3404,10 @@ exports.gmailGetAuthUrl = onCall({
   }
 
   const userId = request.auth.uid;
-  const redirectUri = 'https://us-central1-leaderreps-pd-platform.cloudfunctions.net/gmailOAuthCallback';
+  
+  // Dynamic redirect URI based on project
+  const projectId = process.env.GCLOUD_PROJECT || 'leaderreps-test';
+  const redirectUri = `https://us-central1-${projectId}.cloudfunctions.net/gmailOAuthCallback`;
   
   // Encode state with userId so we know who to save tokens for
   const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
@@ -3703,7 +3754,10 @@ exports.gmailOAuthCallback = onRequest({
   
   const clientId = process.env.GMAIL_CLIENT_ID;
   const clientSecret = process.env.GMAIL_CLIENT_SECRET;
-  const redirectUri = `https://us-central1-leaderreps-pd-platform.cloudfunctions.net/gmailOAuthCallback`;
+  
+  // Dynamic redirect URI based on project
+  const projectId = process.env.GCLOUD_PROJECT || 'leaderreps-test';
+  const redirectUri = `https://us-central1-${projectId}.cloudfunctions.net/gmailOAuthCallback`;
   
   if (!clientId || !clientSecret) {
     logger.error('Gmail OAuth not configured');
@@ -3736,24 +3790,29 @@ exports.gmailOAuthCallback = onRequest({
       headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
     });
     const profileData = await profileResponse.json();
+    const connectedEmail = profileData.emailAddress.toLowerCase();
     
-    // Save tokens to user settings
-    const settingsRef = db.collection('users').doc(userId).collection('settings').doc('gmail');
-    await settingsRef.set({
+    // Save tokens to TEAM-LEVEL settings (all admins can see/use)
+    // Using email as doc ID (sanitized) for easy lookup
+    const emailDocId = connectedEmail.replace(/[.@]/g, '_');
+    const teamSettingsRef = db.collection('team_settings').doc('gmail_accounts').collection('accounts').doc(emailDocId);
+    await teamSettingsRef.set({
       accessToken: tokenData.access_token,
       refreshToken: tokenData.refresh_token,
       tokenType: tokenData.token_type,
       expiresIn: tokenData.expires_in,
       scope: tokenData.scope,
-      email: profileData.emailAddress,
+      email: connectedEmail,
+      connectedBy: userId,
       connectedAt: new Date().toISOString(),
-      tokenUpdatedAt: new Date().toISOString()
-    }, { merge: true });
+      tokenUpdatedAt: new Date().toISOString(),
+      isActive: true
+    });
     
-    logger.info('Gmail OAuth completed', { userId, email: profileData.emailAddress });
+    logger.info('Gmail OAuth completed (team account)', { userId, email: connectedEmail });
     
-    // Redirect back to app
-    return res.redirect(`${getAppUrl()}/settings?gmail_connected=true`);
+    // Redirect back to app with the connected email
+    return res.redirect(`${getAppUrl()}/settings?gmail_connected=${encodeURIComponent(connectedEmail)}`);
     
   } catch (error) {
     logger.error('Gmail OAuth callback error', error);
