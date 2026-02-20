@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { 
   Mail, Phone, Linkedin, MessageSquare, Plus, Edit2, Trash2, 
   Copy, Check, X, ChevronRight, Clock, BarChart3, Users, Zap,
-  PlayCircle, Send
+  PlayCircle, Send, Inbox
 } from 'lucide-react';
 import { useOutreachStore, CHANNELS, OUTCOMES } from '../stores/outreachStore';
 import { useAuthStore } from '../stores/authStore';
 import { useSequenceStore } from '../stores/sequenceStore';
-import { SequenceBuilder, SequenceEnrollmentsDashboard } from '../components/sequences';
+import { SequenceBuilder, SequenceEnrollmentsDashboard, EmailQueue } from '../components/sequences';
 
 const CHANNEL_ICONS = {
   email: Mail,
@@ -44,7 +44,7 @@ export default function OutreachPage() {
     getActivityStats,
   } = useOutreachStore();
   
-  const [activeTab, setActiveTab] = useState('templates'); // templates, sequences, enrollments
+  const [activeTab, setActiveTab] = useState('queue'); // queue, templates, sequences, enrollments
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showSequenceModal, setShowSequenceModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
@@ -145,6 +145,22 @@ export default function OutreachPage() {
       {/* Tabs */}
       <div className="flex gap-2 border-b">
         <button
+          onClick={() => setActiveTab('queue')}
+          className={`px-4 py-2 font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === 'queue'
+              ? 'border-brand-teal text-brand-teal'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100'
+          }`}
+        >
+          <Inbox className="w-4 h-4" />
+          Queue
+          {enrollmentStats.dueToday > 0 && (
+            <span className="px-1.5 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full">
+              {enrollmentStats.dueToday}
+            </span>
+          )}
+        </button>
+        <button
           onClick={() => setActiveTab('templates')}
           className={`px-4 py-2 font-medium border-b-2 transition-colors ${
             activeTab === 'templates'
@@ -181,6 +197,11 @@ export default function OutreachPage() {
           )}
         </button>
       </div>
+      
+      {/* Queue Tab */}
+      {activeTab === 'queue' && (
+        <EmailQueue />
+      )}
       
       {/* Templates Tab */}
       {activeTab === 'templates' && (
