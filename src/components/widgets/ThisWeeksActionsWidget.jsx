@@ -92,16 +92,14 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         console.log('Leader profile not found, skipping');
       }
       
-      // Clear action_progress for prep items
+      // Clear action_progress for ALL prep items (delete all during prep reset)
       const actionProgressRef = collection(db, 'users', user.uid, 'action_progress');
       const progressSnap = await getDocs(actionProgressRef);
       for (const docSnap of progressSnap.docs) {
-        // Delete prep-related action progress
-        const data = docSnap.data();
-        if (data.category === 'prep' || docSnap.id.includes('prep') || docSnap.id.includes('video_series')) {
-          await deleteDoc(docSnap.ref);
-        }
+        // Delete all action progress during prep reset
+        await deleteDoc(docSnap.ref);
       }
+      console.log(`Deleted ${progressSnap.docs.length} action_progress items`);
       
       // Clear video progress
       const videoProgressRef = collection(db, 'users', user.uid, 'videoProgress');
