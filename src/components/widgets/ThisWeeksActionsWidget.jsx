@@ -12,7 +12,7 @@ import { useActionProgress } from '../../hooks/useActionProgress';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import CoachingActionItem from '../coaching/CoachingActionItem';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
@@ -809,6 +809,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         assessmentHistory: newHistory,
         'currentPlan.focusAreas': assessment.focusAreas || []
       });
+      // Set prepStatus flag for unified tracking
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, { 'prepStatus.baselineAssessment': true }).catch(e => console.warn('Could not set prepStatus:', e));
       setShowBaselineModal(false);
     } catch (error) {
       console.error('Error saving baseline assessment:', error);
@@ -1338,7 +1341,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             <VideoSeriesPlayer
               seriesId={viewingSeriesId}
               onClose={() => setViewingSeriesId(null)}
-              onComplete={(completedSeriesId) => {
+              onComplete={async (completedSeriesId) => {
                 // Find the action item with this series as its resource and mark it complete
                 // Check both current actions and carried-over items
                 const seriesAction = allActions.find(a => a.resourceId === completedSeriesId && a.resourceType === 'video_series')
@@ -1351,6 +1354,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     label: seriesAction.label || seriesAction.title,
                     carriedOver: seriesAction.carriedOver || false
                   });
+                  // Update unified prepStatus for video series completion
+                  try {
+                    const userRef = doc(db, 'users', user?.uid);
+                    await updateDoc(userRef, { 'prepStatus.videoSeries': true });
+                  } catch (err) {
+                    console.warn('Could not update prepStatus for video series:', err);
+                  }
                 }
               }}
               showHeader={true}

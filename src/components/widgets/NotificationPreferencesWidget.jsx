@@ -395,7 +395,8 @@ const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
       
       // Save notification settings and sync phone/email to user doc
       const userUpdate = {
-        notificationSettings: settingsToSave
+        notificationSettings: settingsToSave,
+        'prepStatus.notifications': true
       };
       
       // If phone number was entered, also save it to user doc for easy access

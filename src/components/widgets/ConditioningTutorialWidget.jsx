@@ -146,7 +146,8 @@ const ConditioningTutorialWidget = ({ onComplete, onClose }) => {
           completed: true,
           completedAt: serverTimestamp(),
           stepsViewed: totalSteps
-        }
+        },
+        'prepStatus.conditioningTutorial': true
       });
       
       setCompletedSteps(prev => new Set([...prev, currentStep]));
@@ -166,7 +167,8 @@ const ConditioningTutorialWidget = ({ onComplete, onClose }) => {
             completed: true,
             completedAt: serverTimestamp(),
             stepsViewed: totalSteps
-          }
+          },
+          'prepStatus.conditioningTutorial': true
         }, { merge: true });
         
         setIsCompleted(true);

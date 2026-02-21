@@ -111,6 +111,12 @@ export const useLeaderProfile = () => {
 
       await setDoc(profileRef, dataToSave, { merge: true });
 
+      // Set prepStatus flag on user doc for unified tracking
+      if (markComplete) {
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, { 'prepStatus.leaderProfile': true }).catch(e => console.warn('Could not set prepStatus:', e));
+      }
+
       // Sync notification settings to main user doc (used by NotificationSettingsWidget in Locker)
       if (profileData.notificationSettings || profileData.phoneNumber || profileData.timezone) {
         const userRef = doc(db, 'users', user.uid);

@@ -75,7 +75,8 @@ export default function FoundationCommitmentWidget({ onComplete, onClose, isModa
           acknowledged: true,
           name: name.trim(),
           acknowledgedAt: new Date().toISOString()
-        }
+        },
+        'prepStatus.foundationCommitment': true
       });
       
       setShowSuccess(true);
