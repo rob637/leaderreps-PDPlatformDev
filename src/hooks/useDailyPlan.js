@@ -641,7 +641,7 @@ export const useDailyPlan = () => {
       // Progress percentage
       progressPercent: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
     };
-  }, [getItemProgress, developmentPlanData, leaderProfileComplete, dailyPlan]);
+  }, [getItemProgress, developmentPlanData, leaderProfileComplete, dailyPlan, user]);
 
   // Auto-initialize startDate if missing (only for users WITHOUT a cohort)
   useEffect(() => {
