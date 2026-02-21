@@ -12,7 +12,8 @@ import { useActionProgress } from '../../hooks/useActionProgress';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import CoachingActionItem from '../coaching/CoachingActionItem';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, deleteField, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { RotateCcw } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
@@ -48,7 +49,8 @@ const generateCalendarUrl = (calendarEvent) => {
 };
 
 const ThisWeeksActionsWidget = ({ helpText }) => {
-  const { db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
+  const { db, user, developmentPlanData, updateDevelopmentPlanData, isAdmin } = useAppServices();
+  const [resettingPrep, setResettingPrep] = useState(false);
   const [viewingResource, setViewingResource] = useState(null);
   const [loadingResource, setLoadingResource] = useState(false);
   const [viewingSeriesId, setViewingSeriesId] = useState(null);
@@ -64,6 +66,64 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   
   // Prep Complete expanded state (default collapsed when all done)
   const [prepExpanded, setPrepExpanded] = useState(false);
+  
+  // Admin: Reset prep progress for testing
+  const resetPrepProgress = async () => {
+    if (!isAdmin || !user?.uid || !db) return;
+    if (!confirm('⚠️ This will reset ALL prep phase progress. Continue?')) return;
+    
+    setResettingPrep(true);
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      
+      // Clear prepStatus flags and related data on user doc
+      await updateDoc(userRef, {
+        prepStatus: deleteField(),
+        foundationCommitment: deleteField(),
+        conditioningTutorial: deleteField(),
+        notificationSettings: deleteField()
+      });
+      
+      // Clear leader profile
+      const leaderProfileRef = doc(db, 'user_data', user.uid, 'leader_profile', 'current');
+      try {
+        await updateDoc(leaderProfileRef, { isComplete: false });
+      } catch (e) {
+        console.log('Leader profile not found, skipping');
+      }
+      
+      // Clear action_progress for prep items
+      const actionProgressRef = collection(db, 'users', user.uid, 'action_progress');
+      const progressSnap = await getDocs(actionProgressRef);
+      for (const docSnap of progressSnap.docs) {
+        // Delete prep-related action progress
+        const data = docSnap.data();
+        if (data.category === 'prep' || docSnap.id.includes('prep') || docSnap.id.includes('video_series')) {
+          await deleteDoc(docSnap.ref);
+        }
+      }
+      
+      // Clear video progress
+      const videoProgressRef = collection(db, 'users', user.uid, 'videoProgress');
+      const videoSnap = await getDocs(videoProgressRef);
+      for (const docSnap of videoSnap.docs) {
+        await deleteDoc(docSnap.ref);
+      }
+      
+      // Clear assessment history if exists
+      if (updateDevelopmentPlanData) {
+        await updateDevelopmentPlanData({ assessmentHistory: deleteField() });
+      }
+      
+      alert('✅ Prep progress reset! Refresh the page to see changes.');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error resetting prep:', error);
+      alert('Error: ' + error.message);
+    } finally {
+      setResettingPrep(false);
+    }
+  };
   
   // This Week and Prior Week expanded states (default collapsed when all done)
   const [thisWeekExpanded, setThisWeekExpanded] = useState(false);
@@ -1122,6 +1182,16 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   <span className="text-xs font-medium text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
                     {prepRequirementsComplete?.completedCount || 0}/{prepRequirementsComplete?.totalCount || requiredPrepActions.length} complete
                   </span>
+                  {isAdmin && (
+                    <button
+                      onClick={resetPrepProgress}
+                      disabled={resettingPrep}
+                      className="ml-1 p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-400 hover:text-red-500 transition-colors"
+                      title="Reset prep progress (admin only)"
+                    >
+                      <RotateCcw className={`w-3.5 h-3.5 ${resettingPrep ? 'animate-spin' : ''}`} />
+                    </button>
+                  )}
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 px-1">
                   Complete these {prepRequirementsComplete?.totalCount || requiredPrepActions.length} items to get ready for Session One and access additional arena functionality.
@@ -1151,6 +1221,16 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   <div className="flex-shrink-0 p-2 text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 transition-colors">
                     {prepExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </div>
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); resetPrepProgress(); }}
+                      disabled={resettingPrep}
+                      className="ml-1 p-2 rounded-lg bg-white/60 dark:bg-slate-700/60 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-400 hover:text-red-500 transition-colors"
+                      title="Reset prep progress (admin only)"
+                    >
+                      <RotateCcw className={`w-4 h-4 ${resettingPrep ? 'animate-spin' : ''}`} />
+                    </button>
+                  )}
                 </button>
                 
                 {prepExpanded && (
