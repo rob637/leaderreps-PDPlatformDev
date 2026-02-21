@@ -575,6 +575,9 @@ export const useDailyPlan = () => {
     });
     
     // Build items array with completion status
+    // If prepStatus exists, ONLY use prepStatus (no legacy fallback) to ensure clean state after reset
+    const hasPrepStatus = !!user?.prepStatus;
+    
     const items = requiredPrepActions.map(action => {
       const handlerType = action.handlerType || '';
       const labelLower = (action.label || '').toLowerCase();
@@ -582,28 +585,32 @@ export const useDailyPlan = () => {
       let complete = false;
       
       // Special handling for interactive items
-      // Use unified prepStatus first, fall back to legacy checks
+      // Use unified prepStatus ONLY if it exists, otherwise fall back to legacy checks
       if (handlerType === 'leader-profile' || labelLower.includes('leader profile')) {
-        complete = user?.prepStatus?.leaderProfile || leaderProfileComplete || false;
+        complete = hasPrepStatus 
+          ? !!user.prepStatus.leaderProfile 
+          : (leaderProfileComplete || false);
       } else if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment')) {
-        // Check prepStatus first, then assessmentHistory or focusAreas
-        complete = user?.prepStatus?.baselineAssessment || !!(
-          developmentPlanData?.assessmentHistory?.length > 0 ||
-          developmentPlanData?.currentPlan?.focusAreas?.length > 0
-        );
+        complete = hasPrepStatus 
+          ? !!user.prepStatus.baselineAssessment 
+          : !!(developmentPlanData?.assessmentHistory?.length > 0 || developmentPlanData?.currentPlan?.focusAreas?.length > 0);
       } else if (handlerType === 'notification-setup' || labelLower.includes('notification')) {
-        // Check prepStatus first, then notificationSettings has been configured
-        const ns = developmentPlanData?.notificationSettings || user?.notificationSettings;
-        complete = user?.prepStatus?.notifications || !!(ns && ns.strategy);
+        // ONLY use prepStatus.notifications - don't check notificationSettings existence
+        complete = hasPrepStatus 
+          ? !!user.prepStatus.notifications 
+          : !!(user?.notificationSettings?.strategy);
       } else if (handlerType === 'foundation-commitment' || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectations')) {
-        // Check prepStatus first, then foundationCommitment in user doc
-        complete = user?.prepStatus?.foundationCommitment || !!(user?.foundationCommitment?.acknowledged);
+        complete = hasPrepStatus 
+          ? !!user.prepStatus.foundationCommitment 
+          : !!(user?.foundationCommitment?.acknowledged);
       } else if (handlerType === 'conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
-        // Check prepStatus first, then conditioningTutorial in user doc
-        complete = user?.prepStatus?.conditioningTutorial || !!(user?.conditioningTutorial?.completed);
+        complete = hasPrepStatus 
+          ? !!user.prepStatus.conditioningTutorial 
+          : !!(user?.conditioningTutorial?.completed);
       } else if (action.resourceType === 'video_series' || labelLower.includes('video')) {
-        // Check prepStatus for video series, fall back to action progress
-        complete = user?.prepStatus?.videoSeries || isActionComplete(action.id);
+        complete = hasPrepStatus 
+          ? !!user.prepStatus.videoSeries 
+          : isActionComplete(action.id);
       } else {
         // Standard action progress check
         complete = isActionComplete(action.id);

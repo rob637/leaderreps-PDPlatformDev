@@ -694,18 +694,24 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   }, [userState]);
 
   // Fetch video series durations for video_series actions
+  // Use a ref to track fetched series IDs to avoid infinite loops
+  const fetchedSeriesRef = useRef(new Set());
+  
   useEffect(() => {
     const fetchVideoSeriesDurations = async () => {
       if (!db || !allActions.length) return;
       
-      // Find video_series actions that don't have duration loaded yet
+      // Find video_series actions that haven't been fetched yet
       const seriesIds = allActions
-        .filter(a => a.resourceType === 'video_series' && a.resourceId && !videoSeriesDurations[a.resourceId])
+        .filter(a => a.resourceType === 'video_series' && a.resourceId && !fetchedSeriesRef.current.has(a.resourceId))
         .map(a => a.resourceId);
       
       if (seriesIds.length === 0) return;
       
-      const newDurations = { ...videoSeriesDurations };
+      // Mark as fetched immediately to prevent re-fetching
+      seriesIds.forEach(id => fetchedSeriesRef.current.add(id));
+      
+      const newDurations = {};
       
       for (const seriesId of seriesIds) {
         try {
@@ -721,11 +727,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         }
       }
       
-      setVideoSeriesDurations(newDurations);
+      if (Object.keys(newDurations).length > 0) {
+        setVideoSeriesDurations(prev => ({ ...prev, ...newDurations }));
+      }
     };
     
     fetchVideoSeriesDurations();
-  }, [db, allActions, videoSeriesDurations]);
+  }, [db, allActions]); // Removed videoSeriesDurations to prevent infinite loop
 
   // Filter to only required items for progress calculation
   const requiredActions = useMemo(() => {
@@ -1009,14 +1017,26 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Action Item Renderer
   const ActionItem = ({ item, isCarriedOver = false }) => {
     const progress = getItemProgress(item.id);
-    // Interactive items: check live hook values, not stale autoComplete property
-    // This ensures real-time updates when Leader Profile, Assessment, or Notification Setup is completed
-    const isCompleted = item.isInteractive 
-      ? (item.handlerType === 'leader-profile' ? leaderProfileComplete : 
-         item.handlerType === 'baseline-assessment' ? baselineAssessmentComplete : 
-         item.handlerType === 'notification-setup' ? notificationSetupComplete :
-         item.autoComplete)
-      : (progress.status === 'completed' || completedItems.includes(item.id));
+    // For interactive prep items, use prepRequirementsComplete to match the counter
+    // Fall back to individual hook values for legacy compatibility
+    let isCompleted;
+    if (item.isInteractive) {
+      // Try to get completion from unified prepRequirementsComplete first
+      if (Array.isArray(prepRequirementsComplete?.items)) {
+        const prepItem = prepRequirementsComplete.items.find(p => p.handlerType === item.handlerType);
+        isCompleted = prepItem?.complete || false;
+      } else {
+        // Fallback to individual hook values
+        isCompleted = item.handlerType === 'leader-profile' ? leaderProfileComplete : 
+                      item.handlerType === 'baseline-assessment' ? baselineAssessmentComplete : 
+                      item.handlerType === 'notification-setup' ? notificationSetupComplete :
+                      item.handlerType === 'foundation-commitment' ? foundationCommitmentComplete :
+                      item.handlerType === 'conditioning-tutorial' ? conditioningTutorialComplete :
+                      item.autoComplete || false;
+      }
+    } else {
+      isCompleted = (progress.status === 'completed' || completedItems.includes(item.id));
+    }
     const isSkipped = progress.status === 'skipped';
     const Icon = item.isInteractive 
       ? (item.icon === 'User' ? User : item.icon === 'Bell' ? Bell : ClipboardCheck)
