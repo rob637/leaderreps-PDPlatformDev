@@ -292,8 +292,8 @@ const TasksPage = () => {
             onClick={() => setShowAddTask(false)}
           />
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md">
-            <div className="bg-white rounded-xl shadow-elevated p-6 animate-in">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">New Task</h2>
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-elevated p-6 animate-in">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">New Task</h2>
               
               <div className="space-y-4">
                 <div>

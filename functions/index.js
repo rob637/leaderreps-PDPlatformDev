@@ -3385,6 +3385,217 @@ exports.gmailListAccounts = onCall({
 });
 
 /**
+ * IMPORT FROM GOOGLE DRIVE
+ * Downloads files from Google Drive using the Cloud Function's service account
+ * credentials and uploads them to Firebase Storage, creating media_assets records.
+ *
+ * Accepts Google Drive file IDs and folder IDs from share links.
+ * The Drive folder/files must be shared with the Cloud Function's service account
+ * email address (shown in the UI and logs).
+ *
+ * Uses google-auth-library ADC with drive.readonly scope.
+ */
+exports.importFromDrive = onCall({
+  cors: true,
+  region: "us-central1",
+  timeoutSeconds: 540,  // 9 minutes for large file downloads
+  memory: "1GiB",
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be authenticated.');
+  }
+
+  // Auth check — admin/team only
+  const userEmail = request.auth.token.email?.toLowerCase();
+  const teamEmails = [
+    'rob@sagecg.com', 'rob@leaderreps.com',
+    'ryan@leaderreps.com',
+    'jeff@leaderreps.com',
+    'cristina@leaderreps.com'
+  ];
+  let isAuthorized = teamEmails.includes(userEmail);
+  if (!isAuthorized) {
+    try {
+      const configDoc = await db.collection('metadata').doc('config').get();
+      if (configDoc.exists) {
+        const adminEmails = configDoc.data().adminemails || [];
+        isAuthorized = adminEmails.map(e => e.toLowerCase()).includes(userEmail);
+      }
+    } catch (err) { /* fall through */ }
+  }
+  if (!isAuthorized) {
+    throw new HttpsError('permission-denied', 'Not authorized.');
+  }
+
+  const { fileIds = [], folderIds = [], getServiceAccountEmail = false } = request.data;
+
+  // --- Service account auth via google-auth-library ---
+  const { GoogleAuth } = require('google-auth-library');
+  const auth = new GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+  });
+  const authClient = await auth.getClient();
+
+  // If caller just wants the SA email (for sharing instructions), return it
+  if (getServiceAccountEmail) {
+    const saEmail = authClient.email || (await auth.getCredentials()).client_email || 'unknown';
+    logger.info('Service account email requested', { saEmail });
+    return { serviceAccountEmail: saEmail };
+  }
+
+  if (fileIds.length === 0 && folderIds.length === 0) {
+    throw new HttpsError('invalid-argument', 'No file or folder IDs provided.');
+  }
+
+  // Get an access token for Drive API calls
+  const { token: accessToken } = await authClient.getAccessToken();
+  if (!accessToken) {
+    throw new HttpsError('internal', 'Failed to obtain Drive access token from service account.');
+  }
+
+  const bucket = admin.storage().bucket();
+  const results = [];
+  const driveHeaders = { Authorization: `Bearer ${accessToken}` };
+
+  // Helper: get file metadata from Drive
+  const getFileMetadata = async (fileId) => {
+    const metaResponse = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType,size&supportsAllDrives=true`,
+      { headers: driveHeaders }
+    );
+    if (!metaResponse.ok) {
+      const errText = await metaResponse.text();
+      throw new Error(`Metadata fetch failed (${metaResponse.status}): ${errText}`);
+    }
+    return metaResponse.json();
+  };
+
+  // Helper: download and import a single file
+  const importFile = async (fileId) => {
+    try {
+      // 1. Get file metadata
+      const meta = await getFileMetadata(fileId);
+      const { name, mimeType, size } = meta;
+
+      // Skip Google Docs native formats (Sheets, Docs, Slides) — they can't be downloaded directly
+      if (mimeType.startsWith('application/vnd.google-apps.')) {
+        logger.warn('Skipping native Google format', { fileId, name, mimeType });
+        results.push({ fileId, name, success: false, error: `Native Google format (${mimeType}) — download the file as PDF/MP4 first` });
+        return;
+      }
+
+      logger.info('Importing from Drive', { fileId, name, mimeType });
+
+      // 2. Download file content
+      const driveResponse = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`,
+        { headers: driveHeaders }
+      );
+
+      if (!driveResponse.ok) {
+        const errText = await driveResponse.text();
+        logger.error('Drive download failed', { fileId, status: driveResponse.status, error: errText });
+        results.push({ fileId, name, success: false, error: `Download failed: ${driveResponse.status}` });
+        return;
+      }
+
+      // 3. Read file into buffer
+      const arrayBuffer = await driveResponse.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // 4. Upload to Firebase Storage
+      const timestamp = Date.now();
+      const safeName = name.replace(/[^a-zA-Z0-9.]/g, '_');
+      const storagePath = `vault/${timestamp}_${safeName}`;
+      const storageFile = bucket.file(storagePath);
+
+      await storageFile.save(buffer, {
+        metadata: {
+          contentType: mimeType,
+          metadata: { driveFileId: fileId, originalName: name }
+        }
+      });
+
+      // Generate a signed URL (valid for 7 years) since uniform bucket-level access prevents per-object ACLs
+      const [signedUrl] = await storageFile.getSignedUrl({
+        action: 'read',
+        expires: Date.now() + 7 * 365 * 24 * 60 * 60 * 1000,
+      });
+      const downloadURL = signedUrl;
+
+      // 5. Determine media type
+      let mediaType = 'OTHER';
+      if (mimeType.startsWith('image/')) mediaType = 'IMAGE';
+      else if (mimeType.startsWith('video/')) mediaType = 'VIDEO';
+      else if (mimeType.includes('pdf') || mimeType.includes('document') || mimeType.includes('msword')) mediaType = 'DOCUMENT';
+
+      // 6. Create Firestore record
+      const assetData = {
+        title: name,
+        fileName: safeName,
+        storagePath,
+        url: downloadURL,
+        type: mediaType,
+        mimeType,
+        size: parseInt(size) || buffer.length,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        tags: [],
+        source: 'google-drive',
+        driveFileId: fileId,
+      };
+
+      const docRef = await db.collection('media_assets').add(assetData);
+      results.push({ fileId, name, success: true, assetId: docRef.id });
+      logger.info('Drive import success', { fileId, name, assetId: docRef.id });
+
+    } catch (error) {
+      logger.error('Drive import error', { fileId, error: error.message });
+      results.push({ fileId, name: fileId, success: false, error: error.message });
+    }
+  };
+
+  // 1. Resolve folder IDs → file IDs
+  for (const folderId of folderIds) {
+    try {
+      logger.info('Listing folder contents', { folderId });
+      let pageToken = '';
+      do {
+        const url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType,size),nextPageToken&pageSize=100&supportsAllDrives=true&includeItemsFromAllDrives=true${pageToken ? '&pageToken=' + pageToken : ''}`;
+        const listResponse = await fetch(url, { headers: driveHeaders });
+        if (!listResponse.ok) {
+          const errText = await listResponse.text();
+          results.push({ fileId: folderId, name: `Folder ${folderId}`, success: false, error: `Folder list failed: ${listResponse.status} — ${errText}` });
+          break;
+        }
+        const listData = await listResponse.json();
+        const folderFiles = listData.files || [];
+        logger.info('Found files in folder', { folderId, count: folderFiles.length });
+
+        // Import each file from the folder
+        for (const ff of folderFiles) {
+          // Skip sub-folders
+          if (ff.mimeType === 'application/vnd.google-apps.folder') continue;
+          await importFile(ff.id);
+        }
+        pageToken = listData.nextPageToken || '';
+      } while (pageToken);
+    } catch (error) {
+      logger.error('Folder listing error', { folderId, error: error.message });
+      results.push({ fileId: folderId, name: `Folder ${folderId}`, success: false, error: error.message });
+    }
+  }
+
+  // 2. Import individual file IDs
+  for (const fileId of fileIds) {
+    await importFile(fileId);
+  }
+
+  const successCount = results.filter(r => r.success).length;
+  return { results, successCount, totalCount: results.length };
+});
+
+/**
  * GET GMAIL AUTH URL
  * Returns the OAuth URL for connecting a Gmail account.
  * User clicks this to authorize LR-Instantly to send emails on their behalf.
@@ -3472,43 +3683,91 @@ exports.gmailProxy = onCall({
     throw new HttpsError('permission-denied', 'Not authorized to use Gmail API.');
   }
 
-  const { action, accessToken, refreshToken } = request.data;
+  const { action, accessToken, refreshToken, fromEmail } = request.data;
   
-  // Get tokens from request (user provides from their settings)
-  if (!accessToken && !refreshToken) {
+  // Get tokens - either from request OR look up by fromEmail
+  let activeAccessToken = accessToken;
+  let activeRefreshToken = refreshToken;
+  
+  // If fromEmail is provided, look up tokens from team_settings
+  if (fromEmail && !accessToken && !refreshToken) {
+    try {
+      const accountsSnapshot = await db.collection('team_settings').doc('gmail_accounts')
+        .collection('accounts').where('email', '==', fromEmail.toLowerCase()).get();
+      
+      if (accountsSnapshot.empty) {
+        throw new HttpsError('not-found', `Gmail account ${fromEmail} not connected.`);
+      }
+      
+      const accountData = accountsSnapshot.docs[0].data();
+      activeAccessToken = accountData.accessToken;
+      activeRefreshToken = accountData.refreshToken;
+      
+      logger.info('Gmail: Using team account', { fromEmail });
+    } catch (error) {
+      logger.error('Error looking up team account', { fromEmail, error: error.message });
+      throw new HttpsError('failed-precondition', `Could not find Gmail account: ${fromEmail}`);
+    }
+  }
+  
+  if (!activeAccessToken && !activeRefreshToken) {
     throw new HttpsError('failed-precondition', 'Gmail not connected. Please connect Gmail in Settings.');
   }
 
-  // If we have a refresh token but no access token, exchange it
-  let activeAccessToken = accessToken;
-  
-  if (!activeAccessToken && refreshToken) {
+  // Helper to refresh access token
+  const refreshAccessToken = async (refreshToken) => {
     const clientId = process.env.GMAIL_CLIENT_ID;
     const clientSecret = process.env.GMAIL_CLIENT_SECRET;
     
-    if (!clientId || !clientSecret) {
-      throw new HttpsError('failed-precondition', 'Gmail OAuth not configured.');
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token'
+      })
+    });
+    
+    const tokenData = await tokenResponse.json();
+    
+    if (!tokenData.access_token) {
+      logger.error('Refresh token failed', { error: tokenData.error, description: tokenData.error_description });
+      throw new HttpsError('unauthenticated', 'Gmail token expired. Please reconnect Gmail.');
     }
     
+    return tokenData.access_token;
+  };
+
+  // If loading from team account (fromEmail), ALWAYS refresh to ensure token is valid
+  // Access tokens expire after 1 hour
+  if (fromEmail && activeRefreshToken) {
     try {
-      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          client_id: clientId,
-          client_secret: clientSecret,
-          refresh_token: refreshToken,
-          grant_type: 'refresh_token'
-        })
-      });
+      activeAccessToken = await refreshAccessToken(activeRefreshToken);
       
-      const tokenData = await tokenResponse.json();
-      
-      if (!tokenData.access_token) {
-        throw new HttpsError('unauthenticated', 'Gmail token expired. Please reconnect Gmail in Settings.');
+      // Update the stored token for next time
+      try {
+        const emailDocId = fromEmail.toLowerCase().replace(/[.@]/g, '_');
+        const accountRef = db.collection('team_settings').doc('gmail_accounts')
+          .collection('accounts').doc(emailDocId);
+        await accountRef.update({ 
+          accessToken: activeAccessToken,
+          tokenUpdatedAt: new Date().toISOString()
+        });
+        logger.info('Refreshed team account token', { fromEmail });
+      } catch (e) {
+        logger.warn('Could not update team account token', e);
       }
-      
-      activeAccessToken = tokenData.access_token;
+    } catch (error) {
+      logger.error('Error refreshing team account token', { fromEmail, error: error.message });
+      throw new HttpsError('unauthenticated', 'Gmail token expired. Please reconnect Gmail.');
+    }
+  }
+  // If we have a refresh token but no access token (legacy user account), exchange it
+  else if (!activeAccessToken && activeRefreshToken) {
+    try {
+      activeAccessToken = await refreshAccessToken(activeRefreshToken);
       
       // Save the new access token back to user settings (fire and forget)
       try {
@@ -3759,26 +4018,72 @@ exports.gmailOAuthCallback = onRequest({
   const projectId = process.env.GCLOUD_PROJECT || 'leaderreps-test';
   const redirectUri = `https://us-central1-${projectId}.cloudfunctions.net/gmailOAuthCallback`;
   
+  // Debug logging - verbose mode
+  logger.info('OAuth callback - FULL DEBUG', { 
+    hasCode: !!code, 
+    codeLength: code?.length,
+    codePrefix: code?.substring(0, 20),
+    userId, 
+    clientIdFull: clientId,
+    clientSecretFull: clientSecret,
+    redirectUri,
+    projectId
+  });
+  
   if (!clientId || !clientSecret) {
     logger.error('Gmail OAuth not configured');
     return res.redirect(`${getAppUrl()}/settings?gmail_error=not_configured`);
   }
   
   try {
+    // Build request body
+    const requestBody = new URLSearchParams({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code'
+    });
+    
+    logger.info('Token exchange request - RAW BODY', {
+      rawBody: requestBody.toString(),
+      bodyLength: requestBody.toString().length
+    });
+    
+    // Try with fetch as JSON instead
+    const jsonBody = {
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code'
+    };
+    
+    logger.info('Token exchange as JSON', jsonBody);
+    
     // Exchange code for tokens
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code'
-      })
+      body: requestBody
     });
     
-    const tokenData = await tokenResponse.json();
+    const rawText = await tokenResponse.text();
+    logger.info('Token exchange RAW response', { 
+      status: tokenResponse.status,
+      rawResponse: rawText
+    });
+    
+    const tokenData = JSON.parse(rawText);
+    
+    // Log full response for debugging
+    logger.info('Token exchange response - PARSED', { 
+      status: tokenResponse.status,
+      tokenDataKeys: Object.keys(tokenData),
+      hasAccessToken: !!tokenData.access_token, 
+      error: tokenData.error,
+      errorDescription: tokenData.error_description
+    });
     
     if (!tokenData.access_token) {
       logger.error('Failed to get access token', tokenData);
@@ -3837,223 +4142,250 @@ exports.gmailSyncJob = onSchedule({
   region: "us-central1",
   timeoutSeconds: 300,
   memory: "512MiB",
-  secrets: ["GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET"]
 }, async (event) => {
   logger.info("Gmail sync job started");
   
   const clientId = process.env.GMAIL_CLIENT_ID;
   const clientSecret = process.env.GMAIL_CLIENT_SECRET;
   
-  if (!clientId || !clientSecret) {
-    logger.warn('Gmail OAuth not configured, skipping Gmail sync');
-    return;
-  }
-  
   try {
-    // Find all users with Gmail connected
-    const usersSnapshot = await db.collectionGroup('settings')
-      .where('refreshToken', '!=', null)
-      .get();
+    // 1. Get all connected team Gmail accounts
+    const accountsSnap = await db.collection('team_settings')
+      .doc('gmail_accounts').collection('accounts').get();
     
-    const gmailUsers = [];
-    usersSnapshot.forEach(doc => {
-      if (doc.ref.parent.parent && doc.id === 'gmail') {
-        gmailUsers.push({
-          userId: doc.ref.parent.parent.id,
-          ...doc.data()
-        });
+    if (accountsSnap.empty) {
+      logger.info('No team Gmail accounts connected, skipping sync');
+      return;
+    }
+    
+    const accounts = [];
+    accountsSnap.forEach(doc => {
+      const data = doc.data();
+      if (data.refreshToken && data.email) {
+        accounts.push({ id: doc.id, ...data });
       }
     });
     
-    logger.info(`Found ${gmailUsers.length} users with Gmail connected`);
+    logger.info(`Found ${accounts.length} team Gmail accounts`);
     
-    for (const gmailUser of gmailUsers) {
+    // 2. Get ALL prospects with email addresses
+    const prospectsSnap = await db.collection('corporate_prospects').get();
+    const prospectEmails = [];
+    const prospectsByEmail = {};
+    
+    prospectsSnap.forEach(doc => {
+      const data = doc.data();
+      if (data.email) {
+        const email = data.email.toLowerCase();
+        prospectEmails.push(email);
+        prospectsByEmail[email] = {
+          id: doc.id,
+          name: data.name || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+          email: data.email
+        };
+      }
+    });
+    
+    if (prospectEmails.length === 0) {
+      logger.info('No prospects with emails, skipping sync');
+      return;
+    }
+    
+    logger.info(`Loaded ${prospectEmails.length} prospect emails to match against`);
+    
+    // 3. Get last sync time from team_settings (default to 1 hour ago)
+    const syncMetaRef = db.collection('team_settings').doc('gmail_sync');
+    const syncMetaSnap = await syncMetaRef.get();
+    const lastSyncTime = syncMetaSnap.exists && syncMetaSnap.data().lastSyncAt
+      ? new Date(syncMetaSnap.data().lastSyncAt)
+      : new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago default
+    
+    const afterTimestamp = Math.floor(lastSyncTime.getTime() / 1000);
+    
+    let totalSynced = 0;
+    
+    // 4. Process each Gmail account
+    for (const account of accounts) {
       try {
-        await syncGmailForUser(gmailUser, clientId, clientSecret);
+        const synced = await syncTeamGmailAccount(account, clientId, clientSecret, prospectEmails, prospectsByEmail, afterTimestamp);
+        totalSynced += synced;
       } catch (error) {
-        logger.error(`Gmail sync failed for user ${gmailUser.userId}`, error);
+        logger.error(`Gmail sync failed for ${account.email}`, { error: error.message });
       }
     }
     
-    logger.info("Gmail sync job completed");
+    // 5. Update last sync time
+    await syncMetaRef.set({ 
+      lastSyncAt: new Date().toISOString(),
+      lastSyncResult: { totalSynced, accounts: accounts.length, prospects: prospectEmails.length }
+    }, { merge: true });
+    
+    logger.info(`Gmail sync job completed: ${totalSynced} new activities across ${accounts.length} accounts`);
     
   } catch (error) {
-    logger.error("Gmail sync job error", error);
+    logger.error("Gmail sync job error", { error: error.message });
   }
 });
 
 /**
- * Helper: Sync Gmail messages for a single user
+ * Helper: Sync Gmail for a team account
+ * Checks both sent and received emails, logs to outreach_activities
  */
-async function syncGmailForUser(gmailUser, clientId, clientSecret) {
-  const { userId, refreshToken, email: gmailEmail } = gmailUser;
-  
-  // Refresh the access token
+async function syncTeamGmailAccount(account, clientId, clientSecret, prospectEmails, prospectsByEmail, afterTimestamp) {
+  // Refresh access token
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       client_id: clientId,
       client_secret: clientSecret,
-      refresh_token: refreshToken,
+      refresh_token: account.refreshToken,
       grant_type: 'refresh_token'
     })
   });
   
   const tokenData = await tokenResponse.json();
-  
   if (!tokenData.access_token) {
-    logger.warn(`Could not refresh token for user ${userId}`, tokenData);
-    return;
+    logger.warn(`Could not refresh token for ${account.email}`, { error: tokenData.error });
+    return 0;
   }
   
   const accessToken = tokenData.access_token;
   
-  // Get the user's tracked prospects (those with email tracking enabled)
-  const prospectsSnapshot = await db.collection('corporate_prospects')
-    .where('emailTracking', '==', true)
-    .limit(100)
-    .get();
-  
-  if (prospectsSnapshot.empty) {
-    logger.info(`No tracked prospects for user ${userId}`);
-    return;
+  // Update stored token
+  try {
+    const emailDocId = account.email.toLowerCase().replace(/[.@]/g, '_');
+    await db.collection('team_settings').doc('gmail_accounts')
+      .collection('accounts').doc(emailDocId)
+      .update({ accessToken, tokenUpdatedAt: new Date().toISOString() });
+  } catch (e) {
+    logger.warn('Could not update stored access token', { error: e.message });
   }
   
-  const prospectEmails = [];
-  const prospectsByEmail = {};
-  
-  prospectsSnapshot.forEach(doc => {
-    const data = doc.data();
-    if (data.email) {
-      const email = data.email.toLowerCase();
-      prospectEmails.push(email);
-      prospectsByEmail[email] = { id: doc.id, ...data };
-    }
-  });
-  
-  // Get last sync time (default to 1 day ago)
-  const settingsRef = db.collection('users').doc(userId).collection('settings').doc('gmail');
-  const settingsSnap = await settingsRef.get();
-  const lastSyncTime = settingsSnap.data()?.lastSyncAt 
-    ? new Date(settingsSnap.data().lastSyncAt)
-    : new Date(Date.now() - 24 * 60 * 60 * 1000);
-  
-  const afterTimestamp = Math.floor(lastSyncTime.getTime() / 1000);
-  
-  // Query for sent emails
-  const sentQuery = `in:sent after:${afterTimestamp} (${prospectEmails.slice(0, 20).map(e => `to:${e}`).join(' OR ')})`;
-  
-  const sentResponse = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=${encodeURIComponent(sentQuery)}`,
-    { headers: { 'Authorization': `Bearer ${accessToken}` } }
-  );
-  const sentData = await sentResponse.json();
-  
+  const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me';
   let syncedCount = 0;
   
-  // Process sent messages
-  for (const msg of (sentData.messages || []).slice(0, 25)) {
+  // --- CHECK RECEIVED EMAILS (replies from prospects) ---
+  // Build Gmail from: query (max 20 emails per query to avoid URL limits)
+  const emailBatches = [];
+  for (let i = 0; i < prospectEmails.length; i += 20) {
+    emailBatches.push(prospectEmails.slice(i, i + 20));
+  }
+  
+  for (const batch of emailBatches) {
+    const fromClause = batch.map(e => `from:${e}`).join(' OR ');
+    const receivedQuery = `in:inbox after:${afterTimestamp} (${fromClause})`;
+    
     try {
-      const msgDetailResponse = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
+      const listResp = await fetch(
+        `${GMAIL_API}/messages?maxResults=50&q=${encodeURIComponent(receivedQuery)}`,
         { headers: { 'Authorization': `Bearer ${accessToken}` } }
       );
-      const msgDetail = await msgDetailResponse.json();
+      const listData = await listResp.json();
       
-      // Extract headers
-      const headers = {};
-      (msgDetail.payload?.headers || []).forEach(h => {
-        headers[h.name.toLowerCase()] = h.value;
-      });
-      
-      // Find matching prospect
-      const toEmail = extractEmail(headers.to || '');
-      const prospect = prospectsByEmail[toEmail.toLowerCase()];
-      
-      if (prospect) {
-        // Create activity entry
-        const activityRef = db.collection('corporate_prospects').doc(prospect.id)
-          .collection('activities').doc(`gmail_${msg.id}`);
-        
-        const existingActivity = await activityRef.get();
-        if (!existingActivity.exists) {
-          await activityRef.set({
-            type: 'email_sent',
-            source: 'gmail_sync',
-            messageId: msg.id,
-            threadId: msgDetail.threadId,
-            subject: headers.subject || '(No subject)',
-            snippet: msgDetail.snippet || '',
-            from: gmailEmail,
-            to: toEmail,
-            timestamp: headers.date ? new Date(headers.date).toISOString() : new Date().toISOString(),
-            syncedAt: new Date().toISOString()
-          });
-          syncedCount++;
+      for (const msg of (listData.messages || []).slice(0, 25)) {
+        try {
+          const synced = await processGmailMessage(msg.id, accessToken, GMAIL_API, prospectsByEmail, account.email, 'received');
+          if (synced) syncedCount++;
+        } catch (e) {
+          logger.warn(`Could not process received message ${msg.id}`, { error: e.message });
         }
       }
     } catch (e) {
-      logger.warn(`Could not process sent message ${msg.id}`, e);
+      logger.warn(`Received email query failed for batch`, { error: e.message });
     }
   }
   
-  // Query for received emails
-  const receivedQuery = `in:inbox after:${afterTimestamp} (${prospectEmails.slice(0, 20).map(e => `from:${e}`).join(' OR ')})`;
+  // --- CHECK SENT EMAILS (outgoing to prospects) ---
+  for (const batch of emailBatches) {
+    const toClause = batch.map(e => `to:${e}`).join(' OR ');
+    const sentQuery = `in:sent after:${afterTimestamp} (${toClause})`;
+    
+    try {
+      const listResp = await fetch(
+        `${GMAIL_API}/messages?maxResults=50&q=${encodeURIComponent(sentQuery)}`,
+        { headers: { 'Authorization': `Bearer ${accessToken}` } }
+      );
+      const listData = await listResp.json();
+      
+      for (const msg of (listData.messages || []).slice(0, 25)) {
+        try {
+          const synced = await processGmailMessage(msg.id, accessToken, GMAIL_API, prospectsByEmail, account.email, 'sent');
+          if (synced) syncedCount++;
+        } catch (e) {
+          logger.warn(`Could not process sent message ${msg.id}`, { error: e.message });
+        }
+      }
+    } catch (e) {
+      logger.warn(`Sent email query failed for batch`, { error: e.message });
+    }
+  }
   
-  const receivedResponse = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=${encodeURIComponent(receivedQuery)}`,
+  logger.info(`Gmail sync for ${account.email}: ${syncedCount} new activities`);
+  return syncedCount;
+}
+
+/**
+ * Helper: Process a single Gmail message into an outreach_activity
+ */
+async function processGmailMessage(messageId, accessToken, apiBase, prospectsByEmail, teamEmail, direction) {
+  const msgResp = await fetch(
+    `${apiBase}/messages/${messageId}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
     { headers: { 'Authorization': `Bearer ${accessToken}` } }
   );
-  const receivedData = await receivedResponse.json();
+  const msgDetail = await msgResp.json();
   
-  // Process received messages
-  for (const msg of (receivedData.messages || []).slice(0, 25)) {
-    try {
-      const msgDetailResponse = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
-        { headers: { 'Authorization': `Bearer ${accessToken}` } }
-      );
-      const msgDetail = await msgDetailResponse.json();
-      
-      const headers = {};
-      (msgDetail.payload?.headers || []).forEach(h => {
-        headers[h.name.toLowerCase()] = h.value;
-      });
-      
-      const fromEmail = extractEmail(headers.from || '');
-      const prospect = prospectsByEmail[fromEmail.toLowerCase()];
-      
-      if (prospect) {
-        const activityRef = db.collection('corporate_prospects').doc(prospect.id)
-          .collection('activities').doc(`gmail_${msg.id}`);
-        
-        const existingActivity = await activityRef.get();
-        if (!existingActivity.exists) {
-          await activityRef.set({
-            type: 'email_received',
-            source: 'gmail_sync',
-            messageId: msg.id,
-            threadId: msgDetail.threadId,
-            subject: headers.subject || '(No subject)',
-            snippet: msgDetail.snippet || '',
-            from: fromEmail,
-            to: gmailEmail,
-            timestamp: headers.date ? new Date(headers.date).toISOString() : new Date().toISOString(),
-            syncedAt: new Date().toISOString()
-          });
-          syncedCount++;
-        }
-      }
-    } catch (e) {
-      logger.warn(`Could not process received message ${msg.id}`, e);
-    }
-  }
+  // Parse headers
+  const headers = {};
+  (msgDetail.payload?.headers || []).forEach(h => {
+    headers[h.name.toLowerCase()] = h.value;
+  });
   
-  // Update last sync time
-  await settingsRef.update({ lastSyncAt: new Date().toISOString() });
+  // Find matching prospect
+  const relevantEmail = direction === 'received'
+    ? extractEmail(headers.from || '')
+    : extractEmail(headers.to || '');
   
-  logger.info(`Gmail sync completed for user ${userId}`, { syncedCount });
+  const prospect = prospectsByEmail[relevantEmail.toLowerCase()];
+  if (!prospect) return false;
+  
+  // Dedup check: has this gmailMessageId already been logged?
+  const existingQuery = await db.collection('outreach_activities')
+    .where('gmailMessageId', '==', messageId)
+    .limit(1)
+    .get();
+  
+  if (!existingQuery.empty) return false;
+  
+  // Build activity record (matches schema used by EmailQueue + replyDetectionService)
+  const subject = headers.subject || '(No subject)';
+  const date = headers.date ? new Date(headers.date) : new Date();
+  
+  const activity = {
+    prospectId: prospect.id,
+    prospectEmail: prospect.email,
+    prospectName: prospect.name,
+    channel: 'email',
+    type: direction === 'received' ? 'email_received' : 'email_sent',
+    outcome: direction === 'received' ? 'replied' : 'sent',
+    content: direction === 'received'
+      ? `Reply received: "${subject}"\n\n${msgDetail.snippet || ''}`
+      : `Email sent: "${subject}"\n\n${msgDetail.snippet || ''}`,
+    subject,
+    gmailMessageId: messageId,
+    gmailThreadId: msgDetail.threadId,
+    fromEmail: headers.from || '',
+    toEmail: headers.to || '',
+    createdAt: date.toISOString(),
+    userEmail: 'system@leaderreps.com',
+    userName: 'Gmail Sync',
+    isAutoDetected: true,
+    source: 'gmail_sync',
+    syncedVia: teamEmail
+  };
+  
+  await db.collection('outreach_activities').add(activity);
+  return true;
 }
 
 /**
@@ -4435,15 +4767,64 @@ exports.processSequenceQueue = onSchedule({
   region: 'us-central1'
 }, async (event) => {
   const now = admin.firestore.Timestamp.now();
+  const nowDate = now.toDate();
   
-  logger.info('Processing sequence queue', { timestamp: now.toDate().toISOString() });
+  logger.info('Processing sequence queue', { timestamp: nowDate.toISOString() });
   
   try {
-    // Get all active enrollments due for sending
+    // ── Load team sending limits ──────────────────────────────────
+    let maxPerDay = 100;   // default
+    let maxPerHour = 25;   // default
+    try {
+      const limitsSnap = await db.doc('team_settings/sending_limits').get();
+      if (limitsSnap.exists) {
+        const limits = limitsSnap.data();
+        maxPerDay  = limits.maxPerDay  ?? 100;
+        maxPerHour = limits.maxPerHour ?? 25;
+      }
+    } catch (err) {
+      logger.warn('Could not load sending limits, using defaults', err);
+    }
+
+    // ── Check daily and hourly send counts ───────────────────────
+    const startOfDay = new Date(nowDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const startOfHour = new Date(nowDate);
+    startOfHour.setMinutes(0, 0, 0);
+
+    const dailySentSnap = await db.collection('outreach_activities')
+      .where('type', '==', 'sequence_email')
+      .where('automated', '==', true)
+      .where('createdAt', '>=', admin.firestore.Timestamp.fromDate(startOfDay))
+      .get();
+    const dailySent = dailySentSnap.size;
+
+    const hourlySentSnap = await db.collection('outreach_activities')
+      .where('type', '==', 'sequence_email')
+      .where('automated', '==', true)
+      .where('createdAt', '>=', admin.firestore.Timestamp.fromDate(startOfHour))
+      .get();
+    const hourlySent = hourlySentSnap.size;
+
+    if (dailySent >= maxPerDay) {
+      logger.info(`Daily limit reached (${dailySent}/${maxPerDay}). Skipping.`);
+      return { sent: 0, errors: 0, completed: 0, skipped: 0, reason: 'daily_limit' };
+    }
+    if (hourlySent >= maxPerHour) {
+      logger.info(`Hourly limit reached (${hourlySent}/${maxPerHour}). Skipping.`);
+      return { sent: 0, errors: 0, completed: 0, skipped: 0, reason: 'hourly_limit' };
+    }
+
+    // How many more we can send this run
+    const remainingDaily  = maxPerDay  - dailySent;
+    const remainingHourly = maxPerHour - hourlySent;
+    const sendBudget = Math.min(remainingDaily, remainingHourly, 50);
+
+    // ── Fetch due enrollments ────────────────────────────────────
     const dueEnrollments = await db.collection('sequence_enrollments')
       .where('status', '==', 'active')
       .where('nextSendAt', '<=', now)
-      .limit(50)  // Process in batches to avoid timeouts
+      .limit(sendBudget)
       .get();
     
     if (dueEnrollments.empty) {
@@ -4451,7 +4832,7 @@ exports.processSequenceQueue = onSchedule({
       return { sent: 0, errors: 0, completed: 0 };
     }
     
-    logger.info(`Processing ${dueEnrollments.size} due enrollments`);
+    logger.info(`Processing ${dueEnrollments.size} due enrollments (budget: ${sendBudget})`);
     
     const results = { sent: 0, errors: 0, completed: 0, skipped: 0 };
     
@@ -4476,6 +4857,30 @@ exports.processSequenceQueue = onSchedule({
         
         const sequence = sequenceSnap.data();
         
+        // ── Send window enforcement ──────────────────────────────
+        const sendWindow = sequence.sendWindow || {};
+        const tz = sendWindow.timezone || 'America/New_York';
+        const startHour = sendWindow.startHour ?? 8;
+        const endHour   = sendWindow.endHour   ?? 18;
+        const weekdaysOnly = sendWindow.weekdaysOnly ?? true;
+
+        // Get current time in the sequence's timezone
+        const nowInTz = new Date(nowDate.toLocaleString('en-US', { timeZone: tz }));
+        const currentHour = nowInTz.getHours();
+        const currentDay  = nowInTz.getDay(); // 0=Sun, 6=Sat
+
+        const isWeekend  = currentDay === 0 || currentDay === 6;
+        const isOutsideWindow = currentHour < startHour || currentHour >= endHour;
+
+        if ((weekdaysOnly && isWeekend) || isOutsideWindow) {
+          // Reschedule to next valid send time
+          const nextValid = getNextSendWindowStart(nowDate, startHour, endHour, tz, weekdaysOnly);
+          await doc.ref.update({ nextSendAt: admin.firestore.Timestamp.fromDate(nextValid) });
+          results.skipped++;
+          logger.info(`Enrollment ${doc.id} outside send window → rescheduled to ${nextValid.toISOString()}`);
+          continue;
+        }
+
         // 2. Get current step
         const step = sequence.steps?.[enrollment.currentStep];
         if (!step) {
@@ -4485,7 +4890,6 @@ exports.processSequenceQueue = onSchedule({
             completedAt: now
           });
           
-          // Update sequence stats
           await db.collection('outreach_sequences').doc(enrollment.sequenceId).update({
             activeEnrollments: admin.firestore.FieldValue.increment(-1),
             totalCompleted: admin.firestore.FieldValue.increment(1)
@@ -4496,11 +4900,32 @@ exports.processSequenceQueue = onSchedule({
           continue;
         }
         
-        // 3. Get template (if specified)
+        // ── A/B variant selection ────────────────────────────────
+        let selectedTemplateId = step.templateId;
+        let selectedSubject    = step.subject || '';
+        let variantId          = null;
+
+        if (step.variants && step.variants.length > 0) {
+          // Weighted random selection
+          const totalWeight = step.variants.reduce((sum, v) => sum + (v.weight || 50), 0);
+          let rand = Math.random() * totalWeight;
+          for (const variant of step.variants) {
+            rand -= (variant.weight || 50);
+            if (rand <= 0) {
+              selectedTemplateId = variant.templateId || selectedTemplateId;
+              selectedSubject    = variant.subject    || selectedSubject;
+              variantId          = variant.id || variant.label || null;
+              break;
+            }
+          }
+          logger.info(`A/B selected variant "${variantId}" for enrollment ${doc.id}`);
+        }
+
+        // 3. Get template
         let template = null;
-        if (step.templateId) {
+        if (selectedTemplateId) {
           const templateSnap = await db.collection('outreach_templates')
-            .doc(step.templateId)
+            .doc(selectedTemplateId)
             .get();
           
           if (templateSnap.exists) {
@@ -4510,14 +4935,10 @@ exports.processSequenceQueue = onSchedule({
         
         // 4. Personalize content
         const variables = enrollment.variables || {};
-        const subject = substituteVariables(step.subject || template?.subject || '', variables);
+        const subject = substituteVariables(selectedSubject || template?.subject || '', variables);
         const body = substituteVariables(template?.content || '', variables);
         
-        // 5. Check for Gmail tokens (email sending)
-        // For now, we'll mark it as "ready" and log the activity
-        // Full Gmail sending requires the gmailProxy function to be enabled
-        
-        // Try to get owner's Gmail tokens
+        // 5. Check for Gmail tokens
         let gmailConnected = false;
         try {
           const tokensSnap = await db.collection('users')
@@ -4531,7 +4952,7 @@ exports.processSequenceQueue = onSchedule({
           logger.warn(`Could not check Gmail tokens for ${enrollment.ownerId}`, err);
         }
         
-        // 6. Log activity (email prepared/sent)
+        // 6. Log activity
         const activityData = {
           prospectId: enrollment.prospectId,
           prospectEmail: enrollment.prospectEmail,
@@ -4543,13 +4964,13 @@ exports.processSequenceQueue = onSchedule({
           sequenceName: enrollment.sequenceName,
           stepNumber: enrollment.currentStep,
           subject: subject,
-          // Don't store body in activity (too large), but can store summary
           contentPreview: body?.substring(0, 200),
           ownerId: enrollment.ownerId,
           ownerName: enrollment.ownerName,
           createdAt: now,
           automated: true,
-          gmailSent: gmailConnected
+          gmailSent: gmailConnected,
+          ...(variantId ? { variantId } : {})
         };
         
         await db.collection('outreach_activities').add(activityData);
@@ -4558,7 +4979,6 @@ exports.processSequenceQueue = onSchedule({
         const nextStepIndex = enrollment.currentStep + 1;
         
         if (nextStepIndex >= sequence.steps.length) {
-          // Sequence complete!
           await doc.ref.update({ 
             status: 'completed',
             completedAt: now,
@@ -4566,7 +4986,6 @@ exports.processSequenceQueue = onSchedule({
             lastSentAt: now
           });
           
-          // Update sequence stats
           await db.collection('outreach_sequences').doc(enrollment.sequenceId).update({
             activeEnrollments: admin.firestore.FieldValue.increment(-1),
             totalCompleted: admin.firestore.FieldValue.increment(1)
@@ -4574,7 +4993,6 @@ exports.processSequenceQueue = onSchedule({
           
           results.completed++;
         } else {
-          // Schedule next email
           const nextStep = sequence.steps[nextStepIndex];
           const daysUntilNext = (nextStep.day || 0) - (step.day || 0);
           const nextSendAt = addDays(now.toDate(), Math.max(daysUntilNext, 1));
@@ -4592,13 +5010,13 @@ exports.processSequenceQueue = onSchedule({
         logger.info(`Processed enrollment ${doc.id}`, { 
           step: enrollment.currentStep, 
           nextStep: nextStepIndex,
-          gmailConnected 
+          gmailConnected,
+          variantId
         });
         
       } catch (error) {
         logger.error(`Error processing enrollment ${doc.id}:`, error);
         
-        // Mark as error after 3 retries
         const retryCount = (enrollment.retryCount || 0) + 1;
         if (retryCount >= 3) {
           await doc.ref.update({ 
@@ -4606,12 +5024,10 @@ exports.processSequenceQueue = onSchedule({
             lastError: error.message
           });
           
-          // Update sequence stats
           await db.collection('outreach_sequences').doc(enrollment.sequenceId).update({
             activeEnrollments: admin.firestore.FieldValue.increment(-1)
           });
         } else {
-          // Retry in 1 hour
           await doc.ref.update({ 
             retryCount,
             lastError: error.message,
@@ -4697,4 +5113,33 @@ function addDays(date, days) {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
   return result;
+}
+
+/**
+ * Helper: Calculate the next valid send window start.
+ * Advances to the next valid weekday (if weekdaysOnly) and sets the hour
+ * to startHour in the given timezone.
+ */
+function getNextSendWindowStart(fromDate, startHour, endHour, tz, weekdaysOnly) {
+  // Start from next day at startHour
+  const next = new Date(fromDate);
+  next.setDate(next.getDate() + 1);
+  // Set to startHour in UTC (approximate — fine for ±1 hour scheduling)
+  const tzOffsets = {
+    'America/New_York': -5,
+    'America/Chicago': -6,
+    'America/Denver': -7,
+    'America/Los_Angeles': -8,
+  };
+  const offset = tzOffsets[tz] || -5;
+  next.setUTCHours(startHour - offset, 0, 0, 0);
+
+  // Skip weekends if needed
+  if (weekdaysOnly) {
+    const day = next.getUTCDay();
+    if (day === 6) next.setDate(next.getDate() + 2); // Sat → Mon
+    if (day === 0) next.setDate(next.getDate() + 1); // Sun → Mon
+  }
+
+  return next;
 }

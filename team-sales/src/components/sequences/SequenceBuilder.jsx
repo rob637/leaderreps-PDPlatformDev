@@ -30,7 +30,9 @@ import {
   ChevronUp,
   AlertCircle,
   CheckCircle,
-  Eye
+  Eye,
+  GitBranch,
+  Percent
 } from 'lucide-react';
 import { useOutreachStore, CHANNELS } from '../../stores/outreachStore';
 import { substituteVariables } from '../../stores/sequenceStore';
@@ -129,6 +131,35 @@ export default function SequenceBuilder({
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     [newSteps[index], newSteps[targetIndex]] = [newSteps[targetIndex], newSteps[index]];
     setSteps(newSteps);
+  };
+  
+  // Add a variant to a step (A/B testing)
+  const addVariant = (stepIndex) => {
+    const step = steps[stepIndex];
+    const variants = step.variants || [];
+    const label = String.fromCharCode(66 + variants.length); // B, C, D...
+    updateStep(stepIndex, {
+      variants: [...variants, { 
+        id: `variant_${Date.now()}`,
+        label,
+        templateId: '', 
+        subject: '', 
+        weight: 50 
+      }]
+    });
+  };
+  
+  // Update a variant
+  const updateVariant = (stepIndex, variantIndex, updates) => {
+    const variants = [...(steps[stepIndex].variants || [])];
+    variants[variantIndex] = { ...variants[variantIndex], ...updates };
+    updateStep(stepIndex, { variants });
+  };
+  
+  // Remove a variant
+  const removeVariant = (stepIndex, variantIndex) => {
+    const variants = (steps[stepIndex].variants || []).filter((_, i) => i !== variantIndex);
+    updateStep(stepIndex, { variants });
   };
   
   // Validate form
@@ -412,6 +443,79 @@ export default function SequenceBuilder({
                           placeholder="Subject line (use {{firstName}}, {{company}}, etc.)"
                           className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                         />
+                      </div>
+                    )}
+
+                    {/* A/B Variants */}
+                    {step.channel === 'email' && (
+                      <div className="px-4 pb-3">
+                        {step.variants && step.variants.length > 0 && (
+                          <div className="space-y-2 mb-2">
+                            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                              <GitBranch className="w-3.5 h-3.5" />
+                              <span className="font-medium">A/B Variants</span>
+                              <span className="text-slate-400">
+                                (Original: {100 - step.variants.reduce((s, v) => s + (v.weight || 50), 0)}% weight)
+                              </span>
+                            </div>
+                            {step.variants.map((variant, vi) => (
+                              <div key={variant.id || vi} className="flex items-center gap-2 p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 w-5">
+                                  {variant.label || String.fromCharCode(66 + vi)}
+                                </span>
+                                <select
+                                  value={variant.templateId}
+                                  onChange={(e) => {
+                                    const tmpl = getTemplate(e.target.value);
+                                    updateVariant(index, vi, { 
+                                      templateId: e.target.value,
+                                      subject: tmpl?.subject || variant.subject
+                                    });
+                                  }}
+                                  className="flex-1 px-2 py-1 text-xs border border-slate-200 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                                >
+                                  <option value="">Select template...</option>
+                                  {getChannelTemplates('email').map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                  ))}
+                                </select>
+                                <input
+                                  type="text"
+                                  value={variant.subject}
+                                  onChange={(e) => updateVariant(index, vi, { subject: e.target.value })}
+                                  placeholder="Subject override..."
+                                  className="flex-1 px-2 py-1 text-xs border border-slate-200 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                                />
+                                <div className="flex items-center gap-1">
+                                  <Percent className="w-3 h-3 text-slate-400" />
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    value={variant.weight || 50}
+                                    onChange={(e) => updateVariant(index, vi, { weight: parseInt(e.target.value) || 50 })}
+                                    className="w-12 px-1 py-1 text-xs text-center border border-slate-200 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeVariant(index, vi)}
+                                  className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-slate-400 hover:text-red-500"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => addVariant(index)}
+                          className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+                        >
+                          <GitBranch className="w-3 h-3" />
+                          Add A/B Variant
+                        </button>
                       </div>
                     )}
                     

@@ -8,6 +8,7 @@ import { useActionProgress } from '../../hooks/useActionProgress';
 import { useAppServices } from '../../services/useAppServices';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import FacilitatorProfileModal from './FacilitatorProfileModal';
+import FacilitatorAvatar from './FacilitatorAvatar';
 
 /**
  * PrepWelcomeBanner - Progress-Based Onboarding for Prep Phase
@@ -236,17 +237,7 @@ const PrepWelcomeBanner = () => {
                 onClick={() => setShowFacilitatorModal(true)}
                 className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg px-4 py-3 border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 transition-all group text-left"
               >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-corporate-teal to-corporate-navy flex items-center justify-center text-white font-bold text-sm overflow-hidden">
-                  {facilitator.photoUrl ? (
-                    <img 
-                      src={facilitator.photoUrl} 
-                      alt={facilitator.name}
-                      className="w-10 h-10 object-cover"
-                    />
-                  ) : (
-                    facilitator.name?.charAt(0) || '?'
-                  )}
-                </div>
+                <FacilitatorAvatar name={facilitator.name} photoUrl={facilitator.photoUrl} size="sm" />
                 <div className="flex-1">
                   <p className="text-corporate-navy dark:text-white font-medium text-sm group-hover:text-corporate-teal transition-colors">{facilitator.name}</p>
                   <p className="text-slate-500 dark:text-slate-400 text-xs">Your Facilitator • Tap for details</p>

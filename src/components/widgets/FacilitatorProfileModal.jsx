@@ -4,6 +4,7 @@ import {
   MessageSquare, Award, Calendar
 } from 'lucide-react';
 import { Button } from '../ui';
+import FacilitatorAvatar from './FacilitatorAvatar';
 
 /**
  * FacilitatorProfileModal - Shows facilitator introduction and contact info
@@ -32,16 +33,6 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
     phone,
     linkedIn
   } = facilitator;
-
-  // Get initials for avatar fallback
-  const getInitials = (name) => {
-    if (!name) return '?';
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
@@ -72,17 +63,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
           <div className="bg-white dark:bg-slate-700 rounded-xl shadow-lg p-6 border border-slate-100 dark:border-slate-600">
             {/* Avatar */}
             <div className="flex justify-center -mt-14 mb-4">
-              {photoUrl ? (
-                <img 
-                  src={photoUrl} 
-                  alt={name}
-                  className="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg bg-gradient-to-br from-corporate-navy to-corporate-teal flex items-center justify-center">
-                  <span className="text-white font-bold text-2xl">{getInitials(name)}</span>
-                </div>
-              )}
+              <FacilitatorAvatar name={name} photoUrl={photoUrl} size="lg" />
             </div>
 
             {/* Name & Title */}

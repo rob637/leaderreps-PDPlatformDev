@@ -1,7 +1,7 @@
 {
-  "name": "lr-hubspot-chrome-extension",
+  "name": "lr-crm-chrome-extension",
   "version": "1.0.0",
-  "description": "Gmail integration for LR-HubSpot CRM. View prospect data directly in Gmail.",
+  "description": "Gmail integration for LR-CRM. View prospect data directly in Gmail.",
   "main": "background.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

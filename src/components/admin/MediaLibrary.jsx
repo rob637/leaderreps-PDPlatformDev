@@ -16,8 +16,13 @@ import {
   Edit,
   X,
   RefreshCw,
-  CheckCircle
+  CheckCircle,
+  HardDrive,
+  Link,
+  AlertCircle
 } from 'lucide-react';
+import { getApp } from 'firebase/app';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAppServices } from '../../services/useAppServices';
 import { 
   getMediaAssets, 
@@ -29,6 +34,46 @@ import {
   MEDIA_TYPES 
 } from '../../services/mediaService';
 import { getUnifiedContent } from '../../services/unifiedContentService';
+
+/**
+ * Extract Google Drive file IDs from various URL formats:
+ * - https://drive.google.com/file/d/FILE_ID/view
+ * - https://drive.google.com/open?id=FILE_ID
+ * - https://docs.google.com/document/d/FILE_ID/...
+ * - https://drive.google.com/drive/folders/FOLDER_ID
+ * - Just a raw file ID
+ */
+const parseDriveLinks = (text) => {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const parsed = [];
+  
+  for (const line of lines) {
+    // Try /d/FILE_ID pattern
+    let match = line.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+    if (match) {
+      parsed.push({ id: match[1], url: line, type: 'file' });
+      continue;
+    }
+    // Try ?id=FILE_ID pattern
+    match = line.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+    if (match) {
+      parsed.push({ id: match[1], url: line, type: 'file' });
+      continue;
+    }
+    // Try /folders/FOLDER_ID pattern
+    match = line.match(/\/folders\/([a-zA-Z0-9_-]{10,})/);
+    if (match) {
+      parsed.push({ id: match[1], url: line, type: 'folder' });
+      continue;
+    }
+    // Try raw file ID (long alphanumeric string)
+    if (/^[a-zA-Z0-9_-]{10,}$/.test(line)) {
+      parsed.push({ id: line, url: line, type: 'file' });
+      continue;
+    }
+  }
+  return parsed;
+};
 
 const MediaLibrary = () => {
   const { db, storage } = useAppServices();
@@ -47,6 +92,42 @@ const MediaLibrary = () => {
   const [editTitle, setEditTitle] = useState('');
   const [replacingAsset, setReplacingAsset] = useState(null);
   const replaceInputRef = useRef(null);
+
+  // Google Drive Import State
+  const [driveImporting, setDriveImporting] = useState(false);
+  const [driveProgress, setDriveProgress] = useState('');
+  const [showDriveModal, setShowDriveModal] = useState(false);
+  const [driveLinksText, setDriveLinksText] = useState('');
+  const [parsedLinks, setParsedLinks] = useState([]);
+  const [serviceAccountEmail, setServiceAccountEmail] = useState('');
+  const [saCopied, setSaCopied] = useState(false);
+
+  // Parse links as user types
+  useEffect(() => {
+    if (driveLinksText.trim()) {
+      setParsedLinks(parseDriveLinks(driveLinksText));
+    } else {
+      setParsedLinks([]);
+    }
+  }, [driveLinksText]);
+
+  // Fetch service account email when modal opens
+  useEffect(() => {
+    if (showDriveModal && !serviceAccountEmail) {
+      (async () => {
+        try {
+          const functions = getFunctions(getApp(), 'us-central1');
+          const importFromDrive = httpsCallable(functions, 'importFromDrive', { timeout: 30000 });
+          const res = await importFromDrive({ getServiceAccountEmail: true });
+          if (res.data?.serviceAccountEmail) {
+            setServiceAccountEmail(res.data.serviceAccountEmail);
+          }
+        } catch (e) {
+          console.error('Failed to fetch service account email:', e);
+        }
+      })();
+    }
+  }, [showDriveModal, serviceAccountEmail]);
 
   const loadAssets = useCallback(async () => {
     setLoading(true);
@@ -90,6 +171,52 @@ const MediaLibrary = () => {
   useEffect(() => {
     loadAssets();
   }, [loadAssets]);
+
+  const handleDriveImport = useCallback(async () => {
+    const fileLinks = parsedLinks.filter(l => l.type === 'file');
+    const folderLinks = parsedLinks.filter(l => l.type === 'folder');
+    
+    if (fileLinks.length === 0 && folderLinks.length === 0) {
+      alert('No valid Google Drive links found. Paste file or folder share links.');
+      return;
+    }
+
+    setShowDriveModal(false);
+    setDriveImporting(true);
+    setDriveProgress(`Importing ${fileLinks.length} file(s)${folderLinks.length > 0 ? ` + ${folderLinks.length} folder(s)` : ''} from Google Drive...`);
+
+    try {
+      const functions = getFunctions(getApp(), 'us-central1');
+      const importFromDrive = httpsCallable(functions, 'importFromDrive', { timeout: 540000 });
+      
+      const result = await importFromDrive({
+        fileIds: fileLinks.map(l => l.id),
+        folderIds: folderLinks.map(l => l.id),
+      });
+
+      const { successCount, totalCount, results } = result.data;
+      
+      const failures = results.filter(r => !r.success);
+      if (failures.length > 0) {
+        const failNames = failures.map(f => `${f.name || f.fileId}: ${f.error}`).join('\n');
+        alert(`Imported ${successCount}/${totalCount} files.\n\nFailed:\n${failNames}`);
+      } else {
+        setDriveProgress(`Successfully imported ${successCount} file(s)!`);
+      }
+
+      setDriveLinksText('');
+      setParsedLinks([]);
+      await loadAssets();
+    } catch (error) {
+      console.error('Drive import error:', error);
+      alert('Import failed: ' + (error.message || 'Unknown error'));
+    } finally {
+      setTimeout(() => {
+        setDriveImporting(false);
+        setDriveProgress('');
+      }, 2000);
+    }
+  }, [parsedLinks, loadAssets]);
 
   const handleFilesUpload = async (files) => {
     if (!files || files.length === 0) return;
@@ -267,6 +394,14 @@ const MediaLibrary = () => {
             onChange={handleReplaceFile}
             disabled={uploading}
           />
+          <button
+            onClick={() => setShowDriveModal(true)}
+            disabled={driveImporting}
+            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            <HardDrive size={20} />
+            Import from Drive
+          </button>
           <label className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
             <Upload size={20} />
             Upload Asset
@@ -293,6 +428,16 @@ const MediaLibrary = () => {
               className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
               style={{ width: `${uploadProgress}%` }}
             ></div>
+          </div>
+        </div>
+      )}
+
+      {/* Drive Import Progress */}
+      {driveImporting && (
+        <div className="bg-green-50 dark:bg-green-900/20 px-6 py-3 border-b border-green-100 dark:border-green-800">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-600 border-t-transparent"></div>
+            <span className="text-sm text-green-700 dark:text-green-300 font-medium">{driveProgress}</span>
           </div>
         </div>
       )}
@@ -367,7 +512,14 @@ const MediaLibrary = () => {
               <Upload size={64} />
             </div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Vault is empty</h3>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Upload assets to get started</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Upload assets or import from Google Drive to get started</p>
+            <button
+              onClick={() => setShowDriveModal(true)}
+              className="mt-4 inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <HardDrive size={18} />
+              Import from Google Drive
+            </button>
           </div>
         ) : viewMode === 'GRID' ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -524,6 +676,118 @@ const MediaLibrary = () => {
                 disabled={!editTitle.trim()}
               >
                 Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Google Drive Import Modal */}
+      {showDriveModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-lg w-full">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center px-6 py-4 border-b">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <HardDrive size={20} className="text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Import from Google Drive</h3>
+                  <p className="text-xs text-gray-500">Paste share links below</p>
+                </div>
+              </div>
+              <button onClick={() => { setShowDriveModal(false); setDriveLinksText(''); }} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-4 space-y-4">
+              {/* Instructions */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-sm text-blue-700 dark:text-blue-300">
+                <p className="font-medium mb-1">How to use:</p>
+                <ol className="list-decimal list-inside space-y-1 text-xs">
+                  <li>Share your Drive folder/files with this service account (Viewer is enough):</li>
+                  {serviceAccountEmail ? (
+                    <li className="ml-4 flex items-center gap-1 flex-wrap">
+                      <code className="bg-blue-100 dark:bg-blue-800 px-1.5 py-0.5 rounded text-[11px] font-mono select-all">
+                        {serviceAccountEmail}
+                      </code>
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(serviceAccountEmail); setSaCopied(true); setTimeout(() => setSaCopied(false), 2000); }}
+                        className="text-blue-600 hover:text-blue-800 text-[11px] underline"
+                      >
+                        {saCopied ? '✓ Copied' : 'Copy'}
+                      </button>
+                    </li>
+                  ) : (
+                    <li className="ml-4 text-xs text-gray-400 italic">Loading service account email...</li>
+                  )}
+                  <li>In Google Drive, right-click → <strong>Share</strong> → paste the email above</li>
+                  <li>Copy the file or folder link and paste below</li>
+                </ol>
+                <p className="text-xs mt-2 text-blue-600 dark:text-blue-400">
+                  Tip: Share a whole folder, then paste the folder link to import all files at once.
+                </p>
+              </div>
+
+              {/* Text Area */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  Drive Links
+                </label>
+                <textarea
+                  value={driveLinksText}
+                  onChange={(e) => setDriveLinksText(e.target.value)}
+                  placeholder={`https://drive.google.com/file/d/abc123.../view\nhttps://drive.google.com/file/d/def456.../view\nhttps://drive.google.com/drive/folders/xyz789...`}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono h-36 resize-none"
+                  autoFocus
+                />
+              </div>
+
+              {/* Parsed Links Preview */}
+              {parsedLinks.length > 0 && (
+                <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    Detected {parsedLinks.length} link(s):
+                  </p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {parsedLinks.map((link, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                        <CheckCircle size={14} className="text-green-500 flex-shrink-0" />
+                        <span className="truncate">
+                          {link.type === 'folder' ? '📁 Folder' : '📄 File'}: {link.id.substring(0, 20)}...
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {driveLinksText.trim() && parsedLinks.length === 0 && (
+                <div className="flex items-center gap-2 text-sm text-amber-600">
+                  <AlertCircle size={16} />
+                  <span>No valid Google Drive links detected. Check the format.</span>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t bg-gray-50 dark:bg-slate-700/50 rounded-b-xl">
+              <button 
+                onClick={() => { setShowDriveModal(false); setDriveLinksText(''); }}
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDriveImport}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                disabled={parsedLinks.length === 0}
+              >
+                <Download size={18} />
+                Import {parsedLinks.length > 0 ? `${parsedLinks.length} Item(s)` : ''}
               </button>
             </div>
           </div>

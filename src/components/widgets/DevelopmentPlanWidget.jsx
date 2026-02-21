@@ -7,11 +7,13 @@ import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
+import { VideoSeriesPlayer } from '../video';
 
 const DevelopmentPlanWidget = ({ helpText }) => {
   const { db } = useAppServices();
   const [viewingResource, setViewingResource] = useState(null);
   const [loadingResource, setLoadingResource] = useState(false);
+  const [viewingSeriesId, setViewingSeriesId] = useState(null);
 
   // Use Daily Plan Hook
   const { 
@@ -131,6 +133,12 @@ const DevelopmentPlanWidget = ({ helpText }) => {
     }
 
     const resourceId = item.resourceId || item.id;
+
+    // Video Series — open dedicated player
+    if (item.resourceType === 'video_series' && resourceId) {
+      setViewingSeriesId(resourceId);
+      return;
+    }
 
     if (resourceId) {
       setLoadingResource(item.id);
@@ -275,6 +283,19 @@ const DevelopmentPlanWidget = ({ helpText }) => {
           </div>
         </div>
       </Card>
+      
+      {/* Video Series Player Modal */}
+      {viewingSeriesId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
+            <VideoSeriesPlayer
+              seriesId={viewingSeriesId}
+              onClose={() => setViewingSeriesId(null)}
+              showHeader={true}
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 };

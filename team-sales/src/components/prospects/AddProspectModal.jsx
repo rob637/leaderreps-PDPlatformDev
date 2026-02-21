@@ -102,13 +102,13 @@ const AddProspectModal = ({ onClose }) => {
       
       {/* Modal */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg">
-        <div className="bg-white rounded-xl shadow-elevated animate-in">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-elevated animate-in">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-900">Add New Prospect</h2>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Add New Prospect</h2>
             <button
               onClick={onClose}
-              className="p-1.5 hover:bg-slate-100 rounded-lg transition"
+              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
             >
               <X className="w-5 h-5 text-slate-500" />
             </button>

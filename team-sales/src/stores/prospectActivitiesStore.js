@@ -13,7 +13,7 @@ import {
 import { db } from '../lib/firebase';
 import { getCanonicalEmail } from '../config/team';
 
-const COLLECTION = 'prospect_activities';
+const COLLECTION = 'outreach_activities';
 
 export const useActivitiesStore = create((set, get) => ({
   // State - activities keyed by prospectId

@@ -37,6 +37,7 @@ export const ACTIVITY_TYPES = [
   { id: 'call', label: 'Phone Call', icon: 'Phone', color: '#8b5cf6', hasOutcome: true, hasDuration: true },
   { id: 'email_sent', label: 'Email Sent', icon: 'Send', color: '#3b82f6', hasSubject: true },
   { id: 'email_received', label: 'Email Received', icon: 'Inbox', color: '#22c55e', hasSubject: true },
+  { id: 'sequence_email', label: 'Sequence Email', icon: 'Send', color: '#6366f1', hasSubject: true },
   { id: 'meeting', label: 'Meeting', icon: 'Calendar', color: '#f59e0b', hasOutcome: true, hasDuration: true },
   { id: 'linkedin_connect', label: 'LinkedIn Connect', icon: 'UserPlus', color: '#0077b5' },
   { id: 'linkedin_message', label: 'LinkedIn Message', icon: 'MessageCircle', color: '#0077b5' },

@@ -312,8 +312,8 @@ export default function SequenceEnrollmentsDashboard() {
             <div className="col-span-2">Sequence</div>
             <div className="col-span-2">Progress</div>
             <div className="col-span-2">Next Send</div>
-            <div className="col-span-2">Status</div>
-            <div className="col-span-1"></div>
+            <div className="col-span-1">Status</div>
+            <div className="col-span-2 text-right">Actions</div>
           </div>
           
           {/* Rows */}
@@ -378,7 +378,7 @@ export default function SequenceEnrollmentsDashboard() {
                   </div>
                   
                   {/* Status */}
-                  <div className="col-span-2">
+                  <div className="col-span-1">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-${statusConfig.color}-100 dark:bg-${statusConfig.color}-900/30 text-${statusConfig.color}-700 dark:text-${statusConfig.color}-300`}>
                       <StatusIcon className="w-3 h-3" />
                       {statusConfig.label}
@@ -386,7 +386,7 @@ export default function SequenceEnrollmentsDashboard() {
                   </div>
                   
                   {/* Actions */}
-                  <div className="col-span-1 relative">
+                  <div className="col-span-2 relative flex justify-end">
                     <button
                       onClick={() => setShowActions(showActions === enrollment.id ? null : enrollment.id)}
                       className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"

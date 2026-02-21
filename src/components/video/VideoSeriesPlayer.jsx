@@ -33,6 +33,44 @@ import {
   getEmbedUrl,
 } from '../../services/videoSeriesService';
 
+/**
+ * Clean up a video title that may be a raw filename.
+ * Strips file extension, replaces underscores/hyphens with spaces,
+ * removes resolution tags like "(540p)", leading numbers, and capitalizes words.
+ */
+function formatVideoTitle(title) {
+  if (!title) return '';
+  // If it doesn't look like a filename, return as-is
+  if (!/\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(title)) return title;
+  let cleaned = title
+    .replace(/\.(mp4|webm|ogg|mov|avi|mkv)$/i, '') // strip extension
+    .replace(/\s*\(\d+p\)\s*/g, '')                 // remove (540p) etc.
+    .replace(/_v\d+$/i, '')                          // remove version suffixes like _v2
+    .replace(/^\d+[._\s]+/, '')                      // remove leading number prefix (1_, 2., etc.)
+    .replace(/[_-]+/g, ' ')                          // underscores/hyphens to spaces
+    .trim();
+  // Title-case each word
+  cleaned = cleaned.replace(/\b\w/g, (c) => c.toUpperCase());
+  return cleaned || title;
+}
+
+/**
+ * Get the display title for a video.
+ * Uses the description field if it exists (admin-entered friendly name),
+ * otherwise falls back to formatting the title/filename.
+ */
+function getVideoDisplayTitle(video) {
+  if (!video) return '';
+  // If description exists and is not empty, use it as the display title
+  // The admin enters friendly names like "1. Preparation Introduction" in the description field
+  if (video.description && video.description.trim()) {
+    // Strip any leading number prefix if present (e.g., "1. " or "1 ") since we add it ourselves
+    return video.description.trim().replace(/^\d+[.\s]+/, '');
+  }
+  // Otherwise, format the title (which is usually the filename)
+  return formatVideoTitle(video.title);
+}
+
 export default function VideoSeriesPlayer({
   seriesId,
   series: initialSeries = null,
@@ -40,7 +78,7 @@ export default function VideoSeriesPlayer({
   onComplete,
   initialVideoIndex = 0,
   showHeader = true,
-  autoPlay = false,
+  autoPlay = true,
 }) {
   const { db, user } = useAppServices();
 
@@ -48,7 +86,7 @@ export default function VideoSeriesPlayer({
   const [currentVideoIndex, setCurrentVideoIndex] = useState(initialVideoIndex);
   const [watchedVideos, setWatchedVideos] = useState(new Set());
   const [loading, setLoading] = useState(!initialSeries);
-  const [autoPlayNext, setAutoPlayNext] = useState(autoPlay);
+  const [autoPlayNext, setAutoPlayNext] = useState(autoPlay ?? true);
   const [showSidebar, setShowSidebar] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [markingComplete, setMarkingComplete] = useState(false);
@@ -84,7 +122,8 @@ export default function VideoSeriesPlayer({
     const loadProgress = async () => {
       try {
         const progress = await getSeriesProgress(db, user.uid, series.id);
-        setWatchedVideos(new Set(progress?.watchedVideoIds || []));
+        // Service stores watched videos in 'videosWatched' array
+        setWatchedVideos(new Set(progress?.videosWatched || []));
       } catch (error) {
         console.error('Error loading progress:', error);
       }
@@ -107,14 +146,24 @@ export default function VideoSeriesPlayer({
   const isDirectVideo = useMemo(() => {
     if (!videoUrl) return false;
     const lowerUrl = videoUrl.toLowerCase();
+    // Check for video file extensions (may have query params after them)
+    const hasVideoExtension = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(videoUrl);
     return (
-      lowerUrl.endsWith('.mp4') ||
-      lowerUrl.endsWith('.webm') ||
-      lowerUrl.endsWith('.ogg') ||
+      hasVideoExtension ||
       lowerUrl.includes('firebasestorage.googleapis.com') ||
+      lowerUrl.includes('firebasestorage.app') ||
       lowerUrl.includes('storage.googleapis.com')
     );
   }, [videoUrl]);
+
+  // Debug logging for video player type detection
+  useEffect(() => {
+    if (videoUrl) {
+      console.log('[VideoSeriesPlayer] Video URL:', videoUrl);
+      console.log('[VideoSeriesPlayer] isDirectVideo:', isDirectVideo);
+      console.log('[VideoSeriesPlayer] Using:', isDirectVideo ? 'NATIVE video player' : 'EMBED iframe');
+    }
+  }, [videoUrl, isDirectVideo]);
 
   const embedUrl = useMemo(() => {
     if (!videoUrl || isDirectVideo) return null;
@@ -141,20 +190,44 @@ export default function VideoSeriesPlayer({
     return progress.watched === progress.total && progress.total > 0;
   }, [progress]);
 
+  // Track if we've already called onComplete to prevent duplicate calls
+  const [hasCalledComplete, setHasCalledComplete] = useState(false);
+
+  // Call onComplete when series becomes complete
+  useEffect(() => {
+    if (isSeriesComplete && !hasCalledComplete && onComplete && series?.id) {
+      setHasCalledComplete(true);
+      onComplete(series.id);
+    }
+  }, [isSeriesComplete, hasCalledComplete, onComplete, series?.id]);
+
   const markCurrentWatched = useCallback(async () => {
-    if (!currentVideo?.id || !user?.uid || !db) return;
-    if (watchedVideos.has(currentVideo.id)) return;
+    console.log('[VideoSeriesPlayer] markCurrentWatched called', { 
+      videoId: currentVideo?.id, 
+      userId: user?.uid,
+      seriesId: series?.id 
+    });
+    
+    if (!currentVideo?.id || !user?.uid || !db) {
+      console.log('[VideoSeriesPlayer] Missing required data:', { 
+        hasVideoId: !!currentVideo?.id, 
+        hasUserId: !!user?.uid, 
+        hasDb: !!db 
+      });
+      return;
+    }
+    if (watchedVideos.has(currentVideo.id)) {
+      console.log('[VideoSeriesPlayer] Video already watched');
+      return;
+    }
 
     try {
       setMarkingComplete(true);
-      await markVideoWatched(db, user.uid, series.id, currentVideo.id);
+      console.log('[VideoSeriesPlayer] Calling markVideoWatched...');
+      await markVideoWatched(db, user.uid, series.id, currentVideo.id, series);
+      console.log('[VideoSeriesPlayer] markVideoWatched succeeded');
       setWatchedVideos((prev) => new Set([...prev, currentVideo.id]));
-
-      // Check if series is now complete
-      const newWatched = watchedVideos.size + 1;
-      if (newWatched === series.videos.length && onComplete) {
-        onComplete(series.id);
-      }
+      // Series completion is now handled by useEffect watching isSeriesComplete
     } catch (error) {
       console.error('Error marking video watched:', error);
     } finally {
@@ -165,9 +238,7 @@ export default function VideoSeriesPlayer({
     user?.uid,
     db,
     watchedVideos,
-    series?.id,
-    series?.videos?.length,
-    onComplete,
+    series,
   ]);
 
   const goToVideo = useCallback(
@@ -194,9 +265,10 @@ export default function VideoSeriesPlayer({
 
   // Format duration for display
   const formatDuration = (seconds) => {
-    if (!seconds) return '';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const num = parseFloat(seconds);
+    if (!num || num <= 0) return '';
+    const mins = Math.floor(num / 60);
+    const secs = Math.round(num % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -309,9 +381,9 @@ export default function VideoSeriesPlayer({
                             : 'text-slate-700 dark:text-slate-200'
                         }`}
                       >
-                        {index + 1}. {video.title}
+                        {index + 1}. {getVideoDisplayTitle(video)}
                       </p>
-                      {video.duration && (
+                      {formatDuration(video.duration) && (
                         <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                           <Clock className="w-3 h-3" />
                           {formatDuration(video.duration)}
@@ -337,8 +409,9 @@ export default function VideoSeriesPlayer({
                 controls
                 autoPlay={autoPlayNext && isPlaying}
                 className="absolute inset-0 w-full h-full"
-                onEnded={() => {
-                  markCurrentWatched();
+                onEnded={async () => {
+                  console.log('[VideoSeriesPlayer] onEnded fired for video:', currentVideo?.id);
+                  await markCurrentWatched();
                   if (autoPlayNext) {
                     goToNext();
                   }
@@ -369,7 +442,7 @@ export default function VideoSeriesPlayer({
               {/* Video info */}
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-slate-800 dark:text-white truncate">
-                  {currentVideo?.title}
+                  {getVideoDisplayTitle(currentVideo)}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   Video {currentVideoIndex + 1} of {series.videos.length}
@@ -379,22 +452,7 @@ export default function VideoSeriesPlayer({
 
               {/* Controls */}
               <div className="flex items-center gap-2">
-                {/* Mark as watched */}
-                {!watchedVideos.has(currentVideo?.id) && (
-                  <button
-                    onClick={markCurrentWatched}
-                    disabled={markingComplete}
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-corporate-teal hover:bg-corporate-teal/90 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {markingComplete ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Check className="w-4 h-4" />
-                    )}
-                    <span className="hidden sm:inline">Mark Complete</span>
-                  </button>
-                )}
-
+                {/* Completion indicator */}
                 {watchedVideos.has(currentVideo?.id) && (
                   <span className="flex items-center gap-1 text-sm text-corporate-teal font-medium px-3 py-2">
                     <CheckCircle2 className="w-4 h-4" />

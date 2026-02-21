@@ -11,7 +11,7 @@
  * - Choose immediate or delayed start
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   X,
   Mail,
@@ -36,8 +36,13 @@ export default function EnrollInSequenceModal({
   onSuccess 
 }) {
   const { user } = useAuthStore();
-  const { sequences, templates } = useOutreachStore();
+  const { sequences, templates, initialize } = useOutreachStore();
   const { enrollProspect, getProspectEnrollments } = useSequenceStore();
+  
+  // Initialize outreach store on mount to ensure sequences are loaded
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
   
   // Form state
   const [selectedSequenceId, setSelectedSequenceId] = useState('');

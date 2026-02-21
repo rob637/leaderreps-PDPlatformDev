@@ -37,16 +37,16 @@ const CommandPalette = () => {
       {/* Dialog */}
       <div className="absolute left-1/2 top-[20%] -translate-x-1/2 w-full max-w-xl">
         <Command 
-          className="bg-white rounded-xl shadow-elevated overflow-hidden animate-in"
+          className="bg-white dark:bg-slate-800 rounded-xl shadow-elevated overflow-hidden animate-in"
           onKeyDown={(e) => {
             if (e.key === 'Escape') closeCommandPalette();
           }}
         >
-          <div className="flex items-center gap-3 px-4 border-b border-slate-200">
+          <div className="flex items-center gap-3 px-4 border-b border-slate-200 dark:border-slate-700">
             <Search className="w-4 h-4 text-slate-400" />
             <Command.Input 
               placeholder="Type a command or search..."
-              className="flex-1 py-4 text-base outline-none placeholder:text-slate-400"
+              className="flex-1 py-4 text-base outline-none placeholder:text-slate-400 bg-transparent text-slate-900 dark:text-slate-100"
               autoFocus
             />
           </div>

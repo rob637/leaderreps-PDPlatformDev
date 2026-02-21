@@ -212,16 +212,16 @@ export default function CSVImportModal({ isOpen, onClose }) {
   
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
             <FileSpreadsheet className="w-6 h-6 text-brand-teal" />
-            <h2 className="text-lg font-semibold">Import Prospects from CSV</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Import Prospects from CSV</h2>
           </div>
           <button
             onClick={handleClose}
-            className="p-1 hover:bg-gray-100 rounded"
+            className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400"
           >
             <X className="w-5 h-5" />
           </button>

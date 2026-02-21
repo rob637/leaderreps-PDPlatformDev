@@ -106,7 +106,7 @@ export default function LinkedHelperPushModal() {
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+          className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
         >
           {/* Header */}
           <div className="p-5 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-blue-700">

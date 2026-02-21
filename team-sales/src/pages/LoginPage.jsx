@@ -36,7 +36,7 @@ const LoginPage = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-brand-teal/20 rounded-2xl mb-4">
             <Users className="w-8 h-8 text-brand-teal" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-1">LR-HubSpot</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">LR-CRM</h1>
           <p className="text-slate-400 text-sm">LeaderReps Sales CRM</p>
         </div>
 
@@ -55,7 +55,7 @@ const LoginPage = () => {
             {user && !isAuthorized && (
               <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm">
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <span>Your account doesn't have access to LR-HubSpot. Contact an admin.</span>
+                <span>Your account doesn't have access to LR-CRM. Contact an admin.</span>
               </div>
             )}
 

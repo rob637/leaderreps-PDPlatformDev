@@ -195,6 +195,94 @@ export async function syncReceivedEmails(tokens, options = {}) {
   }, tokens);
 }
 
+/**
+ * Sync emails for a specific prospect using team account (fromEmail lookup)
+ * @param {string} prospectEmail - The prospect's email address
+ * @param {string} fromEmail - The team Gmail account to use
+ * @param {number} [daysBack=30] - How many days back to sync
+ * @returns {Promise<Object>} { sent: [...], received: [...] }
+ */
+export async function syncEmailsForProspect(prospectEmail, fromEmail, daysBack = 30) {
+  try {
+    const emailFilter = prospectEmail ? [prospectEmail] : [];
+    const [sentResult, receivedResult] = await Promise.all([
+      gmailProxyFn({
+        action: 'syncSentEmails',
+        fromEmail,
+        prospectEmails: emailFilter,
+        daysBack
+      }),
+      gmailProxyFn({
+        action: 'syncReceivedEmails',
+        fromEmail,
+        prospectEmails: emailFilter,
+        daysBack
+      })
+    ]);
+    
+    return {
+      sent: sentResult.data?.messages || [],
+      received: receivedResult.data?.messages || []
+    };
+  } catch (error) {
+    console.error('Error syncing emails for prospect:', error);
+    throw error;
+  }
+}
+
+/**
+ * List recent emails from a connected team account
+ * @param {string} fromEmail - The team Gmail account to use
+ * @param {number} [maxResults=50] - Max messages to return
+ * @returns {Promise<Array>} Array of email objects with parsed headers
+ */
+export async function listConnectedAccountEmails(fromEmail, maxResults = 50) {
+  try {
+    // Get list of messages
+    const listResult = await gmailProxyFn({
+      action: 'listMessages',
+      fromEmail,
+      maxResults
+    });
+    
+    const messages = listResult.data?.messages || [];
+    const emails = [];
+    
+    // Get details for each message (limit to avoid timeout)
+    for (const msg of messages.slice(0, Math.min(25, maxResults))) {
+      try {
+        const msgResult = await gmailProxyFn({
+          action: 'getMessage',
+          fromEmail,
+          messageId: msg.id,
+          format: 'metadata'
+        });
+        
+        const fullMsg = msgResult.data;
+        const headers = parseHeaders(fullMsg);
+        
+        emails.push({
+          id: fullMsg.id,
+          threadId: fullMsg.threadId,
+          labelIds: fullMsg.labelIds,
+          from: headers.from,
+          to: headers.to,
+          subject: headers.subject,
+          date: headers.date,
+          snippet: fullMsg.snippet
+        });
+      } catch (e) {
+        console.warn('Could not fetch message:', msg.id);
+      }
+    }
+    
+    return emails;
+  } catch (error) {
+    console.error('Error listing account emails:', error);
+    throw error;
+  }
+}
+
 // ========================================
 // HELPERS
 // ========================================
@@ -312,9 +400,51 @@ export function extractHtmlBody(message) {
   return '';
 }
 
+// ========================================
+// TEAM ACCOUNT OPERATIONS
+// ========================================
+
+/**
+ * Send an email using a team account (tokens looked up server-side)
+ * @param {Object} email - Email data
+ * @param {string} email.to - Recipient email
+ * @param {string} email.subject - Email subject
+ * @param {string} email.body - HTML body
+ * @param {string} email.cc - CC recipients (optional)
+ * @param {string} email.bcc - BCC recipients (optional)
+ * @param {string} fromEmail - The team Gmail account to send from
+ * @returns {Promise<Object>} Sent message info
+ */
+export async function sendEmailAsTeamAccount(email, fromEmail) {
+  if (!email.to || !email.subject || !email.body) {
+    throw new Error('To, subject, and body are required');
+  }
+  
+  if (!fromEmail) {
+    throw new Error('From email address is required');
+  }
+  
+  try {
+    const result = await gmailProxyFn({
+      action: 'sendEmail',
+      fromEmail,
+      to: email.to,
+      subject: email.subject,
+      body: email.body,
+      cc: email.cc,
+      bcc: email.bcc
+    });
+    return result.data;
+  } catch (error) {
+    console.error('Error sending email via team account:', error);
+    throw new Error(error.message || 'Failed to send email');
+  }
+}
+
 export default {
   // OAuth
   getOAuthUrl,
+  listConnectedAccounts,
   
   // Operations
   getProfile,
@@ -323,10 +453,13 @@ export default {
   getThread,
   listLabels,
   sendEmail,
+  sendEmailAsTeamAccount,
   
   // Sync
   syncSentEmails,
   syncReceivedEmails,
+  syncEmailsForProspect,
+  listConnectedAccountEmails,
   
   // Helpers
   parseHeaders,

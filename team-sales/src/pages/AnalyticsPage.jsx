@@ -16,7 +16,6 @@ import {
   Target,
   ArrowUpRight,
   ArrowDownRight,
-  Filter,
   DollarSign
 } from 'lucide-react';
 

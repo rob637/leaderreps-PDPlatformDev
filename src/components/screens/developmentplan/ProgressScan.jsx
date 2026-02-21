@@ -17,10 +17,18 @@ import {
 } from './DevPlanComponents';
 import { 
   ASSESSMENT_QUESTIONS, 
+  SCORED_QUESTION_IDS,
   OPEN_ENDED_QUESTION, 
+  FREQUENCY_SCALE,
+  AGREEMENT_SCALE,
   LIKERT_SCALE, 
   generatePlanFromAssessment 
 } from './devPlanUtils';
+
+// Only scored questions (q1-q13) for radio-button rendering
+const SCORED_QUESTIONS = ASSESSMENT_QUESTIONS.filter(q => SCORED_QUESTION_IDS.includes(q.id));
+const getScaleForQuestion = (q) => q.type === 'agreement' ? AGREEMENT_SCALE : FREQUENCY_SCALE;
+const SCALE_MAX = 4;
 import { adaptFirebaseAssessmentToComponents } from '../../../utils/devPlanAdapter';
 
 // REQ: New Radio Button Input Component (Copied from BaselineAssessment for visual consistency)
@@ -123,7 +131,7 @@ const ProgressScan = ({
   }, [developmentPlanData?.assessmentHistory]);
 
   const completedQuestions = Object.keys(responses).length;
-  const totalQuestions = ASSESSMENT_QUESTIONS.length;
+  const totalQuestions = SCORED_QUESTIONS.length;
   const progress = (completedQuestions / totalQuestions) * 100;
   const isComplete = completedQuestions === totalQuestions;
 
@@ -185,7 +193,7 @@ const ProgressScan = ({
           </div>
 
           <div className="space-y-4 mb-6">
-            {ASSESSMENT_QUESTIONS.map(question => {
+            {SCORED_QUESTIONS.map(question => {
               // We need to use .answers for previous assessment if it was a Baseline, or .responses if it was a Progress Scan.
               const prevScore = previousAssessment.responses?.[question.id] || previousAssessment.answers?.[question.id] || 0;
               const newScore = responses[question.id] || 0;
@@ -202,13 +210,13 @@ const ProgressScan = ({
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold" style={{ color: 'var(--corporate-teal)' }}>Previous: {prevScore}/5</span>
-                        <span className="text-xs font-semibold" style={{ color: 'var(--corporate-teal)' }}>Current: {newScore}/5</span>
+                        <span className="text-xs font-semibold" style={{ color: 'var(--corporate-teal)' }}>Previous: {prevScore}/{SCALE_MAX}</span>
+                        <span className="text-xs font-semibold" style={{ color: 'var(--corporate-teal)' }}>Current: {newScore}/{SCALE_MAX}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2.5">
                         <div 
                           className="bg-teal-500 h-2.5 rounded-full" 
-                          style={{ width: `${(newScore / 5) * 100}%` }}
+                          style={{ width: `${(newScore / SCALE_MAX) * 100}%` }}
                         ></div>
                       </div>
                     </div>
@@ -292,22 +300,22 @@ const ProgressScan = ({
       {/* Form Container */}
       <div className="space-y-4 mt-4">
         
-        {/* Render all Likert questions - NOW USING RADIO BUTTON INPUT */}
-        {ASSESSMENT_QUESTIONS.map((question) => {
+        {/* Render scored questions (Q1-Q13) using radio buttons */}
+        {SCORED_QUESTIONS.map((question) => {
           const prevScore = previousAssessment?.responses?.[question.id] || previousAssessment?.answers?.[question.id];
           
           return (
             <div key={question.id}>
-              <RadioButtonInput // Changed from LikertScaleInput
+              <RadioButtonInput
                 question={question}
-                options={LIKERT_SCALE}
+                options={getScaleForQuestion(question)}
                 value={responses[question.id]}
                 onChange={handleResponse}
               />
               {prevScore && (
                 <div className="px-6 py-2 rounded-b-xl" style={{ backgroundColor: 'var(--corporate-teal-10)' }}>
                   <p className="text-xs font-medium" style={{ color: 'var(--corporate-teal)' }}>
-                    Your previous score was: **{prevScore}/5**
+                    Your previous score was: **{prevScore}/{SCALE_MAX}**
                   </p>
                 </div>
               )}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Settings, Key, Sparkles, ExternalLink, Eye, EyeOff, 
   Check, AlertCircle, HelpCircle, Loader2, CreditCard,
-  Sun, Moon, Mail, Linkedin, MailCheck, RefreshCw
+  Sun, Moon, Mail, Linkedin, MailCheck, RefreshCw, Shield, Gauge
 } from 'lucide-react';
 import { useApolloStore } from '../stores/apolloStore';
 // DEPRECATED: Original Instantly.ai - replaced by LR-Instantly (sequenceStore.js)
@@ -11,6 +11,8 @@ import { useLinkedHelperStore } from '../stores/linkedHelperStore';
 import { useGmailStore } from '../stores/gmailStore';
 import { useAuthStore } from '../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
@@ -78,6 +80,11 @@ export default function SettingsPage() {
   const [connectingGmail, setConnectingGmail] = useState(false);
   const [disconnectingGmail, setDisconnectingGmail] = useState(false);
   
+  // Sending limits state
+  const [sendingLimits, setSendingLimits] = useState({ maxPerDay: 100, maxPerHour: 25 });
+  const [savingLimits, setSavingLimits] = useState(false);
+  const [limitsLoaded, setLimitsLoaded] = useState(false);
+  
   // Load all API keys on mount
   useEffect(() => {
     if (user?.uid) {
@@ -85,8 +92,34 @@ export default function SettingsPage() {
       // loadInstantlyKey(user.uid); // DEPRECATED: replaced by LR-Instantly
       loadLinkedHelperKey(user.uid);
       loadConnectedAccounts(); // Team-level Gmail accounts
+      
+      // Load sending limits
+      getDoc(doc(db, 'team_settings', 'sending_limits')).then(snap => {
+        if (snap.exists()) {
+          setSendingLimits(snap.data());
+        }
+        setLimitsLoaded(true);
+      }).catch(() => setLimitsLoaded(true));
     }
   }, [user?.uid, loadApolloKey, loadLinkedHelperKey, loadConnectedAccounts]);
+  
+  // Save sending limits
+  const handleSaveLimits = async () => {
+    setSavingLimits(true);
+    try {
+      await setDoc(doc(db, 'team_settings', 'sending_limits'), {
+        maxPerDay: sendingLimits.maxPerDay,
+        maxPerHour: sendingLimits.maxPerHour,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      toast.success('Sending limits saved');
+    } catch (err) {
+      toast.error('Failed to save limits');
+      console.error(err);
+    } finally {
+      setSavingLimits(false);
+    }
+  };
   
   // Gmail OAuth handlers
   const handleConnectGmail = async () => {
@@ -227,7 +260,7 @@ export default function SettingsPage() {
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
                 <Sparkles className="w-4 h-4" />
-                <span><strong>{creditsUsed}</strong> searches/enrichments made through LR-HubSpot</span>
+                <span><strong>{creditsUsed}</strong> searches/enrichments made through LR-CRM</span>
               </div>
             </div>
           )}
@@ -338,7 +371,7 @@ export default function SettingsPage() {
                     <div>
                       <p className="font-medium text-slate-900 dark:text-white dark:text-slate-100">Create a New API Key</p>
                       <p className="text-sm text-slate-600 dark:text-slate-300 dark:text-slate-400">
-                        Click "Create New Key", name it "LR-HubSpot", and copy the key
+                        Click "Create New Key", name it "LR-CRM", and copy the key
                       </p>
                     </div>
                   </div>
@@ -573,7 +606,7 @@ export default function SettingsPage() {
                 <MailCheck className="w-6 h-6 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">LR-Instantly Gmail Accounts</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">LR-Outreach Gmail Accounts</h2>
                 <p className="text-sm text-slate-600 dark:text-slate-400">Team sending accounts for cold outreach</p>
               </div>
             </div>
@@ -609,7 +642,7 @@ export default function SettingsPage() {
                     <div>
                       <span className="font-medium text-slate-900 dark:text-slate-100">{account.email}</span>
                       {account.connectedAt && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                           Connected {new Date(account.connectedAt).toLocaleDateString()}
                         </p>
                       )}
@@ -640,7 +673,7 @@ export default function SettingsPage() {
           {/* Connect Another Account */}
           <div className="pt-4 border-t dark:border-slate-700">
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-              Connect @leaderreps.biz Gmail accounts for cold outreach. Each account can send emails through LR-Instantly sequences.
+              Connect @leaderreps.biz Gmail accounts for cold outreach. Each account can send emails through LR-Outreach sequences.
             </p>
             <button
               onClick={handleConnectGmail}
@@ -676,7 +709,7 @@ export default function SettingsPage() {
                     <div>
                       <p className="font-medium text-slate-900 dark:text-white dark:text-slate-100">Connect your Gmail</p>
                       <p className="text-sm text-slate-600 dark:text-slate-300 dark:text-slate-400">
-                        Click the button above to authorize LR-HubSpot to access your Gmail
+                        Click the button above to authorize LR-CRM to access your Gmail
                       </p>
                     </div>
                   </div>
@@ -718,6 +751,63 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+      
+      {/* Sending Limits */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border dark:border-slate-700 p-6">
+        <div className="flex items-center gap-3 mb-1">
+          <Gauge className="w-5 h-5 text-orange-500" />
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Sending Limits</h2>
+        </div>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">
+          Throttle automated sequence emails to protect deliverability
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Max Emails Per Day
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="500"
+              value={sendingLimits.maxPerDay}
+              onChange={(e) => setSendingLimits(prev => ({ ...prev, maxPerDay: parseInt(e.target.value) || 100 }))}
+              className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            />
+            <p className="text-xs text-slate-500 mt-1">Total automated sequence emails across all accounts</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Max Emails Per Hour
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={sendingLimits.maxPerHour}
+              onChange={(e) => setSendingLimits(prev => ({ ...prev, maxPerHour: parseInt(e.target.value) || 25 }))}
+              className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            />
+            <p className="text-xs text-slate-500 mt-1">Burst control — prevents hitting Gmail rate limits</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-3 border-t dark:border-slate-700">
+          <div className="flex items-start gap-2 text-sm text-slate-500">
+            <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>Gmail allows ~500/day per account. Keep limits well below to maintain reputation.</span>
+          </div>
+          <button
+            onClick={handleSaveLimits}
+            disabled={savingLimits}
+            className="px-5 py-2 bg-brand-teal text-white rounded-lg font-medium hover:bg-brand-teal/90 disabled:opacity-50 flex items-center gap-2"
+          >
+            {savingLimits ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            Save
+          </button>
         </div>
       </div>
       

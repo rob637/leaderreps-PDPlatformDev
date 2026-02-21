@@ -35,6 +35,32 @@ import {
 } from '../../services/videoSeriesService';
 import { getMediaAssets, MEDIA_TYPES } from '../../services/mediaService';
 
+// Duration helpers - convert between MM:SS string and total seconds
+const parseDurationString = (str) => {
+  if (!str) return 0;
+  const trimmed = String(str).trim();
+  
+  // Handle MM:SS format
+  if (trimmed.includes(':')) {
+    const [mins, secs] = trimmed.split(':').map(s => parseInt(s, 10) || 0);
+    return (mins * 60) + Math.min(secs, 59);
+  }
+  
+  // Handle plain number (assume seconds if > 10, otherwise minutes)
+  const num = parseInt(trimmed, 10);
+  if (isNaN(num)) return 0;
+  
+  // If a small number like 4, treat as minutes; otherwise treat as seconds
+  return num < 10 ? num * 60 : num;
+};
+
+const formatDurationInput = (seconds) => {
+  if (!seconds || seconds <= 0) return '';
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${String(secs).padStart(2, '0')}`;
+};
+
 // Category options
 const CATEGORIES = [
   { value: 'prep', label: 'Foundation Prep' },
@@ -218,9 +244,20 @@ const VideoSeriesManager = () => {
       setMediaLoading(true);
       try {
         const assets = await getMediaAssets(db, MEDIA_TYPES.VIDEO);
+        console.log('[VideoSeriesManager] Loaded media assets:', assets.length);
         setMediaAssets(assets);
       } catch (error) {
         console.error('Error loading media assets:', error);
+        // Try without filter as fallback
+        try {
+          const allAssets = await getMediaAssets(db);
+          const videoAssets = allAssets.filter(a => a.type === 'VIDEO' || a.mimeType?.startsWith('video/'));
+          console.log('[VideoSeriesManager] Fallback loaded:', videoAssets.length);
+          setMediaAssets(videoAssets);
+        } catch (err2) {
+          console.error('Fallback also failed:', err2);
+          alert('Failed to load media library: ' + (err2.message || 'Unknown error'));
+        }
       } finally {
         setMediaLoading(false);
       }
@@ -293,11 +330,12 @@ const VideoSeriesManager = () => {
     });
   };
 
-  // Calculate total duration
-  const totalDuration = formData.videos.reduce(
-    (sum, v) => sum + (parseFloat(v.duration) || 0),
+  // Calculate total duration (stored in seconds)
+  const totalDurationSeconds = formData.videos.reduce(
+    (sum, v) => sum + (parseInt(v.duration, 10) || 0),
     0
   );
+  const totalDurationMinutes = totalDurationSeconds / 60;
 
   if (loading) {
     return (
@@ -324,7 +362,7 @@ const VideoSeriesManager = () => {
               {editingSeries ? 'Edit Video Series' : 'Create Video Series'}
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {formData.videos.length} videos • {formatDuration(totalDuration)} total
+              {formData.videos.length} videos • {formatDuration(totalDurationMinutes)} total
             </p>
           </div>
         </div>
@@ -524,12 +562,17 @@ const VideoSeriesManager = () => {
                               </button>
                             )}
                             <input
-                              type="number"
-                              value={video.duration || ''}
-                              onChange={(e) => handleUpdateVideo(video.id, 'duration', parseFloat(e.target.value) || 0)}
-                              placeholder="Min"
-                              className="w-16 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-corporate-teal/50 bg-white dark:bg-slate-800"
-                              title="Duration in minutes"
+                              type="text"
+                              value={formatDurationInput(video.duration)}
+                              onChange={(e) => handleUpdateVideo(video.id, 'duration', parseDurationString(e.target.value))}
+                              onBlur={(e) => {
+                                // Re-format on blur for consistent display
+                                const seconds = parseDurationString(e.target.value);
+                                handleUpdateVideo(video.id, 'duration', seconds);
+                              }}
+                              placeholder="M:SS"
+                              className="w-16 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-corporate-teal/50 bg-white dark:bg-slate-800 text-center"
+                              title="Duration (e.g. 4:15 for 4 min 15 sec)"
                             />
                           </div>
                         </div>
@@ -579,6 +622,92 @@ const VideoSeriesManager = () => {
             </button>
           </div>
         </div>
+
+        {/* Media Picker Modal (must be inside this return block) */}
+        {showMediaPicker && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[80vh] flex flex-col">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
+                    Select Video from Media Library
+                  </h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Choose an uploaded video to add to this series
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setShowMediaPicker(false); setSelectingForVideoId(null); }}
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+              <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-700">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={mediaSearch}
+                    onChange={(e) => setMediaSearch(e.target.value)}
+                    placeholder="Search videos..."
+                    className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-corporate-teal/50 bg-white dark:bg-slate-800"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                {mediaLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
+                  </div>
+                ) : filteredMediaAssets.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Film className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                    <p className="text-slate-500 dark:text-slate-400">
+                      {mediaSearch ? 'No videos match your search' : 'No videos uploaded yet'}
+                    </p>
+                    <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
+                      Upload videos in the Media Vault first
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {filteredMediaAssets.map((asset) => (
+                      <button
+                        key={asset.id}
+                        onClick={() => handleSelectMedia(asset)}
+                        className="group text-left bg-slate-50 dark:bg-slate-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-corporate-teal transition-all"
+                      >
+                        <div className="aspect-video bg-slate-200 dark:bg-slate-600 flex items-center justify-center relative">
+                          <Film className="w-8 h-8 text-slate-400" />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Play className="w-10 h-10 text-white" />
+                          </div>
+                        </div>
+                        <div className="p-3">
+                          <p className="font-medium text-sm text-slate-700 dark:text-slate-200 truncate">
+                            {asset.title || asset.fileName}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            {(asset.size / (1024 * 1024)).toFixed(1)} MB
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2">
+                <button
+                  onClick={() => { setShowMediaPicker(false); setSelectingForVideoId(null); }}
+                  className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

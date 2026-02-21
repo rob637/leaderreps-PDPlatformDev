@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   Mail, Phone, Linkedin, MessageSquare, Plus, Edit2, Trash2, 
-  Copy, Check, X, ChevronRight, Clock, BarChart3, Users, Zap,
-  PlayCircle, Send, Inbox
+  Copy, Check, X, ChevronRight, ChevronUp, ChevronDown, Clock, BarChart3, Users, Zap,
+  PlayCircle, Send, Inbox, RefreshCw, Search, Filter
 } from 'lucide-react';
 import { useOutreachStore, CHANNELS, OUTCOMES } from '../stores/outreachStore';
 import { useAuthStore } from '../stores/authStore';
 import { useSequenceStore } from '../stores/sequenceStore';
+import useGmailStore from '../stores/gmailStore';
+import * as gmail from '../lib/gmail';
+import { format, formatDistanceToNow } from 'date-fns';
 import { SequenceBuilder, SequenceEnrollmentsDashboard, EmailQueue } from '../components/sequences';
 
 const CHANNEL_ICONS = {
@@ -89,7 +92,7 @@ export default function OutreachPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">LR-Instantly</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">LR-Outreach</h1>
           <p className="text-slate-600 dark:text-slate-400">Email automation engine — templates, sequences, and enrollments</p>
         </div>
       </div>
@@ -195,6 +198,17 @@ export default function OutreachPage() {
               {enrollmentStats.active}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setActiveTab('communications')}
+          className={`px-4 py-2 font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === 'communications'
+              ? 'border-brand-teal text-brand-teal'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100'
+          }`}
+        >
+          <Mail className="w-4 h-4" />
+          Communications
         </button>
       </div>
       
@@ -390,6 +404,11 @@ export default function OutreachPage() {
         <SequenceEnrollmentsDashboard />
       )}
       
+      {/* Communications Tab */}
+      {activeTab === 'communications' && (
+        <CommunicationsTab />
+      )}
+      
       {/* Template Modal */}
       {showTemplateModal && (
         <TemplateModal
@@ -450,12 +469,12 @@ function TemplateModal({ template, onClose, onSave }) {
   
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">
+      <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {template ? 'Edit Template' : 'New Template'}
           </h2>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 dark:bg-slate-700 rounded">
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -597,12 +616,12 @@ function SequenceModal({ sequence, templates, onClose, onSave }) {
   
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">
+      <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {sequence ? 'Edit Sequence' : 'New Sequence'}
           </h2>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 dark:bg-slate-700 rounded">
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -722,6 +741,380 @@ function SequenceModal({ sequence, templates, onClose, onSave }) {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// Communications Tab - Unified Gmail Inbox
+function CommunicationsTab() {
+  const { connectedAccounts, loadConnectedAccounts } = useGmailStore();
+  const [selectedAccount, setSelectedAccount] = useState('');
+  const [emails, setEmails] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState('all'); // all, sent, received
+  const [viewMode, setViewMode] = useState('threads'); // threads, list
+  const [expandedThreads, setExpandedThreads] = useState(new Set());
+  
+  // Load connected accounts on mount
+  useEffect(() => {
+    loadConnectedAccounts();
+  }, [loadConnectedAccounts]);
+  
+  // Set default account when loaded
+  useEffect(() => {
+    if (connectedAccounts.length > 0 && !selectedAccount) {
+      setSelectedAccount(connectedAccounts[0].email);
+    }
+  }, [connectedAccounts, selectedAccount]);
+  
+  // Fetch emails when account selected
+  const handleFetchEmails = async () => {
+    if (!selectedAccount) return;
+    
+    setLoading(true);
+    try {
+      // Fetch recent sent and received emails
+      const [sentResult, receivedResult] = await Promise.all([
+        gmail.syncEmailsForProspect('', selectedAccount, 30), // Empty prospectEmail = all
+      ].filter(Boolean));
+      
+      // Just get recent messages for now using listMessages action
+      const result = await gmail.listConnectedAccountEmails(selectedAccount, 50);
+      
+      const allEmails = (result || []).map(msg => ({
+        ...msg,
+        type: msg.labelIds?.includes('SENT') ? 'sent' : 'received'
+      }));
+      
+      setEmails(allEmails);
+    } catch (error) {
+      console.error('Error fetching emails:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Filter emails
+  const filteredEmails = emails.filter(email => {
+    if (filter === 'sent' && email.type !== 'sent') return false;
+    if (filter === 'received' && email.type !== 'received') return false;
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        email.subject?.toLowerCase().includes(query) ||
+        email.from?.toLowerCase().includes(query) ||
+        email.to?.toLowerCase().includes(query) ||
+        email.snippet?.toLowerCase().includes(query)
+      );
+    }
+    return true;
+  });
+  
+  // Group emails by thread
+  const threadedEmails = useMemo(() => {
+    const threads = {};
+    
+    filteredEmails.forEach(email => {
+      const threadId = email.threadId || email.id;
+      if (!threads[threadId]) {
+        threads[threadId] = {
+          threadId,
+          emails: [],
+          latestDate: null,
+          subject: '',
+          participants: new Set(),
+          hasReplies: false
+        };
+      }
+      threads[threadId].emails.push(email);
+      
+      // Track latest date
+      const emailDate = email.date ? new Date(email.date) : new Date(0);
+      if (!threads[threadId].latestDate || emailDate > threads[threadId].latestDate) {
+        threads[threadId].latestDate = emailDate;
+        threads[threadId].subject = email.subject?.replace(/^(Re:|Fwd:)\s*/gi, '') || '(No subject)';
+      }
+      
+      // Track participants
+      if (email.from) threads[threadId].participants.add(email.from);
+      if (email.to) threads[threadId].participants.add(email.to);
+    });
+    
+    // Sort threads by latest date and emails within threads
+    return Object.values(threads)
+      .map(thread => ({
+        ...thread,
+        emails: thread.emails.sort((a, b) => 
+          new Date(a.date || 0) - new Date(b.date || 0)
+        ),
+        hasReplies: thread.emails.length > 1,
+        participants: Array.from(thread.participants)
+      }))
+      .sort((a, b) => (b.latestDate || 0) - (a.latestDate || 0));
+  }, [filteredEmails]);
+  
+  // Toggle thread expansion
+  const toggleThread = (threadId) => {
+    setExpandedThreads(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(threadId)) {
+        newSet.delete(threadId);
+      } else {
+        newSet.add(threadId);
+      }
+      return newSet;
+    });
+  };
+  
+  if (connectedAccounts.length === 0) {
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+        <Mail className="w-12 h-12 text-slate-400 dark:text-slate-500 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">No Gmail accounts connected</h3>
+        <p className="text-slate-600 dark:text-slate-400 mt-1">Connect a Gmail account in Settings to view communications</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-4">
+      {/* Header with account selector */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-600 dark:text-slate-400">Account:</span>
+            <select
+              value={selectedAccount}
+              onChange={(e) => setSelectedAccount(e.target.value)}
+              className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+            >
+              {connectedAccounts.map(acc => (
+                <option key={acc.email} value={acc.email}>{acc.email}</option>
+              ))}
+            </select>
+          </div>
+          
+          <button
+            onClick={handleFetchEmails}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-1.5 bg-brand-teal text-white rounded-lg text-sm hover:bg-brand-teal/90 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Loading...' : 'Fetch Emails'}
+          </button>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {/* View mode toggle */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
+            <button
+              onClick={() => setViewMode('threads')}
+              className={`px-3 py-1 text-sm rounded-md transition ${
+                viewMode === 'threads'
+                  ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              Threads
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1 text-sm rounded-md transition ${
+                viewMode === 'list'
+                  ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              List
+            </button>
+          </div>
+          
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search emails..."
+              className="pl-9 pr-4 py-1.5 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+            />
+          </div>
+          
+          {/* Filter */}
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+          >
+            <option value="all">All Emails</option>
+            <option value="sent">Sent</option>
+            <option value="received">Received</option>
+          </select>
+        </div>
+      </div>
+      
+      {/* Email list */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        {emails.length === 0 ? (
+          <div className="p-12 text-center">
+            <Inbox className="w-12 h-12 text-slate-400 dark:text-slate-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">No emails loaded</h3>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">Click "Fetch Emails" to load recent communications</p>
+          </div>
+        ) : viewMode === 'threads' ? (
+          /* Threaded View */
+          <div className="divide-y divide-slate-200 dark:divide-slate-700">
+            {threadedEmails.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+                No emails match your search
+              </div>
+            ) : (
+              threadedEmails.map((thread) => {
+                const isExpanded = expandedThreads.has(thread.threadId);
+                const latestEmail = thread.emails[thread.emails.length - 1];
+                
+                return (
+                  <div key={thread.threadId} className="group">
+                    {/* Thread header */}
+                    <div 
+                      onClick={() => thread.hasReplies && toggleThread(thread.threadId)}
+                      className={`p-4 transition ${thread.hasReplies ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50' : ''}`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Thread indicator */}
+                        <div className="flex flex-col items-center">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            latestEmail.type === 'sent' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-green-100 dark:bg-green-900/30'
+                          }`}>
+                            {latestEmail.type === 'sent' 
+                              ? <Send className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                              : <Inbox className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            }
+                          </div>
+                          {thread.hasReplies && (
+                            <div className="mt-1">
+                              {isExpanded 
+                                ? <ChevronUp className="w-4 h-4 text-slate-400" />
+                                : <ChevronDown className="w-4 h-4 text-slate-400" />
+                              }
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
+                                {thread.participants.slice(0, 2).join(', ')}
+                                {thread.participants.length > 2 && ` +${thread.participants.length - 2}`}
+                              </p>
+                              {thread.hasReplies && (
+                                <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 text-xs rounded-full">
+                                  {thread.emails.length}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                              {thread.latestDate ? formatDistanceToNow(thread.latestDate, { addSuffix: true }) : ''}
+                            </span>
+                          </div>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate mt-0.5">
+                            {thread.subject}
+                          </p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-1">
+                            {latestEmail.snippet}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Expanded thread messages */}
+                    {isExpanded && thread.hasReplies && (
+                      <div className="bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700">
+                        {thread.emails.map((email, idx) => (
+                          <div 
+                            key={email.id}
+                            className={`p-4 pl-16 ${idx !== thread.emails.length - 1 ? 'border-b border-slate-200/50 dark:border-slate-700/50' : ''}`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                email.type === 'sent' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-green-100 dark:bg-green-900/30'
+                              }`}>
+                                {email.type === 'sent' 
+                                  ? <Send className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                                  : <Inbox className="w-3 h-3 text-green-600 dark:text-green-400" />
+                                }
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                                    {email.type === 'sent' ? `To: ${email.to}` : `From: ${email.from}`}
+                                  </p>
+                                  <span className="text-xs text-slate-400 whitespace-nowrap">
+                                    {email.date ? formatDistanceToNow(new Date(email.date), { addSuffix: true }) : ''}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                  {email.snippet}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        ) : (
+          /* List View */
+          filteredEmails.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+              No emails match your search
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-200 dark:divide-slate-700">
+              {filteredEmails.map((email) => (
+                <div 
+                  key={email.id}
+                  className="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition cursor-pointer"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      email.type === 'sent' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-green-100 dark:bg-green-900/30'
+                    }`}>
+                      {email.type === 'sent' 
+                        ? <Send className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        : <Inbox className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
+                          {email.type === 'sent' ? `To: ${email.to}` : `From: ${email.from}`}
+                        </p>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                          {email.date ? formatDistanceToNow(new Date(email.date), { addSuffix: true }) : ''}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate mt-0.5">
+                        {email.subject}
+                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-1">
+                        {email.snippet}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
       </div>
     </div>
   );

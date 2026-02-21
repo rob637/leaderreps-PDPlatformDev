@@ -1,8 +1,8 @@
 {
-  "name": "lr-hubspot",
+  "name": "lr-crm",
   "version": "1.0.0",
   "type": "module",
-  "description": "LR-HubSpot - Sales CRM & Pipeline Management",
+  "description": "LR-CRM - Sales CRM & Pipeline Management",
   "scripts": {
     "dev": "vite --port 5175",
     "build": "vite build",

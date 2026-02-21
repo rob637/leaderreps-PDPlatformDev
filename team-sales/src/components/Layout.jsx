@@ -21,7 +21,7 @@ import {
 const navItems = [
   { path: '/prospects', icon: Users, label: 'Prospects', exact: true },
   { path: '/apollo', icon: Sparkles, label: 'Apollo Search' },
-  { path: '/outreach', icon: Mail, label: 'LR-Instantly' },
+  { path: '/outreach', icon: Mail, label: 'LR-Outreach' },
   { path: '/activities', icon: Activity, label: 'Activities' },
   { path: '/analytics', icon: BarChart3, label: 'Analytics' },
   { path: '/tasks', icon: Bell, label: 'Tasks' },
@@ -71,7 +71,7 @@ const Layout = () => {
               <div className="w-7 h-7 bg-brand-teal rounded-lg flex items-center justify-center">
                 <Users className="w-4 h-4" />
               </div>
-              <span className="font-semibold text-sm">LR-HubSpot</span>
+              <span className="font-semibold text-sm">LR-CRM</span>
             </div>
           )}
           <button

@@ -7,6 +7,7 @@ import { Card } from '../ui';
 import { useDailyPlan, PHASES } from '../../hooks/useDailyPlan';
 import { timeService } from '../../services/timeService';
 import FacilitatorProfileModal from './FacilitatorProfileModal';
+import FacilitatorAvatar from './FacilitatorAvatar';
 
 /**
  * MyJourneyWidget - Shows user's cohort and journey progress in Locker
@@ -184,17 +185,7 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
                 onClick={() => setShowFacilitatorModal(true)}
                 className="w-full flex items-center gap-3 mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-600/60 bg-transparent hover:bg-corporate-teal/5 dark:hover:bg-corporate-teal/10 rounded-lg p-2 -mx-2 transition-all group text-left"
               >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-corporate-navy to-corporate-teal flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0">
-                  {cohortData.facilitator.photoUrl ? (
-                    <img 
-                      src={cohortData.facilitator.photoUrl} 
-                      alt={cohortData.facilitator.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    cohortData.facilitator.name?.charAt(0) || '?'
-                  )}
-                </div>
+                <FacilitatorAvatar name={cohortData.facilitator.name} photoUrl={cohortData.facilitator.photoUrl} size="sm" />
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-slate-800 dark:text-white group-hover:text-corporate-teal transition-colors truncate text-sm">{cohortData.facilitator.name}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Your Facilitator</p>

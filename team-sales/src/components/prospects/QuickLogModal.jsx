@@ -6,6 +6,8 @@ import {
 import { useActivitiesStore } from '../../stores/prospectActivitiesStore';
 import { useTasksStore } from '../../stores/tasksStore';
 import { useAuthStore } from '../../stores/authStore';
+import useGmailStore from '../../stores/gmailStore';
+import * as gmail from '../../lib/gmail';
 import { 
   ACTIVITY_TYPES, 
   CALL_OUTCOMES, 
@@ -38,10 +40,13 @@ const QuickLogModal = ({ prospect, initialType = null, onClose }) => {
   const { user } = useAuthStore();
   const { addActivity } = useActivitiesStore();
   const { addTask } = useTasksStore();
+  const { connectedAccounts, loadConnectedAccounts } = useGmailStore();
   
   const [activeType, setActiveType] = useState(initialType || 'call');
   const [saving, setSaving] = useState(false);
   const [showFollowUp, setShowFollowUp] = useState(false);
+  const [sendMode, setSendMode] = useState('send'); // 'send' = send & log, 'log' = log only
+  const [selectedSender, setSelectedSender] = useState('');
   
   // Form state
   const [formData, setFormData] = useState({
@@ -54,6 +59,7 @@ const QuickLogModal = ({ prospect, initialType = null, onClose }) => {
     
     // Email fields
     emailSubject: '',
+    emailBody: '', // Actual email body for sending
     
     // Meeting fields
     meetingType: 'discovery',
@@ -61,6 +67,18 @@ const QuickLogModal = ({ prospect, initialType = null, onClose }) => {
     meetingDuration: '30',
     attendees: '',
   });
+
+  // Load Gmail accounts on mount
+  useEffect(() => {
+    loadConnectedAccounts();
+  }, [loadConnectedAccounts]);
+
+  // Set default sender when accounts load
+  useEffect(() => {
+    if (connectedAccounts.length > 0 && !selectedSender) {
+      setSelectedSender(connectedAccounts[0].email);
+    }
+  }, [connectedAccounts, selectedSender]);
   
   // Follow-up task state
   const [followUpTask, setFollowUpTask] = useState({
@@ -102,8 +120,33 @@ const QuickLogModal = ({ prospect, initialType = null, onClose }) => {
         activityData.content = `${outcome?.label || 'Call'}${formData.callDuration ? ` (${formData.callDuration} min)` : ''}\n\n${formData.content}`;
       } else if (activeType === 'email_sent' || activeType === 'email_received') {
         activityData.subject = formData.emailSubject;
-        if (formData.emailSubject) {
-          activityData.content = `Subject: ${formData.emailSubject}\n\n${formData.content}`;
+        activityData.channel = 'email';
+        
+        // Actually send the email via Gmail if in send mode
+        if (activeType === 'email_sent' && sendMode === 'send' && prospect?.email && selectedSender) {
+          try {
+            const result = await gmail.sendEmailAsTeamAccount({
+              to: prospect.email,
+              subject: formData.emailSubject,
+              body: formData.emailBody || formData.content,
+            }, selectedSender);
+            
+            activityData.outcome = 'sent';
+            activityData.gmailMessageId = result?.id;
+            activityData.gmailThreadId = result?.threadId;
+            activityData.fromEmail = selectedSender;
+            activityData.toEmail = prospect.email;
+            activityData.content = `Email sent: "${formData.emailSubject}"\n\n${formData.emailBody || formData.content}`;
+          } catch (sendError) {
+            console.error('Error sending email:', sendError);
+            toast.error(`Failed to send: ${sendError.message}`);
+            setSaving(false);
+            return;
+          }
+        } else {
+          if (formData.emailSubject) {
+            activityData.content = `Subject: ${formData.emailSubject}\n\n${formData.content}`;
+          }
         }
       } else if (activeType === 'meeting') {
         activityData.meetingType = formData.meetingType;
@@ -169,16 +212,16 @@ const QuickLogModal = ({ prospect, initialType = null, onClose }) => {
       
       {/* Modal */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg max-h-[90vh] overflow-hidden">
-        <div className="bg-white rounded-xl shadow-elevated flex flex-col">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-elevated flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Log Interaction</h2>
-              <p className="text-sm text-slate-500">{prospectName}</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Log Interaction</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{prospectName}</p>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 hover:bg-slate-100 rounded-lg transition"
+              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
             >
               <X className="w-5 h-5 text-slate-500" />
             </button>
@@ -252,18 +295,81 @@ const QuickLogModal = ({ prospect, initialType = null, onClose }) => {
 
             {/* Email-specific fields */}
             {(activeType === 'email_sent' || activeType === 'email_received') && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Subject Line
-                </label>
-                <input
-                  type="text"
-                  value={formData.emailSubject}
-                  onChange={(e) => setFormData(prev => ({ ...prev, emailSubject: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none"
-                  placeholder="Re: LeaderReps Partnership"
-                />
-              </div>
+              <>
+                {activeType === 'email_sent' && prospect?.email && connectedAccounts.length > 0 && (
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSendMode('send')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                          sendMode === 'send'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
+                        }`}
+                      >
+                        <Send className="w-3 h-3 inline mr-1" />
+                        Send & Log
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSendMode('log')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                          sendMode === 'log'
+                            ? 'bg-slate-700 text-white'
+                            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
+                        }`}
+                      >
+                        Log Only
+                      </button>
+                    </div>
+                    {sendMode === 'send' && (
+                      <div className="flex items-center gap-2 ml-auto">
+                        <span className="text-xs text-slate-500 dark:text-slate-400">From:</span>
+                        <select
+                          value={selectedSender}
+                          onChange={(e) => setSelectedSender(e.target.value)}
+                          className="text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-slate-700 dark:text-slate-200"
+                        >
+                          {connectedAccounts.map(a => (
+                            <option key={a.email} value={a.email}>{a.email}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-500 dark:text-slate-400 w-12">To:</span>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{prospect?.email || 'No email'}</span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                    Subject Line
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.emailSubject}
+                    onChange={(e) => setFormData(prev => ({ ...prev, emailSubject: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    placeholder="Subject..."
+                  />
+                </div>
+                {sendMode === 'send' && activeType === 'email_sent' && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                      Email Body
+                    </label>
+                    <textarea
+                      value={formData.emailBody}
+                      onChange={(e) => setFormData(prev => ({ ...prev, emailBody: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none min-h-[120px] resize-none bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                      placeholder="Write your email..."
+                      autoFocus
+                    />
+                  </div>
+                )}
+              </>
             )}
 
             {/* Meeting-specific fields */}
@@ -411,9 +517,18 @@ const QuickLogModal = ({ prospect, initialType = null, onClose }) => {
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className="flex-1 px-4 py-2 bg-brand-teal text-white rounded-lg text-sm font-medium hover:bg-brand-teal/90 transition disabled:opacity-50"
+              className={`flex-1 px-4 py-2 text-white rounded-lg text-sm font-medium transition disabled:opacity-50 ${
+                activeType === 'email_sent' && sendMode === 'send' && prospect?.email
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-brand-teal hover:bg-brand-teal/90'
+              }`}
             >
-              {saving ? 'Saving...' : 'Log Activity'}
+              {saving 
+                ? 'Saving...' 
+                : activeType === 'email_sent' && sendMode === 'send' && prospect?.email
+                  ? '✉ Send & Log'
+                  : 'Log Activity'
+              }
             </button>
           </div>
         </div>

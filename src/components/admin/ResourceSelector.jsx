@@ -12,13 +12,14 @@ import {
   MessageSquare,
   PlusCircle,
   Layers,
-  ClipboardEdit
+  ClipboardEdit,
+  ListVideo
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { getAllContentAdmin, CONTENT_COLLECTIONS } from '../../services/contentService';
 import { UNIFIED_COLLECTION, CONTENT_TYPES as UNIFIED_TYPES } from '../../services/unifiedContentService';
 import { COMMUNITY_SESSION_TYPES_COLLECTION, COACHING_SESSION_TYPES_COLLECTION } from '../../data/Constants';
-import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 
 const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
   const { db } = useAppServices();
@@ -54,6 +55,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
         // Determine which collections to fetch based on active category
         let collections = [];
         let unifiedTypes = [];
+        let allResources = [];
 
         switch (activeCategory) {
           case 'content':
@@ -76,12 +78,23 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
           case 'coaching':
             collections = [COACHING_SESSION_TYPES_COLLECTION];
             break;
+          case 'video-series': {
+            // Fetch from video_series collection
+            const vsRef = collection(db, 'video_series');
+            const vsSnap = await getDocs(query(vsRef, orderBy('order', 'asc')));
+            const vsData = vsSnap.docs.map(d => ({
+              id: d.id,
+              ...d.data(),
+              resourceType: 'video_series',
+              description: d.data().description || `${(d.data().videos || []).length} videos`
+            }));
+            allResources = vsData;
+            break;
+          }
           default:
             collections = [CONTENT_COLLECTIONS.READINGS];
         }
 
-        let allResources = [];
-        
         // 1. Fetch Standard Collections
         for (const col of collections) {
           const data = await getAllContentAdmin(db, col);
@@ -196,6 +209,18 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
           });
           return;
         }
+
+        // Check video_series collection
+        const vsRef = doc(db, 'video_series', valueId);
+        const vsSnap = await getDoc(vsRef);
+        if (vsSnap.exists()) {
+          setSelectedResource({
+            id: vsSnap.id,
+            ...vsSnap.data(),
+            resourceType: 'video_series'
+          });
+          return;
+        }
       } catch (e) {
         console.error("Error loading single resource:", e);
       }
@@ -210,6 +235,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
       const type = selectedResource.resourceType;
       if (type === 'community') setActiveCategory('community');
       else if (type === 'coaching') setActiveCategory('coaching');
+      else if (type === 'video_series') setActiveCategory('video-series');
       else setActiveCategory('content');
     }
   }, [isOpen, selectedResource]);
@@ -240,6 +266,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
       case 'community': return Users;
       case 'coaching': return MessageSquare;
       case 'interactive': return ClipboardEdit;
+      case 'video_series': return ListVideo;
       default: return LinkIcon;
     }
   };
@@ -264,6 +291,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               selectedResource.resourceType === 'community' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
               selectedResource.resourceType === 'coaching' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' :
               selectedResource.resourceType === 'interactive' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-600' :
+              selectedResource.resourceType === 'video_series' ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600' :
               'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
             }`}>
               {React.createElement(getIcon(selectedResource.resourceType), { size: 12 })}
@@ -301,7 +329,9 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
             {/* Category Tabs */}
             <div className="flex border-b bg-white dark:bg-slate-800">
-              {['content', 'community', 'coaching'].map(cat => (
+              {['content', 'video-series', 'community', 'coaching'].map(cat => {
+              const label = cat === 'video-series' ? 'Video Series' : cat.charAt(0).toUpperCase() + cat.slice(1);
+              return (
                 <button 
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
@@ -311,9 +341,10 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
                       : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  {label}
                 </button>
-              ))}
+              );
+            })}
             </div>
 
             {/* Search */}
@@ -363,6 +394,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
                           resource.resourceType === 'community' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
                           resource.resourceType === 'coaching' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' :
                           resource.resourceType === 'interactive' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-600' :
+                          resource.resourceType === 'video_series' ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600' :
                           'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                         }`}>
                           <Icon size={16} />

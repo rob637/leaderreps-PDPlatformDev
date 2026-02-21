@@ -1,11 +1,12 @@
 // src/components/widgets/NotificationPreferencesWidget.jsx
 // Enhanced notification preferences with smart escalation support
-import React, { useState, useEffect } from 'react';
+// Styled to match LeaderProfileFormSimple and BaselineAssessmentSimple
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Bell, Mail, MessageSquare, Smartphone, ChevronRight, 
-  Check, AlertCircle, Globe, Zap, Shield, Volume2, VolumeX
+  Check, AlertCircle, Globe, Zap, Shield, Volume2, VolumeX, X, CheckCircle, Loader
 } from 'lucide-react';
-import { Card, Button, Input, Select } from '../ui';
+import { Button, Input, Select } from '../ui';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { requestNotificationPermission } from '../../services/pushNotificationService';
@@ -84,18 +85,31 @@ const NOTIFICATION_STRATEGIES = {
   }
 };
 
-const NotificationPreferencesWidget = ({ onClose }) => {
+const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
   const { user, db } = useAppServices();
+  const formRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [pushPermission, setPushPermission] = useState('default');
   const [phoneError, setPhoneError] = useState(null);
+  const [emailError, setEmailError] = useState(null);
 
   // Check if selected strategy requires SMS
   const strategyRequiresSMS = (strategy) => {
     return strategy === 'smart_escalation' || strategy === 'full_accountability';
+  };
+
+  // Check if selected strategy uses email
+  const strategyUsesEmail = (strategy) => {
+    return strategy === 'smart_escalation' || strategy === 'full_accountability' || strategy === 'email_only';
+  };
+
+  // Validate email
+  const isValidEmail = (email) => {
+    if (!email) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
   // Validate phone number - must have at least 10 digits
@@ -124,6 +138,7 @@ const NotificationPreferencesWidget = ({ onClose }) => {
       sms: false
     },
     phoneNumber: '',
+    email: '',
     // Escalation tracking (used by cloud function)
     escalation: {
       enabled: true,
@@ -147,8 +162,20 @@ const NotificationPreferencesWidget = ({ onClose }) => {
       try {
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
+        let existingPhoneNumber = '';
+        // Get email from Firebase Auth first (always available)
+        let existingEmail = user.email || '';
+        
         if (userSnap.exists()) {
           const data = userSnap.data();
+          
+          // Check for phone number and email in user doc
+          existingPhoneNumber = data.phoneNumber || '';
+          // User doc email overrides if present (in case they updated it)
+          if (data.email) {
+            existingEmail = data.email;
+          }
+          
           if (data.notificationSettings) {
             const ns = data.notificationSettings;
             
@@ -168,10 +195,16 @@ const NotificationPreferencesWidget = ({ onClose }) => {
               }
             }
             
+            // Use phone/email from notification settings if set, otherwise from user doc
+            const phoneFromSettings = ns.phoneNumber || '';
+            const emailFromSettings = ns.email || '';
+            
             setSettings(prev => ({
               ...prev,
               ...ns,
               strategy,
+              phoneNumber: phoneFromSettings || existingPhoneNumber,
+              email: emailFromSettings || existingEmail,
               channels: {
                 push: ns.channels?.push ?? true,
                 email: ns.channels?.email ?? true,
@@ -179,7 +212,36 @@ const NotificationPreferencesWidget = ({ onClose }) => {
               },
               escalation: ns.escalation || prev.escalation
             }));
+          } else {
+            // No notification settings yet, but use available contact info
+            setSettings(prev => ({
+              ...prev,
+              phoneNumber: existingPhoneNumber,
+              email: existingEmail
+            }));
           }
+        } else {
+          // No user doc yet, use Firebase Auth email
+          setSettings(prev => ({
+            ...prev,
+            email: existingEmail
+          }));
+        }
+        
+        // Also check leader profile for phone/email if we don't have them
+        try {
+          const profileRef = doc(db, `user_data/${user.uid}/leader_profile/current`);
+          const profileSnap = await getDoc(profileRef);
+          if (profileSnap.exists()) {
+            const profileData = profileSnap.data();
+            setSettings(prev => ({
+              ...prev,
+              phoneNumber: prev.phoneNumber || profileData?.phoneNumber || '',
+              email: prev.email || profileData?.email || ''
+            }));
+          }
+        } catch (profileErr) {
+          console.warn('Could not check leader profile:', profileErr);
         }
       } catch (error) {
         console.error("Error loading notification settings:", error);
@@ -305,7 +367,20 @@ const NotificationPreferencesWidget = ({ onClose }) => {
       }
     }
     
+    // Validate email if email strategy is selected
+    if (strategyUsesEmail(settings.strategy)) {
+      if (!settings.email?.trim()) {
+        setEmailError('Email address is required for email notifications.');
+        return;
+      }
+      if (!isValidEmail(settings.email)) {
+        setEmailError('Please enter a valid email address');
+        return;
+      }
+    }
+    
     setPhoneError(null);
+    setEmailError(null);
     setSaving(true);
     setSaved(false);
     
@@ -318,28 +393,57 @@ const NotificationPreferencesWidget = ({ onClose }) => {
         updatedAt: new Date().toISOString()
       };
       
-      await updateDoc(userRef, {
+      // Save notification settings and sync phone/email to user doc
+      const userUpdate = {
         notificationSettings: settingsToSave
-      });
+      };
+      
+      // If phone number was entered, also save it to user doc for easy access
+      if (settings.phoneNumber?.trim()) {
+        userUpdate.phoneNumber = settings.phoneNumber;
+      }
+      
+      // If email was entered, also save it to user doc
+      if (settings.email?.trim()) {
+        userUpdate.email = settings.email;
+      }
+      
+      await updateDoc(userRef, userUpdate);
       
       // Also update leader profile for consistency
       try {
         const profileRef = doc(db, `user_data/${user.uid}/leader_profile/current`);
         const profileSnap = await getDoc(profileRef);
         if (profileSnap.exists()) {
-          await updateDoc(profileRef, {
+          const profileUpdate = {
             'notificationSettings.strategy': settings.strategy,
             'notificationSettings.channels': settings.channels,
             'notificationSettings.timezone': settings.timezone,
             'notificationSettings.enabled': settings.enabled
-          });
+          };
+          // Sync phone number to leader profile too
+          if (settings.phoneNumber?.trim()) {
+            profileUpdate.phoneNumber = settings.phoneNumber;
+          }
+          // Sync email to leader profile too
+          if (settings.email?.trim()) {
+            profileUpdate.email = settings.email;
+          }
+          await updateDoc(profileRef, profileUpdate);
         }
       } catch (profileErr) {
         console.warn('Could not sync to leader profile:', profileErr);
       }
       
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      // Show success state then close
+      setShowSuccess(true);
+      setTimeout(() => {
+        if (onComplete) {
+          onComplete();
+        } else if (onClose) {
+          onClose();
+        }
+      }, 1500);
       
     } catch (error) {
       console.error("Error saving notification settings:", error);
@@ -350,36 +454,62 @@ const NotificationPreferencesWidget = ({ onClose }) => {
 
   if (loading) {
     return (
-      <Card className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-slate-100 dark:bg-slate-700 rounded w-1/3" />
-          <div className="h-20 bg-slate-100 dark:bg-slate-700 rounded" />
-          <div className="h-20 bg-slate-100 dark:bg-slate-700 rounded" />
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700">
+        <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+          <div className="w-16 h-16 bg-corporate-teal/10 rounded-full flex items-center justify-center mb-4">
+            <Loader className="w-8 h-8 text-corporate-teal animate-spin" />
+          </div>
+          <h3 className="text-xl font-bold text-corporate-navy dark:text-white mb-2">Loading Settings...</h3>
+          <p className="text-slate-600 dark:text-slate-300">Please wait</p>
         </div>
-      </Card>
+      </div>
+    );
+  }
+
+  // Success state
+  if (showSuccess) {
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700">
+        <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle className="w-10 h-10 text-green-500" />
+          </div>
+          <h3 className="text-xl font-bold text-corporate-navy dark:text-white mb-2">Preferences Saved!</h3>
+          <p className="text-slate-600 dark:text-slate-300">Your notification settings are ready.</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="p-6">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-corporate-teal/10 rounded-lg">
-          <Bell className="w-6 h-6 text-corporate-teal" />
+    <div ref={formRef} className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col max-h-[calc(100vh-6rem)] md:max-h-[90vh]">
+      {/* Header — navy gradient, consistent with LeaderProfile and Baseline */}
+      <div className="p-5 pb-4 bg-gradient-to-r from-corporate-navy to-corporate-navy/90 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Bell className="w-5 h-5 text-white/90" />
+            <h3 className="text-lg font-bold text-white">Notification Preferences</h3>
+          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-2.5 -mr-1 bg-transparent hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
-        <div>
-          <h3 className="text-lg font-bold text-corporate-navy" style={{ fontFamily: 'var(--font-heading)' }}>
-            Notification Preferences
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Choose how you want to be reminded</p>
-        </div>
+        <div className="mt-1 text-sm text-white/70">Choose how you want to be reminded</div>
       </div>
 
-      {/* Strategy Selection */}
-      <div className="space-y-3 mb-6">
-        <label className="block text-sm font-medium text-corporate-navy mb-2">
-          Reminder Style
-        </label>
+      {/* Form Body — Scrollable */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-6">
+
+        {/* Strategy Selection */}
+        <div>
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Reminder Style</h3>
+          <div className="space-y-3">
         
         {Object.values(NOTIFICATION_STRATEGIES).map((strategy) => {
           const Icon = strategy.icon;
@@ -431,11 +561,12 @@ const NotificationPreferencesWidget = ({ onClose }) => {
             </button>
           );
         })}
-      </div>
+          </div>
+        </div>
 
-      {/* Push Notification Permission Status */}
-      {settings.strategy !== 'disabled' && settings.channels.push && (
-        <div className={`p-4 rounded-xl border mb-4 ${
+        {/* Push Notification Permission Status */}
+        {settings.strategy !== 'disabled' && settings.channels.push && (
+          <div className={`p-4 rounded-xl border ${
           pushPermission === 'granted' 
             ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' 
             : pushPermission === 'denied'
@@ -497,9 +628,9 @@ const NotificationPreferencesWidget = ({ onClose }) => {
         </div>
       )}
 
-      {/* Phone Number - Show prominently when SMS strategy is selected */}
-      {strategyRequiresSMS(settings.strategy) && (
-        <div className={`p-4 rounded-xl border mb-4 ${phoneError ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'}`}>
+        {/* Phone Number - Show prominently when SMS strategy is selected */}
+        {strategyRequiresSMS(settings.strategy) && (
+          <div className={`p-4 rounded-xl border ${phoneError ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'}`}>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
             <MessageSquare className="w-4 h-4" /> 
             Mobile Number for SMS
@@ -535,21 +666,41 @@ const NotificationPreferencesWidget = ({ onClose }) => {
         </div>
       )}
 
-      {/* Advanced Settings Toggle */}
-      {settings.strategy !== 'disabled' && (
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full flex items-center justify-between p-3 text-sm text-slate-600 dark:text-slate-300 hover:text-corporate-navy hover:bg-slate-50 rounded-lg transition-colors"
-        >
-          <span>Advanced Settings</span>
-          <ChevronRight className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-90' : ''}`} />
-        </button>
+        {/* Email Address - Show when email strategy is selected */}
+        {strategyUsesEmail(settings.strategy) && (
+          <div className={`p-4 rounded-xl border ${emailError ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20'}`}>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
+            <Mail className="w-4 h-4" /> 
+            Email Address
+            <span className="text-red-500">*</span>
+          </label>
+          <Input 
+            type="email" 
+            placeholder="your@email.com"
+            value={settings.email}
+            onChange={(e) => {
+              setSettings({...settings, email: e.target.value});
+              if (emailError) setEmailError(null);
+            }}
+            className={emailError ? 'border-red-300' : ''}
+          />
+          {emailError ? (
+            <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" /> {emailError}
+            </p>
+          ) : (
+            <p className="text-xs text-blue-700 dark:text-blue-300 mt-2 flex items-center gap-1">
+              <Mail className="w-3 h-3" />
+              {settings.strategy === 'email_only' 
+                ? 'All notifications will be sent to this email address.'
+                : 'Email reminders will be sent based on your selected strategy.'}
+            </p>
+          )}
+        </div>
       )}
 
-      {/* Advanced Settings Panel */}
-      {showAdvanced && settings.strategy !== 'disabled' && (
-        <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl space-y-4">
-          {/* Timezone */}
+        {/* Timezone - show when notifications enabled */}
+        {settings.strategy !== 'disabled' && (
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
               <Globe className="w-4 h-4" /> Your Time Zone
@@ -561,35 +712,33 @@ const NotificationPreferencesWidget = ({ onClose }) => {
             />
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Notifications will be timed to your local time.</p>
           </div>
-
-        </div>
-      )}
-
-      {/* Save Button */}
-      <div className="mt-6 flex items-center gap-3">
-        <Button 
-          className="flex-1 bg-corporate-navy hover:bg-corporate-navy/90" 
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? 'Saving...' : saved ? (
-            <span className="flex items-center gap-2">
-              <Check className="w-4 h-4" /> Saved!
-            </span>
-          ) : 'Save Preferences'}
-        </Button>
-        {onClose && (
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
         )}
+
       </div>
 
-      {/* Info Footer */}
-      <p className="text-xs text-center text-slate-400 mt-4">
-        You can change these settings anytime from your Locker.
-      </p>
-    </Card>
+      {/* Footer — consistent gray bar with action buttons */}
+      <div className="px-5 py-4 border-t border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 flex-shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-colors text-sm font-medium"
+            >
+              Cancel
+            </button>
+          )}
+          <div className="flex-1" />
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 bg-corporate-teal hover:bg-corporate-teal/90"
+          >
+            {saving ? <Loader className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+            {saving ? 'Saving...' : 'Save Preferences'}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };
 

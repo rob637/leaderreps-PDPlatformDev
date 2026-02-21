@@ -30,10 +30,15 @@ import {
   Loader2,
   ExternalLink,
   Copy,
-  CheckCircle
+  CheckCircle,
+  AlertTriangle,
+  Inbox
 } from 'lucide-react';
 import { useSequenceStore, substituteVariables } from '../../stores/sequenceStore';
 import { useOutreachStore } from '../../stores/outreachStore';
+import { useGmailStore } from '../../stores/gmailStore';
+import { sendEmailAsTeamAccount } from '../../lib/gmail';
+import { checkAllAccountsForReplies } from '../../services/replyDetectionService';
 import { formatDistanceToNow, format, isToday, isTomorrow, isPast, addDays } from 'date-fns';
 import toast from 'react-hot-toast';
 import { 
@@ -61,22 +66,57 @@ export default function EmailQueue() {
     cleanup: cleanupOutreach
   } = useOutreachStore();
   
+  const {
+    connectedAccounts,
+    accountsLoaded,
+    loadConnectedAccounts
+  } = useGmailStore();
+  
   const [expandedEmail, setExpandedEmail] = useState(null);
   const [sendingId, setSendingId] = useState(null);
   const [editingEmail, setEditingEmail] = useState(null);
   const [editedSubject, setEditedSubject] = useState('');
   const [editedBody, setEditedBody] = useState('');
   const [copiedId, setCopiedId] = useState(null);
+  const [selectedSender, setSelectedSender] = useState('');
+  const [checkingReplies, setCheckingReplies] = useState(false);
+  
+  // Handle check for replies
+  const handleCheckReplies = async () => {
+    setCheckingReplies(true);
+    try {
+      const result = await checkAllAccountsForReplies(7);
+      if (result.newReplies > 0) {
+        toast.success(result.message);
+      } else {
+        toast(result.message, { icon: '📧' });
+      }
+    } catch (error) {
+      console.error('Error checking replies:', error);
+      toast.error('Failed to check for replies');
+    } finally {
+      setCheckingReplies(false);
+    }
+  };
   
   // Initialize stores on mount
   useEffect(() => {
     initialize();
     initOutreach();
+    loadConnectedAccounts();
     return () => {
       cleanup();
       cleanupOutreach();
     };
-  }, [initialize, cleanup, initOutreach, cleanupOutreach]);
+  }, [initialize, cleanup, initOutreach, cleanupOutreach, loadConnectedAccounts]);
+  
+  // Set initial sender when accounts load — default to jeff@leaderreps.biz
+  useEffect(() => {
+    if (connectedAccounts.length > 0 && !selectedSender) {
+      const jeff = connectedAccounts.find(a => a.email === 'jeff@leaderreps.biz');
+      setSelectedSender(jeff ? jeff.email : connectedAccounts[0].email);
+    }
+  }, [connectedAccounts, selectedSender]);
   
   // Compute pending emails from active enrollments
   const pendingEmails = useMemo(() => {
@@ -148,11 +188,24 @@ export default function EmailQueue() {
   
   // Send an email (advance enrollment)
   const handleSend = async (email, customSubject, customBody) => {
+    // Check if sender is selected
+    if (!selectedSender) {
+      toast.error('Please select a Gmail account to send from');
+      return;
+    }
+    
     setSendingId(email.id);
     
     try {
       const subject = customSubject || email.subject;
       const body = customBody || email.body;
+      
+      // Actually send the email via Gmail
+      await sendEmailAsTeamAccount({
+        to: email.prospectEmail,
+        subject,
+        body
+      }, selectedSender);
       
       // Log the activity (email sent)
       await addDoc(collection(db, 'outreach_activities'), {
@@ -169,6 +222,7 @@ export default function EmailQueue() {
         contentPreview: body?.substring(0, 200),
         ownerId: email.ownerId,
         ownerName: email.ownerName,
+        sentFrom: selectedSender,
         createdAt: serverTimestamp(),
         manualSend: true // Distinguish from automated sends
       });
@@ -355,23 +409,61 @@ export default function EmailQueue() {
           </div>
         </div>
         
-        {/* Bulk Actions */}
-        {pendingEmails.length > 0 && (
+        {/* From Selector + Bulk Actions */}
+        <div className="flex items-center gap-4">
+          {/* Gmail Account Selector */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500">
-              {pendingEmails.length} pending
-            </span>
-            {(pastDueCount > 0 || dueTodayCount > 0) && (
-              <button
-                onClick={handleSendAll}
-                className="flex items-center gap-2 px-3 py-1.5 bg-brand-teal text-white text-sm rounded-lg hover:bg-brand-teal/90"
+            <span className="text-sm text-slate-600 dark:text-slate-400">From:</span>
+            {connectedAccounts.length > 0 ? (
+              <select
+                value={selectedSender}
+                onChange={(e) => setSelectedSender(e.target.value)}
+                className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-900 dark:text-slate-100"
               >
-                <Send className="w-4 h-4" />
-                Send All Due ({pastDueCount + dueTodayCount})
-              </button>
+                {connectedAccounts.map(account => (
+                  <option key={account.id || account.email} value={account.email}>
+                    {account.email}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="w-4 h-4" />
+                No Gmail connected
+              </span>
             )}
           </div>
-        )}
+          
+          {/* Check Replies Button */}
+          <button
+            onClick={handleCheckReplies}
+            disabled={checkingReplies || connectedAccounts.length === 0}
+            className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Check for prospect replies"
+          >
+            <Inbox className={`w-4 h-4 ${checkingReplies ? 'animate-pulse' : ''}`} />
+            {checkingReplies ? 'Checking...' : 'Check Replies'}
+          </button>
+          
+          {/* Bulk Actions */}
+          {pendingEmails.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-500">
+                {pendingEmails.length} pending
+              </span>
+              {(pastDueCount > 0 || dueTodayCount > 0) && (
+                <button
+                  onClick={handleSendAll}
+                  disabled={!selectedSender}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-brand-teal text-white text-sm rounded-lg hover:bg-brand-teal/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4" />
+                  Send All Due ({pastDueCount + dueTodayCount})
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Stats */}

@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   CheckCircle, Circle, Play, BookOpen, Users, Video, FileText, Zap, 
   ExternalLink, Loader, Layers, MessageSquare, 
   SkipForward, Clock, AlertTriangle,
-  User, ClipboardCheck, Calendar, ChevronDown, ChevronUp, Trophy
+  User, ClipboardCheck, Calendar, ChevronDown, ChevronUp, Trophy, Bell
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
@@ -17,6 +17,10 @@ import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
+import NotificationPreferencesWidget from './NotificationPreferencesWidget';
+import FoundationCommitmentWidget from './FoundationCommitmentWidget';
+import ConditioningTutorialWidget from './ConditioningTutorialWidget';
+import { VideoSeriesPlayer } from '../video';
 
 // Helper function to generate Google Calendar URL
 const generateCalendarUrl = (calendarEvent) => {
@@ -44,14 +48,18 @@ const generateCalendarUrl = (calendarEvent) => {
 };
 
 const ThisWeeksActionsWidget = ({ helpText }) => {
-  const { db, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
+  const { db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const [viewingResource, setViewingResource] = useState(null);
   const [loadingResource, setLoadingResource] = useState(false);
+  const [viewingSeriesId, setViewingSeriesId] = useState(null);
   // const [showSkipConfirm, setShowSkipConfirm] = useState(null);
   
   // Interactive content modals
   const [showLeaderProfileModal, setShowLeaderProfileModal] = useState(false);
   const [showBaselineModal, setShowBaselineModal] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [showFoundationCommitmentModal, setShowFoundationCommitmentModal] = useState(false);
+  const [showConditioningTutorialModal, setShowConditioningTutorialModal] = useState(false);
   const [savingBaseline, setSavingBaseline] = useState(false);
   
   // Prep Complete expanded state (default collapsed when all done)
@@ -70,10 +78,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     dailyPlan, 
     currentPhase, 
     phaseDayNumber, 
-    currentDayData, 
     toggleItemComplete: toggleDailyItem,
     userState,
-    journeyDay,
     prepRequirementsComplete
   } = useDailyPlan();
 
@@ -88,6 +94,67 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     const assessmentHistory = developmentPlanData?.assessmentHistory;
     return assessmentHistory && assessmentHistory.length > 0;
   }, [developmentPlanData?.assessmentHistory]);
+  
+  // Notification Setup completion tracking
+  const [notificationSetupComplete, setNotificationSetupComplete] = useState(false);
+  useEffect(() => {
+    const checkNotificationSettings = async () => {
+      if (!db || !user?.uid) return;
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const ns = userSnap.data().notificationSettings;
+          // Consider complete if a strategy has been explicitly set
+          setNotificationSetupComplete(ns && ns.strategy ? true : false);
+        }
+      } catch (error) {
+        console.warn('Could not check notification settings:', error);
+      }
+    };
+    checkNotificationSettings();
+  }, [db, user?.uid, showNotificationModal]); // Re-check when modal closes
+  
+  // Foundation Commitment completion tracking
+  const [foundationCommitmentComplete, setFoundationCommitmentComplete] = useState(false);
+  useEffect(() => {
+    const checkFoundationCommitment = async () => {
+      if (!db || !user?.uid) return;
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const fc = userSnap.data().foundationCommitment;
+          setFoundationCommitmentComplete(fc && fc.acknowledged ? true : false);
+        }
+      } catch (error) {
+        console.warn('Could not check foundation commitment:', error);
+      }
+    };
+    checkFoundationCommitment();
+  }, [db, user?.uid, showFoundationCommitmentModal]); // Re-check when modal closes
+  
+  // Conditioning Tutorial completion tracking
+  const [conditioningTutorialComplete, setConditioningTutorialComplete] = useState(false);
+  useEffect(() => {
+    const checkConditioningTutorial = async () => {
+      if (!db || !user?.uid) return;
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const ct = userSnap.data().conditioningTutorial;
+          setConditioningTutorialComplete(ct && ct.completed ? true : false);
+        }
+      } catch (error) {
+        console.warn('Could not check conditioning tutorial:', error);
+      }
+    };
+    checkConditioningTutorial();
+  }, [db, user?.uid, showConditioningTutorialModal]); // Re-check when modal closes
+  
+  // Video series duration data (fetched on demand)
+  const [videoSeriesDurations, setVideoSeriesDurations] = useState({});
   
   // Progress tracking
   const { 
@@ -170,7 +237,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   };
 
   // Normalize daily plan actions
-  const normalizeDailyActions = (actions, dayId, dayNumber) => {
+  const normalizeDailyActions = useCallback((actions, dayId, dayNumber) => {
     return (actions || []).map((action, idx) => {
       const label = action.label || 'Daily Action';
       const fallbackId = `daily-${dayId}-${label.toLowerCase().replace(/\s+/g, '-').substring(0, 20)}-${idx}`;
@@ -182,7 +249,21 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         category = 'Community';
       } else if (actionType === 'coaching' || actionType === 'call') {
         category = 'Coaching';
+      } else if (actionType === 'onboarding') {
+        category = 'Onboarding';
       }
+      
+      // Determine if this is an interactive item based on handlerType
+      const handlerType = action.handlerType || '';
+      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
+      
+      // Auto-complete status for interactive items
+      let autoComplete = undefined;
+      if (handlerType === 'leader-profile') autoComplete = leaderProfileComplete;
+      else if (handlerType === 'baseline-assessment') autoComplete = baselineAssessmentComplete;
+      else if (handlerType === 'notification-setup') autoComplete = notificationSetupComplete;
+      else if (handlerType === 'foundation-commitment') autoComplete = foundationCommitmentComplete;
+      else if (handlerType === 'conditioning-tutorial') autoComplete = conditioningTutorialComplete;
       
       return {
         ...action,
@@ -205,10 +286,14 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         dayId: dayId,
         dayNumber: dayNumber,
         // Pass through estimated time
-        estimatedMinutes: action.estimatedMinutes
+        estimatedMinutes: action.estimatedMinutes,
+        // Interactive item support
+        isInteractive,
+        autoComplete,
+        handlerType
       };
     });
-  };
+  }, [leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete]);
 
   // Combine all actionable items from Daily Plan
   const allActions = useMemo(() => {
@@ -217,39 +302,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // Pre-Start phase = COMPLETION-BASED (not day-based or time-based)
     // Two sections: Required Prep and Explore (optional)
     if (currentPhase?.id === 'pre-start') {
-      // Interactive content items (Leader Profile & Baseline Assessment)
-      // These are part of the required items
-      const interactiveItems = [
-        {
-          id: 'interactive-leader-profile',
-          type: 'INTERACTIVE',
-          handlerType: 'leader-profile',
-          label: 'Complete Your Leader Profile',
-          required: true,
-          category: 'Onboarding',
-          fromDailyPlan: false,
-          isInteractive: true,
-          autoComplete: leaderProfileComplete,
-          icon: 'User',
-          description: 'Tell us about yourself to personalize your journey',
-          estimatedMinutes: 3
-        },
-        {
-          id: 'interactive-baseline-assessment',
-          type: 'INTERACTIVE',
-          handlerType: 'baseline-assessment',
-          label: 'Take Baseline Assessment',
-          required: true,
-          category: 'Onboarding',
-          fromDailyPlan: false,
-          isInteractive: true,
-          autoComplete: baselineAssessmentComplete,
-          icon: 'ClipboardCheck',
-          description: 'Assess your current leadership skills',
-          estimatedMinutes: 5
-        }
-      ];
-      
       // Get prep phase actions from daily plan (progress-based, not day-based)
       // EXCLUDE explore-config - those are handled separately
       const prepDays = dailyPlan.filter(d => d.phase === 'pre-start' && d.id !== 'explore-config');
@@ -261,13 +313,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         }
       });
       
-      // Filter out items handled by interactive components
-      const onboardingLabels = ['leader profile', 'baseline assessment'];
+      // Filter out daily_rep type items (those are not milestone items)
       const filteredPrepActions = allPrepActions.filter(action => {
-        const labelLower = (action.label || '').toLowerCase();
-        const handlerType = action.handlerType || '';
-        if (onboardingLabels.some(keyword => labelLower.includes(keyword))) return false;
-        if (handlerType === 'leader-profile' || handlerType === 'baseline-assessment') return false;
         if (action.type === 'daily_rep') return false;
         return true;
       });
@@ -288,11 +335,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // COMPLETION-BASED GATING:
       // If required prep is NOT complete, only show required items
       if (!prepRequirementsComplete?.allComplete) {
-        return [...interactiveItems, ...requiredPrepActions];
+        return requiredPrepActions;
       }
       
       // Required prep is complete - show ALL prep items (including Explore)
-      return [...interactiveItems, ...requiredPrepActions, ...explorePrepActions];
+      return [...requiredPrepActions, ...explorePrepActions];
     }
     
     // Start/Post phase = Show actions for the CURRENT WEEK
@@ -326,7 +373,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // Filter out Daily Reps
     return weekActions.filter(action => action.type !== 'daily_rep');
     
-  }, [dailyPlan, currentPhase?.id, journeyDay, currentDayData, leaderProfileComplete, baselineAssessmentComplete, currentWeekNumber]);
+  }, [dailyPlan, currentPhase?.id, currentWeekNumber, prepRequirementsComplete?.allComplete, normalizeDailyActions]);
 
   // Get carried over items (including incomplete prep phase items AND all prior weeks)
   const carriedOverItems = useMemo(() => {
@@ -356,47 +403,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // Check for incomplete prep phase items (interactive items)
     // These should carry over to Start phase if not completed
     if (currentPhase?.id === 'start') {
-      // Leader Profile - if not complete, carry over
-      if (!leaderProfileComplete) {
-        carriedItems.push({
-          id: 'interactive-leader-profile',
-          type: 'INTERACTIVE',
-          handlerType: 'leader-profile',
-          label: 'Complete Your Leader Profile',
-          required: true,
-          category: 'Onboarding',
-          fromDailyPlan: false,
-          isInteractive: true,
-          autoComplete: false,
-          icon: 'User',
-          description: 'Tell us about yourself to personalize your journey',
-          estimatedMinutes: 3,
-          carriedOver: true,
-          fromWeek: 0
-        });
-      }
-      
-      // Baseline Assessment - if not complete, carry over
-      if (!baselineAssessmentComplete) {
-        carriedItems.push({
-          id: 'interactive-baseline-assessment',
-          type: 'INTERACTIVE',
-          handlerType: 'baseline-assessment',
-          label: 'Take Baseline Assessment',
-          required: true,
-          category: 'Onboarding',
-          fromDailyPlan: false,
-          isInteractive: true,
-          autoComplete: false,
-          icon: 'ClipboardCheck',
-          description: 'Assess your current leadership skills',
-          estimatedMinutes: 5,
-          carriedOver: true,
-          fromWeek: 0
-        });
-      }
-      
-      // Check for incomplete prep phase daily plan items
+      // Check for incomplete prep phase daily plan items (including interactive items)
       const prepDays = dailyPlan.filter(d => d.phase === 'pre-start');
       
       prepDays.forEach(day => {
@@ -408,10 +415,22 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             // Check if completed
             const actionId = action.id || `daily-${day.id}-${(action.label || '').toLowerCase().replace(/\s+/g, '-').substring(0, 20)}-${idx}`;
             
-            if (!isActionCompleted(actionId)) {
-              // Filter out items that are in the interactive list or daily reps
-              const labelLower = (action.label || '').toLowerCase();
-              if (labelLower.includes('leader profile') || labelLower.includes('baseline assessment')) return;
+            // Check interactive items by handlerType
+            const handlerType = action.handlerType || '';
+            let isComplete = false;
+            
+            if (handlerType === 'leader-profile') {
+              isComplete = leaderProfileComplete;
+            } else if (handlerType === 'baseline-assessment') {
+              isComplete = baselineAssessmentComplete;
+            } else if (handlerType === 'notification-setup') {
+              isComplete = notificationSetupComplete;
+            } else {
+              isComplete = isActionCompleted(actionId);
+            }
+            
+            if (!isComplete) {
+              // Skip daily reps
               if (action.type === 'daily_rep') return;
               
               carriedItems.push({
@@ -419,7 +438,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 id: actionId,
                 label: action.label || 'Preparation Action',
                 required: true,
-                category: 'Preparation',
+                category: action.type === 'onboarding' ? 'Onboarding' : 'Preparation',
                 fromDailyPlan: true,
                 dayId: day.id,
                 dayNumber: day.dayNumber,
@@ -427,7 +446,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 fromWeek: 0,
                 resourceId: action.resourceId,
                 resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
-                url: action.url || action.videoUrl || action.link || action.details?.externalUrl
+                url: action.url || action.videoUrl || action.link || action.details?.externalUrl,
+                isInteractive: ['leader-profile', 'baseline-assessment', 'notification-setup'].includes(handlerType),
+                handlerType
               });
             }
           });
@@ -569,7 +590,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     }
     
     return carriedItems;
-  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, leaderProfileComplete, baselineAssessmentComplete, dailyPlan, userState?.dailyProgress]);
+  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, dailyPlan, userState?.dailyProgress]);
 
   // Preserve carried over items - merge new items but keep completed ones
   useEffect(() => {
@@ -607,6 +628,40 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     const result = Array.from(completedSet);
     return result;
   }, [userState]);
+
+  // Fetch video series durations for video_series actions
+  useEffect(() => {
+    const fetchVideoSeriesDurations = async () => {
+      if (!db || !allActions.length) return;
+      
+      // Find video_series actions that don't have duration loaded yet
+      const seriesIds = allActions
+        .filter(a => a.resourceType === 'video_series' && a.resourceId && !videoSeriesDurations[a.resourceId])
+        .map(a => a.resourceId);
+      
+      if (seriesIds.length === 0) return;
+      
+      const newDurations = { ...videoSeriesDurations };
+      
+      for (const seriesId of seriesIds) {
+        try {
+          const seriesRef = doc(db, 'video_series', seriesId);
+          const seriesSnap = await getDoc(seriesRef);
+          if (seriesSnap.exists()) {
+            const data = seriesSnap.data();
+            // totalDuration is stored in minutes
+            newDurations[seriesId] = Math.round(data.totalDuration || 0);
+          }
+        } catch (error) {
+          console.warn('Could not fetch video series duration:', seriesId, error);
+        }
+      }
+      
+      setVideoSeriesDurations(newDurations);
+    };
+    
+    fetchVideoSeriesDurations();
+  }, [db, allActions, videoSeriesDurations]);
 
   // Filter to only required items for progress calculation
   const requiredActions = useMemo(() => {
@@ -730,12 +785,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   //   }
   // };
   
-  // Handler for INTERACTIVE content items (Leader Profile, Baseline Assessment)
+  // Handler for INTERACTIVE content items (Leader Profile, Baseline Assessment, Notification Setup, Foundation Commitment, Conditioning Tutorial)
   const handleInteractiveClick = (item) => {
     if (item.handlerType === 'leader-profile') {
       setShowLeaderProfileModal(true);
     } else if (item.handlerType === 'baseline-assessment') {
       setShowBaselineModal(true);
+    } else if (item.handlerType === 'notification-setup') {
+      setShowNotificationModal(true);
+    } else if (item.handlerType === 'foundation-commitment') {
+      setShowFoundationCommitmentModal(true);
+    } else if (item.handlerType === 'conditioning-tutorial') {
+      setShowConditioningTutorialModal(true);
     }
   };
   
@@ -760,6 +821,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     e.stopPropagation();
     
     const resourceId = item.resourceId || item.id;
+
+    // Video Series — open dedicated player
+    if (item.resourceType === 'video_series' && resourceId) {
+      setViewingSeriesId(resourceId);
+      return;
+    }
 
     // Always fetch from Firestore for consistent, reliable resource data
     if (resourceId) {
@@ -876,15 +943,16 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   const ActionItem = ({ item, isCarriedOver = false }) => {
     const progress = getItemProgress(item.id);
     // Interactive items: check live hook values, not stale autoComplete property
-    // This ensures real-time updates when Leader Profile or Assessment is completed
+    // This ensures real-time updates when Leader Profile, Assessment, or Notification Setup is completed
     const isCompleted = item.isInteractive 
       ? (item.handlerType === 'leader-profile' ? leaderProfileComplete : 
          item.handlerType === 'baseline-assessment' ? baselineAssessmentComplete : 
+         item.handlerType === 'notification-setup' ? notificationSetupComplete :
          item.autoComplete)
       : (progress.status === 'completed' || completedItems.includes(item.id));
     const isSkipped = progress.status === 'skipped';
     const Icon = item.isInteractive 
-      ? (item.icon === 'User' ? User : ClipboardCheck)
+      ? (item.icon === 'User' ? User : item.icon === 'Bell' ? Bell : ClipboardCheck)
       : getIcon(item.type);
     
     if (isSkipped) return null;
@@ -925,9 +993,16 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         <div
           onClick={(e) => {
             e.stopPropagation();
-            if (!item.isInteractive) handleToggle(item);
+            // Prevent manual completion for interactive items - they must be completed through their forms
+            if (item.isInteractive) return;
+            // Prevent manual completion for video series - must watch all videos
+            if (item.resourceType === 'video_series') {
+              alert('Watch all videos in the series to mark this complete. Click the row to open the video player.');
+              return;
+            }
+            handleToggle(item);
           }}
-          className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 ${getCheckboxStyles()}`}
+          className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${item.resourceType === 'video_series' && !isCompleted ? 'cursor-not-allowed' : 'cursor-pointer touch-manipulation active:scale-90'} ${getCheckboxStyles()}`}
         >
           {isCompleted && <CheckCircle className="w-4 h-4 text-white pointer-events-none" />}
         </div>
@@ -968,9 +1043,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 {item.description && !item.resourceTitle && (
                   <><span>•</span><span className="text-slate-600 dark:text-slate-400">{item.description}</span></>
                 )}
-                {/* Show estimated time to complete */}
-                {item.estimatedMinutes && (
-                   <><span>•</span><span className="text-slate-500 dark:text-slate-400">{item.estimatedMinutes} min</span></>
+                {/* Show estimated time to complete - for video_series, use fetched totalDuration */}
+                {(item.estimatedMinutes || (item.resourceType === 'video_series' && videoSeriesDurations[item.resourceId])) && (
+                   <><span>•</span><span className="text-slate-500 dark:text-slate-400">{item.estimatedMinutes || videoSeriesDurations[item.resourceId]} min</span></>
                 )}
               </>
             )}
@@ -1130,6 +1205,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 if (item.isInteractive) {
                   if (item.handlerType === 'leader-profile') return leaderProfileComplete;
                   if (item.handlerType === 'baseline-assessment') return baselineAssessmentComplete;
+                  if (item.handlerType === 'notification-setup') return notificationSetupComplete;
                 }
                 const progress = getItemProgress(item.id);
                 return progress.status === 'completed' || completedItems.includes(item.id);
@@ -1255,10 +1331,38 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         )}
       </Card>
       
+      {/* Video Series Player Modal */}
+      {viewingSeriesId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
+            <VideoSeriesPlayer
+              seriesId={viewingSeriesId}
+              onClose={() => setViewingSeriesId(null)}
+              onComplete={(completedSeriesId) => {
+                // Find the action item with this series as its resource and mark it complete
+                // Check both current actions and carried-over items
+                const seriesAction = allActions.find(a => a.resourceId === completedSeriesId && a.resourceType === 'video_series')
+                  || carriedOverItems.find(a => a.resourceId === completedSeriesId && a.resourceType === 'video_series');
+                if (seriesAction) {
+                  completeItem(seriesAction.id, {
+                    currentWeek: currentWeekNumber,
+                    weekNumber: currentWeekNumber,
+                    category: seriesAction.category?.toLowerCase(),
+                    label: seriesAction.label || seriesAction.title,
+                    carriedOver: seriesAction.carriedOver || false
+                  });
+                }
+              }}
+              showHeader={true}
+            />
+          </div>
+        </div>
+      )}
+      
       {/* Leader Profile Modal */}
       {showLeaderProfileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-md">
+          <div className="relative w-full max-w-xl">
             <LeaderProfileFormSimple 
               onComplete={() => setShowLeaderProfileModal(false)}
               onClose={() => setShowLeaderProfileModal(false)}
@@ -1270,12 +1374,57 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       {/* Baseline Assessment Modal */}
       {showBaselineModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-2xl">
+          <div className="relative w-full max-w-xl">
             <BaselineAssessmentSimple 
               onComplete={handleBaselineComplete}
               onClose={() => setShowBaselineModal(false)}
               isLoading={savingBaseline}
               initialData={developmentPlanData?.assessmentHistory?.[developmentPlanData.assessmentHistory.length - 1]}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Notification Setup Modal */}
+      {showNotificationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-xl">
+            <NotificationPreferencesWidget 
+              onComplete={() => {
+                setShowNotificationModal(false);
+                setNotificationSetupComplete(true);
+              }}
+              onClose={() => setShowNotificationModal(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Foundation Commitment Modal */}
+      {showFoundationCommitmentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-xl">
+            <FoundationCommitmentWidget 
+              onComplete={() => {
+                setShowFoundationCommitmentModal(false);
+                setFoundationCommitmentComplete(true);
+              }}
+              onClose={() => setShowFoundationCommitmentModal(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Conditioning Tutorial Modal */}
+      {showConditioningTutorialModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-xl">
+            <ConditioningTutorialWidget 
+              onComplete={() => {
+                setShowConditioningTutorialModal(false);
+                setConditioningTutorialComplete(true);
+              }}
+              onClose={() => setShowConditioningTutorialModal(false)}
             />
           </div>
         </div>

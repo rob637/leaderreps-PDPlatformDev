@@ -5,58 +5,82 @@
 import { timeService } from '../../../services/timeService';
 
 /* =========================================================
-   ASSESSMENT QUESTIONS
+   ASSESSMENT QUESTIONS (v2 — 15 questions)
 ========================================================= */
 export const ASSESSMENT_QUESTIONS = [
-  { id: 'q1', text: 'I clearly communicate priorities and ensure my team understands how their work connects to broader goals.' },
-  { id: 'q2', text: 'I consistently provide actionable feedback that helps my team members grow and improve.' },
-  { id: 'q3', text: 'I create opportunities for team members to develop new skills and take on stretch assignments.' },
-  { id: 'q4', text: 'I actively seek diverse perspectives and encourage open dialogue, even when opinions differ from mine.' },
-  { id: 'q5', text: 'I effectively manage my time and energy to balance strategic thinking with day-to-day execution.' },
-  { id: 'q6', text: 'I build strong relationships across the organization to advance team goals and remove barriers.' },
-  { id: 'q7', text: 'Decisions on my team are made efficiently, with the right people involved and clear follow-through.' },
-  { id: 'q8', text: 'I intentionally model openness and vulnerability to build trust within my team.' },
-  { id: 'q9', text: 'My team handles conflict directly and constructively, even when it is uncomfortable.' },
-  { id: 'q10', text: 'I frequently recognize and celebrate progress and contributions in meaningful ways.' },
+  // Frequency scale (Q1-Q10)
+  { id: 'q1', text: 'I clearly defined the criteria for success when I assigned work.', type: 'frequency', category: 'Clarity' },
+  { id: 'q2', text: 'I explicitly named ownership of the outcome and confirmed that my direct accepted it.', type: 'frequency', category: 'Ownership' },
+  { id: 'q3', text: 'I gave reinforcing (positive) feedback tied to a specific behavior and impact.', type: 'frequency', category: 'Feedback' },
+  { id: 'q4', text: 'I gave redirecting (correcting) feedback when behavior missed the standard.', type: 'frequency', category: 'Feedback' },
+  { id: 'q5', text: 'I followed up on work rather than assuming it was on track.', type: 'frequency', category: 'Follow-Through' },
+  { id: 'q6', text: 'I modeled vulnerability by acknowledging a mistake, gap, or miss of my own.', type: 'frequency', category: 'Vulnerability' },
+  { id: 'q7', text: 'I intentionally checked after giving feedback to confirm whether the behavior changed.', type: 'frequency', category: 'Follow-Through' },
+  { id: 'q8', text: 'I noticed patterns early rather than waiting until issues escalated.', type: 'frequency', category: 'Awareness' },
+  { id: 'q9', text: 'I asked my direct report for their plan when progress stalled or mistakes happened on their assigned work.', type: 'frequency', category: 'Ownership' },
+  { id: 'q10', text: 'I adjusted my approach when I met resistance during feedback.', type: 'frequency', category: 'Adaptability' },
+  // Agreement scale (Q11-Q13)
+  { id: 'q11', text: 'I have a clear intention for how I want to show up when navigating a difficult leadership moment.', type: 'agreement', category: 'Intentionality' },
+  { id: 'q12', text: 'I have practical tools to handle difficult conversations with my direct report(s).', type: 'agreement', category: 'Tools' },
+  { id: 'q13', text: 'I hold regular one-on-ones with my direct report(s) and allow them to set the agenda.', type: 'agreement', category: 'Structure' },
+  // Open text (Q14)
+  { id: 'q14', text: 'What leadership situation is currently challenging or frustrating for you?', type: 'open-text', category: 'Reflection' },
+  // Multi-select (Q15)
+  { id: 'q15', text: 'Which important leadership moments do you tend to delay, soften, or avoid?', type: 'multi-select', category: 'Self-Awareness' },
 ];
+
+// Only the scored (numeric) questions — used for plan generation
+export const SCORED_QUESTION_IDS = ASSESSMENT_QUESTIONS.filter(q => q.type === 'frequency' || q.type === 'agreement').map(q => q.id);
 
 export const OPEN_ENDED_QUESTION = {
-  id: 'goals',
-  text: 'What are your top 1-3 leadership development goals for the next 90 days?',
-  placeholder: 'Example: Improve my ability to delegate effectively, Build stronger cross-functional relationships, Develop more strategic thinking habits...',
+  id: 'q14',
+  text: 'What leadership situation is currently challenging or frustrating for you?',
+  placeholder: 'Describe the situation...',
 };
 
-export const LIKERT_SCALE = [
+export const FREQUENCY_SCALE = [
+  { value: 1, label: 'Never / Rarely' },
+  { value: 2, label: 'Seldom / < 50%' },
+  { value: 3, label: 'Often / > 50%' },
+  { value: 4, label: 'Consistently / Always' },
+];
+
+export const AGREEMENT_SCALE = [
   { value: 1, label: 'Strongly Disagree' },
   { value: 2, label: 'Disagree' },
-  { value: 3, label: 'Neutral' },
-  { value: 4, label: 'Agree' },
-  { value: 5, label: 'Strongly Agree' },
+  { value: 3, label: 'Agree' },
+  { value: 4, label: 'Strongly Agree' },
 ];
+
+// Keep LIKERT_SCALE export for backward compatibility (maps to frequency scale)
+export const LIKERT_SCALE = FREQUENCY_SCALE;
 
 /* =========================================================
    SKILL CATEGORIES AND MAPPINGS
 ========================================================= */
 export const SKILL_CATEGORIES = {
-  STRATEGIC: 'Strategic Leadership',
-  PEOPLE: 'People Development',
-  EXECUTION: 'Execution Excellence',
-  INFLUENCE: 'Influence & Communication',
-  SELF: 'Self-Management',
+  CLARITY: 'Clarity & Expectations',
+  FEEDBACK: 'Feedback & Coaching',
+  ACCOUNTABILITY: 'Ownership & Accountability',
+  FOLLOW_THROUGH: 'Follow-Through',
+  SELF: 'Self-Awareness & Adaptability',
 };
 
 // Map assessment questions to skill categories
 export const QUESTION_TO_CATEGORY = {
-  q1: 'STRATEGIC',
-  q2: 'PEOPLE',
-  q3: 'PEOPLE',
-  q4: 'INFLUENCE',
-  q5: 'SELF',
-  q6: 'INFLUENCE',
-  q7: 'EXECUTION',
-  q8: 'INFLUENCE',
-  q9: 'PEOPLE',
-  q10: 'PEOPLE',
+  q1: 'CLARITY',          // Criteria for success
+  q2: 'ACCOUNTABILITY',   // Named ownership
+  q3: 'FEEDBACK',         // Reinforcing feedback
+  q4: 'FEEDBACK',         // Redirecting feedback
+  q5: 'FOLLOW_THROUGH',   // Followed up on work
+  q6: 'SELF',             // Modeled vulnerability
+  q7: 'FOLLOW_THROUGH',   // Checked feedback changed behavior
+  q8: 'SELF',             // Noticed patterns early
+  q9: 'ACCOUNTABILITY',   // Asked for their plan
+  q10: 'SELF',            // Adjusted approach on resistance
+  q11: 'CLARITY',         // Intention for difficult moments
+  q12: 'FEEDBACK',        // Practical tools for conversations
+  q13: 'ACCOUNTABILITY',  // Regular one-on-ones
 };
 
 /* =========================================================
@@ -192,16 +216,17 @@ export const getCurrentPhase = (weekNumber) => {
  */
 export const calculateCategoryScores = (responses) => {
   const categoryScores = {
-    STRATEGIC: [],
-    PEOPLE: [],
-    EXECUTION: [],
-    INFLUENCE: [],
+    CLARITY: [],
+    FEEDBACK: [],
+    ACCOUNTABILITY: [],
+    FOLLOW_THROUGH: [],
     SELF: [],
   };
 
   Object.entries(responses).forEach(([questionId, score]) => {
     const category = QUESTION_TO_CATEGORY[questionId];
-    if (category) {
+    // Only include numeric scores (skip open-text q14 and multi-select q15)
+    if (category && typeof score === 'number') {
       categoryScores[category].push(score);
     }
   });
@@ -457,9 +482,19 @@ export const getStatusVariant = (status) => {
  * Validate assessment responses
  */
 export const validateAssessment = (responses) => {
-  const questionIds = ASSESSMENT_QUESTIONS.map(q => q.id);
-  const missingQuestions = questionIds.filter(id => !responses[id]);
-  
+  const missingQuestions = [];
+
+  ASSESSMENT_QUESTIONS.forEach(q => {
+    const val = responses[q.id];
+    if (q.type === 'open-text') {
+      if (!val || (typeof val === 'string' && val.trim() === '')) missingQuestions.push(q.id);
+    } else if (q.type === 'multi-select') {
+      if (!val || (Array.isArray(val) && val.length === 0)) missingQuestions.push(q.id);
+    } else {
+      if (val === undefined || val === null) missingQuestions.push(q.id);
+    }
+  });
+
   return {
     isValid: missingQuestions.length === 0,
     missingQuestions,
@@ -470,11 +505,19 @@ export const validateAssessment = (responses) => {
  * Generate a summary of assessment results
  */
 export const generateAssessmentSummary = (responses) => {
-  const categoryScores = calculateCategoryScores(responses);
+  // Filter to only numeric (scored) responses for category analysis
+  const numericResponses = Object.fromEntries(
+    Object.entries(responses).filter(([, v]) => typeof v === 'number')
+  );
+
+  const categoryScores = calculateCategoryScores(numericResponses);
   const focusAreas = identifyFocusAreas(categoryScores, 3);
-  
-  const averageScore = Object.values(responses).reduce((a, b) => a + b, 0) / Object.values(responses).length;
-  
+
+  const numericValues = Object.values(numericResponses);
+  const averageScore = numericValues.length > 0
+    ? numericValues.reduce((a, b) => a + b, 0) / numericValues.length
+    : 0;
+
   return {
     averageScore: averageScore.toFixed(1),
     categoryScores,
@@ -488,7 +531,10 @@ export const generateAssessmentSummary = (responses) => {
 
 export default {
   ASSESSMENT_QUESTIONS,
+  SCORED_QUESTION_IDS,
   OPEN_ENDED_QUESTION,
+  FREQUENCY_SCALE,
+  AGREEMENT_SCALE,
   LIKERT_SCALE,
   SKILL_CATEGORIES,
   QUESTION_TO_CATEGORY,

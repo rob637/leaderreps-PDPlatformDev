@@ -9,6 +9,7 @@ import {
   addDoc, 
   updateDoc, 
   deleteDoc,
+  setDoc,
   query,
   where,
   orderBy,
@@ -73,20 +74,22 @@ export const getAllSeries = async (db, options = {}) => {
   const { category = null, activeOnly = true } = options;
   
   try {
-    let q = collection(db, VIDEO_SERIES_COLLECTION);
+    // Fetch all series and filter client-side to avoid needing composite indexes
+    let q = query(collection(db, VIDEO_SERIES_COLLECTION), orderBy('order', 'asc'));
     
+    const snapshot = await getDocs(q);
+    let results = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    
+    // Apply filters client-side
     if (activeOnly) {
-      q = query(q, where('isActive', '==', true));
+      results = results.filter(s => s.isActive === true);
     }
     
     if (category) {
-      q = query(q, where('category', '==', category));
+      results = results.filter(s => s.category === category);
     }
     
-    q = query(q, orderBy('order', 'asc'));
-    
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    return results;
   } catch (error) {
     console.error('Error fetching video series:', error);
     return [];
@@ -141,11 +144,13 @@ export const getSeriesById = async (db, seriesId) => {
  */
 export const createSeries = async (db, seriesData) => {
   try {
-    // Calculate total duration from videos
-    const totalDuration = (seriesData.videos || []).reduce(
-      (sum, v) => sum + (parseFloat(v.duration) || 0), 
+    // Calculate total duration from videos (video.duration is in seconds)
+    const totalDurationSeconds = (seriesData.videos || []).reduce(
+      (sum, v) => sum + (parseInt(v.duration, 10) || 0), 
       0
     );
+    // Store totalDuration in minutes for display compatibility
+    const totalDuration = totalDurationSeconds / 60;
     
     const docRef = await addDoc(collection(db, VIDEO_SERIES_COLLECTION), {
       ...seriesData,
@@ -172,12 +177,14 @@ export const updateSeries = async (db, seriesId, updates) => {
   try {
     const docRef = doc(db, VIDEO_SERIES_COLLECTION, seriesId);
     
-    // Recalculate total duration if videos changed
+    // Recalculate total duration if videos changed (video.duration is in seconds)
     if (updates.videos) {
-      updates.totalDuration = updates.videos.reduce(
-        (sum, v) => sum + (parseFloat(v.duration) || 0), 
+      const totalDurationSeconds = updates.videos.reduce(
+        (sum, v) => sum + (parseInt(v.duration, 10) || 0), 
         0
       );
+      // Store totalDuration in minutes for display compatibility
+      updates.totalDuration = totalDurationSeconds / 60;
     }
     
     await updateDoc(docRef, {
@@ -298,11 +305,7 @@ export const markVideoWatched = async (db, userId, seriesId, videoId, series) =>
         percentComplete
       };
       
-      await updateDoc(docRef, progressData, { merge: true }).catch(() => {
-        // If doc doesn't exist, set it
-        const { setDoc } = require('firebase/firestore');
-        return setDoc(docRef, progressData);
-      });
+      await setDoc(docRef, progressData, { merge: true });
     }
     
     return progressData;

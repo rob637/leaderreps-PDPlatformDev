@@ -590,6 +590,16 @@ export const useDailyPlan = () => {
           developmentPlanData?.assessmentHistory?.length > 0 ||
           developmentPlanData?.currentPlan?.focusAreas?.length > 0
         );
+      } else if (handlerType === 'notification-setup' || labelLower.includes('notification')) {
+        // Check notificationSettings has been configured
+        const ns = developmentPlanData?.notificationSettings || user?.notificationSettings;
+        complete = !!(ns && ns.strategy);
+      } else if (handlerType === 'foundation-commitment' || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectations')) {
+        // Check foundationCommitment in user doc
+        complete = !!(user?.foundationCommitment?.acknowledged);
+      } else if (handlerType === 'conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
+        // Check conditioningTutorial in user doc
+        complete = !!(user?.conditioningTutorial?.completed);
       } else {
         // Standard action progress check
         complete = isActionComplete(action.id);

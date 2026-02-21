@@ -94,7 +94,7 @@ const BaselineAssessmentWidget = () => {
         {/* Modal for viewing/updating */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
-            <div className="relative max-w-3xl w-full my-auto">
+            <div className="relative max-w-xl w-full my-auto">
               <BaselineAssessmentSimple 
                 onComplete={handleAssessmentComplete}
                 onClose={() => setShowModal(false)}
@@ -164,7 +164,7 @@ const BaselineAssessmentWidget = () => {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="relative max-w-3xl w-full my-auto">
+          <div className="relative max-w-xl w-full my-auto">
             <BaselineAssessmentSimple 
               onComplete={handleAssessmentComplete}
               onClose={() => setShowModal(false)}
