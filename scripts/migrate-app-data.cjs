@@ -53,6 +53,7 @@ const APP_DATA_COLLECTIONS = [
   'content',                 // Unified Content Library (Legacy/Migration)
   'content_library',         // Unified Content Library (Canonical)
   'skills',                  // Skills Taxonomy
+  'video_series',            // Video Series (multi-video playlists)
   // NOTE: 'cohorts' removed - contains user data (facilitator, memberIds)
   'metadata',
   'config',
