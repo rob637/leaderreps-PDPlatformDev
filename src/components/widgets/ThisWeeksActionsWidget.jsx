@@ -70,7 +70,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Admin: Reset prep progress for testing
   const resetPrepProgress = async () => {
     if (!isAdmin || !user?.uid || !db) return;
-    if (!confirm('⚠️ This will reset ALL prep phase progress. Continue?')) return;
+    if (!confirm('⚠️ This will reset ALL prep phase progress AND data (leader profile, baseline, etc). Continue?')) return;
     
     setResettingPrep(true);
     try {
@@ -84,10 +84,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         notificationSettings: deleteField()
       });
       
-      // Clear leader profile
+      // DELETE leader profile document entirely (not just mark incomplete)
       const leaderProfileRef = doc(db, 'user_data', user.uid, 'leader_profile', 'current');
       try {
-        await updateDoc(leaderProfileRef, { isComplete: false });
+        await deleteDoc(leaderProfileRef);
+        console.log('Deleted leader profile document');
       } catch (e) {
         console.log('Leader profile not found, skipping');
       }
@@ -96,7 +97,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       const actionProgressRef = collection(db, 'users', user.uid, 'action_progress');
       const progressSnap = await getDocs(actionProgressRef);
       for (const docSnap of progressSnap.docs) {
-        // Delete all action progress during prep reset
         await deleteDoc(docSnap.ref);
       }
       console.log(`Deleted ${progressSnap.docs.length} action_progress items`);
@@ -107,13 +107,19 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       for (const docSnap of videoSnap.docs) {
         await deleteDoc(docSnap.ref);
       }
+      console.log(`Deleted ${videoSnap.docs.length} videoProgress items`);
       
-      // Clear assessment history if exists
+      // Clear assessment history AND focusAreas from development plan
       if (updateDevelopmentPlanData) {
-        await updateDevelopmentPlanData({ assessmentHistory: deleteField() });
+        await updateDevelopmentPlanData({ 
+          assessmentHistory: deleteField(),
+          focusAreas: deleteField(),
+          currentPlan: deleteField()
+        });
+        console.log('Cleared assessmentHistory, focusAreas, currentPlan from development plan');
       }
       
-      alert('✅ Prep progress reset! Refresh the page to see changes.');
+      alert('✅ Prep progress AND data reset! Page will reload.');
       window.location.reload();
     } catch (error) {
       console.error('Error resetting prep:', error);
