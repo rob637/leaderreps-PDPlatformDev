@@ -544,11 +544,26 @@ const DevelopmentJourneyWidget = () => {
       const handlerType = action.handlerType || '';
       const labelLower = (action.label || '').toLowerCase();
       
-      // Leader Profile - check by handlerType OR label
+      // Use prepRequirementsComplete from useDailyPlan for unified completion status
+      // This checks prepStatus flags, legacy data, and action progress all in one place
+      if (prepRequirementsComplete?.items?.length > 0) {
+        // Find matching item in prepRequirementsComplete by handler type or label
+        const matchingItem = prepRequirementsComplete.items.find(item => {
+          if (item.handlerType === handlerType) return true;
+          if (item.label?.toLowerCase().includes(labelLower.substring(0, 15))) return true;
+          if (labelLower.includes((item.label || '').toLowerCase().substring(0, 15))) return true;
+          return false;
+        });
+        if (matchingItem) {
+          return matchingItem.complete;
+        }
+      }
+      
+      // Fallback: Leader Profile - check by handlerType OR label
       if (handlerType === 'leader-profile' || labelLower.includes('leader profile')) {
         return leaderProfileComplete;
       }
-      // Baseline Assessment - check by handlerType OR label
+      // Fallback: Baseline Assessment - check by handlerType OR label
       if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment')) {
         return baselineAssessmentComplete;
       }
