@@ -1671,9 +1671,9 @@ const UserManagement = () => {
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 bg-white dark:bg-slate-800"
                 >
                   <option value="">Select a facilitator...</option>
-                  {Object.values(FACILITATOR_PROFILES).map(f => (
+                  {facilitators.map(f => (
                     <option key={f.id} value={f.id}>
-                      {f.displayName} ({f.email})
+                      {f.name} ({f.email || 'No email'})
                     </option>
                   ))}
                 </select>
@@ -1681,73 +1681,6 @@ const UserManagement = () => {
                   The facilitator will be shown to cohort members as their point of contact.
                 </p>
               </div>
-
-              {/* Facilitator Profile Details - Show when a facilitator is selected */}
-              {cohortForm.facilitatorId && (
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700 space-y-3">
-                  <h4 className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Facilitator Profile (Visible to Participants)
-                  </h4>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Title</label>
-                      <input
-                        type="text"
-                        placeholder="Leadership Facilitator"
-                        value={cohortForm.facilitatorTitle}
-                        onChange={e => setCohortForm({...cohortForm, facilitatorTitle: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Photo URL</label>
-                      <input
-                        type="url"
-                        placeholder="https://..."
-                        value={cohortForm.facilitatorPhotoUrl}
-                        onChange={e => setCohortForm({...cohortForm, facilitatorPhotoUrl: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Bio / Introduction</label>
-                    <textarea
-                      placeholder="A short introduction about the facilitator that will help participants connect with them..."
-                      value={cohortForm.facilitatorBio}
-                      onChange={e => setCohortForm({...cohortForm, facilitatorBio: e.target.value})}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm resize-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Phone (optional)</label>
-                      <input
-                        type="tel"
-                        placeholder="+1 (555) 123-4567"
-                        value={cohortForm.facilitatorPhone}
-                        onChange={e => setCohortForm({...cohortForm, facilitatorPhone: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">LinkedIn (optional)</label>
-                      <input
-                        type="text"
-                        placeholder="linkedin.com/in/username or just username"
-                        value={cohortForm.facilitatorLinkedIn}
-                        onChange={e => setCohortForm({...cohortForm, facilitatorLinkedIn: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Cohort Settings */}
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700">

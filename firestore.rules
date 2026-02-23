@@ -195,6 +195,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Facilitators (coaches, trainers)
+    match /facilitators/{document} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
     match /system_lovs/{document} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
