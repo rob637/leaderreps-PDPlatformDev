@@ -136,7 +136,7 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
     >
       <div onClick={(e) => e.stopPropagation()}>
         <Card 
-          className="w-full max-w-lg max-h-[calc(100vh-6rem)] md:max-h-[90vh] overflow-hidden flex flex-col"
+          className="w-full max-w-xl max-h-[calc(100vh-6rem)] md:max-h-[90vh] overflow-hidden flex flex-col"
           style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
         {/* Header */}
