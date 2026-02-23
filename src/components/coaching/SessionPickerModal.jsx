@@ -54,14 +54,29 @@ const SessionPickerModal = ({
   const {
     isRegistered,
     getRegistration,
+    getRegistrationForCoachingItem,
     registerForSession,
     cancelRegistration,
     loading: registrationsLoading
   } = useCoachingRegistrations();
   
+  // Get user's current registration for THIS coaching item (if any)
+  const existingRegistrationForItem = useMemo(() => {
+    return coachingItem?.id ? getRegistrationForCoachingItem(coachingItem.id) : null;
+  }, [coachingItem?.id, getRegistrationForCoachingItem]);
+  
   // Get matching sessions based on coaching item
   const matchingSessions = useMemo(() => {
     let sessions = [];
+    
+    // PRIMARY FILTER: If sessionType is specified, filter by it first
+    // This is the new approach from Content Manager session type checkboxes
+    if (coachingItem?.sessionType) {
+      sessions = upcomingSessions.filter(s => s.sessionType === coachingItem.sessionType);
+      return sessions; // Return early - sessionType is the definitive filter
+    }
+    
+    // FALLBACK: Skill-based filtering (legacy approach)
     if (skillArray.length > 0) {
       sessions = getSessionsForDevPlan(skillArray);
     } else {
@@ -76,7 +91,9 @@ const SessionPickerModal = ({
       const normalizedTarget = targetTitle.toLowerCase();
       
       // If the target is generic, don't filter too strictly
-      const isGeneric = normalizedTarget === 'coaching session' || normalizedTarget === 'coaching';
+      const isGeneric = normalizedTarget === 'coaching session' || 
+                        normalizedTarget === 'coaching' ||
+                        normalizedTarget.includes('schedule:'); // New format: "Schedule: Open Gym Session"
       
       if (!isGeneric) {
         sessions = sessions.filter(s => {
@@ -277,24 +294,74 @@ const SessionPickerModal = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {currentWeekSessions.map(session => {
+                {/* Show current registration notice if user has one */}
+                {existingRegistrationForItem && (
+                  <div className="p-3 rounded-xl bg-teal-50 dark:bg-teal-900/20 border-2 border-corporate-teal">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-corporate-teal">
+                          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                          <span>Your Current Registration</span>
+                        </div>
+                        <h4 className="font-semibold text-slate-800 dark:text-slate-200 mt-1">
+                          {existingRegistrationForItem.sessionTitle}
+                        </h4>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          <Calendar className="w-3 h-3" />
+                          <span>{existingRegistrationForItem.sessionDate ? formatDate(existingRegistrationForItem.sessionDate) : 'Date TBD'}</span>
+                          {existingRegistrationForItem.sessionTime && (
+                            <>
+                              <Clock className="w-3 h-3 ml-1" />
+                              <span>{existingRegistrationForItem.sessionTime}</span>
+                            </>
+                          )}
+                        </div>
+                        {existingRegistrationForItem.coach && (
+                          <p className="text-xs text-slate-400 mt-1">with {existingRegistrationForItem.coach}</p>
+                        )}
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                          Cancel this to register for a different session
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleCancel(existingRegistrationForItem.sessionId)}
+                        disabled={registering === existingRegistrationForItem.sessionId}
+                        className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors flex-shrink-0 disabled:opacity-50"
+                      >
+                        {registering === existingRegistrationForItem.sessionId ? (
+                          <Loader className="w-3 h-3 animate-spin" />
+                        ) : (
+                          'Cancel'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {currentWeekSessions
+                  .filter(session => {
+                    // Skip the session that's already shown in "Your Current Registration" card above
+                    if (existingRegistrationForItem?.sessionId === session.id) return false;
+                    return true;
+                  })
+                  .map(session => {
                   const SessionIcon = getSessionIcon(session.sessionType);
-                  const registered = isRegistered(session.id);
-                  // eslint-disable-next-line no-unused-vars
-                  const _registration = getRegistration(session.id); // For future use
-                  const spotsLeft = session.maxAttendees - (session.registrationCount || 0);
-                  const isFull = spotsLeft <= 0;
+                  // Check if registered for THIS specific session
+                  const registeredForThisSession = isRegistered(session.id);
+                  // Calculate spots
+                  const spotsLeft = (session.maxAttendees || 20) - (session.registrationCount || 0);
+                  const isFull = spotsLeft <= 0 && !registeredForThisSession;
                   const isPast = new Date(session.date) < new Date();
+                  // Show "switch" button if user has an existing registration and this is a different session
+                  const canSwitch = existingRegistrationForItem && !isFull && !isPast;
                   
                   return (
                     <div
                       key={session.id}
                       className={`
                         p-3 rounded-xl border transition-all
-                        ${registered 
-                          ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800' 
-                          : isFull 
-                            ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-60'
+                        ${isFull 
+                            ? 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'
                             : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-teal-300 hover:shadow-sm'
                         }
                       `}
@@ -303,16 +370,18 @@ const SessionPickerModal = ({
                         {/* Icon */}
                         <div className={`
                           p-2 rounded-lg
-                          ${registered ? 'bg-teal-100 dark:bg-teal-900/30 text-corporate-teal' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}
+                          ${isFull ? 'bg-slate-200 dark:bg-slate-600 text-slate-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}
                         `}>
                           <SessionIcon className="w-5 h-5" />
                         </div>
                         
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
-                            {session.title}
-                          </h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className={`text-sm font-semibold truncate ${isFull ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}>
+                              {session.title}
+                            </h3>
+                          </div>
                           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
                             <Calendar className="w-3 h-3" />
                             <span>{formatDate(session.date)}</span>
@@ -326,15 +395,15 @@ const SessionPickerModal = ({
                           )}
                           
                           {/* Spots indicator */}
-                          {!registered && !isPast && (
+                          {!isPast && (
                             <div className={`
                               flex items-center gap-1 text-xs mt-2
-                              ${spotsLeft <= 3 ? 'text-orange-600' : 'text-slate-400'}
+                              ${isFull ? 'text-red-500 font-medium' : spotsLeft <= 3 ? 'text-orange-600' : 'text-slate-400'}
                             `}>
                               <Users className="w-3 h-3" />
                               <span>
                                 {isFull 
-                                  ? 'Session full' 
+                                  ? '⛔ Session Full' 
                                   : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`
                                 }
                               </span>
@@ -345,44 +414,32 @@ const SessionPickerModal = ({
                         {/* Action Button */}
                         <div className="flex-shrink-0">
                           {isPast ? (
-                            registered ? (
-                              <button
-                                onClick={() => handleMarkAttended(session)}
-                                className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 dark:bg-green-900/30 rounded-lg hover:bg-green-200 transition-colors"
-                              >
-                                I Attended
-                              </button>
-                            ) : (
-                              <span className="text-xs text-slate-400">Past</span>
-                            )
-                          ) : registered ? (
+                            <span className="text-xs text-slate-400">Past</span>
+                          ) : isFull ? (
+                            <span className="px-3 py-1.5 text-xs font-medium text-slate-400 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                              Full
+                            </span>
+                          ) : canSwitch ? (
                             <button
-                              onClick={() => handleCancel(session.id)}
+                              onClick={() => handleRegister(session)}
                               disabled={registering === session.id}
-                              className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                              className="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 rounded-lg transition-colors disabled:opacity-50"
                             >
                               {registering === session.id ? (
                                 <Loader className="w-3 h-3 animate-spin" />
                               ) : (
-                                'Cancel'
+                                'Switch'
                               )}
                             </button>
                           ) : (
                             <button
                               onClick={() => handleRegister(session)}
-                              disabled={isFull || registering === session.id}
-                              className={`
-                                px-3 py-1.5 text-xs font-medium rounded-lg transition-colors
-                                ${isFull 
-                                  ? 'text-slate-400 bg-slate-100 dark:bg-slate-700 cursor-not-allowed'
-                                  : 'text-white bg-corporate-teal hover:bg-teal-700 disabled:opacity-50'
-                                }
-                              `}
+                              disabled={registering === session.id || existingRegistrationForItem}
+                              className="px-3 py-1.5 text-xs font-medium text-white bg-corporate-teal hover:bg-teal-700 rounded-lg transition-colors disabled:opacity-50"
+                              title={existingRegistrationForItem ? 'Cancel current registration to select this session' : undefined}
                             >
                               {registering === session.id ? (
                                 <Loader className="w-3 h-3 animate-spin" />
-                              ) : isFull ? (
-                                'Full'
                               ) : (
                                 'Register'
                               )}
@@ -396,18 +453,6 @@ const SessionPickerModal = ({
               </div>
             )}
           </div>
-          
-          {/* Footer */}
-          {currentRegistration && (
-            <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-teal-50 dark:bg-teal-900/20">
-              <div className="flex items-center gap-2 text-sm text-corporate-teal">
-                <CheckCircle className="w-4 h-4" />
-                <span>
-                  You're registered for <strong>{currentRegistration.sessionTitle}</strong>
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

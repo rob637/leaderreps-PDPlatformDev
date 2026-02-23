@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { serverTimestamp } from '../../../services/firebaseUtils';
-import { useAppServices } from '../../../hooks/useAppServices';
+import { useAppServices } from '../../../services/useAppServices';
 import { timeService } from '../../../services/timeService';
 import { calculateRepStreak, getStreakMilestone, isExcludedDate } from '../../../utils/streakCalculator';
 import { logActivity, ACTIVITY_TYPES } from '../../../services/activityLogger';

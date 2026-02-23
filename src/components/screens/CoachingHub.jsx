@@ -9,8 +9,9 @@ import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, serverTim
 import { 
   Loader, Users, Calendar, MessageSquare, Video, 
   Clock, ChevronLeft, ChevronRight, Play, Bot, UserCheck,
-  CalendarDays, ExternalLink, Lock, Megaphone
+  CalendarDays, ExternalLink, Lock
 } from 'lucide-react';
+import { CoachingIcon } from '../icons';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { NoWidgetsEnabled, TabButton } from '../ui';
@@ -331,76 +332,268 @@ const OnDemandSection = ({ navigate }) => (
 // ============================================
 // MY COACHING DASHBOARD
 // ============================================
-const MyCoachingSection = ({ registeredSessions, pastSessions, onCancel }) => (
-  <div className="space-y-8">
-    {/* Upcoming Registered */}
-    <div>
-      <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-        <CalendarDays className="w-5 h-5 text-indigo-600" />
-        My Upcoming Sessions
-        {registeredSessions.length > 0 && (
-          <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 text-xs font-bold px-2 py-0.5 rounded-full">
-            {registeredSessions.length}
-          </span>
-        )}
-      </h3>
-      
-      {registeredSessions.length === 0 ? (
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 p-8 text-center">
-          <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <h4 className="font-bold text-slate-600 dark:text-slate-300 mb-1">No Registered Sessions</h4>
-          <p className="text-slate-400 text-sm">Browse live coaching to find sessions to join.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {registeredSessions.map(session => (
-            <SessionCard 
-              key={session.id} 
-              session={session} 
-              isRegistered={true}
-              onCancel={onCancel}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-
-    {/* Past Sessions / Replays */}
-    <div>
-      <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-        <Video className="w-5 h-5 text-purple-600" />
-        Past Sessions & Replays
-      </h3>
-      
-      {pastSessions.length === 0 ? (
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 p-8 text-center">
-          <Video className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <h4 className="font-bold text-slate-600 dark:text-slate-300 mb-1">No Past Sessions Yet</h4>
-          <p className="text-slate-400 text-sm">Sessions you attend will appear here with replays.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {pastSessions.map(session => (
-            <div key={session.id} className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Play className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">{session.title}</h4>
-                  <p className="text-xs text-slate-400 mb-2">{session.date}</p>
-                  <button className="text-xs font-bold text-purple-600 hover:text-purple-800">
-                    Watch Replay →
+const MyCoachingSection = ({ registrations = [], sessions = [], pastSessions = [], onCancel, onReschedule, navigate }) => {
+  // Get active registrations (not cancelled/no-show) - normalize to lowercase for comparison
+  const activeRegistrations = registrations.filter(r => {
+    const status = (r.status || '').toLowerCase();
+    return status !== 'cancelled' && status !== 'no_show';
+  });
+  
+  // Separate by status (case-insensitive)
+  const scheduledRegistrations = activeRegistrations.filter(r => (r.status || '').toLowerCase() === 'registered');
+  const attendedRegistrations = activeRegistrations.filter(r => (r.status || '').toLowerCase() === 'attended');
+  const certifiedRegistrations = activeRegistrations.filter(r => (r.status || '').toLowerCase() === 'certified');
+  
+  // Find session details for a registration
+  const getSessionForRegistration = (reg) => {
+    return sessions.find(s => s.id === reg.sessionId);
+  };
+  
+  // Status badge component
+  const StatusBadge = ({ status }) => {
+    const normalizedStatus = (status || '').toLowerCase();
+    const styles = {
+      registered: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+      attended: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+      certified: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+    };
+    const labels = {
+      registered: 'Scheduled',
+      attended: 'Awaiting Certification',
+      certified: 'Certified ✓'
+    };
+    return (
+      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${styles[normalizedStatus] || styles.registered}`}>
+        {labels[normalizedStatus] || status}
+      </span>
+    );
+  };
+  
+  // Registration card component
+  const RegistrationCard = ({ registration }) => {
+    const session = getSessionForRegistration(registration);
+    const sessionDate = registration.sessionDate 
+      ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+      : 'Date TBD';
+    const sessionTime = registration.sessionTime || 'Time TBD';
+    
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-shadow">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              registration.sessionType === 'one_on_one' ? 'bg-orange-50 dark:bg-orange-900/20' :
+              registration.sessionType === 'open_gym' ? 'bg-blue-50 dark:bg-blue-900/20' :
+              'bg-teal-50 dark:bg-teal-900/20'
+            }`}>
+              {registration.sessionType === 'one_on_one' ? (
+                <UserCheck className="w-6 h-6 text-orange-600" />
+              ) : registration.sessionType === 'open_gym' ? (
+                <Users className="w-6 h-6 text-blue-600" />
+              ) : (
+                <Video className="w-6 h-6 text-teal-600" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                {registration.sessionTitle || session?.title || 'Coaching Session'}
+              </h4>
+              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-1">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{sessionDate}</span>
+                <Clock className="w-3.5 h-3.5 ml-2" />
+                <span>{sessionTime}</span>
+              </div>
+              {registration.coach && (
+                <p className="text-xs text-slate-400 mt-1">with {registration.coach}</p>
+              )}
+              {registration.coachingItemId && (
+                <p className="text-xs text-corporate-teal mt-1">
+                  Milestone {registration.coachingItemId.includes('-') ? registration.coachingItemId.split('-')[1] : ''} requirement
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <StatusBadge status={registration.status} />
+            {(registration.status || '').toLowerCase() === 'registered' && (
+              <div className="flex gap-2 mt-2">
+                {onReschedule && (
+                  <button 
+                    onClick={() => onReschedule(registration)}
+                    className="text-xs font-medium text-corporate-teal hover:text-teal-700"
+                  >
+                    Reschedule
                   </button>
+                )}
+                {onCancel && (
+                  <button 
+                    onClick={() => onCancel(session || { id: registration.sessionId })}
+                    className="text-xs font-medium text-red-500 hover:text-red-700"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Progress indicator for certification flow */}
+        {registration.coachingItemId && ((() => {
+          const status = (registration.status || '').toLowerCase();
+          const isAttendedOrCertified = status === 'attended' || status === 'certified';
+          const isCertified = status === 'certified';
+          return (
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
+            <div className="flex items-center gap-2 text-xs">
+              <div className={`flex items-center gap-1 ${registration.status ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${registration.status ? 'bg-emerald-500 text-white' : 'bg-slate-200'}`}>
+                  {registration.status ? '✓' : '1'}
                 </div>
+                <span className="font-medium">Scheduled</span>
+              </div>
+              <div className={`flex-1 h-0.5 ${isAttendedOrCertified ? 'bg-emerald-300' : 'bg-slate-200'}`} />
+              <div className={`flex items-center gap-1 ${isAttendedOrCertified ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${isAttendedOrCertified ? 'bg-emerald-500 text-white' : 'bg-slate-200'}`}>
+                  {isAttendedOrCertified ? '✓' : '2'}
+                </div>
+                <span className="font-medium">Attended</span>
+              </div>
+              <div className={`flex-1 h-0.5 ${isCertified ? 'bg-emerald-300' : 'bg-slate-200'}`} />
+              <div className={`flex items-center gap-1 ${isCertified ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${isCertified ? 'bg-emerald-500 text-white' : 'bg-slate-200'}`}>
+                  {isCertified ? '✓' : '3'}
+                </div>
+                <span className="font-medium">Certified</span>
               </div>
             </div>
-          ))}
+          </div>
+          );
+        })())}
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{scheduledRegistrations.length}</p>
+          <p className="text-xs text-blue-600 dark:text-blue-400">Upcoming</p>
+        </div>
+        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">{attendedRegistrations.length}</p>
+          <p className="text-xs text-amber-600 dark:text-amber-400">Awaiting Cert</p>
+        </div>
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{certifiedRegistrations.length}</p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-400">Certified</p>
+        </div>
+      </div>
+
+      {/* Upcoming Sessions */}
+      <div>
+        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+          <CalendarDays className="w-5 h-5 text-blue-600" />
+          Upcoming Sessions
+          {scheduledRegistrations.length > 0 && (
+            <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 text-xs font-bold px-2 py-0.5 rounded-full">
+              {scheduledRegistrations.length}
+            </span>
+          )}
+        </h3>
+        
+        {scheduledRegistrations.length === 0 ? (
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 p-8 text-center">
+            <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+            <h4 className="font-bold text-slate-600 dark:text-slate-300 mb-1">No Upcoming Sessions</h4>
+            <p className="text-slate-400 text-sm mb-4">Schedule coaching sessions from your milestone actions on the dashboard.</p>
+            <button 
+              onClick={() => navigate && navigate('dashboard')}
+              className="px-4 py-2 bg-corporate-teal text-white font-medium rounded-lg hover:bg-teal-600 transition-colors text-sm"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {scheduledRegistrations.map(reg => (
+              <RegistrationCard key={reg.id} registration={reg} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Awaiting Certification */}
+      {attendedRegistrations.length > 0 && (
+        <div>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-amber-600" />
+            Awaiting Certification
+            <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 text-xs font-bold px-2 py-0.5 rounded-full">
+              {attendedRegistrations.length}
+            </span>
+          </h3>
+          <div className="space-y-3">
+            {attendedRegistrations.map(reg => (
+              <RegistrationCard key={reg.id} registration={reg} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Certified Sessions */}
+      {certifiedRegistrations.length > 0 && (
+        <div>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-emerald-600" />
+            Certified Sessions
+            <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-xs font-bold px-2 py-0.5 rounded-full">
+              {certifiedRegistrations.length}
+            </span>
+          </h3>
+          <div className="space-y-3">
+            {certifiedRegistrations.map(reg => (
+              <RegistrationCard key={reg.id} registration={reg} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Past Sessions / Replays */}
+      {pastSessions.length > 0 && (
+        <div>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+            <Video className="w-5 h-5 text-purple-600" />
+            Past Sessions & Replays
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {pastSessions.map(session => (
+              <div key={session.id} className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Play className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">{session.title}</h4>
+                    <p className="text-xs text-slate-400 mb-2">{session.date}</p>
+                    {session.replayUrl && (
+                      <button className="text-xs font-bold text-purple-600 hover:text-purple-800">
+                        Watch Replay →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
-  </div>
-);
+  );
+};
 
 // ============================================
 // MAIN COACHING HUB COMPONENT
@@ -434,7 +627,7 @@ const CoachingHub = () => {
   const [legacySessions, setLegacySessions] = useState([]);
   const [legacyRegistrations, setLegacyRegistrations] = useState([]);
   const [legacyLoading, setLegacyLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('live'); // Default to live
+  const [activeTab, setActiveTab] = useState('my'); // Default to My Sessions
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
 
   // Day-based content unlocking
@@ -616,16 +809,16 @@ const CoachingHub = () => {
     showAllSessions: true
   };
 
-  // Zone Gate: Coaching unlocks at Day 22
+  // Zone Gate: Coaching unlocks when user enters Foundation phase
   if (!zoneVisibility.isCoachingZoneOpen) {
     return (
       <PageLayout 
-        title="Coaching" 
+        title="Coaching Sessions" 
         subtitle="Live sessions, on-demand practice, and personalized coaching"
-        icon={Megaphone}
+        icon={CoachingIcon}
         breadcrumbs={[
           { label: 'Home', path: 'dashboard' },
-          { label: 'Coaching', path: null }
+          { label: 'Coaching Sessions', path: null }
         ]}
       >
         <div className="max-w-2xl mx-auto">
@@ -633,18 +826,19 @@ const CoachingHub = () => {
             <div className="w-16 h-16 rounded-2xl bg-slate-200 flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-slate-400" />
             </div>
-            <h2 className="text-xl font-bold text-corporate-navy mb-2">Coaching Coming Soon</h2>
+            <h2 className="text-xl font-bold text-corporate-navy mb-2">Complete Your Prep First</h2>
             <p className="text-slate-600 dark:text-slate-300 mb-4">
-              The Coaching zone unlocks on Day 22 of your program.
-              {zoneVisibility.isCoaching1on1Window && (
-                <span className="block mt-2 text-corporate-teal font-medium">
-                  1:1 Coaching scheduling is available Days 23-35.
-                </span>
-              )}
+              Coaching Sessions unlock once you complete your preparation phase and enter the Foundation program.
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Current Day: {currentDayNumber} | Unlocks: Day 22
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+              Complete all required prep items to get started.
             </p>
+            <button 
+              onClick={() => navigate('dashboard')}
+              className="px-6 py-2.5 bg-corporate-teal text-white font-bold rounded-lg hover:bg-teal-600 transition-colors"
+            >
+              Go to Dashboard
+            </button>
           </div>
         </div>
       </PageLayout>
@@ -653,12 +847,12 @@ const CoachingHub = () => {
 
   return (
     <PageLayout 
-      title="Coaching" 
+      title="Coaching Sessions" 
       subtitle="Live sessions, on-demand practice, and personalized coaching"
-      icon={Megaphone}
+      icon={CoachingIcon}
       breadcrumbs={[
         { label: 'Home', path: 'dashboard' },
-        { label: 'Coaching', path: null }
+        { label: 'Coaching Sessions', path: null }
       ]}
     >
       <div className="max-w-6xl mx-auto">
@@ -666,12 +860,21 @@ const CoachingHub = () => {
         {/* Tab Navigation */}
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto">
           <div className="flex">
+            {isFeatureEnabled('coaching-my-sessions') && (
+              <TabButton 
+                active={activeTab === 'my'} 
+                onClick={() => setActiveTab('my')}
+                icon={UserCheck}
+                label="My Sessions"
+                badge={registrations.filter(r => { const s = (r.status || '').toLowerCase(); return s !== 'cancelled' && s !== 'no_show'; }).length}
+              />
+            )}
             {isFeatureEnabled('coaching-upcoming-sessions') && (
               <TabButton 
                 active={activeTab === 'live'} 
                 onClick={() => setActiveTab('live')}
                 icon={Calendar}
-                label="Live Coaching"
+                label="Browse Sessions"
                 badge={upcomingSessions.length}
               />
             )}
@@ -680,16 +883,7 @@ const CoachingHub = () => {
                 active={activeTab === 'ondemand'} 
                 onClick={() => setActiveTab('ondemand')}
                 icon={Bot}
-                label="On-Demand"
-              />
-            )}
-            {isFeatureEnabled('coaching-my-sessions') && (
-              <TabButton 
-                active={activeTab === 'my'} 
-                onClick={() => setActiveTab('my')}
-                icon={UserCheck}
-                label="My Coaching"
-                badge={registeredSessions.length}
+                label="Resources"
               />
             )}
           </div>

@@ -34,7 +34,9 @@ const ScreenMap = {
   'executive-reflection': lazy(() =>
     import('../components/screens/ExecutiveReflection.jsx')
   ),
-  community: lazy(() => import('../components/screens/CommunityScreen.jsx')),
+  community: lazy(() => import('../components/screens/CommunityHub.jsx')),
+  'community-hub': lazy(() => import('../components/screens/CommunityHub.jsx')),
+  'community-feed': lazy(() => import('../components/screens/CommunityFeed.jsx')),
   'applied-leadership': lazy(() =>
     import('../components/screens/AppliedLeadership.jsx')
   ),

@@ -22,7 +22,10 @@ import {
   ChevronUp,
   ChevronDown,
   Eye,
-  EyeOff
+  EyeOff,
+  Lock,
+  MessageSquare,
+  Zap
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -41,6 +44,25 @@ import ResourceSelector from './ResourceSelector';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import { FEATURE_METADATA } from '../../config/widgetTemplates';
 import { useFeatures } from '../../providers/FeatureProvider';
+import { SESSION_TYPES } from '../../data/Constants';
+import { COMMUNITY_SESSION_TYPES } from '../../data/Constants';
+
+// Session Type Labels for display
+const COACHING_SESSION_LABELS = {
+  [SESSION_TYPES.OPEN_GYM]: { label: 'Open Gym', description: 'Weekly drop-in feedback sessions', icon: '🏋️' },
+  [SESSION_TYPES.LEADER_CIRCLE]: { label: 'Leader Circle', description: 'Peer discussion groups', icon: '👥' },
+  [SESSION_TYPES.WORKSHOP]: { label: 'Workshop', description: 'Structured learning sessions', icon: '📚' },
+  [SESSION_TYPES.LIVE_WORKOUT]: { label: 'Live Workout', description: 'Quick skill practice', icon: '⚡' },
+  [SESSION_TYPES.ONE_ON_ONE]: { label: '1:1 Coaching', description: 'Personal coaching', icon: '🎯' }
+};
+
+const COMMUNITY_SESSION_LABELS = {
+  [COMMUNITY_SESSION_TYPES.LEADER_CIRCLE]: { label: 'Leader Circle', description: 'Peer discussion/accountability groups', icon: '👥' },
+  [COMMUNITY_SESSION_TYPES.COMMUNITY_EVENT]: { label: 'Community Event', description: 'Live networking events', icon: '🎉' },
+  [COMMUNITY_SESSION_TYPES.ACCOUNTABILITY_POD]: { label: 'Accountability Pod', description: 'Small group check-ins', icon: '🤝' },
+  [COMMUNITY_SESSION_TYPES.MASTERMIND]: { label: 'Mastermind', description: 'Expert-led group sessions', icon: '🧠' },
+  [COMMUNITY_SESSION_TYPES.NETWORKING]: { label: 'Networking', description: 'Casual networking sessions', icon: '🌐' }
+};
 
 // Categories of widgets that can be toggled per-day in the Daily Plan
 // Excludes system widgets like 'program-status-debug' which shouldn't be toggled per-day
@@ -116,7 +138,7 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
               <span className="font-bold">{day.actions?.length || 0}</span> Actions
             </span>
             {linkedResourceCount > 0 && (
-              <span className="flex items-center gap-1 text-blue-600">
+              <span className="flex items-center gap-1 text-corporate-teal">
                 <Link className="w-3 h-3" />
                 <span className="font-bold">{linkedResourceCount}</span> Linked
               </span>
@@ -170,7 +192,7 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
             <span className="font-bold">{day.actions?.length || 0}</span> Actions
           </span>
           {linkedResourceCount > 0 && (
-            <span className="flex items-center gap-1 text-blue-600">
+            <span className="flex items-center gap-1 text-corporate-teal">
               <Link className="w-3 h-3" />
               <span className="font-bold">{linkedResourceCount}</span> Linked
             </span>
@@ -200,6 +222,34 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
         [key]: !prev.dashboard?.[key]
       }
     }));
+  };
+
+  // --- Coaching Session Types Toggle ---
+  const handleCoachingSessionToggle = (sessionType) => {
+    setFormData(prev => {
+      const currentTypes = prev.coachingSessionTypes || [];
+      const isSelected = currentTypes.includes(sessionType);
+      return {
+        ...prev,
+        coachingSessionTypes: isSelected
+          ? currentTypes.filter(t => t !== sessionType)
+          : [...currentTypes, sessionType]
+      };
+    });
+  };
+
+  // --- Community Session Types Toggle ---
+  const handleCommunitySessionToggle = (sessionType) => {
+    setFormData(prev => {
+      const currentTypes = prev.communitySessionTypes || [];
+      const isSelected = currentTypes.includes(sessionType);
+      return {
+        ...prev,
+        communitySessionTypes: isSelected
+          ? currentTypes.filter(t => t !== sessionType)
+          : [...currentTypes, sessionType]
+      };
+    });
   };
 
   // --- Actions Management ---
@@ -334,18 +384,23 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
       {/* Header */}
       <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
         <div>
-          <h3 className="font-bold text-corporate-navy">Edit {formData.weekNumber < 1 ? 'Login' : 'Day'} {displayDayNumber || formData.dayNumber}</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Week {formData.weekNumber}</p>
+          <h3 className="font-bold text-corporate-navy">
+            {formData.id?.startsWith('milestone-') ? `Edit Milestone ${formData.milestone}` : `Edit ${formData.weekNumber < 1 ? 'Login' : 'Day'} ${displayDayNumber || formData.dayNumber}`}
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {formData.id?.startsWith('milestone-') ? formData.title : `Week ${formData.weekNumber}`}
+          </p>
         </div>
         <div className="flex gap-2">
-          <button onClick={onCancel} className="p-2 hover:bg-slate-200 rounded-full">
+          <button onClick={onCancel} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full">
             <ChevronRight className="w-5 h-5 text-slate-500 dark:text-slate-400" />
           </button>
           <button 
             onClick={() => onSave(formData)}
-            className="p-2 bg-corporate-teal text-white rounded-full hover:bg-teal-700 shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-2 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 shadow-sm font-medium text-sm"
           >
-            <Save className="w-5 h-5" />
+            <Save className="w-4 h-4" />
+            Save
           </button>
         </div>
       </div>
@@ -515,7 +570,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
             <div className="flex gap-1">
               <button 
                 onClick={() => handlePropagate('actions')}
-                className="text-[10px] text-blue-600 hover:underline px-1 mr-2"
+                className="text-[10px] text-corporate-teal hover:underline px-1 mr-2"
                 title="Copy these actions to Mon-Fri of this week"
               >
                 Propagate
@@ -642,19 +697,19 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
 
         {/* Linked Resources Summary */}
         {(formData.actions || []).some(a => a.resourceId) && (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-            <label className="text-xs font-bold text-blue-700 uppercase mb-2 block flex items-center gap-1">
+          <div className="bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg p-3">
+            <label className="text-xs font-bold text-corporate-teal uppercase mb-2 block flex items-center gap-1">
               <Link className="w-3 h-3" />
               Unlocked Resources ({(formData.actions || []).filter(a => a.resourceId).length})
             </label>
-            <p className="text-[10px] text-blue-600 mb-2">
+            <p className="text-[10px] text-corporate-teal mb-2">
               Resources linked to actions above are automatically unlocked for users on this day.
             </p>
             <div className="flex flex-wrap gap-1">
               {(formData.actions || [])
                 .filter(a => a.resourceId)
                 .map((action, idx) => (
-                  <span key={idx} className="bg-white dark:bg-slate-800 text-blue-700 text-[10px] px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+                  <span key={idx} className="bg-white dark:bg-slate-800 text-corporate-teal text-[10px] px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800 flex items-center gap-1">
                     {action.resourceType === 'video' && <Video className="w-2.5 h-2.5" />}
                     {action.resourceType === 'document' && <FileText className="w-2.5 h-2.5" />}
                     {action.resourceType === 'book' && <BookOpen className="w-2.5 h-2.5" />}
@@ -722,6 +777,92 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
           </div>
         )}
 
+        {/* Coaching Sessions Section */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <MessageSquare className="w-4 h-4 text-corporate-teal" />
+            <label className="text-xs font-bold text-corporate-teal uppercase">Coaching Sessions</label>
+          </div>
+          <p className="text-xs text-slate-400 mb-3">Select which coaching session types are available for this milestone. Users can schedule sessions from these types.</p>
+          <div className="space-y-2">
+            {Object.entries(COACHING_SESSION_LABELS).map(([typeKey, typeInfo]) => {
+              const isSelected = (formData.coachingSessionTypes || []).includes(typeKey);
+              return (
+                <label 
+                  key={typeKey} 
+                  className={`flex items-center justify-between p-2.5 border rounded-lg cursor-pointer transition-all ${
+                    isSelected 
+                      ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-700' 
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{typeInfo.icon}</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-slate-800 dark:text-white">{typeInfo.label}</span>
+                      <span className="text-[10px] text-slate-400">{typeInfo.description}</span>
+                    </div>
+                  </div>
+                  <input 
+                    type="checkbox" 
+                    checked={isSelected}
+                    onChange={() => handleCoachingSessionToggle(typeKey)}
+                    className="w-4 h-4 rounded border-slate-300 text-corporate-teal focus:ring-teal-500"
+                  />
+                </label>
+              );
+            })}
+          </div>
+          {(formData.coachingSessionTypes || []).length > 0 && (
+            <div className="mt-2 p-2 bg-teal-50 dark:bg-teal-900/20 rounded text-xs text-corporate-teal">
+              {(formData.coachingSessionTypes || []).length} coaching session type(s) selected
+            </div>
+          )}
+        </div>
+
+        {/* Community Sessions Section */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <Users className="w-4 h-4 text-corporate-orange" />
+            <label className="text-xs font-bold text-corporate-orange uppercase">Community Sessions</label>
+          </div>
+          <p className="text-xs text-slate-400 mb-3">Select which community session types are available for this milestone. Users can join sessions from these types.</p>
+          <div className="space-y-2">
+            {Object.entries(COMMUNITY_SESSION_LABELS).map(([typeKey, typeInfo]) => {
+              const isSelected = (formData.communitySessionTypes || []).includes(typeKey);
+              return (
+                <label 
+                  key={typeKey} 
+                  className={`flex items-center justify-between p-2.5 border rounded-lg cursor-pointer transition-all ${
+                    isSelected 
+                      ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700' 
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{typeInfo.icon}</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-slate-800 dark:text-white">{typeInfo.label}</span>
+                      <span className="text-[10px] text-slate-400">{typeInfo.description}</span>
+                    </div>
+                  </div>
+                  <input 
+                    type="checkbox" 
+                    checked={isSelected}
+                    onChange={() => handleCommunitySessionToggle(typeKey)}
+                    className="w-4 h-4 rounded border-slate-300 text-corporate-orange focus:ring-orange-500"
+                  />
+                </label>
+              );
+            })}
+          </div>
+          {(formData.communitySessionTypes || []).length > 0 && (
+            <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-900/20 rounded text-xs text-corporate-orange">
+              {(formData.communitySessionTypes || []).length} community session type(s) selected
+            </div>
+          )}
+        </div>
+
         {/* Dashboard Config */}
         <div>
           <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 block">Dashboard Widgets</label>
@@ -752,6 +893,20 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
 
       </div>
 
+      {/* Footer with Save Button */}
+      <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+        <button 
+          onClick={() => onSave(formData)}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 shadow-md font-semibold transition-all"
+        >
+          <Save className="w-5 h-5" />
+          Save Changes
+        </button>
+        <p className="text-xs text-slate-400 text-center mt-2">
+          Click to save your changes to the database
+        </p>
+      </div>
+
       {/* Picker - Only for Daily Reps Library */}
       {showContentPicker && pickerType === 'daily_rep' && (
         <ContentPicker 
@@ -766,13 +921,14 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
 
 // --- Main Component ---
 
-const DailyPlanManager = () => {
+const ContentManager = () => {
   const { db } = useAppServices();
   const [days, setDays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState(-2); // Start with Prep Phase
   const [selectedPhase, setSelectedPhase] = useState('prep'); // 'prep', 'dev', 'post'
   const [selectedPrepSection, setSelectedPrepSection] = useState('required'); // 'required' or 'explore'
+  const [selectedMilestone, setSelectedMilestone] = useState(1); // Milestone 1-5 for Foundation
   const [editingDay, setEditingDay] = useState(null);
 
   // Phase configuration
@@ -794,13 +950,14 @@ const DailyPlanManager = () => {
       id: 'dev', 
       name: 'Foundation', 
       emoji: '🎯',
-      description: '8-Week Core Program (Days 1-56)',
-      weekRange: [1, 8], // Weeks 1-8
+      description: '5 Gated Milestones (Self-Paced, Facilitator Approval Required)',
+      weekRange: [1, 5], // Milestones 1-5 (reusing weekRange for milestone numbers)
       bgColor: 'bg-teal-50 dark:bg-teal-900/20',
       textColor: 'text-corporate-teal',
       borderColor: 'border-corporate-teal',
       activeColor: 'bg-corporate-teal',
-      dayOffset: 14
+      dayOffset: 14,
+      isMilestoneBased: true // Flag for milestone-based progression
     },
     post: { 
       id: 'post', 
@@ -841,14 +998,81 @@ const DailyPlanManager = () => {
     }
   };
 
+  // Foundation Milestone configuration (5 gated milestones)
+  const MILESTONES = {
+    1: {
+      id: 1,
+      name: 'Milestone 1',
+      title: 'Foundation Basics',
+      emoji: '📍',
+      description: 'Core leadership fundamentals and self-awareness',
+      bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
+      textColor: 'text-emerald-700',
+      borderColor: 'border-emerald-300',
+      activeColor: 'bg-emerald-500'
+    },
+    2: {
+      id: 2,
+      name: 'Milestone 2',
+      title: 'Communication Mastery',
+      emoji: '🎯',
+      description: 'Effective communication and influence skills',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+      textColor: 'text-blue-700',
+      borderColor: 'border-blue-300',
+      activeColor: 'bg-blue-500'
+    },
+    3: {
+      id: 3,
+      name: 'Milestone 3',
+      title: 'Team Leadership',
+      emoji: '💡',
+      description: 'Building and leading high-performing teams',
+      bgColor: 'bg-amber-50 dark:bg-amber-900/20',
+      textColor: 'text-amber-700',
+      borderColor: 'border-amber-300',
+      activeColor: 'bg-amber-500'
+    },
+    4: {
+      id: 4,
+      name: 'Milestone 4',
+      title: 'Strategic Thinking',
+      emoji: '🚀',
+      description: 'Strategic planning and decision-making',
+      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+      textColor: 'text-purple-700',
+      borderColor: 'border-purple-300',
+      activeColor: 'bg-purple-500'
+    },
+    5: {
+      id: 5,
+      name: 'Milestone 5',
+      title: 'Executive Presence',
+      emoji: '🏆',
+      description: 'Executive presence and organizational impact',
+      bgColor: 'bg-rose-50 dark:bg-rose-900/20',
+      textColor: 'text-rose-700',
+      borderColor: 'border-rose-300',
+      activeColor: 'bg-rose-500'
+    }
+  };
+
   // Load Data
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const q = query(collection(db, 'daily_plan_v1'), orderBy('dayNumber', 'asc'));
-        const snap = await getDocs(q);
+        // Don't use orderBy - it excludes documents without that field (like milestones)
+        // We'll sort client-side instead
+        const collRef = collection(db, 'daily_plan_v1');
+        const snap = await getDocs(collRef);
         const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Sort by dayNumber (documents without dayNumber go to the end)
+        data.sort((a, b) => {
+          const aDayNum = a.dayNumber ?? Infinity;
+          const bDayNum = b.dayNumber ?? Infinity;
+          return aDayNum - bDayNum;
+        });
         setDays(data);
       } catch (error) {
         console.error("Error loading daily plan:", error);
@@ -934,8 +1158,30 @@ const DailyPlanManager = () => {
       // Explore shows ONE single configurable item
       return selectedPrepSection === 'required' ? requiredPrepDays : [exploreItem];
     }
+    if (selectedPhase === 'dev') {
+      // Foundation uses milestone-based content (1 block per milestone)
+      // Find/create a milestone content item for the selected milestone
+      const milestoneId = `milestone-${selectedMilestone}`;
+      const existingMilestone = days.find(d => d.id === milestoneId);
+      if (existingMilestone) {
+        return [existingMilestone];
+      }
+      // Return a placeholder milestone item
+      const milestoneData = MILESTONES[selectedMilestone];
+      return [{
+        id: milestoneId,
+        milestone: selectedMilestone,
+        phase: 'foundation',
+        title: milestoneData?.title || `Milestone ${selectedMilestone}`,
+        description: milestoneData?.description || '',
+        actions: [],
+        resources: [],
+        isPlaceholder: true
+      }];
+    }
+    // Ascent (post) uses week-based
     return weeks[selectedWeek] || [];
-  }, [selectedPhase, selectedPrepSection, requiredPrepDays, exploreItem, weeks, selectedWeek]);
+  }, [selectedPhase, selectedPrepSection, requiredPrepDays, exploreItem, weeks, selectedWeek, days, selectedMilestone]);
 
   // Handle phase change - jump to first week of that phase
   const handlePhaseChange = (phaseId) => {
@@ -982,14 +1228,38 @@ const DailyPlanManager = () => {
   const handleSaveDay = async (updatedDay) => {
     try {
       const cleanDay = removeUndefined(updatedDay);
+      
+      // Check if this is a milestone document and if it has any content configured
+      // If so, remove the isPlaceholder flag
+      const isMilestone = cleanDay.id?.startsWith('milestone-');
+      if (isMilestone) {
+        const hasContent = 
+          (cleanDay.actions && cleanDay.actions.length > 0) ||
+          (cleanDay.resources && cleanDay.resources.length > 0) ||
+          (cleanDay.coachingSessionTypes && cleanDay.coachingSessionTypes.length > 0) ||
+          (cleanDay.communitySessionTypes && cleanDay.communitySessionTypes.length > 0);
+        
+        if (hasContent) {
+          cleanDay.isPlaceholder = false;
+        }
+      }
+      
       const ref = doc(db, 'daily_plan_v1', cleanDay.id);
       await setDoc(ref, {
         ...cleanDay,
         updatedAt: serverTimestamp()
       });
       
-      // Update local state
-      setDays(prev => prev.map(d => d.id === cleanDay.id ? cleanDay : d));
+      // Update local state - add if new (placeholder), or update if existing
+      setDays(prev => {
+        const exists = prev.some(d => d.id === cleanDay.id);
+        if (exists) {
+          return prev.map(d => d.id === cleanDay.id ? cleanDay : d);
+        } else {
+          // New document (was a placeholder) - add it to the list
+          return [...prev, cleanDay];
+        }
+      });
       setEditingDay(null);
     } catch (error) {
       console.error("Error saving day:", error);
@@ -1013,46 +1283,32 @@ const DailyPlanManager = () => {
           <div>
             <h2 className="text-2xl font-bold text-corporate-navy flex items-center gap-2">
               <Calendar className="w-6 h-6" />
-              Daily Plan Manager
+              Content Manager
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm">
-              Manage the day-by-day journey. {days.length} days defined.
+              Manage milestone content, coaching, and resources. {days.length} items defined.
             </p>
           </div>
         </div>
         
         {/* Phase Tabs - Primary Navigation */}
         <div className="flex gap-2 mb-4">
-          {Object.values(PHASES).map(phase => {
-            // Only show week count for Foundation (dev) phase
-            const showWeekCount = phase.id === 'dev';
-            const weekCount = weekNumbers.filter(w => w >= phase.weekRange[0] && w <= phase.weekRange[1]).length;
-            
-            return (
-              <button
-                key={phase.id}
-                onClick={() => handlePhaseChange(phase.id)}
-                className={`
-                  flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all
-                  ${selectedPhase === phase.id 
-                    ? `${phase.activeColor} text-white shadow-md` 
-                    : `${phase.bgColor} ${phase.textColor} hover:opacity-80 border ${phase.borderColor}`
-                  }
-                `}
-              >
-                <span>{phase.emoji}</span>
-                <span>{phase.name}</span>
-                {showWeekCount && (
-                  <span className={`
-                    text-xs px-1.5 py-0.5 rounded-full
-                    ${selectedPhase === phase.id ? 'bg-white/20 dark:bg-slate-800/20' : 'bg-black/5'}
-                  `}>
-                    {weekCount} wks
-                  </span>
-                )}
-              </button>
-            );
-          })}
+          {Object.values(PHASES).map(phase => (
+            <button
+              key={phase.id}
+              onClick={() => handlePhaseChange(phase.id)}
+              className={`
+                flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all
+                ${selectedPhase === phase.id 
+                  ? `${phase.activeColor} text-white shadow-md` 
+                  : `${phase.bgColor} ${phase.textColor} hover:opacity-80 border ${phase.borderColor}`
+                }
+              `}
+            >
+              <span>{phase.emoji}</span>
+              <span>{phase.name}</span>
+            </button>
+          ))}
         </div>
         
         {/* Week/Section Selector - Context-aware based on phase */}
@@ -1079,8 +1335,62 @@ const DailyPlanManager = () => {
               ))}
             </div>
           </div>
+        ) : selectedPhase === 'dev' ? (
+          // FOUNDATION PHASE: Milestone selector (gated, requires facilitator approval)
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-bold text-slate-400 uppercase">MILESTONE:</span>
+            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+              <button 
+                onClick={() => {
+                  if (selectedMilestone > 1) setSelectedMilestone(selectedMilestone - 1);
+                }}
+                disabled={selectedMilestone === 1}
+                className="p-1.5 hover:bg-white rounded-md disabled:opacity-30"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              
+              {/* Milestone Pills */}
+              <div className="flex gap-1 px-2">
+                {Object.values(MILESTONES).map(milestone => (
+                  <button
+                    key={milestone.id}
+                    onClick={() => {
+                      setSelectedMilestone(milestone.id);
+                      setSelectedWeek(milestone.id); // Sync with week for data fetching
+                    }}
+                    title={milestone.title}
+                    className={`
+                      flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all
+                      ${selectedMilestone === milestone.id 
+                        ? `${milestone.activeColor} text-white` 
+                        : 'hover:bg-white text-slate-600 dark:text-slate-300'
+                      }
+                    `}
+                  >
+                    <span>{milestone.emoji}</span>
+                    <span>M{milestone.id}</span>
+                  </button>
+                ))}
+              </div>
+              
+              <button 
+                onClick={() => {
+                  if (selectedMilestone < 5) setSelectedMilestone(selectedMilestone + 1);
+                }}
+                disabled={selectedMilestone === 5}
+                className="p-1.5 hover:bg-white rounded-md disabled:opacity-30"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+              <Lock className="w-3 h-3" />
+              Gated (Facilitator Approval)
+            </span>
+          </div>
         ) : (
-          // DEV/POST PHASE: Week-based selector
+          // POST PHASE: Week-based selector (Ascent)
           <div className="flex items-center gap-4">
             <span className="text-xs font-bold text-slate-400 uppercase">Week:</span>
             <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
@@ -1110,10 +1420,7 @@ const DailyPlanManager = () => {
                         }
                       `}
                     >
-                      {selectedPhase === 'dev' 
-                        ? `Wk ${weekNum}` 
-                        : `W${weekNum - 8}`
-                      }
+                      W{weekNum - 8}
                     </button>
                   ))
                 ) : (
@@ -1141,6 +1448,10 @@ const DailyPlanManager = () => {
         <div className={`px-6 py-2 text-sm font-medium ${PREP_SECTIONS[selectedPrepSection].bgColor} ${PREP_SECTIONS[selectedPrepSection].textColor} border-b ${PREP_SECTIONS[selectedPrepSection].borderColor}`}>
           {PREP_SECTIONS[selectedPrepSection].emoji} {PREP_SECTIONS[selectedPrepSection].description}
         </div>
+      ) : selectedPhase === 'dev' ? (
+        <div className={`px-6 py-2 text-sm font-medium ${MILESTONES[selectedMilestone].bgColor} ${MILESTONES[selectedMilestone].textColor} border-b ${MILESTONES[selectedMilestone].borderColor}`}>
+          {MILESTONES[selectedMilestone].emoji} <strong>{MILESTONES[selectedMilestone].name}:</strong> {MILESTONES[selectedMilestone].title} — {MILESTONES[selectedMilestone].description}
+        </div>
       ) : (
         <div className={`px-6 py-2 text-sm font-medium ${currentPhase.bgColor} ${currentPhase.textColor} border-b ${currentPhase.borderColor}`}>
           {currentPhase.emoji} {currentPhase.description}
@@ -1149,12 +1460,69 @@ const DailyPlanManager = () => {
 
       {/* Day Cards Grid */}
       <div className="flex-1 p-6 overflow-y-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className={selectedPhase === 'dev' ? "max-w-2xl" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"}>
           {currentWeekDays.map((day, idx) => {
             // For prep phase, show sequential item numbers within the section
+            // For dev (Foundation), show milestone number
+            // For post (Ascent), show day number
             const displayDay = selectedPhase === 'prep' 
               ? idx + 1 
-              : day.dayNumber - (currentPhase.dayOffset || 0);
+              : selectedPhase === 'dev'
+                ? selectedMilestone
+                : day.dayNumber - (currentPhase.dayOffset || 0);
+            
+            // For Foundation milestones, render a milestone card instead of day card
+            if (selectedPhase === 'dev') {
+              const milestoneData = MILESTONES[selectedMilestone];
+              return (
+                <Card 
+                  key={day.id}
+                  className={`border-2 ${milestoneData.borderColor} ${milestoneData.bgColor} hover:shadow-lg transition-all cursor-pointer`}
+                  onClick={() => setEditingDay(day)}
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${milestoneData.activeColor}`}>
+                          {milestoneData.emoji}
+                        </div>
+                        <div>
+                          <h3 className={`text-lg font-bold ${milestoneData.textColor}`}>
+                            {milestoneData.name}
+                          </h3>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">
+                            {milestoneData.title}
+                          </p>
+                        </div>
+                      </div>
+                      {day.isPlaceholder && (
+                        <span className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full">
+                          Not configured
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                      {milestoneData.description}
+                    </p>
+                    <div className="flex items-center gap-4 text-sm text-slate-500 flex-wrap">
+                      <span>{(day.actions || []).length} Actions</span>
+                      <span>{(day.resources || []).length} Resources</span>
+                      {(day.coachingSessionTypes || []).length > 0 && (
+                        <span className="text-corporate-teal">{(day.coachingSessionTypes || []).length} Coaching</span>
+                      )}
+                      {(day.communitySessionTypes || []).length > 0 && (
+                        <span className="text-corporate-orange">{(day.communitySessionTypes || []).length} Community</span>
+                      )}
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                      <button className="text-sm font-medium text-corporate-teal hover:underline flex items-center gap-1">
+                        Configure Milestone Content →
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            }
             
             return (
               <DayCard 
@@ -1171,6 +1539,11 @@ const DailyPlanManager = () => {
                 <>
                   <p className="text-lg font-medium mb-2">No Required Prep items found</p>
                   <p className="text-sm">Configure prep content in the daily_plan_v1 collection.</p>
+                </>
+              ) : selectedPhase === 'dev' ? (
+                <>
+                  <p className="text-lg font-medium mb-2">Milestone {selectedMilestone} not configured</p>
+                  <p className="text-sm">Click to set up content for this milestone.</p>
                 </>
               ) : (
                 <>
@@ -1200,4 +1573,4 @@ const DailyPlanManager = () => {
   );
 };
 
-export default DailyPlanManager;
+export default ContentManager;

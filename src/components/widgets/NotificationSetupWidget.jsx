@@ -31,10 +31,14 @@ const NotificationSetupWidget = () => {
         if (userSnap.exists()) {
           const data = userSnap.data();
           const ns = data.notificationSettings;
-          if (ns && ns.strategy) {
+          // Only consider complete if prepStatus.notifications is set
+          // Previously checked ns.strategy but that was triggered by defaults from Leader Profile
+          if (data.prepStatus?.notifications) {
             setSettings(ns);
-            // Consider complete if a strategy has been explicitly selected
             setIsComplete(true);
+          } else if (ns && ns.strategy) {
+            // Has settings but not explicitly completed - show partial state
+            setSettings(ns);
           }
         }
       } catch (error) {

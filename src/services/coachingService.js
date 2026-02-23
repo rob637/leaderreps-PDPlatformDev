@@ -23,11 +23,12 @@ import {
   COACHING_SESSIONS_COLLECTION,
   COACHING_REGISTRATIONS_COLLECTION,
   SESSION_TYPES,
-  SESSION_STATUS
+  SESSION_STATUS,
+  REGISTRATION_STATUS
 } from '../data/Constants';
 
 // Re-export for convenience
-export { SESSION_TYPES, SESSION_STATUS };
+export { SESSION_TYPES, SESSION_STATUS, REGISTRATION_STATUS };
 
 // Legacy collection object for backward compatibility
 export const COACHING_COLLECTIONS = {
@@ -440,10 +441,137 @@ export const clearCoachingData = async (db) => {
   }
 };
 
+// ============================================
+// FACILITATOR FUNCTIONS - Attendance & Certification
+// ============================================
+
+/**
+ * Get all registrations for a session (for facilitator view)
+ */
+export const getSessionRegistrations = async (db, sessionId) => {
+  if (!db) throw new Error('Database not initialized');
+  
+  const registrationsRef = collection(db, COACHING_COLLECTIONS.REGISTRATIONS);
+  const q = query(registrationsRef, where('sessionId', '==', sessionId));
+  const snapshot = await getDocs(q);
+  
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+};
+
+/**
+ * Mark a participant as attended (facilitator action)
+ */
+export const markParticipantAttended = async (db, sessionId, userId, facilitatorId) => {
+  if (!db) throw new Error('Database not initialized');
+  
+  const registrationId = `${sessionId}_${userId}`;
+  const regRef = doc(db, COACHING_COLLECTIONS.REGISTRATIONS, registrationId);
+  
+  await updateDoc(regRef, {
+    status: REGISTRATION_STATUS.ATTENDED,
+    attendedAt: serverTimestamp(),
+    markedAttendedBy: facilitatorId
+  });
+  
+  console.log(`[coachingService] Marked attended: ${userId} for session ${sessionId}`);
+  return { success: true };
+};
+
+/**
+ * Certify a participant for milestone progression (facilitator action)
+ * This is the final step that allows the participant to progress to the next milestone
+ */
+export const certifyParticipant = async (db, sessionId, userId, facilitatorId, notes = '') => {
+  if (!db) throw new Error('Database not initialized');
+  
+  const registrationId = `${sessionId}_${userId}`;
+  const regRef = doc(db, COACHING_COLLECTIONS.REGISTRATIONS, registrationId);
+  
+  await updateDoc(regRef, {
+    status: REGISTRATION_STATUS.CERTIFIED,
+    certifiedAt: serverTimestamp(),
+    certifiedBy: facilitatorId,
+    certificationNotes: notes
+  });
+  
+  console.log(`[coachingService] Certified participant: ${userId} for session ${sessionId}`);
+  return { success: true };
+};
+
+/**
+ * Mark a participant as no-show
+ */
+export const markNoShow = async (db, sessionId, userId, facilitatorId) => {
+  if (!db) throw new Error('Database not initialized');
+  
+  const registrationId = `${sessionId}_${userId}`;
+  const regRef = doc(db, COACHING_COLLECTIONS.REGISTRATIONS, registrationId);
+  
+  await updateDoc(regRef, {
+    status: REGISTRATION_STATUS.NO_SHOW,
+    markedNoShowAt: serverTimestamp(),
+    markedNoShowBy: facilitatorId
+  });
+  
+  console.log(`[coachingService] Marked no-show: ${userId} for session ${sessionId}`);
+  return { success: true };
+};
+
+/**
+ * Get all sessions that need attendance/certification (facilitator dashboard)
+ * Returns sessions from the past week that have registrations
+ */
+export const getSessionsAwaitingReview = async (db) => {
+  if (!db) throw new Error('Database not initialized');
+  
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  
+  // Get recent sessions
+  const sessionsRef = collection(db, COACHING_COLLECTIONS.SESSIONS);
+  const sessionsSnap = await getDocs(sessionsRef);
+  
+  const sessionsNeedingReview = [];
+  
+  for (const sessionDoc of sessionsSnap.docs) {
+    const session = { id: sessionDoc.id, ...sessionDoc.data() };
+    const sessionDate = new Date(session.date);
+    
+    // Only include past sessions from the last week
+    if (sessionDate > now || sessionDate < weekAgo) continue;
+    
+    // Get registrations for this session
+    const regs = await getSessionRegistrations(db, session.id);
+    
+    // Check if any need attention (attended but not certified, or registered but not attended)
+    const needsReview = regs.filter(r => 
+      r.status === REGISTRATION_STATUS.REGISTERED ||
+      r.status === REGISTRATION_STATUS.ATTENDED
+    );
+    
+    if (needsReview.length > 0) {
+      sessionsNeedingReview.push({
+        ...session,
+        registrations: regs,
+        pendingCount: needsReview.length
+      });
+    }
+  }
+  
+  // Sort by date descending
+  sessionsNeedingReview.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  return sessionsNeedingReview;
+};
+
 export default {
   COACHING_COLLECTIONS,
   SESSION_TYPES,
   SESSION_STATUS,
+  REGISTRATION_STATUS,
   createSessionType,
   createSession,
   generateSessionsFromType,
@@ -453,5 +581,11 @@ export default {
   getRegistrationCount,
   updateSpotsLeft,
   seedCoachingData,
-  clearCoachingData
+  clearCoachingData,
+  // Facilitator functions
+  getSessionRegistrations,
+  markParticipantAttended,
+  certifyParticipant,
+  markNoShow,
+  getSessionsAwaitingReview
 };

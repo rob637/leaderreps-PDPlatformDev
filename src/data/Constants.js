@@ -250,9 +250,11 @@ export const SESSION_STATUS = {
 };
 
 // Registration Status
+// Flow: registered → attended → certified (for milestone progression)
 export const REGISTRATION_STATUS = {
-    REGISTERED: 'registered',
-    ATTENDED: 'attended',
+    REGISTERED: 'registered',       // User booked the session
+    ATTENDED: 'attended',           // User attended (or marked attended)
+    CERTIFIED: 'certified',         // Facilitator certified/approved progression
     NO_SHOW: 'no_show',
     CANCELLED: 'cancelled'
 };

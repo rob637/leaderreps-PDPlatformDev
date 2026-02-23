@@ -3,7 +3,6 @@ import {
   LayoutDashboard, 
   Target, 
   BookOpen, 
-  Megaphone, 
   User, 
   LogOut,
   ChevronLeft,
@@ -17,7 +16,7 @@ import {
   AlertTriangle,
   Sparkles
 } from 'lucide-react';
-import { CommunityIcon, LockerIcon } from '../icons';
+import { CommunityIcon, CoachingIcon, LockerIcon } from '../icons';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
@@ -76,9 +75,9 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
     
     { type: 'section', label: 'Resources' },
-    { id: 'community', label: 'Community', icon: CommunityIcon, flag: 'enableCommunity', devModeOnly: true },
+    { id: 'community', label: 'Events', icon: CommunityIcon, flag: 'enableCommunity', devModeOnly: true },
     { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' }, // Using enableReadings as proxy for Content
-    { id: 'coaching-hub', label: 'Coaching', icon: Megaphone, flag: 'enableLabs', devModeOnly: true },
+    { id: 'coaching-hub', label: 'Sessions', icon: CoachingIcon, flag: 'enableLabs', devModeOnly: true },
     
     { type: 'section', label: 'Personal' },
     { id: 'locker', label: 'Your Locker', icon: LockerIcon },

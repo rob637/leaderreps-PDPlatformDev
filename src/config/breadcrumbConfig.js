@@ -165,15 +165,15 @@ export const BREADCRUMB_MAP = {
   // ============================================
   'coaching-hub': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Coaching Hub', path: null }
+    { label: 'Coaching Sessions', path: null }
   ],
   'coaching-lab': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Coaching Hub', path: null }
+    { label: 'Coaching Sessions', path: null }
   ],
   'labs': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Coaching Hub', path: null }
+    { label: 'Coaching Sessions', path: null }
   ],
 
   // ============================================
@@ -201,7 +201,7 @@ export const BREADCRUMB_MAP = {
   // ============================================
   'community': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Community', path: null }
+    { label: 'Community Events', path: null }
   ],
 
   // ============================================

@@ -55,7 +55,7 @@ const FAQ_DATA = [
       },
       {
         q: 'How long is the program?',
-        a: 'The core program runs for 8 weeks, with weekly live sessions and daily practice between sessions. After the 8-week program, you continue with ongoing daily practice and access to resources.'
+        a: 'The core program consists of 5 main milestones, with live coaching sessions and daily practice between sessions. After completing all milestones, you continue with ongoing daily practice and access to resources.'
       },
       {
         q: 'What happens in Session One?',

@@ -82,7 +82,23 @@ export const useCoachingRegistrations = () => {
     );
   }, [registrations]);
 
-  // Register for a session
+  // Get registration for a specific coaching item (dev plan action)
+  // Returns the active registration for this coaching item if one exists
+  const getRegistrationForCoachingItem = useCallback((coachingItemId) => {
+    if (!coachingItemId) return null;
+    return registrations.find(
+      r => r.coachingItemId === coachingItemId && 
+           r.status !== REGISTRATION_STATUS.CANCELLED &&
+           r.status !== REGISTRATION_STATUS.NO_SHOW
+    );
+  }, [registrations]);
+
+  // Check if user has registered for a coaching item (any session)
+  const hasRegisteredForCoachingItem = useCallback((coachingItemId) => {
+    return !!getRegistrationForCoachingItem(coachingItemId);
+  }, [getRegistrationForCoachingItem]);
+
+  // Register for a session (cancels previous registration for same coaching item if switching)
   const registerForSession = useCallback(async (session, additionalData = {}) => {
     if (!db || !user?.uid) {
       console.error('[useCoachingRegistrations] Cannot register: no db or user');
@@ -94,9 +110,79 @@ export const useCoachingRegistrations = () => {
       return { success: false, error: 'Invalid session' };
     }
 
-    // Check if already registered
-    if (isRegistered(session.id)) {
-      return { success: false, error: 'Already registered' };
+    const coachingItemId = additionalData.coachingItemId;
+    const sessionType = session.sessionType || '';
+    
+    // For 1:1 coaching sessions, only allow ONE active registration at a time
+    // (regardless of coaching item - you can only have one 1:1 scheduled)
+    if (sessionType === 'one_on_one') {
+      const existing1on1 = registrations.find(r =>
+        r.sessionType === 'one_on_one' &&
+        r.status !== REGISTRATION_STATUS.CANCELLED &&
+        r.status !== REGISTRATION_STATUS.NO_SHOW &&
+        r.status !== REGISTRATION_STATUS.CERTIFIED &&
+        r.sessionId !== session.id
+      );
+      if (existing1on1) {
+        // If switching (coachingItemId provided), cancel the old one first
+        if (coachingItemId) {
+          console.log('[useCoachingRegistrations] Switching 1:1 - cancelling previous:', existing1on1.sessionId);
+          try {
+            const oldRegRef = doc(db, COACHING_REGISTRATIONS_COLLECTION, existing1on1.id);
+            await setDoc(oldRegRef, {
+              status: REGISTRATION_STATUS.CANCELLED,
+              cancelledAt: serverTimestamp(),
+              cancelReason: 'switched_session'
+            }, { merge: true });
+          } catch (err) {
+            console.error('[useCoachingRegistrations] Error cancelling previous 1:1:', err);
+            return { success: false, error: 'Failed to cancel previous session' };
+          }
+        } else {
+          // No coachingItemId means they're not switching - block the registration
+          console.log('[useCoachingRegistrations] Already have active 1:1 registration');
+          return { 
+            success: false, 
+            error: 'You already have a 1:1 coaching session scheduled. Cancel or attend your current session first.' 
+          };
+        }
+      }
+    }
+    
+    // When switching sessions for a coaching item, handle cancellation first
+    if (coachingItemId) {
+      // Find ALL active registrations for this coaching item
+      const existingRegistrations = registrations.filter(r => 
+        r.coachingItemId === coachingItemId && 
+        r.status !== REGISTRATION_STATUS.CANCELLED &&
+        r.status !== REGISTRATION_STATUS.NO_SHOW
+      );
+      
+      // Cancel any registrations for different sessions
+      for (const existingReg of existingRegistrations) {
+        if (existingReg.sessionId !== session.id) {
+          console.log('[useCoachingRegistrations] Switching sessions - cancelling previous:', existingReg.sessionId);
+          try {
+            const oldRegRef = doc(db, COACHING_REGISTRATIONS_COLLECTION, existingReg.id);
+            await setDoc(oldRegRef, {
+              status: REGISTRATION_STATUS.CANCELLED,
+              cancelledAt: serverTimestamp(),
+              cancelReason: 'switched_session'
+            }, { merge: true });
+          } catch (err) {
+            console.error('[useCoachingRegistrations] Error cancelling previous registration:', err);
+          }
+        } else {
+          // Already registered for this exact session for this coaching item - success!
+          console.log('[useCoachingRegistrations] Already registered for target session');
+          return { success: true, message: 'Already registered for this session' };
+        }
+      }
+    } else {
+      // No coachingItemId - standard registration check
+      if (isRegistered(session.id)) {
+        return { success: false, error: 'Already registered for this session' };
+      }
     }
 
     try {
@@ -116,6 +202,7 @@ export const useCoachingRegistrations = () => {
         sessionDate: session.date || null,
         sessionTime: session.time || null,
         coach: session.coach || null,
+        coachEmail: session.coachEmail || null, // For facilitator notifications
         skillFocus: session.skillFocus || session.skills || [],
         
         // Additional metadata (e.g. coachingItemId from dev plan)
@@ -138,7 +225,7 @@ export const useCoachingRegistrations = () => {
       console.error('[useCoachingRegistrations] Error registering:', err);
       return { success: false, error: err.message };
     }
-  }, [db, user, isRegistered]);
+  }, [db, user, isRegistered, registrations]);
 
   // Cancel registration
   const cancelRegistration = useCallback(async (sessionId) => {
@@ -238,7 +325,18 @@ export const useCoachingRegistrations = () => {
 
   // Get attended sessions (for stats)
   const getAttendedSessions = useCallback(() => {
-    return registrations.filter(r => r.status === REGISTRATION_STATUS.ATTENDED);
+    return registrations.filter(r => r.status === REGISTRATION_STATUS.ATTENDED || r.status === REGISTRATION_STATUS.CERTIFIED);
+  }, [registrations]);
+
+  // Get certified sessions (for milestone progression)
+  const getCertifiedSessions = useCallback(() => {
+    return registrations.filter(r => r.status === REGISTRATION_STATUS.CERTIFIED);
+  }, [registrations]);
+
+  // Check if a session is certified (for milestone completion)
+  const isCertified = useCallback((sessionId) => {
+    const reg = registrations.find(r => r.sessionId === sessionId);
+    return reg?.status === REGISTRATION_STATUS.CERTIFIED;
   }, [registrations]);
 
   // Calculate coaching stats
@@ -246,6 +344,7 @@ export const useCoachingRegistrations = () => {
     totalRegistrations: registrations.filter(r => r.status !== REGISTRATION_STATUS.CANCELLED).length,
     upcomingCount: getUpcomingRegistrations().length,
     attendedCount: getAttendedSessions().length,
+    certifiedCount: getCertifiedSessions().length,
     replaysWatched: registrations.filter(r => r.watchedReplay).length
   };
 
@@ -259,9 +358,13 @@ export const useCoachingRegistrations = () => {
     // Query methods
     isRegistered,
     getRegistration,
+    getRegistrationForCoachingItem,
+    hasRegisteredForCoachingItem,
     getUpcomingRegistrations,
     getPastRegistrations,
     getAttendedSessions,
+    getCertifiedSessions,
+    isCertified,
     
     // Action methods
     registerForSession,

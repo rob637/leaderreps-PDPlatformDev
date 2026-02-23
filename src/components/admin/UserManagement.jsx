@@ -19,7 +19,10 @@ import {
   Eye,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Edit,
+  Plus,
+  UserCog
 } from 'lucide-react';
 import { 
   collection, 
@@ -42,30 +45,8 @@ import { buildModulePath } from '../../services/pathUtils';
 import { COMMON_TIMEZONES, DEFAULT_TIMEZONE } from '../../services/dateUtils';
 import NotificationSettingsModal from './NotificationSettingsModal';
 
-// Predefined Facilitator Profiles
-// These are the official LeaderReps facilitators with their profile info pre-populated
-const FACILITATOR_PROFILES = {
-  'ryan@leaderreps.com': {
-    id: 'ryan-yeoman',
-    email: 'ryan@leaderreps.com',
-    displayName: 'Ryan Yeoman',
-    title: 'Founder & Lead Facilitator',
-    bio: 'Ryan is the founder of LeaderReps and has spent over 15 years helping leaders develop the habits and mindsets that drive exceptional performance. His approach combines practical leadership science with real-world application.',
-    photoUrl: 'https://firebasestorage.googleapis.com/v0/b/leaderreps-pd-platform.appspot.com/o/facilitators%2Fryan-yeoman.jpg?alt=media',
-    phone: '',
-    linkedIn: 'ryanyeoman'
-  },
-  'cristina@leaderreps.com': {
-    id: 'cristina-stensvaag',
-    email: 'cristina@leaderreps.com',
-    displayName: 'Cristina Stensvaag',
-    title: 'Leadership Facilitator',
-    bio: 'Cristina brings a wealth of experience in leadership development and executive coaching. She is passionate about helping leaders unlock their full potential through structured practice and reflection.',
-    photoUrl: 'https://firebasestorage.googleapis.com/v0/b/leaderreps-pd-platform.appspot.com/o/facilitators%2Fcristina-stensvaag.jpg?alt=media',
-    phone: '',
-    linkedIn: 'cristinastensvaag'
-  }
-};
+// Facilitators are now stored in Firestore 'facilitators' collection
+// and managed via the Facilitators tab in this admin panel
 
 const UserManagement = () => {
   const { db, user } = useAppServices();
@@ -101,46 +82,35 @@ const UserManagement = () => {
     timezone: DEFAULT_TIMEZONE,
     description: '',
     facilitatorId: '',
-    facilitatorTitle: '',
-    facilitatorBio: '',
-    facilitatorPhotoUrl: '',
-    facilitatorPhone: '',
-    facilitatorLinkedIn: '',
     maxCapacity: 25,
     allowLateJoins: true,
-    lateJoinCutoff: 3
+    lateJoinCutoff: 0
   });
   const [isCohortModalOpen, setIsCohortModalOpen] = useState(false);
   const [savingCohort, setSavingCohort] = useState(false);
   const [fetchError, setFetchError] = useState(null);
 
-  // Handler to select a facilitator and auto-populate their profile
+  // Facilitator State
+  const [facilitators, setFacilitators] = useState([]);
+  const [facilitatorForm, setFacilitatorForm] = useState({
+    id: null,
+    displayName: '',
+    email: '',
+    title: '',
+    bio: '',
+    photoUrl: '',
+    phone: '',
+    linkedIn: ''
+  });
+  const [isFacilitatorModalOpen, setIsFacilitatorModalOpen] = useState(false);
+  const [savingFacilitator, setSavingFacilitator] = useState(false);
+
+  // Handler to select a facilitator for a cohort
   const handleFacilitatorSelect = (facilitatorId) => {
-    // Check if it's a predefined facilitator (by email key)
-    const predefinedFacilitator = Object.values(FACILITATOR_PROFILES).find(f => f.id === facilitatorId);
-    
-    if (predefinedFacilitator) {
-      setCohortForm(prev => ({
-        ...prev,
-        facilitatorId: predefinedFacilitator.id,
-        facilitatorTitle: predefinedFacilitator.title,
-        facilitatorBio: predefinedFacilitator.bio,
-        facilitatorPhotoUrl: predefinedFacilitator.photoUrl,
-        facilitatorPhone: predefinedFacilitator.phone,
-        facilitatorLinkedIn: predefinedFacilitator.linkedIn
-      }));
-    } else {
-      // Clear facilitator fields if no match or empty selection
-      setCohortForm(prev => ({
-        ...prev,
-        facilitatorId: facilitatorId,
-        facilitatorTitle: '',
-        facilitatorBio: '',
-        facilitatorPhotoUrl: '',
-        facilitatorPhone: '',
-        facilitatorLinkedIn: ''
-      }));
-    }
+    setCohortForm(prev => ({
+      ...prev,
+      facilitatorId: facilitatorId
+    }));
   };
 
   // Email Template State
@@ -176,8 +146,18 @@ const UserManagement = () => {
       }
       setAdminEmails(admins);
 
-      // Note: Facilitators are now defined in FACILITATOR_PROFILES constant
-      // No need to fetch from database
+      // Fetch facilitators for dropdown use in multiple tabs
+      try {
+        const facilitatorsRef = collection(db, 'facilitators');
+        const facilitatorsSnap = await getDocs(query(facilitatorsRef, orderBy('displayName')));
+        const facilitatorsList = facilitatorsSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setFacilitators(facilitatorsList);
+      } catch (e) {
+        console.error('[UserManagement] Error fetching facilitators:', e);
+      }
 
       if (activeTab === 'users') {
         // Fetch Users
@@ -587,14 +567,9 @@ const UserManagement = () => {
       timezone: cohort.timezone || DEFAULT_TIMEZONE,
       description: cohort.description || '',
       facilitatorId: cohort.facilitator?.id || '',
-      facilitatorTitle: cohort.facilitator?.title || '',
-      facilitatorBio: cohort.facilitator?.bio || '',
-      facilitatorPhotoUrl: cohort.facilitator?.photoUrl || '',
-      facilitatorPhone: cohort.facilitator?.phone || '',
-      facilitatorLinkedIn: cohort.facilitator?.linkedIn || '',
       maxCapacity: cohort.settings?.maxCapacity || 25,
       allowLateJoins: cohort.settings?.allowLateJoins ?? true,
-      lateJoinCutoff: cohort.settings?.lateJoinCutoff || 3
+      lateJoinCutoff: cohort.settings?.lateJoinCutoff ?? 0
     });
     setIsCohortModalOpen(true);
   };
@@ -607,17 +582,17 @@ const UserManagement = () => {
       const startDate = new Date(cohortForm.startDate);
       // Note: We preserve the time selected by the user for session scheduling
       
-      // Build facilitator object from predefined facilitator profiles
-      const selectedFacilitator = Object.values(FACILITATOR_PROFILES).find(f => f.id === cohortForm.facilitatorId);
+      // Build facilitator object from fetched facilitators
+      const selectedFacilitator = facilitators.find(f => f.id === cohortForm.facilitatorId);
       const facilitatorData = selectedFacilitator ? {
         id: selectedFacilitator.id,
         name: selectedFacilitator.displayName,
         email: selectedFacilitator.email,
-        title: cohortForm.facilitatorTitle || selectedFacilitator.title || 'Leadership Facilitator',
-        bio: cohortForm.facilitatorBio || selectedFacilitator.bio || '',
-        photoUrl: cohortForm.facilitatorPhotoUrl || selectedFacilitator.photoUrl || '',
-        phone: cohortForm.facilitatorPhone || selectedFacilitator.phone || '',
-        linkedIn: cohortForm.facilitatorLinkedIn || selectedFacilitator.linkedIn || ''
+        title: selectedFacilitator.title || 'Leadership Facilitator',
+        bio: selectedFacilitator.bio || '',
+        photoUrl: selectedFacilitator.photoUrl || '',
+        phone: selectedFacilitator.phone || '',
+        linkedIn: selectedFacilitator.linkedIn || ''
       } : null;
 
       const cohortData = {
@@ -654,14 +629,9 @@ const UserManagement = () => {
         startDate: '',
         description: '',
         facilitatorId: '',
-        facilitatorTitle: '',
-        facilitatorBio: '',
-        facilitatorPhotoUrl: '',
-        facilitatorPhone: '',
-        facilitatorLinkedIn: '',
         maxCapacity: 25,
         allowLateJoins: true,
-        lateJoinCutoff: 3,
+        lateJoinCutoff: 0,
         timezone: DEFAULT_TIMEZONE
       });
       fetchData();
@@ -681,6 +651,83 @@ const UserManagement = () => {
       setUsers(users.filter(u => u.id !== inviteId));
     } catch (error) {
       console.error("Error deleting invite:", error);
+    }
+  };
+
+  // Facilitator CRUD handlers
+  const handleOpenFacilitatorModal = (facilitator = null) => {
+    if (facilitator) {
+      setFacilitatorForm({
+        id: facilitator.id,
+        displayName: facilitator.displayName || '',
+        email: facilitator.email || '',
+        title: facilitator.title || '',
+        bio: facilitator.bio || '',
+        photoUrl: facilitator.photoUrl || '',
+        phone: facilitator.phone || '',
+        linkedIn: facilitator.linkedIn || ''
+      });
+    } else {
+      setFacilitatorForm({
+        id: null,
+        displayName: '',
+        email: '',
+        title: '',
+        bio: '',
+        photoUrl: '',
+        phone: '',
+        linkedIn: ''
+      });
+    }
+    setIsFacilitatorModalOpen(true);
+  };
+
+  const handleSaveFacilitator = async (e) => {
+    e.preventDefault();
+    setSavingFacilitator(true);
+
+    try {
+      const facilitatorData = {
+        displayName: facilitatorForm.displayName,
+        email: facilitatorForm.email.toLowerCase().trim(),
+        title: facilitatorForm.title,
+        bio: facilitatorForm.bio,
+        photoUrl: facilitatorForm.photoUrl,
+        phone: facilitatorForm.phone,
+        linkedIn: facilitatorForm.linkedIn,
+        updatedAt: serverTimestamp()
+      };
+
+      if (facilitatorForm.id) {
+        // Update existing facilitator
+        await updateDoc(doc(db, 'facilitators', facilitatorForm.id), facilitatorData);
+      } else {
+        // Create new facilitator
+        await addDoc(collection(db, 'facilitators'), {
+          ...facilitatorData,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      setIsFacilitatorModalOpen(false);
+      fetchData(); // Refresh the facilitators list
+    } catch (error) {
+      console.error("Error saving facilitator:", error);
+      alert("Failed to save facilitator");
+    } finally {
+      setSavingFacilitator(false);
+    }
+  };
+
+  const handleDeleteFacilitator = async (facilitatorId) => {
+    if (!window.confirm("Are you sure you want to delete this facilitator? This cannot be undone.")) return;
+    
+    try {
+      await deleteDoc(doc(db, 'facilitators', facilitatorId));
+      setFacilitators(facilitators.filter(f => f.id !== facilitatorId));
+    } catch (error) {
+      console.error("Error deleting facilitator:", error);
+      alert("Failed to delete facilitator");
     }
   };
 
@@ -766,6 +813,13 @@ const UserManagement = () => {
         </div>
         <div className="flex gap-2">
           <button
+            onClick={() => handleOpenFacilitatorModal()}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            <UserCog className="w-4 h-4" />
+            Add Facilitator
+          </button>
+          <button
             onClick={() => setIsCohortModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
           >
@@ -805,6 +859,19 @@ const UserManagement = () => {
           Cohorts
         </button>
         <button
+          onClick={() => setActiveTab('facilitators')}
+          className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+            activeTab === 'facilitators'
+              ? 'border-corporate-teal text-corporate-teal'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <UserCog className="w-4 h-4" />
+            Facilitators
+          </span>
+        </button>
+        <button
           onClick={() => setActiveTab('invites')}
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'invites'
@@ -830,7 +897,7 @@ const UserManagement = () => {
       </div>
 
       {/* Search Bar */}
-      {activeTab !== 'cohorts' && activeTab !== 'templates' && (
+      {activeTab !== 'cohorts' && activeTab !== 'facilitators' && activeTab !== 'templates' && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
@@ -899,6 +966,13 @@ const UserManagement = () => {
                     <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Cohort Name</th>
                     <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Start Date</th>
                     <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Members</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 text-right">Actions</th>
+                  </>
+                ) : activeTab === 'facilitators' ? (
+                  <>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Facilitator</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Email</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Title</th>
                     <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 text-right">Actions</th>
                   </>
                 ) : (
@@ -1055,7 +1129,7 @@ const UserManagement = () => {
                             className="p-1 text-slate-400 hover:text-corporate-teal transition-colors"
                             title="Edit Cohort"
                           >
-                            <RefreshCw className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteCohort(cohort.id)}
@@ -1072,6 +1146,73 @@ const UserManagement = () => {
                   <tr>
                     <td colSpan="4" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
                       No cohorts defined. Create one to get started.
+                    </td>
+                  </tr>
+                )
+              )}
+
+              {activeTab === 'facilitators' && (
+                facilitators.length > 0 ? (
+                  facilitators.map((facilitator) => (
+                    <tr key={facilitator.id} className="hover:bg-slate-50/50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {facilitator.photoUrl ? (
+                            <img 
+                              src={facilitator.photoUrl} 
+                              alt={facilitator.displayName}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-corporate-teal/10 flex items-center justify-center">
+                              <User className="w-5 h-5 text-corporate-teal" />
+                            </div>
+                          )}
+                          <span className="font-medium text-slate-900 dark:text-white">
+                            {facilitator.displayName}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                        {facilitator.email}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                        {facilitator.title || '-'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleOpenFacilitatorModal(facilitator)}
+                            className="p-1 text-slate-400 hover:text-corporate-teal transition-colors"
+                            title="Edit Facilitator"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteFacilitator(facilitator.id)}
+                            className="p-1 text-slate-400 hover:text-red-600 transition-colors"
+                            title="Delete Facilitator"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+                      <div className="flex flex-col items-center gap-3">
+                        <UserCog className="w-12 h-12 text-slate-300" />
+                        <p>No facilitators defined yet.</p>
+                        <button
+                          onClick={() => handleOpenFacilitatorModal()}
+                          className="flex items-center gap-2 px-4 py-2 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Facilitator
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -1674,12 +1815,151 @@ const UserManagement = () => {
                   {savingCohort ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      Creating...
+                      {cohortForm.id ? 'Updating...' : 'Creating...'}
                     </>
                   ) : (
                     <>
                       <Users className="w-4 h-4" />
-                      Create Cohort
+                      {cohortForm.id ? 'Update Cohort' : 'Create Cohort'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Facilitator Modal */}
+      {isFacilitatorModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
+                {facilitatorForm.id ? 'Edit Facilitator' : 'Add Facilitator'}
+              </h3>
+              <button 
+                onClick={() => setIsFacilitatorModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSaveFacilitator} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={facilitatorForm.displayName}
+                    onChange={e => setFacilitatorForm({...facilitatorForm, displayName: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                    placeholder="Ryan Yeoman"
+                  />
+                </div>
+                
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={facilitatorForm.email}
+                    onChange={e => setFacilitatorForm({...facilitatorForm, email: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                    placeholder="ryan@leaderreps.com"
+                  />
+                </div>
+                
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Title</label>
+                  <input
+                    type="text"
+                    value={facilitatorForm.title}
+                    onChange={e => setFacilitatorForm({...facilitatorForm, title: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
+                    placeholder="Founder & Lead Facilitator"
+                  />
+                </div>
+                
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Bio</label>
+                  <textarea
+                    value={facilitatorForm.bio}
+                    onChange={e => setFacilitatorForm({...facilitatorForm, bio: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 min-h-[80px]"
+                    placeholder="Brief bio about the facilitator..."
+                  />
+                </div>
+                
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Photo URL</label>
+                  <input
+                    type="url"
+                    value={facilitatorForm.photoUrl}
+                    onChange={e => setFacilitatorForm({...facilitatorForm, photoUrl: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
+                    placeholder="https://..."
+                  />
+                  {facilitatorForm.photoUrl && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <img 
+                        src={facilitatorForm.photoUrl} 
+                        alt="Preview"
+                        className="w-12 h-12 rounded-full object-cover"
+                        onError={e => e.target.style.display = 'none'}
+                      />
+                      <span className="text-xs text-slate-500">Photo preview</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={facilitatorForm.phone}
+                    onChange={e => setFacilitatorForm({...facilitatorForm, phone: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">LinkedIn</label>
+                  <input
+                    type="text"
+                    value={facilitatorForm.linkedIn}
+                    onChange={e => setFacilitatorForm({...facilitatorForm, linkedIn: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 text-sm"
+                    placeholder="username or full URL"
+                  />
+                </div>
+              </div>
+              
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsFacilitatorModalOpen(false)}
+                  className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingFacilitator}
+                  className="flex-1 px-4 py-2 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 font-medium disabled:opacity-50 flex justify-center items-center gap-2"
+                >
+                  {savingFacilitator ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      {facilitatorForm.id ? 'Update Facilitator' : 'Add Facilitator'}
                     </>
                   )}
                 </button>

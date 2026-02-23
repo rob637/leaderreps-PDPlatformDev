@@ -117,9 +117,32 @@ export const useLeaderProfile = () => {
         await updateDoc(userRef, { 'prepStatus.leaderProfile': true }).catch(e => console.warn('Could not set prepStatus:', e));
       }
 
-      // NOTE: Notification settings are NOT synced here. They should only be set
-      // when user completes the dedicated NotificationPreferencesWidget form.
-      // This prevents false "notifications complete" status when user just saves leader profile.
+      // Sync notification settings to main user doc (used by NotificationSettingsWidget in Locker)
+      if (profileData.notificationSettings || profileData.phoneNumber || profileData.timezone) {
+        const userRef = doc(db, 'users', user.uid);
+        
+        // Build complete notification settings object that matches NotificationSettingsWidget format
+        const strategy = profileData.notificationSettings?.strategy || 'smart_escalation';
+        const pushEnabled = profileData.notificationSettings?.channels?.push ?? true;
+        const emailEnabled = profileData.notificationSettings?.channels?.email ?? true;
+        const smsEnabled = profileData.notificationSettings?.channels?.sms ?? false;
+        const isDisabled = strategy === 'disabled';
+        
+        const notificationSettings = {
+          enabled: !isDisabled, // Disabled strategy means notifications are off
+          strategy: strategy,
+          timezone: profileData.notificationSettings?.timezone || profileData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
+          channels: {
+            push: pushEnabled,
+            email: emailEnabled,
+            sms: smsEnabled
+          },
+          phoneNumber: profileData.phoneNumber || '',
+          updatedAt: new Date().toISOString()
+        };
+
+        await updateDoc(userRef, { notificationSettings }).catch(err => console.warn("Failed to sync user settings", err));
+      }
       
       setProfile(prev => ({
         ...prev,

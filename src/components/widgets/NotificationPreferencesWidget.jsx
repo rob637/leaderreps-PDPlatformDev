@@ -95,6 +95,8 @@ const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
   const [pushPermission, setPushPermission] = useState('default');
   const [phoneError, setPhoneError] = useState(null);
   const [emailError, setEmailError] = useState(null);
+  const phoneInputRef = useRef(null);
+  const emailInputRef = useRef(null);
 
   // Check if selected strategy requires SMS
   const strategyRequiresSMS = (strategy) => {
@@ -359,10 +361,15 @@ const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
     if (strategyRequiresSMS(settings.strategy)) {
       if (!settings.phoneNumber?.trim()) {
         setPhoneError('Phone number is required for SMS reminders. Add one or choose "Push Only" or "Email Only".');
+        // Scroll to and focus the phone input
+        phoneInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => phoneInputRef.current?.focus(), 300);
         return;
       }
       if (!isValidPhoneNumber(settings.phoneNumber)) {
         setPhoneError('Please enter a valid phone number (at least 10 digits)');
+        phoneInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => phoneInputRef.current?.focus(), 300);
         return;
       }
     }
@@ -371,10 +378,14 @@ const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
     if (strategyUsesEmail(settings.strategy)) {
       if (!settings.email?.trim()) {
         setEmailError('Email address is required for email notifications.');
+        emailInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => emailInputRef.current?.focus(), 300);
         return;
       }
       if (!isValidEmail(settings.email)) {
         setEmailError('Please enter a valid email address');
+        emailInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => emailInputRef.current?.focus(), 300);
         return;
       }
     }
@@ -638,6 +649,7 @@ const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
             <span className="text-red-500">*</span>
           </label>
           <Input 
+            ref={phoneInputRef}
             type="tel" 
             placeholder="+1 (555) 000-0000"
             value={settings.phoneNumber}
@@ -676,6 +688,7 @@ const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
             <span className="text-red-500">*</span>
           </label>
           <Input 
+            ref={emailInputRef}
             type="email" 
             placeholder="your@email.com"
             value={settings.email}

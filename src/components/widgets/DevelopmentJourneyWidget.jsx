@@ -17,45 +17,122 @@ import { useDailyPlan, PHASES } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { useAppServices } from '../../services/useAppServices';
+import { useCoachingRegistrations, REGISTRATION_STATUS } from '../../hooks/useCoachingRegistrations';
+import { SESSION_TYPES } from '../../data/Constants';
+
+// Session type labels for generating milestone coaching actions
+const COACHING_SESSION_LABELS = {
+  [SESSION_TYPES.OPEN_GYM]: { label: 'Open Gym Session', icon: '🏋️' },
+  [SESSION_TYPES.LEADER_CIRCLE]: { label: 'Leader Circle', icon: '👥' },
+  [SESSION_TYPES.WORKSHOP]: { label: 'Workshop', icon: '📚' },
+  [SESSION_TYPES.LIVE_WORKOUT]: { label: 'Live Workout', icon: '⚡' },
+  [SESSION_TYPES.ONE_ON_ONE]: { label: '1:1 Coaching', icon: '🎯' }
+};
 
 // Phase themes - different visual treatment for each phase
+// Using corporate brand colors: Navy (#002E47), Teal (#47A88D), Orange (#E04E1B)
 const PHASE_THEMES = {
   'pre-start': {
     title: 'Preparation',
     subtitle: 'Get Ready',
     icon: Rocket,
-    color: 'from-slate-600 to-slate-700',
-    bgColor: 'bg-slate-50 dark:bg-slate-800',
-    borderColor: 'border-slate-300 dark:border-slate-600',
-    textColor: 'text-slate-700 dark:text-slate-200',
-    iconBg: 'bg-slate-100 dark:bg-slate-700',
-    accentColor: 'slate'
+    color: 'from-corporate-navy to-slate-700',
+    bgColor: 'bg-corporate-navy/5 dark:bg-corporate-navy/20',
+    borderColor: 'border-corporate-navy/30 dark:border-slate-500/50',
+    textColor: 'text-corporate-navy dark:text-slate-200',
+    iconBg: 'bg-corporate-navy/10 dark:bg-corporate-navy/30',
+    accentColor: 'navy'
   },
   'start': {
     title: 'Foundation',
     subtitle: 'Your Journey',
     icon: Mountain,
     color: 'from-corporate-teal to-emerald-600',
-    bgColor: 'bg-teal-50 dark:bg-teal-900/20',
-    borderColor: 'border-teal-200 dark:border-teal-800',
-    textColor: 'text-teal-700',
-    iconBg: 'bg-teal-100 dark:bg-teal-900/30',
+    bgColor: 'bg-corporate-teal/5 dark:bg-corporate-teal/20',
+    borderColor: 'border-corporate-teal/20 dark:border-corporate-teal/40',
+    textColor: 'text-corporate-teal',
+    iconBg: 'bg-corporate-teal/10 dark:bg-corporate-teal/30',
     accentColor: 'teal'
   },
   'post-start': {
     title: 'Ascent',
     subtitle: 'Continue Growing',
     icon: GraduationCap,
-    color: 'from-corporate-navy to-slate-700',
-    bgColor: 'bg-slate-50 dark:bg-slate-800',
-    borderColor: 'border-corporate-navy/20',
-    textColor: 'text-corporate-navy',
-    iconBg: 'bg-corporate-navy/10',
+    color: 'from-corporate-navy to-corporate-teal',
+    bgColor: 'bg-corporate-navy/5 dark:bg-corporate-navy/20',
+    borderColor: 'border-corporate-navy/30 dark:border-slate-500/50',
+    textColor: 'text-corporate-navy dark:text-slate-200',
+    iconBg: 'bg-corporate-navy/10 dark:bg-corporate-navy/30',
     accentColor: 'navy'
   }
 };
 
-// Dynamic week themes - all weeks use corporate-teal for brand consistency
+// Foundation Milestone themes (5 gated milestones, self-paced)
+// Using corporate brand colors: Navy (#002E47), Teal (#47A88D), Orange (#E04E1B)
+const MILESTONE_THEMES = {
+  1: { 
+    id: 1,
+    name: 'Milestone 1', 
+    title: 'Foundation Basics', 
+    description: 'Core leadership fundamentals and self-awareness',
+    icon: Target, 
+    color: 'from-corporate-teal to-emerald-600', 
+    bgColor: 'bg-corporate-teal/10 dark:bg-corporate-teal/20', 
+    borderColor: 'border-corporate-teal/30 dark:border-corporate-teal/40', 
+    textColor: 'text-corporate-teal dark:text-corporate-teal',
+    iconBg: 'bg-corporate-teal/20 dark:bg-corporate-teal/30'
+  },
+  2: { 
+    id: 2,
+    name: 'Milestone 2', 
+    title: 'Communication Mastery', 
+    description: 'Effective communication and influence skills',
+    icon: MessageSquare, 
+    color: 'from-corporate-navy to-slate-700', 
+    bgColor: 'bg-corporate-navy/10 dark:bg-corporate-navy/20', 
+    borderColor: 'border-corporate-navy/30 dark:border-slate-500/50', 
+    textColor: 'text-corporate-navy dark:text-slate-200',
+    iconBg: 'bg-corporate-navy/20 dark:bg-corporate-navy/30'
+  },
+  3: { 
+    id: 3,
+    name: 'Milestone 3', 
+    title: 'Team Leadership', 
+    description: 'Building and leading high-performing teams',
+    icon: Users, 
+    color: 'from-corporate-orange to-orange-600', 
+    bgColor: 'bg-corporate-orange/10 dark:bg-corporate-orange/20', 
+    borderColor: 'border-corporate-orange/30 dark:border-corporate-orange/40', 
+    textColor: 'text-corporate-orange dark:text-corporate-orange',
+    iconBg: 'bg-corporate-orange/20 dark:bg-corporate-orange/30'
+  },
+  4: { 
+    id: 4,
+    name: 'Milestone 4', 
+    title: 'Strategic Thinking', 
+    description: 'Strategic planning and decision-making',
+    icon: Lightbulb, 
+    color: 'from-corporate-teal to-teal-600', 
+    bgColor: 'bg-corporate-teal/10 dark:bg-corporate-teal/20', 
+    borderColor: 'border-corporate-teal/30 dark:border-corporate-teal/40', 
+    textColor: 'text-corporate-teal dark:text-corporate-teal',
+    iconBg: 'bg-corporate-teal/20 dark:bg-corporate-teal/30'
+  },
+  5: { 
+    id: 5,
+    name: 'Milestone 5', 
+    title: 'Executive Presence', 
+    description: 'Executive presence and organizational impact',
+    icon: Trophy, 
+    color: 'from-corporate-navy to-corporate-teal', 
+    bgColor: 'bg-corporate-navy/10 dark:bg-corporate-navy/20', 
+    borderColor: 'border-corporate-navy/30 dark:border-slate-500/50', 
+    textColor: 'text-corporate-navy dark:text-slate-200',
+    iconBg: 'bg-corporate-navy/20 dark:bg-corporate-navy/30'
+  }
+};
+
+// Legacy week themes - kept for Ascent phase if needed
 const WEEK_THEME_CYCLE = [
   { icon: Target, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
   { icon: MessageSquare, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
@@ -441,7 +518,10 @@ const DevelopmentJourneyWidget = () => {
   const [_canScrollRight, setCanScrollRight] = useState(true);
   
   // Get data from hooks
-  const { developmentPlanData } = useAppServices();
+  const { developmentPlanData, user } = useAppServices();
+  
+  // Get user milestone progress (signedOff status set by facilitator)
+  const milestoneProgress = user?.milestoneProgress || {};
   const { 
     dailyPlan, 
     currentPhase, 
@@ -452,6 +532,7 @@ const DevelopmentJourneyWidget = () => {
   
   const { getItemProgress } = useActionProgress();
   const { isComplete: leaderProfileComplete } = useLeaderProfile();
+  const coachingRegistrations = useCoachingRegistrations();
   
   // Check baseline assessment completion - use developmentPlanData directly for real-time updates
   const baselineAssessmentComplete = useMemo(() => {
@@ -459,26 +540,20 @@ const DevelopmentJourneyWidget = () => {
     return developmentPlanData.assessmentHistory.length > 0;
   }, [developmentPlanData?.assessmentHistory]);
   
-  // Determine current segment
+  // Determine current segment - find the first incomplete segment
   const currentSegmentId = useMemo(() => {
     if (currentPhase?.id === 'pre-start') return 'prep';
     if (currentPhase?.id === 'post-start') return 'post';
     if (currentPhase?.id === 'start') {
-      const weekNum = Math.ceil(phaseDayNumber / 7);
-      return `week-${weekNum}`;
+      // Find the first milestone that is not 100% complete
+      // This makes the "current" segment dynamic based on progress
+      return 'milestone-1'; // Will be refined after journeyData is computed
     }
     return null;
-  }, [currentPhase, phaseDayNumber]);
+  }, [currentPhase]);
   
   // Track if user has manually selected a segment
   const hasUserSelected = useRef(false);
-  
-  // Set initial selected segment to current - only on mount or when no selection
-  useEffect(() => {
-    if (currentSegmentId && !hasUserSelected.current) {
-      setSelectedSegment(currentSegmentId);
-    }
-  }, [currentSegmentId]);
   
   // Wrapper to track user selections
   const handleSelectSegment = (segmentId) => {
@@ -601,82 +676,103 @@ const DevelopmentJourneyWidget = () => {
       description: 'Get ready for your leadership journey'
     });
     
-    // =================== DEVELOPMENT PHASE (WEEKS) ===================
-    // Dynamically calculate weeks based on START phase data
-    const devDays = dailyPlan.filter(d => 
-      d.dayNumber >= PHASES.START.dbDayStart && 
-      d.dayNumber <= PHASES.START.dbDayEnd
-    );
+    // =================== FOUNDATION PHASE (5 MILESTONES) ===================
+    // Foundation uses 5 gated milestones instead of 8 weeks
+    // Milestones are self-paced with facilitator approval required
+    // IMPORTANT: Check milestoneProgress.signedOff to determine if facilitator has signed off
     
-    if (devDays.length > 0) {
-      const devDayNumbers = devDays.map(d => d.dayNumber);
-      const devMinDay = Math.min(...devDayNumbers);
-      const devMaxDay = Math.max(...devDayNumbers);
+    for (let milestone = 1; milestone <= 5; milestone++) {
+      const milestoneTheme = MILESTONE_THEMES[milestone];
       
-      // Calculate number of weeks dynamically
-      const totalDevDays = devMaxDay - devMinDay + 1;
-      const numWeeks = Math.ceil(totalDevDays / 7);
+      // Check if this milestone has been signed off by facilitator
+      const milestoneKey = `milestone_${milestone}`;
+      const milestoneSignedOff = milestoneProgress[milestoneKey]?.signedOff === true;
       
-      for (let week = 1; week <= numWeeks; week++) {
-        const weekStartDay = PHASES.START.dbDayStart + (week - 1) * 7;
-        const weekEndDay = PHASES.START.dbDayStart + week * 7 - 1;
-        
-        const weekDays = dailyPlan.filter(d => 
-          d.dayNumber >= weekStartDay && 
-          d.dayNumber <= weekEndDay
-        );
-        
-        if (weekDays.length === 0) continue;
-        
-        const actions = [];
-        weekDays.forEach(day => {
-          if (day.actions) {
-            actions.push(...day.actions.map((a, idx) => ({
-              ...a,
-              dayId: day.id,
-              dayNumber: day.dayNumber,
-              id: a.id || `daily-${day.id}-${(a.label || '').toLowerCase().replace(/\s+/g, '-').substring(0, 20)}-${idx}`
-            })));
-          }
-        });
-        
-        // Filter to required actions only (exclude daily_reps and optional items)
-        const mainActions = actions.filter(a => 
-          a.type !== 'daily_rep' && 
-          a.required !== false && 
-          a.optional !== true
-        );
-        
-        // Check completion status for each action and store it
-        const mainActionsWithStatus = mainActions.map(a => {
-          const progress = getItemProgress(a.id);
-          const isCompleted = progress.status === 'completed' || completedItems.has(a.id);
-          return { ...a, isCompleted };
-        });
-        
-        const completedCount = mainActionsWithStatus.filter(a => a.isCompleted).length;
-        
-        // Get theme from cycle (loops if more than 8 weeks)
-        const themeIndex = (week - 1) % WEEK_THEME_CYCLE.length;
-        const themeKey = WEEK_THEME_CYCLE[themeIndex];
-        
-        segments.push({
-          id: `week-${week}`,
-          type: 'week',
-          phaseId: 'start',
-          weekNumber: week,
-          label: `Week ${week}`,
-          shortLabel: `W${week}`,
-          theme: PHASE_THEMES[themeKey] || PHASE_THEMES.start,
-          actions: mainActionsWithStatus,
-          totalActions: mainActionsWithStatus.length,
-          completedActions: completedCount,
-          progress: mainActionsWithStatus.length > 0 ? Math.round((completedCount / mainActionsWithStatus.length) * 100) : 0,
-          daysCount: weekDays.length,
-          icon: 'calendar',
-          description: `Week ${week} of your development journey`
+      // Look for milestone-specific content in daily_plan_v1
+      // Milestones are stored as milestone-{N} documents
+      const milestoneContent = dailyPlan.find(d => d.id === `milestone-${milestone}`);
+      
+      // Get actions from milestone content if it exists
+      const milestoneActions = milestoneContent?.actions || [];
+      const actionsWithId = milestoneActions.map((a, idx) => ({
+        ...a,
+        dayId: `milestone-${milestone}`,
+        id: a.id || `milestone-${milestone}-action-${idx}`
+      }));
+      
+      // Generate coaching session actions from milestone's coachingSessionTypes
+      let coachingActions = [];
+      if (milestoneContent?.coachingSessionTypes && milestoneContent.coachingSessionTypes.length > 0) {
+        coachingActions = milestoneContent.coachingSessionTypes.map((sessionType) => {
+          const typeInfo = COACHING_SESSION_LABELS[sessionType] || { label: 'Coaching Session', icon: '🎯' };
+          const actionId = `milestone-${milestone}-coaching-${sessionType}`;
+          
+          // Check if certified via coaching registrations
+          const registration = coachingRegistrations.registrations?.find(r => 
+            r.coachingItemId === actionId ||
+            (r.sessionType === sessionType && r.coachingItemId?.includes(`milestone-${milestone}`))
+          );
+          const isCertified = registration?.status === REGISTRATION_STATUS.CERTIFIED;
+          
+          return {
+            id: actionId,
+            type: 'coaching',
+            label: typeInfo.label,
+            icon: typeInfo.icon,
+            dayId: `milestone-${milestone}`,
+            isCompleted: isCertified
+          };
         });
       }
+      
+      // Add Leader Certification action as the LAST item in the milestone
+      const certificationId = `milestone-${milestone}-certification`;
+      const certProgress = getItemProgress(certificationId);
+      const certificationAction = {
+        id: certificationId,
+        type: 'certification',
+        label: 'Leader Certification',
+        icon: '🏆',
+        dayId: `milestone-${milestone}`,
+        isCompleted: certProgress?.status === 'completed'
+      };
+      
+      // Check completion status for regular actions
+      const actionsWithStatus = actionsWithId.map(a => {
+        const progress = getItemProgress(a.id);
+        const isCompleted = progress.status === 'completed' || completedItems.has(a.id);
+        return { ...a, isCompleted };
+      });
+      
+      // Combine all actions: regular, coaching, then certification last
+      const allActions = [...actionsWithStatus, ...coachingActions, certificationAction];
+      const completedCount = allActions.filter(a => a.isCompleted).length;
+      
+      // If milestone is signed off by facilitator, it's 100% complete regardless of action status
+      const effectiveProgress = milestoneSignedOff 
+        ? 100 
+        : (allActions.length > 0 ? Math.round((completedCount / allActions.length) * 100) : 0);
+      const effectiveCompletedCount = milestoneSignedOff 
+        ? allActions.length 
+        : completedCount;
+      
+      segments.push({
+        id: `milestone-${milestone}`,
+        type: 'milestone',
+        phaseId: 'start',
+        milestoneNumber: milestone,
+        label: milestoneTheme.title,
+        shortLabel: `M${milestone}`,
+        theme: milestoneTheme,
+        actions: allActions,
+        totalActions: allActions.length,
+        completedActions: effectiveCompletedCount,
+        progress: effectiveProgress,
+        isSignedOff: milestoneSignedOff, // Track signed-off status
+        icon: 'target',
+        description: milestoneTheme.description,
+        requiresApproval: true // Milestones require Leader Certification
+      });
     }
     
     // =================== POST PHASE ===================
@@ -731,11 +827,11 @@ const DevelopmentJourneyWidget = () => {
       });
     }
     
-    // Count development weeks
-    const totalWeeks = segments.filter(s => s.type === 'week').length;
+    // Count development milestones
+    const totalWeeks = segments.filter(s => s.type === 'milestone').length;
     
     return { segments, totalWeeks };
-  }, [dailyPlan, getItemProgress, completedItems, leaderProfileComplete, baselineAssessmentComplete, prepRequirementsComplete]);
+  }, [dailyPlan, getItemProgress, completedItems, leaderProfileComplete, baselineAssessmentComplete, prepRequirementsComplete, milestoneProgress, coachingRegistrations]);
   
   // Overall progress across entire journey
   const overallProgress = useMemo(() => {
@@ -766,27 +862,6 @@ const DevelopmentJourneyWidget = () => {
     }
   };
   
-  // Scroll to center the current week/segment on mount
-  useEffect(() => {
-    if (scrollContainerRef.current && journeyData.segments.length > 0 && currentSegmentId) {
-      setTimeout(() => {
-        // Find the current segment element by data attribute
-        const currentElement = scrollContainerRef.current?.querySelector(`[data-segment-id="${currentSegmentId}"]`);
-        if (currentElement) {
-          // Calculate scroll position to center the current element
-          const container = scrollContainerRef.current;
-          const containerWidth = container.clientWidth;
-          const elementLeft = currentElement.offsetLeft;
-          const elementWidth = currentElement.offsetWidth;
-          const scrollPosition = elementLeft - (containerWidth / 2) + (elementWidth / 2);
-          
-          container.scrollTo({ left: Math.max(0, scrollPosition), behavior: 'auto' });
-        }
-        handleScroll();
-      }, 100);
-    }
-  }, [journeyData.segments.length, currentSegmentId]);
-  
   // Calculate initial scroll state on mount and when segments change
   useEffect(() => {
     // Small delay to ensure layout is complete
@@ -800,14 +875,95 @@ const DevelopmentJourneyWidget = () => {
   const selectedSegmentData = selectedSegment 
     ? journeyData.segments.find(s => s.id === selectedSegment) 
     : null;
+  
+  // Find the first incomplete segment to show as "current"
+  // IMPORTANT: Respect the actual phase - don't advance to Foundation until cohort starts
+  const firstIncompleteSegmentId = useMemo(() => {
+    // If still in pre-start phase (before cohort start date)
+    if (currentPhase?.id === 'pre-start') {
+      // Check if prep is complete
+      const prepSegment = journeyData.segments.find(s => s.id === 'prep');
+      if (prepSegment && prepSegment.progress < 100) {
+        return 'prep'; // Prep is still in progress
+      }
+      // Prep is 100% complete but cohort hasn't started yet
+      // Return null - no segment should show "NOW" (milestones are all "UPCOMING")
+      return null;
+    }
+    
+    // If in post-start phase, current is post
+    if (currentPhase?.id === 'post-start') {
+      return 'post';
+    }
+    
+    // In start phase - find first segment with progress < 100
+    const firstIncomplete = journeyData.segments.find(s => s.progress < 100);
+    return firstIncomplete?.id || journeyData.segments[0]?.id;
+  }, [journeyData.segments, currentPhase]);
+  
+  // Set initial selected segment to first incomplete segment
+  // If no incomplete segment (prep done, waiting for cohort), default to first milestone
+  useEffect(() => {
+    if (!hasUserSelected.current) {
+      if (firstIncompleteSegmentId) {
+        setSelectedSegment(firstIncompleteSegmentId);
+      } else if (journeyData.segments.length > 1) {
+        // Prep is done but cohort hasn't started - select first milestone to preview
+        setSelectedSegment(journeyData.segments[1]?.id || journeyData.segments[0]?.id);
+      }
+    }
+  }, [firstIncompleteSegmentId, journeyData.segments]);
+  
+  // Scroll to center the current segment on mount
+  useEffect(() => {
+    const targetSegmentId = firstIncompleteSegmentId || selectedSegment;
+    if (scrollContainerRef.current && journeyData.segments.length > 0 && targetSegmentId) {
+      setTimeout(() => {
+        // Find the target segment element by data attribute
+        const currentElement = scrollContainerRef.current?.querySelector(`[data-segment-id="${targetSegmentId}"]`);
+        if (currentElement) {
+          // Calculate scroll position to center the current element
+          const container = scrollContainerRef.current;
+          const containerWidth = container.clientWidth;
+          const elementLeft = currentElement.offsetLeft;
+          const elementWidth = currentElement.offsetWidth;
+          const scrollPosition = elementLeft - (containerWidth / 2) + (elementWidth / 2);
+          
+          container.scrollTo({ left: Math.max(0, scrollPosition), behavior: 'auto' });
+        }
+        handleScroll();
+      }, 100);
+    }
+  }, [journeyData.segments.length, firstIncompleteSegmentId, selectedSegment]);
     
   // Check if segment is past, current, or future
   const getSegmentState = (segment) => {
-    const currentIndex = journeyData.segments.findIndex(s => s.id === currentSegmentId);
+    // PHASE-AWARE LOGIC: Don't show Foundation milestones as current until cohort starts
+    if (currentPhase?.id === 'pre-start') {
+      // In prep phase: only prep can be current/past, everything else is future
+      if (segment.id === 'prep') {
+        // Prep can be complete (past) or in-progress (current)
+        return segment.progress === 100 ? 'past' : 'current';
+      }
+      // All milestones are future during prep phase - cohort hasn't started yet
+      return 'future';
+    }
+    
+    // If segment is 100% complete, it's past
+    if (segment.progress === 100) return 'past';
+    
+    // The first incomplete segment is current
+    if (segment.id === firstIncompleteSegmentId) return 'current';
+    
+    // If segment has some progress but isn't the first incomplete, still show as current
+    if (segment.progress > 0 && segment.progress < 100) return 'current';
+    
+    // Check segment order - segments before first incomplete are past
+    const currentIndex = journeyData.segments.findIndex(s => s.id === firstIncompleteSegmentId);
     const segmentIndex = journeyData.segments.findIndex(s => s.id === segment.id);
     
-    if (segment.id === currentSegmentId) return 'current';
-    if (segmentIndex < currentIndex) return 'past';
+    if (currentIndex >= 0 && segmentIndex < currentIndex) return 'past';
+    
     return 'future';
   };
   
@@ -858,10 +1014,12 @@ const DevelopmentJourneyWidget = () => {
           {journeyData.segments.map((segment, idx) => {
             const segmentState = getSegmentState(segment);
             const isClickable = true; // Allow viewing all segments including future
-            const theme = segment.type === 'week' 
-              ? WEEK_THEME_CYCLE[(segment.weekNumber - 1) % WEEK_THEME_CYCLE.length]
-              : segment.theme;
-            const Icon = segment.type === 'week' ? theme.icon : segment.theme.icon;
+            const theme = segment.type === 'milestone' 
+              ? segment.theme // Milestones use their own theme
+              : segment.type === 'week' 
+                ? WEEK_THEME_CYCLE[(segment.weekNumber - 1) % WEEK_THEME_CYCLE.length]
+                : segment.theme;
+            const Icon = theme.icon || segment.theme?.icon || Calendar;
             
             return (
               <motion.div 
@@ -874,7 +1032,7 @@ const DevelopmentJourneyWidget = () => {
                   data-segment-id={segment.id}
                   onClick={() => isClickable && handleSelectSegment(segment.id)}
                   className={`
-                    relative w-[140px] flex-shrink-0 rounded-2xl p-4 cursor-pointer transition-all duration-300
+                    relative w-[140px] min-h-[200px] flex-shrink-0 rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col
                     ${segment.id === selectedSegment ? 'ring-2 ring-corporate-teal ring-offset-2' : ''}
                     ${segmentState === 'current' ? `${theme.bgColor} border-2 ${theme.borderColor} shadow-lg` : ''}
                     ${segmentState === 'past' ? 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700' : ''}
@@ -926,7 +1084,7 @@ const DevelopmentJourneyWidget = () => {
                   
                   {/* Label */}
                   <div className="text-center mb-3">
-                    <div className="font-semibold text-sm text-slate-700 dark:text-slate-200">
+                    <div className="font-semibold text-sm text-slate-700 dark:text-slate-200 min-h-[2.5rem] flex items-center justify-center">
                       {segment.label}
                     </div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -970,14 +1128,16 @@ const DevelopmentJourneyWidget = () => {
             className="mt-4"
           >
             <WeekDetailPanel
-              weekNumber={selectedSegmentData.weekNumber || selectedSegmentData.id}
-              theme={selectedSegmentData.type === 'week' 
-                ? WEEK_THEME_CYCLE[(selectedSegmentData.weekNumber - 1) % WEEK_THEME_CYCLE.length]
-                : selectedSegmentData.theme
+              weekNumber={selectedSegmentData.milestoneNumber || selectedSegmentData.weekNumber || selectedSegmentData.id}
+              theme={selectedSegmentData.type === 'milestone'
+                ? selectedSegmentData.theme
+                : selectedSegmentData.type === 'week' 
+                  ? WEEK_THEME_CYCLE[(selectedSegmentData.weekNumber - 1) % WEEK_THEME_CYCLE.length]
+                  : selectedSegmentData.theme
               }
               weekData={selectedSegmentData}
               completedItems={completedItems}
-              isCurrentWeek={selectedSegment === currentSegmentId}
+              isCurrentWeek={selectedSegment === firstIncompleteSegmentId}
               segmentLabel={selectedSegmentData.label}
               segmentType={selectedSegmentData.type}
               leaderProfileComplete={leaderProfileComplete}
@@ -987,7 +1147,7 @@ const DevelopmentJourneyWidget = () => {
         )}
       </AnimatePresence>
       
-      {/* Journey Stats - Following methodology: Preparation → Foundation (8 weeks) → Ascent */}
+      {/* Journey Stats - Following methodology: Preparation → Foundation (5 milestones) → Ascent */}
       <div className="mt-6 grid grid-cols-3 gap-4">
         {/* Current Phase */}
         <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
@@ -1003,10 +1163,10 @@ const DevelopmentJourneyWidget = () => {
         {/* Foundation Progress */}
         <div className="text-center p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
           <div className="text-2xl font-bold text-emerald-600">
-            {journeyData.segments.filter(s => s.type === 'week' && s.progress === 100).length}
-            <span className="text-sm font-normal text-slate-500 dark:text-slate-400"> of {journeyData.totalWeeks || 8}</span>
+            {journeyData.segments.filter(s => s.type === 'milestone' && s.progress === 100).length}
+            <span className="text-sm font-normal text-slate-500 dark:text-slate-400"> of {journeyData.totalWeeks || 5}</span>
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Foundation Weeks</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Milestones Complete</div>
         </div>
         {/* Actions Done */}
         <div className="text-center p-4 bg-corporate-teal/10 rounded-xl">

@@ -31,7 +31,8 @@ import {
   Download,
   MessageSquare,
   UserCheck,
-  UserX
+  UserX,
+  ArrowUpDown
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -160,8 +161,26 @@ const SessionManager = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, _setSortBy] = useState('date'); // 'date', 'title', 'attendees'
-  const [sortOrder, _setSortOrder] = useState('asc');
+  const [sortBy, setSortBy] = useState('date'); // 'date', 'title', 'attendees', 'type', 'status'
+  const [sortOrder, setSortOrder] = useState('asc');
+  
+  // Handle column header click to toggle sort
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+  
+  // Sort indicator component
+  const SortIndicator = ({ field }) => {
+    if (sortBy !== field) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-30" />;
+    return sortOrder === 'asc' 
+      ? <ChevronUp className="w-3 h-3 ml-1 text-corporate-teal" />
+      : <ChevronDown className="w-3 h-3 ml-1 text-corporate-teal" />;
+  };
   
   // Edit state
   const [editingSession, setEditingSession] = useState(null);
@@ -250,9 +269,19 @@ const SessionManager = () => {
     filtered.sort((a, b) => {
       let comparison = 0;
       if (sortBy === 'date') {
-        comparison = new Date(a.date || 0) - new Date(b.date || 0);
+        // Sort by date first, then by time
+        const dateA = new Date(a.date || 0);
+        const dateB = new Date(b.date || 0);
+        comparison = dateA - dateB;
+        if (comparison === 0 && a.time && b.time) {
+          comparison = a.time.localeCompare(b.time);
+        }
       } else if (sortBy === 'title') {
         comparison = (a.title || '').localeCompare(b.title || '');
+      } else if (sortBy === 'type') {
+        comparison = (a.sessionType || '').localeCompare(b.sessionType || '');
+      } else if (sortBy === 'status') {
+        comparison = (a.status || '').localeCompare(b.status || '');
       } else if (sortBy === 'attendees') {
         const aCount = getSessionRegistrations(a.id).length;
         const bCount = getSessionRegistrations(b.id).length;
@@ -692,11 +721,36 @@ const SessionManager = () => {
           <table className="w-full">
             <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase rounded-tl-xl">Session</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Date & Time</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Type</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Attendees</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Status</th>
+                <th 
+                  onClick={() => handleSort('title')} 
+                  className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase rounded-tl-xl cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 select-none"
+                >
+                  <span className="flex items-center">Session<SortIndicator field="title" /></span>
+                </th>
+                <th 
+                  onClick={() => handleSort('date')} 
+                  className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 select-none"
+                >
+                  <span className="flex items-center">Date & Time<SortIndicator field="date" /></span>
+                </th>
+                <th 
+                  onClick={() => handleSort('type')} 
+                  className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 select-none"
+                >
+                  <span className="flex items-center">Type<SortIndicator field="type" /></span>
+                </th>
+                <th 
+                  onClick={() => handleSort('attendees')} 
+                  className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 select-none"
+                >
+                  <span className="flex items-center">Attendees<SortIndicator field="attendees" /></span>
+                </th>
+                <th 
+                  onClick={() => handleSort('status')} 
+                  className="text-left px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 select-none"
+                >
+                  <span className="flex items-center">Status<SortIndicator field="status" /></span>
+                </th>
                 <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase rounded-tr-xl">Actions</th>
               </tr>
             </thead>

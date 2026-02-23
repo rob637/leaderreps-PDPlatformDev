@@ -196,6 +196,11 @@ export default defineConfig({
             return 'admin';
           }
           
+          // Constants/data - shared across app, must initialize first
+          if (id.includes('/data/Constants') || id.includes('/data/')) {
+            return 'shared';
+          }
+          
           // Dashboard - critical path, separate chunk
           if (id.includes('Dashboard') || id.includes('/dashboard/')) {
             return 'dashboard';

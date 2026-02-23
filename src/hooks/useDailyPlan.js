@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../services/useAppServices';
-import { collection, query, orderBy, getDocs, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { timeChange$ } from '../services/timeService';
 import { useActionProgress } from './useActionProgress';
 import { useLeaderProfile } from './useLeaderProfile';
@@ -403,15 +403,31 @@ export const useDailyPlan = () => {
       // This instance will fetch - create the promise
       _dailyPlanFetchPromise = (async () => {
         const planRef = collection(db, 'daily_plan_v1');
-        const q = query(planRef, orderBy('dayNumber', 'asc'));
-        const snapshot = await getDocs(q);
+        // Don't use orderBy - fetch ALL documents (including milestones without dayNumber)
+        const snapshot = await getDocs(planRef);
         
         const days = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
         
-        console.log(`[useDailyPlan] Loaded ${days.length} days from daily_plan_v1`);
+        // Sort client-side: regular days by dayNumber, milestones by milestone number
+        days.sort((a, b) => {
+          // Milestones go at the end (or separate them as needed)
+          const aIsMilestone = a.id?.startsWith('milestone-');
+          const bIsMilestone = b.id?.startsWith('milestone-');
+          
+          if (aIsMilestone && !bIsMilestone) return 1;
+          if (!aIsMilestone && bIsMilestone) return -1;
+          if (aIsMilestone && bIsMilestone) {
+            return (a.milestone || 0) - (b.milestone || 0);
+          }
+          
+          // Both are regular days - sort by dayNumber
+          return (a.dayNumber || 0) - (b.dayNumber || 0);
+        });
+        
+        console.log(`[useDailyPlan] Loaded ${days.length} days from daily_plan_v1 (including milestones)`);
         
         // Cache the result
         _dailyPlanCache = days;
@@ -575,9 +591,6 @@ export const useDailyPlan = () => {
     });
     
     // Build items array with completion status
-    // If prepStatus exists, ONLY use prepStatus (no legacy fallback) to ensure clean state after reset
-    const hasPrepStatus = !!user?.prepStatus;
-    
     const items = requiredPrepActions.map(action => {
       const handlerType = action.handlerType || '';
       const labelLower = (action.label || '').toLowerCase();
@@ -585,32 +598,28 @@ export const useDailyPlan = () => {
       let complete = false;
       
       // Special handling for interactive items
-      // Use unified prepStatus ONLY if it exists, otherwise fall back to legacy checks
+      // Use unified prepStatus first, fall back to legacy checks
       if (handlerType === 'leader-profile' || labelLower.includes('leader profile')) {
-        complete = hasPrepStatus 
-          ? !!user.prepStatus.leaderProfile 
-          : (leaderProfileComplete || false);
+        complete = user?.prepStatus?.leaderProfile || leaderProfileComplete || false;
       } else if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment')) {
-        complete = hasPrepStatus 
-          ? !!user.prepStatus.baselineAssessment 
-          : !!(developmentPlanData?.assessmentHistory?.length > 0 || developmentPlanData?.currentPlan?.focusAreas?.length > 0);
+        // Check prepStatus first, then assessmentHistory or focusAreas
+        complete = user?.prepStatus?.baselineAssessment || !!(
+          developmentPlanData?.assessmentHistory?.length > 0 ||
+          developmentPlanData?.currentPlan?.focusAreas?.length > 0
+        );
       } else if (handlerType === 'notification-setup' || labelLower.includes('notification')) {
-        // ONLY use prepStatus.notifications - don't check notificationSettings existence
-        complete = hasPrepStatus 
-          ? !!user.prepStatus.notifications 
-          : !!(user?.notificationSettings?.strategy);
+        // Only use prepStatus.notifications - user must explicitly complete notification setup
+        // Previously checked ns.strategy as fallback but that was triggered by defaults from Leader Profile
+        complete = user?.prepStatus?.notifications || false;
       } else if (handlerType === 'foundation-commitment' || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectations')) {
-        complete = hasPrepStatus 
-          ? !!user.prepStatus.foundationCommitment 
-          : !!(user?.foundationCommitment?.acknowledged);
+        // Check prepStatus first, then foundationCommitment in user doc
+        complete = user?.prepStatus?.foundationCommitment || !!(user?.foundationCommitment?.acknowledged);
       } else if (handlerType === 'conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
-        complete = hasPrepStatus 
-          ? !!user.prepStatus.conditioningTutorial 
-          : !!(user?.conditioningTutorial?.completed);
+        // Check prepStatus first, then conditioningTutorial in user doc
+        complete = user?.prepStatus?.conditioningTutorial || !!(user?.conditioningTutorial?.completed);
       } else if (action.resourceType === 'video_series' || labelLower.includes('video')) {
-        complete = hasPrepStatus 
-          ? !!user.prepStatus.videoSeries 
-          : isActionComplete(action.id);
+        // Check prepStatus for video series, fall back to action progress
+        complete = user?.prepStatus?.videoSeries || isActionComplete(action.id);
       } else {
         // Standard action progress check
         complete = isActionComplete(action.id);

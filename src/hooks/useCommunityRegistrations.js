@@ -81,6 +81,16 @@ export const useCommunityRegistrations = () => {
     );
   }, [registrations]);
 
+  // Get registration for a specific community item (dev plan action)
+  // Returns the active registration for this community item if one exists
+  const getRegistrationForCommunityItem = useCallback((communityItemId) => {
+    if (!communityItemId) return null;
+    return registrations.find(
+      r => r.communityItemId === communityItemId && 
+           r.status !== REGISTRATION_STATUS.CANCELLED
+    );
+  }, [registrations]);
+
   // Register for a session
   const registerForSession = useCallback(async (session, additionalData = {}) => {
     if (!db || !user?.uid) {
@@ -267,6 +277,7 @@ export const useCommunityRegistrations = () => {
     // Query methods
     isRegistered,
     getRegistration,
+    getRegistrationForCommunityItem,
     
     // Action methods
     registerForSession,

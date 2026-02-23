@@ -6,6 +6,8 @@
  * - manualRollover: HTTP endpoint to manually trigger rollover for a specific user (catch-up)
  * - geminiProxy: Secure proxy for Gemini AI API calls
  * - scheduledNotificationCheck: Checks for scheduled notifications every 15 minutes
+ * - onCoachingRegistration: Sends confirmation + ICS calendar to leader and notification to facilitator
+ * - scheduledCoachingReminders: Sends 24-hour and 1-hour reminders for upcoming coaching sessions
  */
 
 // const { setGlobalOptions } = require("firebase-functions");
@@ -339,6 +341,585 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
       error: error.message,
       resend: false // Clear flag even on error to prevent infinite retry loops
     });
+  }
+});
+
+/**
+ * ICS CALENDAR HELPER
+ * Generates ICS file content for calendar attachments
+ */
+const formatCalendarDateICS = (date) => {
+  const d = new Date(date);
+  return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+};
+
+const generateICSContent = ({ title, description, location, startDate, startTime, durationMinutes = 60, uid }) => {
+  let start = new Date(startDate);
+  if (startTime) {
+    // Parse time like "10:00 AM" or "14:00"
+    const timeParts = startTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (timeParts) {
+      let hours = parseInt(timeParts[1]);
+      const minutes = parseInt(timeParts[2]);
+      const meridiem = timeParts[3];
+      if (meridiem) {
+        if (meridiem.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+        if (meridiem.toUpperCase() === 'AM' && hours === 12) hours = 0;
+      }
+      start.setHours(hours, minutes, 0, 0);
+    }
+  }
+  
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+  const now = new Date();
+  
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//LeaderReps//Coaching Session//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:REQUEST',
+    'BEGIN:VEVENT',
+    `UID:${uid || `${Date.now()}@leaderreps.com`}`,
+    `DTSTAMP:${formatCalendarDateICS(now)}`,
+    `DTSTART:${formatCalendarDateICS(start)}`,
+    `DTEND:${formatCalendarDateICS(end)}`,
+    `SUMMARY:${title}`,
+    `DESCRIPTION:${(description || '').replace(/\n/g, '\\n')}`,
+    `LOCATION:${location || 'Virtual Session'}`,
+    'STATUS:CONFIRMED',
+    'SEQUENCE:0',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+};
+
+/**
+ * COACHING REGISTRATION NOTIFICATION
+ * Sends email notifications to facilitators when a user registers for a coaching session.
+ * Also sends confirmation to the user with calendar attachment.
+ */
+exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDocumentCreated("coaching_registrations/{registrationId}", async (event) => {
+  const snapshot = event.data;
+  if (!snapshot) {
+    logger.error("No data associated with the event");
+    return;
+  }
+
+  const registration = snapshot.data();
+  logger.info("New coaching registration:", { id: event.params.registrationId, sessionId: registration.sessionId });
+
+  // Skip if this is a cancelled or no-show status (edge case)
+  if (registration.status === 'CANCELLED' || registration.status === 'NO_SHOW') {
+    return;
+  }
+
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+
+  if (!emailUser || !emailPass) {
+    logger.warn("Email credentials not configured. Skipping notification.");
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: emailUser,
+      pass: emailPass,
+    },
+  });
+
+  const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+  const appDomain = projectId === 'leaderreps-test' 
+    ? 'leaderreps-test.web.app' 
+    : 'leaderreps-pd-platform.web.app';
+  const appUrl = `https://${appDomain}`;
+
+  const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps';
+  const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
+
+  // Format date nicely
+  const sessionDate = registration.sessionDate 
+    ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    : 'Date TBD';
+  const sessionTime = registration.sessionTime || 'Time TBD';
+
+  // 1. Send notification to facilitator/coach if coachEmail is available
+  if (registration.coachEmail) {
+    const facilitatorMailOptions = {
+      from: `"${emailFromName}" <${emailUser}>`,
+      replyTo: emailReplyTo,
+      to: registration.coachEmail,
+      subject: `📅 New Session Registration: ${registration.userName || 'A participant'} - ${registration.sessionTitle || 'Coaching Session'}`,
+      headers: {
+        'X-Priority': '1',
+        'X-Mailer': 'LeaderReps Platform',
+      },
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="color: white; margin: 0;">New Session Registration</h2>
+          </div>
+          <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin-top: 0;"><strong>${registration.userName || 'A participant'}</strong> has registered for your coaching session.</p>
+            
+            <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+              <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
+              <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Coaching Session'}</p>
+              <p style="margin: 8px 0;"><strong>Type:</strong> ${registration.sessionType || '1:1 Coaching'}</p>
+              <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+              <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+            </div>
+            
+            <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+              <h3 style="margin-top: 0; color: #002E47;">Participant Details</h3>
+              <p style="margin: 8px 0;"><strong>Name:</strong> ${registration.userName || 'Not provided'}</p>
+              <p style="margin: 8px 0;"><strong>Email:</strong> ${registration.userEmail || 'Not provided'}</p>
+              ${registration.coachingItemId ? `<p style="margin: 8px 0;"><strong>Milestone:</strong> ${registration.coachingItemId}</p>` : ''}
+            </div>
+            
+            <p style="text-align: center; margin-top: 24px;">
+              <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
+            </p>
+          </div>
+          <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin: 0; color: #64748b; font-size: 12px;">This is an automated notification from LeaderReps.</p>
+          </div>
+        </div>
+      `,
+    };
+
+    try {
+      await transporter.sendMail(facilitatorMailOptions);
+      logger.info(`Facilitator notification sent to ${registration.coachEmail}`);
+    } catch (error) {
+      logger.error(`Failed to send facilitator notification to ${registration.coachEmail}:`, error);
+    }
+  } else {
+    logger.info("No coachEmail on registration, skipping facilitator notification");
+  }
+
+  // Generate ICS calendar content for attachments
+  const icsContent = generateICSContent({
+    title: `LeaderReps: ${registration.sessionTitle || 'Coaching Session'}`,
+    description: `Coaching session${registration.coach ? ` with ${registration.coach}` : ''}\\n\\nJoin via LeaderReps: ${appUrl}`,
+    location: 'Virtual Session',
+    startDate: registration.sessionDate,
+    startTime: registration.sessionTime,
+    durationMinutes: 60,
+    uid: `${event.params.registrationId}@leaderreps.com`
+  });
+
+  // 2. Send confirmation to the user with calendar attachment
+  if (registration.userEmail) {
+    const userMailOptions = {
+      from: `"${emailFromName}" <${emailUser}>`,
+      replyTo: emailReplyTo,
+      to: registration.userEmail,
+      subject: `✅ Registration Confirmed: ${registration.sessionTitle || 'Coaching Session'}`,
+      headers: {
+        'X-Priority': '1',
+        'X-Mailer': 'LeaderReps Platform',
+      },
+      attachments: [{
+        filename: 'coaching-session.ics',
+        content: icsContent,
+        contentType: 'text/calendar; charset=utf-8; method=REQUEST'
+      }],
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="color: white; margin: 0;">Registration Confirmed!</h2>
+          </div>
+          <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin-top: 0;">Hi ${registration.userName || 'there'},</p>
+            <p>Your coaching session has been successfully scheduled!</p>
+            
+            <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+              <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
+              <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Coaching Session'}</p>
+              <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+              <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+              ${registration.coach ? `<p style="margin: 8px 0;"><strong>Coach:</strong> ${registration.coach}</p>` : ''}
+            </div>
+            
+            <p style="text-align: center; margin: 16px 0;">
+              <span style="background: #e0f2fe; color: #0369a1; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Calendar invite attached - open the .ics file to add to your calendar</span>
+            </p>
+            
+            <p><strong>Next Steps:</strong></p>
+            <ul>
+              <li>Open the attached calendar invite to add this session</li>
+              <li>Prepare any questions or topics you'd like to discuss</li>
+              <li>Join the session at the scheduled time</li>
+            </ul>
+            
+            <p style="text-align: center; margin-top: 24px;">
+              <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
+            </p>
+          </div>
+          <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email or contact your coach directly.</p>
+          </div>
+        </div>
+      `,
+    };
+
+    try {
+      await transporter.sendMail(userMailOptions);
+      logger.info(`User confirmation sent to ${registration.userEmail}`);
+    } catch (error) {
+      logger.error(`Failed to send user confirmation to ${registration.userEmail}:`, error);
+    }
+  }
+
+  // Update registration to mark notification sent
+  try {
+    await snapshot.ref.update({
+      notificationSentAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (error) {
+    logger.error("Failed to update registration with notification timestamp:", error);
+  }
+});
+
+/**
+ * COACHING SESSION REMINDERS
+ * Sends reminder emails to leaders and facilitators before coaching sessions.
+ * 
+ * Runs every hour and checks for:
+ * - Sessions starting in ~24 hours (sends day-before reminder)
+ * - Sessions starting in ~1 hour (sends same-day reminder)
+ */
+exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) => {
+  logger.info("Starting coaching session reminder check...");
+  
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+
+  if (!emailUser || !emailPass) {
+    logger.warn("Email credentials not configured. Skipping reminders.");
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: emailUser, pass: emailPass },
+  });
+
+  const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+  const appDomain = projectId === 'leaderreps-test' ? 'leaderreps-test.web.app' : 'leaderreps-pd-platform.web.app';
+  const appUrl = `https://${appDomain}`;
+  const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps';
+  const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
+
+  const now = new Date();
+  
+  // Get all active registrations (registered status only - not cancelled)
+  const registrationsSnap = await db.collection('coaching_registrations')
+    .where('status', 'in', ['registered', 'REGISTERED'])
+    .get();
+  
+  if (registrationsSnap.empty) {
+    logger.info("No active coaching registrations found.");
+    return;
+  }
+
+  let remindersSent = 0;
+
+  for (const doc of registrationsSnap.docs) {
+    const registration = { id: doc.id, ...doc.data() };
+    
+    if (!registration.sessionDate) continue;
+    
+    // Parse session datetime
+    let sessionStart = new Date(registration.sessionDate);
+    if (registration.sessionTime) {
+      const timeParts = registration.sessionTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (timeParts) {
+        let hours = parseInt(timeParts[1]);
+        const minutes = parseInt(timeParts[2]);
+        const meridiem = timeParts[3];
+        if (meridiem) {
+          if (meridiem.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+          if (meridiem.toUpperCase() === 'AM' && hours === 12) hours = 0;
+        }
+        sessionStart.setHours(hours, minutes, 0, 0);
+      }
+    }
+    
+    const hoursUntilSession = (sessionStart - now) / (1000 * 60 * 60);
+    
+    // Skip sessions in the past or too far in the future
+    if (hoursUntilSession < 0 || hoursUntilSession > 25) continue;
+    
+    // Determine reminder type and check if already sent
+    const reminderFlags = registration.remindersSent || {};
+    let reminderType = null;
+    let reminderSubjectPrefix = '';
+    
+    if (hoursUntilSession >= 23 && hoursUntilSession <= 25 && !reminderFlags.dayBefore) {
+      reminderType = 'dayBefore';
+      reminderSubjectPrefix = '📅 Tomorrow: ';
+    } else if (hoursUntilSession >= 0.5 && hoursUntilSession <= 1.5 && !reminderFlags.hourBefore) {
+      reminderType = 'hourBefore';
+      reminderSubjectPrefix = '⏰ Starting Soon: ';
+    }
+    
+    if (!reminderType) continue;
+    
+    // Format date/time for email
+    const sessionDate = sessionStart.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const sessionTime = registration.sessionTime || sessionStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    
+    // Generate ICS for attachment
+    const icsContent = generateICSContent({
+      title: `LeaderReps: ${registration.sessionTitle || 'Coaching Session'}`,
+      description: `Coaching session${registration.coach ? ` with ${registration.coach}` : ''}\\n\\nJoin via LeaderReps: ${appUrl}`,
+      location: 'Virtual Session',
+      startDate: registration.sessionDate,
+      startTime: registration.sessionTime,
+      durationMinutes: 60,
+      uid: `${doc.id}@leaderreps.com`
+    });
+    
+    const reminderMessage = reminderType === 'dayBefore' 
+      ? "Your coaching session is scheduled for tomorrow. Make sure you're ready!"
+      : "Your coaching session starts in about an hour. Time to prepare!";
+    
+    // Send reminder to leader
+    if (registration.userEmail) {
+      const leaderMailOptions = {
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: registration.userEmail,
+        subject: `${reminderSubjectPrefix}${registration.sessionTitle || 'Coaching Session'}`,
+        attachments: [{
+          filename: 'coaching-session.ics',
+          content: icsContent,
+          contentType: 'text/calendar; charset=utf-8; method=REQUEST'
+        }],
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+              <h2 style="color: white; margin: 0;">${reminderType === 'dayBefore' ? '📅 Session Tomorrow' : '⏰ Starting Soon'}</h2>
+            </div>
+            <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+              <p style="margin-top: 0;">Hi ${registration.userName || 'there'},</p>
+              <p>${reminderMessage}</p>
+              
+              <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+                <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
+                <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Coaching Session'}</p>
+                <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+                <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+                ${registration.coach ? `<p style="margin: 8px 0;"><strong>Coach:</strong> ${registration.coach}</p>` : ''}
+              </div>
+              
+              <p style="text-align: center; margin-top: 24px;">
+                <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
+              </p>
+            </div>
+            <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+              <p style="margin: 0; color: #64748b; font-size: 12px;">Calendar invite attached for your convenience.</p>
+            </div>
+          </div>
+        `,
+      };
+
+      try {
+        await transporter.sendMail(leaderMailOptions);
+        logger.info(`${reminderType} reminder sent to leader: ${registration.userEmail}`);
+        remindersSent++;
+      } catch (error) {
+        logger.error(`Failed to send leader reminder to ${registration.userEmail}:`, error);
+      }
+    }
+    
+    // Send reminder to facilitator/coach
+    if (registration.coachEmail) {
+      const facilitatorMailOptions = {
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: registration.coachEmail,
+        subject: `${reminderSubjectPrefix}${registration.userName || 'Participant'} - ${registration.sessionTitle || 'Coaching Session'}`,
+        attachments: [{
+          filename: 'coaching-session.ics',
+          content: icsContent,
+          contentType: 'text/calendar; charset=utf-8; method=REQUEST'
+        }],
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+              <h2 style="color: white; margin: 0;">${reminderType === 'dayBefore' ? '📅 Session Tomorrow' : '⏰ Starting Soon'}</h2>
+            </div>
+            <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+              <p style="margin-top: 0;">You have a coaching session ${reminderType === 'dayBefore' ? 'scheduled for tomorrow' : 'starting in about an hour'}.</p>
+              
+              <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+                <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
+                <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Coaching Session'}</p>
+                <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+                <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+              </div>
+              
+              <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+                <h3 style="margin-top: 0; color: #002E47;">Participant</h3>
+                <p style="margin: 8px 0;"><strong>Name:</strong> ${registration.userName || 'Not provided'}</p>
+                <p style="margin: 8px 0;"><strong>Email:</strong> ${registration.userEmail || 'Not provided'}</p>
+              </div>
+              
+              <p style="text-align: center; margin-top: 24px;">
+                <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
+              </p>
+            </div>
+            <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+              <p style="margin: 0; color: #64748b; font-size: 12px;">Calendar invite attached for your convenience.</p>
+            </div>
+          </div>
+        `,
+      };
+
+      try {
+        await transporter.sendMail(facilitatorMailOptions);
+        logger.info(`${reminderType} reminder sent to facilitator: ${registration.coachEmail}`);
+        remindersSent++;
+      } catch (error) {
+        logger.error(`Failed to send facilitator reminder to ${registration.coachEmail}:`, error);
+      }
+    }
+    
+    // Mark reminder as sent
+    try {
+      await doc.ref.update({
+        [`remindersSent.${reminderType}`]: admin.firestore.FieldValue.serverTimestamp()
+      });
+    } catch (error) {
+      logger.error(`Failed to update reminder flag for ${doc.id}:`, error);
+    }
+  }
+  
+  logger.info(`Coaching reminder check complete. Sent ${remindersSent} reminders.`);
+});
+
+/**
+ * MILESTONE COMPLETION EMAIL
+ * Sends email notification when a facilitator signs off on a leader's milestone.
+ * Also sends graduation notification when all 5 milestones are complete.
+ * Includes link to view/print certificate.
+ */
+exports.sendMilestoneCompletionEmail = onCall(async (request) => {
+  const { userId, userEmail, userName, milestone, milestoneName, isGraduation } = request.data;
+  
+  if (!userEmail) {
+    logger.warn('No email provided for milestone completion notification');
+    return { success: false, error: 'No email provided' };
+  }
+  
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+  
+  if (!emailUser || !emailPass) {
+    logger.warn('Email credentials not configured for milestone notification');
+    return { success: false, error: 'Email not configured' };
+  }
+  
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: emailUser, pass: emailPass }
+  });
+  
+  const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+  const appDomain = projectId === 'leaderreps-test' ? 'leaderreps-test.web.app' : 'leaderreps-pd-platform.web.app';
+  const appUrl = `https://${appDomain}`;
+  const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps';
+  const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
+  
+  const milestoneEmoji = {
+    1: '📍',
+    2: '🎯',
+    3: '💡',
+    4: '🚀',
+    5: '🏆'
+  };
+  
+  const subject = isGraduation
+    ? `🎓 Congratulations! You've Graduated from LeaderReps!`
+    : `✅ Milestone ${milestone} Complete: ${milestoneName}`;
+  
+  const bodyHtml = isGraduation ? `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">🎓 Congratulations!</h1>
+        <p style="color: #9CE0C8; margin: 10px 0 0 0; font-size: 18px;">You've Graduated!</p>
+      </div>
+      <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none;">
+        <p style="margin-top: 0; font-size: 18px;">Hi ${userName || 'there'},</p>
+        <p style="font-size: 16px;">You've successfully completed all 5 milestones and earned your <strong>LeaderReps Leadership Certification</strong>!</p>
+        
+        <div style="background: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #D4AF37 100%); padding: 4px; border-radius: 12px; margin: 24px 0;">
+          <div style="background: white; padding: 24px; border-radius: 10px; text-align: center;">
+            <p style="margin: 0 0 8px 0; font-size: 14px; color: #666;">CERTIFICATE OF COMPLETION</p>
+            <p style="margin: 0; font-size: 24px; font-weight: bold; color: #002E47;">LeaderReps Leadership Program</p>
+            <p style="margin: 8px 0 0 0; font-size: 16px; color: #47A88D;">All 5 Milestones Complete</p>
+          </div>
+        </div>
+        
+        <p style="text-align: center; margin-top: 24px;">
+          <a href="${appUrl}?screen=certificates" style="background: #47A88D; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">View Your Certificate</a>
+        </p>
+        
+        <p style="margin-top: 24px; color: #666; font-size: 14px;">You can print or share your certificate from the app. Thank you for your dedication to becoming a better leader!</p>
+      </div>
+      <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+        <p style="margin: 0; color: #64748b; font-size: 12px;">Congratulations from the LeaderReps Team!</p>
+      </div>
+    </div>
+  ` : `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 24px; border-radius: 8px 8px 0 0;">
+        <h2 style="color: white; margin: 0;">${milestoneEmoji[milestone] || '✅'} Milestone Complete!</h2>
+      </div>
+      <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+        <p style="margin-top: 0;">Hi ${userName || 'there'},</p>
+        <p>Congratulations! Your facilitator has signed off on <strong>Milestone ${milestone}: ${milestoneName}</strong>.</p>
+        
+        <div style="background: #10B981; color: white; padding: 16px; border-radius: 8px; margin: 20px 0; text-align: center;">
+          <p style="margin: 0; font-size: 18px; font-weight: bold;">${milestoneEmoji[milestone]} ${milestoneName}</p>
+          <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Milestone ${milestone} of 5 Complete</p>
+        </div>
+        
+        ${milestone < 5 ? `
+        <p><strong>What's Next?</strong></p>
+        <p>Your certificate for this milestone is now available in the app. <strong>Milestone ${milestone + 1}</strong> is now unlocked and ready for you to begin!</p>
+        ` : ''}
+        
+        <p style="text-align: center; margin-top: 24px;">
+          <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">View Certificate & Continue</a>
+        </p>
+      </div>
+      <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+        <p style="margin: 0; color: #64748b; font-size: 12px;">Keep up the great work!</p>
+      </div>
+    </div>
+  `;
+  
+  const mailOptions = {
+    from: `"${emailFromName}" <${emailUser}>`,
+    replyTo: emailReplyTo,
+    to: userEmail,
+    subject,
+    html: bodyHtml
+  };
+  
+  try {
+    await transporter.sendMail(mailOptions);
+    logger.info(`Milestone completion email sent to ${userEmail} for milestone ${milestone}`);
+    return { success: true };
+  } catch (error) {
+    logger.error(`Failed to send milestone email to ${userEmail}:`, error);
+    return { success: false, error: error.message };
   }
 });
 
@@ -1439,16 +2020,12 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
 
             switch (rule.criteria) {
               case 'am_bookend_incomplete':
-                // Check if Morning Bookend (Win the Day) is completed
-                shouldSend = !practiceData.morningBookend?.winCompleted;
-                break;
               case 'pm_bookend_incomplete':
-                // Check if Evening Bookend (Reflection) is completed
-                shouldSend = !practiceData.eveningBookend?.completedAt;
-                break;
               case 'daily_action_incomplete':
-                // Check if Daily Rep is completed
-                shouldSend = practiceData.dailyTargetRepStatus !== 'Completed'; 
+                // DEPRECATED: AM/PM Bookends and Daily Reps have been removed from the app
+                // Skip these rules - they should be disabled in Firestore
+                logger.info(`Skipping deprecated criteria: ${rule.criteria} for rule ${rule.id}`);
+                shouldSend = false;
                 break;
               default:
                 logger.warn(`Unknown criteria: ${rule.criteria}`);

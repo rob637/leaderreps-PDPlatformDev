@@ -18,7 +18,9 @@ import {
   Dumbbell,
   Bell,
   Eye,
-  PlaySquare
+  PlaySquare,
+  CheckCircle,
+  Award
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
@@ -33,7 +35,9 @@ import CommunityManager from './CommunityManager';
 import CoachingManager from './CoachingManager';
 import LOVManager from './LOVManager';
 import DailyRepsLibrary from './DailyRepsLibrary';
-import DailyPlanManager from './DailyPlanManager';
+import ContentManager from './DailyPlanManager';
+import MilestoneSignOffQueue from './MilestoneSignOffQueue';
+import CoachingCertificationQueue from './CoachingCertificationQueue';
 import CohortManager from './CohortManager';
 import UserManagement from './UserManagement';
 import LeaderProfileReports from './LeaderProfileReports';
@@ -132,11 +136,20 @@ const AdminPortal = () => {
       items: [
         { id: 'users', label: 'User Management', icon: Users },
         // { id: 'cohorts', label: 'Cohorts', icon: Users },
-        { id: 'daily-plan', label: 'Daily Plan (New)', icon: Calendar },
+        { id: 'content-manager', label: 'Content Manager', icon: Calendar },
         { id: 'content', label: 'Content Library', icon: FileText },
         { id: 'media', label: 'Media Vault', icon: Database },
         { id: 'video-series', label: 'Video Series', icon: PlaySquare },
         { id: 'notifications', label: 'Notifications', icon: Bell }
+      ]
+    },
+    {
+      title: 'Facilitator',
+      items: [
+        { id: 'sign-off-queue', label: 'Sign-Off Queue', icon: CheckCircle },
+        { id: 'coaching-cert', label: 'Leader Certification', icon: Award },
+        { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
+        { id: 'conditioning', label: 'Conditioning', icon: Dumbbell }
       ]
     },
     {
@@ -146,13 +159,6 @@ const AdminPortal = () => {
         { id: 'community', label: 'Community', icon: Users },
         { id: 'coaching', label: 'Coaching', icon: BrainCircuit },
         { id: 'lov', label: 'System Values', icon: List }
-      ]
-    },
-    {
-      title: 'Reports',
-      items: [
-        { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
-        { id: 'conditioning', label: 'Conditioning', icon: Dumbbell }
       ]
     },
     {
@@ -184,8 +190,12 @@ const AdminPortal = () => {
         return <CohortManager />;
       case 'tests':
         return <TestCenter />;
-      case 'daily-plan':
-        return <DailyPlanManager />;
+      case 'content-manager':
+        return <ContentManager />;
+      case 'sign-off-queue':
+        return <MilestoneSignOffQueue />;
+      case 'coaching-cert':
+        return <CoachingCertificationQueue />;
       // 'library' tab removed - Programs/Workouts/Skills now managed as LOVs
       case 'media':
         return <MediaLibrary />;

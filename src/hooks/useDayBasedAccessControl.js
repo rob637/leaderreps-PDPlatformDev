@@ -173,11 +173,11 @@ export const useDayBasedAccessControl = () => {
       showScorecard: checkVisibility('scorecard', 'showScorecard', false),
       
       // Zone Access (derived from CSV structure)
-      // Community is available after Day 15 (Week 1)
-      isCommunityZoneOpen: effectiveDayNumber >= 15,
-      // Coaching 1:1 scheduling window is Days 23-35
-      isCoachingZoneOpen: effectiveDayNumber >= 22,
-      isCoaching1on1Window: effectiveDayNumber >= 23 && effectiveDayNumber <= 35,
+      // Community zone opens once user completes prep and enters Foundation phase
+      isCommunityZoneOpen: prepStatus.isComplete,
+      // Coaching zone opens once user completes prep and enters Foundation phase
+      isCoachingZoneOpen: prepStatus.isComplete,
+      isCoaching1on1Window: effectiveDayNumber >= 1, // Available throughout Foundation
       
       // Content Zone is always open but items are gated
       isContentZoneOpen: true,

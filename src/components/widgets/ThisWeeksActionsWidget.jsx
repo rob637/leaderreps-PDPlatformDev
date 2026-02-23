@@ -3,17 +3,19 @@ import {
   CheckCircle, Circle, Play, BookOpen, Users, Video, FileText, Zap, 
   ExternalLink, Loader, Layers, MessageSquare, 
   SkipForward, Clock, AlertTriangle,
-  User, ClipboardCheck, Calendar, ChevronDown, ChevronUp, Trophy, Bell
+  User, ClipboardCheck, Calendar, ChevronDown, ChevronUp, Trophy, Bell,
+  RotateCcw, Award
 } from 'lucide-react';
+import { SESSION_TYPES, COMMUNITY_SESSION_TYPES } from '../../data/Constants';
 import { Card } from '../ui';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
-// useCoachingRegistrations available if needed
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
+import { useCoachingRegistrations, REGISTRATION_STATUS } from '../../hooks/useCoachingRegistrations';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import CoachingActionItem from '../coaching/CoachingActionItem';
+import SessionPickerModal from '../coaching/SessionPickerModal';
 import { doc, getDoc, updateDoc, deleteField, collection, getDocs, deleteDoc } from 'firebase/firestore';
-import { RotateCcw } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
@@ -22,6 +24,24 @@ import NotificationPreferencesWidget from './NotificationPreferencesWidget';
 import FoundationCommitmentWidget from './FoundationCommitmentWidget';
 import ConditioningTutorialWidget from './ConditioningTutorialWidget';
 import { VideoSeriesPlayer } from '../video';
+import LeaderCertificateViewer from '../coaching/LeaderCertificateViewer';
+
+// Session type labels for display in user-facing UI
+const COACHING_SESSION_LABELS = {
+  [SESSION_TYPES.OPEN_GYM]: { label: 'Open Gym Session', description: 'Drop-in feedback session', icon: '🏋️' },
+  [SESSION_TYPES.LEADER_CIRCLE]: { label: 'Leader Circle', description: 'Peer discussion group', icon: '👥' },
+  [SESSION_TYPES.WORKSHOP]: { label: 'Workshop', description: 'Structured learning session', icon: '📚' },
+  [SESSION_TYPES.LIVE_WORKOUT]: { label: 'Live Workout', description: 'Quick skill practice', icon: '⚡' },
+  [SESSION_TYPES.ONE_ON_ONE]: { label: '1:1 Coaching', description: 'Personal coaching session', icon: '🎯' }
+};
+
+const COMMUNITY_SESSION_LABELS = {
+  [COMMUNITY_SESSION_TYPES.LEADER_CIRCLE]: { label: 'Leader Circle', description: 'Peer discussion group', icon: '👥' },
+  [COMMUNITY_SESSION_TYPES.COMMUNITY_EVENT]: { label: 'Community Event', description: 'Live networking event', icon: '🎉' },
+  [COMMUNITY_SESSION_TYPES.ACCOUNTABILITY_POD]: { label: 'Accountability Pod', description: 'Small group check-in', icon: '🤝' },
+  [COMMUNITY_SESSION_TYPES.MASTERMIND]: { label: 'Mastermind', description: 'Expert-led group session', icon: '🧠' },
+  [COMMUNITY_SESSION_TYPES.NETWORKING]: { label: 'Networking', description: 'Casual networking session', icon: '🌐' }
+};
 
 // Helper function to generate Google Calendar URL
 const generateCalendarUrl = (calendarEvent) => {
@@ -63,6 +83,16 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   const [showFoundationCommitmentModal, setShowFoundationCommitmentModal] = useState(false);
   const [showConditioningTutorialModal, setShowConditioningTutorialModal] = useState(false);
   const [savingBaseline, setSavingBaseline] = useState(false);
+  
+  // Session picker modals
+  const [showSessionPicker, setShowSessionPicker] = useState(false);
+  const [sessionPickerItem, setSessionPickerItem] = useState(null);
+  const [showCommunitySessionPicker, setShowCommunitySessionPicker] = useState(false);
+  const [communitySessionPickerItem, setCommunitySessionPickerItem] = useState(null);
+  
+  // Leader Certification viewer
+  const [showCertificateViewer, setShowCertificateViewer] = useState(false);
+  const [certificationMilestone, setCertificationMilestone] = useState(null);
   
   // Prep Complete expanded state (default collapsed when all done)
   const [prepExpanded, setPrepExpanded] = useState(false);
@@ -148,7 +178,10 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   } = useDailyPlan();
 
   const actionProgress = useActionProgress();
-  // const coachingRegistrations = useCoachingRegistrations();
+  const { 
+    registrations: coachingRegistrationsList,
+    getRegistrationForCoachingItem 
+  } = useCoachingRegistrations();
   
   // Leader Profile completion tracking (for auto-check in Pre-Start)
   const { isComplete: leaderProfileComplete } = useLeaderProfile();
@@ -228,11 +261,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     getItemProgress,
     getCarriedOverItems
   } = actionProgress;
-  
-  // Coaching registrations
-  // const {
-    // registrations: userRegistrations
-  // } = coachingRegistrations;
 
   // Calculate Current Week Number
   const currentWeekNumber = useMemo(() => {
@@ -406,15 +434,176 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       return [...requiredPrepActions, ...explorePrepActions];
     }
     
-    // Start/Post phase = Show actions for the CURRENT WEEK
+    // =================== FOUNDATION PHASE (MILESTONE-BASED) ===================
+    // Foundation uses 5 gated milestones instead of 8 weeks
+    // Milestones are stored as milestone-1, milestone-2, etc. in daily_plan_v1
+    if (currentPhase?.id === 'start') {
+      // Determine current milestone from user's milestone progress
+      // Current milestone = first milestone that is NOT signed off (or 6 if all signed = graduated)
+      let currentMilestone = 1;
+      const milestoneProgress = user?.milestoneProgress || {};
+      let signedOffCount = 0;
+      for (let m = 1; m <= 5; m++) {
+        const mData = milestoneProgress[`milestone_${m}`] || {};
+        if (mData.signedOff) {
+          currentMilestone = m + 1;
+          signedOffCount++;
+        } else {
+          break;
+        }
+      }
+      
+      // Check if graduated (all 5 milestones signed off)
+      const isGraduated = signedOffCount === 5;
+      
+      // Cap at 5 for showing milestone content (graduated users still see milestone 5 content)
+      const displayMilestone = Math.min(currentMilestone, 5);
+      
+      // Look for milestone document in dailyPlan
+      const milestoneDoc = dailyPlan.find(d => d.id === `milestone-${displayMilestone}`);
+      
+      // Initialize arrays for all action types
+      let certificateActions = [];
+      let milestoneActions = [];
+      let coachingActions = [];
+      let communityActions = [];
+      
+      // Milestone names mapping
+      const milestoneNames = {
+        1: 'Foundation Basics',
+        2: 'Communication Mastery',
+        3: 'Team Leadership',
+        4: 'Strategic Thinking',
+        5: 'Executive Presence'
+      };
+      
+      // CHECK FOR UNVIEWED CERTIFICATES
+      // If graduated and milestone 5 certificate not viewed, show GRADUATION certificate
+      if (isGraduated) {
+        const milestone5Data = milestoneProgress['milestone_5'] || {};
+        if (!milestone5Data.certificateViewed) {
+          certificateActions.push({
+            id: 'view-certificate-graduation',
+            type: 'certificate',
+            displayType: 'certificate',
+            label: '🎓 View Your Graduation Certificate',
+            description: 'Congratulations! You have completed the Foundation Program!',
+            icon: '🎓',
+            required: false,
+            category: 'Certificate',
+            fromDailyPlan: true,
+            dayId: 'graduation',
+            handlerType: 'view-certificate',
+            isViewCertificate: true,
+            certificateMilestone: 5,
+            certificateMilestoneName: 'Foundation Program Graduation',
+            isGraduation: true
+          });
+        }
+      } else if (currentMilestone > 1) {
+        // Not graduated - check for previous milestone certificate
+        const prevMilestoneData = milestoneProgress[`milestone_${currentMilestone - 1}`] || {};
+        if (prevMilestoneData.signedOff && !prevMilestoneData.certificateViewed) {
+          const prevMilestoneName = milestoneNames[currentMilestone - 1] || `Milestone ${currentMilestone - 1}`;
+          
+          certificateActions.push({
+            id: `view-certificate-milestone-${currentMilestone - 1}`,
+            type: 'certificate',
+            displayType: 'certificate',
+            label: `🎉 View Your ${prevMilestoneName} Certificate`,
+            description: `Congratulations! Print or save your certificate for ${prevMilestoneName}`,
+            icon: '🏆',
+            required: false, // Viewing is optional but encouraged
+            category: 'Certificate',
+            fromDailyPlan: true,
+            dayId: `milestone-${displayMilestone}`,
+            handlerType: 'view-certificate',
+            isViewCertificate: true,
+            certificateMilestone: currentMilestone - 1,
+            certificateMilestoneName: prevMilestoneName
+          });
+        }
+      }
+      
+      // If graduated, don't show milestone content - just the graduation certificate
+      if (isGraduated) {
+        return [...certificateActions];
+      }
+      
+      // Get regular actions from milestone if configured
+      if (milestoneDoc?.actions && milestoneDoc.actions.length > 0) {
+        milestoneActions = normalizeDailyActions(
+          milestoneDoc.actions, 
+          `milestone-${displayMilestone}`, 
+          displayMilestone
+        ).filter(action => action.type !== 'daily_rep');
+      }
+      
+      // Generate coaching session actions from milestone's coachingSessionTypes
+      // These require 3 steps: Schedule → Attend → Get Certified by facilitator
+      if (milestoneDoc?.coachingSessionTypes && milestoneDoc.coachingSessionTypes.length > 0) {
+        coachingActions = milestoneDoc.coachingSessionTypes.map((sessionType) => {
+          const typeInfo = COACHING_SESSION_LABELS[sessionType] || { label: 'Coaching Session', description: '', icon: '🎯' };
+          return {
+            id: `milestone-${displayMilestone}-coaching-${sessionType}`,
+            type: 'coaching',
+            displayType: 'coaching',
+            sessionType: sessionType, // Pass to SessionPickerModal for filtering
+            label: typeInfo.label,
+            description: typeInfo.description,
+            icon: typeInfo.icon,
+            required: true,
+            category: 'Coaching',
+            fromDailyPlan: true,
+            dayId: `milestone-${displayMilestone}`,
+            handlerType: 'session-picker',
+            isSessionPicker: true,
+            requiresCertification: true, // Must be certified by facilitator to complete
+            milestoneId: displayMilestone
+          };
+        });
+      }
+      
+      // Generate community session actions from milestone's communitySessionTypes
+      if (milestoneDoc?.communitySessionTypes && milestoneDoc.communitySessionTypes.length > 0) {
+        communityActions = milestoneDoc.communitySessionTypes.map((sessionType) => {
+          const typeInfo = COMMUNITY_SESSION_LABELS[sessionType] || { label: 'Community Session', description: '', icon: '🎉' };
+          return {
+            id: `milestone-${displayMilestone}-community-${sessionType}`,
+            type: 'community',
+            displayType: 'community',
+            sessionType: sessionType, // Pass to CommunitySessionPickerModal for filtering
+            label: `Join: ${typeInfo.label}`,
+            description: typeInfo.description,
+            icon: typeInfo.icon,
+            required: false,
+            optional: true,
+            category: 'Community',
+            fromDailyPlan: true,
+            dayId: `milestone-${displayMilestone}`,
+            handlerType: 'community-session-picker',
+            isSessionPicker: true
+          };
+        });
+      }
+      
+      // NOTE: Leader Certification is handled by the facilitator in Admin > Sign-Off Queue
+      // Users don't see a "waiting for certification" item - they only see the certificate
+      // to view/print AFTER the facilitator signs off (shown at start of next milestone)
+      
+      // Return combined actions: CERTIFICATE first (from previous milestone), regular actions, coaching, community
+      // NO certification gate shown to user - it's handled by facilitator
+      return [...certificateActions, ...milestoneActions, ...coachingActions, ...communityActions];
+    }
+    
+    // =================== ASCENT PHASE (WEEK-BASED) ===================
+    // Post phase still uses week-based structure
     // Calculate day range for current week
     const startDay = (currentWeekNumber - 1) * 7 + 1;
     const endDay = currentWeekNumber * 7;
     
-    // Filter dailyPlan for days in this week range (relative to phase start)
-    // Note: dailyPlan has absolute dayNumbers (15-70 for Start Phase)
-    // We need to map phaseDayNumber to absolute dayNumber
-    const phaseStartDbDay = 15; // Hardcoded for now, should come from config
+    // Filter dailyPlan for days in this week range
+    const phaseStartDbDay = 71; // Ascent starts at day 71
     const absStartDay = phaseStartDbDay + startDay - 1;
     const absEndDay = phaseStartDbDay + endDay - 1;
     
@@ -437,7 +626,50 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // Filter out Daily Reps
     return weekActions.filter(action => action.type !== 'daily_rep');
     
-  }, [dailyPlan, currentPhase?.id, currentWeekNumber, prepRequirementsComplete?.allComplete, normalizeDailyActions]);
+  }, [dailyPlan, currentPhase?.id, currentWeekNumber, prepRequirementsComplete?.allComplete, normalizeDailyActions, user?.milestoneProgress]);
+
+  // Calculate current milestone info for display
+  const currentMilestoneInfo = useMemo(() => {
+    if (currentPhase?.id !== 'start') return null;
+    
+    const milestoneProgress = user?.milestoneProgress || {};
+    let currentMilestone = 1;
+    let signedOffCount = 0;
+    for (let m = 1; m <= 5; m++) {
+      const mData = milestoneProgress[`milestone_${m}`] || {};
+      if (mData.signedOff) {
+        currentMilestone = m + 1;
+        signedOffCount++;
+      } else {
+        break;
+      }
+    }
+    
+    // Check if graduated
+    const isGraduated = signedOffCount === 5;
+    
+    if (isGraduated) {
+      return {
+        number: 5,
+        name: 'Foundation Program Completed! 🎓',
+        isGraduated: true
+      };
+    }
+    
+    const milestoneNames = {
+      1: 'Foundation Basics',
+      2: 'Communication Mastery',
+      3: 'Team Leadership',
+      4: 'Strategic Thinking',
+      5: 'Executive Presence'
+    };
+    
+    return {
+      number: currentMilestone,
+      name: milestoneNames[currentMilestone] || `Milestone ${currentMilestone}`,
+      isGraduated: false
+    };
+  }, [currentPhase?.id, user?.milestoneProgress]);
 
   // Get carried over items (including incomplete prep phase items AND all prior weeks)
   const carriedOverItems = useMemo(() => {
@@ -466,7 +698,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
     // Check for incomplete prep phase items (interactive items)
     // These should carry over to Start phase if not completed
-    if (currentPhase?.id === 'start') {
+    // SKIP if all prep requirements are already complete - don't show completed phases
+    if (currentPhase?.id === 'start' && !prepRequirementsComplete?.allComplete) {
       // Check for incomplete prep phase daily plan items (including interactive items)
       const prepDays = dailyPlan.filter(d => d.phase === 'pre-start');
       
@@ -489,6 +722,10 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               isComplete = baselineAssessmentComplete;
             } else if (handlerType === 'notification-setup') {
               isComplete = notificationSetupComplete;
+            } else if (handlerType === 'foundation-commitment') {
+              isComplete = foundationCommitmentComplete;
+            } else if (handlerType === 'conditioning-tutorial') {
+              isComplete = conditioningTutorialComplete;
             } else {
               isComplete = isActionCompleted(actionId);
             }
@@ -511,7 +748,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 resourceId: action.resourceId,
                 resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
                 url: action.url || action.videoUrl || action.link || action.details?.externalUrl,
-                isInteractive: ['leader-profile', 'baseline-assessment', 'notification-setup'].includes(handlerType),
+                isInteractive: ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType),
                 handlerType
               });
             }
@@ -654,7 +891,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     }
     
     return carriedItems;
-  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, dailyPlan, userState?.dailyProgress]);
+  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, dailyPlan, userState?.dailyProgress]);
 
   // Preserve carried over items - merge new items but keep completed ones
   useEffect(() => {
@@ -670,7 +907,21 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   }, [carriedOverItems]);
   
   // Use preserved items if available, otherwise use current carriedOverItems
-  const displayedCarriedOverItems = preservedCarriedOver.length > 0 ? preservedCarriedOver : carriedOverItems;
+  // Filter out prep items when all prep is complete (completed phases shouldn't carry forward)
+  const displayedCarriedOverItems = useMemo(() => {
+    const baseItems = preservedCarriedOver.length > 0 ? preservedCarriedOver : carriedOverItems;
+    
+    // If all prep is complete, filter out prep items (fromWeek === 0 or category is Preparation/Onboarding)
+    if (prepRequirementsComplete?.allComplete) {
+      return baseItems.filter(item => 
+        item.fromWeek !== 0 && 
+        item.category !== 'Preparation' && 
+        item.category !== 'Onboarding'
+      );
+    }
+    
+    return baseItems;
+  }, [preservedCarriedOver, carriedOverItems, prepRequirementsComplete?.allComplete]);
 
   // Calculate progress
   const completedItems = useMemo(() => {
@@ -751,10 +1002,24 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   const totalRequiredCount = requiredActions.length;
   const _progressPercent = totalRequiredCount > 0 ? Math.round((completedRequiredCount / totalRequiredCount) * 100) : 0;
 
-  // Dynamic title
-  const widgetTitle = currentPhase?.id === 'pre-start' 
-    ? "Prep Actions" 
-    : "This Week's Actions";
+  // Dynamic title - context-aware for phase
+  // When in 'start' phase but only showing carried-over prep items (no milestone content), 
+  // show "Preparation Phase" instead of "Current Milestone"
+  const widgetTitle = useMemo(() => {
+    if (currentPhase?.id === 'pre-start') {
+      return "Prep Actions";
+    }
+    if (currentPhase?.id === 'start') {
+      // If we only have carried-over prep items and no milestone content, show "Preparation Phase"
+      const hasNoMilestoneContent = allActions.length === 0;
+      const hasCarriedOverItems = displayedCarriedOverItems.length > 0;
+      if (hasNoMilestoneContent && hasCarriedOverItems) {
+        return "Preparation Phase";
+      }
+      return "Current Milestone";
+    }
+    return "This Week's Actions";
+  }, [currentPhase?.id, allActions.length, displayedCarriedOverItems.length]);
 
   // Separate actions into Required Prep and Additional Prep for prep phase
   // Uses the `required` and `optional` flags from the daily plan data
@@ -771,6 +1036,30 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       return isRequired;
     });
   }, [currentPhase?.id, allActions]);
+
+  // Calculate local prep completion count using widget's state values
+  // This syncs the counter with the visual checkboxes in ActionItem
+  const localPrepCompletion = useMemo(() => {
+    if (currentPhase?.id !== 'pre-start') return { completedCount: 0, totalCount: 0, allComplete: false };
+    
+    const completedCount = requiredPrepActions.filter(action => {
+      const handlerType = action.handlerType || '';
+      // Interactive item checks
+      if (handlerType === 'leader-profile') return leaderProfileComplete;
+      if (handlerType === 'baseline-assessment') return baselineAssessmentComplete;
+      if (handlerType === 'notification-setup') return notificationSetupComplete;
+      if (handlerType === 'foundation-commitment') return foundationCommitmentComplete;
+      if (handlerType === 'conditioning-tutorial') return conditioningTutorialComplete;
+      // Standard completion check
+      const progress = getItemProgress(action.id);
+      return progress.status === 'completed' || completedItems.includes(action.id);
+    }).length;
+    
+    const totalCount = requiredPrepActions.length;
+    const allComplete = totalCount > 0 && completedCount === totalCount;
+    
+    return { completedCount, totalCount, allComplete };
+  }, [currentPhase?.id, requiredPrepActions, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, getItemProgress, completedItems]);
   
   const additionalPrepActions = useMemo(() => {
     if (currentPhase?.id !== 'pre-start') return [];
@@ -1017,6 +1306,314 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Action Item Renderer
   const ActionItem = ({ item, isCarriedOver = false }) => {
     const progress = getItemProgress(item.id);
+    
+    // ========== SPECIAL HANDLING: Leader Certification (Final Milestone Gate) ==========
+    // This is the LAST action in each milestone - requires facilitator certification + user acknowledgment
+    if (item.isLeaderCertification) {
+      const milestoneId = item.milestoneId;
+      
+      // Check if user has been certified for this milestone by looking at coaching registrations
+      const certifiedRegistration = coachingRegistrationsList.find(r => 
+        r.status === REGISTRATION_STATUS.CERTIFIED &&
+        r.coachingItemId?.includes(`milestone-${milestoneId}`)
+      );
+      
+      const isCertified = !!certifiedRegistration;
+      const isAcknowledged = progress?.status === 'completed';
+      
+      // Get user name from profile or user object
+      const userName = developmentPlanData?.leaderProfile?.preferredName || 
+                       developmentPlanData?.leaderProfile?.name ||
+                       user?.displayName || 
+                       'Leader';
+      
+      const handleViewCertificate = () => {
+        if (!isCertified) return;
+        setCertificationMilestone({
+          milestone: milestoneId,
+          userName,
+          certificationDate: certifiedRegistration?.certifiedAt?.toDate?.() || certifiedRegistration?.certifiedAt || new Date(),
+          facilitatorName: certifiedRegistration?.certifiedBy || 'Program Facilitator',
+          isAcknowledged
+        });
+        setShowCertificateViewer(true);
+      };
+      
+      const handleAcknowledgeCertificate = async () => {
+        // Mark the certification action as complete
+        await completeItem(item.id, {
+          currentWeek: currentWeekNumber,
+          weekNumber: currentWeekNumber,
+          category: 'certification',
+          label: item.label,
+          acknowledgedAt: new Date().toISOString()
+        });
+        setShowCertificateViewer(false);
+      };
+      
+      return (
+        <div 
+          className={`group p-4 rounded-xl border transition-all ${
+            isAcknowledged 
+              ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-700 cursor-default'
+              : isCertified
+                ? 'bg-amber-50 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 dark:border-amber-700 dark:hover:bg-amber-900/40 cursor-pointer'
+                : 'bg-slate-100 border-slate-200 dark:bg-slate-800/50 dark:border-slate-700 cursor-not-allowed opacity-60'
+          }`}
+          onClick={isCertified && !isAcknowledged ? handleViewCertificate : undefined}
+        >
+          {/* Header with icon and label */}
+          <div className="flex items-center gap-3 mb-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              isAcknowledged 
+                ? 'bg-emerald-500' 
+                : isCertified
+                  ? 'bg-gradient-to-br from-amber-400 to-amber-600'
+                  : 'bg-slate-300 dark:bg-slate-600'
+            }`}>
+              {isAcknowledged ? (
+                <CheckCircle className="w-5 h-5 text-white" />
+              ) : (
+                <Trophy className="w-5 h-5 text-white" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`font-bold ${
+                isAcknowledged 
+                  ? 'text-emerald-700 dark:text-emerald-400' 
+                  : isCertified
+                    ? 'text-amber-700 dark:text-amber-400'
+                    : 'text-slate-500 dark:text-slate-400'
+              }`}>
+                {item.label}
+              </p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                {isAcknowledged 
+                  ? '✓ Certificate acknowledged - Milestone complete!' 
+                  : isCertified 
+                    ? '🎉 You\'ve been certified! Click to view your certificate'
+                    : '🔒 Complete all actions & get facilitator certification'
+                }
+              </p>
+            </div>
+            {isAcknowledged && (
+              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Complete
+              </span>
+            )}
+          </div>
+          
+          {/* Status indicator */}
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${
+              isAcknowledged
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
+                : isCertified
+                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+                  : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+            }`}>
+              {isAcknowledged ? (
+                <>
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  Milestone {milestoneId} Complete
+                </>
+              ) : isCertified ? (
+                <>
+                  <Trophy className="w-3.5 h-3.5" />
+                  View & Acknowledge Certificate
+                </>
+              ) : (
+                <>
+                  <Clock className="w-3.5 h-3.5" />
+                  Awaiting Certification
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // ========== SPECIAL HANDLING: View Certificate (from previous milestone) ==========
+    // This shows at the START of a new milestone when the previous one was signed off
+    if (item.isViewCertificate) {
+      const milestoneProgress = user?.milestoneProgress || {};
+      const certMilestone = item.certificateMilestone;
+      const certData = milestoneProgress[`milestone_${certMilestone}`] || {};
+      const isViewed = certData.certificateViewed || false;
+      
+      const handleViewPreviousCertificate = async () => {
+        if (isViewed) return; // Already viewed
+        
+        // Get user name for certificate
+        const userName = developmentPlanData?.leaderProfile?.preferredName || 
+                         developmentPlanData?.leaderProfile?.name ||
+                         user?.displayName || 
+                         'Leader';
+        
+        // Show the certificate viewer
+        setCertificationMilestone({
+          milestone: certMilestone,
+          userName,
+          certificationDate: certData.signOffApprovedAt || new Date(),
+          facilitatorName: certData.signedOffBy || 'Program Facilitator',
+          isAcknowledged: false
+        });
+        setShowCertificateViewer(true);
+      };
+      
+      return (
+        <div
+          className={`group flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+            isViewed
+              ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700'
+              : 'bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 border-amber-300 dark:border-amber-600 hover:shadow-md'
+          }`}
+          onClick={handleViewPreviousCertificate}
+        >
+          <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+            isViewed 
+              ? 'bg-emerald-500' 
+              : 'bg-gradient-to-br from-amber-400 to-yellow-500 animate-pulse'
+          }`}>
+            {isViewed ? (
+              <CheckCircle className="w-5 h-5 text-white" />
+            ) : (
+              <Award className="w-5 h-5 text-white" />
+            )}
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className={`text-sm font-semibold ${
+                isViewed ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-200'
+              }`}>
+                {isViewed ? '✅ Certificate Viewed' : item.label}
+              </span>
+            </div>
+            <p className={`text-xs mt-0.5 ${
+              isViewed ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+            }`}>
+              {isViewed ? `${item.certificateMilestoneName} certificate saved` : item.description}
+            </p>
+          </div>
+          
+          {!isViewed && (
+            <div className="flex-shrink-0">
+              <span className="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-semibold">
+                View & Print
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    // ========== SPECIAL HANDLING: Coaching Sessions with Certification ==========
+    // These have a 3-step flow: Schedule → Attend → Get Certified
+    if (item.requiresCertification) {
+      // Find the registration for this coaching item using the hook's function
+      const registration = getRegistrationForCoachingItem(item.id);
+      
+      const registrationStatus = registration?.status;
+      const isScheduled = registrationStatus && registrationStatus !== REGISTRATION_STATUS.CANCELLED;
+      const isAttended = registrationStatus === REGISTRATION_STATUS.ATTENDED || registrationStatus === REGISTRATION_STATUS.CERTIFIED;
+      const isCertified = registrationStatus === REGISTRATION_STATUS.CERTIFIED;
+      
+      const handleCoachingClick = () => {
+        if (!isCertified) {
+          // Open session picker to schedule or reschedule
+          setSessionPickerItem(item);
+          setShowSessionPicker(true);
+        }
+        // If certified, action is complete - no action needed
+      };
+      
+      return (
+        <div 
+          className={`group p-4 rounded-xl border transition-all cursor-pointer ${
+            isCertified 
+              ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-700'
+              : 'bg-teal-50 border-teal-100 hover:bg-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700'
+          }`}
+          onClick={handleCoachingClick}
+        >
+          {/* Header with icon and label */}
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              isCertified 
+                ? 'bg-emerald-500' 
+                : 'bg-gradient-to-br from-corporate-teal to-teal-600'
+            }`}>
+              {isCertified ? (
+                <CheckCircle className="w-5 h-5 text-white" />
+              ) : (
+                <Video className="w-5 h-5 text-white" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`font-bold ${isCertified ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-white'}`}>
+                {item.label}
+              </p>
+              {isCertified ? (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                  ✓ Certified by facilitator
+                </p>
+              ) : isAttended ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  ⏳ Awaiting facilitator certification
+                </p>
+              ) : isScheduled && registration ? (
+                <div className="text-xs text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <Calendar className="w-3 h-3" />
+                    <span>
+                      {registration.sessionDate 
+                        ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                        : 'Date TBD'
+                      }
+                      {registration.sessionTime && ` at ${registration.sessionTime}`}
+                    </span>
+                  </div>
+                  {registration.coach && (
+                    <p className="text-slate-500 dark:text-slate-400 mt-0.5">with {registration.coach}</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Click to schedule your coaching session
+                </p>
+              )}
+            </div>
+            
+            {/* Right side: Status badge and action button */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Required
+              </span>
+              {!isCertified && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSessionPickerItem(item);
+                    setShowSessionPicker(true);
+                  }}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    isScheduled 
+                      ? 'text-slate-600 bg-white dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'
+                      : 'text-white bg-corporate-teal hover:bg-teal-600'
+                  }`}
+                >
+                  {isScheduled ? 'Reschedule' : 'Schedule'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // ========== STANDARD ACTION ITEMS ==========
     // For interactive prep items, use prepRequirementsComplete to match the counter
     // Fall back to individual hook values for legacy compatibility
     let isCompleted;
@@ -1046,25 +1643,35 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
     const getCategoryStyles = () => {
       if (isCompleted) return 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-700';
-      return 'bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:border-slate-600';
+      return 'bg-teal-50 border-teal-100 hover:bg-teal-100 hover:border-teal-200 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:border-slate-600';
     };
 
     const getCheckboxStyles = () => {
       if (isCompleted) return 'bg-emerald-500 border-emerald-500';
-      return 'border-blue-300 group-hover:border-blue-500 dark:border-blue-500 dark:group-hover:border-blue-400';
+      return 'border-teal-300 group-hover:border-corporate-teal dark:border-teal-500 dark:group-hover:border-teal-400';
     };
 
     const getIconColor = () => {
       if (isCompleted) return 'text-emerald-600 dark:text-emerald-400';
-      return 'text-blue-600 dark:text-blue-400';
+      return 'text-corporate-teal dark:text-teal-400';
     };
     
-    // Determine if this item is clickable (either interactive or has a resource)
-    const isClickable = item.isInteractive || item.resourceId || item.url;
+    // Determine if this item is clickable (interactive, has resource, or is session picker)
+    const isClickable = item.isInteractive || item.resourceId || item.url || item.isSessionPicker;
     
     // Determine click handler for the main row
     const handleRowClick = (e) => {
-      if (item.isInteractive) {
+      if (item.isSessionPicker) {
+        // Open session picker modal for coaching/community sessions
+        if (item.type === 'coaching' || item.handlerType === 'session-picker') {
+          setSessionPickerItem(item);
+          setShowSessionPicker(true);
+        } else if (item.type === 'community' || item.handlerType === 'community-session-picker') {
+          // For now, use the same coaching session picker - can create a separate community one later
+          setCommunitySessionPickerItem(item);
+          setShowCommunitySessionPicker(true);
+        }
+      } else if (item.isInteractive) {
         handleInteractiveClick(item);
       } else if (item.resourceId || item.url) {
         // Open the resource viewer for content items
@@ -1100,7 +1707,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               {item.label || item.title || 'Untitled Action'}
             </p>
             {item.required !== false && !item.optional && !isCarriedOver && !isCompleted && (
-              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+              <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
             )}
             {!item.isInteractive && item.optional && !isCarriedOver && (
               <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:text-slate-400 dark:bg-slate-700 px-1.5 py-0.5 rounded uppercase tracking-wider">Optional</span>
@@ -1146,7 +1753,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-500 dark:hover:text-blue-400 dark:hover:bg-blue-900/30 rounded-xl transition-all"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
             >
               <Calendar className="w-5 h-5" />
             </a>
@@ -1194,7 +1801,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         {currentPhase?.id === 'pre-start' && (
           <>
             {/* SECTION 1: Preparation */}
-            {!prepRequirementsComplete?.allComplete ? (
+            {!localPrepCompletion.allComplete ? (
               // Preparation NOT Complete - Show as primary section
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-3 px-1">
@@ -1204,7 +1811,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   </div>
                   <div className="flex-1 h-px bg-amber-200 dark:bg-amber-700"></div>
                   <span className="text-xs font-medium text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
-                    {prepRequirementsComplete?.completedCount || 0}/{prepRequirementsComplete?.totalCount || requiredPrepActions.length} complete
+                    {localPrepCompletion.completedCount}/{localPrepCompletion.totalCount} complete
                   </span>
                   {isAdmin && (
                     <button
@@ -1218,7 +1825,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   )}
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 px-1">
-                  Complete these {prepRequirementsComplete?.totalCount || requiredPrepActions.length} items to get ready for Session One and access additional arena functionality.
+                  Complete these {localPrepCompletion.totalCount} items to get ready for Session One and access additional arena functionality.
                 </p>
                 <div className="space-y-1 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-xl border border-amber-200/60 dark:border-amber-700/40">
                   {requiredPrepActions.map((item, idx) => (
@@ -1239,7 +1846,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   <div className="flex-1 text-left">
                     <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">🎉 Preparation Complete!</p>
                     <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                      All 5 tasks done — Your leadership tools are now unlocked below!
+                      All {localPrepCompletion.totalCount} tasks done — Your leadership tools are now unlocked below!
                     </p>
                   </div>
                   <div className="flex-shrink-0 p-2 text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 transition-colors">
@@ -1260,7 +1867,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 {prepExpanded && (
                   <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Completed Items</p>
-                    {prepRequirementsComplete.items.map((item) => (
+                    {requiredPrepActions.map((item) => (
                       <div key={item.id} className="flex items-center gap-2 text-sm">
                         <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                         <span className="text-emerald-700 dark:text-emerald-400">{item.label}</span>
@@ -1272,7 +1879,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             )}
             
             {/* Explore items (when prep complete) - shown inline with actions */}
-            {prepRequirementsComplete?.allComplete && additionalPrepActions.length > 0 && (
+            {localPrepCompletion.allComplete && additionalPrepActions.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs text-slate-600 dark:text-slate-400 px-1">
                   Explore these tools at your own pace before Session 1:
@@ -1292,7 +1899,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             )}
             
             {/* Just the success message if no explore items */}
-            {prepRequirementsComplete?.allComplete && additionalPrepActions.length === 0 && (
+            {localPrepCompletion.allComplete && additionalPrepActions.length === 0 && (
               <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
                 <p className="text-xs text-slate-600 dark:text-slate-400">
                   🚀 <span className="font-semibold">You're all set!</span> Session 1 will build on everything you've learned.
@@ -1308,11 +1915,19 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             {/* Carried Over Items - Show even when all complete */}
             {displayedCarriedOverItems.length > 0 && (() => {
               const completedCarriedOver = displayedCarriedOverItems.filter(item => {
-                // For interactive items, use live hook values
+                // Match ActionItem's completion logic exactly
                 if (item.isInteractive) {
+                  // Use prepRequirementsComplete.items first (same as ActionItem)
+                  if (Array.isArray(prepRequirementsComplete?.items)) {
+                    const prepItem = prepRequirementsComplete.items.find(p => p.handlerType === item.handlerType);
+                    if (prepItem) return prepItem.complete;
+                  }
+                  // Fallback to individual hook values
                   if (item.handlerType === 'leader-profile') return leaderProfileComplete;
                   if (item.handlerType === 'baseline-assessment') return baselineAssessmentComplete;
                   if (item.handlerType === 'notification-setup') return notificationSetupComplete;
+                  if (item.handlerType === 'foundation-commitment') return foundationCommitmentComplete;
+                  if (item.handlerType === 'conditioning-tutorial') return conditioningTutorialComplete;
                 }
                 const progress = getItemProgress(item.id);
                 return progress.status === 'completed' || completedItems.includes(item.id);
@@ -1330,7 +1945,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                       <Trophy className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">✅ Prior Week Complete!</p>
+                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">✅ Preparation Complete!</p>
                       <p className="text-xs text-emerald-600 dark:text-emerald-400">
                         All {displayedCarriedOverItems.length} carried-over {displayedCarriedOverItems.length === 1 ? 'task' : 'tasks'} finished
                       </p>
@@ -1373,6 +1988,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             {/* Current Week Items */}
             {allActions.length > 0 && (() => {
               const completedThisWeek = allActions.filter(item => {
+                // Special handling for coaching items that require certification
+                if (item.requiresCertification) {
+                  const reg = getRegistrationForCoachingItem(item.id);
+                  return reg?.status === REGISTRATION_STATUS.CERTIFIED;
+                }
+                // Standard completion check
                 const progress = getItemProgress(item.id);
                 return progress.status === 'completed' || completedItems.includes(item.id);
               });
@@ -1389,7 +2010,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                       <Trophy className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">🎉 This Week Complete!</p>
+                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                        🎉 {currentPhase?.id === 'start' ? 'Milestone Complete!' : 'This Week Complete!'}
+                      </p>
                       <p className="text-xs text-emerald-600 dark:text-emerald-400">
                         All {allActions.length} {allActions.length === 1 ? 'task' : 'tasks'} finished — Great work!
                       </p>
@@ -1413,7 +2036,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   <div className="flex items-center gap-2 mb-2 px-1">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                      <span className="text-sm font-bold text-teal-800 dark:text-teal-400 uppercase tracking-wider">This Week</span>
+                      <span className="text-sm font-bold text-teal-800 dark:text-teal-400 uppercase tracking-wider">
+                        {currentPhase?.id === 'start' 
+                          ? currentMilestoneInfo?.name || 'Current Milestone'
+                          : 'This Week'}
+                      </span>
                     </div>
                     <div className="flex-1 h-px bg-teal-200 dark:bg-teal-700"></div>
                     <span className="text-xs font-medium text-teal-600 bg-teal-100 dark:text-teal-300 dark:bg-teal-900/40 px-2 py-0.5 rounded-full">
@@ -1431,7 +2058,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
             {/* Empty state */}
             {allActions.length === 0 && displayedCarriedOverItems.length === 0 && (
-              <div className="p-4 text-center text-slate-500 dark:text-slate-400 text-sm italic">No actions scheduled for this week.</div>
+              <div className="p-4 text-center text-slate-500 dark:text-slate-400 text-sm italic">
+                {currentPhase?.id === 'start' 
+                  ? 'No content configured for this milestone yet. Check Content Manager.'
+                  : 'No actions scheduled for this week.'
+                }
+              </div>
             )}
 
           </>
@@ -1542,6 +2174,116 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             />
           </div>
         </div>
+      )}
+
+      {/* Coaching Session Picker Modal */}
+      {showSessionPicker && sessionPickerItem && (
+        <SessionPickerModal
+          isOpen={showSessionPicker}
+          onClose={() => {
+            setShowSessionPicker(false);
+            setSessionPickerItem(null);
+          }}
+          coachingItem={sessionPickerItem}
+          onRegister={(session) => {
+            // Mark the action as "scheduled" (not fully complete until attended)
+            completeItem(sessionPickerItem.id, {
+              currentWeek: currentWeekNumber,
+              category: 'coaching',
+              label: sessionPickerItem.label,
+              sessionId: session.id,
+              status: 'scheduled'
+            });
+            setShowSessionPicker(false);
+            setSessionPickerItem(null);
+          }}
+          onAttended={(sessionId) => {
+            // Mark as fully complete when attended
+            completeItem(sessionPickerItem.id, {
+              currentWeek: currentWeekNumber,
+              category: 'coaching',
+              label: sessionPickerItem.label,
+              sessionId,
+              status: 'attended'
+            });
+            setShowSessionPicker(false);
+            setSessionPickerItem(null);
+          }}
+        />
+      )}
+
+      {/* Community Session Picker Modal (uses same modal for now) */}
+      {showCommunitySessionPicker && communitySessionPickerItem && (
+        <SessionPickerModal
+          isOpen={showCommunitySessionPicker}
+          onClose={() => {
+            setShowCommunitySessionPicker(false);
+            setCommunitySessionPickerItem(null);
+          }}
+          coachingItem={communitySessionPickerItem}
+          onRegister={(session) => {
+            completeItem(communitySessionPickerItem.id, {
+              currentWeek: currentWeekNumber,
+              category: 'community',
+              label: communitySessionPickerItem.label,
+              sessionId: session.id,
+              status: 'scheduled'
+            });
+            setShowCommunitySessionPicker(false);
+            setCommunitySessionPickerItem(null);
+          }}
+          onAttended={(sessionId) => {
+            completeItem(communitySessionPickerItem.id, {
+              currentWeek: currentWeekNumber,
+              category: 'community',
+              label: communitySessionPickerItem.label,
+              sessionId,
+              status: 'attended'
+            });
+            setShowCommunitySessionPicker(false);
+            setCommunitySessionPickerItem(null);
+          }}
+        />
+      )}
+
+      {/* Leader Certification Viewer Modal */}
+      {showCertificateViewer && certificationMilestone && (
+        <LeaderCertificateViewer
+          isOpen={showCertificateViewer}
+          onClose={() => {
+            setShowCertificateViewer(false);
+            setCertificationMilestone(null);
+          }}
+          onAcknowledge={async () => {
+            // Mark the certification action as complete
+            const itemId = `milestone-${certificationMilestone.milestone}-certification`;
+            await completeItem(itemId, {
+              currentWeek: currentWeekNumber,
+              weekNumber: currentWeekNumber,
+              category: 'certification',
+              label: 'Leader Certification',
+              acknowledgedAt: new Date().toISOString()
+            });
+            
+            // Also mark the certificate as viewed in milestone progress
+            if (user?.uid && certificationMilestone?.milestone) {
+              const milestoneKey = `milestone_${certificationMilestone.milestone}`;
+              const userRef = doc(db, 'users', user.uid);
+              await updateDoc(userRef, {
+                [`milestoneProgress.${milestoneKey}.certificateViewed`]: true,
+                [`milestoneProgress.${milestoneKey}.certificateViewedAt`]: new Date().toISOString()
+              }).catch(e => console.warn('Could not mark certificate as viewed:', e));
+            }
+            
+            setShowCertificateViewer(false);
+            setCertificationMilestone(null);
+          }}
+          milestone={certificationMilestone.milestone}
+          userName={certificationMilestone.userName}
+          certificationDate={certificationMilestone.certificationDate}
+          facilitatorName={certificationMilestone.facilitatorName}
+          isAcknowledged={certificationMilestone.isAcknowledged}
+        />
       )}
     </>
   );

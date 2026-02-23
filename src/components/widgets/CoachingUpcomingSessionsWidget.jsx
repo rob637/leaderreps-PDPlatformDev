@@ -162,12 +162,13 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
   // Internal state for calendar if not controlled externally
   const [internalViewMode] = useState('list');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [typeFilter, setTypeFilter] = useState('all');
   
   const activeViewMode = setViewMode ? viewMode : internalViewMode;
   // const toggleViewMode = setViewMode || setInternalViewMode;
   
   // Use upcomingSessions if provided, otherwise filter sessions
-  const displaySessions = useMemo(() => {
+  const allUpcomingSessions = useMemo(() => {
     if (upcomingSessions?.length > 0) return upcomingSessions;
     return (sessions || []).filter(s => {
       if (!s.date) return true;
@@ -177,6 +178,18 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
       return sessionDate >= today;
     });
   }, [upcomingSessions, sessions]);
+  
+  // Apply type filter
+  const displaySessions = useMemo(() => {
+    if (typeFilter === 'all') return allUpcomingSessions;
+    return allUpcomingSessions.filter(s => s.sessionType === typeFilter);
+  }, [allUpcomingSessions, typeFilter]);
+  
+  // Get unique session types for filter buttons
+  const availableTypes = useMemo(() => {
+    const types = new Set(allUpcomingSessions.map(s => s.sessionType).filter(Boolean));
+    return Array.from(types);
+  }, [allUpcomingSessions]);
   
   // Calendar helpers
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
@@ -321,16 +334,55 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
         </div>
       ) : (
         <div className="space-y-3">
-          {displaySessions.slice(0, showAllSessions ? undefined : 5).map(session => (
-            <SessionCard 
-              key={session.id}
-              session={session}
-              isRegistered={checkRegistered(session.id)}
-              onRegister={handleRegister}
-              onCancel={handleCancel}
-            />
-          ))}
+          {/* Type Filter Buttons */}
+          {availableTypes.length > 1 && (
+            <div className="flex flex-wrap gap-2 pb-3 mb-3 border-b border-slate-100 dark:border-slate-700">
+              <button
+                onClick={() => setTypeFilter('all')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                  typeFilter === 'all'
+                    ? 'bg-corporate-teal text-white'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                All ({allUpcomingSessions.length})
+              </button>
+              {availableTypes.map(type => {
+                const config = SESSION_TYPE_CONFIG[type] || {};
+                const count = allUpcomingSessions.filter(s => s.sessionType === type).length;
+                return (
+                  <button
+                    key={type}
+                    onClick={() => setTypeFilter(type)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                      typeFilter === type
+                        ? 'bg-corporate-teal text-white'
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                    }`}
+                  >
+                    {config.label || type} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          )}
           
+          {displaySessions.length === 0 && typeFilter !== 'all' ? (
+            <div className="text-center py-6">
+              <p className="text-sm text-slate-400">No {SESSION_TYPE_CONFIG[typeFilter]?.label || typeFilter} sessions available.</p>
+              <button onClick={() => setTypeFilter('all')} className="mt-2 text-sm text-corporate-teal font-medium">Show all sessions</button>
+            </div>
+          ) : (
+            displaySessions.slice(0, showAllSessions ? undefined : 5).map(session => (
+              <SessionCard 
+                key={session.id}
+                session={session}
+                isRegistered={checkRegistered(session.id)}
+                onRegister={handleRegister}
+                onCancel={handleCancel}
+              />
+            ))
+          )}
           {!showAllSessions && displaySessions.length > 5 && (
             <button 
               onClick={() => navigate?.('coaching-lab')}
