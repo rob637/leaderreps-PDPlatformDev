@@ -9,8 +9,24 @@ const DebugDataViewer = () => {
     const {
         metadata, developmentPlanData, dailyPracticeData,
         isLoading, error,
-        navigate
+        navigate, isAdmin
     } = useAppServices();
+
+    // Admin-only screen - redirect non-admins
+    if (!isAdmin) {
+        return (
+            <div className="p-6 md:p-10 min-h-screen bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
+                <div className="text-center">
+                    <Code className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-slate-600 mb-2">Admin Access Required</h2>
+                    <p className="text-slate-500 mb-4">This screen is only available to administrators.</p>
+                    <Button onClick={() => navigate('dashboard')} variant="secondary">
+                        <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     const formattedMetadata = useMemo(() => JSON.stringify(metadata || {}, null, 2), [metadata]);
     const formattedDevPlanData = useMemo(() => JSON.stringify(developmentPlanData || {}, null, 2), [developmentPlanData]);

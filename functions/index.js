@@ -285,21 +285,29 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
       .replace(/\{\{inviteLink\}\}/g, inviteLink);
   };
 
-  const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps Platform';
-  const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
+  const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps Arena';
+  const emailFromAddress = process.env.EMAIL_FROM || emailUser;
+  const emailReplyTo = process.env.EMAIL_REPLY_TO || 'arena@leaderreps.com';
+
+  // Build logo URL using the same domain logic
+  const logoUrl = `https://${appDomain}/icons/icon-192x192.png`;
 
   const mailOptions = {
-    from: `"${emailFromName}" <${emailUser}>`,
+    from: `"${emailFromName}" <${emailFromAddress}>`,
     replyTo: emailReplyTo,
     to: recipientEmail,
     subject: `${subjectPrefix}${substituteVars(emailTemplate.subject)}`,
     headers: {
       'X-Priority': '1',
-      'X-Mailer': 'LeaderReps Platform',
+      'X-Mailer': 'LeaderReps Arena',
       'Precedence': 'bulk',
     },
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <!-- Logo Header -->
+        <div style="text-align: center; margin-bottom: 24px;">
+          <img src="${logoUrl}" alt="LeaderReps" style="width: 64px; height: 64px; border-radius: 12px;" />
+        </div>
         ${invitation.isTest ? `
           <div style="background-color: #fff7ed; border: 1px solid #fdba74; padding: 10px; margin-bottom: 20px; border-radius: 6px; color: #9a3412;">
             <strong>🧪 TEST MODE</strong><br/>
@@ -307,17 +315,21 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
             But sent to you for testing purposes.
           </div>
         ` : ''}
-        <h2 style="color: #0f172a;">${substituteVars(emailTemplate.headline)}</h2>
+        <h2 style="color: #002E47; margin-bottom: 16px;">${substituteVars(emailTemplate.headline)}</h2>
         <p>${substituteVars(bodyText)}</p>
         <p>Click the button below to accept your invitation and set up your account:</p>
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${inviteLink}" style="background-color: #0f766e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">${substituteVars(emailTemplate.buttonText)}</a>
+          <a href="${inviteLink}" style="background-color: #47A88D; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">${substituteVars(emailTemplate.buttonText)}</a>
         </div>
         <p>Or copy and paste this link into your browser:</p>
         <p><a href="${inviteLink}">${inviteLink}</a></p>
         <p>${substituteVars(emailTemplate.expiryText)}</p>
         <hr style="border: 1px solid #e2e8f0; margin: 30px 0;" />
         <p style="color: #64748b; font-size: 12px;">${substituteVars(emailTemplate.footerText)}</p>
+        <p style="color: #94a3b8; font-size: 11px; text-align: center; margin-top: 20px;">
+          LeaderReps Arena | Professional Leadership Development<br/>
+          <a href="https://leaderreps.com" style="color: #47A88D;">leaderreps.com</a>
+        </p>
       </div>
     `,
   };

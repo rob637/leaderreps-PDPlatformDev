@@ -147,7 +147,7 @@ const NewAuditForm = ({ onSubmit, isSubmitting }) => {
   const [selectedType, setSelectedType] = useState('conditioning');
   const [selectedEnv, setSelectedEnv] = useState('dev');
   const [customTask, setCustomTask] = useState('');
-  const [email, setEmail] = useState('rob@sagecg.com');
+  const [email, setEmail] = useState('');
 
   const handleSubmit = () => {
     onSubmit({

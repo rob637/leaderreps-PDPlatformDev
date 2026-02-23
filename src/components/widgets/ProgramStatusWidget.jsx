@@ -5,7 +5,7 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { Card } from '../ui';
 
 const ProgramStatusWidget = () => {
-  const { user, updateDevelopmentPlanData } = useAppServices();
+  const { user, updateDevelopmentPlanData, isAdmin } = useAppServices();
   const { currentDayNumber, userState, simulatedNow } = useDailyPlan();
   const [isFixing, setIsFixing] = useState(false);
 
@@ -34,7 +34,8 @@ const ProgramStatusWidget = () => {
     }
   };
 
-  if (!user?.email?.includes('rob@sagecg.com') && !user?.email?.includes('admin')) return null;
+  // Only show to admins - this is a debug widget
+  if (!isAdmin) return null;
 
   return (
     <Card title="Program Status (Admin Debug)" icon={Clock} accent="RED">

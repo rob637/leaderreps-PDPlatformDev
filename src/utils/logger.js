@@ -1,5 +1,6 @@
 // src/utils/logger.js
 // PERFORMANCE FIX: Production-safe logging system
+// In production, only ERROR and WARN levels are logged
 
 const LOG_LEVELS = {
   ERROR: 0,
@@ -8,9 +9,14 @@ const LOG_LEVELS = {
   DEBUG: 3
 };
 
+// Check for production environment using Vite's env system
+const isProduction = import.meta.env.PROD || import.meta.env.VITE_ENV === 'production';
+const isDebugMode = import.meta.env.VITE_ENABLE_DEBUG_MODE === 'true';
+
 class Logger {
   constructor() {
-    this.level = process.env.NODE_ENV === 'production' ? LOG_LEVELS.WARN : LOG_LEVELS.DEBUG;
+    // In production, only show WARN and ERROR unless debug mode is explicitly enabled
+    this.level = isProduction && !isDebugMode ? LOG_LEVELS.WARN : LOG_LEVELS.DEBUG;
     this.prefix = '[LeaderReps]';
   }
 

@@ -6,7 +6,10 @@ import fs from 'node:fs';
 
 const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const isProduction = mode === 'production';
+  
+  return {
   define: {
     '__APP_VERSION__': JSON.stringify(packageJson.version),
     global: 'globalThis'
@@ -243,6 +246,13 @@ export default defineConfig({
     // Minification with better compression
     minify: 'esbuild',
     target: 'es2020',
+    
+    // Drop console.log statements in production builds
+    // Keeps console.error and console.warn for debugging production issues
+    esbuild: {
+      drop: isProduction ? ['debugger'] : [],
+      pure: isProduction ? ['console.log', 'console.debug', 'console.info'] : [],
+    },
   },
 
   // Dev server configuration
@@ -270,4 +280,4 @@ export default defineConfig({
       'src/**/*.{test,spec}.{js,jsx,ts,tsx}',  // Only include src tests
     ],
   }
-})
+}});

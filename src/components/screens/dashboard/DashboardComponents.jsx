@@ -245,8 +245,9 @@ export const ModeSwitch = ({ isArenaMode, onToggle, isLoading }) => (
   </Button>
 );
 
-export const StreakTracker = ({ streakCount, streakCoins, userEmail }) => {
-  const isDeveloper = userEmail === 'rob@sagecg.com';
+export const StreakTracker = ({ streakCount, streakCoins, userEmail, isAdmin = false }) => {
+  // Show tokens to admins only (for debugging arena economy)
+  const showTokens = isAdmin;
   return (
     <div className="flex items-center gap-4 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
       <div className="flex items-center gap-2">
@@ -254,7 +255,7 @@ export const StreakTracker = ({ streakCount, streakCoins, userEmail }) => {
         <span className="font-bold text-lg text-corporate-navy">{streakCount}</span>
         <span className="text-sm text-slate-500 dark:text-slate-400">Day Streak</span>
       </div>
-      {isDeveloper && (
+      {showTokens && (
         <>
           <div className="h-6 w-px bg-slate-300" />
           <div className="flex items-center gap-2">

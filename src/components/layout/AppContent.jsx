@@ -1,7 +1,7 @@
 // src/components/layout/AppContent.jsx 
 
 import React, { Suspense, useState, useEffect, useRef } from 'react';
-import { signOut, updateProfile } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { LogOut, Loader, Settings, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
 import MobileBottomNav from './MobileBottomNav.jsx';
@@ -56,18 +56,7 @@ const AppContent = ({
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Temporary fix: Update Rob's profile name if missing
-  useEffect(() => {
-    if (user && !user.displayName && (user.email === 'rob@sagecg.com' || user.email === 'rob@leaderreps.com')) {
-      console.log("Updating profile for Rob...");
-      updateProfile(user, { displayName: 'Rob Pfleghardt' })
-        .then(() => {
-          console.log("Profile updated successfully");
-          window.location.reload();
-        })
-        .catch(err => console.error("Error updating profile:", err));
-    }
-  }, [user]);
+  // Profile update logic removed - users set their own name during signup
 
   /*
   const toggleDeveloperMode = () => {
