@@ -386,8 +386,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           console.log('[DEBUG normalizeDailyActions] After inference:', { handlerType });
         }
       }
-        }
-      }
       
       // HOTFIX: Fix Review Onboarding Guide having wrong handlerType (likely clonied from Leader Profile)
       // This ensures it opens the link instead of the profile modal
