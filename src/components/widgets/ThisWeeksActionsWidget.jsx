@@ -1861,7 +1861,24 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       {viewingResource && (
         <UniversalResourceViewer 
           resource={viewingResource} 
-          onClose={() => setViewingResource(null)} 
+          onClose={() => setViewingResource(null)}
+          onVideoComplete={(resource) => {
+            // Mark the video item as complete when user clicks "Mark as Watched"
+            const item = resource;
+            const itemId = item.id || item.resourceId;
+            if (itemId && item.fromDailyPlan && item.dayId) {
+              toggleDailyItem(item.dayId, itemId, true);
+            }
+            if (itemId) {
+              completeItem(itemId, {
+                currentWeek: currentWeekNumber,
+                weekNumber: currentWeekNumber,
+                category: item.category?.toLowerCase() || 'content',
+                label: item.label || item.title,
+                carriedOver: item.carriedOver || false
+              });
+            }
+          }}
         />
       )}
       <Card title={widgetTitle} icon={CheckCircle} accent="TEAL" helpText={helpText}>

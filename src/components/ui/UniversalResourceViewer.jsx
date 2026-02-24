@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, ExternalLink, Download, FileText, Film, Link as LinkIcon, Layers, AlertCircle } from 'lucide-react';
+import { X, ExternalLink, Download, FileText, Film, Link as LinkIcon, Layers, AlertCircle, CheckCircle } from 'lucide-react';
 
 /**
  * Iframe wrapper that detects load failures (blank/gray iframes from gview)
@@ -78,12 +78,29 @@ const IframeWithFallback = ({ src, directUrl, title }) => {
   );
 };
 
-const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
+const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = false }) => {
+  const [markedComplete, setMarkedComplete] = useState(false);
+  
   if (!resource) return null;
 
   // Extract URL from either legacy top-level field or new details object
   const url = resource.url || resource.details?.url;
   const { resourceType, type: legacyType, title, description } = resource;
+
+  // Handler for marking video as watched
+  const handleMarkWatched = () => {
+    setMarkedComplete(true);
+    if (onVideoComplete) {
+      onVideoComplete(resource);
+    }
+  };
+
+  // Handler for video ended event (native video player)
+  const handleVideoEnded = () => {
+    if (!markedComplete) {
+      handleMarkWatched();
+    }
+  };
 
   // Helper to determine content type if not explicitly provided
   const getContentType = () => {
@@ -126,42 +143,102 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
 
         if (url.includes('youtube.com') || url.includes('youtu.be')) {
           return (
-            <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
-              <iframe
-                src={getYouTubeEmbedUrl(url)}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title={title}
-              />
+            <div className="flex flex-col gap-3 w-full">
+              <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
+                <iframe
+                  src={getYouTubeEmbedUrl(url)}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={title}
+                />
+              </div>
+              {onVideoComplete && (
+                <div className="flex justify-center">
+                  {markedComplete ? (
+                    <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Marked as Watched
+                    </span>
+                  ) : (
+                    <button
+                      onClick={handleMarkWatched}
+                      className="flex items-center gap-2 px-4 py-2 bg-corporate-teal hover:bg-teal-600 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Mark as Watched
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           );
         } else if (url.includes('vimeo.com')) {
           const vimeoId = url.match(/vimeo\.com\/(\d+)/)?.[1];
           const embedUrl = vimeoId ? `https://player.vimeo.com/video/${vimeoId}?autoplay=1` : url;
           return (
-            <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
-              <iframe
-                src={embedUrl}
-                className="w-full h-full"
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-                title={title}
-              />
+            <div className="flex flex-col gap-3 w-full">
+              <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
+                <iframe
+                  src={embedUrl}
+                  className="w-full h-full"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                  title={title}
+                />
+              </div>
+              {onVideoComplete && (
+                <div className="flex justify-center">
+                  {markedComplete ? (
+                    <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Marked as Watched
+                    </span>
+                  ) : (
+                    <button
+                      onClick={handleMarkWatched}
+                      className="flex items-center gap-2 px-4 py-2 bg-corporate-teal hover:bg-teal-600 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Mark as Watched
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           );
         } else if (url.includes('loom.com')) {
           const loomId = url.match(/loom\.com\/share\/([a-f0-9]+)/)?.[1];
           const embedUrl = loomId ? `https://www.loom.com/embed/${loomId}?autoplay=1` : url;
           return (
-            <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
-              <iframe
-                src={embedUrl}
-                className="w-full h-full"
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-                title={title}
-              />
+            <div className="flex flex-col gap-3 w-full">
+              <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
+                <iframe
+                  src={embedUrl}
+                  className="w-full h-full"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                  title={title}
+                />
+              </div>
+              {onVideoComplete && (
+                <div className="flex justify-center">
+                  {markedComplete ? (
+                    <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Marked as Watched
+                    </span>
+                  ) : (
+                    <button
+                      onClick={handleMarkWatched}
+                      className="flex items-center gap-2 px-4 py-2 bg-corporate-teal hover:bg-teal-600 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Mark as Watched
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           );
         } else {
@@ -176,6 +253,7 @@ const UniversalResourceViewer = ({ resource, onClose, inline = false }) => {
                   playsInline
                   crossOrigin="anonymous"
                   className="w-full h-full max-h-[70vh]"
+                  onEnded={handleVideoEnded}
                 >
                   <p className="text-white p-4 text-center">
                     Video format not supported for inline playback.<br/>
