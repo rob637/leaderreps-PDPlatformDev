@@ -350,8 +350,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       
       // HOTFIX: Fix Review Onboarding Guide having wrong handlerType (likely clonied from Leader Profile)
       // This ensures it opens the link instead of the profile modal
-      if ((action.label?.includes('Review Onboarding Guide') || action.title?.includes('Review Onboarding Guide')) && handlerType === 'leader-profile') {
-        handlerType = '';
+      // Check both case-sensitive and case-insensitive to be safe
+      const labelLower = (action.label || action.title || '').toLowerCase();
+      if (labelLower.includes('review onboarding guide') || labelLower.includes('onboarding guide')) {
+        // Force clear handlerType if it's set to leader-profile
+        if (handlerType === 'leader-profile') {
+           handlerType = '';
+        }
       }
 
       const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
