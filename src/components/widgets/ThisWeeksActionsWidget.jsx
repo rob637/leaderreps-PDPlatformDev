@@ -1273,7 +1273,21 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         
         if (contentSnap.exists()) {
            const data = contentSnap.data();
-           let resourceData = { id: contentSnap.id, ...data, resourceType: data.type };
+           // Include original item properties for tracking (dayId, fromDailyPlan, label, category)
+           // Preserve actionItemId (original item.id) separately since Firestore doc ID may differ
+           let resourceData = { 
+             id: contentSnap.id, 
+             actionItemId: item.id, // Original action item ID for completion tracking
+             resourceId: resourceId,
+             ...data, 
+             resourceType: data.type,
+             // Preserve item tracking properties for completion
+             dayId: item.dayId,
+             fromDailyPlan: item.fromDailyPlan !== false, // Default to true for daily plan items
+             label: item.label || data.title,
+             category: item.category || data.category,
+             carriedOver: item.carriedOver
+           };
            if (data.type === 'REP' && data.details?.videoUrl) {
                resourceData.url = data.details.videoUrl;
                resourceData.resourceType = 'video';
@@ -1868,9 +1882,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           onVideoComplete={(resource) => {
             // Mark the video item as complete when user clicks "Mark as Watched"
             const item = resource;
-            const itemId = item.id || item.resourceId;
+            // Use actionItemId (original item ID) for completion, fall back to resourceId or id
+            const itemId = item.actionItemId || item.resourceId || item.id;
+            const dailyPlanItemId = item.actionItemId || item.id; // For daily plan toggle
+            
             if (itemId && item.fromDailyPlan && item.dayId) {
-              toggleDailyItem(item.dayId, itemId, true);
+              toggleDailyItem(item.dayId, dailyPlanItemId, true);
             }
             if (itemId) {
               completeItem(itemId, {
