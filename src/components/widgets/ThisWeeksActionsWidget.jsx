@@ -346,7 +346,14 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       }
       
       // Determine if this is an interactive item based on handlerType
-      const handlerType = action.handlerType || '';
+      let handlerType = action.handlerType || '';
+      
+      // HOTFIX: Fix Review Onboarding Guide having wrong handlerType (likely clonied from Leader Profile)
+      // This ensures it opens the link instead of the profile modal
+      if ((action.label?.includes('Review Onboarding Guide') || action.title?.includes('Review Onboarding Guide')) && handlerType === 'leader-profile') {
+        handlerType = '';
+      }
+
       const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
       
       // Auto-complete status for interactive items
