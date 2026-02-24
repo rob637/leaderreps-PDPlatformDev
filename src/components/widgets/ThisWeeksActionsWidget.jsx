@@ -348,15 +348,36 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // Determine if this is an interactive item based on handlerType
       let handlerType = action.handlerType || '';
       
+      // FAILSAFE: Standardize handlerType (replace underscore with dash)
+      if (handlerType) {
+        handlerType = handlerType.replace('_', '-').toLowerCase();
+      }
+
+      // FAILSAFE: Attempt to deliver handlerType from ID or resourceId if missing
+      if (!handlerType) {
+        if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile') {
+          handlerType = 'leader-profile';
+        } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment') {
+          handlerType = 'baseline-assessment';
+        }
+      }
+      
       // HOTFIX: Fix Review Onboarding Guide having wrong handlerType (likely clonied from Leader Profile)
       // This ensures it opens the link instead of the profile modal
       // Check both case-sensitive and case-insensitive to be safe
       const labelLower = (action.label || action.title || '').toLowerCase();
-      if (labelLower.includes('review onboarding guide') || labelLower.includes('onboarding guide')) {
-        // Force clear handlerType if it's set to leader-profile
-        if (handlerType === 'leader-profile') {
+      
+      // Expanded match to be extremely safe - catch any variation
+      // BUT exclude Leader Profile explicitly to prevent false positives
+      if ((labelLower.includes('onboarding guide') || labelLower.includes('review onboarding')) && 
+          !labelLower.includes('leader profile') && !labelLower.includes('baseline')) {
+        // UNCONDITIONALLY clear handlerType if it looks like leader-profile
+        // This prevents the Leader Profile modal from hijacking the click
+        if (handlerType && (handlerType.includes('leader') || handlerType.includes('profile'))) {
            handlerType = '';
         }
+        // Force clear strict match too just in case
+        if (handlerType === 'leader-profile') handlerType = '';
       }
 
       const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
@@ -725,7 +746,20 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             const actionId = action.id || `daily-${day.id}-${(action.label || '').toLowerCase().replace(/\s+/g, '-').substring(0, 20)}-${idx}`;
             
             // Check interactive items by handlerType
-            const handlerType = action.handlerType || '';
+            let handlerType = action.handlerType || '';
+            
+            // Standardize handlerType if present
+            if (handlerType) {
+              handlerType = handlerType.replace('_', '-').toLowerCase();
+            } else {
+              // Failsafe: Try to infer handlerType from ID or resourceId
+              if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile') {
+                handlerType = 'leader-profile';
+              } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment') {
+                handlerType = 'baseline-assessment';
+              }
+            }
+            
             let isComplete = false;
             
             if (handlerType === 'leader-profile') {
@@ -1055,7 +1089,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     if (currentPhase?.id !== 'pre-start') return { completedCount: 0, totalCount: 0, allComplete: false };
     
     const completedCount = requiredPrepActions.filter(action => {
-      const handlerType = action.handlerType || '';
+      let handlerType = action.handlerType || '';
+      // FAILSAFE: Standardize handlerType
+      if (handlerType) {
+        handlerType = handlerType.replace('_', '-').toLowerCase();
+      }
       // Interactive item checks
       if (handlerType === 'leader-profile') return leaderProfileComplete;
       if (handlerType === 'baseline-assessment') return baselineAssessmentComplete;
@@ -2085,7 +2123,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       {/* Video Series Player Modal */}
       {viewingSeriesId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
+          <div className="relative w-full max-w-5xl h-[85vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col">
             <VideoSeriesPlayer
               seriesId={viewingSeriesId}
               onClose={() => setViewingSeriesId(null)}
