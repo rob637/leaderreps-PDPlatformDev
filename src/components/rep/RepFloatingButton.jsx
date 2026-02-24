@@ -5,9 +5,18 @@
 import React, { useState } from 'react';
 import { Brain, Sparkles } from 'lucide-react';
 import RepUpOverlay from './RepUpOverlay';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 const RepFloatingButton = () => {
   const [showRepUp, setShowRepUp] = useState(false);
+  const { currentPhase } = useDailyPlan();
+
+  // Hide RepUp during preparation phase - only show starting from Foundation
+  const isInPrepPhase = currentPhase?.id === 'pre-start' || currentPhase?.name === 'Preparation';
+  
+  if (isInPrepPhase) {
+    return null;
+  }
 
   // Hide the floating button when RepUp is showing (RepUp has its own minimize button)
   if (showRepUp) {
