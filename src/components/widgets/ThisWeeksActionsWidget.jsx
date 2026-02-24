@@ -1163,6 +1163,28 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
     return exploreConfig.actions.map((action, idx) => {
       const label = action.label || 'Explore Action';
+      const labelLower = label.toLowerCase();
+      
+      // Infer handlerType from label (same logic as normalizeDailyActions)
+      let handlerType = action.handlerType || '';
+      if (handlerType) {
+        handlerType = handlerType.replace('_', '-').toLowerCase();
+      } else {
+        if (action.id?.includes('leader-profile') || labelLower.includes('leader profile')) {
+          handlerType = 'leader-profile';
+        } else if (action.id?.includes('baseline-assessment') || labelLower.includes('baseline assessment')) {
+          handlerType = 'baseline-assessment';
+        } else if (action.id?.includes('notification-setup') || action.id?.includes('notification') || labelLower.includes('notification')) {
+          handlerType = 'notification-setup';
+        } else if (action.id?.includes('conditioning-tutorial') || labelLower.includes('conditioning tutorial')) {
+          handlerType = 'conditioning-tutorial';
+        } else if (action.id?.includes('foundation-commitment') || labelLower.includes('foundation commitment')) {
+          handlerType = 'foundation-commitment';
+        }
+      }
+      
+      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
+      
       return {
         ...action,
         id: action.id || `explore-${idx}`,
@@ -1179,7 +1201,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         fromDailyPlan: true,
         dayId: 'explore-config',
         dayNumber: 0,
-        estimatedMinutes: action.estimatedMinutes
+        estimatedMinutes: action.estimatedMinutes,
+        handlerType,
+        isInteractive
       };
     });
   }, [currentPhase?.id, dailyPlan]);
