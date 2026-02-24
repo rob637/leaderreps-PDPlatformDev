@@ -14,7 +14,8 @@ import {
   Timestamp,
   limit as firestoreLimit
 } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../lib/firebase';
 import { timeService } from './timeService';
 import { REP_TYPES, getRepType, isPrepRequired, LEGACY_REP_TYPE_MAPPING } from './repTaxonomy';
 
@@ -1357,7 +1358,6 @@ export const conditioningService = {
    */
   assessQualityWithAI: async (evidence, rep) => {
     try {
-      const functions = getFunctions();
       const assessRepQuality = httpsCallable(functions, 'assessRepQuality');
       
       const result = await assessRepQuality({

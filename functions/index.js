@@ -30,6 +30,93 @@ const db = admin.firestore();
 // Global options for cost control
 // setGlobalOptions({ maxInstances: 10, region: "us-central1" });
 
+// ============================================
+// COMMUNICATION TEMPLATE HELPERS
+// ============================================
+
+/**
+ * Fetch a communication template from Firestore
+ * @param {string} templateId - The template document ID
+ * @returns {Object|null} Template data or null if not found
+ */
+const getTemplate = async (templateId) => {
+  try {
+    const doc = await db.collection('communication_templates').doc(templateId).get();
+    if (doc.exists && doc.data().enabled !== false) {
+      return { id: doc.id, ...doc.data() };
+    }
+    return null;
+  } catch (err) {
+    logger.warn(`Failed to fetch template ${templateId}:`, err.message);
+    return null;
+  }
+};
+
+/**
+ * Apply variable substitution to a template string
+ * Supports {{variable}} syntax and {{#variable}}content{{/variable}} conditional blocks
+ * @param {string} text - Template text
+ * @param {Object} variables - Key-value pairs for substitution
+ * @returns {string} Processed text
+ */
+const applyTemplateVariables = (text, variables = {}) => {
+  if (!text) return '';
+  
+  let result = text;
+  
+  // Handle conditional blocks {{#variable}}content{{/variable}}
+  // These only render if the variable is truthy
+  result = result.replace(/\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (match, varName, content) => {
+    return variables[varName] ? content : '';
+  });
+  
+  // Handle simple variable substitution {{variable}}
+  result = result.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
+    return variables[varName] !== undefined ? variables[varName] : '';
+  });
+  
+  return result;
+};
+
+/**
+ * Generate HTML email from template
+ * Uses the standard LeaderReps email wrapper
+ */
+const generateEmailHtml = (template, variables, appUrl) => {
+  const headline = applyTemplateVariables(template.headline || '', variables);
+  const body = applyTemplateVariables(template.body || '', variables);
+  const buttonText = applyTemplateVariables(template.buttonText || 'Open LeaderReps', variables);
+  const footerText = applyTemplateVariables(template.footerText || '', variables);
+  
+  // Convert line breaks to HTML
+  const bodyHtml = body.split('\n').map(line => {
+    if (line.startsWith('•')) {
+      return `<li style="margin: 4px 0;">${line.substring(1).trim()}</li>`;
+    }
+    return line ? `<p style="margin: 8px 0;">${line}</p>` : '';
+  }).join('');
+  
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+        <h2 style="color: white; margin: 0;">${headline}</h2>
+      </div>
+      <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+        ${bodyHtml}
+        
+        <p style="text-align: center; margin-top: 24px;">
+          <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">${buttonText}</a>
+        </p>
+      </div>
+      ${footerText ? `
+      <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+        <p style="margin: 0; color: #64748b; font-size: 12px;">${footerText}</p>
+      </div>
+      ` : ''}
+    </div>
+  `;
+};
+
 /**
  * VALIDATE INVITATION (Gen 1 - HTTPS Callable)
  * Allows frontend to lookup invite details by token without exposing the whole collection.
@@ -245,44 +332,36 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
   }
 
   // Fetch email template from Firestore (with fallback defaults)
-  let emailTemplate = {
+  const defaultTemplate = {
     subject: "You're invited to LeaderReps PD Platform",
     headline: "Welcome to LeaderReps!",
-    bodyText: "You have been invited to join the LeaderReps Professional Development Platform.",
+    body: "You have been invited to join the LeaderReps Professional Development Platform.\n\nClick the button below to accept your invitation and set up your account.",
     buttonText: "Accept Invitation",
-    expiryText: "This invitation will expire in 7 days.",
     footerText: "If you did not expect this invitation, please ignore this email."
   };
   
-  try {
-    const templateDoc = await admin.firestore().collection('metadata').doc('email_templates').get();
-    if (templateDoc.exists) {
-      const templates = templateDoc.data();
-      if (templates.invite) {
-        emailTemplate = { ...emailTemplate, ...templates.invite };
-      }
-    }
-  } catch (err) {
-    logger.warn("Could not fetch email template, using defaults:", err.message);
-  }
+  // Try to load from communication_templates collection
+  const template = await getTemplate('invitation_platform') || defaultTemplate;
+  logger.info('Using invitation template:', { templateId: template.id || 'default' });
 
-  // Use customMessage from invitation if provided, otherwise use template bodyText
+  // Use customMessage from invitation if provided, otherwise use template body
   const bodyText = invitation.customMessage && invitation.customMessage.trim() 
     ? invitation.customMessage 
-    : emailTemplate.bodyText;
+    : template.body;
   
-  // Variable substitution - replace {{variables}} in text
+  // Build template variables
   const firstName = invitation.firstName || '';
   const lastName = invitation.lastName || '';
   const fullName = `${firstName} ${lastName}`.trim() || 'there';
   
-  const substituteVars = (text) => {
-    return (text || '')
-      .replace(/\{\{firstName\}\}/g, firstName)
-      .replace(/\{\{lastName\}\}/g, lastName)
-      .replace(/\{\{fullName\}\}/g, fullName)
-      .replace(/\{\{email\}\}/g, email)
-      .replace(/\{\{inviteLink\}\}/g, inviteLink);
+  const templateVars = {
+    firstName,
+    lastName,
+    fullName,
+    email,
+    inviteLink,
+    cohortName: invitation.cohortName || '',
+    inviterName: invitation.inviterName || ''
   };
 
   const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps Arena';
@@ -296,7 +375,7 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
     from: `"${emailFromName}" <${emailFromAddress}>`,
     replyTo: emailReplyTo,
     to: recipientEmail,
-    subject: `${subjectPrefix}${substituteVars(emailTemplate.subject)}`,
+    subject: `${subjectPrefix}${applyTemplateVariables(template.subject, templateVars)}`,
     headers: {
       'X-Priority': '1',
       'X-Mailer': 'LeaderReps Arena',
@@ -315,17 +394,15 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
             But sent to you for testing purposes.
           </div>
         ` : ''}
-        <h2 style="color: #002E47; margin-bottom: 16px;">${substituteVars(emailTemplate.headline)}</h2>
-        <p>${substituteVars(bodyText)}</p>
-        <p>Click the button below to accept your invitation and set up your account:</p>
+        <h2 style="color: #002E47; margin-bottom: 16px;">${applyTemplateVariables(template.headline, templateVars)}</h2>
+        <p>${applyTemplateVariables(bodyText, templateVars).replace(/\n/g, '<br/>')}</p>
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${inviteLink}" style="background-color: #47A88D; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">${substituteVars(emailTemplate.buttonText)}</a>
+          <a href="${inviteLink}" style="background-color: #47A88D; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">${applyTemplateVariables(template.buttonText, templateVars)}</a>
         </div>
         <p>Or copy and paste this link into your browser:</p>
         <p><a href="${inviteLink}">${inviteLink}</a></p>
-        <p>${substituteVars(emailTemplate.expiryText)}</p>
         <hr style="border: 1px solid #e2e8f0; margin: 30px 0;" />
-        <p style="color: #64748b; font-size: 12px;">${substituteVars(emailTemplate.footerText)}</p>
+        <p style="color: #64748b; font-size: 12px;">${applyTemplateVariables(template.footerText || '', templateVars)}</p>
         <p style="color: #94a3b8; font-size: 11px; text-align: center; margin-top: 20px;">
           LeaderReps Arena | Professional Leadership Development<br/>
           <a href="https://leaderreps.com" style="color: #47A88D;">leaderreps.com</a>
@@ -359,31 +436,90 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
 /**
  * ICS CALENDAR HELPER
  * Generates ICS file content for calendar attachments
+ * Uses America/New_York timezone for all sessions
  */
 const formatCalendarDateICS = (date) => {
   const d = new Date(date);
   return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 };
 
+// Format date for ICS with timezone (no Z suffix)
+const formatLocalDateICS = (date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const seconds = String(d.getSeconds()).padStart(2, '0');
+  return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+};
+
 const generateICSContent = ({ title, description, location, startDate, startTime, durationMinutes = 60, uid }) => {
-  let start = new Date(startDate);
+  // Parse the date string - expects format like "2026-03-12" or ISO string
+  // startDate comes from Firestore, could be a string or Date
+  let dateStr = startDate;
+  if (startDate && typeof startDate === 'object' && startDate.toDate) {
+    // Firestore Timestamp
+    dateStr = startDate.toDate().toISOString().split('T')[0];
+  } else if (startDate instanceof Date) {
+    dateStr = startDate.toISOString().split('T')[0];
+  } else if (typeof startDate === 'string' && startDate.includes('T')) {
+    // ISO string - extract date part
+    dateStr = startDate.split('T')[0];
+  }
+  
+  // Build datetime by combining date + time (treating time as Eastern)
+  let hours = 0;
+  let minutes = 0;
   if (startTime) {
-    // Parse time like "10:00 AM" or "14:00"
+    // Parse time like "10:00 AM", "12:00 PM", "14:00"
     const timeParts = startTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
     if (timeParts) {
-      let hours = parseInt(timeParts[1]);
-      const minutes = parseInt(timeParts[2]);
+      hours = parseInt(timeParts[1]);
+      minutes = parseInt(timeParts[2]);
       const meridiem = timeParts[3];
       if (meridiem) {
         if (meridiem.toUpperCase() === 'PM' && hours !== 12) hours += 12;
         if (meridiem.toUpperCase() === 'AM' && hours === 12) hours = 0;
       }
-      start.setHours(hours, minutes, 0, 0);
     }
   }
   
-  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+  // Create date components from date string
+  const [year, month, day] = dateStr.split('-').map(Number);
+  
+  // Format start and end times for ICS (local time format, no Z)
+  const startFormatted = `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}${String(minutes).padStart(2, '0')}00`;
+  
+  // Calculate end time
+  const endMinutes = minutes + durationMinutes;
+  const endHours = hours + Math.floor(endMinutes / 60);
+  const endMins = endMinutes % 60;
+  const endFormatted = `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}T${String(endHours).padStart(2, '0')}${String(endMins).padStart(2, '0')}00`;
+  
   const now = new Date();
+  
+  // VTIMEZONE for America/New_York (handles EDT/EST automatically)
+  const vtimezone = [
+    'BEGIN:VTIMEZONE',
+    'TZID:America/New_York',
+    'BEGIN:DAYLIGHT',
+    'DTSTART:20070311T020000',
+    'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU',
+    'TZOFFSETFROM:-0500',
+    'TZOFFSETTO:-0400',
+    'TZNAME:EDT',
+    'END:DAYLIGHT',
+    'BEGIN:STANDARD',
+    'DTSTART:20071104T020000',
+    'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU',
+    'TZOFFSETFROM:-0400',
+    'TZOFFSETTO:-0500',
+    'TZNAME:EST',
+    'END:STANDARD',
+    'END:VTIMEZONE'
+  ].join('\r\n');
   
   return [
     'BEGIN:VCALENDAR',
@@ -391,11 +527,12 @@ const generateICSContent = ({ title, description, location, startDate, startTime
     'PRODID:-//LeaderReps//Coaching Session//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:REQUEST',
+    vtimezone,
     'BEGIN:VEVENT',
     `UID:${uid || `${Date.now()}@leaderreps.com`}`,
     `DTSTAMP:${formatCalendarDateICS(now)}`,
-    `DTSTART:${formatCalendarDateICS(start)}`,
-    `DTEND:${formatCalendarDateICS(end)}`,
+    `DTSTART;TZID=America/New_York:${startFormatted}`,
+    `DTEND;TZID=America/New_York:${endFormatted}`,
     `SUMMARY:${title}`,
     `DESCRIPTION:${(description || '').replace(/\n/g, '\\n')}`,
     `LOCATION:${location || 'Virtual Session'}`,
@@ -457,25 +594,45 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
     : 'Date TBD';
   const sessionTime = registration.sessionTime || 'Time TBD';
 
+  // Build template variables
+  const templateVars = {
+    userName: registration.userName || 'there',
+    userEmail: registration.userEmail || 'Not provided',
+    sessionTitle: registration.sessionTitle || 'Coaching Session',
+    sessionType: registration.sessionType || '1:1 Coaching',
+    sessionDate,
+    sessionTime,
+    coach: registration.coach || '',
+    coachingItemId: registration.coachingItemId || ''
+  };
+
+  // Fetch templates (with fallback to hardcoded)
+  const facilitatorTemplate = await getTemplate('coaching_registration_facilitator');
+  const userTemplate = await getTemplate('coaching_registration_user');
+  
+  logger.info('Using coaching templates:', { 
+    facilitator: facilitatorTemplate?.id || 'fallback', 
+    user: userTemplate?.id || 'fallback' 
+  });
+
   // 1. Send notification to facilitator/coach if coachEmail is available
   if (registration.coachEmail) {
-    const facilitatorMailOptions = {
-      from: `"${emailFromName}" <${emailUser}>`,
-      replyTo: emailReplyTo,
-      to: registration.coachEmail,
-      subject: `📅 New Session Registration: ${registration.userName || 'A participant'} - ${registration.sessionTitle || 'Coaching Session'}`,
-      headers: {
-        'X-Priority': '1',
-        'X-Mailer': 'LeaderReps Platform',
-      },
-      html: `
+    let facilitatorHtml;
+    let facilitatorSubject;
+    
+    if (facilitatorTemplate) {
+      facilitatorSubject = applyTemplateVariables(facilitatorTemplate.subject, templateVars);
+      facilitatorHtml = generateEmailHtml(facilitatorTemplate, templateVars, appUrl);
+    } else {
+      // Fallback to hardcoded HTML
+      facilitatorSubject = `📅 New Session Registration: ${registration.userName || 'A participant'} - ${registration.sessionTitle || 'Coaching Session'}`;
+      facilitatorHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
             <h2 style="color: white; margin: 0;">New Session Registration</h2>
           </div>
           <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
             <p style="margin-top: 0;"><strong>${registration.userName || 'A participant'}</strong> has registered for your coaching session.</p>
-            
             <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
               <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
               <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Coaching Session'}</p>
@@ -483,14 +640,12 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
               <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
               <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
             </div>
-            
             <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
               <h3 style="margin-top: 0; color: #002E47;">Participant Details</h3>
               <p style="margin: 8px 0;"><strong>Name:</strong> ${registration.userName || 'Not provided'}</p>
               <p style="margin: 8px 0;"><strong>Email:</strong> ${registration.userEmail || 'Not provided'}</p>
               ${registration.coachingItemId ? `<p style="margin: 8px 0;"><strong>Milestone:</strong> ${registration.coachingItemId}</p>` : ''}
             </div>
-            
             <p style="text-align: center; margin-top: 24px;">
               <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
             </p>
@@ -499,7 +654,19 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
             <p style="margin: 0; color: #64748b; font-size: 12px;">This is an automated notification from LeaderReps.</p>
           </div>
         </div>
-      `,
+      `;
+    }
+    
+    const facilitatorMailOptions = {
+      from: `"${emailFromName}" <${emailUser}>`,
+      replyTo: emailReplyTo,
+      to: registration.coachEmail,
+      subject: facilitatorSubject,
+      headers: {
+        'X-Priority': '1',
+        'X-Mailer': 'LeaderReps Platform',
+      },
+      html: facilitatorHtml,
     };
 
     try {
@@ -525,11 +692,55 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
 
   // 2. Send confirmation to the user with calendar attachment
   if (registration.userEmail) {
+    let userHtml;
+    let userSubject;
+    
+    if (userTemplate) {
+      userSubject = applyTemplateVariables(userTemplate.subject, templateVars);
+      userHtml = generateEmailHtml(userTemplate, templateVars, appUrl);
+    } else {
+      // Fallback to hardcoded HTML
+      userSubject = `✅ Registration Confirmed: ${registration.sessionTitle || 'Coaching Session'}`;
+      userHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="color: white; margin: 0;">Registration Confirmed!</h2>
+          </div>
+          <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin-top: 0;">Hi ${registration.userName || 'there'},</p>
+            <p>Your coaching session has been successfully scheduled!</p>
+            <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+              <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
+              <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Coaching Session'}</p>
+              <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+              <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+              ${registration.coach ? `<p style="margin: 8px 0;"><strong>Coach:</strong> ${registration.coach}</p>` : ''}
+            </div>
+            <p style="text-align: center; margin: 16px 0;">
+              <span style="background: #e0f2fe; color: #0369a1; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Calendar invite attached - open the .ics file to add to your calendar</span>
+            </p>
+            <p><strong>Next Steps:</strong></p>
+            <ul>
+              <li>Open the attached calendar invite to add this session</li>
+              <li>Prepare any questions or topics you'd like to discuss</li>
+              <li>Join the session at the scheduled time</li>
+            </ul>
+            <p style="text-align: center; margin-top: 24px;">
+              <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
+            </p>
+          </div>
+          <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email or contact your coach directly.</p>
+          </div>
+        </div>
+      `;
+    }
+    
     const userMailOptions = {
       from: `"${emailFromName}" <${emailUser}>`,
       replyTo: emailReplyTo,
       to: registration.userEmail,
-      subject: `✅ Registration Confirmed: ${registration.sessionTitle || 'Coaching Session'}`,
+      subject: userSubject,
       headers: {
         'X-Priority': '1',
         'X-Mailer': 'LeaderReps Platform',
@@ -539,43 +750,7 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
         content: icsContent,
         contentType: 'text/calendar; charset=utf-8; method=REQUEST'
       }],
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
-            <h2 style="color: white; margin: 0;">Registration Confirmed!</h2>
-          </div>
-          <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
-            <p style="margin-top: 0;">Hi ${registration.userName || 'there'},</p>
-            <p>Your coaching session has been successfully scheduled!</p>
-            
-            <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
-              <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
-              <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Coaching Session'}</p>
-              <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
-              <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
-              ${registration.coach ? `<p style="margin: 8px 0;"><strong>Coach:</strong> ${registration.coach}</p>` : ''}
-            </div>
-            
-            <p style="text-align: center; margin: 16px 0;">
-              <span style="background: #e0f2fe; color: #0369a1; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Calendar invite attached - open the .ics file to add to your calendar</span>
-            </p>
-            
-            <p><strong>Next Steps:</strong></p>
-            <ul>
-              <li>Open the attached calendar invite to add this session</li>
-              <li>Prepare any questions or topics you'd like to discuss</li>
-              <li>Join the session at the scheduled time</li>
-            </ul>
-            
-            <p style="text-align: center; margin-top: 24px;">
-              <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
-            </p>
-          </div>
-          <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
-            <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email or contact your coach directly.</p>
-          </div>
-        </div>
-      `,
+      html: userHtml,
     };
 
     try {
@@ -640,6 +815,20 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
 
   let remindersSent = 0;
 
+  // Pre-fetch reminder templates
+  const reminderTemplates = {
+    leaderDayBefore: await getTemplate('coaching_reminder_leader_day_before'),
+    leaderHourBefore: await getTemplate('coaching_reminder_leader_hour_before'),
+    facilitatorDayBefore: await getTemplate('coaching_reminder_facilitator_day_before'),
+    facilitatorHourBefore: await getTemplate('coaching_reminder_facilitator_hour_before')
+  };
+  logger.info('Loaded reminder templates:', {
+    leaderDayBefore: !!reminderTemplates.leaderDayBefore,
+    leaderHourBefore: !!reminderTemplates.leaderHourBefore,
+    facilitatorDayBefore: !!reminderTemplates.facilitatorDayBefore,
+    facilitatorHourBefore: !!reminderTemplates.facilitatorHourBefore
+  });
+
   for (const doc of registrationsSnap.docs) {
     const registration = { id: doc.id, ...doc.data() };
     
@@ -685,6 +874,16 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
     const sessionDate = sessionStart.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     const sessionTime = registration.sessionTime || sessionStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     
+    // Build template variables
+    const templateVars = {
+      userName: registration.userName || 'there',
+      userEmail: registration.userEmail || 'Not provided',
+      sessionTitle: registration.sessionTitle || 'Coaching Session',
+      sessionDate,
+      sessionTime,
+      coach: registration.coach || ''
+    };
+    
     // Generate ICS for attachment
     const icsContent = generateICSContent({
       title: `LeaderReps: ${registration.sessionTitle || 'Coaching Session'}`,
@@ -696,23 +895,29 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
       uid: `${doc.id}@leaderreps.com`
     });
     
-    const reminderMessage = reminderType === 'dayBefore' 
-      ? "Your coaching session is scheduled for tomorrow. Make sure you're ready!"
-      : "Your coaching session starts in about an hour. Time to prepare!";
+    // Determine which template to use
+    const leaderTemplate = reminderType === 'dayBefore' 
+      ? reminderTemplates.leaderDayBefore 
+      : reminderTemplates.leaderHourBefore;
+    const facilitatorTemplate = reminderType === 'dayBefore' 
+      ? reminderTemplates.facilitatorDayBefore 
+      : reminderTemplates.facilitatorHourBefore;
     
     // Send reminder to leader
     if (registration.userEmail) {
-      const leaderMailOptions = {
-        from: `"${emailFromName}" <${emailUser}>`,
-        replyTo: emailReplyTo,
-        to: registration.userEmail,
-        subject: `${reminderSubjectPrefix}${registration.sessionTitle || 'Coaching Session'}`,
-        attachments: [{
-          filename: 'coaching-session.ics',
-          content: icsContent,
-          contentType: 'text/calendar; charset=utf-8; method=REQUEST'
-        }],
-        html: `
+      let leaderHtml;
+      let leaderSubject;
+      
+      if (leaderTemplate) {
+        leaderSubject = applyTemplateVariables(leaderTemplate.subject, templateVars);
+        leaderHtml = generateEmailHtml(leaderTemplate, templateVars, appUrl);
+      } else {
+        // Fallback to hardcoded
+        leaderSubject = `${reminderSubjectPrefix}${registration.sessionTitle || 'Coaching Session'}`;
+        const reminderMessage = reminderType === 'dayBefore' 
+          ? "Your coaching session is scheduled for tomorrow. Make sure you're ready!"
+          : "Your coaching session starts in about an hour. Time to prepare!";
+        leaderHtml = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
               <h2 style="color: white; margin: 0;">${reminderType === 'dayBefore' ? '📅 Session Tomorrow' : '⏰ Starting Soon'}</h2>
@@ -720,7 +925,6 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
             <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
               <p style="margin-top: 0;">Hi ${registration.userName || 'there'},</p>
               <p>${reminderMessage}</p>
-              
               <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
                 <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
                 <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Coaching Session'}</p>
@@ -728,7 +932,6 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
                 <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
                 ${registration.coach ? `<p style="margin: 8px 0;"><strong>Coach:</strong> ${registration.coach}</p>` : ''}
               </div>
-              
               <p style="text-align: center; margin-top: 24px;">
                 <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
               </p>
@@ -737,7 +940,20 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
               <p style="margin: 0; color: #64748b; font-size: 12px;">Calendar invite attached for your convenience.</p>
             </div>
           </div>
-        `,
+        `;
+      }
+      
+      const leaderMailOptions = {
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: registration.userEmail,
+        subject: leaderSubject,
+        attachments: [{
+          filename: 'coaching-session.ics',
+          content: icsContent,
+          contentType: 'text/calendar; charset=utf-8; method=REQUEST'
+        }],
+        html: leaderHtml,
       };
 
       try {
@@ -751,37 +967,33 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
     
     // Send reminder to facilitator/coach
     if (registration.coachEmail) {
-      const facilitatorMailOptions = {
-        from: `"${emailFromName}" <${emailUser}>`,
-        replyTo: emailReplyTo,
-        to: registration.coachEmail,
-        subject: `${reminderSubjectPrefix}${registration.userName || 'Participant'} - ${registration.sessionTitle || 'Coaching Session'}`,
-        attachments: [{
-          filename: 'coaching-session.ics',
-          content: icsContent,
-          contentType: 'text/calendar; charset=utf-8; method=REQUEST'
-        }],
-        html: `
+      let facilitatorHtml;
+      let facilitatorSubject;
+      
+      if (facilitatorTemplate) {
+        facilitatorSubject = applyTemplateVariables(facilitatorTemplate.subject, templateVars);
+        facilitatorHtml = generateEmailHtml(facilitatorTemplate, templateVars, appUrl);
+      } else {
+        // Fallback to hardcoded
+        facilitatorSubject = `${reminderSubjectPrefix}${registration.userName || 'Participant'} - ${registration.sessionTitle || 'Coaching Session'}`;
+        facilitatorHtml = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
               <h2 style="color: white; margin: 0;">${reminderType === 'dayBefore' ? '📅 Session Tomorrow' : '⏰ Starting Soon'}</h2>
             </div>
             <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
               <p style="margin-top: 0;">You have a coaching session ${reminderType === 'dayBefore' ? 'scheduled for tomorrow' : 'starting in about an hour'}.</p>
-              
               <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
                 <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
                 <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Coaching Session'}</p>
                 <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
                 <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
               </div>
-              
               <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
                 <h3 style="margin-top: 0; color: #002E47;">Participant</h3>
                 <p style="margin: 8px 0;"><strong>Name:</strong> ${registration.userName || 'Not provided'}</p>
                 <p style="margin: 8px 0;"><strong>Email:</strong> ${registration.userEmail || 'Not provided'}</p>
               </div>
-              
               <p style="text-align: center; margin-top: 24px;">
                 <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
               </p>
@@ -790,7 +1002,20 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
               <p style="margin: 0; color: #64748b; font-size: 12px;">Calendar invite attached for your convenience.</p>
             </div>
           </div>
-        `,
+        `;
+      }
+      
+      const facilitatorMailOptions = {
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: registration.coachEmail,
+        subject: facilitatorSubject,
+        attachments: [{
+          filename: 'coaching-session.ics',
+          content: icsContent,
+          contentType: 'text/calendar; charset=utf-8; method=REQUEST'
+        }],
+        html: facilitatorHtml,
       };
 
       try {
@@ -848,6 +1073,23 @@ exports.sendMilestoneCompletionEmail = onCall(async (request) => {
   const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps';
   const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
   
+  // Fetch templates
+  const milestoneTemplate = await getTemplate('milestone_completion');
+  const graduationTemplate = await getTemplate('graduation');
+  
+  logger.info('Using milestone templates:', { 
+    milestone: milestoneTemplate?.id || 'fallback',
+    graduation: graduationTemplate?.id || 'fallback'
+  });
+  
+  // Build template variables
+  const templateVars = {
+    userName: userName || 'there',
+    milestoneName: milestoneName || `Milestone ${milestone}`,
+    milestone: String(milestone),
+    nextMilestone: String((milestone || 0) + 1)
+  };
+  
   const milestoneEmoji = {
     1: '📍',
     2: '🎯',
@@ -856,66 +1098,74 @@ exports.sendMilestoneCompletionEmail = onCall(async (request) => {
     5: '🏆'
   };
   
-  const subject = isGraduation
-    ? `🎓 Congratulations! You've Graduated from LeaderReps!`
-    : `✅ Milestone ${milestone} Complete: ${milestoneName}`;
+  let subject, bodyHtml;
   
-  const bodyHtml = isGraduation ? `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">🎓 Congratulations!</h1>
-        <p style="color: #9CE0C8; margin: 10px 0 0 0; font-size: 18px;">You've Graduated!</p>
-      </div>
-      <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none;">
-        <p style="margin-top: 0; font-size: 18px;">Hi ${userName || 'there'},</p>
-        <p style="font-size: 16px;">You've successfully completed all 5 milestones and earned your <strong>LeaderReps Leadership Certification</strong>!</p>
-        
-        <div style="background: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #D4AF37 100%); padding: 4px; border-radius: 12px; margin: 24px 0;">
-          <div style="background: white; padding: 24px; border-radius: 10px; text-align: center;">
-            <p style="margin: 0 0 8px 0; font-size: 14px; color: #666;">CERTIFICATE OF COMPLETION</p>
-            <p style="margin: 0; font-size: 24px; font-weight: bold; color: #002E47;">LeaderReps Leadership Program</p>
-            <p style="margin: 8px 0 0 0; font-size: 16px; color: #47A88D;">All 5 Milestones Complete</p>
+  if (isGraduation) {
+    if (graduationTemplate) {
+      subject = applyTemplateVariables(graduationTemplate.subject, templateVars);
+      bodyHtml = generateEmailHtml(graduationTemplate, templateVars, appUrl);
+    } else {
+      subject = `🎓 Congratulations! You've Graduated from LeaderReps!`;
+      bodyHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">🎓 Congratulations!</h1>
+            <p style="color: #9CE0C8; margin: 10px 0 0 0; font-size: 18px;">You've Graduated!</p>
+          </div>
+          <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin-top: 0; font-size: 18px;">Hi ${userName || 'there'},</p>
+            <p style="font-size: 16px;">You've successfully completed all 5 milestones and earned your <strong>LeaderReps Leadership Certification</strong>!</p>
+            <div style="background: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #D4AF37 100%); padding: 4px; border-radius: 12px; margin: 24px 0;">
+              <div style="background: white; padding: 24px; border-radius: 10px; text-align: center;">
+                <p style="margin: 0 0 8px 0; font-size: 14px; color: #666;">CERTIFICATE OF COMPLETION</p>
+                <p style="margin: 0; font-size: 24px; font-weight: bold; color: #002E47;">LeaderReps Leadership Program</p>
+                <p style="margin: 8px 0 0 0; font-size: 16px; color: #47A88D;">All 5 Milestones Complete</p>
+              </div>
+            </div>
+            <p style="text-align: center; margin-top: 24px;">
+              <a href="${appUrl}?screen=certificates" style="background: #47A88D; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">View Your Certificate</a>
+            </p>
+            <p style="margin-top: 24px; color: #666; font-size: 14px;">You can print or share your certificate from the app. Thank you for your dedication to becoming a better leader!</p>
+          </div>
+          <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin: 0; color: #64748b; font-size: 12px;">Congratulations from the LeaderReps Team!</p>
           </div>
         </div>
-        
-        <p style="text-align: center; margin-top: 24px;">
-          <a href="${appUrl}?screen=certificates" style="background: #47A88D; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">View Your Certificate</a>
-        </p>
-        
-        <p style="margin-top: 24px; color: #666; font-size: 14px;">You can print or share your certificate from the app. Thank you for your dedication to becoming a better leader!</p>
-      </div>
-      <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
-        <p style="margin: 0; color: #64748b; font-size: 12px;">Congratulations from the LeaderReps Team!</p>
-      </div>
-    </div>
-  ` : `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 24px; border-radius: 8px 8px 0 0;">
-        <h2 style="color: white; margin: 0;">${milestoneEmoji[milestone] || '✅'} Milestone Complete!</h2>
-      </div>
-      <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
-        <p style="margin-top: 0;">Hi ${userName || 'there'},</p>
-        <p>Congratulations! Your facilitator has signed off on <strong>Milestone ${milestone}: ${milestoneName}</strong>.</p>
-        
-        <div style="background: #10B981; color: white; padding: 16px; border-radius: 8px; margin: 20px 0; text-align: center;">
-          <p style="margin: 0; font-size: 18px; font-weight: bold;">${milestoneEmoji[milestone]} ${milestoneName}</p>
-          <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Milestone ${milestone} of 5 Complete</p>
+      `;
+    }
+  } else {
+    if (milestoneTemplate) {
+      subject = applyTemplateVariables(milestoneTemplate.subject, templateVars);
+      bodyHtml = generateEmailHtml(milestoneTemplate, templateVars, appUrl);
+    } else {
+      subject = `✅ Milestone ${milestone} Complete: ${milestoneName}`;
+      bodyHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 24px; border-radius: 8px 8px 0 0;">
+            <h2 style="color: white; margin: 0;">${milestoneEmoji[milestone] || '✅'} Milestone Complete!</h2>
+          </div>
+          <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin-top: 0;">Hi ${userName || 'there'},</p>
+            <p>Congratulations! Your facilitator has signed off on <strong>Milestone ${milestone}: ${milestoneName}</strong>.</p>
+            <div style="background: #10B981; color: white; padding: 16px; border-radius: 8px; margin: 20px 0; text-align: center;">
+              <p style="margin: 0; font-size: 18px; font-weight: bold;">${milestoneEmoji[milestone]} ${milestoneName}</p>
+              <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Milestone ${milestone} of 5 Complete</p>
+            </div>
+            ${milestone < 5 ? `
+            <p><strong>What's Next?</strong></p>
+            <p>Your certificate for this milestone is now available in the app. <strong>Milestone ${milestone + 1}</strong> is now unlocked and ready for you to begin!</p>
+            ` : ''}
+            <p style="text-align: center; margin-top: 24px;">
+              <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">View Certificate & Continue</a>
+            </p>
+          </div>
+          <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin: 0; color: #64748b; font-size: 12px;">Keep up the great work!</p>
+          </div>
         </div>
-        
-        ${milestone < 5 ? `
-        <p><strong>What's Next?</strong></p>
-        <p>Your certificate for this milestone is now available in the app. <strong>Milestone ${milestone + 1}</strong> is now unlocked and ready for you to begin!</p>
-        ` : ''}
-        
-        <p style="text-align: center; margin-top: 24px;">
-          <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">View Certificate & Continue</a>
-        </p>
-      </div>
-      <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
-        <p style="margin: 0; color: #64748b; font-size: 12px;">Keep up the great work!</p>
-      </div>
-    </div>
-  `;
+      `;
+    }
+  }
   
   const mailOptions = {
     from: `"${emailFromName}" <${emailUser}>`,
@@ -1038,7 +1288,11 @@ exports.geminiProxy = onRequest(
  * }
  */
 exports.assessRepQuality = onCall(
-  { cors: true, region: "us-central1" },
+  { 
+    cors: [/arena\.leaderreps\.com$/, /leaderreps-prod\.web\.app$/, /leaderreps-prod\.firebaseapp\.com$/, /leaderreps-test\.web\.app$/, /leaderreps-test\.firebaseapp\.com$/, /leaderreps-pd-platform\.web\.app$/, /leaderreps-pd-platform\.firebaseapp\.com$/, /localhost/],
+    invoker: "public",
+    region: "us-central1" 
+  },
   async (request) => {
     const { repType, person, responses, structured } = request.data;
     
@@ -3801,7 +4055,9 @@ exports.sendReppyInvite = onCall({ cors: true, region: "us-central1" }, async (r
 exports.reppyCoach = onCall(
     { 
         secrets: ["ANTHROPIC_API_KEY"],
-        cors: true,
+        cors: [/arena\.leaderreps\.com$/, /leaderreps-prod\.web\.app$/, /leaderreps-prod\.firebaseapp\.com$/, /leaderreps-test\.web\.app$/, /leaderreps-test\.firebaseapp\.com$/, /leaderreps-pd-platform\.web\.app$/, /leaderreps-pd-platform\.firebaseapp\.com$/, /localhost/],
+        invoker: "public",
+        region: "us-central1",
         maxInstances: 20,
     },
     async (request) => {

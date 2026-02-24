@@ -244,6 +244,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Communication Templates (email, SMS, push notification templates)
+    match /communication_templates/{document} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
     match /system_logs/{document=**} {
       // Admins can read all system logs
       allow read: if isAdmin();

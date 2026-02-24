@@ -7,11 +7,14 @@ import {
   onSnapshot,
   doc,
   setDoc,
+  updateDoc,
+  increment,
   serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
 import {
   COACHING_REGISTRATIONS_COLLECTION,
+  COACHING_SESSIONS_COLLECTION,
   REGISTRATION_STATUS
 } from '../data/Constants';
 
@@ -134,6 +137,11 @@ export const useCoachingRegistrations = () => {
               cancelledAt: serverTimestamp(),
               cancelReason: 'switched_session'
             }, { merge: true });
+            // Decrement registration count on the old session
+            const oldSessionRef = doc(db, COACHING_SESSIONS_COLLECTION, existing1on1.sessionId);
+            await updateDoc(oldSessionRef, {
+              registrationCount: increment(-1)
+            });
           } catch (err) {
             console.error('[useCoachingRegistrations] Error cancelling previous 1:1:', err);
             return { success: false, error: 'Failed to cancel previous session' };
@@ -169,6 +177,11 @@ export const useCoachingRegistrations = () => {
               cancelledAt: serverTimestamp(),
               cancelReason: 'switched_session'
             }, { merge: true });
+            // Decrement registration count on the old session
+            const oldSessionRef = doc(db, COACHING_SESSIONS_COLLECTION, existingReg.sessionId);
+            await updateDoc(oldSessionRef, {
+              registrationCount: increment(-1)
+            });
           } catch (err) {
             console.error('[useCoachingRegistrations] Error cancelling previous registration:', err);
           }
@@ -219,6 +232,17 @@ export const useCoachingRegistrations = () => {
 
       await setDoc(registrationRef, registrationData);
       
+      // Increment registration count on the session
+      try {
+        const sessionRef = doc(db, COACHING_SESSIONS_COLLECTION, session.id);
+        await updateDoc(sessionRef, {
+          registrationCount: increment(1)
+        });
+      } catch (countErr) {
+        console.warn('[useCoachingRegistrations] Could not update registration count:', countErr);
+        // Don't fail the registration if count update fails
+      }
+      
       console.log('[useCoachingRegistrations] Registered for session:', session.id);
       return { success: true, registrationId };
     } catch (err) {
@@ -242,6 +266,17 @@ export const useCoachingRegistrations = () => {
         status: REGISTRATION_STATUS.CANCELLED,
         cancelledAt: serverTimestamp()
       }, { merge: true });
+
+      // Decrement registration count on the session
+      try {
+        const sessionRef = doc(db, COACHING_SESSIONS_COLLECTION, sessionId);
+        await updateDoc(sessionRef, {
+          registrationCount: increment(-1)
+        });
+      } catch (countErr) {
+        console.warn('[useCoachingRegistrations] Could not update registration count:', countErr);
+        // Don't fail the cancellation if count update fails
+      }
 
       console.log('[useCoachingRegistrations] Cancelled registration:', sessionId);
       return { success: true };

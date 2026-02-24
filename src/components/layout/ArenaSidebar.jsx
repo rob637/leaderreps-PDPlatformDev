@@ -61,10 +61,13 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     enableCourses: isPrepComplete,
     enableVideos: isPrepComplete,
     
+    // FOUNDATION FEATURES - Unlocks after prep completion
+    enableCommunity: isPrepComplete,
+    enableCoaching: isPrepComplete,
+    
     // FUTURE SCOPE FEATURES (DISABLED)
     enableLabs: false,
     enablePlanningHub: false,
-    enableCommunity: false,
     enableRoiReport: false,
   };
 
@@ -75,9 +78,9 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
     
     { type: 'section', label: 'Resources' },
-    { id: 'community', label: 'Events', icon: CommunityIcon, flag: 'enableCommunity', devModeOnly: true },
+    { id: 'community', label: 'Events', icon: CommunityIcon, flag: 'enableCommunity' },
     { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' }, // Using enableReadings as proxy for Content
-    { id: 'coaching-hub', label: 'Sessions', icon: CoachingIcon, flag: 'enableLabs', devModeOnly: true },
+    { id: 'coaching-hub', label: 'Sessions', icon: CoachingIcon, flag: 'enableCoaching' },
     
     { type: 'section', label: 'Personal' },
     { id: 'locker', label: 'Your Locker', icon: LockerIcon },

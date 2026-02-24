@@ -4,7 +4,7 @@ import { useContentAccess } from '../../../hooks/useContentAccess';
 import { doc, getDoc } from '../../../services/firebaseUtils';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { PageLayout } from '../../ui/PageLayout.jsx';
-import { Loader, BookOpen, Clock, Target, CheckCircle, AlertTriangle, FileText, Layers, Zap, Lock } from 'lucide-react';
+import { Loader, BookOpen, Clock, Target, CheckCircle, AlertTriangle, FileText, Layers, Zap, Lock, Sparkles } from 'lucide-react';
 import { Button } from '../../screens/developmentplan/DevPlanComponents.jsx';
 
 const COMPLEXITY_MAP = {
@@ -14,11 +14,16 @@ const COMPLEXITY_MAP = {
 };
 
 const ReadRepDetail = (props) => {
-  const { db, navigate } = useAppServices();
+  const { db, navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
   const { isContentUnlocked } = useContentAccess();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('brief'); // brief, flyer, action
+  const [activeTab, setActiveTab] = useState('brief'); // brief, action
+  
+  // AI Coach state
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
   const bookId = props.id || props.navParams?.id;
@@ -46,6 +51,45 @@ const ReadRepDetail = (props) => {
 
     fetchBook();
   }, [db, bookId]);
+
+  // Handle AI Coach submission
+  const handleAskCoach = async () => {
+    const q = (aiQuery || '').trim();
+    if (!book || !q) return;
+
+    setIsAiLoading(true);
+    setAiResponse('RepUp is analyzing the book and your question...');
+
+    const hasKeyOk = typeof hasGeminiKey === 'function' ? hasGeminiKey() : false;
+    if (!hasKeyOk) {
+      setAiResponse('**RepUp Offline:** API configuration is missing.');
+      setIsAiLoading(false);
+      return;
+    }
+
+    try {
+      const focusAreas = book.metadata?.focusAreas?.join(', ') || 'Leadership principles';
+      
+      const systemInstruction = `You are RepUp, the LeaderReps AI Coach. Help the user apply principles from "${book.title}".
+Focus Areas: ${focusAreas}
+Description: ${book.description || 'N/A'}
+Keep responses concise (3-5 sentences), actionable, and directly answer the question. Focus on practical application.`;
+
+      const payload = {
+        prompt: q,
+        model: GEMINI_MODEL || 'gemini-2.0-flash',
+        systemInstruction
+      };
+
+      const result = await callSecureGeminiAPI(payload);
+      const text = result?.text || 'No response received.';
+      setAiResponse(text.trim());
+    } catch (err) {
+      setAiResponse(`**Error:** ${err.message}`);
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -130,9 +174,17 @@ const ReadRepDetail = (props) => {
         
         {/* Header Card */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6 flex flex-col md:flex-row gap-6">
-          {/* Cover Placeholder */}
-          <div className="w-32 h-48 bg-slate-100 dark:bg-slate-700 rounded-lg flex-shrink-0 flex items-center justify-center text-slate-300 shadow-inner">
-            <BookOpen className="w-12 h-12" />
+          {/* Cover Image or Placeholder */}
+          <div className="w-32 h-48 bg-slate-100 dark:bg-slate-700 rounded-lg flex-shrink-0 flex items-center justify-center text-slate-300 shadow-inner overflow-hidden">
+            {book.thumbnail || book.coverImage ? (
+              <img 
+                src={book.thumbnail || book.coverImage} 
+                alt={book.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <BookOpen className="w-12 h-12" />
+            )}
           </div>
 
           <div className="flex-grow">
@@ -183,19 +235,6 @@ const ReadRepDetail = (props) => {
               </div>
             </button>
             <button
-              onClick={() => setActiveTab('flyer')}
-              className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${
-                activeTab === 'flyer' 
-                  ? 'border-corporate-teal text-corporate-teal bg-teal-50/30 dark:bg-teal-900/20/30' 
-                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <BookOpen className="w-4 h-4" />
-                Full Flyer
-              </div>
-            </button>
-            <button
               onClick={() => setActiveTab('action')}
               className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${
                 activeTab === 'action' 
@@ -204,8 +243,8 @@ const ReadRepDetail = (props) => {
               }`}
             >
               <div className="flex items-center justify-center gap-2">
-                <Zap className="w-4 h-4" />
-                AI Rep Coach
+                <Sparkles className="w-4 h-4" />
+                RepUp
               </div>
             </button>
           </div>
@@ -262,31 +301,48 @@ const ReadRepDetail = (props) => {
             )}
 
             {activeTab === 'action' && (
-              <div className="max-w-2xl mx-auto text-center py-12">
-                <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Zap className="w-8 h-8 text-indigo-600" />
+              <div className="max-w-2xl mx-auto text-center py-8">
+                <div className="w-16 h-16 bg-corporate-teal/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Sparkles className="w-8 h-8 text-corporate-teal" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">AI Rep Coach</h3>
-                <p className="text-slate-600 dark:text-slate-300 mb-8">
-                  Ask the AI coach how to apply the principles from <strong>{book.title}</strong> to your specific leadership challenges.
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">RepUp</h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-6">
+                  Ask RepUp how to apply the principles from <strong>{book.title}</strong> to your specific leadership challenges.
                 </p>
                 
                 <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700 text-left">
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">What's your challenge?</label>
                   <textarea 
-                    className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
                     rows={4}
-                    placeholder="e.g., How can I apply the 'Build-Measure-Learn' loop to my team's weekly meetings?"
+                    value={aiQuery}
+                    onChange={(e) => setAiQuery(e.target.value)}
+                    placeholder={`e.g., How can I apply insights from "${book.title}" to improve my team communication?`}
+                    disabled={isAiLoading}
                   ></textarea>
                   <div className="mt-4 flex justify-end">
-                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                      Ask Coach
+                    <Button 
+                      onClick={handleAskCoach}
+                      disabled={isAiLoading || !aiQuery.trim()}
+                      className="bg-corporate-teal hover:bg-teal-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isAiLoading ? 'Thinking...' : 'Ask Coach'}
                     </Button>
                   </div>
                 </div>
-                <p className="text-xs text-slate-400 mt-4">
-                  AI features are currently in preview mode.
-                </p>
+                
+                {/* AI Response */}
+                {aiResponse && (
+                  <div className="mt-6 bg-white dark:bg-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700 text-left">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="w-5 h-5 text-corporate-teal" />
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">RepUp Response</span>
+                    </div>
+                    <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                      {aiResponse}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -22,6 +22,9 @@ import {
 } from '../../services/videoSeriesService';
 import VideoSeriesPlayer from './VideoSeriesPlayer';
 
+// Default thumbnail fallback - LeaderReps logo
+const DEFAULT_THUMBNAIL = '/leaderreps-logo.png';
+
 export default function VideoSeriesCard({
   series,
   onOpen,
@@ -100,11 +103,11 @@ export default function VideoSeriesCard({
     return nextIdx >= 0 ? nextIdx : 0;
   }, [series?.videos, progress?.watchedVideoIds]);
 
-  // Thumbnail - use series thumbnail or first video thumbnail
+  // Thumbnail - use series thumbnail, first video thumbnail, or default logo
   const thumbnail =
     series?.thumbnail ||
     (series?.videos?.length > 0 && series.videos[0].thumbnail) ||
-    null;
+    DEFAULT_THUMBNAIL;
 
   if (!series) return null;
 
@@ -119,17 +122,11 @@ export default function VideoSeriesCard({
           <div className="flex flex-col md:flex-row">
             {/* Thumbnail */}
             <div className="relative md:w-80 h-48 md:h-auto bg-slate-100 dark:bg-slate-700 flex-shrink-0 overflow-hidden">
-              {thumbnail ? (
-                <img
+              <img
                   src={thumbnail}
                   alt={series.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-contain bg-slate-800 p-4 group-hover:scale-105 transition-transform duration-300"
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <ListVideo className="w-16 h-16 text-slate-300 dark:text-slate-600" />
-                </div>
-              )}
               {/* Play overlay */}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
@@ -233,17 +230,11 @@ export default function VideoSeriesCard({
         >
           {/* Thumbnail */}
           <div className="relative w-20 h-12 bg-slate-100 dark:bg-slate-700 rounded overflow-hidden flex-shrink-0">
-            {thumbnail ? (
               <img
                 src={thumbnail}
                 alt={series.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain bg-slate-800 p-1"
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ListVideo className="w-6 h-6 text-slate-300 dark:text-slate-600" />
-              </div>
-            )}
             <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <PlayCircle className="w-6 h-6 text-white" />
             </div>
@@ -296,18 +287,12 @@ export default function VideoSeriesCard({
         className="group w-full bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-all text-left"
       >
         {/* Thumbnail */}
-        <div className="relative h-40 bg-slate-100 dark:bg-slate-700 overflow-hidden">
-          {thumbnail ? (
-            <img
+        <div className="relative h-40 bg-slate-800 overflow-hidden">
+          <img
               src={thumbnail}
               alt={series.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
             />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <ListVideo className="w-12 h-12 text-slate-300 dark:text-slate-600" />
-            </div>
-          )}
           {/* Play overlay */}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">

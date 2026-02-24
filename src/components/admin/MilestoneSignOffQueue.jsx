@@ -28,7 +28,8 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { Card } from '../ui';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../lib/firebase';
 
 // Milestone metadata - Updated to match 5-milestone structure
 const MILESTONES = {
@@ -247,7 +248,6 @@ const MilestoneSignOffQueue = () => {
       
       // Send email notification
       try {
-        const functions = getFunctions();
         const sendMilestoneEmail = httpsCallable(functions, 'sendMilestoneCompletionEmail');
         await sendMilestoneEmail({
           userId: participant.id,

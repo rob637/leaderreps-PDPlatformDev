@@ -7,10 +7,13 @@ import {
   onSnapshot,
   doc,
   setDoc,
+  updateDoc,
+  increment,
   serverTimestamp
 } from 'firebase/firestore';
 import {
   COMMUNITY_REGISTRATIONS_COLLECTION,
+  COMMUNITY_SESSIONS_COLLECTION,
   REGISTRATION_STATUS
 } from '../data/Constants';
 
@@ -141,6 +144,17 @@ export const useCommunityRegistrations = () => {
 
       await setDoc(registrationRef, registrationData);
       
+      // Increment registration count on the session
+      try {
+        const sessionRef = doc(db, COMMUNITY_SESSIONS_COLLECTION, session.id);
+        await updateDoc(sessionRef, {
+          registrationCount: increment(1)
+        });
+      } catch (countErr) {
+        console.warn('[useCommunityRegistrations] Could not update registration count:', countErr);
+        // Don't fail the registration if count update fails
+      }
+      
       console.log('[useCommunityRegistrations] Registered for session:', session.id);
       return { success: true, registrationId };
     } catch (err) {
@@ -164,6 +178,17 @@ export const useCommunityRegistrations = () => {
         status: REGISTRATION_STATUS.CANCELLED,
         cancelledAt: serverTimestamp()
       }, { merge: true });
+
+      // Decrement registration count on the session
+      try {
+        const sessionRef = doc(db, COMMUNITY_SESSIONS_COLLECTION, sessionId);
+        await updateDoc(sessionRef, {
+          registrationCount: increment(-1)
+        });
+      } catch (countErr) {
+        console.warn('[useCommunityRegistrations] Could not update registration count:', countErr);
+        // Don't fail the cancellation if count update fails
+      }
 
       console.log('[useCommunityRegistrations] Cancelled registration:', sessionId);
       return { success: true };

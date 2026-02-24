@@ -10,7 +10,8 @@ import {
   AlertCircle, Dumbbell, Plus, ChevronRight, Clock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../lib/firebase';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
@@ -335,7 +336,6 @@ const RepUpOverlay = ({ onClose }) => {
     setChatHistory(newHistory);
     
     try {
-      const functions = getFunctions();
       const reppyCoach = httpsCallable(functions, 'reppyCoach');
       
       // Build coaching context for RepUp
@@ -549,7 +549,10 @@ Help them with their question. Be practical and actionable.`;
                             initial={{ x: -10, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             className="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors"
-                            onClick={() => navigate('conditioning')}
+                            onClick={() => {
+                              navigate('conditioning', { selectedRepId: rep.id });
+                              onClose?.();
+                            }}
                           >
                             <div className="w-8 h-8 bg-corporate-teal/10 rounded-full flex items-center justify-center flex-shrink-0">
                               <Dumbbell className="w-4 h-4 text-corporate-teal" />
@@ -570,7 +573,10 @@ Help them with their question. Be practical and actionable.`;
 
                   {/* Quick Add Button */}
                   <button
-                    onClick={() => navigate('conditioning', { openCommitForm: true })}
+                    onClick={() => {
+                      navigate('conditioning', { openCommitForm: true });
+                      onClose?.();
+                    }}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 
                                bg-gradient-to-r from-corporate-navy to-corporate-teal
                                text-white text-sm font-medium rounded-lg

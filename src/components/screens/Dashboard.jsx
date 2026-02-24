@@ -635,8 +635,8 @@ const Dashboard = () => {
     'conditioning': () => shouldShow('conditioning', true) ? <ConditioningWidget helpText={getWidgetHelpText('conditioning')} /> : null,  // Gated until Foundation starts
     'daily-leader-reps': () => null,  // DISABLED - replaced by conditioning widget
     'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <div data-repup-step="this-weeks-actions"><WidgetRenderer widgetId="this-weeks-actions" scope={scope} /></div> : null,
-    'notifications': () => shouldShow('notifications', false) ? <NotificationSetupWidget /> : null,
-    'conditioning-tutorial': () => shouldShow('conditioning-tutorial', false) ? <ConditioningTutorialWidget /> : null,
+    'notifications': () => shouldShow('notifications', true) ? <NotificationSetupWidget /> : null,
+    'conditioning-tutorial': () => shouldShow('conditioning-tutorial', true) ? <ConditioningTutorialWidget /> : null,
     'pm-bookend-header': () => shouldShow('pm-bookend-header', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
     'progress-feedback': () => shouldShow('progress-feedback', true) ? <WidgetRenderer widgetId="progress-feedback" scope={scope} /> : null,
     'pm-bookend': () => shouldShow('pm-bookend', true) ? <div data-repup-step="pm-bookend"><WidgetRenderer widgetId="pm-bookend" scope={scope} /></div> : null,

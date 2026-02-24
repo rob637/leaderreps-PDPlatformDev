@@ -20,7 +20,8 @@ import {
   Eye,
   PlaySquare,
   CheckCircle,
-  Award
+  Award,
+  Mail
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
@@ -42,6 +43,7 @@ import CohortManager from './CohortManager';
 import UserManagement from './UserManagement';
 import LeaderProfileReports from './LeaderProfileReports';
 import NotificationManager from './NotificationManager';
+import CommunicationsManager from './CommunicationsManager';
 import ConditioningDashboard from './ConditioningDashboard';
 import UxAuditPanel from './UxAuditPanel';
 import VideoSeriesManager from './VideoSeriesManager';
@@ -140,7 +142,8 @@ const AdminPortal = () => {
         { id: 'content', label: 'Content Library', icon: FileText },
         { id: 'media', label: 'Media Vault', icon: Database },
         { id: 'video-series', label: 'Video Series', icon: PlaySquare },
-        { id: 'notifications', label: 'Notifications', icon: Bell }
+        { id: 'notifications', label: 'Notifications', icon: Bell },
+        { id: 'communications', label: 'Communications', icon: Mail }
       ]
     },
     {
@@ -201,6 +204,8 @@ const AdminPortal = () => {
         return <MediaLibrary />;
       case 'notifications':
         return <NotificationManager />;
+      case 'communications':
+        return <CommunicationsManager />;
       case 'diagnostics':
         return <SystemDiagnostics />;
       case 'content':

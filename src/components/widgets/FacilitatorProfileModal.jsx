@@ -116,7 +116,13 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
 
               {linkedIn && (
                 <a 
-                  href={linkedIn.startsWith('http') ? linkedIn : `https://linkedin.com/in/${linkedIn}`}
+                  href={
+                    linkedIn.startsWith('http') 
+                      ? linkedIn 
+                      : linkedIn.includes('linkedin.com')
+                        ? `https://${linkedIn}`
+                        : `https://linkedin.com/in/${linkedIn}`
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors group"

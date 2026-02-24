@@ -7,7 +7,8 @@ import {
   MessageSquare, Send, Loader2, AlertCircle, Target, Brain, History, Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../lib/firebase';
 import { doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
@@ -370,7 +371,6 @@ const RepUpCoach = ({ userId: _userId, onSwitchToReps }) => {
     setChatHistory(newHistory);
     
     try {
-      const functions = getFunctions();
       const reppyCoach = httpsCallable(functions, 'reppyCoach');
       
       // Build rich context with leader profile and rep history
