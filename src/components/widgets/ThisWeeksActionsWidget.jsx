@@ -96,6 +96,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   
   // Prep Complete expanded state (default collapsed when all done)
   const [prepExpanded, setPrepExpanded] = useState(false);
+  const [exploreExpanded, setExploreExpanded] = useState(false);
   
   // Admin: Reset prep progress for testing
   const resetPrepProgress = async () => {
@@ -355,17 +356,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
       // Get label for inference
       const labelLower = (action.label || action.title || '').toLowerCase();
-      
-      // DEBUG: Log inference attempt for notification/conditioning items
-      if (labelLower.includes('notification') || labelLower.includes('conditioning')) {
-        console.log('[DEBUG normalizeDailyActions] Interactive item found:', {
-          id: action.id,
-          label: action.label,
-          labelLower,
-          originalHandlerType: action.handlerType,
-          inferredHandlerType: handlerType
-        });
-      }
 
       // FAILSAFE: Attempt to infer handlerType from ID, resourceId, OR label if missing
       if (!handlerType) {
@@ -379,11 +369,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           handlerType = 'conditioning-tutorial';
         } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation commitment')) {
           handlerType = 'foundation-commitment';
-        }
-        
-        // DEBUG: Log inferred handlerType
-        if (labelLower.includes('notification') || labelLower.includes('conditioning')) {
-          console.log('[DEBUG normalizeDailyActions] After inference:', { handlerType });
         }
       }
       
@@ -1265,13 +1250,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   
   // Handler for INTERACTIVE content items (Leader Profile, Baseline Assessment, Notification Setup, Foundation Commitment, Conditioning Tutorial)
   const handleInteractiveClick = (item) => {
-    console.log('[DEBUG] handleInteractiveClick called with item:', {
-      id: item.id,
-      label: item.label,
-      handlerType: item.handlerType,
-      isInteractive: item.isInteractive,
-      resourceId: item.resourceId
-    });
     if (item.handlerType === 'leader-profile') {
       setShowLeaderProfileModal(true);
     } else if (item.handlerType === 'baseline-assessment') {
@@ -1282,8 +1260,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       setShowFoundationCommitmentModal(true);
     } else if (item.handlerType === 'conditioning-tutorial') {
       setShowConditioningTutorialModal(true);
-    } else {
-      console.warn('[DEBUG] handleInteractiveClick: unrecognized handlerType:', item.handlerType);
     }
   };
   
@@ -1761,7 +1737,17 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // Try to get completion from unified prepRequirementsComplete first
       if (Array.isArray(prepRequirementsComplete?.items)) {
         const prepItem = prepRequirementsComplete.items.find(p => p.handlerType === item.handlerType);
-        isCompleted = prepItem?.complete || false;
+        if (prepItem) {
+          isCompleted = prepItem.complete || false;
+        } else {
+          // Item not in prepRequirementsComplete (e.g., explore items), use individual hooks
+          isCompleted = item.handlerType === 'leader-profile' ? leaderProfileComplete : 
+                        item.handlerType === 'baseline-assessment' ? baselineAssessmentComplete : 
+                        item.handlerType === 'notification-setup' ? notificationSetupComplete :
+                        item.handlerType === 'foundation-commitment' ? foundationCommitmentComplete :
+                        item.handlerType === 'conditioning-tutorial' ? conditioningTutorialComplete :
+                        item.autoComplete || false;
+        }
       } else {
         // Fallback to individual hook values
         isCompleted = item.handlerType === 'leader-profile' ? leaderProfileComplete : 
@@ -1801,15 +1787,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
     // Determine click handler for the main row
     const handleRowClick = (e) => {
-      console.log('[DEBUG] handleRowClick called with item:', {
-        id: item.id,
-        label: item.label,
-        handlerType: item.handlerType,
-        isInteractive: item.isInteractive,
-        isSessionPicker: item.isSessionPicker,
-        resourceId: item.resourceId,
-        url: item.url
-      });
       if (item.isSessionPicker) {
         // Open session picker modal for coaching/community sessions
         if (item.type === 'coaching' || item.handlerType === 'session-picker') {
@@ -2007,18 +1984,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               <div className="mb-4">
                 <button
                   onClick={() => setPrepExpanded(!prepExpanded)}
-                  className="w-full group flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-all"
+                  className="w-full group flex items-center gap-3 p-4 rounded-xl bg-teal-50 dark:bg-teal-900/40 border border-teal-200 dark:border-teal-700 hover:bg-teal-100 dark:hover:bg-teal-800/50 transition-all"
                 >
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-corporate-teal flex items-center justify-center">
                     <Trophy className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">🎉 Preparation Complete!</p>
-                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                    <p className="text-sm font-bold text-teal-800 dark:text-teal-300">🎉 Preparation Complete!</p>
+                    <p className="text-xs text-teal-600 dark:text-teal-400">
                       All {localPrepCompletion.totalCount} tasks done — Your leadership tools are now unlocked below!
                     </p>
                   </div>
-                  <div className="flex-shrink-0 p-2 text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 transition-colors">
+                  <div className="flex-shrink-0 p-2 text-teal-600 dark:text-teal-400 group-hover:text-teal-800 dark:group-hover:text-teal-300 transition-colors">
                     {prepExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </div>
                   {isAdmin && (
@@ -2038,8 +2015,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Completed Items</p>
                     {requiredPrepActions.map((item) => (
                       <div key={item.id} className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                        <span className="text-emerald-700 dark:text-emerald-400">{item.label}</span>
+                        <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
+                        <span className="text-teal-700 dark:text-teal-400">{item.label}</span>
                       </div>
                     ))}
                   </div>
@@ -2048,24 +2025,79 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             )}
             
             {/* Explore items (when prep complete) - shown inline with actions */}
-            {localPrepCompletion.allComplete && additionalPrepActions.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs text-slate-600 dark:text-slate-400 px-1">
-                  Explore these tools at your own pace before Session 1:
-                </p>
-                <div className="space-y-1">
-                  {additionalPrepActions.map((item, idx) => (
-                    <ActionItem key={item.id || idx} item={item} idx={idx} />
-                  ))}
+            {localPrepCompletion.allComplete && additionalPrepActions.length > 0 && (() => {
+              // Calculate if all explore items are complete
+              const allExploreComplete = additionalPrepActions.every(item => {
+                if (item.isInteractive) {
+                  if (item.handlerType === 'notification-setup') return notificationSetupComplete;
+                  if (item.handlerType === 'conditioning-tutorial') return conditioningTutorialComplete;
+                  if (item.handlerType === 'leader-profile') return leaderProfileComplete;
+                  if (item.handlerType === 'baseline-assessment') return baselineAssessmentComplete;
+                  if (item.handlerType === 'foundation-commitment') return foundationCommitmentComplete;
+                }
+                const progress = getItemProgress(item.id);
+                return progress.status === 'completed' || completedItems.includes(item.id);
+              });
+              
+              return allExploreComplete ? (
+                // All explore items complete - show collapsed section
+                <div className="mb-4">
+                  <button
+                    onClick={() => setExploreExpanded(!exploreExpanded)}
+                    className="w-full group flex items-center gap-3 p-4 rounded-xl bg-teal-50 dark:bg-teal-900/40 border border-teal-200 dark:border-teal-700 hover:bg-teal-100 dark:hover:bg-teal-800/50 transition-all"
+                  >
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-corporate-teal flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-bold text-teal-800 dark:text-teal-300">✨ Explore Complete!</p>
+                      <p className="text-xs text-teal-600 dark:text-teal-400">
+                        All {additionalPrepActions.length} optional tools explored — You're ready for Session 1!
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 p-2 text-teal-600 dark:text-teal-400 group-hover:text-teal-800 dark:group-hover:text-teal-300 transition-colors">
+                      {exploreExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    </div>
+                  </button>
+                  
+                  {exploreExpanded && (
+                    <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Explored Items</p>
+                      {additionalPrepActions.map((item) => (
+                        <div key={item.id} className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
+                          <span className="text-teal-700 dark:text-teal-400">{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      🚀 <span className="font-semibold">You're all set!</span> Session 1 will build on everything you've learned.
+                    </p>
+                  </div>
                 </div>
-                
-                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    🚀 <span className="font-semibold">You're all set!</span> Session 1 will build on everything you've learned.
+              ) : (
+                // Not all complete - show normal explore section
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 px-1">
+                    Explore these tools at your own pace before Session 1:
                   </p>
+                  <div className="space-y-1">
+                    {additionalPrepActions.map((item, idx) => (
+                      <ActionItem key={item.id || idx} item={item} idx={idx} />
+                    ))}
+                  </div>
+                  
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      🚀 <span className="font-semibold">You're all set!</span> Session 1 will build on everything you've learned.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
             
             {/* Just the success message if no explore items */}
             {localPrepCompletion.allComplete && additionalPrepActions.length === 0 && (
