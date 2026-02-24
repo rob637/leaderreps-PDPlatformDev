@@ -353,12 +353,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         handlerType = handlerType.replace('_', '-').toLowerCase();
       }
 
-      // FAILSAFE: Attempt to deliver handlerType from ID or resourceId if missing
+      // FAILSAFE: Attempt to infer handlerType from ID or resourceId if missing
       if (!handlerType) {
         if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile') {
           handlerType = 'leader-profile';
         } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment') {
           handlerType = 'baseline-assessment';
+        } else if (action.id?.includes('notification-setup') || action.id?.includes('notification') || action.resourceId === 'interactive-notification-setup') {
+          handlerType = 'notification-setup';
+        } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial') {
+          handlerType = 'conditioning-tutorial';
+        } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment') {
+          handlerType = 'foundation-commitment';
         }
       }
       
@@ -757,6 +763,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 handlerType = 'leader-profile';
               } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment') {
                 handlerType = 'baseline-assessment';
+              } else if (action.id?.includes('notification-setup') || action.id?.includes('notification') || action.resourceId === 'interactive-notification-setup') {
+                handlerType = 'notification-setup';
+              } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial') {
+                handlerType = 'conditioning-tutorial';
+              } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment') {
+                handlerType = 'foundation-commitment';
               }
             }
             
@@ -1093,6 +1105,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // FAILSAFE: Standardize handlerType
       if (handlerType) {
         handlerType = handlerType.replace('_', '-').toLowerCase();
+      } else {
+        // Infer handlerType from ID if missing
+        if (action.id?.includes('leader-profile')) handlerType = 'leader-profile';
+        else if (action.id?.includes('baseline-assessment')) handlerType = 'baseline-assessment';
+        else if (action.id?.includes('notification-setup') || action.id?.includes('notification')) handlerType = 'notification-setup';
+        else if (action.id?.includes('conditioning-tutorial')) handlerType = 'conditioning-tutorial';
+        else if (action.id?.includes('foundation-commitment')) handlerType = 'foundation-commitment';
       }
       // Interactive item checks
       if (handlerType === 'leader-profile') return leaderProfileComplete;
