@@ -355,6 +355,17 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
       // Get label for inference
       const labelLower = (action.label || action.title || '').toLowerCase();
+      
+      // DEBUG: Log inference attempt for notification/conditioning items
+      if (labelLower.includes('notification') || labelLower.includes('conditioning')) {
+        console.log('[DEBUG normalizeDailyActions] Interactive item found:', {
+          id: action.id,
+          label: action.label,
+          labelLower,
+          originalHandlerType: action.handlerType,
+          inferredHandlerType: handlerType
+        });
+      }
 
       // FAILSAFE: Attempt to infer handlerType from ID, resourceId, OR label if missing
       if (!handlerType) {
@@ -368,6 +379,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           handlerType = 'conditioning-tutorial';
         } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation commitment')) {
           handlerType = 'foundation-commitment';
+        }
+        
+        // DEBUG: Log inferred handlerType
+        if (labelLower.includes('notification') || labelLower.includes('conditioning')) {
+          console.log('[DEBUG normalizeDailyActions] After inference:', { handlerType });
+        }
+      }
         }
       }
       
