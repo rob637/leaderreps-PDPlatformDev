@@ -214,31 +214,40 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
   );
 
   return (
-    <div ref={formRef} className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col max-h-[calc(100vh-6rem)] md:max-h-[90vh]">
+    <div ref={formRef} className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col w-full max-h-[85vh]">
       {/* Header */}
-      <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-5 flex-shrink-0">
+      <div className="bg-[#002E47] text-white p-5 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
               <ClipboardCheck className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-lg font-bold">Leadership Baseline Assessment</h2>
-              <p className="text-white/80 text-sm">Thinking about the last 30 days, how often did you do the following?</p>
+              <p className="text-blue-200 text-sm">Thinking about the last 30 days, how often did you do the following?</p>
             </div>
           </div>
           {onClose && (
-            <button onClick={onClose} className="p-2.5 -mr-1 bg-transparent hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors" aria-label="Close">
+            <button 
+              onClick={onClose} 
+              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+              aria-label="Close"
+            >
               <X className="w-5 h-5" />
             </button>
           )}
         </div>
-        <div className="flex justify-between text-xs text-white/70 mb-1">
+        
+        {/* Progress Bar */}
+        <div className="flex justify-between text-xs text-blue-200 font-medium mb-1.5 uppercase tracking-wider">
           <span>{completedCount} of {TOTAL_REQUIRED} answered</span>
           <span>{Math.round(progress)}%</span>
         </div>
-        <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-          <div className="h-full bg-corporate-teal transition-all duration-300" style={{ width: `${progress}%` }} />
+        <div className="h-2 bg-black/20 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-corporate-teal transition-all duration-300 ease-out" 
+            style={{ width: `${progress}%` }} 
+          />
         </div>
       </div>
 

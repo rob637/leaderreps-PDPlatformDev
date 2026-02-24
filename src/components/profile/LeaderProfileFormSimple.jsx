@@ -286,10 +286,9 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
   }
 
   return (
-    <>
-    <div ref={formRef} className={`${isModal ? 'bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col max-h-[calc(100vh-6rem)] md:max-h-[90vh]' : ''}`}>
+    <div ref={formRef} className={isModal ? 'bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col w-full max-h-[85vh]' : ''}>
       {/* Header — navy gradient, conditioning-consistent */}
-      <div className="p-5 pb-4 bg-gradient-to-r from-corporate-navy to-corporate-navy/90 flex-shrink-0">
+      <div className="p-5 pb-4 bg-[#002E47] flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <User className="w-5 h-5 text-white/90" />
@@ -678,7 +677,6 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
         </div>
       </div>
     </div>
-    </>
   );
 };
 
