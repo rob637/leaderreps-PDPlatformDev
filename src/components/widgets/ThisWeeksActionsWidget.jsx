@@ -1084,9 +1084,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   const requiredPrepActions = useMemo(() => {
     if (currentPhase?.id !== 'pre-start') return [];
     // Required items are those with: required === true OR (required !== false AND optional !== true)
-    // Also include interactive items (Leader Profile & Baseline Assessment)
+    // Also include interactive items (Leader Profile & Baseline Assessment) UNLESS they're in explore-config
     return allActions.filter(action => {
-      // Interactive items are always considered required
+      // Items from explore-config are always optional, even if interactive
+      if (action.dayId === 'explore-config') return false;
+      
+      // Interactive items from prep days are always considered required
       if (action.isInteractive) return true;
       
       // Check the required/optional flags from the daily plan data
