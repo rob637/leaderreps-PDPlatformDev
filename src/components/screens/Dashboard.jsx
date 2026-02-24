@@ -27,6 +27,8 @@ import { FadeIn, Stagger } from '../motion';
 // useAccessControlContext available if needed
 import ProgramStatusWidget from '../widgets/ProgramStatusWidget';
 import ConditioningWidget from '../widgets/ConditioningWidget';
+import NotificationSetupWidget from '../widgets/NotificationSetupWidget';
+import ConditioningTutorialWidget from '../widgets/ConditioningTutorialWidget';
 import PrepCompleteModal from '../modals/PrepCompleteModal';
 // NOTE: LeaderProfileWidget and BaselineAssessmentWidget removed - now handled as 
 // INTERACTIVE content items in ThisWeeksActionsWidget
@@ -43,6 +45,7 @@ const DASHBOARD_FEATURES = [
   'grounding-rep',
   'win-the-day',
   'conditioning',        // Conditioning widget - PRIMARY FOCUS for V1
+  'conditioning-tutorial', // Interactive tutorial for Conditioning
   'daily-plan',
   // 'daily-leader-reps', // REMOVED - replaced by conditioning widget
   'this-weeks-actions',
@@ -572,7 +575,9 @@ const Dashboard = () => {
       'daily-leader-reps',
       'pm-bookend-header',
       'pm-bookend',
-      'scorecard'
+      'scorecard',
+      'notifications',
+      'conditioning-tutorial'
     ];
 
     // If in pre-start phase and this is a gated widget, check prep completion
@@ -630,7 +635,8 @@ const Dashboard = () => {
     'conditioning': () => shouldShow('conditioning', true) ? <ConditioningWidget helpText={getWidgetHelpText('conditioning')} /> : null,  // Gated until Foundation starts
     'daily-leader-reps': () => null,  // DISABLED - replaced by conditioning widget
     'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <div data-repup-step="this-weeks-actions"><WidgetRenderer widgetId="this-weeks-actions" scope={scope} /></div> : null,
-    'notifications': () => shouldShow('notifications', false) ? <WidgetRenderer widgetId="notifications" scope={scope} /> : null,
+    'notifications': () => shouldShow('notifications', false) ? <NotificationSetupWidget /> : null,
+    'conditioning-tutorial': () => shouldShow('conditioning-tutorial', false) ? <ConditioningTutorialWidget /> : null,
     'pm-bookend-header': () => shouldShow('pm-bookend-header', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
     'progress-feedback': () => shouldShow('progress-feedback', true) ? <WidgetRenderer widgetId="progress-feedback" scope={scope} /> : null,
     'pm-bookend': () => shouldShow('pm-bookend', true) ? <div data-repup-step="pm-bookend"><WidgetRenderer widgetId="pm-bookend" scope={scope} /></div> : null,
