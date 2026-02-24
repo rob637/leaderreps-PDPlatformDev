@@ -1220,6 +1220,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   
   // Handler for INTERACTIVE content items (Leader Profile, Baseline Assessment, Notification Setup, Foundation Commitment, Conditioning Tutorial)
   const handleInteractiveClick = (item) => {
+    console.log('[DEBUG] handleInteractiveClick called with item:', {
+      id: item.id,
+      label: item.label,
+      handlerType: item.handlerType,
+      isInteractive: item.isInteractive,
+      resourceId: item.resourceId
+    });
     if (item.handlerType === 'leader-profile') {
       setShowLeaderProfileModal(true);
     } else if (item.handlerType === 'baseline-assessment') {
@@ -1230,6 +1237,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       setShowFoundationCommitmentModal(true);
     } else if (item.handlerType === 'conditioning-tutorial') {
       setShowConditioningTutorialModal(true);
+    } else {
+      console.warn('[DEBUG] handleInteractiveClick: unrecognized handlerType:', item.handlerType);
     }
   };
   
@@ -1747,6 +1756,15 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
     // Determine click handler for the main row
     const handleRowClick = (e) => {
+      console.log('[DEBUG] handleRowClick called with item:', {
+        id: item.id,
+        label: item.label,
+        handlerType: item.handlerType,
+        isInteractive: item.isInteractive,
+        isSessionPicker: item.isSessionPicker,
+        resourceId: item.resourceId,
+        url: item.url
+      });
       if (item.isSessionPicker) {
         // Open session picker modal for coaching/community sessions
         if (item.type === 'coaching' || item.handlerType === 'session-picker') {
