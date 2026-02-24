@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, CheckCircle, X, Unlock, Library } from 'lucide-react';
+import { PlayCircle, CheckCircle, X, Bell, Dumbbell } from 'lucide-react';
 
 /**
  * PrepCompleteModal - Informs user about new features after completing prep
@@ -18,7 +18,7 @@ const PrepCompleteModal = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Prep Complete</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">New features are now available</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">You're ready to explore</p>
             </div>
           </div>
           <button 
@@ -31,41 +31,41 @@ const PrepCompleteModal = ({ isOpen, onClose }) => {
 
         {/* Content */}
         <div className="p-5 space-y-4">
-          {/* Content Library */}
+          {/* Session 1 Preview */}
           <div className="flex gap-3">
             <div className="w-8 h-8 bg-corporate-teal/10 rounded-lg flex items-center justify-center flex-shrink-0">
-              <BookOpen className="w-4 h-4 text-corporate-teal" />
+              <PlayCircle className="w-4 h-4 text-corporate-teal" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Content Library</h3>
+              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Session 1 Preview</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                Your prep videos and documents are in the Content section. Use the left navigation to access them anytime.
+                Watch the Session 1 video to get a preview of what's coming in Foundation.
               </p>
             </div>
           </div>
 
-          {/* Progressive Unlocks */}
+          {/* Notifications */}
           <div className="flex gap-3">
             <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Unlock className="w-4 h-4 text-amber-600" />
+              <Bell className="w-4 h-4 text-amber-600" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">More Content Unlocking</h3>
+              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Setup Notifications</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                Additional videos, exercises, and resources will unlock as you progress through the program.
+                Configure your notification preferences to stay on track with daily reminders.
               </p>
             </div>
           </div>
 
-          {/* Foundation Starts */}
+          {/* Conditioning Tutorial */}
           <div className="flex gap-3">
             <div className="w-8 h-8 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Library className="w-4 h-4 text-indigo-600" />
+              <Dumbbell className="w-4 h-4 text-indigo-600" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Foundation Begins Soon</h3>
+              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Conditioning Tutorial</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                Explore the content library while you wait for Session 1 to begin.
+                Learn how Conditioning works — daily practice that builds leadership habits.
               </p>
             </div>
           </div>
