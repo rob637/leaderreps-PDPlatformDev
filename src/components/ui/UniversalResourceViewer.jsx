@@ -262,7 +262,25 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
                 </video>
               </div>
               
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center gap-3">
+                {onVideoComplete && (
+                  <>
+                    {markedComplete ? (
+                      <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Marked as Watched
+                      </span>
+                    ) : (
+                      <button
+                        onClick={handleMarkWatched}
+                        className="flex items-center gap-2 px-4 py-2 bg-corporate-teal hover:bg-teal-600 text-white text-sm font-medium rounded-lg transition-colors"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Mark as Watched
+                      </button>
+                    )}
+                  </>
+                )}
                 <a 
                   href={url} 
                   target="_blank" 
