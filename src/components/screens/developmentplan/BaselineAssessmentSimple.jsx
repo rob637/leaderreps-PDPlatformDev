@@ -214,7 +214,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
   );
 
   return (
-    <div ref={formRef} className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col w-full max-h-[85vh] min-h-[50vh]">
+    <div ref={formRef} className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col w-full max-h-[70dvh] sm:max-h-[85vh] min-h-[50vh]">
       {/* Header */}
       <div className="bg-[#002E47] text-white p-5 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">

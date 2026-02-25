@@ -59,27 +59,32 @@ const SESSION_TYPE_CONFIG = {
   open_gym: {
     label: 'Open Gym',
     color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 border-orange-300',
-    icon: '🏋️'
+    icon: '🏋️',
+    defaultMaxAttendees: 20
   },
   leader_circle: {
     label: 'Leader Circle',
     color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 border-purple-300',
-    icon: '🔮'
+    icon: '🔮',
+    defaultMaxAttendees: 12
   },
   live_workout: {
     label: 'Live Workout',
     color: 'bg-teal-100 dark:bg-teal-900/30 text-teal-800 border-teal-300',
-    icon: '⚡'
+    icon: '⚡',
+    defaultMaxAttendees: 30
   },
   workshop: {
     label: 'Workshop',
     color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 border-blue-300',
-    icon: '📚'
+    icon: '📚',
+    defaultMaxAttendees: 25
   },
   one_on_one: {
     label: '1:1 Coaching',
     color: 'bg-green-100 dark:bg-green-900/30 text-green-800 border-green-300',
-    icon: '👤'
+    icon: '👤',
+    defaultMaxAttendees: 1
   }
 };
 
@@ -922,7 +927,16 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
           </label>
           <select
             value={session.sessionType || 'open_gym'}
-            onChange={(e) => setSession({ ...session, sessionType: e.target.value })}
+            onChange={(e) => {
+              const newType = e.target.value;
+              const typeConfig = SESSION_TYPE_CONFIG[newType];
+              // Auto-set maxAttendees to type's default when changing session type
+              setSession({ 
+                ...session, 
+                sessionType: newType,
+                maxAttendees: typeConfig?.defaultMaxAttendees || 20
+              });
+            }}
             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
           >
             {Object.entries(SESSION_TYPE_CONFIG).map(([key, config]) => (

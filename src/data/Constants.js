@@ -241,6 +241,20 @@ export const SESSION_TYPES = {
     ONE_ON_ONE: 'one_on_one'        // Personal coaching
 };
 
+// Default max attendees per session type
+export const SESSION_TYPE_DEFAULT_MAX_ATTENDEES = {
+    [SESSION_TYPES.OPEN_GYM]: 20,
+    [SESSION_TYPES.LEADER_CIRCLE]: 12,
+    [SESSION_TYPES.WORKSHOP]: 25,
+    [SESSION_TYPES.LIVE_WORKOUT]: 30,
+    [SESSION_TYPES.ONE_ON_ONE]: 1
+};
+
+// Helper to get default max attendees for a session type
+export const getDefaultMaxAttendees = (sessionType) => {
+    return SESSION_TYPE_DEFAULT_MAX_ATTENDEES[sessionType] || 20;
+};
+
 // Coaching Session Status
 export const SESSION_STATUS = {
     SCHEDULED: 'scheduled',

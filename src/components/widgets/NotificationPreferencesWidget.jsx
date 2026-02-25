@@ -494,7 +494,7 @@ const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
   }
 
   return (
-    <div ref={formRef} className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col max-h-[calc(100vh-6rem)] md:max-h-[90vh]">
+    <div ref={formRef} className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col max-h-[70dvh] md:max-h-[85vh]">
       {/* Header — navy gradient, consistent with LeaderProfile and Baseline */}
       <div className="p-5 pb-4 bg-gradient-to-r from-corporate-navy to-corporate-navy/90 flex-shrink-0">
         <div className="flex items-center justify-between">

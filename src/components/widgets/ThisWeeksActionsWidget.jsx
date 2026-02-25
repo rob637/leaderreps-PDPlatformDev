@@ -254,6 +254,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Video series duration data (fetched on demand)
   const [videoSeriesDurations, setVideoSeriesDurations] = useState({});
   
+  // Interactive content duration data (fetched from content_library)
+  const [interactiveDurations, setInteractiveDurations] = useState({});
+  
   // Progress tracking
   const { 
     completeItem, 
@@ -422,6 +425,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         dayNumber: dayNumber,
         // Pass through estimated time
         estimatedMinutes: action.estimatedMinutes,
+        duration: action.duration,
         // Interactive item support
         isInteractive,
         autoComplete,
@@ -812,7 +816,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
                 url: action.url || action.videoUrl || action.link || action.details?.externalUrl,
                 isInteractive: ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType),
-                handlerType
+                handlerType,
+                estimatedMinutes: action.estimatedMinutes,
+                duration: action.duration
               });
             }
           });
@@ -1048,6 +1054,49 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
     fetchVideoSeriesDurations();
   }, [db, allActions]); // Removed videoSeriesDurations to prevent infinite loop
+
+  // Fetch durations for interactive items from content_library
+  const fetchedInteractiveRef = useRef(new Set());
+  
+  useEffect(() => {
+    const fetchInteractiveDurations = async () => {
+      if (!db || !allActions.length) return;
+      
+      // Find interactive items that haven't been fetched yet
+      const interactiveIds = allActions
+        .filter(a => a.isInteractive && a.resourceId && !fetchedInteractiveRef.current.has(a.resourceId))
+        .map(a => a.resourceId);
+      
+      if (interactiveIds.length === 0) return;
+      
+      // Mark as fetched immediately to prevent re-fetching
+      interactiveIds.forEach(id => fetchedInteractiveRef.current.add(id));
+      
+      const newDurations = {};
+      
+      for (const resourceId of interactiveIds) {
+        try {
+          const contentRef = doc(db, 'content_library', resourceId);
+          const contentSnap = await getDoc(contentRef);
+          if (contentSnap.exists()) {
+            const data = contentSnap.data();
+            // estimatedTime is stored as number in minutes
+            if (data.estimatedTime) {
+              newDurations[resourceId] = parseInt(data.estimatedTime, 10) || data.estimatedTime;
+            }
+          }
+        } catch (error) {
+          console.warn('Could not fetch interactive content duration:', resourceId, error);
+        }
+      }
+      
+      if (Object.keys(newDurations).length > 0) {
+        setInteractiveDurations(prev => ({ ...prev, ...newDurations }));
+      }
+    };
+    
+    fetchInteractiveDurations();
+  }, [db, allActions]);
 
   // Filter to only required items for progress calculation
   const requiredActions = useMemo(() => {
@@ -1850,8 +1899,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             {item.isInteractive ? (
               <>
                 <span className="text-slate-600 dark:text-slate-400">{item.description}</span>
-                {item.estimatedMinutes && (
-                  <><span>•</span><span className="text-slate-500 dark:text-slate-400">{item.estimatedMinutes} min</span></>
+                {(interactiveDurations[item.resourceId] || item.estimatedMinutes || item.duration) && (
+                  <><span>•</span><span className="text-slate-500 dark:text-slate-400">{interactiveDurations[item.resourceId] || item.estimatedMinutes || item.duration} min</span></>
                 )}
               </>
             ) : (
@@ -1864,8 +1913,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   <><span>•</span><span className="text-slate-600 dark:text-slate-400">{item.description}</span></>
                 )}
                 {/* Show estimated time to complete - for video_series, use fetched totalDuration */}
-                {(item.estimatedMinutes || (item.resourceType === 'video_series' && videoSeriesDurations[item.resourceId])) && (
-                   <><span>•</span><span className="text-slate-500 dark:text-slate-400">{item.estimatedMinutes || videoSeriesDurations[item.resourceId]} min</span></>
+                {(item.estimatedMinutes || item.duration || (item.resourceType === 'video_series' && videoSeriesDurations[item.resourceId])) && (
+                   <><span>•</span><span className="text-slate-500 dark:text-slate-400">{item.estimatedMinutes || item.duration || videoSeriesDurations[item.resourceId]} min</span></>
                 )}
               </>
             )}
@@ -2273,8 +2322,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       
       {/* Video Series Player Modal */}
       {viewingSeriesId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-5xl h-[85vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-24 sm:pb-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-5xl h-[70dvh] sm:h-[85vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col">
             <VideoSeriesPlayer
               seriesId={viewingSeriesId}
               onClose={() => setViewingSeriesId(null)}
@@ -2308,7 +2357,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       
       {/* Leader Profile Modal */}
       {showLeaderProfileModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-24 sm:pb-4 bg-black/50 backdrop-blur-sm">
           <div className="relative w-full max-w-xl">
             <LeaderProfileFormSimple 
               onComplete={() => setShowLeaderProfileModal(false)}
@@ -2320,7 +2369,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       
       {/* Baseline Assessment Modal */}
       {showBaselineModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-24 sm:pb-4 bg-black/50 backdrop-blur-sm">
           <div className="relative w-full max-w-xl">
             <BaselineAssessmentSimple 
               onComplete={handleBaselineComplete}
@@ -2334,7 +2383,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
       {/* Notification Setup Modal */}
       {showNotificationModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-24 sm:pb-4 bg-black/50 backdrop-blur-sm">
           <div className="relative w-full max-w-xl">
             <NotificationPreferencesWidget 
               onComplete={() => {
@@ -2349,7 +2398,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
       {/* Foundation Commitment Modal */}
       {showFoundationCommitmentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-24 sm:pb-4 bg-black/50 backdrop-blur-sm">
           <div className="relative w-full max-w-xl">
             <FoundationCommitmentWidget 
               onComplete={() => {
@@ -2364,7 +2413,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
       {/* Conditioning Tutorial Modal */}
       {showConditioningTutorialModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-24 sm:pb-4 bg-black/50 backdrop-blur-sm">
           <div className="relative w-full max-w-xl">
             <ConditioningTutorialWidget 
               onComplete={() => {

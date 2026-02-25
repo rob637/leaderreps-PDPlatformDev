@@ -176,6 +176,18 @@ const SessionPickerModal = ({
     }
   };
   
+  // Get default max attendees based on session type
+  const getDefaultMaxAttendees = (sessionType) => {
+    switch (sessionType) {
+      case SESSION_TYPES.ONE_ON_ONE: return 1;
+      case SESSION_TYPES.LEADER_CIRCLE: return 12;
+      case SESSION_TYPES.LIVE_WORKOUT: return 30;
+      case SESSION_TYPES.WORKSHOP: return 25;
+      case SESSION_TYPES.OPEN_GYM: return 20;
+      default: return 20;
+    }
+  };
+  
   // Handle registration
   const handleRegister = async (session) => {
     setRegistering(session.id);
@@ -348,8 +360,9 @@ const SessionPickerModal = ({
                   const SessionIcon = getSessionIcon(session.sessionType);
                   // Check if registered for THIS specific session
                   const registeredForThisSession = isRegistered(session.id);
-                  // Calculate spots
-                  const spotsLeft = (session.maxAttendees || 20) - (session.registrationCount || 0);
+                  // Calculate spots - use type-specific default (e.g., 1 for 1:1 sessions)
+                  const defaultMax = getDefaultMaxAttendees(session.sessionType);
+                  const spotsLeft = (session.maxAttendees || defaultMax) - (session.registrationCount || 0);
                   const isFull = spotsLeft <= 0 && !registeredForThisSession;
                   const isPast = new Date(session.date) < new Date();
                   // Show "switch" button if user has an existing registration and this is a different session

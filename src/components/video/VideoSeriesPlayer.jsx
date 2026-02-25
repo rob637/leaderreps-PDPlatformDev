@@ -6,7 +6,7 @@
  * - Video list sidebar with progress indicators
  * - Auto-play next video option
  * - Progress tracking (marks videos as watched)
- * - Responsive layout (sidebar collapses on mobile)
+ * - Mobile-first responsive layout
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -16,6 +16,8 @@ import {
   Check,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   Clock,
   List,
   X,
@@ -87,7 +89,7 @@ export default function VideoSeriesPlayer({
   const [watchedVideos, setWatchedVideos] = useState(new Set());
   const [loading, setLoading] = useState(!initialSeries);
   const [autoPlayNext, setAutoPlayNext] = useState(autoPlay ?? true);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showVideoList, setShowVideoList] = useState(false); // Collapsed by default on mobile
   const [isPlaying, setIsPlaying] = useState(false);
   const [markingComplete, setMarkingComplete] = useState(false);
 
@@ -290,23 +292,23 @@ export default function VideoSeriesPlayer({
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-lg">
+    <div className="flex flex-col h-full max-h-[100dvh] bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-lg">
       {/* Header */}
       {showHeader && (
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <button
-              onClick={() => setShowSidebar(!showSidebar)}
-              className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors lg:hidden"
-              aria-label={showSidebar ? 'Hide video list' : 'Show video list'}
+              onClick={() => setShowVideoList(!showVideoList)}
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+              aria-label={showVideoList ? 'Hide video list' : 'Show video list'}
             >
               <List className="w-5 h-5 text-slate-600 dark:text-slate-400" />
             </button>
-            <div>
-              <h2 className="font-semibold text-slate-800 dark:text-white truncate max-w-xs">
+            <div className="min-w-0 flex-1">
+              <h2 className="font-semibold text-slate-800 dark:text-white text-sm sm:text-base truncate">
                 {series.title}
               </h2>
-              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                 <span>
                   {progress.watched} of {progress.total} watched
                 </span>
@@ -318,7 +320,7 @@ export default function VideoSeriesPlayer({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
               aria-label="Close player"
             >
               <X className="w-5 h-5 text-slate-600 dark:text-slate-400" />
@@ -327,25 +329,22 @@ export default function VideoSeriesPlayer({
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Video Sidebar */}
-        <div
-          className={`${
-            showSidebar ? 'w-72' : 'w-0'
-          } flex-shrink-0 border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 overflow-hidden transition-all duration-300 lg:w-72`}
-        >
-          <div className="h-full overflow-y-auto p-2">
-            {/* Progress bar */}
-            <div className="px-2 py-3 mb-2">
-              <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-corporate-teal transition-all duration-500"
-                  style={{ width: `${progress.percent}%` }}
-                />
-              </div>
+      {/* Main content - stacked on mobile, side-by-side on desktop */}
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
+        {/* Desktop sidebar (hidden on mobile) */}
+        <div className="hidden lg:flex flex-shrink-0 w-72 border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex-col">
+          {/* Progress bar */}
+          <div className="px-3 py-3 flex-shrink-0">
+            <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-corporate-teal transition-all duration-500"
+                style={{ width: `${progress.percent}%` }}
+              />
             </div>
-
-            {/* Video list */}
+          </div>
+          
+          {/* Video list */}
+          <div className="flex-1 overflow-y-auto p-2">
             <div className="space-y-1">
               {series.videos.map((video, index) => {
                 const isWatched = watchedVideos.has(video.id);
@@ -361,8 +360,7 @@ export default function VideoSeriesPlayer({
                         : 'hover:bg-slate-100 dark:hover:bg-slate-700'
                     }`}
                   >
-                    {/* Status icon */}
-                    <div className="flex-shrink-0 mt-1">
+                    <div className="flex-shrink-0 mt-0.5">
                       {isWatched ? (
                         <CheckCircle2 className="w-5 h-5 text-corporate-teal" />
                       ) : isCurrent ? (
@@ -371,16 +369,10 @@ export default function VideoSeriesPlayer({
                         <Circle className="w-5 h-5 text-slate-300 dark:text-slate-600" />
                       )}
                     </div>
-
-                    {/* Video info */}
                     <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-sm font-medium truncate ${
-                          isCurrent
-                            ? 'text-corporate-teal'
-                            : 'text-slate-700 dark:text-slate-200'
-                        }`}
-                      >
+                      <p className={`text-sm font-medium truncate ${
+                        isCurrent ? 'text-corporate-teal' : 'text-slate-700 dark:text-slate-200'
+                      }`}>
                         {index + 1}. {getVideoDisplayTitle(video)}
                       </p>
                       {formatDuration(video.duration) && (
@@ -398,74 +390,75 @@ export default function VideoSeriesPlayer({
         </div>
 
         {/* Main video area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Video player */}
-          <div className="relative flex-1 bg-black">
-            {isDirectVideo && videoUrl ? (
-              /* Native video player for uploaded videos */
-              <video
-                key={videoUrl}
-                src={videoUrl}
-                controls
-                autoPlay={autoPlayNext && isPlaying}
-                className="absolute inset-0 w-full h-full"
-                onEnded={async () => {
-                  console.log('[VideoSeriesPlayer] onEnded fired for video:', currentVideo?.id);
-                  await markCurrentWatched();
-                  if (autoPlayNext) {
-                    goToNext();
-                  }
-                }}
-              >
-                Your browser does not support the video tag.
-              </video>
-            ) : embedUrl ? (
-              /* Iframe for YouTube/Vimeo */
-              <iframe
-                src={embedUrl}
-                title={currentVideo?.title}
-                className="absolute inset-0 w-full h-full"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-white">No video selected</p>
-              </div>
-            )}
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+          {/* Video player - responsive aspect ratio */}
+          <div className="relative w-full bg-black flex-shrink-0" style={{ paddingTop: '56.25%' }}>
+            <div className="absolute inset-0">
+              {isDirectVideo && videoUrl ? (
+                <video
+                  key={videoUrl}
+                  src={videoUrl}
+                  controls
+                  autoPlay={autoPlayNext && isPlaying}
+                  playsInline
+                  className="w-full h-full object-contain"
+                  onEnded={async () => {
+                    console.log('[VideoSeriesPlayer] onEnded fired for video:', currentVideo?.id);
+                    await markCurrentWatched();
+                    if (autoPlayNext) {
+                      goToNext();
+                    }
+                  }}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              ) : embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  title={currentVideo?.title}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <p className="text-white">No video selected</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Video controls */}
-          <div className="px-4 py-3 bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
-            <div className="flex items-center justify-between gap-4">
+          <div className="px-3 sm:px-4 py-2 sm:py-3 bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex-shrink-0">
+            <div className="flex items-center justify-between gap-2 sm:gap-4">
               {/* Video info */}
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-slate-800 dark:text-white truncate">
+                <h3 className="font-medium text-slate-800 dark:text-white text-sm sm:text-base truncate">
                   {getVideoDisplayTitle(currentVideo)}
                 </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                   Video {currentVideoIndex + 1} of {series.videos.length}
                   {currentVideo?.duration && ` • ${formatDuration(currentVideo.duration)}`}
                 </p>
               </div>
 
               {/* Controls */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                 {/* Completion indicator */}
                 {watchedVideos.has(currentVideo?.id) && (
-                  <span className="flex items-center gap-1 text-sm text-corporate-teal font-medium px-3 py-2">
+                  <span className="flex items-center gap-1 text-xs sm:text-sm text-corporate-teal font-medium px-2 py-1">
                     <CheckCircle2 className="w-4 h-4" />
                     <span className="hidden sm:inline">Completed</span>
                   </span>
                 )}
 
                 {/* Previous / Next */}
-                <div className="flex items-center gap-1 border-l border-slate-300 dark:border-slate-600 pl-2 ml-2">
+                <div className="flex items-center gap-0.5 sm:gap-1 border-l border-slate-300 dark:border-slate-600 pl-2 ml-1 sm:ml-2">
                   <button
                     onClick={goToPrevious}
                     disabled={currentVideoIndex === 0}
-                    className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     aria-label="Previous video"
                   >
                     <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
@@ -473,7 +466,7 @@ export default function VideoSeriesPlayer({
                   <button
                     onClick={goToNext}
                     disabled={currentVideoIndex === series.videos.length - 1}
-                    className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     aria-label="Next video"
                   >
                     <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-400" />
@@ -482,8 +475,8 @@ export default function VideoSeriesPlayer({
               </div>
             </div>
 
-            {/* Auto-play toggle */}
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+            {/* Auto-play toggle - hide on very small screens to save space */}
+            <div className="hidden sm:flex items-center gap-2 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-slate-200 dark:border-slate-700">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -497,16 +490,94 @@ export default function VideoSeriesPlayer({
               </label>
             </div>
           </div>
+
+          {/* Mobile video list (collapsible) */}
+          <div className="lg:hidden flex-1 min-h-0 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
+            {/* Toggle button */}
+            <button
+              onClick={() => setShowVideoList(!showVideoList)}
+              className="flex items-center justify-between w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+            >
+              <div className="flex items-center gap-2">
+                <List className="w-4 h-4 text-slate-500" />
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  All Videos ({series.videos.length})
+                </span>
+                {/* Mini progress */}
+                <div className="flex items-center gap-1 ml-2">
+                  <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-corporate-teal transition-all"
+                      style={{ width: `${progress.percent}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-slate-500">{progress.percent}%</span>
+                </div>
+              </div>
+              {showVideoList ? (
+                <ChevronUp className="w-4 h-4 text-slate-400" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-slate-400" />
+              )}
+            </button>
+
+            {/* Video list */}
+            {showVideoList && (
+              <div className="flex-1 overflow-y-auto px-2 pb-2">
+                <div className="space-y-1">
+                  {series.videos.map((video, index) => {
+                    const isWatched = watchedVideos.has(video.id);
+                    const isCurrent = index === currentVideoIndex;
+
+                    return (
+                      <button
+                        key={video.id}
+                        onClick={() => {
+                          goToVideo(index);
+                          setShowVideoList(false); // Collapse after selection
+                        }}
+                        className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors ${
+                          isCurrent
+                            ? 'bg-corporate-teal/10 border border-corporate-teal/30'
+                            : 'hover:bg-slate-100 dark:hover:bg-slate-700 bg-white dark:bg-slate-800'
+                        }`}
+                      >
+                        <div className="flex-shrink-0">
+                          {isWatched ? (
+                            <CheckCircle2 className="w-4 h-4 text-corporate-teal" />
+                          ) : isCurrent ? (
+                            <PlayCircle className="w-4 h-4 text-corporate-teal" />
+                          ) : (
+                            <Circle className="w-4 h-4 text-slate-300 dark:text-slate-600" />
+                          )}
+                        </div>
+                        <span className={`text-sm font-medium flex-1 truncate ${
+                          isCurrent ? 'text-corporate-teal' : 'text-slate-700 dark:text-slate-200'
+                        }`}>
+                          {index + 1}. {getVideoDisplayTitle(video)}
+                        </span>
+                        {formatDuration(video.duration) && (
+                          <span className="text-xs text-slate-400 flex-shrink-0">
+                            {formatDuration(video.duration)}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Series completion banner */}
       {isSeriesComplete && (
-        <div className="px-4 py-3 bg-gradient-to-r from-corporate-teal to-emerald-500 text-white">
-          <div className="flex items-center justify-center gap-2">
-            <CheckCircle2 className="w-5 h-5" />
+        <div className="px-4 py-2 sm:py-3 bg-gradient-to-r from-corporate-teal to-emerald-500 text-white flex-shrink-0">
+          <div className="flex items-center justify-center gap-2 text-sm sm:text-base">
+            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="font-medium">
-              Congratulations! You&apos;ve completed this video series!
+              Congratulations! You&apos;ve completed this series!
             </span>
           </div>
         </div>

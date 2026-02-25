@@ -24,7 +24,8 @@ import {
   COACHING_REGISTRATIONS_COLLECTION,
   SESSION_TYPES,
   SESSION_STATUS,
-  REGISTRATION_STATUS
+  REGISTRATION_STATUS,
+  getDefaultMaxAttendees
 } from '../data/Constants';
 
 // Re-export for convenience
@@ -150,7 +151,7 @@ export const generateSessionsFromType = async (db, sessionTypeId, weeksAhead = 4
       sessionType: sessionType.sessionType,
       coach: sessionType.coach,
       durationMinutes: sessionType.durationMinutes || 60,
-      maxAttendees: sessionType.maxAttendees || 20,
+      maxAttendees: sessionType.maxAttendees || getDefaultMaxAttendees(sessionType.sessionType),
       skillFocus: sessionType.skillFocus || [],
       prerequisites: sessionType.prerequisites || '',
       targetAudience: sessionType.targetAudience || '',
@@ -164,7 +165,7 @@ export const generateSessionsFromType = async (db, sessionTypeId, weeksAhead = 4
       
       // Status
       status: SESSION_STATUS.SCHEDULED,
-      spotsLeft: sessionType.maxAttendees || 20,
+      spotsLeft: sessionType.maxAttendees || getDefaultMaxAttendees(sessionType.sessionType),
       
       // Links (to be filled in later)
       zoomLink: null,
@@ -260,7 +261,7 @@ export const updateSpotsLeft = async (db, sessionId) => {
   if (sessionSnap.empty) return;
   
   const session = sessionSnap.docs[0].data();
-  const maxAttendees = session.maxAttendees || 20;
+  const maxAttendees = session.maxAttendees || getDefaultMaxAttendees(session.sessionType);
   
   // Count registrations
   const regCount = await getRegistrationCount(db, sessionId);

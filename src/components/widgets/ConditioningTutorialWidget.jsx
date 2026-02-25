@@ -409,7 +409,7 @@ const ConditioningTutorialWidget = ({ onComplete, onClose }) => {
   // Already completed state
   if (alreadyCompleted && isCompleted && !isSaving) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden max-h-[70dvh] sm:max-h-[85vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-4">
           <div className="flex items-center justify-between">
@@ -468,7 +468,7 @@ const ConditioningTutorialWidget = ({ onComplete, onClose }) => {
   // Just completed state (celebration)
   if (isCompleted) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden max-h-[70dvh] sm:max-h-[85vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-4">
           <div className="flex items-center justify-between">
@@ -502,7 +502,7 @@ const ConditioningTutorialWidget = ({ onComplete, onClose }) => {
   
   // Main tutorial view
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden max-h-[90vh] overflow-y-auto">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden max-h-[70dvh] sm:max-h-[85vh] overflow-y-auto">
       {/* Header */}
       <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white p-4">
         <div className="flex items-center justify-between">

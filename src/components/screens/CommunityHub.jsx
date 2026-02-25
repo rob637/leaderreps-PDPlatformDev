@@ -354,7 +354,9 @@ const CommunityHub = () => {
             {isFeatureEnabled('community-upcoming-sessions') && (
               <TabButton active={activeTab === 'browse'} onClick={() => setActiveTab('browse')} icon={Calendar} label="Browse Events" badge={upcomingSessions.length} />
             )}
+            {/* Resources tab hidden for now
             <TabButton active={activeTab === 'resources'} onClick={() => setActiveTab('resources')} icon={Video} label="Resources" />
+            */}
           </div>
           {activeTab === 'browse' && (
             <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg">
@@ -393,6 +395,7 @@ const CommunityHub = () => {
                 )
             )}
 
+            {/* Resources tab content hidden for now
             {activeTab === 'resources' && (
               <div className="space-y-6">
                 <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 text-white">
@@ -417,6 +420,7 @@ const CommunityHub = () => {
                 </div>
               </div>
             )}
+            */}
 
             {!isFeatureEnabled('community-upcoming-sessions') && !isFeatureEnabled('community-my-registrations') && (
               <NoWidgetsEnabled moduleName="Community" />

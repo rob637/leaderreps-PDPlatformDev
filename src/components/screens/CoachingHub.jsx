@@ -20,6 +20,30 @@ import { NoWidgetsEnabled, TabButton } from '../ui';
 // TAB NAVIGATION
 // ============================================
 
+// Helper to get default max attendees per session type
+const getDefaultMaxAttendees = (sessionType) => {
+  switch (sessionType) {
+    case SESSION_TYPES.ONE_ON_ONE:
+    case 'one_on_one':
+    case '1:1':
+      return 1;
+    case SESSION_TYPES.LEADER_CIRCLE:
+    case 'leader_circle':
+      return 12;
+    case SESSION_TYPES.LIVE_WORKOUT:
+    case 'live_workout':
+      return 30;
+    case SESSION_TYPES.WORKSHOP:
+    case 'workshop':
+      return 25;
+    case SESSION_TYPES.OPEN_GYM:
+    case 'open_gym':
+      return 20;
+    default:
+      return 20;
+  }
+};
+
 // ============================================
 // CALENDAR VIEW COMPONENT
 // ============================================
@@ -236,11 +260,15 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
                   <UserCheck className="w-3 h-3" /> {session.coach}
                 </span>
               )}
-              {session.spotsLeft !== undefined && (
-                <span className="flex items-center gap-1">
-                  <Users className="w-3 h-3" /> {session.spotsLeft} spots
-                </span>
-              )}
+              {(() => {
+                const maxAttendees = session.maxAttendees || getDefaultMaxAttendees(session.sessionType);
+                const spotsLeft = maxAttendees - (session.registrationCount || 0);
+                return spotsLeft !== undefined && (
+                  <span className={`flex items-center gap-1 ${spotsLeft <= 0 ? 'text-red-500 font-medium' : spotsLeft <= 3 ? 'text-orange-600' : ''}`}>
+                    <Users className="w-3 h-3" /> {spotsLeft <= 0 ? 'Full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''}`}
+                  </span>
+                );
+              })()}
             </div>
             
             {isRegistered ? (

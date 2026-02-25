@@ -473,11 +473,11 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 pb-24 sm:pb-4 animate-in fade-in duration-200"
       onClick={onClose} // Close on backdrop click
     >
       <div 
-        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden relative"
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[70dvh] sm:max-h-[90vh] flex flex-col overflow-hidden relative"
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
       >
         {/* Absolute Close Button for reliability */}
