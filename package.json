@@ -49,6 +49,8 @@
     "data:export": "node scripts/migrate-app-data.cjs export",
     "data:import": "node scripts/migrate-app-data.cjs import",
     "data:list": "node scripts/migrate-app-data.cjs list",
+    "storage:copy": "node scripts/copy-storage-files.cjs",
+    "storage:rewrite-urls": "node scripts/rewrite-storage-urls.cjs",
     "cleanup:dev-preview": "node scripts/cleanup-test-users.cjs dev --dry-run",
     "cleanup:dev-execute": "node scripts/cleanup-test-users.cjs dev --execute",
     "cleanup:test-preview": "node scripts/cleanup-test-users.cjs test --dry-run",
