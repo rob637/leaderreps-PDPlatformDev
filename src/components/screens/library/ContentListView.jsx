@@ -16,7 +16,8 @@ const ContentListView = ({
   detailRoute,
   indexRoute, // Optional: Explicitly define the index route (e.g., 'videos-index')
   color,
-  bgColor
+  bgColor,
+  headerContent // Optional: Custom content to render above the list (e.g., video series)
 }) => {
   const { db, navigate } = useAppServices();
   const { isContentUnlocked } = useContentAccess();
@@ -166,6 +167,9 @@ const ContentListView = ({
             </div>
           </div>
         </div>
+
+        {/* Custom Header Content (e.g., Video Series) */}
+        {headerContent}
 
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">

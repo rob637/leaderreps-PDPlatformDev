@@ -370,7 +370,7 @@ Widgets are **dynamic UI components** that can be:
 | Planning | AM Bookend Header, Weekly Focus, Grounding Rep, Win the Day |
 | Reflection | PM Bookend Header, Reflection, Daily Quote |
 | Tracking | Scorecard, Progress Feedback, Streak Display |
-| Development Plan | Baseline Assessment, Plan Tracker, Timeline |
+| Development Plan | Leadership Skills Baseline, Plan Tracker, Timeline |
 | Locker | Wins History, Reps History, Reflection History |
 | Community | Community Feed, My Discussions, Live Events |
 | Coaching | Upcoming Sessions, On-Demand, My Sessions |
@@ -534,7 +534,7 @@ Located in `metadata/config.adminemails`:
   startDate: "2025-11-18",
   releaseGroup: "alpha",
   masterPlan: { ... },              // Copy of the plan template
-  assessmentResults: { ... },       // Baseline assessment data
+  assessmentResults: { ... },       // Leadership Skills Baseline data
   weekProgress: {
     "week-01": { completedAt: "...", ... },
     "week-02": { completedAt: "...", ... }

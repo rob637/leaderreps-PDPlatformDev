@@ -23,12 +23,15 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) => {
   const { identityStatement, habitAnchor, whyStatement, isAdmin, user, developmentPlanData } = useAppServices();
-  const { prepRequirementsComplete, cohortData } = useDailyPlan();
+  const { prepRequirementsComplete, cohortData, currentPhase } = useDailyPlan();
   const [showAnchors, setShowAnchors] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   
   // Content is unlocked after prep is complete
   const isPrepComplete = prepRequirementsComplete?.allComplete === true;
+  
+  // Community is only available during Ascent phase (post-start)
+  const isAscent = currentPhase?.id === 'post-start';
 
   // Developer Mode State
   const [isDeveloperMode, setIsDeveloperMode] = useState(() => {
@@ -62,7 +65,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     enableVideos: isPrepComplete,
     
     // FOUNDATION FEATURES - Unlocks after prep completion
-    enableCommunity: isPrepComplete,
+    enableCommunity: isAscent, // Community only available during Ascent phase
     enableCoaching: isPrepComplete,
     
     // FUTURE SCOPE FEATURES (DISABLED)

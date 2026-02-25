@@ -43,7 +43,7 @@ const DEFAULT_REMINDERS = {
 };
 
 export const NotificationProvider = ({ children }) => {
-  const { user, db, dailyPracticeData } = useAppServices();
+  const { user, db, dailyPracticeData, isAuthReady } = useAppServices();
   const [permission, setPermission] = useState(notificationService.getPermission());
   const [reminders, setReminders] = useState(DEFAULT_REMINDERS);
   const [sentLog, setSentLog] = useState({}); // { date_reminderId: timestamp }
@@ -52,7 +52,8 @@ export const NotificationProvider = ({ children }) => {
 
   // Load settings from Firestore
   useEffect(() => {
-    if (!user || !db || !user.uid) return;
+    // Wait for auth to be ready before making Firestore calls
+    if (!isAuthReady || !user || !db || !user.uid) return;
 
     const loadSettings = async () => {
       try {
@@ -83,7 +84,7 @@ export const NotificationProvider = ({ children }) => {
     };
 
     loadSettings();
-  }, [user, db]);
+  }, [user, db, isAuthReady]);
 
   // Save settings to Firestore
   // eslint-disable-next-line react-hooks/exhaustive-deps

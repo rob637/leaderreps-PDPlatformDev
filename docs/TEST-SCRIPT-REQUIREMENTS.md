@@ -179,7 +179,7 @@ The Prep Phase prepares users before their cohort officially starts.
 User Journey: Prep Phase
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Day -14 to -7:  Account Creation → Quick Start Accelerator
-Day -7 to -1:   Prep Gate Completion → Leader Profile → Baseline Assessment
+Day -7 to -1:   Prep Gate Completion → Leader Profile → Leadership Skills Baseline
 Day 0:          Ready for Day 1 Content Unlock
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -193,7 +193,7 @@ Day 0:          Ready for Day 1 Content Unlock
 | PREP-003 | Prep Gate Display | Gate shown until prerequisites met | Critical |
 | PREP-004 | Leader Profile Creation | All profile fields, save, validation | Critical |
 | PREP-005 | LIS Maker Widget | Create/edit Leadership Identity Statement | High |
-| PREP-006 | Baseline Assessment | Complete assessment, view results | Critical |
+| PREP-006 | Leadership Skills Baseline | Complete assessment, view results | Critical |
 | PREP-007 | Prep Phase Content Access | Only Prep content visible | High |
 | PREP-008 | Dev Plan Locked State | Core content locked during Prep | High |
 | PREP-009 | Cohort Assignment | User assigned to cohort correctly | High |
@@ -1129,7 +1129,7 @@ Run these first to validate core functionality:
 - PREP-001: New User Registration
 - PREP-003: Prep Gate Display
 - PREP-004: Leader Profile Creation
-- PREP-006: Baseline Assessment
+- PREP-006: Leadership Skills Baseline
 - PREP-014: Day 1 Blocked Without Prep
 
 **Day 1 & AM Bookend (10)**

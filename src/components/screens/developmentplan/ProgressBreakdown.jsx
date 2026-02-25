@@ -71,7 +71,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
     return (
       <div>
         <Card accent="BLUE">
-          <p className="text-gray-600 dark:text-gray-300">No skills to display. Complete your baseline assessment to get started.</p>
+          <p className="text-gray-600 dark:text-gray-300">No skills to display. Complete your Leadership Skills Baseline to get started.</p>
         </Card>
       </div>
     );

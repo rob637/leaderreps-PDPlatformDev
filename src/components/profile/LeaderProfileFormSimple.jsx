@@ -136,6 +136,36 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
   const [showSuccess, setShowSuccess] = useState(false);
   const formRef = useRef(null);
 
+  // Check if all required fields are filled (for enabling the submit button)
+  const isFormComplete = () => {
+    // Contact info
+    if (!formData.firstName?.trim()) return false;
+    if (!formData.lastName?.trim()) return false;
+    if (!formData.email?.trim()) return false;
+    if (!formData.companyName?.trim()) return false;
+    if (!formData.jobTitle?.trim()) return false;
+    
+    // Leadership context (Q1-Q4)
+    if (!formData.roleAlignment) return false;
+    if (!formData.directReports) return false;
+    if (!formData.yearsLeading) return false;
+    if (!formData.teamState) return false;
+    
+    // Quick reflection (Q5-Q6)
+    if (!formData.whatWouldBreak?.trim()) return false;
+    if (!formData.catchPhrase?.trim()) return false;
+    
+    // Patterns & energy (Q7-Q8)
+    if (!formData.underPressure?.length) return false;
+    if (!formData.energyDrain?.length) return false;
+    
+    // Foundation goals (Q9-Q10)
+    if (!formData.leadershipMuscle?.trim()) return false;
+    if (!formData.successDefinition?.trim()) return false;
+    
+    return true;
+  };
+
   // Scroll to top when form mounts
   useEffect(() => {
     if (formRef.current) {
@@ -668,8 +698,12 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
           <div className="flex-1" />
           <Button
             onClick={handleSubmit}
-            disabled={saving}
-            className="flex items-center gap-2 bg-corporate-teal hover:bg-corporate-teal/90"
+            disabled={saving || !isFormComplete()}
+            className={`flex items-center gap-2 ${
+              isFormComplete() 
+                ? 'bg-corporate-teal hover:bg-corporate-teal/90' 
+                : 'bg-slate-400 cursor-not-allowed'
+            }`}
           >
             {saving ? <Loader className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
             {profileAlreadyComplete ? 'Update Profile' : 'Complete Profile'}

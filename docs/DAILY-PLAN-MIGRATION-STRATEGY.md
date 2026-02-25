@@ -10,7 +10,7 @@ The following fields are currently stored in `development_plan` and must be migr
 | Field | Purpose | New Location (Proposed) |
 |-------|---------|-------------------------|
 | `dailyProgress` | Tracks completion of daily tasks | `users/{userId}/daily_plan/progress` |
-| `assessmentHistory` | Stores Baseline Assessment results | `users/{userId}/assessments/baseline` |
+| `assessmentHistory` | Stores Leadership Skills Baseline results | `users/{userId}/assessments/baseline` |
 | `currentAssessment` | Most recent assessment snapshot | `users/{userId}/assessments/baseline` |
 | `startDate` | Program start date | `users/{userId}` (Root profile) |
 | `cohortId` | User's cohort assignment | `users/{userId}` (Root profile) |
@@ -38,7 +38,7 @@ The following fields are currently stored in `development_plan` and must be migr
 #### Phase 3: Switch Read Source (The Switch)
 **Goal:** Point the application to read from the new location.
 1.  **Update `useDailyPlan`:** Change the data fetching logic to subscribe to the new `daily_plan` user document instead of `developmentPlanData`.
-2.  **Update `useDayBasedAccessControl`:** Point the "Baseline Assessment" check to the new assessment location.
+2.  **Update `useDayBasedAccessControl`:** Point the "Leadership Skills Baseline" check to the new assessment location.
 3.  **Update Widgets:** Ensure `BaselineAssessmentWidget` reads from the new history.
 4.  **Test:** Verify the Dashboard works without `developmentPlanData`.
 

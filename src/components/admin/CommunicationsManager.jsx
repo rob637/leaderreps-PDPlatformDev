@@ -128,9 +128,9 @@ const TemplateEditor = ({ template, onSave, onCancel }) => {
         </div>
       )}
 
-      {/* Channel Tabs */}
+      {/* Channel Tabs - SMS disabled for go-live */}
       <div className="flex border-b border-slate-200 dark:border-slate-700 mb-4">
-        {['email', 'sms', 'push'].map(tab => (
+        {['email', 'push'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -220,7 +220,7 @@ const TemplateEditor = ({ template, onSave, onCancel }) => {
         </div>
       )}
 
-      {/* SMS Tab */}
+      {/* SMS Tab - Disabled for go-live
       {activeTab === 'sms' && (
         <div className="space-y-4">
           <div>
@@ -244,6 +244,7 @@ const TemplateEditor = ({ template, onSave, onCancel }) => {
           </div>
         </div>
       )}
+      */}
 
       {/* Push Tab */}
       {activeTab === 'push' && (

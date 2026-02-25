@@ -2194,6 +2194,8 @@ async function handleTestEmailSms(email, phone, message, type) {
     }
   }
 
+  // SMS disabled for go-live - uncomment when Twilio is configured
+  /*
   // Send SMS (not implemented yet)
   if (phone && (!type || type === 'sms' || type === 'both')) {
     try {
@@ -2203,6 +2205,7 @@ async function handleTestEmailSms(email, phone, message, type) {
       results.sms = { success: false, error: e.message };
     }
   }
+  */
 
   return { success: true, results };
 }
@@ -2329,7 +2332,8 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
       // Determine channels based on strategy and escalation
       let sendPush = false;
       let sendEmail = false;
-      let sendSms = false;
+      // SMS disabled for go-live - uncomment when Twilio is configured
+      // let sendSms = false;
       
       // Get escalation data for smart escalation
       const escalation = settings.escalation || { missedDays: 0 };
@@ -2339,11 +2343,12 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
         case 'smart_escalation':
           // Level 0 (Day 1): Push only
           // Level 1 (Day 2): Push + Email
-          // Level 2 (Day 3+): Push + Email + SMS
+          // Level 2 (Day 3+): Push + Email + SMS (disabled for go-live)
           sendPush = settings.channels?.push !== false;
           sendEmail = missedDays >= 1 && settings.channels?.email !== false;
-          sendSms = missedDays >= 2 && settings.channels?.sms !== false && settings.phoneNumber;
-          logger.info(`Smart escalation for ${user.email}: missedDays=${missedDays}, push=${sendPush}, email=${sendEmail}, sms=${sendSms}`);
+          // SMS disabled for go-live - uncomment when Twilio is configured
+          // sendSms = missedDays >= 2 && settings.channels?.sms !== false && settings.phoneNumber;
+          logger.info(`Smart escalation for ${user.email}: missedDays=${missedDays}, push=${sendPush}, email=${sendEmail}`);
           break;
           
         case 'push_only':
@@ -2357,7 +2362,8 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
         case 'full_accountability':
           sendPush = settings.channels?.push !== false;
           sendEmail = settings.channels?.email !== false;
-          sendSms = settings.channels?.sms !== false && settings.phoneNumber;
+          // SMS disabled for go-live - uncomment when Twilio is configured
+          // sendSms = settings.channels?.sms !== false && settings.phoneNumber;
           break;
           
         default:
@@ -2404,6 +2410,8 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
         }
       }
 
+      // SMS disabled for go-live - uncomment when Twilio is configured
+      /*
       // SMS via Twilio - Skip for test users (don't send test SMS)
       // SMS includes a shortened link at the end
       if (sendSms && settings.phoneNumber && !isTestUser) {
@@ -2411,6 +2419,7 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
       } else if (sendSms && isTestUser) {
         logger.info(`🧪 SMS skipped for test user ${user.email}`);
       }
+      */
       
       // Update escalation tracking for smart escalation strategy
       if (strategy === 'smart_escalation') {
@@ -2434,8 +2443,15 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
 });
 
 // Helper to send SMS via Twilio
+// NOTE: SMS functionality is disabled for go-live. Uncomment all sendSms references when Twilio is configured.
 // Options can include: { linkText, linkUrl } to append a link to the message
 async function sendSmsNotification(phoneNumber, message, options = {}) {
+  // SMS disabled for go-live - early return
+  logger.info("SMS disabled for go-live. Would have sent to:", phoneNumber);
+  return;
+  
+  // Original implementation below (disabled)
+  /*
   const twilioSid = process.env.TWILIO_ACCOUNT_SID;
   const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
   const twilioFrom = process.env.TWILIO_PHONE_NUMBER;
@@ -2471,6 +2487,7 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
   } catch (e) {
     logger.error(`Failed to send SMS to ${phoneNumber}`, e);
   }
+  */
 }
 
 // Helper to send email

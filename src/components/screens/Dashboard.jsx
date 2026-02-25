@@ -689,7 +689,7 @@ const Dashboard = () => {
             </h1>
           </div>
           <p className="text-slate-500 dark:text-slate-400 mt-2 leading-relaxed" style={{ fontFamily: 'var(--font-body)' }}>
-            {greeting} Welcome to your daily practice.
+            {greeting} Welcome to the Arena.
           </p>
         </FadeIn>
       </header>

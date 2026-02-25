@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Input, Select } from '../ui';
-import { Bell, Mail, MessageSquare, Globe, Save, AlertCircle, Check } from 'lucide-react';
+// MessageSquare removed - SMS disabled for go-live
+import { Bell, Mail, Globe, AlertCircle, Check } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 
@@ -182,6 +183,7 @@ const NotificationSettingsWidget = () => {
                 />
               </div>
 
+              {/* SMS/Text disabled for go-live - uncomment when Twilio is configured
               <div className={`flex items-center justify-between p-3 rounded-lg border ${settings.channels.sms ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="flex items-center gap-3">
                   <MessageSquare className={`w-5 h-5 ${settings.channels.sms ? 'text-blue-600' : 'text-gray-400'}`} />
@@ -194,9 +196,10 @@ const NotificationSettingsWidget = () => {
                   className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600"
                 />
               </div>
+              */}
             </div>
 
-            {/* Phone Number Input (Conditional) */}
+            {/* Phone Number Input (Conditional) - SMS disabled for go-live
             {settings.channels.sms && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Mobile Number</label>
@@ -211,6 +214,7 @@ const NotificationSettingsWidget = () => {
                 </p>
               </div>
             )}
+            */
 
             <Button 
               className="w-full mt-4" 

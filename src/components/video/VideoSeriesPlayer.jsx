@@ -9,7 +9,7 @@
  * - Mobile-first responsive layout
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Play,
   Pause,
@@ -27,6 +27,7 @@ import {
   Circle,
   Loader2,
 } from 'lucide-react';
+import { doc, updateDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import {
   getSeriesById,
@@ -92,6 +93,11 @@ export default function VideoSeriesPlayer({
   const [showVideoList, setShowVideoList] = useState(false); // Collapsed by default on mobile
   const [isPlaying, setIsPlaying] = useState(false);
   const [markingComplete, setMarkingComplete] = useState(false);
+  const videoRef = useRef(null);
+  // Ref to track current index - avoids stale closure issues in event handlers
+  const currentVideoIndexRef = useRef(initialVideoIndex);
+  const iframeRef = useRef(null);
+  const shouldAutoPlayRef = useRef(false); // Track if we should autoplay on next render
 
   // Load series data if not provided
   useEffect(() => {
@@ -136,13 +142,20 @@ export default function VideoSeriesPlayer({
 
   const currentVideo = useMemo(() => {
     if (!series?.videos?.length) return null;
-    return series.videos[currentVideoIndex] || series.videos[0];
+    const video = series.videos[currentVideoIndex] || series.videos[0];
+    console.log('[VideoSeriesPlayer] currentVideo memo - index:', currentVideoIndex, 'video:', video?.id, 'url:', video?.videoUrl || video?.url);
+    return video;
   }, [series?.videos, currentVideoIndex]);
 
   // Get video URL (support both 'url' and 'videoUrl' field names)
+  // IMPORTANT: Use currentVideoIndex directly to ensure we get the right URL
   const videoUrl = useMemo(() => {
-    return currentVideo?.videoUrl || currentVideo?.url || null;
-  }, [currentVideo]);
+    if (!series?.videos?.length) return null;
+    const video = series.videos[currentVideoIndex];
+    const url = video?.videoUrl || video?.url || null;
+    console.log('[VideoSeriesPlayer] videoUrl memo - index:', currentVideoIndex, 'url:', url);
+    return url;
+  }, [series?.videos, currentVideoIndex]);
 
   // Determine if this is a direct video file (mp4, webm) vs embedded (YouTube, Vimeo)
   const isDirectVideo = useMemo(() => {
@@ -197,11 +210,23 @@ export default function VideoSeriesPlayer({
 
   // Call onComplete when series becomes complete
   useEffect(() => {
-    if (isSeriesComplete && !hasCalledComplete && onComplete && series?.id) {
+    if (isSeriesComplete && !hasCalledComplete && series?.id) {
       setHasCalledComplete(true);
-      onComplete(series.id);
+      
+      // Set prepStatus.videoSeries flag so milestone tasks show as complete
+      if (db && user?.uid) {
+        const userRef = doc(db, 'users', user.uid);
+        updateDoc(userRef, { 'prepStatus.videoSeries': true })
+          .then(() => console.log('[VideoSeriesPlayer] Set prepStatus.videoSeries = true'))
+          .catch(err => console.warn('[VideoSeriesPlayer] Could not update prepStatus:', err));
+      }
+      
+      // Notify parent component
+      if (onComplete) {
+        onComplete(series.id);
+      }
     }
-  }, [isSeriesComplete, hasCalledComplete, onComplete, series?.id]);
+  }, [isSeriesComplete, hasCalledComplete, onComplete, series?.id, db, user?.uid]);
 
   const markCurrentWatched = useCallback(async () => {
     console.log('[VideoSeriesPlayer] markCurrentWatched called', { 
@@ -246,6 +271,9 @@ export default function VideoSeriesPlayer({
   const goToVideo = useCallback(
     (index) => {
       if (index >= 0 && index < (series?.videos?.length || 0)) {
+        console.log('[VideoSeriesPlayer] goToVideo called with index:', index, 'current:', currentVideoIndexRef.current);
+        shouldAutoPlayRef.current = true; // Flag to autoplay on next render
+        currentVideoIndexRef.current = index; // Update ref immediately
         setCurrentVideoIndex(index);
         setIsPlaying(true);
       }
@@ -253,11 +281,34 @@ export default function VideoSeriesPlayer({
     [series?.videos?.length]
   );
 
-  const goToNext = useCallback(() => {
-    if (currentVideoIndex < (series?.videos?.length || 0) - 1) {
-      goToVideo(currentVideoIndex + 1);
+  // Effect to autoplay video when changing to a new video
+  useEffect(() => {
+    if (shouldAutoPlayRef.current && videoRef.current && autoPlayNext) {
+      shouldAutoPlayRef.current = false;
+      console.log('[VideoSeriesPlayer] Autoplay effect triggered for index:', currentVideoIndex);
+      // Force load new source and play
+      const timer = setTimeout(() => {
+        if (videoRef.current) {
+          // Force reload the video source
+          videoRef.current.load();
+          videoRef.current.play().catch(err => {
+            console.log('[VideoSeriesPlayer] Autoplay prevented by browser:', err.message);
+          });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [currentVideoIndex, series?.videos?.length, goToVideo]);
+  }, [currentVideoIndex, autoPlayNext]);
+
+  const goToNext = useCallback(() => {
+    const nextIndex = currentVideoIndexRef.current + 1;
+    console.log('[VideoSeriesPlayer] goToNext called, currentRef:', currentVideoIndexRef.current, 'nextIndex:', nextIndex, 'total:', series?.videos?.length);
+    if (nextIndex < (series?.videos?.length || 0)) {
+      goToVideo(nextIndex);
+    } else {
+      console.log('[VideoSeriesPlayer] Already at last video, not advancing');
+    }
+  }, [series?.videos?.length, goToVideo]);
 
   const goToPrevious = useCallback(() => {
     if (currentVideoIndex > 0) {
@@ -394,17 +445,25 @@ export default function VideoSeriesPlayer({
           {/* Video player - responsive aspect ratio */}
           <div className="relative w-full bg-black flex-shrink-0" style={{ paddingTop: '56.25%' }}>
             <div className="absolute inset-0">
+              {/* Debug: log what we're rendering */}
+              {console.log('[VideoSeriesPlayer] RENDER - index:', currentVideoIndex, 'videoUrl:', videoUrl, 'videos count:', series?.videos?.length, 'videos:', series?.videos?.map(v => ({ id: v.id, url: v.videoUrl || v.url })))}
               {isDirectVideo && videoUrl ? (
                 <video
-                  key={videoUrl}
+                  ref={videoRef}
+                  key={`video-${currentVideoIndex}-${currentVideo?.id || ''}-${videoUrl?.slice(-20) || 'no-url'}`}
                   src={videoUrl}
                   controls
                   autoPlay={autoPlayNext && isPlaying}
                   playsInline
                   className="w-full h-full object-contain"
-                  onEnded={async () => {
-                    console.log('[VideoSeriesPlayer] onEnded fired for video:', currentVideo?.id);
-                    await markCurrentWatched();
+                  onLoadStart={() => {
+                    console.log('[VideoSeriesPlayer] Video loading:', videoUrl, 'index:', currentVideoIndex);
+                  }}
+                  onEnded={() => {
+                    console.log('[VideoSeriesPlayer] onEnded fired for video index:', currentVideoIndexRef.current, 'id:', currentVideo?.id);
+                    // Mark as watched in background - don't await to avoid blocking goToNext
+                    markCurrentWatched();
+                    // Advance to next video immediately if autoplay is enabled
                     if (autoPlayNext) {
                       goToNext();
                     }
@@ -414,6 +473,7 @@ export default function VideoSeriesPlayer({
                 </video>
               ) : embedUrl ? (
                 <iframe
+                  key={`iframe-${currentVideoIndex}-${currentVideo?.id || ''}`}
                   src={embedUrl}
                   title={currentVideo?.title}
                   className="w-full h-full"

@@ -530,7 +530,7 @@ Rep reads from and writes to:
 | Daily Rep videos | ⚠️ Partial | Need video content |
 | Daily Rep reflections | ⚠️ Partial | Need reflection prompts |
 | Bookend prompts | ✅ Exists | Morning/evening flows |
-| Assessment questions | ✅ Exists | Baseline assessment |
+| Assessment questions | ✅ Exists | Leadership Skills Baseline |
 | Reading content | ⚠️ Partial | Content library items |
 | Video content | ⚠️ Partial | Content library items |
 

@@ -63,7 +63,7 @@ export const useDayBasedAccessControl = () => {
       totalCount: 2,
       missingItems: [
         !hasLeaderProfile && 'Leader Profile',
-        !hasBaselineAssessment && 'Baseline Assessment'
+        !hasBaselineAssessment && 'Leadership Skills Baseline'
       ].filter(Boolean)
     };
   }, [prepRequirementsComplete, leaderProfileIsComplete, developmentPlanData]);

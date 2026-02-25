@@ -161,9 +161,9 @@ Each week includes:
 | 👥 Community | Discussion topics and activities |
 | 🎯 Coaching | Live sessions and office hours |
 
-### Baseline Assessment
+### Leadership Skills Baseline
 
-At the start, you'll complete a **Baseline Assessment**:
+At the start, you'll complete a **Leadership Skills Baseline**:
 - Evaluates your current leadership capabilities
 - Personalizes your development recommendations
 - Provides a benchmark to measure growth

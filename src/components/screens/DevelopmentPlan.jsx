@@ -568,7 +568,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     ];
     
     if (view === 'baseline') {
-      return [...base, { label: 'Baseline Assessment', path: null }];
+      return [...base, { label: 'Leadership Skills Baseline', path: null }];
     }
     if (view === 'scan') {
       return [...base, { label: 'Progress Scan', path: null }];

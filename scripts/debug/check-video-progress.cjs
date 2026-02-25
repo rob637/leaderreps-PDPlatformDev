@@ -31,7 +31,7 @@ async function addNotificationSetup() {
     return;
   }
   
-  // Add notification setup action after Baseline Assessment
+  // Add notification setup action after Leadership Skills Baseline
   const newAction = {
     id: 'prep-notification-setup',
     label: 'Set Up Notifications',
@@ -43,7 +43,7 @@ async function addNotificationSetup() {
     estimatedMinutes: 1
   };
   
-  // Insert after Baseline Assessment (index 1), before Foundation Video Series
+  // Insert after Leadership Skills Baseline (index 1), before Foundation Video Series
   const updatedActions = [
     ...actions.slice(0, 2),
     newAction,

@@ -120,7 +120,7 @@ export const ONBOARDING_MODULES = {
     id: 'welcome',
     title: 'Your First Steps',
     headline: null, // Day 1 uses personalized welcome headline from banner
-    description: 'Today we set the foundation. Complete your Leader Profile and Baseline Assessment to help us personalize your experience.',
+    description: 'Today we set the foundation. Complete your Leader Profile and Leadership Skills Baseline to help us personalize your experience.',
     widgets: ['leaderProfile', 'baselineAssessment', 'todaysActions'],
     features: ['leader_profile', 'baseline_assessment'],
     callToAction: 'Come back tomorrow to discover your daily leadership rhythm!',
@@ -192,7 +192,7 @@ export const ACCELERATED_MODULES = {
       widgets: ['leaderProfile', 'baselineAssessment', 'amBookend', 'pmBookend', 'appOverview'],
       features: ['leader_profile', 'baseline_assessment', 'am_bookend', 'pm_bookend', 'full_access'],
       callToAction: 'Complete your profile and assessment before Day 1!',
-      tip: 'Focus on the Leader Profile and Baseline Assessment first - they\'re essential for personalization.',
+      tip: 'Focus on the Leader Profile and Leadership Skills Baseline first - they\'re essential for personalization.',
       isFoundation: true
     }
   ]
@@ -547,17 +547,41 @@ export const useDailyPlan = () => {
   // Items are considered "required" if: required === true OR (required !== false AND optional !== true)
   // This is COMPLETION-BASED, not day-based.
   const prepRequirementsComplete = useMemo(() => {
+    // Get all action progress data for verb-matching fallback
+    const allProgressData = developmentPlanData?.actionProgress || {};
+    
     // Helper to check if an action is completed
-    const isActionComplete = (actionId) => {
+    const isActionComplete = (actionId, actionLabel) => {
       // Check via useActionProgress
       const progress = getItemProgress(actionId);
       if (progress?.status === 'completed') return true;
       
       // Fallback: Check all dailyProgress entries for legacy data
       const dailyProgress = developmentPlanData?.dailyProgress || {};
-      return Object.values(dailyProgress).some(dayProgress => 
+      const foundInDailyProgress = Object.values(dailyProgress).some(dayProgress => 
         dayProgress?.itemsCompleted?.includes(actionId)
       );
+      if (foundInDailyProgress) return true;
+      
+      // Fallback 2: Verb-matching for when action IDs change (admin edits content)
+      // Match by first word (verb like "Download", "Watch", "Complete", etc.)
+      // Only match completed prep items (weekNumber null or <= 0)
+      if (actionLabel && allProgressData) {
+        const firstWord = actionLabel.split(/[\s/]/)[0].toLowerCase();
+        if (firstWord.length > 3) {
+          const matchByVerb = Object.values(allProgressData).some(p => {
+            if (p?.status !== 'completed' || !p?.label) return false;
+            // Only consider prep-phase entries (weekNumber null or <= 0)
+            if (p.weekNumber != null && p.weekNumber > 0) return false;
+            if (p.originalWeek != null && p.originalWeek > 0) return false;
+            const pFirstWord = (p.label).split(/[\s/]/)[0].toLowerCase();
+            return pFirstWord === firstWord;
+          });
+          if (matchByVerb) return true;
+        }
+      }
+      
+      return false;
     };
     
     // Get all prep phase days from daily plan (phase-based, not time-based)
@@ -601,7 +625,7 @@ export const useDailyPlan = () => {
       // Use unified prepStatus first, fall back to legacy checks
       if (handlerType === 'leader-profile' || labelLower.includes('leader profile')) {
         complete = user?.prepStatus?.leaderProfile || leaderProfileComplete || false;
-      } else if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment')) {
+      } else if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment') || labelLower.includes('skills baseline')) {
         // Check prepStatus first, then assessmentHistory or focusAreas
         complete = user?.prepStatus?.baselineAssessment || !!(
           developmentPlanData?.assessmentHistory?.length > 0 ||
@@ -611,7 +635,7 @@ export const useDailyPlan = () => {
         // Only use prepStatus.notifications - user must explicitly complete notification setup
         // Previously checked ns.strategy as fallback but that was triggered by defaults from Leader Profile
         complete = user?.prepStatus?.notifications || false;
-      } else if (handlerType === 'foundation-commitment' || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectations')) {
+      } else if (handlerType === 'foundation-commitment' || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectation')) {
         // Check prepStatus first, then foundationCommitment in user doc
         complete = user?.prepStatus?.foundationCommitment || !!(user?.foundationCommitment?.acknowledged);
       } else if (handlerType === 'conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
@@ -619,10 +643,10 @@ export const useDailyPlan = () => {
         complete = user?.prepStatus?.conditioningTutorial || !!(user?.conditioningTutorial?.completed);
       } else if (action.resourceType === 'video_series' || labelLower.includes('video')) {
         // Check prepStatus for video series, fall back to action progress
-        complete = user?.prepStatus?.videoSeries || isActionComplete(action.id);
+        complete = user?.prepStatus?.videoSeries || isActionComplete(action.id, action.label);
       } else {
         // Standard action progress check
-        complete = isActionComplete(action.id);
+        complete = isActionComplete(action.id, action.label);
       }
       
       return {
@@ -630,7 +654,9 @@ export const useDailyPlan = () => {
         label: action.label || 'Required Item',
         complete,
         handlerType: action.handlerType,
-        type: action.type
+        type: action.type,
+        // Prep section for splitting Onboarding vs Session 1 (default to 'onboarding')
+        prepSection: action.prepSection || 'onboarding'
       };
     });
     
@@ -639,13 +665,20 @@ export const useDailyPlan = () => {
     const allComplete = totalCount > 0 && completedCount === totalCount;
     const remaining = items.filter(i => !i.complete);
 
+    // Split items by prepSection for Onboarding vs Session 1 display
+    const onboardingItems = items.filter(i => !i.prepSection || i.prepSection === 'onboarding');
+    const session1Items = items.filter(i => i.prepSection === 'session1');
+    
+    const onboardingComplete = onboardingItems.length === 0 || onboardingItems.every(i => i.complete);
+    const session1Complete = session1Items.length === 0 || session1Items.every(i => i.complete);
+
     // Also provide legacy individual flags for backwards compatibility
     const leaderProfile = items.find(i => 
       i.handlerType === 'leader-profile' || (i.label || '').toLowerCase().includes('leader profile')
     )?.complete || false;
     
     const baselineAssessment = items.find(i => 
-      i.handlerType === 'baseline-assessment' || (i.label || '').toLowerCase().includes('baseline assessment')
+      i.handlerType === 'baseline-assessment' || (i.label || '').toLowerCase().includes('baseline assessment') || (i.label || '').toLowerCase().includes('skills baseline')
     )?.complete || false;
 
     return {
@@ -658,6 +691,15 @@ export const useDailyPlan = () => {
       totalCount,
       allComplete,
       remaining,
+      // Section-based tracking for Onboarding vs Session 1
+      onboardingItems,
+      session1Items,
+      onboardingComplete,
+      session1Complete,
+      onboardingCount: onboardingItems.filter(i => i.complete).length,
+      onboardingTotal: onboardingItems.length,
+      session1Count: session1Items.filter(i => i.complete).length,
+      session1Total: session1Items.length,
       // Progress percentage
       progressPercent: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
     };

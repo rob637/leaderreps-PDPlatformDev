@@ -3,11 +3,16 @@ import React from 'react';
 import { LayoutDashboard, BookOpen } from 'lucide-react';
 import { CommunityIcon, CoachingIcon, LockerIcon } from '../icons';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
 
 const MobileBottomNav = ({ currentScreen }) => {
   const { navigate } = useAppServices();
+  const { currentPhase } = useDailyPlan();
   
-  // 5 buttons: Dashboard, Community, Content, Coaching, Locker
+  // Community is only available during Ascent phase (post-start)
+  const isAscent = currentPhase?.id === 'post-start';
+  
+  // 5 buttons: Dashboard, Community (Ascent only), Content, Coaching, Locker
   // Note: AI Coach is desktop-only (not released to mobile)
   const navItems = [
     {
@@ -16,12 +21,13 @@ const MobileBottomNav = ({ currentScreen }) => {
       icon: LayoutDashboard,
       screen: 'dashboard'
     },
-    {
+    // Community only shows during Ascent phase
+    ...(isAscent ? [{
       id: 'community',
       label: 'Events',
       icon: CommunityIcon,
       screen: 'community'
-    },
+    }] : []),
     {
       id: 'library',
       label: 'Content',

@@ -57,7 +57,7 @@ import { doc, getDoc } from 'firebase/firestore';
 const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
 
 const AdminPortal = () => {
-  const { user, db } = useAppServices();
+  const { user, db, isAuthReady } = useAppServices();
   const { navParams } = useNavigation();
   const [activeTab, setActiveTab] = useState(navParams?.tab || 'dashboard');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -71,9 +71,12 @@ const AdminPortal = () => {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (!user?.email) {
-        setIsAdmin(false);
-        setLoading(false);
+      // Wait for auth to be ready before making Firestore calls
+      if (!isAuthReady || !user?.email) {
+        if (isAuthReady && !user?.email) {
+          setIsAdmin(false);
+          setLoading(false);
+        }
         return;
       }
 
@@ -106,7 +109,7 @@ const AdminPortal = () => {
     };
 
     checkAdminStatus();
-  }, [user, db]);
+  }, [user, db, isAuthReady]);
 
   if (loading) {
     return (

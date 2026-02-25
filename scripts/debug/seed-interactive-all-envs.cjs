@@ -12,7 +12,7 @@ const INTERACTIVE_ITEMS = [
   },
   {
     id: 'interactive-baseline-assessment',
-    title: 'Take Baseline Assessment',
+    title: 'Take Leadership Skills Baseline',
     description: 'Assess your current leadership skills to track your growth.',
     type: 'INTERACTIVE', 
     handlerType: 'baseline-assessment',

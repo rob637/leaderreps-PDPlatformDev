@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { 
   CheckCircle, Circle, Play, BookOpen, Users, Video, FileText, Zap, 
   ExternalLink, Loader, Layers, MessageSquare, 
-  SkipForward, Clock, AlertTriangle,
+  SkipForward, Clock, AlertTriangle, PlayCircle,
   User, ClipboardCheck, Calendar, ChevronDown, ChevronUp, Trophy, Bell,
   RotateCcw, Award
 } from 'lucide-react';
@@ -251,6 +251,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     checkConditioningTutorial();
   }, [db, user?.uid, showConditioningTutorialModal]); // Re-check when modal closes
   
+  // Video Series completion tracking (check prepStatus.videoSeries)
+  const videoSeriesComplete = useMemo(() => {
+    return user?.prepStatus?.videoSeries === true;
+  }, [user?.prepStatus?.videoSeries]);
+  
   // Video series duration data (fetched on demand)
   const [videoSeriesDurations, setVideoSeriesDurations] = useState({});
   
@@ -263,7 +268,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     uncompleteItem, 
     // skipItem, 
     getItemProgress,
-    getCarriedOverItems
+    getCarriedOverItems,
+    progressData
   } = actionProgress;
 
   // Calculate Current Week Number
@@ -364,14 +370,16 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       if (!handlerType) {
         if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile' || labelLower.includes('leader profile')) {
           handlerType = 'leader-profile';
-        } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline assessment')) {
+        } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline assessment') || labelLower.includes('skills baseline')) {
           handlerType = 'baseline-assessment';
         } else if (action.id?.includes('notification-setup') || action.id?.includes('notification') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('notification')) {
           handlerType = 'notification-setup';
         } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
           handlerType = 'conditioning-tutorial';
-        } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation commitment')) {
+        } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectation')) {
           handlerType = 'foundation-commitment';
+        } else if (action.resourceType === 'video_series' || labelLower.includes('onboarding video') || (labelLower.includes('watch') && labelLower.includes('video'))) {
+          handlerType = 'video-series';
         }
       }
       
@@ -393,7 +401,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         if (handlerType === 'leader-profile') handlerType = '';
       }
 
-      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
+      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'video-series'].includes(handlerType);
       
       // Auto-complete status for interactive items
       let autoComplete = undefined;
@@ -402,6 +410,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       else if (handlerType === 'notification-setup') autoComplete = notificationSetupComplete;
       else if (handlerType === 'foundation-commitment') autoComplete = foundationCommitmentComplete;
       else if (handlerType === 'conditioning-tutorial') autoComplete = conditioningTutorialComplete;
+      else if (handlerType === 'video-series') autoComplete = videoSeriesComplete;
       
       return {
         ...action,
@@ -429,10 +438,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         // Interactive item support
         isInteractive,
         autoComplete,
-        handlerType
+        handlerType,
+        // Prep section for splitting Onboarding vs Session 1 (default to 'onboarding' for backwards compatibility)
+        prepSection: action.prepSection || 'onboarding'
       };
     });
-  }, [leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete]);
+  }, [leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete]);
 
   // Combine all actionable items from Daily Plan
   const allActions = useMemo(() => {
@@ -727,16 +738,37 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     const dailyProgress = userState?.dailyProgress || {};
     
     // Helper function to check if an action is completed
-    const isActionCompleted = (actionId) => {
+    const isActionCompleted = (actionId, actionLabel) => {
       // Check in dailyProgress
       const completedInDailyProgress = Object.values(dailyProgress).some(
         dp => dp?.itemsCompleted?.includes(actionId)
       );
       if (completedInDailyProgress) return true;
       
-      // Also check in actionProgress
+      // Also check in actionProgress by ID
       const progress = getItemProgress(actionId);
-      return progress?.status === 'completed';
+      if (progress?.status === 'completed') return true;
+      
+      // Fallback: check actionProgress by action verb + prep-phase context.
+      // Action IDs change when admin edits content, but the action verb
+      // (first word like "Download" or "Watch") stays consistent.
+      // Only match completed prep items (weekNumber null or <= 0).
+      if (actionLabel && progressData) {
+        const firstWord = actionLabel.split(/[\s/]/)[0].toLowerCase();
+        if (firstWord.length > 3) {
+          const matchByVerb = Object.values(progressData).some(p => {
+            if (p?.status !== 'completed' || !p?.label) return false;
+            // Only consider prep-phase entries (weekNumber null or <= 0)
+            if (p.weekNumber != null && p.weekNumber > 0) return false;
+            if (p.originalWeek != null && p.originalWeek > 0) return false;
+            const pFirstWord = (p.label).split(/[\s/]/)[0].toLowerCase();
+            return pFirstWord === firstWord;
+          });
+          if (matchByVerb) return true;
+        }
+      }
+      
+      return false;
     };
     
     // Get explicitly carried over items from actionProgress
@@ -748,7 +780,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // SKIP if all prep requirements are already complete - don't show completed phases
     if (currentPhase?.id === 'start' && !prepRequirementsComplete?.allComplete) {
       // Check for incomplete prep phase daily plan items (including interactive items)
-      const prepDays = dailyPlan.filter(d => d.phase === 'pre-start');
+      // Include session1-config items (Watch Session 1 Video, Setup Notifications) for carryover
+      // Exclude only onboarding-config (duplicate of day-001 items) and explore-config
+      const prepDays = dailyPlan.filter(d => 
+        d.phase === 'pre-start' && 
+        d.id !== 'onboarding-config' && 
+        d.id !== 'explore-config'
+      );
       
       prepDays.forEach(day => {
         if (day.actions && Array.isArray(day.actions)) {
@@ -770,14 +808,16 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               const labelLower = (action.label || action.title || '').toLowerCase();
               if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile' || labelLower.includes('leader profile')) {
                 handlerType = 'leader-profile';
-              } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline assessment')) {
+              } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline assessment') || labelLower.includes('skills baseline')) {
                 handlerType = 'baseline-assessment';
               } else if (action.id?.includes('notification-setup') || action.id?.includes('notification') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('notification')) {
                 handlerType = 'notification-setup';
               } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
                 handlerType = 'conditioning-tutorial';
-              } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation commitment')) {
+              } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectation')) {
                 handlerType = 'foundation-commitment';
+              } else if (action.resourceType === 'video_series' || labelLower.includes('onboarding video') || labelLower.includes('watch') && labelLower.includes('video')) {
+                handlerType = 'video-series';
               }
             }
             
@@ -793,8 +833,10 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               isComplete = foundationCommitmentComplete;
             } else if (handlerType === 'conditioning-tutorial') {
               isComplete = conditioningTutorialComplete;
+            } else if (handlerType === 'video-series') {
+              isComplete = videoSeriesComplete;
             } else {
-              isComplete = isActionCompleted(actionId);
+              isComplete = isActionCompleted(actionId, action.label);
             }
             
             if (!isComplete) {
@@ -815,7 +857,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 resourceId: action.resourceId,
                 resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
                 url: action.url || action.videoUrl || action.link || action.details?.externalUrl,
-                isInteractive: ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType),
+                isInteractive: ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'video-series'].includes(handlerType),
                 handlerType,
                 estimatedMinutes: action.estimatedMinutes,
                 duration: action.duration
@@ -960,7 +1002,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     }
     
     return carriedItems;
-  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, dailyPlan, userState?.dailyProgress]);
+  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, progressData, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete, dailyPlan, userState?.dailyProgress]);
 
   // Preserve carried over items - merge new items but keep completed ones
   useEffect(() => {
@@ -977,10 +1019,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   
   // Use preserved items if available, otherwise use current carriedOverItems
   // Filter out prep items when all prep is complete (completed phases shouldn't carry forward)
+  // Also filter out any individually completed items
   const displayedCarriedOverItems = useMemo(() => {
     const baseItems = preservedCarriedOver.length > 0 ? preservedCarriedOver : carriedOverItems;
     
-    // If all prep is complete, filter out prep items (fromWeek === 0 or category is Preparation/Onboarding)
+    // If all prep is complete, filter out ALL prep items
     if (prepRequirementsComplete?.allComplete) {
       return baseItems.filter(item => 
         item.fromWeek !== 0 && 
@@ -989,8 +1032,29 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       );
     }
     
-    return baseItems;
-  }, [preservedCarriedOver, carriedOverItems, prepRequirementsComplete?.allComplete]);
+    // Even if not all prep is complete, filter out items that ARE individually complete
+    // This handles cases where an item is complete but wasn't detected properly initially
+    return baseItems.filter(item => {
+      // Check if this specific item is complete
+      if (item.isInteractive) {
+        if (item.handlerType === 'leader-profile') return !leaderProfileComplete;
+        if (item.handlerType === 'baseline-assessment') return !baselineAssessmentComplete;
+        if (item.handlerType === 'notification-setup') return !notificationSetupComplete;
+        if (item.handlerType === 'foundation-commitment') return !foundationCommitmentComplete;
+        if (item.handlerType === 'conditioning-tutorial') return !conditioningTutorialComplete;
+        if (item.handlerType === 'video-series') return !videoSeriesComplete;
+      }
+      // Check prepRequirementsComplete.items for this item
+      if (prepRequirementsComplete?.items) {
+        const prepItem = prepRequirementsComplete.items.find(p => 
+          p.id === item.id || 
+          (p.label && item.label && p.label.toLowerCase() === item.label.toLowerCase())
+        );
+        if (prepItem?.complete) return false; // Filter out - it's complete
+      }
+      return true; // Keep - not found or not complete
+    });
+  }, [preservedCarriedOver, carriedOverItems, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.items, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete]);
 
   // Calculate progress
   const completedItems = useMemo(() => {
@@ -1135,29 +1199,69 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
   // Separate actions into Required Prep and Additional Prep for prep phase
   // Uses the `required` and `optional` flags from the daily plan data
-  const requiredPrepActions = useMemo(() => {
+  // Separate prep actions from the 3 config documents
+  // onboarding-config → onboardingActions
+  // session1-config → session1Actions  
+  // explore-config → exploreActions (handled separately)
+  const onboardingActions = useMemo(() => {
     if (currentPhase?.id !== 'pre-start') return [];
-    // Required items are those with: required === true OR (required !== false AND optional !== true)
-    // Also include interactive items (Leader Profile & Baseline Assessment) UNLESS they're in explore-config
+    
+    // Primary: Read from onboarding-config document
+    const onboardingConfig = dailyPlan?.find(d => d.id === 'onboarding-config');
+    if (onboardingConfig?.actions && onboardingConfig.actions.length > 0) {
+      return normalizeDailyActions(onboardingConfig.actions, 'onboarding-config', -2);
+    }
+    
+    // Fallback: Filter from legacy prep days by prepSection field
     return allActions.filter(action => {
-      // Items from explore-config are always optional, even if interactive
-      if (action.dayId === 'explore-config') return false;
-      
-      // Interactive items from prep days are always considered required
-      if (action.isInteractive) return true;
-      
-      // Check the required/optional flags from the daily plan data
-      const isRequired = action.required === true || (action.required !== false && action.optional !== true);
-      return isRequired;
+      if (action.dayId === 'explore-config' || action.dayId === 'session1-config') return false;
+      if (action.prepSection === 'explore' || action.prepSection === 'session1') return false;
+      // Include items with no prepSection OR prepSection='onboarding'
+      return !action.prepSection || action.prepSection === 'onboarding';
+    });
+  }, [currentPhase?.id, dailyPlan, allActions, normalizeDailyActions]);
+
+  const session1Actions = useMemo(() => {
+    if (currentPhase?.id !== 'pre-start') return [];
+    
+    // Primary: Read from session1-config document
+    const session1Config = dailyPlan?.find(d => d.id === 'session1-config');
+    if (session1Config?.actions && session1Config.actions.length > 0) {
+      return normalizeDailyActions(session1Config.actions, 'session1-config', -1);
+    }
+    
+    // Fallback: Filter from legacy prep days by prepSection field
+    return allActions.filter(action => {
+      if (action.dayId === 'explore-config' || action.dayId === 'onboarding-config') return false;
+      return action.prepSection === 'session1';
+    });
+  }, [currentPhase?.id, dailyPlan, allActions, normalizeDailyActions]);
+
+  // requiredPrepActions = combined onboarding + session1 for completion tracking
+  const requiredPrepActions = useMemo(() => {
+    return [...onboardingActions, ...session1Actions];
+  }, [onboardingActions, session1Actions]);
+
+  // Get explore items from legacy prep days that have prepSection='explore'
+  const exploreActionsFromLegacy = useMemo(() => {
+    if (currentPhase?.id !== 'pre-start') return [];
+    return allActions.filter(action => {
+      if (action.dayId === 'explore-config' || action.dayId === 'onboarding-config' || action.dayId === 'session1-config') return false;
+      return action.prepSection === 'explore';
     });
   }, [currentPhase?.id, allActions]);
 
   // Calculate local prep completion count using widget's state values
   // This syncs the counter with the visual checkboxes in ActionItem
   const localPrepCompletion = useMemo(() => {
-    if (currentPhase?.id !== 'pre-start') return { completedCount: 0, totalCount: 0, allComplete: false };
+    if (currentPhase?.id !== 'pre-start') return { 
+      completedCount: 0, totalCount: 0, allComplete: false,
+      onboardingCount: 0, onboardingTotal: 0, onboardingComplete: false,
+      session1Count: 0, session1Total: 0, session1Complete: false
+    };
     
-    const completedCount = requiredPrepActions.filter(action => {
+    // Helper to check if an action is completed
+    const isActionComplete = (action) => {
       let handlerType = action.handlerType || '';
       // FAILSAFE: Standardize handlerType
       if (handlerType) {
@@ -1166,10 +1270,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         // Infer handlerType from ID or label if missing
         const labelLower = (action.label || action.title || '').toLowerCase();
         if (action.id?.includes('leader-profile') || labelLower.includes('leader profile')) handlerType = 'leader-profile';
-        else if (action.id?.includes('baseline-assessment') || labelLower.includes('baseline assessment')) handlerType = 'baseline-assessment';
+        else if (action.id?.includes('baseline-assessment') || labelLower.includes('baseline assessment') || labelLower.includes('skills baseline')) handlerType = 'baseline-assessment';
         else if (action.id?.includes('notification-setup') || action.id?.includes('notification') || labelLower.includes('notification')) handlerType = 'notification-setup';
         else if (action.id?.includes('conditioning-tutorial') || labelLower.includes('conditioning tutorial')) handlerType = 'conditioning-tutorial';
-        else if (action.id?.includes('foundation-commitment') || labelLower.includes('foundation commitment')) handlerType = 'foundation-commitment';
+        else if (action.id?.includes('foundation-commitment') || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectation')) handlerType = 'foundation-commitment';
+        else if (action.resourceType === 'video_series' || labelLower.includes('onboarding video') || (labelLower.includes('watch') && labelLower.includes('video'))) handlerType = 'video-series';
       }
       // Interactive item checks
       if (handlerType === 'leader-profile') return leaderProfileComplete;
@@ -1177,16 +1282,33 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       if (handlerType === 'notification-setup') return notificationSetupComplete;
       if (handlerType === 'foundation-commitment') return foundationCommitmentComplete;
       if (handlerType === 'conditioning-tutorial') return conditioningTutorialComplete;
+      if (handlerType === 'video-series') return videoSeriesComplete;
       // Standard completion check
       const progress = getItemProgress(action.id);
       return progress.status === 'completed' || completedItems.includes(action.id);
-    }).length;
+    };
     
-    const totalCount = requiredPrepActions.length;
+    // Calculate onboarding completion
+    const onboardingCount = onboardingActions.filter(isActionComplete).length;
+    const onboardingTotal = onboardingActions.length;
+    const onboardingComplete = onboardingTotal === 0 || onboardingCount === onboardingTotal;
+    
+    // Calculate session1 completion
+    const session1Count = session1Actions.filter(isActionComplete).length;
+    const session1Total = session1Actions.length;
+    const session1Complete = session1Total === 0 || session1Count === session1Total;
+    
+    // Overall totals
+    const completedCount = onboardingCount + session1Count;
+    const totalCount = onboardingTotal + session1Total;
     const allComplete = totalCount > 0 && completedCount === totalCount;
     
-    return { completedCount, totalCount, allComplete };
-  }, [currentPhase?.id, requiredPrepActions, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, getItemProgress, completedItems]);
+    return { 
+      completedCount, totalCount, allComplete,
+      onboardingCount, onboardingTotal, onboardingComplete,
+      session1Count, session1Total, session1Complete
+    };
+  }, [currentPhase?.id, onboardingActions, session1Actions, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete, getItemProgress, completedItems]);
   
   const additionalPrepActions = useMemo(() => {
     if (currentPhase?.id !== 'pre-start') return [];
@@ -1206,18 +1328,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       } else {
         if (action.id?.includes('leader-profile') || labelLower.includes('leader profile')) {
           handlerType = 'leader-profile';
-        } else if (action.id?.includes('baseline-assessment') || labelLower.includes('baseline assessment')) {
+        } else if (action.id?.includes('baseline-assessment') || labelLower.includes('baseline assessment') || labelLower.includes('skills baseline')) {
           handlerType = 'baseline-assessment';
         } else if (action.id?.includes('notification-setup') || action.id?.includes('notification') || labelLower.includes('notification')) {
           handlerType = 'notification-setup';
         } else if (action.id?.includes('conditioning-tutorial') || labelLower.includes('conditioning tutorial')) {
           handlerType = 'conditioning-tutorial';
-        } else if (action.id?.includes('foundation-commitment') || labelLower.includes('foundation commitment')) {
+        } else if (action.id?.includes('foundation-commitment') || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectation')) {
           handlerType = 'foundation-commitment';
         }
       }
       
-      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
+      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'video-series'].includes(handlerType);
       
       return {
         ...action,
@@ -1241,6 +1363,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       };
     });
   }, [currentPhase?.id, dailyPlan]);
+
+  // Combine explore-config items with prepSection='explore' items from legacy prep days
+  const allExploreActions = useMemo(() => {
+    return [...exploreActionsFromLegacy, ...additionalPrepActions];
+  }, [exploreActionsFromLegacy, additionalPrepActions]);
 
   // Helper to get icon based on type
   const getIcon = (type) => {
@@ -1386,6 +1513,22 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                resourceData.resourceType = 'document';
            }
            setViewingResource(resourceData);
+           
+           // Auto-complete documents (PDFs, tools) when opened - they are "completed" by viewing
+           // This applies to items like Onboarding Guide and similar resources
+           if ((data.type === 'DOCUMENT' || data.type === 'TOOL') && item.fromDailyPlan) {
+             const itemId = item.id;
+             if (itemId && item.dayId) {
+               toggleDailyItem(item.dayId, itemId, true);
+               completeItem(itemId, {
+                 currentWeek: currentWeekNumber,
+                 weekNumber: currentWeekNumber,
+                 category: item.category?.toLowerCase() || 'content',
+                 label: item.label || data.title,
+                 carriedOver: item.carriedOver || false
+               });
+             }
+           }
         } else {
             // Fallback: If not in Firestore, use the URL from the item directly
             if (item.url) {
@@ -1394,6 +1537,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 type: item.resourceType || item.type || 'document',
                 url: item.url
               });
+              // Auto-complete documents when opened (fallback path)
+              const resourceType = (item.resourceType || item.type || '').toLowerCase();
+              if ((resourceType === 'document' || resourceType === 'tool') && item.fromDailyPlan && item.id && item.dayId) {
+                toggleDailyItem(item.dayId, item.id, true);
+                completeItem(item.id, {
+                  currentWeek: currentWeekNumber,
+                  weekNumber: currentWeekNumber,
+                  category: item.category?.toLowerCase() || 'content',
+                  label: item.label,
+                  carriedOver: item.carriedOver || false
+                });
+              }
             } else {
               alert("Resource not found.");
             }
@@ -1411,6 +1566,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         type: item.resourceType || item.type || 'document',
         url: item.url
       });
+      // Auto-complete documents when opened (direct URL path)
+      const resourceType = (item.resourceType || item.type || '').toLowerCase();
+      if ((resourceType === 'document' || resourceType === 'tool') && item.fromDailyPlan && item.id && item.dayId) {
+        toggleDailyItem(item.dayId, item.id, true);
+        completeItem(item.id, {
+          currentWeek: currentWeekNumber,
+          weekNumber: currentWeekNumber,
+          category: item.category?.toLowerCase() || 'content',
+          label: item.label,
+          carriedOver: item.carriedOver || false
+        });
+      }
     } else {
       alert("No resource available.");
     }
@@ -1795,6 +1962,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                         item.handlerType === 'notification-setup' ? notificationSetupComplete :
                         item.handlerType === 'foundation-commitment' ? foundationCommitmentComplete :
                         item.handlerType === 'conditioning-tutorial' ? conditioningTutorialComplete :
+                        item.handlerType === 'video-series' ? videoSeriesComplete :
                         item.autoComplete || false;
         }
       } else {
@@ -1804,6 +1972,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                       item.handlerType === 'notification-setup' ? notificationSetupComplete :
                       item.handlerType === 'foundation-commitment' ? foundationCommitmentComplete :
                       item.handlerType === 'conditioning-tutorial' ? conditioningTutorialComplete :
+                      item.handlerType === 'video-series' ? videoSeriesComplete :
                       item.autoComplete || false;
       }
     } else {
@@ -1864,14 +2033,14 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             e.stopPropagation();
             // Prevent manual completion for interactive items - they must be completed through their forms
             if (item.isInteractive) return;
-            // Prevent manual completion for video series - must watch all videos
-            if (item.resourceType === 'video_series') {
-              alert('Watch all videos in the series to mark this complete. Click the row to open the video player.');
+            // Prevent manual completion for any item with a resource - must open/view the content first
+            if (item.resourceId || item.url) {
+              alert('Open the content to mark this complete. Click the row to view it.');
               return;
             }
             handleToggle(item);
           }}
-          className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${item.resourceType === 'video_series' && !isCompleted ? 'cursor-not-allowed' : 'cursor-pointer touch-manipulation active:scale-90'} ${getCheckboxStyles()}`}
+          className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${(item.resourceId || item.url || item.isInteractive) && !isCompleted ? 'cursor-not-allowed' : 'cursor-pointer touch-manipulation active:scale-90'} ${getCheckboxStyles()}`}
         >
           {isCompleted && <CheckCircle className="w-4 h-4 text-white pointer-events-none" />}
         </div>
@@ -1898,7 +2067,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             <Icon className="w-3 h-3" />
             {item.isInteractive ? (
               <>
-                <span className="text-slate-600 dark:text-slate-400">{item.description}</span>
+                <span className="capitalize">Form</span>
+                <span>•</span>
+                <span className="text-slate-600 dark:text-slate-400 font-medium">
+                  {item.handlerType === 'notification-setup' ? 'Personal Settings'
+                    : item.handlerType === 'conditioning-tutorial' ? 'Session 1'
+                    : 'Foundation Onboarding'}
+                </span>
                 {(interactiveDurations[item.resourceId] || item.estimatedMinutes || item.duration) && (
                   <><span>•</span><span className="text-slate-500 dark:text-slate-400">{interactiveDurations[item.resourceId] || item.estimatedMinutes || item.duration} min</span></>
                 )}
@@ -1992,97 +2167,150 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       )}
       <Card title={widgetTitle} icon={CheckCircle} accent="TEAL" helpText={helpText}>
         
-        {/* ========== PREPARATION PHASE: Progress-Based Sections ========== */}
+        {/* ========== PREPARATION PHASE: Two Sections (Onboarding + Session 1 Prep) ========== */}
         {currentPhase?.id === 'pre-start' && (
           <>
-            {/* SECTION 1: Preparation */}
-            {!localPrepCompletion.allComplete ? (
-              // Preparation NOT Complete - Show as primary section
-              <div className="mb-4">
-                <div className="flex items-center gap-2 mb-3 px-1">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                    <span className="text-sm font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">Preparation</span>
+            {/* SECTION 1: Onboarding */}
+            {onboardingActions.length > 0 && (
+              !localPrepCompletion.onboardingComplete ? (
+                // Onboarding NOT Complete - Show as primary section
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-1 px-1">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      <span className="text-sm font-bold text-teal-800 dark:text-teal-400 uppercase tracking-wider">Onboarding</span>
+                    </div>
+                    <div className="flex-1 h-px bg-teal-200 dark:bg-teal-700"></div>
+                    <span className="text-xs font-medium text-teal-700 bg-teal-100 dark:text-teal-300 dark:bg-teal-900/40 px-2 py-0.5 rounded-full">
+                      {localPrepCompletion.onboardingCount}/{localPrepCompletion.onboardingTotal} complete
+                    </span>
+                    {isAdmin && (
+                      <button
+                        onClick={resetPrepProgress}
+                        disabled={resettingPrep}
+                        className="ml-1 p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-400 hover:text-red-500 transition-colors"
+                        title="Reset prep progress (admin only)"
+                      >
+                        <RotateCcw className={`w-3.5 h-3.5 ${resettingPrep ? 'animate-spin' : ''}`} />
+                      </button>
+                    )}
                   </div>
-                  <div className="flex-1 h-px bg-amber-200 dark:bg-amber-700"></div>
-                  <span className="text-xs font-medium text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
-                    {localPrepCompletion.completedCount}/{localPrepCompletion.totalCount} complete
-                  </span>
-                  {isAdmin && (
-                    <button
-                      onClick={resetPrepProgress}
-                      disabled={resettingPrep}
-                      className="ml-1 p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-400 hover:text-red-500 transition-colors"
-                      title="Reset prep progress (admin only)"
-                    >
-                      <RotateCcw className={`w-3.5 h-3.5 ${resettingPrep ? 'animate-spin' : ''}`} />
-                    </button>
-                  )}
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 px-1">
-                  Complete these {localPrepCompletion.totalCount} items to get ready for Session One and access additional arena functionality.
-                </p>
-                <div className="space-y-1 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-xl border border-amber-200/60 dark:border-amber-700/40">
-                  {requiredPrepActions.map((item, idx) => (
-                    <ActionItem key={item.id || idx} item={item} idx={idx} />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              // Preparation IS Complete - Show collapsed celebration
-              <div className="mb-4">
-                <button
-                  onClick={() => setPrepExpanded(!prepExpanded)}
-                  className="w-full group flex items-center gap-3 p-4 rounded-xl bg-teal-50 dark:bg-teal-900/40 border border-teal-200 dark:border-teal-700 hover:bg-teal-100 dark:hover:bg-teal-800/50 transition-all"
-                >
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-corporate-teal flex items-center justify-center">
-                    <Trophy className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-bold text-teal-800 dark:text-teal-300">🎉 Preparation Complete!</p>
-                    <p className="text-xs text-teal-600 dark:text-teal-400">
-                      All {localPrepCompletion.totalCount} tasks done — Your leadership tools are now unlocked below!
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 p-2 text-teal-600 dark:text-teal-400 group-hover:text-teal-800 dark:group-hover:text-teal-300 transition-colors">
-                    {prepExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                  </div>
-                  {isAdmin && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); resetPrepProgress(); }}
-                      disabled={resettingPrep}
-                      className="ml-1 p-2 rounded-lg bg-white/60 dark:bg-slate-700/60 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-400 hover:text-red-500 transition-colors"
-                      title="Reset prep progress (admin only)"
-                    >
-                      <RotateCcw className={`w-4 h-4 ${resettingPrep ? 'animate-spin' : ''}`} />
-                    </button>
-                  )}
-                </button>
-                
-                {prepExpanded && (
-                  <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Completed Items</p>
-                    {requiredPrepActions.map((item) => (
-                      <div key={item.id} className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
-                        <span className="text-teal-700 dark:text-teal-400">{item.label}</span>
-                      </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 px-1">
+                    Complete these {localPrepCompletion.onboardingTotal} items to get ready for Session 1.
+                  </p>
+                  <div className="space-y-1 p-3 bg-teal-50/50 dark:bg-teal-900/20 rounded-xl border border-teal-200/60 dark:border-teal-700/40">
+                    {onboardingActions.map((item, idx) => (
+                      <ActionItem key={item.id || idx} item={item} idx={idx} />
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                // Onboarding IS Complete - Show collapsed celebration
+                <div className="mb-4">
+                  <button
+                    onClick={() => setPrepExpanded(!prepExpanded)}
+                    className="w-full group flex items-center gap-3 p-4 rounded-xl bg-teal-50 dark:bg-teal-900/40 border border-teal-200 dark:border-teal-700 hover:bg-teal-100 dark:hover:bg-teal-800/50 transition-all"
+                  >
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-corporate-teal flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-bold text-teal-800 dark:text-teal-300">✓ Onboarding Complete!</p>
+                      <p className="text-xs text-teal-600 dark:text-teal-400">
+                        All {localPrepCompletion.onboardingTotal} onboarding tasks done
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 p-2 text-teal-600 dark:text-teal-400 group-hover:text-teal-800 dark:group-hover:text-teal-300 transition-colors">
+                      {prepExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    </div>
+                  </button>
+                  
+                  {prepExpanded && (
+                    <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Completed Items</p>
+                      {onboardingActions.map((item) => (
+                        <div key={item.id} className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
+                          <span className="text-teal-700 dark:text-teal-400">{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
             )}
             
-            {/* Explore items (when prep complete) - shown inline with actions */}
-            {localPrepCompletion.allComplete && additionalPrepActions.length > 0 && (() => {
+            {/* SECTION 2: Session 1 Prep (shows immediately alongside Onboarding) */}
+            {session1Actions.length > 0 && (
+              !localPrepCompletion.session1Complete ? (
+                // Session 1 Prep NOT Complete - Show as primary section
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-3 px-1">
+                    <div className="flex items-center gap-2">
+                      <PlayCircle className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      <span className="text-sm font-bold text-teal-800 dark:text-teal-400 uppercase tracking-wider">Session 1 Preparation</span>
+                    </div>
+                    <div className="flex-1 h-px bg-teal-200 dark:bg-teal-700"></div>
+                    <span className="text-xs font-medium text-teal-700 bg-teal-100 dark:text-teal-300 dark:bg-teal-900/40 px-2 py-0.5 rounded-full">
+                      {localPrepCompletion.session1Count}/{localPrepCompletion.session1Total} complete
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 px-1">
+                    Complete these {localPrepCompletion.session1Total} items to get ready for Session 1.
+                  </p>
+                  <div className="space-y-1 p-3 bg-teal-50/50 dark:bg-teal-900/20 rounded-xl border border-teal-200/60 dark:border-teal-700/40">
+                    {session1Actions.map((item, idx) => (
+                      <ActionItem key={item.id || idx} item={item} idx={idx} />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                // Session 1 Prep IS Complete - Show collapsed celebration
+                <div className="mb-4">
+                  <button
+                    onClick={() => setExploreExpanded(!exploreExpanded)}
+                    className="w-full group flex items-center gap-3 p-4 rounded-xl bg-teal-50 dark:bg-teal-900/40 border border-teal-200 dark:border-teal-700 hover:bg-teal-100 dark:hover:bg-teal-800/50 transition-all"
+                  >
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-corporate-teal flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-bold text-teal-800 dark:text-teal-300">✓ Session 1 Prep Complete!</p>
+                      <p className="text-xs text-teal-600 dark:text-teal-400">
+                        All {localPrepCompletion.session1Total} prep tasks done — Explore is now unlocked!
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 p-2 text-teal-600 dark:text-teal-400 group-hover:text-teal-800 dark:group-hover:text-teal-300 transition-colors">
+                      {exploreExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    </div>
+                  </button>
+                  
+                  {exploreExpanded && (
+                    <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Completed Items</p>
+                      {session1Actions.map((item) => (
+                        <div key={item.id} className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
+                          <span className="text-teal-700 dark:text-teal-400">{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            )}
+            
+            {/* Explore items (when BOTH onboarding AND session1 are complete) */}
+            {localPrepCompletion.allComplete && allExploreActions.length > 0 && (() => {
               // Calculate if all explore items are complete
-              const allExploreComplete = additionalPrepActions.every(item => {
+              const allExploreComplete = allExploreActions.every(item => {
                 if (item.isInteractive) {
                   if (item.handlerType === 'notification-setup') return notificationSetupComplete;
                   if (item.handlerType === 'conditioning-tutorial') return conditioningTutorialComplete;
                   if (item.handlerType === 'leader-profile') return leaderProfileComplete;
                   if (item.handlerType === 'baseline-assessment') return baselineAssessmentComplete;
                   if (item.handlerType === 'foundation-commitment') return foundationCommitmentComplete;
+                  if (item.handlerType === 'video-series') return videoSeriesComplete;
                 }
                 const progress = getItemProgress(item.id);
                 return progress.status === 'completed' || completedItems.includes(item.id);
@@ -2101,7 +2329,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     <div className="flex-1 text-left">
                       <p className="text-sm font-bold text-teal-800 dark:text-teal-300">✨ Explore Complete!</p>
                       <p className="text-xs text-teal-600 dark:text-teal-400">
-                        All {additionalPrepActions.length} optional tools explored — You're ready for Session 1!
+                        All {allExploreActions.length} optional tools explored — You're ready for Session 1!
                       </p>
                     </div>
                     <div className="flex-shrink-0 p-2 text-teal-600 dark:text-teal-400 group-hover:text-teal-800 dark:group-hover:text-teal-300 transition-colors">
@@ -2112,7 +2340,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   {exploreExpanded && (
                     <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
                       <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Explored Items</p>
-                      {additionalPrepActions.map((item) => (
+                      {allExploreActions.map((item) => (
                         <div key={item.id} className="flex items-center gap-2 text-sm">
                           <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
                           <span className="text-teal-700 dark:text-teal-400">{item.label}</span>
@@ -2134,7 +2362,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     Explore these tools at your own pace before Session 1:
                   </p>
                   <div className="space-y-1">
-                    {additionalPrepActions.map((item, idx) => (
+                    {allExploreActions.map((item, idx) => (
                       <ActionItem key={item.id || idx} item={item} idx={idx} />
                     ))}
                   </div>
@@ -2149,7 +2377,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             })()}
             
             {/* Just the success message if no explore items */}
-            {localPrepCompletion.allComplete && additionalPrepActions.length === 0 && (
+            {localPrepCompletion.allComplete && allExploreActions.length === 0 && (
               <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
                 <p className="text-xs text-slate-600 dark:text-slate-400">
                   🚀 <span className="font-semibold">You're all set!</span> Session 1 will build on everything you've learned.
@@ -2178,6 +2406,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   if (item.handlerType === 'notification-setup') return notificationSetupComplete;
                   if (item.handlerType === 'foundation-commitment') return foundationCommitmentComplete;
                   if (item.handlerType === 'conditioning-tutorial') return conditioningTutorialComplete;
+                  if (item.handlerType === 'video-series') return videoSeriesComplete;
                 }
                 const progress = getItemProgress(item.id);
                 return progress.status === 'completed' || completedItems.includes(item.id);
@@ -2195,7 +2424,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                       <Trophy className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">✅ Preparation Complete!</p>
+                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">✅ Onboarding Complete!</p>
                       <p className="text-xs text-emerald-600 dark:text-emerald-400">
                         All {displayedCarriedOverItems.length} carried-over {displayedCarriedOverItems.length === 1 ? 'task' : 'tasks'} finished
                       </p>
@@ -2218,15 +2447,15 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2 px-1">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      <span className="text-sm font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">Catch Up</span>
+                      <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      <span className="text-sm font-bold text-teal-800 dark:text-teal-400 uppercase tracking-wider">Catch Up</span>
                     </div>
-                    <div className="flex-1 h-px bg-amber-200 dark:bg-amber-700"></div>
-                    <span className="text-xs font-medium text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
+                    <div className="flex-1 h-px bg-teal-200 dark:bg-teal-700"></div>
+                    <span className="text-xs font-medium text-teal-700 bg-teal-100 dark:text-teal-300 dark:bg-teal-900/40 px-2 py-0.5 rounded-full">
                       {completedCarriedOver.length}/{displayedCarriedOverItems.length} complete
                     </span>
                   </div>
-                  <div className="space-y-1 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-xl border border-amber-200/60 dark:border-amber-700/40">
+                  <div className="space-y-1 p-3 bg-teal-50/50 dark:bg-teal-900/20 rounded-xl border border-teal-200/60 dark:border-teal-700/40">
                     {displayedCarriedOverItems.map((item, idx) => (
                       <ActionItem key={item.id || `carried-${idx}`} item={item} idx={idx} isCarriedOver={true} />
                     ))}

@@ -43,6 +43,28 @@ const PHASE_THEMES = {
     iconBg: 'bg-corporate-navy/10 dark:bg-corporate-navy/30',
     accentColor: 'navy'
   },
+  'onboarding': {
+    title: 'Onboarding',
+    subtitle: 'Get Set Up',
+    icon: Rocket,
+    color: 'from-corporate-navy to-slate-700',
+    bgColor: 'bg-corporate-navy/5 dark:bg-corporate-navy/20',
+    borderColor: 'border-corporate-navy/30 dark:border-slate-500/50',
+    textColor: 'text-corporate-navy dark:text-slate-200',
+    iconBg: 'bg-corporate-navy/10 dark:bg-corporate-navy/30',
+    accentColor: 'navy'
+  },
+  'session1': {
+    title: 'Session 1 Prep',
+    subtitle: 'Prepare for Session 1',
+    icon: Target,
+    color: 'from-corporate-teal to-emerald-600',
+    bgColor: 'bg-corporate-teal/5 dark:bg-corporate-teal/20',
+    borderColor: 'border-corporate-teal/20 dark:border-corporate-teal/40',
+    textColor: 'text-corporate-teal',
+    iconBg: 'bg-corporate-teal/10 dark:bg-corporate-teal/30',
+    accentColor: 'teal'
+  },
   'start': {
     title: 'Foundation',
     subtitle: 'Your Journey',
@@ -348,7 +370,8 @@ const WeekDetailPanel = ({
       return leaderProfileComplete;
     }
     // Baseline Assessment - check by handlerType OR label
-    if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment')) {
+    // Label may be 'Take Leadership Skills Baseline' or 'Baseline Assessment'
+    if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment') || labelLower.includes('skills baseline')) {
       return baselineAssessmentComplete;
     }
     // Standard check for other items
@@ -434,14 +457,79 @@ const WeekDetailPanel = ({
         </div>
       </div>
       
-      {/* Actions List */}
+      {/* Actions List - with sub-groups support */}
       <div className="p-5">
         {actions.length === 0 ? (
           <div className="text-center py-8 text-slate-500 dark:text-slate-400">
             <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm">No actions scheduled for this week</p>
           </div>
+        ) : weekData?.groups && weekData.groups.length > 0 ? (
+          // Render grouped actions (for Preparation phase)
+          <div className="space-y-6">
+            {weekData.groups.map((group, groupIdx) => (
+              <div key={groupIdx}>
+                <div className="flex items-center gap-2 mb-3">
+                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{group.name}</h4>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    ({group.actions.filter(a => isActionCompleted(a)).length}/{group.actions.length})
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {group.actions.slice(0, 6).map((action, idx) => {
+                    const isCompleted = isActionCompleted(action);
+                    const TypeIcon = getTypeIcon(action.type || action.resourceType);
+                    return (
+                      <motion.div
+                        key={action.id || idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className={`
+                          flex items-center gap-3 p-3 rounded-xl border transition-all
+                          ${isCompleted 
+                            ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' 
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                          }
+                        `}
+                      >
+                        <div className={`
+                          w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
+                          ${isCompleted ? 'bg-emerald-100' : theme?.iconBg || 'bg-slate-100 dark:bg-slate-700'}
+                        `}>
+                          {isCompleted ? (
+                            <CheckCircle className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <TypeIcon className={`w-4 h-4 ${theme?.textColor || 'text-slate-600 dark:text-slate-300'}`} />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium truncate ${isCompleted ? 'text-emerald-700 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
+                            {action.label || action.title || 'Action Item'}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
+                            {(action.type || action.resourceType || 'content').replace(/_/g, ' ')}
+                          </p>
+                        </div>
+                        {isCompleted && (
+                          <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                  {group.actions.length > 6 && (
+                    <div className="text-center pt-1">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        +{group.actions.length - 6} more
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
+          // Flat actions list (for milestones/weeks)
           <div className="space-y-3">
             {actions.slice(0, 6).map((action, idx) => {
               const isCompleted = isActionCompleted(action);
@@ -542,7 +630,7 @@ const DevelopmentJourneyWidget = () => {
   
   // Determine current segment - find the first incomplete segment
   const currentSegmentId = useMemo(() => {
-    if (currentPhase?.id === 'pre-start') return 'prep';
+    if (currentPhase?.id === 'pre-start') return 'preparation';
     if (currentPhase?.id === 'post-start') return 'post';
     if (currentPhase?.id === 'start') {
       // Find the first milestone that is not 100% complete
@@ -585,34 +673,10 @@ const DevelopmentJourneyWidget = () => {
     const _minDay = Math.min(...dayNumbers);
     const _maxDay = Math.max(...dayNumbers);
     
-    // =================== PREP PHASE ===================
-    // Get all prep phase days from daily plan (phase-based, not time-based)
-    const prepDays = dailyPlan.filter(d => d.phase === 'pre-start');
-    
-    // Collect ALL prep actions from the daily plan
-    const allPrepActions = [];
-    prepDays.forEach(day => {
-      if (day.actions) {
-        day.actions.forEach((action, idx) => {
-          allPrepActions.push({
-            ...action,
-            dayId: day.id,
-            dayNumber: day.dayNumber,
-            id: action.id || `daily-${day.id}-${idx}`
-          });
-        });
-      }
-    });
-    
-    // Filter to get only REQUIRED prep actions (required !== false AND optional !== true)
-    // Also exclude daily_rep type as those are not progress items
-    const requiredPrepActions = allPrepActions.filter(action => {
-      // Skip daily reps - they're not milestone items
-      if (action.type === 'daily_rep') return false;
-      // Check if explicitly marked as required or not optional
-      const isRequired = action.required === true || (action.required !== false && action.optional !== true);
-      return isRequired;
-    });
+    // =================== PREP PHASE ===================\n    // Preparation phase with two sub-groups: Onboarding and Session 1 Prep
+    // Get config documents for each prep section
+    const onboardingConfig = dailyPlan.find(d => d.id === 'onboarding-config');
+    const session1Config = dailyPlan.find(d => d.id === 'session1-config');
     
     // Helper to check completion for each action type
     const checkActionComplete = (action) => {
@@ -639,7 +703,8 @@ const DevelopmentJourneyWidget = () => {
         return leaderProfileComplete;
       }
       // Fallback: Baseline Assessment - check by handlerType OR label
-      if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment')) {
+      // Label may be 'Take Leadership Skills Baseline' or 'Baseline Assessment'
+      if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment') || labelLower.includes('skills baseline')) {
         return baselineAssessmentComplete;
       }
       // Check action progress
@@ -650,31 +715,72 @@ const DevelopmentJourneyWidget = () => {
       return false;
     };
     
-    // Build required prep actions with completion status
-    const requiredPrepActionsWithStatus = requiredPrepActions.map(action => ({
-      ...action,
-      isCompleted: checkActionComplete(action),
-      isRequired: true
-    }));
+    // ===== PREPARATION SEGMENT (combines Onboarding + Session 1) =====
+    const onboardingActions = onboardingConfig?.actions || [];
+    const onboardingActionsWithStatus = onboardingActions
+      .filter(action => {
+        if (action.type === 'daily_rep') return false;
+        const isRequired = action.required === true || (action.required !== false && action.optional !== true);
+        return isRequired;
+      })
+      .map((action, idx) => ({
+        ...action,
+        dayId: 'onboarding-config',
+        id: action.id || `onboarding-${idx}`,
+        isCompleted: checkActionComplete(action),
+        isRequired: true
+      }));
     
-    const completedRequiredCount = requiredPrepActionsWithStatus.filter(a => a.isCompleted).length;
-    const totalRequiredCount = requiredPrepActionsWithStatus.length;
+    const session1Actions = session1Config?.actions || [];
+    const session1ActionsWithStatus = session1Actions
+      .filter(action => {
+        if (action.type === 'daily_rep') return false;
+        const isRequired = action.required === true || (action.required !== false && action.optional !== true);
+        return isRequired;
+      })
+      .map((action, idx) => ({
+        ...action,
+        dayId: 'session1-config',
+        id: action.id || `session1-${idx}`,
+        isCompleted: checkActionComplete(action),
+        isRequired: true
+      }));
     
-    segments.push({
-      id: 'prep',
-      type: 'phase',
-      phaseId: 'pre-start',
-      label: 'Preparation',
-      shortLabel: 'Prep',
-      theme: PHASE_THEMES['pre-start'],
-      actions: requiredPrepActionsWithStatus,
-      totalActions: totalRequiredCount,
-      completedActions: completedRequiredCount,
-      progress: totalRequiredCount > 0 ? Math.round((completedRequiredCount / totalRequiredCount) * 100) : 0,
-      daysCount: prepDays.length,
-      icon: 'rocket',
-      description: 'Get ready for your leadership journey'
-    });
+    // Combine both groups into one Preparation segment
+    const allPrepActions = [...onboardingActionsWithStatus, ...session1ActionsWithStatus];
+    const prepCompletedCount = allPrepActions.filter(a => a.isCompleted).length;
+    const prepTotalCount = allPrepActions.length;
+    
+    if (prepTotalCount > 0) {
+      segments.push({
+        id: 'preparation',
+        type: 'phase',
+        phaseId: 'pre-start',
+        label: 'Preparation',
+        shortLabel: 'Prep',
+        theme: PHASE_THEMES['pre-start'],
+        actions: allPrepActions,
+        // Store sub-groups for display
+        groups: [
+          { 
+            name: 'Onboarding', 
+            description: 'Complete your profile and setup',
+            actions: onboardingActionsWithStatus 
+          },
+          { 
+            name: 'Session 1 Prep', 
+            description: 'Review materials before your first session',
+            actions: session1ActionsWithStatus 
+          }
+        ],
+        totalActions: prepTotalCount,
+        completedActions: prepCompletedCount,
+        progress: prepTotalCount > 0 ? Math.round((prepCompletedCount / prepTotalCount) * 100) : 0,
+        daysCount: 1,
+        icon: 'rocket',
+        description: 'Get ready for your leadership journey'
+      });
+    }
     
     // =================== FOUNDATION PHASE (5 MILESTONES) ===================
     // Foundation uses 5 gated milestones instead of 8 weeks
@@ -881,10 +987,10 @@ const DevelopmentJourneyWidget = () => {
   const firstIncompleteSegmentId = useMemo(() => {
     // If still in pre-start phase (before cohort start date)
     if (currentPhase?.id === 'pre-start') {
-      // Check if prep is complete
-      const prepSegment = journeyData.segments.find(s => s.id === 'prep');
+      // Check if preparation segment is complete
+      const prepSegment = journeyData.segments.find(s => s.id === 'preparation');
       if (prepSegment && prepSegment.progress < 100) {
-        return 'prep'; // Prep is still in progress
+        return 'preparation'; // Preparation is still in progress
       }
       // Prep is 100% complete but cohort hasn't started yet
       // Return null - no segment should show "NOW" (milestones are all "UPCOMING")
@@ -940,10 +1046,11 @@ const DevelopmentJourneyWidget = () => {
   const getSegmentState = (segment) => {
     // PHASE-AWARE LOGIC: Don't show Foundation milestones as current until cohort starts
     if (currentPhase?.id === 'pre-start') {
-      // In prep phase: only prep can be current/past, everything else is future
-      if (segment.id === 'prep') {
-        // Prep can be complete (past) or in-progress (current)
-        return segment.progress === 100 ? 'past' : 'current';
+      // In prep phase: only preparation segment can be current/past, everything else is future
+      if (segment.id === 'preparation') {
+        // Prep segment can be complete (past) or in-progress (current)
+        if (segment.progress === 100) return 'past';
+        return 'current';
       }
       // All milestones are future during prep phase - cohort hasn't started yet
       return 'future';

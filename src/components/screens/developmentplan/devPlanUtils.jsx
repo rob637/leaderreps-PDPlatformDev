@@ -39,10 +39,10 @@ export const OPEN_ENDED_QUESTION = {
 };
 
 export const FREQUENCY_SCALE = [
-  { value: 1, label: 'Never / Rarely' },
-  { value: 2, label: 'Seldom / < 50%' },
-  { value: 3, label: 'Often / > 50%' },
-  { value: 4, label: 'Consistently / Always' },
+  { value: 1, label: 'Never' },
+  { value: 2, label: 'Seldom' },
+  { value: 3, label: 'Often' },
+  { value: 4, label: 'Always' },
 ];
 
 export const AGREEMENT_SCALE = [

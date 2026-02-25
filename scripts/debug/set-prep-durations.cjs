@@ -14,7 +14,7 @@ const actionConfig = {
   'Download/print Onboarding Guide': { duration: 3, handlerType: null }, // static content
   'Watch Onboarding Videos': { duration: 14, handlerType: null }, // video content
   'Complete Leader Profile': { duration: 5, handlerType: 'leader-profile', isInteractive: true },
-  'Complete Baseline Assessment': { duration: 10, handlerType: 'baseline-assessment', isInteractive: true },
+  'Complete Leadership Skills Baseline': { duration: 10, handlerType: 'baseline-assessment', isInteractive: true },
   'Accept Foundation Expectations': { duration: 2, handlerType: 'foundation-commitment', isInteractive: true },
   
   // Day 0 explore/optional actions

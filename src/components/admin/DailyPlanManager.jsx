@@ -510,8 +510,8 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
                   </button>
                 </div>
                 
-                {/* Optional Toggle */}
-                <div className="flex items-center gap-2 pl-8 mb-1">
+                {/* Optional Toggle + Prep Section (for prep phase) */}
+                <div className="flex items-center gap-4 pl-8 mb-1 flex-wrap">
                   <label className="flex items-center gap-1.5 cursor-pointer">
                     <input 
                       type="checkbox"
@@ -521,6 +521,22 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
                     />
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Optional (not required)</span>
                   </label>
+                  
+                  {/* Prep Section dropdown - only for prep phase items */}
+                  {(formData.weekNumber < 1 || formData.phase === 'pre-start') && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-slate-400 font-medium">Section:</span>
+                      <select
+                        value={action.prepSection || 'onboarding'}
+                        onChange={e => updateAction(idx, 'prepSection', e.target.value)}
+                        className="text-[10px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                      >
+                        <option value="onboarding">Onboarding</option>
+                        <option value="session1">Session 1</option>
+                        <option value="explore">Explore</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {/* Link Resource - Using ResourceSelector */}
@@ -643,8 +659,8 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
                   </button>
                 </div>
                 
-                {/* Optional Toggle */}
-                <div className="flex items-center gap-2 pl-8 mb-1">
+                {/* Optional Toggle + Prep Section (for prep phase) */}
+                <div className="flex items-center gap-4 pl-8 mb-1 flex-wrap">
                   <label className="flex items-center gap-1.5 cursor-pointer">
                     <input 
                       type="checkbox"
@@ -654,6 +670,22 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
                     />
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Optional (not required)</span>
                   </label>
+                  
+                  {/* Prep Section dropdown - only for prep phase items */}
+                  {(formData.weekNumber < 1 || formData.phase === 'pre-start') && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-slate-400 font-medium">Section:</span>
+                      <select
+                        value={action.prepSection || 'onboarding'}
+                        onChange={e => updateAction(idx, 'prepSection', e.target.value)}
+                        className="text-[10px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                      >
+                        <option value="onboarding">Onboarding</option>
+                        <option value="session1">Session 1</option>
+                        <option value="explore">Explore</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {/* Link Resource - Using ResourceSelector */}
@@ -927,7 +959,7 @@ const ContentManager = () => {
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState(-2); // Start with Prep Phase
   const [selectedPhase, setSelectedPhase] = useState('prep'); // 'prep', 'dev', 'post'
-  const [selectedPrepSection, setSelectedPrepSection] = useState('required'); // 'required' or 'explore'
+  const [selectedPrepSection, setSelectedPrepSection] = useState('onboarding'); // 'onboarding', 'session1', or 'explore'
   const [selectedMilestone, setSelectedMilestone] = useState(1); // Milestone 1-5 for Foundation
   const [editingDay, setEditingDay] = useState(null);
 
@@ -974,23 +1006,33 @@ const ContentManager = () => {
     }
   };
   
-  // Preparation Phase section configuration
+  // Preparation Phase section configuration - 3 sections matching dashboard display
   const PREP_SECTIONS = {
-    required: {
-      id: 'required',
-      name: 'Preparation',
-      emoji: '⚡',
-      description: 'Required items that must be completed to unlock app features',
+    onboarding: {
+      id: 'onboarding',
+      name: 'Onboarding',
+      emoji: '📋',
+      description: 'Initial setup items - opens immediately on dashboard',
       bgColor: 'bg-amber-50 dark:bg-amber-900/20',
       textColor: 'text-amber-700',
       borderColor: 'border-amber-300',
       activeColor: 'bg-amber-500'
     },
+    session1: {
+      id: 'session1',
+      name: 'Session 1',
+      emoji: '🎯',
+      description: 'Session 1 preparation - opens immediately on dashboard',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+      textColor: 'text-blue-700',
+      borderColor: 'border-blue-300',
+      activeColor: 'bg-blue-500'
+    },
     explore: {
       id: 'explore',
       name: 'Explore',
       emoji: '🔓',
-      description: 'Optional content unlocked after completing Preparation',
+      description: 'Optional content - unlocks after Onboarding & Session 1 complete',
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
       textColor: 'text-purple-700',
       borderColor: 'border-purple-300',
@@ -1107,56 +1149,68 @@ const ContentManager = () => {
     return days.filter(day => day.weekNumber !== undefined && day.weekNumber <= 0);
   }, [days]);
   
-  // Separate prep days into Required Prep vs Explore
-  // Required Prep: Day marked with isRequiredPrep=true (contains all required items)
-  // Explore: A SINGLE configurable item (stored as id='explore-config')
-  const { requiredPrepDays, exploreItem } = useMemo(() => {
-    // Find the Required Prep day (should be one day with isRequiredPrep=true)
-    const requiredDay = prepDays.find(day => day.isRequiredPrep === true);
+  // Separate prep content into 3 separate config documents:
+  // - onboarding-config: Onboarding items
+  // - session1-config: Session 1 preparation items  
+  // - explore-config: Optional Explore items
+  const { onboardingItem, session1Item, exploreItem } = useMemo(() => {
+    // Find or create Onboarding config
+    const existingOnboarding = days.find(d => d.id === 'onboarding-config');
+    const onboarding = existingOnboarding || {
+      id: 'onboarding-config',
+      title: 'Onboarding',
+      focus: 'Initial setup and orientation items',
+      dayNumber: -2,
+      weekNumber: -2,
+      phase: 'pre-start',
+      isOnboardingConfig: true,
+      actions: [],
+      dashboard: {}
+    };
     
-    // If no day is explicitly marked, fall back to finding days with required prep actions
-    const required = requiredDay ? [requiredDay] : prepDays.filter(day => {
-      const actions = day.actions || [];
-      return actions.some(action => {
-        const id = (action.id || '').toLowerCase();
-        const label = (action.label || '').toLowerCase();
-        
-        // Check for required prep items
-        if (id.includes('action-prep-001') || id.includes('action-prep-002') || id.includes('action-prep-003')) return true;
-        if (label.includes('foundation') && (label.includes('video') || label.includes('workbook'))) return true;
-        if (label.includes('prep exercises') || label.includes('session 1 prep')) return true;
-        if (label.includes('leader profile') || label.includes('baseline assessment')) return true;
-        
-        return false;
-      });
-    }).sort((a, b) => a.dayNumber - b.dayNumber);
+    // Find or create Session 1 config
+    const existingSession1 = days.find(d => d.id === 'session1-config');
+    const session1 = existingSession1 || {
+      id: 'session1-config',
+      title: 'Session 1 Preparation',
+      focus: 'Prepare for your first coaching session',
+      dayNumber: -1,
+      weekNumber: -1,
+      phase: 'pre-start',
+      isSession1Config: true,
+      actions: [],
+      dashboard: {}
+    };
     
     // Find or create the single Explore item (stored with id='explore-config')
     const existingExplore = days.find(d => d.id === 'explore-config');
     const explore = existingExplore || {
       id: 'explore-config',
       title: 'Explore the App',
-      focus: 'Optional content and tools available after completing Required Prep',
+      focus: 'Optional content and tools available after completing Onboarding & Session 1',
       dayNumber: 0,
       weekNumber: 0,
+      phase: 'pre-start',
       isExploreConfig: true,
       actions: [],
       dashboard: {}
     };
     
     return { 
-      requiredPrepDays: required,
+      onboardingItem: onboarding,
+      session1Item: session1,
       exploreItem: explore
     };
-  }, [prepDays, days]);
+  }, [days]);
   
   // Current days to display based on phase and section
   const currentWeekDays = useMemo(() => {
     if (selectedPhase === 'prep') {
-      // Prep phase has two sections: Required Prep and Explore
-      // Required Prep shows the required prep day(s)
-      // Explore shows ONE single configurable item
-      return selectedPrepSection === 'required' ? requiredPrepDays : [exploreItem];
+      // Prep phase has 3 separate sections with their own config documents
+      if (selectedPrepSection === 'onboarding') return [onboardingItem];
+      if (selectedPrepSection === 'session1') return [session1Item];
+      if (selectedPrepSection === 'explore') return [exploreItem];
+      return [onboardingItem]; // fallback
     }
     if (selectedPhase === 'dev') {
       // Foundation uses milestone-based content (1 block per milestone)
@@ -1181,7 +1235,7 @@ const ContentManager = () => {
     }
     // Ascent (post) uses week-based
     return weeks[selectedWeek] || [];
-  }, [selectedPhase, selectedPrepSection, requiredPrepDays, exploreItem, weeks, selectedWeek, days, selectedMilestone]);
+  }, [selectedPhase, selectedPrepSection, onboardingItem, session1Item, exploreItem, weeks, selectedWeek, days, selectedMilestone]);
 
   // Handle phase change - jump to first week of that phase
   const handlePhaseChange = (phaseId) => {

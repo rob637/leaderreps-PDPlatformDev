@@ -240,10 +240,10 @@ const RepBookendWidget = ({
         <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full mx-auto flex items-center justify-center mb-3 shadow-sm">
           <Check className="w-6 h-6 text-corporate-teal" />
         </div>
-        <h3 className="font-semibold text-rep-text-primary mb-1">
+        <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-1">
           {isMorning ? 'Intentions Set!' : 'Day Complete!'}
         </h3>
-        <p className="text-sm text-rep-text-secondary">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           {isMorning 
             ? "Your intentions are saved to your Dashboard." 
             : "Your reflection is saved. Great work today!"}
@@ -260,8 +260,8 @@ const RepBookendWidget = ({
           <Icon className={`w-5 h-5 ${prompts.iconColor}`} />
         </div>
         <div>
-          <h3 className="font-semibold text-rep-text-primary">{prompts.title}</h3>
-          <p className="text-xs text-rep-text-secondary">{prompts.subtitle}</p>
+          <h3 className="font-semibold text-slate-800 dark:text-slate-100">{prompts.title}</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{prompts.subtitle}</p>
         </div>
       </div>
 
@@ -271,7 +271,7 @@ const RepBookendWidget = ({
           // Morning intentions - 3 text fields
           prompts.fields.map((field, index) => (
             <div key={index}>
-              <label className="block text-sm font-medium text-rep-text-primary mb-1.5">
+              <label className="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-1.5">
                 {field.label}
               </label>
               <input
@@ -289,7 +289,7 @@ const RepBookendWidget = ({
           // Evening reflection - 3 specific fields
           prompts.fields.map((field, index) => (
             <div key={index}>
-              <label className="block text-sm font-medium text-rep-text-primary mb-1.5">
+              <label className="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-1.5">
                 {field.label}
               </label>
               <textarea

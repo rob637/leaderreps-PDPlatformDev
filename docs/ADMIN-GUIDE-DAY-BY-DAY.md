@@ -55,7 +55,7 @@ The platform has shifted from a week-based model to a **Day-by-Day** model.
 ## 3. For Users (The Experience)
 
 ### A. The Prep Gate
-- When a user first joins, if they have not completed their **Leader Profile** or **Baseline Assessment**, they will see a "Prep Gate" on their dashboard.
+- When a user first joins, if they have not completed their **Leader Profile** or **Leadership Skills Baseline**, they will see a "Prep Gate" on their dashboard.
 - They **cannot** access Day 1 content until these items are complete.
 
 ### B. Daily Unlocking

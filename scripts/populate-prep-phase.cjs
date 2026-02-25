@@ -9,7 +9,7 @@
  * 
  * REQUIRED ITEMS (5 total):
  * 1. Complete Leader Profile
- * 2. Complete Baseline Assessment
+ * 2. Complete Leadership Skills Baseline
  * 3. Watch Foundation S1 Prep Video
  * 4. Download Foundation Workbook
  * 5. Complete Session 1 Prep Exercises
@@ -35,7 +35,7 @@ const db = admin.firestore();
 // These are all available from Day 1 and can be completed in any order
 const PREP_ACTIONS = [
   // REQUIRED ITEMS (5) - Must complete before Session One
-  // NOTE: Leader Profile and Baseline Assessment are now INTERACTIVE content items
+  // NOTE: Leader Profile and Leadership Skills Baseline are now INTERACTIVE content items
   // They are handled directly in ThisWeeksActionsWidget with IDs:
   //   - interactive-leader-profile
   //   - interactive-baseline-assessment
@@ -56,7 +56,7 @@ const PREP_ACTIONS = [
   },
   {
     id: 'action-prep-baseline-assessment',
-    label: 'Take Baseline Assessment',
+    label: 'Take Leadership Skills Baseline',
     type: 'interactive',
     resourceId: 'interactive-baseline-assessment',
     resourceType: 'INTERACTIVE',

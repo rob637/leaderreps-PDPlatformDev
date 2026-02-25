@@ -102,6 +102,27 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
     }
   };
 
+  // Handler for closing the viewer - marks video as watched if applicable
+  const handleClose = () => {
+    // Mark video as watched when closing (if it's a video and has completion handler)
+    if (onVideoComplete && !markedComplete) {
+      const isEmbeddedVideo = url && (
+        url.includes('youtube.com') || 
+        url.includes('youtu.be') || 
+        url.includes('vimeo.com') || 
+        url.includes('loom.com')
+      );
+      const isVideoType = resourceType === 'video' || legacyType === 'video';
+      
+      if (isEmbeddedVideo || isVideoType) {
+        handleMarkWatched();
+      }
+    }
+    if (onClose) {
+      onClose();
+    }
+  };
+
   // Helper to determine content type if not explicitly provided
   const getContentType = () => {
     const lowerUrl = (url || '').toLowerCase();
@@ -153,22 +174,12 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
                   title={title}
                 />
               </div>
-              {onVideoComplete && (
+              {onVideoComplete && markedComplete && (
                 <div className="flex justify-center">
-                  {markedComplete ? (
-                    <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
-                      <CheckCircle className="w-4 h-4" />
-                      Marked as Watched
-                    </span>
-                  ) : (
-                    <button
-                      onClick={handleMarkWatched}
-                      className="flex items-center gap-2 px-4 py-2 bg-corporate-teal hover:bg-teal-600 text-white text-sm font-medium rounded-lg transition-colors"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      Mark as Watched
-                    </button>
-                  )}
+                  <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                    <CheckCircle className="w-4 h-4" />
+                    Marked as Watched
+                  </span>
                 </div>
               )}
             </div>
@@ -187,22 +198,12 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
                   title={title}
                 />
               </div>
-              {onVideoComplete && (
+              {onVideoComplete && markedComplete && (
                 <div className="flex justify-center">
-                  {markedComplete ? (
-                    <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
-                      <CheckCircle className="w-4 h-4" />
-                      Marked as Watched
-                    </span>
-                  ) : (
-                    <button
-                      onClick={handleMarkWatched}
-                      className="flex items-center gap-2 px-4 py-2 bg-corporate-teal hover:bg-teal-600 text-white text-sm font-medium rounded-lg transition-colors"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      Mark as Watched
-                    </button>
-                  )}
+                  <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                    <CheckCircle className="w-4 h-4" />
+                    Marked as Watched
+                  </span>
                 </div>
               )}
             </div>
@@ -221,22 +222,12 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
                   title={title}
                 />
               </div>
-              {onVideoComplete && (
+              {onVideoComplete && markedComplete && (
                 <div className="flex justify-center">
-                  {markedComplete ? (
-                    <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
-                      <CheckCircle className="w-4 h-4" />
-                      Marked as Watched
-                    </span>
-                  ) : (
-                    <button
-                      onClick={handleMarkWatched}
-                      className="flex items-center gap-2 px-4 py-2 bg-corporate-teal hover:bg-teal-600 text-white text-sm font-medium rounded-lg transition-colors"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      Mark as Watched
-                    </button>
-                  )}
+                  <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                    <CheckCircle className="w-4 h-4" />
+                    Marked as Watched
+                  </span>
                 </div>
               )}
             </div>
@@ -263,23 +254,11 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
               </div>
               
               <div className="flex flex-col items-center gap-3">
-                {onVideoComplete && (
-                  <>
-                    {markedComplete ? (
-                      <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
-                        <CheckCircle className="w-4 h-4" />
-                        Marked as Watched
-                      </span>
-                    ) : (
-                      <button
-                        onClick={handleMarkWatched}
-                        className="flex items-center gap-2 px-4 py-2 bg-corporate-teal hover:bg-teal-600 text-white text-sm font-medium rounded-lg transition-colors"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        Mark as Watched
-                      </button>
-                    )}
-                  </>
+                {onVideoComplete && markedComplete && (
+                  <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                    <CheckCircle className="w-4 h-4" />
+                    Marked as Watched
+                  </span>
                 )}
                 <a 
                   href={url} 
@@ -474,7 +453,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
   return (
     <div 
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 pb-24 sm:pb-4 animate-in fade-in duration-200"
-      onClick={onClose} // Close on backdrop click
+      onClick={handleClose} // Close on backdrop click - marks video as watched
     >
       <div 
         className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[70dvh] sm:max-h-[90vh] flex flex-col overflow-hidden relative"
@@ -485,7 +464,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onClose();
+            handleClose();
           }}
           className="absolute top-3 right-3 z-[60] p-2 bg-white/90 dark:bg-slate-800/90 hover:bg-red-100 text-slate-500 dark:text-slate-400 hover:text-red-600 rounded-full transition-colors shadow-sm border border-slate-100"
           title="Close"

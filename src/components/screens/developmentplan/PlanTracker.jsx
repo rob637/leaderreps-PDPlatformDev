@@ -297,7 +297,7 @@ const PlanTracker = ({
           No plan available
         </h3>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Complete your baseline assessment to get started.
+          Complete your Leadership Skills Baseline to get started.
         </p>
       </div>
     );

@@ -503,7 +503,7 @@ Each day's message should be **unique, brief, and actionable**. Here's the conte
 You're part of [Cohort Name], starting [Start Date].
 
 TODAY'S FOCUS:
-Complete your Leader Profile and Baseline Assessment.
+Complete your Leader Profile and Leadership Skills Baseline.
 These help us personalize your journey.
 
 [Start Profile Button]

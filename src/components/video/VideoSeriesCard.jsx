@@ -87,7 +87,7 @@ export default function VideoSeriesCard({
 
   const handleSeriesComplete = (seriesId) => {
     console.log('[VideoSeriesCard] Series completed:', seriesId);
-    // Refresh progress
+    // Refresh progress - prepStatus.videoSeries is set by VideoSeriesPlayer
     if (db && user?.uid && series?.id) {
       getSeriesProgress(db, user.uid, series.id).then((data) => {
         setProgress(data);

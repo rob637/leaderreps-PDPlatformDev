@@ -184,11 +184,6 @@ export default function FoundationCommitmentWidget({ onComplete, onClose, isModa
 
         {/* Acknowledgment Section */}
         <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
-          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Acknowledgment & Commitment</h4>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-            This is a commitment to your own development, not a formality.
-          </p>
-
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-4 border border-slate-200 dark:border-slate-700">
             <p className="text-sm text-slate-700 dark:text-slate-200">
               I understand what is expected of me and take responsibility for my engagement, execution, and follow-through during Foundation.
@@ -202,7 +197,7 @@ export default function FoundationCommitmentWidget({ onComplete, onClose, isModa
               <div className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
                 acknowledged 
                   ? 'bg-corporate-teal border-corporate-teal' 
-                  : 'border-slate-300 dark:border-slate-600 group-hover:border-corporate-teal'
+                  : 'border-corporate-teal/60 dark:border-corporate-teal/50 group-hover:border-corporate-teal bg-white dark:bg-slate-700'
               }`}>
                 {acknowledged && <CheckCircle className="w-4 h-4 text-white" />}
               </div>

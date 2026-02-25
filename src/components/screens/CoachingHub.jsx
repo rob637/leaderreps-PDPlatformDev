@@ -262,7 +262,7 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
               )}
               {(() => {
                 const maxAttendees = session.maxAttendees || getDefaultMaxAttendees(session.sessionType);
-                const spotsLeft = maxAttendees - (session.registrationCount || 0);
+                const spotsLeft = Math.max(0, maxAttendees - Math.max(0, session.registrationCount || 0));
                 return spotsLeft !== undefined && (
                   <span className={`flex items-center gap-1 ${spotsLeft <= 0 ? 'text-red-500 font-medium' : spotsLeft <= 3 ? 'text-orange-600' : ''}`}>
                     <Users className="w-3 h-3" /> {spotsLeft <= 0 ? 'Full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''}`}

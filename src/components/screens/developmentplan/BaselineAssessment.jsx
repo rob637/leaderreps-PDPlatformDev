@@ -129,7 +129,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
           <div className="flex-1">
             <h3 className="text-lg font-bold text-corporate-navy flex items-center gap-2">
               <span className="p-1 bg-teal-100 dark:bg-teal-900/30 rounded text-teal-700"><CheckCircle className="w-5 h-5" /></span>
-              Baseline Assessment Completed
+              Leadership Skills Baseline Completed
             </h3>
             <p className="text-sm text-corporate-teal mt-1">
               Your leadership profile and goals are set.
@@ -183,7 +183,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
         {/* Header Area */}
         <div className="p-6 sm:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 border-b" style={{ borderColor: 'var(--corporate-teal)' }}>
           <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: 'var(--corporate-navy)' }}>
-            Baseline Assessment
+            Leadership Skills Baseline
           </h1>
           <p className="text-lg" style={{ color: 'var(--corporate-teal)' }}>
             Answer these {totalQuestions} questions to create your personalized leadership plan.

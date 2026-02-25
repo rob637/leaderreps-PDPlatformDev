@@ -1,5 +1,5 @@
 // src/components/screens/developmentplan/BaselineAssessmentSimple.jsx
-// Leadership Baseline Assessment — 15 questions: frequency, agreement, open text, multi-select
+// Leadership Skills Baseline — 15 questions: frequency, agreement, open text, multi-select
 
 import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle, Loader, ClipboardCheck, X } from 'lucide-react';
@@ -21,10 +21,10 @@ const FREQUENCY_QUESTIONS = [
 ];
 
 const FREQUENCY_OPTIONS = [
-  { value: 1, label: 'Never / Rarely', shortLabel: 'Never', color: 'bg-red-100 dark:bg-red-900/30 border-red-300 text-red-700 hover:bg-red-200' },
-  { value: 2, label: 'Seldom / < 50%', shortLabel: '<50%', color: 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 text-orange-700 hover:bg-orange-200' },
-  { value: 3, label: 'Often / > 50%', shortLabel: '>50%', color: 'bg-teal-100 dark:bg-teal-900/30 border-teal-300 text-teal-700 hover:bg-teal-200' },
-  { value: 4, label: 'Consistently / Always', shortLabel: 'Always', color: 'bg-green-100 dark:bg-green-900/30 border-green-300 text-green-700 hover:bg-green-200' },
+  { value: 1, label: 'Never', shortLabel: 'Never', color: 'bg-red-100 dark:bg-red-900/30 border-red-300 text-red-700 hover:bg-red-200' },
+  { value: 2, label: 'Seldom', shortLabel: 'Seldom', color: 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 text-orange-700 hover:bg-orange-200' },
+  { value: 3, label: 'Often', shortLabel: 'Often', color: 'bg-teal-100 dark:bg-teal-900/30 border-teal-300 text-teal-700 hover:bg-teal-200' },
+  { value: 4, label: 'Always', shortLabel: 'Always', color: 'bg-green-100 dark:bg-green-900/30 border-green-300 text-green-700 hover:bg-green-200' },
 ];
 
 // --- Questions 11-13: Agreement Scale ---
@@ -35,10 +35,10 @@ const AGREEMENT_QUESTIONS = [
 ];
 
 const AGREEMENT_OPTIONS = [
-  { value: 1, label: 'Strongly Disagree', shortLabel: 'SD', color: 'bg-red-100 dark:bg-red-900/30 border-red-300 text-red-700 hover:bg-red-200' },
-  { value: 2, label: 'Disagree', shortLabel: 'D', color: 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 text-orange-700 hover:bg-orange-200' },
-  { value: 3, label: 'Agree', shortLabel: 'A', color: 'bg-teal-100 dark:bg-teal-900/30 border-teal-300 text-teal-700 hover:bg-teal-200' },
-  { value: 4, label: 'Strongly Agree', shortLabel: 'SA', color: 'bg-green-100 dark:bg-green-900/30 border-green-300 text-green-700 hover:bg-green-200' },
+  { value: 1, label: 'Strongly Disagree', shortLabel: 'Strongly Disagree', color: 'bg-red-100 dark:bg-red-900/30 border-red-300 text-red-700 hover:bg-red-200' },
+  { value: 2, label: 'Disagree', shortLabel: 'Disagree', color: 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 text-orange-700 hover:bg-orange-200' },
+  { value: 3, label: 'Agree', shortLabel: 'Agree', color: 'bg-teal-100 dark:bg-teal-900/30 border-teal-300 text-teal-700 hover:bg-teal-200' },
+  { value: 4, label: 'Strongly Agree', shortLabel: 'Strongly Agree', color: 'bg-green-100 dark:bg-green-900/30 border-green-300 text-green-700 hover:bg-green-200' },
 ];
 
 // --- Question 14: Open Text ---
@@ -194,19 +194,19 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
           <span className="text-xs text-gray-500 dark:text-slate-400 mt-1 inline-block">{question.category}</span>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2 ml-10">
+      <div className="grid grid-cols-4 gap-1.5 ml-10">
         {options.map(option => (
           <button
             key={option.value}
             onClick={() => handleResponse(question.id, option.value)}
             title={option.label}
-            className={`px-3 py-2 rounded-lg text-xs font-medium border-2 transition-all text-center
+            className={`px-2 py-2 rounded-lg text-xs font-medium border-2 transition-all text-center
               ${responses[question.id] === option.value
                 ? `${option.color.split(' hover:')[0]} ring-2 ring-offset-1 ring-corporate-teal/40 scale-105`
                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50'
               }`}
           >
-            {option.label}
+            {option.shortLabel}
           </button>
         ))}
       </div>
@@ -223,7 +223,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
               <ClipboardCheck className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">Leadership Baseline Assessment</h2>
+              <h2 className="text-lg font-bold">Leadership Skills Baseline</h2>
               <p className="text-blue-200 text-sm">Thinking about the last 30 days, how often did you do the following?</p>
             </div>
           </div>
@@ -257,9 +257,9 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
         {/* Section: Frequency Questions (1-10) */}
         <div className="mb-2">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Frequency — Last 30 Days</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
+          <div className="grid grid-cols-4 gap-1.5 text-xs mb-3">
             {FREQUENCY_OPTIONS.map(o => (
-              <span key={o.value} className={`px-2 py-1 rounded border text-center ${o.color.split(' hover:')[0]}`}>{o.label}</span>
+              <span key={o.value} className={`px-2 py-1 rounded border text-center ${o.color.split(' hover:')[0]}`}>{o.shortLabel}</span>
             ))}
           </div>
         </div>
@@ -269,9 +269,9 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
         {/* Section: Agreement Questions (11-13) */}
         <div className="mt-6 mb-2 pt-4 border-t border-slate-200 dark:border-slate-700">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Agreement</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
+          <div className="grid grid-cols-4 gap-1.5 text-xs mb-3">
             {AGREEMENT_OPTIONS.map(o => (
-              <span key={o.value} className={`px-2 py-1 rounded border text-center ${o.color.split(' hover:')[0]}`}>{o.label}</span>
+              <span key={o.value} className={`px-2 py-1 rounded border text-center ${o.color.split(' hover:')[0]}`}>{o.shortLabel}</span>
             ))}
           </div>
         </div>

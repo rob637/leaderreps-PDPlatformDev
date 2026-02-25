@@ -43,31 +43,31 @@ const RepSessionComplete = ({
       </div>
 
       {/* Main Message */}
-      <h1 className="text-2xl md:text-3xl font-bold text-corporate-navy mb-2">
+      <h1 className="text-2xl md:text-3xl font-bold text-corporate-navy dark:text-slate-100 mb-2">
         Nice work, {userName}! ✨
       </h1>
       
-      <p className="text-rep-text-secondary text-lg mb-6">
+      <p className="text-slate-500 dark:text-slate-400 text-lg mb-6">
         Session complete in {sessionMinutes} minutes
       </p>
 
       {/* Streak Card */}
-      <div className="bg-gradient-to-r from-rep-coral-light to-rep-teal-light rounded-2xl p-4 mb-6 w-full max-w-sm">
+      <div className="bg-gradient-to-r from-orange-50 to-teal-50 dark:from-orange-900/20 dark:to-teal-900/20 rounded-2xl p-4 mb-6 w-full max-w-sm">
         <div className="flex items-center justify-center gap-3">
           <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shadow-sm">
             <Flame className="w-6 h-6 text-corporate-orange" />
           </div>
           <div className="text-left">
-            <div className="text-2xl font-bold text-corporate-navy">{streak} Day Streak</div>
-            <div className="text-sm text-rep-text-secondary">{streakMessage}</div>
+            <div className="text-2xl font-bold text-corporate-navy dark:text-slate-100">{streak} Day Streak</div>
+            <div className="text-sm text-slate-500 dark:text-slate-400">{streakMessage}</div>
           </div>
         </div>
       </div>
 
       {/* Cohort Position (if available) */}
       {cohortPosition && (
-        <div className="flex items-center gap-2 text-sm text-rep-text-secondary bg-rep-navy-light rounded-full px-4 py-2 mb-6">
-          <Users className="w-4 h-4 text-corporate-teal" />
+        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 rounded-full px-4 py-2 mb-6">
+          <Users className="w-4 h-4 text-corporate-teal dark:text-teal-400" />
           <span>{cohortPosition}</span>
         </div>
       )}
@@ -75,8 +75,8 @@ const RepSessionComplete = ({
       {/* Next Session Preview */}
       {nextSessionPreview && (
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-6 w-full max-w-sm text-left">
-          <div className="text-xs text-rep-text-secondary uppercase tracking-wide mb-1">Tomorrow</div>
-          <div className="text-sm font-medium text-rep-text-primary">{nextSessionPreview}</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Tomorrow</div>
+          <div className="text-sm font-medium text-slate-800 dark:text-slate-200">{nextSessionPreview}</div>
         </div>
       )}
 
@@ -93,7 +93,7 @@ const RepSessionComplete = ({
         
         <button
           onClick={onViewApp}
-          className="w-full py-3 bg-white dark:bg-slate-800 text-rep-text-primary border border-gray-200 dark:border-gray-700 rounded-xl font-medium 
+          className="w-full py-3 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-gray-200 dark:border-gray-700 rounded-xl font-medium 
                      hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
         >
           Explore the App

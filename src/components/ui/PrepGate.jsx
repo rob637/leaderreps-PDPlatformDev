@@ -74,7 +74,7 @@ const PrepGate = ({ children, showStatus = true }) => {
               )}
             </div>
 
-            {/* Baseline Assessment */}
+            {/* Leadership Skills Baseline */}
             <div 
               onClick={() => navigate('development-plan')}
               className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
@@ -93,7 +93,7 @@ const PrepGate = ({ children, showStatus = true }) => {
                 )}
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-corporate-navy">Baseline Assessment</h3>
+                <h3 className="font-semibold text-corporate-navy">Leadership Skills Baseline</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   {prepStatus.hasBaselineAssessment 
                     ? 'Completed' 

@@ -13,7 +13,7 @@ const AccessControlContext = createContext(null);
  * - Locker
  * 
  * Also implements the Prep Gate to ensure users complete
- * Leader Profile and Baseline Assessment before Day 1.
+ * Leader Profile and Leadership Skills Baseline before Day 1.
  */
 export const AccessControlProvider = ({ children }) => {
   const accessControl = useDayBasedAccessControl();

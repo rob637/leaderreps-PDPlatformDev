@@ -3134,14 +3134,14 @@ render(<RepsHistoryWidget />);
   
   const handleViewBaseline = () => {
     if (navigate) {
-      // Navigate to view/update the baseline assessment
+      // Navigate to view/update the Leadership Skills Baseline
       navigate('development-plan', { view: 'baseline', mode: 'view', _t: Date.now() });
     }
   };
 
   return (
     <Card 
-      title="Baseline Assessment" 
+      title="Leadership Skills Baseline" 
       icon={ClipboardList}
       accent="NAVY"
     >
@@ -3227,10 +3227,10 @@ export const FEATURE_METADATA = {
   'baseline-assessment': {
     core: false,  // DEPRECATED - Now handled as INTERACTIVE content in ThisWeeksActionsWidget
     category: 'Dashboard',
-    name: 'Baseline Assessment (Legacy)',
-    description: 'Complete Your Baseline Assessment',
+    name: 'Leadership Skills Baseline (Legacy)',
+    description: 'Complete Your Leadership Skills Baseline',
     purpose: 'DEPRECATED: Now handled as INTERACTIVE content type in ThisWeeksActionsWidget.',
-    extendedDescription: 'Legacy widget. Baseline Assessment is now managed as an INTERACTIVE content item in the Content Library and appears inline in the Actions list.',
+    extendedDescription: 'Legacy widget. Leadership Skills Baseline is now managed as an INTERACTIVE content item in the Content Library and appears inline in the Actions list.',
     inputs: ['developmentPlanData'],
     outputs: ['assessmentHistory'],
     componentPath: 'src/components/widgets/BaselineAssessmentWidget.jsx',

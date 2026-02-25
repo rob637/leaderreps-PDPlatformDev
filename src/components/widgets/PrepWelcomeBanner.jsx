@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { 
   Target, Rocket, Calendar, 
-  ChevronRight, Users, Info
+  ChevronRight, Users, Info, Flame
 } from 'lucide-react';
 import { useDailyPlan, ONBOARDING_MODULES } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
@@ -11,18 +11,20 @@ import FacilitatorProfileModal from './FacilitatorProfileModal';
 import FacilitatorAvatar from './FacilitatorAvatar';
 
 /**
- * PrepWelcomeBanner - Progress-Based Onboarding for Prep Phase
+ * PrepWelcomeBanner - Progress-Based Welcome Banner for Prep and Foundation Phases
  * 
- * Shows content based on user's COMPLETION STATUS (not days or logins):
+ * PREP PHASE: Shows content based on user's COMPLETION STATUS (not days or logins):
  * - Not started: Welcome message, encourage to start Required Prep
  * - In progress: Show remaining required items
  * - Complete: Congratulations, show Explore section is unlocked
+ * 
+ * FOUNDATION PHASE: Shows current week progress and milestone info
  * 
  * Includes cohort name and facilitator info if available.
  */
 const PrepWelcomeBanner = () => {
   const { user, developmentPlanData } = useAppServices();
-  const { prepPhaseInfo, currentPhase, currentDayData, userState, prepRequirementsComplete } = useDailyPlan();
+  const { prepPhaseInfo, currentPhase, currentDayData, userState, prepRequirementsComplete, phaseDayNumber } = useDailyPlan();
   const { getItemProgress } = useActionProgress();
   const { isComplete: leaderProfileComplete, profile: leaderProfile } = useLeaderProfile();
   const [showFacilitatorModal, setShowFacilitatorModal] = useState(false);
@@ -87,10 +89,18 @@ const PrepWelcomeBanner = () => {
     return [...interactiveItems, ...filteredDailyActions];
   }, [currentDayData, leaderProfileComplete, baselineAssessmentComplete]);
   
-  // Only show in Prep Phase
-  if (currentPhase?.id !== 'pre-start') {
+  // Calculate current week for Foundation phase
+  const currentWeekNumber = useMemo(() => {
+    if (currentPhase?.id !== 'start') return 0;
+    return Math.ceil(phaseDayNumber / 7) || 1;
+  }, [currentPhase?.id, phaseDayNumber]);
+  
+  // Only show in Prep Phase or Foundation (start) Phase
+  if (currentPhase?.id !== 'pre-start' && currentPhase?.id !== 'start') {
     return null;
   }
+  
+  const isFoundationPhase = currentPhase?.id === 'start';
   
   const info = prepPhaseInfo || {};
   const { 
@@ -139,6 +149,17 @@ const PrepWelcomeBanner = () => {
 
   // Build headline - progress-based, not day-based
   const getPersonalizedHeadline = () => {
+    // Foundation phase - show week-based encouragement
+    if (isFoundationPhase) {
+      if (currentWeekNumber === 1) {
+        return `Let's Go, ${firstName}!`;
+      }
+      if (currentWeekNumber >= 8) {
+        return `Final Week, ${firstName}!`;
+      }
+      return `Keep Going, ${firstName}!`;
+    }
+    
     // Prep complete - show success!
     if (isPrepComplete) {
       return `You're Ready, ${firstName}!`;
@@ -161,6 +182,17 @@ const PrepWelcomeBanner = () => {
 
   // Get the subtext - progress-based messaging
   const getSubtext = () => {
+    // Foundation phase - show week guidance
+    if (isFoundationPhase) {
+      if (currentWeekNumber === 1) {
+        return "Your Foundation journey has begun! Build daily leadership habits with your morning practice and evening reflection.";
+      }
+      if (currentWeekNumber >= 8) {
+        return "You're in the final stretch! Finish strong and prepare for your leadership Ascent.";
+      }
+      return `Week ${currentWeekNumber} of your Foundation. Stay consistent with your daily practices to build lasting leadership habits.`;
+    }
+    
     // After prep requirements complete, show success message with explanation of new functionality
     if (isPrepComplete) {
       if (daysUntilStart <= 0) {
@@ -206,8 +238,17 @@ const PrepWelcomeBanner = () => {
             {/* Phase Badge - Cleaner, simpler */}
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-2 text-corporate-teal font-bold tracking-wider text-xs uppercase">
-                <Target className="w-4 h-4" />
-                <span>Foundation Prep</span>
+                {isFoundationPhase ? (
+                  <>
+                    <Flame className="w-4 h-4" />
+                    <span>Foundation Week {currentWeekNumber}</span>
+                  </>
+                ) : (
+                  <>
+                    <Target className="w-4 h-4" />
+                    <span>Foundation Prep</span>
+                  </>
+                )}
               </div>
               {cohortName && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center gap-1">
@@ -215,7 +256,7 @@ const PrepWelcomeBanner = () => {
                   {cohortName}
                 </span>
               )}
-              {isPrepComplete && (
+              {!isFoundationPhase && isPrepComplete && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 font-bold">
                   ✓ READY
                 </span>
@@ -255,11 +296,16 @@ const PrepWelcomeBanner = () => {
             />
           </div>
 
-          {/* Right Visual - Countdown to Session One with Date - Clean and simple */}
+          {/* Right Visual - Countdown/Week Display - Clean and simple */}
           <div className="hidden lg:flex flex-col items-center gap-3">
-            {/* Countdown Circle - Simplified */}
+            {/* Circle Display - Simplified */}
             <div className="relative w-24 h-24 rounded-full flex items-center justify-center shadow-md bg-gradient-to-br from-corporate-teal to-emerald-600 shadow-corporate-teal/20">
-              {isLaunch ? (
+              {isFoundationPhase ? (
+                <div className="text-center">
+                  <span className="text-3xl font-bold text-white">{currentWeekNumber}</span>
+                  <span className="block text-xs text-white/80 font-medium">of 8</span>
+                </div>
+              ) : isLaunch ? (
                 <Rocket className="w-10 h-10 text-white" />
               ) : (
                 <div className="text-center">
@@ -270,10 +316,12 @@ const PrepWelcomeBanner = () => {
                 </div>
               )}
             </div>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">until Session One</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              {isFoundationPhase ? 'Foundation Week' : 'until Session One'}
+            </span>
             
-            {/* Session One Date - Show actual date from cohort */}
-            {cohortStartDate && (
+            {/* Session One Date - Show actual date from cohort (only in prep phase) */}
+            {!isFoundationPhase && cohortStartDate && (
               <div className="text-center bg-slate-50 dark:bg-slate-800 rounded-lg px-3 py-2 border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                   <Calendar className="w-3.5 h-3.5" />

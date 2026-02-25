@@ -2,7 +2,7 @@
  * Fix all prep item handlerTypes in day-001
  * - Download/print Onboarding Guide: should have NO handlerType (opens resource)
  * - Complete Leader Profile: should have handlerType='leader-profile'
- * - Complete Baseline Assessment: should have handlerType='baseline-assessment'
+ * - Complete Leadership Skills Baseline: should have handlerType='baseline-assessment'
  * - Accept Foundation Expectations: should have handlerType='foundation-commitment'
  */
 
@@ -51,7 +51,7 @@ const handlerRules = [
   { 
     match: label => label.includes('baseline assessment'),
     expectedHandler: 'baseline-assessment',
-    name: 'Baseline Assessment'
+    name: 'Leadership Skills Baseline'
   },
   { 
     match: label => label.includes('foundation') && (label.includes('expectations') || label.includes('commitment')),

@@ -34,7 +34,7 @@ Week 8: Innovation & Change
 ---
 
 ### Option 2: Adaptive Based on User Profile
-Use their Baseline Assessment + Leader Profile to serve personalized content:
+Use their Leadership Skills Baseline + Leader Profile to serve personalized content:
 
 - **Low score in Delegation?** → More delegation content this week
 - **High score in Communication?** → Advanced communication challenges

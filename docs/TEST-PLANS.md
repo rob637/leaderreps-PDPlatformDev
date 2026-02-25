@@ -142,7 +142,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 |---------|-----------|-------|-----------------|-----------|
 | DEV-001 | New User Enrollment | Create new account, access Dev Plan | Enrollment prompt displays | |
 | DEV-002 | Start Plan | Click "Start Plan" button | Plan initialized, Week 1 active | |
-| DEV-003 | Baseline Assessment | Complete assessment | Results saved, recommendations show | |
+| DEV-003 | Leadership Skills Baseline | Complete assessment | Results saved, recommendations show | |
 
 ### 3.2 Week Navigation
 

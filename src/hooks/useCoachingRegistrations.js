@@ -6,6 +6,7 @@ import {
   where, 
   onSnapshot,
   doc,
+  getDoc,
   setDoc,
   updateDoc,
   increment,
@@ -137,11 +138,17 @@ export const useCoachingRegistrations = () => {
               cancelledAt: serverTimestamp(),
               cancelReason: 'switched_session'
             }, { merge: true });
-            // Decrement registration count on the old session
+            // Decrement registration count on the old session (guard against negative)
             const oldSessionRef = doc(db, COACHING_SESSIONS_COLLECTION, existing1on1.sessionId);
-            await updateDoc(oldSessionRef, {
-              registrationCount: increment(-1)
-            });
+            const oldSessionSnap = await getDoc(oldSessionRef);
+            const oldCount = oldSessionSnap.data()?.registrationCount || 0;
+            if (oldCount > 0) {
+              await updateDoc(oldSessionRef, {
+                registrationCount: increment(-1)
+              });
+            } else {
+              await updateDoc(oldSessionRef, { registrationCount: 0 });
+            }
           } catch (err) {
             console.error('[useCoachingRegistrations] Error cancelling previous 1:1:', err);
             return { success: false, error: 'Failed to cancel previous session' };
@@ -177,11 +184,17 @@ export const useCoachingRegistrations = () => {
               cancelledAt: serverTimestamp(),
               cancelReason: 'switched_session'
             }, { merge: true });
-            // Decrement registration count on the old session
+            // Decrement registration count on the old session (guard against negative)
             const oldSessionRef = doc(db, COACHING_SESSIONS_COLLECTION, existingReg.sessionId);
-            await updateDoc(oldSessionRef, {
-              registrationCount: increment(-1)
-            });
+            const oldSessionSnap = await getDoc(oldSessionRef);
+            const oldCount = oldSessionSnap.data()?.registrationCount || 0;
+            if (oldCount > 0) {
+              await updateDoc(oldSessionRef, {
+                registrationCount: increment(-1)
+              });
+            } else {
+              await updateDoc(oldSessionRef, { registrationCount: 0 });
+            }
           } catch (err) {
             console.error('[useCoachingRegistrations] Error cancelling previous registration:', err);
           }
@@ -267,12 +280,21 @@ export const useCoachingRegistrations = () => {
         cancelledAt: serverTimestamp()
       }, { merge: true });
 
-      // Decrement registration count on the session
+      // Decrement registration count on the session (guard against going below 0)
       try {
         const sessionRef = doc(db, COACHING_SESSIONS_COLLECTION, sessionId);
-        await updateDoc(sessionRef, {
-          registrationCount: increment(-1)
-        });
+        const sessionSnap = await getDoc(sessionRef);
+        const currentCount = sessionSnap.data()?.registrationCount || 0;
+        if (currentCount > 0) {
+          await updateDoc(sessionRef, {
+            registrationCount: increment(-1)
+          });
+        } else {
+          // Reset to 0 if already at 0 or negative
+          await updateDoc(sessionRef, {
+            registrationCount: 0
+          });
+        }
       } catch (countErr) {
         console.warn('[useCoachingRegistrations] Could not update registration count:', countErr);
         // Don't fail the cancellation if count update fails

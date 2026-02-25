@@ -36,7 +36,7 @@ const NOTIFICATION_STRATEGIES = {
     details: [
       'Day 1 missed: Push notification only',
       'Day 2 missed: Push + Email',
-      'Day 3+ missed: Push + Email + SMS'
+      'Day 3+ missed: Push + Email reminder'
     ],
     default: true
   },
@@ -57,7 +57,7 @@ const NOTIFICATION_STRATEGIES = {
     description: 'All channels, every reminder',
     icon: Shield,
     details: [
-      'Push + Email + SMS always',
+      'Push + Email always',
       'Maximum accountability',
       'Best for building habits'
     ]
@@ -640,7 +640,7 @@ const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
         </div>
       )}
 
-        {/* Phone Number - Show prominently when SMS strategy is selected */}
+        {/* Phone Number - SMS is disabled for go-live
         {strategyRequiresSMS(settings.strategy) && (
           <div className={`p-4 rounded-xl border ${phoneError ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'}`}>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
@@ -678,6 +678,7 @@ const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
           )}
         </div>
       )}
+        */}
 
         {/* Email Address - Show when email strategy is selected */}
         {strategyUsesEmail(settings.strategy) && (

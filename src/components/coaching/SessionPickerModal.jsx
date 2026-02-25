@@ -362,7 +362,8 @@ const SessionPickerModal = ({
                   const registeredForThisSession = isRegistered(session.id);
                   // Calculate spots - use type-specific default (e.g., 1 for 1:1 sessions)
                   const defaultMax = getDefaultMaxAttendees(session.sessionType);
-                  const spotsLeft = (session.maxAttendees || defaultMax) - (session.registrationCount || 0);
+                  const maxSpots = session.maxAttendees || defaultMax;
+                  const spotsLeft = Math.max(0, Math.min(maxSpots, maxSpots - Math.max(0, session.registrationCount || 0)));
                   const isFull = spotsLeft <= 0 && !registeredForThisSession;
                   const isPast = new Date(session.date) < new Date();
                   // Show "switch" button if user has an existing registration and this is a different session

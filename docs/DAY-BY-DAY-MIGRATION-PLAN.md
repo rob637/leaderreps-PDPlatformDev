@@ -18,7 +18,7 @@ This document outlines the technical strategy to shift the LeaderReps platform f
 ### 1.3. Lock & Key Evolution
 - **Granularity:** Unlocking happens daily at 00:00 local time (or server time).
 - **Scope:**
-    - **Prep Phase:** Unlocks "Leader Profile", "Baseline Assessment", "Pre-workbooks".
+    - **Prep Phase:** Unlocks "Leader Profile", "Leadership Skills Baseline", "Pre-workbooks".
     - **Core Phase:** Unlocks "Daily Reps", "Weekly Focus", "Content", "Media".
 
 ---

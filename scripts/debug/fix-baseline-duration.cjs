@@ -20,7 +20,7 @@ async function fixEnv(name, serviceAccountPath, projectId) {
     const data = doc.data();
     const newActions = data.actions.map(a => {
       if (a.label?.includes('Baseline Assessment')) {
-        console.log(`  ${name}: Fixing Baseline Assessment: ${a.duration} → 8 min`);
+        console.log(`  ${name}: Fixing Leadership Skills Baseline: ${a.duration} → 8 min`);
         return { ...a, duration: 8 };
       }
       return a;
@@ -30,7 +30,7 @@ async function fixEnv(name, serviceAccountPath, projectId) {
 }
 
 async function run() {
-  console.log('=== FIXING BASELINE ASSESSMENT DURATION ===\n');
+  console.log('=== FIXING LEADERSHIP SKILLS BASELINE DURATION ===\n');
   
   await fixEnv('DEV', '/workspaces/leaderreps-PDPlatformDev/leaderreps-pd-platform-firebase-adminsdk.json', 'leaderreps-pd-platform');
   await fixEnv('TEST', '/workspaces/leaderreps-PDPlatformDev/leaderreps-test-firebase-adminsdk.json', 'leaderreps-test');

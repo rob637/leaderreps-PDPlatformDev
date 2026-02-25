@@ -1,7 +1,7 @@
 // src/components/screens/Library.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { BookOpen, ShieldCheck, Film, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText, Layers, Dumbbell, Wrench, ListVideo } from 'lucide-react';
+import { BookOpen, ShieldCheck, Film, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText, Layers, Dumbbell, Wrench } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { PageLayout, PageGrid, NoWidgetsEnabled } from '../ui';
 import { DashboardCard } from '../ui/DashboardCard';
@@ -111,20 +111,11 @@ const Library = () => {
       {
         id: 'videos',
         title: 'Videos',
-        description: 'Leadership videos and talks to inspire and educate.',
+        description: 'Leadership videos, talks, and curated playlists.',
         icon: Film,
         screen: 'videos-index',
         color: 'text-corporate-orange',
         bgColor: 'bg-corporate-orange/10'
-      },
-      {
-        id: 'video-series',
-        title: 'Video Series',
-        description: 'Curated playlists of videos to watch in sequence.',
-        icon: ListVideo,
-        screen: 'video-series-index',
-        color: 'text-purple-600 dark:text-purple-400',
-        bgColor: 'bg-purple-100 dark:bg-purple-900/30'
       },
       {
         id: 'documents',

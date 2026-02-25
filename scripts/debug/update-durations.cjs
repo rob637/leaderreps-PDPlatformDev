@@ -11,7 +11,7 @@ const db = admin.firestore();
 // Durations by label (partial match)
 const durationMap = {
   'Leader Profile': 5,
-  'Baseline Assessment': 10,
+  'Leadership Skills Baseline': 10,
   'Onboarding Guide': 3,
   'Onboarding Videos': 14,
   'Foundation Expectations': 2,

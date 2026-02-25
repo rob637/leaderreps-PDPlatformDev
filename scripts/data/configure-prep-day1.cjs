@@ -1,5 +1,5 @@
 /**
- * Configure Prep Phase Day 1 with Leader Profile and Baseline Assessment actions
+ * Configure Prep Phase Day 1 with Leader Profile and Leadership Skills Baseline actions
  * Run: node configure-prep-day1.cjs
  */
 const admin = require('firebase-admin');
@@ -18,7 +18,7 @@ async function configurePrepDay1() {
     dayNumber: 1,
     weekNumber: -2,  // Prep Week 1 (2 weeks before start)
     title: 'Set Up Your Leadership Journey',
-    focus: 'Complete your profile and baseline assessment to personalize your experience',
+    focus: 'Complete your profile and Leadership Skills Baseline to personalize your experience',
     isWeekend: false,
     
     // Actions for Day 1
@@ -36,7 +36,7 @@ async function configurePrepDay1() {
       {
         id: 'action-baseline-assessment',
         type: 'task',
-        label: 'Complete Your Baseline Assessment',
+        label: 'Complete Your Leadership Skills Baseline',
         description: 'Assess your current leadership skills and set 1-3 development goals. This creates your personalized plan.',
         resourceId: null, // No external resource - handled by in-app assessment
         isCompleted: false,
@@ -63,7 +63,7 @@ async function configurePrepDay1() {
       'welcome-message': true,        // SHOW - Greeting
       'daily-quote': true,            // SHOW - Inspirational
       'weekly-focus': true,           // SHOW - Today's focus
-      'this-weeks-actions': true,     // SHOW - Contains Leader Profile & Baseline Assessment as INTERACTIVE items
+      'this-weeks-actions': true,     // SHOW - Contains Leader Profile & Leadership Skills Baseline as INTERACTIVE items
       
       // Hide during Prep Phase
       'am-bookend-header': false,
