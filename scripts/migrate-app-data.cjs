@@ -37,7 +37,7 @@ const path = require('path');
 // Collections that contain APPLICATION data (should migrate)
 const APP_DATA_COLLECTIONS = [
   'development_plan_v1',
-  'daily_plan_v1',           // NEW: Day-by-Day Daily Plan (includes prep phase)
+  'daily_plan_v1',           // Day-by-Day Daily Plan (includes prep phase)
   'system_lovs',
   'content_readings',
   'content_videos',
@@ -52,6 +52,8 @@ const APP_DATA_COLLECTIONS = [
   'content_documents',       // Document Wrappers
   'content',                 // Unified Content Library (Legacy/Migration)
   'content_library',         // Unified Content Library (Canonical)
+  'unified-content',         // Unified Content (Admin CMS)
+  'content-groups',          // Content Groups (Session/Week groupings)
   'skills',                  // Skills Taxonomy
   'video_series',            // Video Series (multi-video playlists)
   // NOTE: 'cohorts' removed - contains user data (facilitator, memberIds)
