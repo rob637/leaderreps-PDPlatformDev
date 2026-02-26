@@ -196,8 +196,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Notification Setup completion tracking
   // Must use prepStatus.notifications (set explicitly when user completes the setup form)
   // NOT notificationSettings.strategy (which can be set by defaults from other flows)
-  const [notificationSetupComplete, setNotificationSetupComplete] = useState(false);
+  // Initialize from user prop to avoid race condition
+  const [notificationSetupComplete, setNotificationSetupComplete] = useState(
+    user?.prepStatus?.notifications === true
+  );
   useEffect(() => {
+    // Re-check from Firestore when modal closes or user changes
     const checkNotificationSettings = async () => {
       if (!db || !user?.uid) return;
       try {
@@ -215,8 +219,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     checkNotificationSettings();
   }, [db, user?.uid, showNotificationModal]); // Re-check when modal closes
   
+  // Also sync from user prop when it changes
+  useEffect(() => {
+    if (user?.prepStatus?.notifications === true) {
+      setNotificationSetupComplete(true);
+    }
+  }, [user?.prepStatus?.notifications]);
+  
   // Foundation Commitment completion tracking
-  const [foundationCommitmentComplete, setFoundationCommitmentComplete] = useState(false);
+  // Initialize from user prop to avoid race condition
+  const [foundationCommitmentComplete, setFoundationCommitmentComplete] = useState(
+    user?.prepStatus?.foundationCommitment === true
+  );
   useEffect(() => {
     const checkFoundationCommitment = async () => {
       if (!db || !user?.uid) return;
@@ -234,8 +248,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     checkFoundationCommitment();
   }, [db, user?.uid, showFoundationCommitmentModal]); // Re-check when modal closes
   
+  // Sync from user prop when it changes
+  useEffect(() => {
+    if (user?.prepStatus?.foundationCommitment === true) {
+      setFoundationCommitmentComplete(true);
+    }
+  }, [user?.prepStatus?.foundationCommitment]);
+  
   // Conditioning Tutorial completion tracking
-  const [conditioningTutorialComplete, setConditioningTutorialComplete] = useState(false);
+  // Initialize from user prop to avoid race condition
+  const [conditioningTutorialComplete, setConditioningTutorialComplete] = useState(
+    user?.prepStatus?.conditioningTutorial === true
+  );
   useEffect(() => {
     const checkConditioningTutorial = async () => {
       if (!db || !user?.uid) return;
@@ -252,6 +276,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     };
     checkConditioningTutorial();
   }, [db, user?.uid, showConditioningTutorialModal]); // Re-check when modal closes
+  
+  // Sync from user prop when it changes
+  useEffect(() => {
+    if (user?.prepStatus?.conditioningTutorial === true) {
+      setConditioningTutorialComplete(true);
+    }
+  }, [user?.prepStatus?.conditioningTutorial]);
   
   // Video Series completion tracking (check prepStatus.videoSeries)
   const videoSeriesComplete = useMemo(() => {
