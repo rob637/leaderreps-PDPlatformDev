@@ -102,22 +102,9 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
     }
   };
 
-  // Handler for closing the viewer - marks video as watched if applicable
+  // Handler for closing the viewer - does NOT auto-mark videos complete
+  // Videos are only marked complete when they finish playing (handleVideoEnded)
   const handleClose = () => {
-    // Mark video as watched when closing (if it's a video and has completion handler)
-    if (onVideoComplete && !markedComplete) {
-      const isEmbeddedVideo = url && (
-        url.includes('youtube.com') || 
-        url.includes('youtu.be') || 
-        url.includes('vimeo.com') || 
-        url.includes('loom.com')
-      );
-      const isVideoType = resourceType === 'video' || legacyType === 'video';
-      
-      if (isEmbeddedVideo || isVideoType) {
-        handleMarkWatched();
-      }
-    }
     if (onClose) {
       onClose();
     }
@@ -482,7 +469,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
   return (
     <div 
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 pb-24 sm:pb-4 animate-in fade-in duration-200"
-      onClick={handleClose} // Close on backdrop click - marks video as watched
+      onClick={handleClose}
     >
       <div 
         className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[70dvh] sm:max-h-[90vh] flex flex-col overflow-hidden relative"
