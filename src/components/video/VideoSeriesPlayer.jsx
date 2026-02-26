@@ -476,6 +476,14 @@ export default function VideoSeriesPlayer({
                   onCanPlay={() => {
                     console.log('[VideoSeriesPlayer] Video can play');
                   }}
+                  onTimeUpdate={(e) => {
+                    // Auto-mark as watched when within last 5 seconds
+                    const video = e.target;
+                    const timeRemaining = video.duration - video.currentTime;
+                    if (timeRemaining <= 5 && video.duration > 0 && !watchedVideos.has(currentVideo?.id)) {
+                      markCurrentWatched();
+                    }
+                  }}
                   onEnded={() => {
                     console.log('[VideoSeriesPlayer] onEnded fired for video index:', currentVideoIndexRef.current, 'id:', currentVideo?.id);
                     // Mark as watched in background - don't await to avoid blocking goToNext

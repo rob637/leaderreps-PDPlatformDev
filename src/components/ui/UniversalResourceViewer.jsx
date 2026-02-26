@@ -89,9 +89,20 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
 
   // Handler for marking video as watched
   const handleMarkWatched = () => {
+    if (markedComplete) return; // Prevent duplicate calls
     setMarkedComplete(true);
     if (onVideoComplete) {
       onVideoComplete(resource);
+    }
+  };
+
+  // Handler for video time update - mark complete when within last 5 seconds
+  const handleTimeUpdate = (e) => {
+    if (markedComplete) return;
+    const video = e.target;
+    const timeRemaining = video.duration - video.currentTime;
+    if (timeRemaining <= 5 && video.duration > 0) {
+      handleMarkWatched();
     }
   };
 
@@ -231,6 +242,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
                   playsInline
                   crossOrigin="anonymous"
                   className="w-full h-full max-h-[70vh]"
+                  onTimeUpdate={handleTimeUpdate}
                   onEnded={handleVideoEnded}
                 >
                   <p className="text-white p-4 text-center">
