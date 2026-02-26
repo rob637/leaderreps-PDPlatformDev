@@ -629,12 +629,32 @@ export const useDailyPlan = () => {
     
     // Build items array with completion status
     const items = requiredPrepActions.map(action => {
-      const handlerType = action.handlerType || '';
+      // Get handlerType from action, or infer from label/ID if not explicitly set
+      let handlerType = action.handlerType || '';
       const labelLower = (action.label || '').toLowerCase();
+      const actionId = action.id || '';
+      const resourceId = action.resourceId || '';
+      
+      // Infer handlerType from label or ID if not explicitly set
+      if (!handlerType) {
+        if (actionId.includes('leader-profile') || resourceId === 'interactive-leader-profile' || labelLower.includes('leader profile')) {
+          handlerType = 'leader-profile';
+        } else if (actionId.includes('baseline-assessment') || resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline') || labelLower.includes('skills assessment')) {
+          handlerType = 'baseline-assessment';
+        } else if (actionId.includes('notification-setup') || resourceId === 'interactive-notification-setup' || labelLower.includes('notification')) {
+          handlerType = 'notification-setup';
+        } else if (actionId.includes('foundation-commitment') || resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation expectation') || labelLower.includes('foundation commitment')) {
+          handlerType = 'foundation-commitment';
+        } else if (actionId.includes('conditioning-tutorial') || resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
+          handlerType = 'conditioning-tutorial';
+        } else if (action.resourceType === 'video_series') {
+          handlerType = 'video-series';
+        }
+      }
       
       let complete = false;
       
-      // Special handling for interactive items - use handlerType ONLY, no label matching
+      // Special handling for interactive items - use inferred handlerType
       // This prevents cross-matching between items with similar words in labels
       if (handlerType === 'leader-profile') {
         complete = user?.prepStatus?.leaderProfile || leaderProfileComplete || false;
@@ -671,7 +691,7 @@ export const useDailyPlan = () => {
         id: action.id,
         label: action.label || 'Required Item',
         complete,
-        handlerType: action.handlerType,
+        handlerType: handlerType, // Use inferred handlerType, not just action.handlerType
         type: action.type,
         // Prep section for splitting Onboarding vs Session 1 (default to 'onboarding')
         prepSection: action.prepSection || 'onboarding'
