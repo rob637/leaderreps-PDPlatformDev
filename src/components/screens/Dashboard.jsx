@@ -236,11 +236,13 @@ const Dashboard = () => {
   const [isWinSaved, setIsWinSaved] = useState(false);
   const [isEditingLIS, setIsEditingLIS] = useState(false);
 
-  // State for prep complete modal
+  // State for prep milestone modals (onboarding complete + all prep complete)
   const [showPrepCompleteModal, setShowPrepCompleteModal] = useState(false);
-  const hasShownModalThisSession = useRef(false);
+  const [prepMilestone, setPrepMilestone] = useState('all-prep'); // 'onboarding' or 'all-prep'
+  const hasShownOnboardingModal = useRef(false);
+  const hasShownAllPrepModal = useRef(false);
   
-  // Show modal when prep is complete (triggered once per session, persisted in localStorage)
+  // Show milestone modals when onboarding or all prep is complete
   useEffect(() => {
     // Only act during prep phase
     if (currentPhase?.id !== 'pre-start') return;
@@ -249,37 +251,51 @@ const Dashboard = () => {
     const userId = user?.uid;
     if (!userId) return;
     
-    // Check if already shown this session or previously dismissed (user-specific key)
-    const storageKey = `prepCompleteModalSeen_${userId}`;
-    const hasSeenBefore = localStorage.getItem(storageKey) === 'true';
+    const onboardingKey = `onboardingCompleteModalSeen_${userId}`;
+    const allPrepKey = `prepCompleteModalSeen_${userId}`;
+    const hasSeenOnboarding = localStorage.getItem(onboardingKey) === 'true';
+    const hasSeenAllPrep = localStorage.getItem(allPrepKey) === 'true';
     
     console.log('[PrepCompleteModal] Check:', {
       phase: currentPhase?.id,
+      onboardingComplete: prepRequirementsComplete?.onboardingComplete,
+      session1Complete: prepRequirementsComplete?.session1Complete,
       allComplete: prepRequirementsComplete?.allComplete,
-      completedCount: prepRequirementsComplete?.completedCount,
-      totalCount: prepRequirementsComplete?.totalCount,
-      hasSeenBefore,
-      hasShownThisSession: hasShownModalThisSession.current,
-      items: prepRequirementsComplete?.items?.map(i => `${i.label}: ${i.complete}`)
+      hasSeenOnboarding,
+      hasSeenAllPrep,
     });
     
-    // Show modal when all prep is complete and user hasn't seen it
-    if (prepRequirementsComplete?.allComplete && !hasSeenBefore && !hasShownModalThisSession.current) {
-      console.log('[PrepCompleteModal] 🎉 Showing modal! All prep complete.');
-      hasShownModalThisSession.current = true;
-      // Scroll to top so user sees the updated welcome banner and new functionality
+    // Priority: Show "all prep complete" modal if everything is done
+    if (prepRequirementsComplete?.allComplete && !hasSeenAllPrep && !hasShownAllPrepModal.current) {
+      console.log('[PrepCompleteModal] 🎉 All prep complete!');
+      hasShownAllPrepModal.current = true;
+      setPrepMilestone('all-prep');
       window.scrollTo({ top: 0, behavior: 'instant' });
-      // Show congratulatory modal
+      setShowPrepCompleteModal(true);
+      return;
+    }
+    
+    // Show "onboarding complete" modal when onboarding is done but session 1 isn't
+    if (prepRequirementsComplete?.onboardingComplete && !prepRequirementsComplete?.allComplete 
+        && !hasSeenOnboarding && !hasShownOnboardingModal.current) {
+      console.log('[PrepCompleteModal] 🎉 Onboarding complete!');
+      hasShownOnboardingModal.current = true;
+      setPrepMilestone('onboarding');
+      window.scrollTo({ top: 0, behavior: 'instant' });
       setShowPrepCompleteModal(true);
     }
-  }, [prepRequirementsComplete?.allComplete, prepRequirementsComplete?.completedCount, currentPhase?.id, user?.uid]);
+  }, [prepRequirementsComplete?.onboardingComplete, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.completedCount, currentPhase?.id, user?.uid]);
   
-  // Handle modal dismissal - persist that user has seen it (user-specific key)
+  // Handle modal dismissal - persist the appropriate milestone key
   const handlePrepCompleteModalClose = () => {
     setShowPrepCompleteModal(false);
     const userId = user?.uid;
     if (userId) {
-      localStorage.setItem(`prepCompleteModalSeen_${userId}`, 'true');
+      if (prepMilestone === 'onboarding') {
+        localStorage.setItem(`onboardingCompleteModalSeen_${userId}`, 'true');
+      } else {
+        localStorage.setItem(`prepCompleteModalSeen_${userId}`, 'true');
+      }
     }
   };
 
@@ -738,6 +754,7 @@ const Dashboard = () => {
       <PrepCompleteModal 
         isOpen={showPrepCompleteModal}
         onClose={handlePrepCompleteModalClose}
+        milestone={prepMilestone}
       />
         </>
       </div>
