@@ -305,14 +305,19 @@ const MediaLibrary = () => {
 
       // Now update asset references in the database
       const oldUrl = replacingAsset.url;
-      const newUrl = importedFile.downloadUrl;
+      const newUrl = importedFile.url;
+      
+      if (!newUrl) {
+        throw new Error('Import succeeded but no URL returned');
+      }
+      
       const count = await updateAssetReferences(db, oldUrl, newUrl);
 
       // Update the asset record itself
       await updateMediaAsset(db, replacingAsset.id, {
         url: newUrl,
-        storagePath: importedFile.storagePath,
-        size: importedFile.size,
+        storagePath: importedFile.storagePath || null,
+        size: importedFile.size || null,
         updatedAt: new Date(),
       });
 

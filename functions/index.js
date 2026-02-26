@@ -4416,7 +4416,17 @@ exports.importFromDrive = onCall({
       };
 
       const docRef = await db.collection('media_assets').add(assetData);
-      results.push({ fileId, name, success: true, assetId: docRef.id });
+      results.push({ 
+        fileId, 
+        name, 
+        success: true, 
+        assetId: docRef.id,
+        url: downloadURL,
+        storagePath,
+        size: parseInt(size) || buffer.length,
+        mimeType,
+        type: mediaType
+      });
       logger.info('Drive import success', { fileId, name, assetId: docRef.id });
 
     } catch (error) {
