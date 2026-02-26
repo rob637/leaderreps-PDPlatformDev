@@ -141,19 +141,6 @@ const PrepCompleteModal = ({ isOpen, onClose, milestone = 'all-prep' }) => {
                   </p>
                 </div>
               </div>
-
-              {/* Win the Day */}
-              <div className="flex gap-3">
-                <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Trophy className="w-4 h-4 text-amber-600" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Win the Day</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                    Use daily tools to set priorities, practice reps, and reflect on your day.
-                  </p>
-                </div>
-              </div>
             </>
           )}
         </div>
