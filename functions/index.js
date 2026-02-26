@@ -4297,7 +4297,7 @@ exports.importFromDrive = onCall({
     throw new HttpsError('permission-denied', 'Not authorized.');
   }
 
-  const { fileIds = [], folderIds = [], getServiceAccountEmail = false } = request.data;
+  const { fileIds = [], folderIds = [], getServiceAccountEmail = false, forReplacement = false } = request.data;
 
   // --- Service account auth via google-auth-library ---
   const { GoogleAuth } = require('google-auth-library');
@@ -4399,35 +4399,40 @@ exports.importFromDrive = onCall({
       else if (mimeType.startsWith('video/')) mediaType = 'VIDEO';
       else if (mimeType.includes('pdf') || mimeType.includes('document') || mimeType.includes('msword')) mediaType = 'DOCUMENT';
 
-      // 6. Create Firestore record
-      const assetData = {
-        title: name,
-        fileName: safeName,
-        storagePath,
-        url: downloadURL,
-        type: mediaType,
-        mimeType,
-        size: parseInt(size) || buffer.length,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        tags: [],
-        source: 'google-drive',
-        driveFileId: fileId,
-      };
+      // 6. Create Firestore record (skip if this is a replacement import)
+      let assetId = null;
+      if (!forReplacement) {
+        const assetData = {
+          title: name,
+          fileName: safeName,
+          storagePath,
+          url: downloadURL,
+          type: mediaType,
+          mimeType,
+          size: parseInt(size) || buffer.length,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          tags: [],
+          source: 'google-drive',
+          driveFileId: fileId,
+        };
 
-      const docRef = await db.collection('media_assets').add(assetData);
+        const docRef = await db.collection('media_assets').add(assetData);
+        assetId = docRef.id;
+      }
+      
       results.push({ 
         fileId, 
         name, 
         success: true, 
-        assetId: docRef.id,
+        assetId,
         url: downloadURL,
         storagePath,
         size: parseInt(size) || buffer.length,
         mimeType,
         type: mediaType
       });
-      logger.info('Drive import success', { fileId, name, assetId: docRef.id });
+      logger.info('Drive import success', { fileId, name, assetId, forReplacement });
 
     } catch (error) {
       logger.error('Drive import error', { fileId, error: error.message });
