@@ -193,12 +193,12 @@ const PrepWelcomeBanner = () => {
       return `Week ${currentWeekNumber} of your Foundation. Stay consistent with your daily practices to build lasting leadership habits.`;
     }
     
-    // After prep requirements complete, show success message with explanation of new functionality
+    // After prep requirements complete, show success message
     if (isPrepComplete) {
       if (daysUntilStart <= 0) {
         return "Session One begins today! Let's launch your leadership journey.";
       }
-      return `Great work! You've unlocked your daily leadership tools. Use Win the Day to set your priorities each morning, explore additional content below, and end your day with a PM Reflection.`;
+      return `Great work — you're all set for Session 1! Explore additional content below while you wait, or check out the Content Library.`;
     }
 
     // Show remaining count
