@@ -399,17 +399,17 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // Get label for inference
       const labelLower = (action.label || action.title || '').toLowerCase();
 
-      // FAILSAFE: Attempt to infer handlerType from ID or resourceId ONLY (no label matching to prevent cross-matches)
+      // FAILSAFE: Attempt to infer handlerType from ID, resourceId, or label
       if (!handlerType) {
-        if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile') {
+        if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile' || labelLower.includes('leader profile')) {
           handlerType = 'leader-profile';
-        } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment') {
+        } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline') || labelLower.includes('skills assessment')) {
           handlerType = 'baseline-assessment';
-        } else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup') {
+        } else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('setup notification')) {
           handlerType = 'notification-setup';
-        } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial') {
+        } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
           handlerType = 'conditioning-tutorial';
-        } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment') {
+        } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation expectation') || labelLower.includes('foundation commitment')) {
           handlerType = 'foundation-commitment';
         } else if (action.resourceType === 'video_series') {
           handlerType = 'video-series';
@@ -841,16 +841,17 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             if (handlerType) {
               handlerType = handlerType.replace('_', '-').toLowerCase();
             } else {
-              // Failsafe: Try to infer handlerType from ID or resourceId ONLY (no label matching)
-              if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile') {
+              // Failsafe: Infer handlerType from ID, resourceId, or label
+              const labelLower = (action.label || '').toLowerCase();
+              if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile' || labelLower.includes('leader profile')) {
                 handlerType = 'leader-profile';
-              } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment') {
+              } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline') || labelLower.includes('skills assessment')) {
                 handlerType = 'baseline-assessment';
-              } else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup') {
+              } else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('setup notification')) {
                 handlerType = 'notification-setup';
-              } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial') {
+              } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
                 handlerType = 'conditioning-tutorial';
-              } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment') {
+              } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation expectation') || labelLower.includes('foundation commitment')) {
                 handlerType = 'foundation-commitment';
               } else if (action.resourceType === 'video_series') {
                 handlerType = 'video-series';
@@ -1321,16 +1322,17 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         }
       }
       
-      // Fallback: Infer handlerType from ID/resourceId ONLY (no label matching to prevent cross-matches)
+      // Fallback: Infer handlerType from ID, resourceId, or label
       let handlerType = action.handlerType || '';
+      const labelLower = (action.label || '').toLowerCase();
       if (handlerType) {
         handlerType = handlerType.replace('_', '-').toLowerCase();
       } else {
-        if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile') handlerType = 'leader-profile';
-        else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment') handlerType = 'baseline-assessment';
-        else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup') handlerType = 'notification-setup';
-        else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial') handlerType = 'conditioning-tutorial';
-        else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment') handlerType = 'foundation-commitment';
+        if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile' || labelLower.includes('leader profile')) handlerType = 'leader-profile';
+        else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline') || labelLower.includes('skills assessment')) handlerType = 'baseline-assessment';
+        else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('setup notification')) handlerType = 'notification-setup';
+        else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) handlerType = 'conditioning-tutorial';
+        else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation expectation') || labelLower.includes('foundation commitment')) handlerType = 'foundation-commitment';
         else if (action.resourceType === 'video_series') handlerType = 'video-series';
       }
       
@@ -1380,20 +1382,20 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       const label = action.label || 'Explore Action';
       const labelLower = label.toLowerCase();
       
-      // Infer handlerType from ID/resourceId ONLY (no label matching to prevent cross-matches)
+      // Infer handlerType from ID, resourceId, or label
       let handlerType = action.handlerType || '';
       if (handlerType) {
         handlerType = handlerType.replace('_', '-').toLowerCase();
       } else {
-        if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile') {
+        if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile' || labelLower.includes('leader profile')) {
           handlerType = 'leader-profile';
-        } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment') {
+        } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline') || labelLower.includes('skills assessment')) {
           handlerType = 'baseline-assessment';
-        } else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup') {
+        } else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('setup notification')) {
           handlerType = 'notification-setup';
-        } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial') {
+        } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
           handlerType = 'conditioning-tutorial';
-        } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment') {
+        } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation expectation') || labelLower.includes('foundation commitment')) {
           handlerType = 'foundation-commitment';
         }
       }
