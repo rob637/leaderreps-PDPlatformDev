@@ -91,6 +91,9 @@ const MediaLibrary = () => {
   const [editingAsset, setEditingAsset] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [replacingAsset, setReplacingAsset] = useState(null);
+  const [showReplaceModal, setShowReplaceModal] = useState(false);
+  const [replaceLinksText, setReplaceLinksText] = useState('');
+  const [replaceParsedLinks, setReplaceParsedLinks] = useState([]);
   const replaceInputRef = useRef(null);
 
   // Google Drive Import State
@@ -110,6 +113,15 @@ const MediaLibrary = () => {
       setParsedLinks([]);
     }
   }, [driveLinksText]);
+
+  // Parse replace links as user types
+  useEffect(() => {
+    if (replaceLinksText.trim()) {
+      setReplaceParsedLinks(parseDriveLinks(replaceLinksText));
+    } else {
+      setReplaceParsedLinks([]);
+    }
+  }, [replaceLinksText]);
 
   // Fetch service account email when modal opens
   useEffect(() => {
@@ -252,8 +264,71 @@ const MediaLibrary = () => {
 
   const handleReplaceClick = (asset) => {
     setReplacingAsset(asset);
-    replaceInputRef.current?.click();
+    setShowReplaceModal(true);
   };
+
+  const handleReplaceFromUpload = () => {
+    setShowReplaceModal(false);
+    setTimeout(() => replaceInputRef.current?.click(), 100);
+  };
+
+  const handleReplaceFromDrive = useCallback(async () => {
+    if (!replacingAsset || replaceParsedLinks.length === 0) return;
+    
+    // Only allow single file for replacement
+    const fileLinks = replaceParsedLinks.filter(l => l.type === 'file');
+    if (fileLinks.length !== 1) {
+      alert('Please provide exactly one file link for replacement.');
+      return;
+    }
+
+    setShowReplaceModal(false);
+    setDriveImporting(true);
+    setDriveProgress(`Importing replacement file from Google Drive...`);
+
+    try {
+      const functions = getFunctions(getApp(), 'us-central1');
+      const importFromDrive = httpsCallable(functions, 'importFromDrive', { timeout: 540000 });
+      
+      const result = await importFromDrive({
+        fileIds: [fileLinks[0].id],
+        folderIds: [],
+        forReplacement: true, // Signal that this is for replacement
+      });
+
+      const { results } = result.data;
+      const importedFile = results?.[0];
+      
+      if (!importedFile?.success) {
+        throw new Error(importedFile?.error || 'Failed to import file');
+      }
+
+      // Now update asset references in the database
+      const oldUrl = replacingAsset.url;
+      const newUrl = importedFile.downloadUrl;
+      const count = await updateAssetReferences(db, oldUrl, newUrl);
+
+      // Update the asset record itself
+      await updateMediaAsset(db, replacingAsset.id, {
+        url: newUrl,
+        storagePath: importedFile.storagePath,
+        size: importedFile.size,
+        updatedAt: new Date(),
+      });
+
+      alert(`Asset replaced successfully!\nUpdated ${count} references in the database.`);
+      await loadAssets();
+      setReplaceLinksText('');
+      setReplaceParsedLinks([]);
+    } catch (error) {
+      console.error('Drive replace error:', error);
+      alert('Replacement failed: ' + (error.message || 'Unknown error'));
+    } finally {
+      setDriveImporting(false);
+      setDriveProgress('');
+      setReplacingAsset(null);
+    }
+  }, [replacingAsset, replaceParsedLinks, db, loadAssets]);
 
   const handleReplaceFile = async (e) => {
     const file = e.target.files?.[0];
@@ -788,6 +863,125 @@ const MediaLibrary = () => {
               >
                 <Download size={18} />
                 Import {parsedLinks.length > 0 ? `${parsedLinks.length} Item(s)` : ''}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Replace Asset Modal */}
+      {showReplaceModal && replacingAsset && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-lg w-full">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center px-6 py-4 border-b">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                  <RefreshCw size={20} className="text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Replace Asset</h3>
+                  <p className="text-xs text-gray-500 truncate max-w-xs">{replacingAsset.title}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => { setShowReplaceModal(false); setReplacingAsset(null); setReplaceLinksText(''); setReplaceParsedLinks([]); }} 
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-4 space-y-4">
+              {/* Option 1: Upload from Computer */}
+              <button
+                onClick={handleReplaceFromUpload}
+                className="w-full flex items-center gap-4 p-4 border-2 border-dashed rounded-lg hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group"
+              >
+                <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:bg-blue-200">
+                  <Upload size={24} className="text-blue-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium text-gray-900 dark:text-gray-100">Upload from Computer</p>
+                  <p className="text-xs text-gray-500">Select a file from your device</p>
+                </div>
+              </button>
+
+              {/* Divider */}
+              <div className="flex items-center gap-4">
+                <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+                <span className="text-xs text-gray-400">or</span>
+                <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+              </div>
+
+              {/* Option 2: Import from Drive */}
+              <div className="border rounded-lg p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <HardDrive size={20} className="text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">Import from Google Drive</p>
+                    <p className="text-xs text-gray-500">Paste a single file share link</p>
+                  </div>
+                </div>
+
+                {/* Service Account Info */}
+                {serviceAccountEmail && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded p-2 mb-3 text-xs text-blue-700 dark:text-blue-300">
+                    <span>Share with: </span>
+                    <code className="bg-blue-100 dark:bg-blue-800 px-1 py-0.5 rounded font-mono select-all">
+                      {serviceAccountEmail.substring(0, 30)}...
+                    </code>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(serviceAccountEmail); setSaCopied(true); setTimeout(() => setSaCopied(false), 2000); }}
+                      className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {saCopied ? '✓' : 'Copy'}
+                    </button>
+                  </div>
+                )}
+
+                <textarea
+                  value={replaceLinksText}
+                  onChange={(e) => setReplaceLinksText(e.target.value)}
+                  placeholder="https://drive.google.com/file/d/abc123.../view"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm font-mono h-20 resize-none"
+                />
+
+                {replaceParsedLinks.length > 0 && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-green-600">
+                    <CheckCircle size={14} />
+                    <span>File detected: {replaceParsedLinks[0].id.substring(0, 20)}...</span>
+                  </div>
+                )}
+
+                {replaceParsedLinks.length > 1 && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-amber-600">
+                    <AlertCircle size={14} />
+                    <span>Only one file can be used for replacement. The first will be used.</span>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleReplaceFromDrive}
+                  disabled={replaceParsedLinks.length === 0}
+                  className="mt-3 w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <Download size={16} />
+                  Replace from Drive
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end px-6 py-4 border-t bg-gray-50 dark:bg-slate-700/50 rounded-b-xl">
+              <button 
+                onClick={() => { setShowReplaceModal(false); setReplacingAsset(null); setReplaceLinksText(''); setReplaceParsedLinks([]); }}
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg"
+              >
+                Cancel
               </button>
             </div>
           </div>
