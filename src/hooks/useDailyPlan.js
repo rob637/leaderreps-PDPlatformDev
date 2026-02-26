@@ -547,7 +547,7 @@ export const useDailyPlan = () => {
   // Items are considered "required" if: required === true OR (required !== false AND optional !== true)
   // This is COMPLETION-BASED, not day-based.
   const prepRequirementsComplete = useMemo(() => {
-    // Get all action progress data for verb-matching fallback
+    // Get all action progress data for label-matching fallback
     // Use actionProgressData from useActionProgress hook (users/{uid}/action_progress subcollection)
     // NOT developmentPlanData?.actionProgress which may not exist
     const allProgressData = actionProgressData || {};
@@ -565,22 +565,19 @@ export const useDailyPlan = () => {
       );
       if (foundInDailyProgress) return true;
       
-      // Fallback 2: Verb-matching for when action IDs change (admin edits content)
-      // Match by first word (verb like "Download", "Watch", "Complete", etc.)
+      // Fallback 2: Exact label matching for when action IDs change (admin edits content)
+      // Match the FULL label exactly (case-insensitive, trimmed)
       // Only match completed prep items (weekNumber null or <= 0)
       if (actionLabel && allProgressData) {
-        const firstWord = actionLabel.split(/[\s/]/)[0].toLowerCase();
-        if (firstWord.length > 3) {
-          const matchByVerb = Object.values(allProgressData).some(p => {
-            if (p?.status !== 'completed' || !p?.label) return false;
-            // Only consider prep-phase entries (weekNumber null or <= 0)
-            if (p.weekNumber != null && p.weekNumber > 0) return false;
-            if (p.originalWeek != null && p.originalWeek > 0) return false;
-            const pFirstWord = (p.label).split(/[\s/]/)[0].toLowerCase();
-            return pFirstWord === firstWord;
-          });
-          if (matchByVerb) return true;
-        }
+        const actionLabelNorm = actionLabel.toLowerCase().trim();
+        const matchByLabel = Object.values(allProgressData).some(p => {
+          if (p?.status !== 'completed' || !p?.label) return false;
+          // Only consider prep-phase entries (weekNumber null or <= 0)
+          if (p.weekNumber != null && p.weekNumber > 0) return false;
+          if (p.originalWeek != null && p.originalWeek > 0) return false;
+          return p.label.toLowerCase().trim() === actionLabelNorm;
+        });
+        if (matchByLabel) return true;
       }
       
       return false;
@@ -620,7 +617,9 @@ export const useDailyPlan = () => {
     // Required = required === true OR (required !== false AND optional !== true)
     // Exclude daily_rep type as those are not milestone items
     // Exclude actions from explore-config (those are always optional)
+    // Exclude hidden actions (temporarily disabled items)
     const requiredPrepActions = allPrepActions.filter(action => {
+      if (action.hidden === true) return false; // Skip hidden actions
       if (action.type === 'daily_rep') return false;
       // Actions from explore-config are always optional, not required
       if (action.dayId === 'explore-config') return false;
@@ -635,31 +634,36 @@ export const useDailyPlan = () => {
       
       let complete = false;
       
-      // Special handling for interactive items
-      // Use unified prepStatus first, fall back to legacy checks
-      if (handlerType === 'leader-profile' || labelLower.includes('leader profile')) {
+      // Special handling for interactive items - use handlerType ONLY, no label matching
+      // This prevents cross-matching between items with similar words in labels
+      if (handlerType === 'leader-profile') {
         complete = user?.prepStatus?.leaderProfile || leaderProfileComplete || false;
-      } else if (handlerType === 'baseline-assessment' || labelLower.includes('baseline assessment') || labelLower.includes('skills baseline')) {
+      } else if (handlerType === 'baseline-assessment') {
         // Check prepStatus first, then assessmentHistory or focusAreas
         complete = user?.prepStatus?.baselineAssessment || !!(
           developmentPlanData?.assessmentHistory?.length > 0 ||
           developmentPlanData?.currentPlan?.focusAreas?.length > 0
         );
-      } else if (handlerType === 'notification-setup' || labelLower.includes('notification')) {
+      } else if (handlerType === 'notification-setup') {
         // Only use prepStatus.notifications - user must explicitly complete notification setup
-        // Previously checked ns.strategy as fallback but that was triggered by defaults from Leader Profile
         complete = user?.prepStatus?.notifications || false;
-      } else if (handlerType === 'foundation-commitment' || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectation')) {
+      } else if (handlerType === 'foundation-commitment') {
         // Check prepStatus first, then foundationCommitment in user doc
         complete = user?.prepStatus?.foundationCommitment || !!(user?.foundationCommitment?.acknowledged);
-      } else if (handlerType === 'conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
+      } else if (handlerType === 'conditioning-tutorial') {
         // Check prepStatus first, then conditioningTutorial in user doc
         complete = user?.prepStatus?.conditioningTutorial || !!(user?.conditioningTutorial?.completed);
-      } else if (action.resourceType === 'video_series' || labelLower.includes('video')) {
-        // Check prepStatus for video series, fall back to action progress
-        complete = user?.prepStatus?.videoSeries || isActionComplete(action.id, action.label);
+      } else if (handlerType === 'video-series') {
+        // Check prepStatus for specific video, use exact label to determine which
+        if (action.label === 'Watch Onboarding Videos') {
+          complete = user?.prepStatus?.videoSeries || isActionComplete(action.id, action.label);
+        } else if (action.label === 'Watch Session 1 Video') {
+          complete = user?.prepStatus?.session1Video || isActionComplete(action.id, action.label);
+        } else {
+          complete = isActionComplete(action.id, action.label);
+        }
       } else {
-        // Standard action progress check
+        // All other items: use exact label matching via isActionComplete
         complete = isActionComplete(action.id, action.label);
       }
       

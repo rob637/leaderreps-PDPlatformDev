@@ -168,9 +168,6 @@ const ContentListView = ({
           </div>
         </div>
 
-        {/* Custom Header Content (e.g., Video Series) */}
-        {headerContent}
-
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-grow">
@@ -217,6 +214,9 @@ const ContentListView = ({
         <div className="text-sm text-slate-500 dark:text-slate-400 mb-4">
           {loading ? 'Loading...' : `${filteredItems.length} item${filteredItems.length !== 1 ? 's' : ''}`}
         </div>
+
+        {/* Custom Content (e.g., Video Series) - Rendered below search */}
+        {headerContent}
         
         {loading ? (
           <div className="flex justify-center p-12">

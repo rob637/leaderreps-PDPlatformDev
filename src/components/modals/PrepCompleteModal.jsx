@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayCircle, CheckCircle, X, Bell, Dumbbell, BookOpen, FileText, Trophy } from 'lucide-react';
+import { PlayCircle, CheckCircle, X, Bell, BookOpen, FileText, Trophy } from 'lucide-react';
 
 /**
  * PrepCompleteModal - Shows milestone celebrations for prep phase completion
@@ -83,19 +83,6 @@ const PrepCompleteModal = ({ isOpen, onClose, milestone = 'all-prep' }) => {
                 </div>
               </div>
 
-              {/* Conditioning Tutorial */}
-              <div className="flex gap-3">
-                <div className="w-8 h-8 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Dumbbell className="w-4 h-4 text-indigo-600" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Complete Conditioning Tutorial</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                    Learn how Conditioning works — daily practice that builds leadership habits.
-                  </p>
-                </div>
-              </div>
-
               {/* Setup Notifications */}
               <div className="flex gap-3">
                 <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -125,19 +112,6 @@ const PrepCompleteModal = ({ isOpen, onClose, milestone = 'all-prep' }) => {
                   <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Explore Content Library</h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                     Browse leadership readings, videos, and resources at your own pace.
-                  </p>
-                </div>
-              </div>
-
-              {/* Start Conditioning */}
-              <div className="flex gap-3">
-                <div className="w-8 h-8 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Dumbbell className="w-4 h-4 text-indigo-600" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Start Conditioning</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                    Begin building leadership habits with daily conditioning reps.
                   </p>
                 </div>
               </div>

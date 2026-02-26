@@ -213,11 +213,21 @@ export default function VideoSeriesPlayer({
     if (isSeriesComplete && !hasCalledComplete && series?.id) {
       setHasCalledComplete(true);
       
-      // Set prepStatus.videoSeries flag so milestone tasks show as complete
+      // Determine which prepStatus flag to set based on series title/id
+      // "Watch Onboarding Videos" → prepStatus.videoSeries
+      // "Watch Session 1 Video" → prepStatus.session1Video
       if (db && user?.uid) {
         const userRef = doc(db, 'users', user.uid);
-        updateDoc(userRef, { 'prepStatus.videoSeries': true })
-          .then(() => console.log('[VideoSeriesPlayer] Set prepStatus.videoSeries = true'))
+        const seriesTitle = (series?.title || series?.id || '').toLowerCase();
+        
+        // Determine the correct prepStatus field
+        let prepStatusField = 'prepStatus.videoSeries'; // default
+        if (seriesTitle.includes('session') && seriesTitle.includes('1')) {
+          prepStatusField = 'prepStatus.session1Video';
+        }
+        
+        updateDoc(userRef, { [prepStatusField]: true })
+          .then(() => console.log(`[VideoSeriesPlayer] Set ${prepStatusField} = true`))
           .catch(err => console.warn('[VideoSeriesPlayer] Could not update prepStatus:', err));
       }
       
@@ -226,7 +236,7 @@ export default function VideoSeriesPlayer({
         onComplete(series.id);
       }
     }
-  }, [isSeriesComplete, hasCalledComplete, onComplete, series?.id, db, user?.uid]);
+  }, [isSeriesComplete, hasCalledComplete, onComplete, series?.id, series?.title, db, user?.uid]);
 
   const markCurrentWatched = useCallback(async () => {
     console.log('[VideoSeriesPlayer] markCurrentWatched called', { 

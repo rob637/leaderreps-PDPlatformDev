@@ -399,19 +399,19 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // Get label for inference
       const labelLower = (action.label || action.title || '').toLowerCase();
 
-      // FAILSAFE: Attempt to infer handlerType from ID, resourceId, OR label if missing
+      // FAILSAFE: Attempt to infer handlerType from ID or resourceId ONLY (no label matching to prevent cross-matches)
       if (!handlerType) {
-        if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile' || labelLower.includes('leader profile')) {
+        if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile') {
           handlerType = 'leader-profile';
-        } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline assessment') || labelLower.includes('skills baseline')) {
+        } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment') {
           handlerType = 'baseline-assessment';
-        } else if (action.id?.includes('notification-setup') || action.id?.includes('notification') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('notification')) {
+        } else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup') {
           handlerType = 'notification-setup';
-        } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
+        } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial') {
           handlerType = 'conditioning-tutorial';
-        } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectation')) {
+        } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment') {
           handlerType = 'foundation-commitment';
-        } else if (action.resourceType === 'video_series' || labelLower.includes('onboarding video') || (labelLower.includes('watch') && labelLower.includes('video'))) {
+        } else if (action.resourceType === 'video_series') {
           handlerType = 'video-series';
         }
       }
@@ -790,23 +790,19 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       const progress = getItemProgress(actionId);
       if (progress?.status === 'completed') return true;
       
-      // Fallback: check actionProgress by action verb + prep-phase context.
-      // Action IDs change when admin edits content, but the action verb
-      // (first word like "Download" or "Watch") stays consistent.
+      // Fallback: check actionProgress by EXACT label match + prep-phase context.
+      // Action IDs change when admin edits content, so match the full label exactly.
       // Only match completed prep items (weekNumber null or <= 0).
       if (actionLabel && progressData) {
-        const firstWord = actionLabel.split(/[\s/]/)[0].toLowerCase();
-        if (firstWord.length > 3) {
-          const matchByVerb = Object.values(progressData).some(p => {
-            if (p?.status !== 'completed' || !p?.label) return false;
-            // Only consider prep-phase entries (weekNumber null or <= 0)
-            if (p.weekNumber != null && p.weekNumber > 0) return false;
-            if (p.originalWeek != null && p.originalWeek > 0) return false;
-            const pFirstWord = (p.label).split(/[\s/]/)[0].toLowerCase();
-            return pFirstWord === firstWord;
-          });
-          if (matchByVerb) return true;
-        }
+        const actionLabelNorm = actionLabel.toLowerCase().trim();
+        const matchByLabel = Object.values(progressData).some(p => {
+          if (p?.status !== 'completed' || !p?.label) return false;
+          // Only consider prep-phase entries (weekNumber null or <= 0)
+          if (p.weekNumber != null && p.weekNumber > 0) return false;
+          if (p.originalWeek != null && p.originalWeek > 0) return false;
+          return p.label.toLowerCase().trim() === actionLabelNorm;
+        });
+        if (matchByLabel) return true;
       }
       
       return false;
@@ -845,19 +841,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             if (handlerType) {
               handlerType = handlerType.replace('_', '-').toLowerCase();
             } else {
-              // Failsafe: Try to infer handlerType from ID, resourceId, or label
-              const labelLower = (action.label || action.title || '').toLowerCase();
-              if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile' || labelLower.includes('leader profile')) {
+              // Failsafe: Try to infer handlerType from ID or resourceId ONLY (no label matching)
+              if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile') {
                 handlerType = 'leader-profile';
-              } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline assessment') || labelLower.includes('skills baseline')) {
+              } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment') {
                 handlerType = 'baseline-assessment';
-              } else if (action.id?.includes('notification-setup') || action.id?.includes('notification') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('notification')) {
+              } else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup') {
                 handlerType = 'notification-setup';
-              } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
+              } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial') {
                 handlerType = 'conditioning-tutorial';
-              } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectation')) {
+              } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment') {
                 handlerType = 'foundation-commitment';
-              } else if (action.resourceType === 'video_series' || labelLower.includes('onboarding video') || labelLower.includes('watch') && labelLower.includes('video')) {
+              } else if (action.resourceType === 'video_series') {
                 handlerType = 'video-series';
               }
             }
@@ -1250,7 +1245,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // Primary: Read from onboarding-config document
     const onboardingConfig = dailyPlan?.find(d => d.id === 'onboarding-config');
     if (onboardingConfig?.actions && onboardingConfig.actions.length > 0) {
-      return normalizeDailyActions(onboardingConfig.actions, 'onboarding-config', -2);
+      // Filter out hidden actions before normalizing
+      const visibleActions = onboardingConfig.actions.filter(a => a.hidden !== true);
+      return normalizeDailyActions(visibleActions, 'onboarding-config', -2);
     }
     
     // Fallback: Filter from legacy prep days by prepSection field
@@ -1268,7 +1265,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // Primary: Read from session1-config document
     const session1Config = dailyPlan?.find(d => d.id === 'session1-config');
     if (session1Config?.actions && session1Config.actions.length > 0) {
-      return normalizeDailyActions(session1Config.actions, 'session1-config', -1);
+      // Filter out hidden actions before normalizing
+      const visibleActions = session1Config.actions.filter(a => a.hidden !== true);
+      return normalizeDailyActions(visibleActions, 'session1-config', -1);
     }
     
     // Fallback: Filter from legacy prep days by prepSection field
@@ -1301,30 +1300,49 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       session1Count: 0, session1Total: 0, session1Complete: false
     };
     
-    // Helper to check if an action is completed
+    // Helper to check if an action is completed - uses prepRequirementsComplete for unified tracking
     const isActionComplete = (action) => {
+      // First, try to find this action in prepRequirementsComplete (for unified tracking)
+      // This ensures the counter matches the DevelopmentJourneyWidget
+      if (Array.isArray(prepRequirementsComplete?.items)) {
+        const itemLabel = (action.label || '').toLowerCase().trim();
+        const prepItem = prepRequirementsComplete.items.find(p => {
+          // 1. Match by exact ID first (most reliable)
+          if (action.id && p.id && action.id === p.id) return true;
+          // 2. Match by handlerType (for interactive items)
+          if (action.handlerType && p.handlerType && action.handlerType === p.handlerType) return true;
+          // 3. Match by EXACT label (case-insensitive, trimmed) - NOT substring
+          const pLabel = (p.label || '').toLowerCase().trim();
+          if (pLabel && itemLabel && pLabel === itemLabel) return true;
+          return false;
+        });
+        if (prepItem) {
+          return prepItem.complete || false;
+        }
+      }
+      
+      // Fallback: Infer handlerType from ID/resourceId ONLY (no label matching to prevent cross-matches)
       let handlerType = action.handlerType || '';
-      // FAILSAFE: Standardize handlerType
       if (handlerType) {
         handlerType = handlerType.replace('_', '-').toLowerCase();
       } else {
-        // Infer handlerType from ID or label if missing
-        const labelLower = (action.label || action.title || '').toLowerCase();
-        if (action.id?.includes('leader-profile') || labelLower.includes('leader profile')) handlerType = 'leader-profile';
-        else if (action.id?.includes('baseline-assessment') || labelLower.includes('baseline assessment') || labelLower.includes('skills baseline')) handlerType = 'baseline-assessment';
-        else if (action.id?.includes('notification-setup') || action.id?.includes('notification') || labelLower.includes('notification')) handlerType = 'notification-setup';
-        else if (action.id?.includes('conditioning-tutorial') || labelLower.includes('conditioning tutorial')) handlerType = 'conditioning-tutorial';
-        else if (action.id?.includes('foundation-commitment') || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectation')) handlerType = 'foundation-commitment';
-        else if (action.resourceType === 'video_series' || labelLower.includes('onboarding video') || (labelLower.includes('watch') && labelLower.includes('video'))) handlerType = 'video-series';
+        if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile') handlerType = 'leader-profile';
+        else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment') handlerType = 'baseline-assessment';
+        else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup') handlerType = 'notification-setup';
+        else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial') handlerType = 'conditioning-tutorial';
+        else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment') handlerType = 'foundation-commitment';
+        else if (action.resourceType === 'video_series') handlerType = 'video-series';
       }
-      // Interactive item checks
+      
+      // Fallback: Interactive item checks
       if (handlerType === 'leader-profile') return leaderProfileComplete;
       if (handlerType === 'baseline-assessment') return baselineAssessmentComplete;
       if (handlerType === 'notification-setup') return notificationSetupComplete;
       if (handlerType === 'foundation-commitment') return foundationCommitmentComplete;
       if (handlerType === 'conditioning-tutorial') return conditioningTutorialComplete;
       if (handlerType === 'video-series') return videoSeriesComplete;
-      // Standard completion check
+      
+      // Fallback: Standard completion check
       const progress = getItemProgress(action.id);
       return progress.status === 'completed' || completedItems.includes(action.id);
     };
@@ -1349,7 +1367,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       onboardingCount, onboardingTotal, onboardingComplete,
       session1Count, session1Total, session1Complete
     };
-  }, [currentPhase?.id, onboardingActions, session1Actions, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete, getItemProgress, completedItems]);
+  }, [currentPhase?.id, onboardingActions, session1Actions, prepRequirementsComplete, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete, getItemProgress, completedItems]);
   
   const additionalPrepActions = useMemo(() => {
     if (currentPhase?.id !== 'pre-start') return [];
@@ -1362,20 +1380,20 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       const label = action.label || 'Explore Action';
       const labelLower = label.toLowerCase();
       
-      // Infer handlerType from label (same logic as normalizeDailyActions)
+      // Infer handlerType from ID/resourceId ONLY (no label matching to prevent cross-matches)
       let handlerType = action.handlerType || '';
       if (handlerType) {
         handlerType = handlerType.replace('_', '-').toLowerCase();
       } else {
-        if (action.id?.includes('leader-profile') || labelLower.includes('leader profile')) {
+        if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile') {
           handlerType = 'leader-profile';
-        } else if (action.id?.includes('baseline-assessment') || labelLower.includes('baseline assessment') || labelLower.includes('skills baseline')) {
+        } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment') {
           handlerType = 'baseline-assessment';
-        } else if (action.id?.includes('notification-setup') || action.id?.includes('notification') || labelLower.includes('notification')) {
+        } else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup') {
           handlerType = 'notification-setup';
-        } else if (action.id?.includes('conditioning-tutorial') || labelLower.includes('conditioning tutorial')) {
+        } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial') {
           handlerType = 'conditioning-tutorial';
-        } else if (action.id?.includes('foundation-commitment') || labelLower.includes('foundation commitment') || labelLower.includes('foundation expectation')) {
+        } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment') {
           handlerType = 'foundation-commitment';
         }
       }
@@ -1987,27 +2005,32 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     }
     
     // ========== STANDARD ACTION ITEMS ==========
-    // For interactive prep items, use prepRequirementsComplete to match the counter
-    // Fall back to individual hook values for legacy compatibility
+    // For ALL prep phase items, use prepRequirementsComplete for unified completion tracking
+    // This ensures the checkbox state matches the DevelopmentJourneyWidget counter
     let isCompleted;
-    if (item.isInteractive) {
-      // Try to get completion from unified prepRequirementsComplete first
-      if (Array.isArray(prepRequirementsComplete?.items)) {
-        const prepItem = prepRequirementsComplete.items.find(p => p.handlerType === item.handlerType);
-        if (prepItem) {
-          isCompleted = prepItem.complete || false;
-        } else {
-          // Item not in prepRequirementsComplete (e.g., explore items), use individual hooks
-          isCompleted = item.handlerType === 'leader-profile' ? leaderProfileComplete : 
-                        item.handlerType === 'baseline-assessment' ? baselineAssessmentComplete : 
-                        item.handlerType === 'notification-setup' ? notificationSetupComplete :
-                        item.handlerType === 'foundation-commitment' ? foundationCommitmentComplete :
-                        item.handlerType === 'conditioning-tutorial' ? conditioningTutorialComplete :
-                        item.handlerType === 'video-series' ? videoSeriesComplete :
-                        item.autoComplete || false;
-        }
-      } else {
-        // Fallback to individual hook values
+    
+    // Check if this is a prep phase item (from onboarding-config or session1-config)
+    const isPrepPhaseItem = item.dayId === 'onboarding-config' || item.dayId === 'session1-config';
+    
+    if (isPrepPhaseItem && Array.isArray(prepRequirementsComplete?.items)) {
+      // For prep items, look up completion in prepRequirementsComplete
+      // Match by ID first, then handlerType, then exact label (same logic as DevelopmentJourneyWidget)
+      const itemLabel = (item.label || '').toLowerCase().trim();
+      const prepItem = prepRequirementsComplete.items.find(p => {
+        // 1. Match by exact ID first (most reliable)
+        if (item.id && p.id && item.id === p.id) return true;
+        // 2. Match by handlerType (for interactive items)
+        if (item.handlerType && p.handlerType && item.handlerType === p.handlerType) return true;
+        // 3. Match by EXACT label (case-insensitive, trimmed) - NOT substring
+        const pLabel = (p.label || '').toLowerCase().trim();
+        if (pLabel && itemLabel && pLabel === itemLabel) return true;
+        return false;
+      });
+      
+      if (prepItem) {
+        isCompleted = prepItem.complete || false;
+      } else if (item.isInteractive) {
+        // Fallback for interactive items not in prepRequirementsComplete
         isCompleted = item.handlerType === 'leader-profile' ? leaderProfileComplete : 
                       item.handlerType === 'baseline-assessment' ? baselineAssessmentComplete : 
                       item.handlerType === 'notification-setup' ? notificationSetupComplete :
@@ -2015,8 +2038,21 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                       item.handlerType === 'conditioning-tutorial' ? conditioningTutorialComplete :
                       item.handlerType === 'video-series' ? videoSeriesComplete :
                       item.autoComplete || false;
+      } else {
+        // Fallback to action progress for content items not found in prepRequirementsComplete
+        isCompleted = (progress.status === 'completed' || completedItems.includes(item.id));
       }
+    } else if (item.isInteractive) {
+      // Interactive items outside prep phase (or when prepRequirementsComplete not available)
+      isCompleted = item.handlerType === 'leader-profile' ? leaderProfileComplete : 
+                    item.handlerType === 'baseline-assessment' ? baselineAssessmentComplete : 
+                    item.handlerType === 'notification-setup' ? notificationSetupComplete :
+                    item.handlerType === 'foundation-commitment' ? foundationCommitmentComplete :
+                    item.handlerType === 'conditioning-tutorial' ? conditioningTutorialComplete :
+                    item.handlerType === 'video-series' ? videoSeriesComplete :
+                    item.autoComplete || false;
     } else {
+      // Non-prep, non-interactive items use standard progress check
       isCompleted = (progress.status === 'completed' || completedItems.includes(item.id));
     }
     const isSkipped = progress.status === 'skipped';

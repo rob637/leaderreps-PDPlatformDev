@@ -33,129 +33,129 @@ export const BREADCRUMB_MAP = {
   ],
   
   // ============================================
-  // LIBRARY - Main Hub
+  // CONTENT - Main Hub
   // ============================================
   'library': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: null }
+    { label: 'Content', path: null }
   ],
   
   // ============================================
-  // LIBRARY - Programs
+  // CONTENT - Programs
   // ============================================
   'programs-index': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Programs', path: null }
   ],
   'program-detail': (params) => [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Programs', path: 'programs-index' },
     { label: params?.title || 'Program', path: null }
   ],
 
   // ============================================
-  // LIBRARY - Workouts
+  // CONTENT - Workouts
   // ============================================
   'workouts-index': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Workouts', path: null }
   ],
   'workout-detail': (params) => [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Workouts', path: 'workouts-index' },
     { label: params?.title || 'Workout', path: null }
   ],
 
   // ============================================
-  // LIBRARY - Skills (Discovery Engine)
+  // CONTENT - Skills (Discovery Engine)
   // ============================================
   'skills-index': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Skills', path: null }
   ],
   'skill-detail': (params) => [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Skills', path: 'skills-index' },
     { label: params?.title || 'Skill', path: null }
   ],
 
   // ============================================
-  // LIBRARY - Read & Reps
+  // CONTENT - Read & Reps
   // ============================================
   'read-reps-index': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Read & Reps', path: null }
   ],
   'read-rep-detail': (params) => [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Read & Reps', path: 'read-reps-index' },
     { label: params?.title || 'Book', path: null }
   ],
   // Legacy alias
   'business-readings': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Read & Reps', path: null }
   ],
   
   // ============================================
-  // LIBRARY - Tools
+  // CONTENT - Tools
   // ============================================
   'tools-index': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Tools', path: null }
   ],
   'tool-detail': (params) => [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Tools', path: 'tools-index' },
     { label: params?.title || 'Tool', path: null }
   ],
 
   // ============================================
-  // LIBRARY - Videos
+  // CONTENT - Videos
   // ============================================
   'videos-index': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Videos', path: null }
   ],
   'video-detail': (params) => [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Videos', path: 'videos-index' },
     { label: params?.title || 'Video', path: null }
   ],
 
   // ============================================
-  // LIBRARY - Video Series
+  // CONTENT - Video Series
   // ============================================
   'video-series-index': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Video Series', path: null }
   ],
 
   // ============================================
-  // LIBRARY - Documents
+  // CONTENT - Documents
   // ============================================
   'documents-index': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Documents', path: null }
   ],
   'document-detail': (params) => [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Documents', path: 'documents-index' },
     { label: params?.title || 'Document', path: null }
   ],
@@ -209,12 +209,12 @@ export const BREADCRUMB_MAP = {
   // ============================================
   'applied-leadership': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Applied Leadership', path: null }
   ],
   'leadership-videos': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     { label: 'Leadership Videos', path: null }
   ],
   'roadmap-tracker': [

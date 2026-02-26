@@ -43,6 +43,7 @@ import {
 import { useAppServices } from '../../services/useAppServices';
 import { buildModulePath } from '../../services/pathUtils';
 import { COMMON_TIMEZONES, DEFAULT_TIMEZONE } from '../../services/dateUtils';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import NotificationSettingsModal from './NotificationSettingsModal';
 
 // Facilitators are now stored in Firestore 'facilitators' collection
@@ -299,6 +300,42 @@ const UserManagement = () => {
     } catch (error) {
       console.error("Error updating user status:", error);
       alert("Failed to update user status");
+    }
+  };
+
+  // Delete user completely (Firestore + Auth) via Cloud Function
+  const [deletingUser, setDeletingUser] = useState(null);
+  
+  const handleDeleteUser = async (userEmail, userName) => {
+    const confirmMsg = `⚠️ PERMANENTLY DELETE USER\n\nThis will delete:\n• Firebase Auth account\n• All Firestore data\n• All subcollections (progress, video history, etc.)\n\nUser: ${userName || userEmail}\nEmail: ${userEmail}\n\nThis cannot be undone. Are you sure?`;
+    
+    if (!window.confirm(confirmMsg)) return;
+    
+    // Double confirm
+    const finalConfirm = window.prompt(`Type "DELETE" to confirm permanent deletion of ${userEmail}:`);
+    if (finalConfirm !== 'DELETE') {
+      alert('Deletion cancelled.');
+      return;
+    }
+    
+    setDeletingUser(userEmail);
+    
+    try {
+      const functions = getFunctions();
+      const deleteTestUser = httpsCallable(functions, 'deleteTestUser');
+      const result = await deleteTestUser({ email: userEmail, confirm: true });
+      
+      console.log('[UserManagement] Delete result:', result.data);
+      
+      // Remove from local state
+      setUsers(users.filter(u => u.email?.toLowerCase() !== userEmail.toLowerCase()));
+      
+      alert(`Successfully deleted user: ${userEmail}`);
+    } catch (error) {
+      console.error('[UserManagement] Error deleting user:', error);
+      alert(`Failed to delete user: ${error.message}`);
+    } finally {
+      setDeletingUser(null);
     }
   };
 
@@ -1062,6 +1099,19 @@ const UserManagement = () => {
                                 }`}
                               >
                                 {user.disabled ? 'Enable' : 'Disable'}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(user.email, user.displayName || user.name)}
+                                disabled={deletingUser === user.email}
+                                className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-red-100 dark:bg-red-900/30 text-red-700 hover:bg-red-200 disabled:opacity-50 flex items-center gap-1"
+                                title="Permanently delete user"
+                              >
+                                {deletingUser === user.email ? (
+                                  <RefreshCw className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-3 h-3" />
+                                )}
+                                Delete
                               </button>
                             </>
                           ) : (

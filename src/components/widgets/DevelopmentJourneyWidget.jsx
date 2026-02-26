@@ -719,6 +719,7 @@ const DevelopmentJourneyWidget = () => {
     const onboardingActions = onboardingConfig?.actions || [];
     const onboardingActionsWithStatus = onboardingActions
       .filter(action => {
+        if (action.hidden === true) return false; // Skip hidden actions
         if (action.type === 'daily_rep') return false;
         const isRequired = action.required === true || (action.required !== false && action.optional !== true);
         return isRequired;
@@ -734,6 +735,7 @@ const DevelopmentJourneyWidget = () => {
     const session1Actions = session1Config?.actions || [];
     const session1ActionsWithStatus = session1Actions
       .filter(action => {
+        if (action.hidden === true) return false; // Skip hidden actions
         if (action.type === 'daily_rep') return false;
         const isRequired = action.required === true || (action.required !== false && action.optional !== true);
         return isRequired;

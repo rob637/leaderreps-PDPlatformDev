@@ -6000,6 +6000,164 @@ function addDays(date, days) {
   return result;
 }
 
+// ============================================
+// ADMIN: DELETE TEST USER
+// ============================================
+
+/**
+ * DELETE TEST USER
+ * Safely deletes a test user and all their data.
+ * Admin-only, requires confirmation, logs all actions.
+ * 
+ * Usage: Call with { email: "test@example.com", confirm: true }
+ */
+exports.deleteTestUser = onCall({ 
+  cors: true, 
+  region: "us-central1"
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be authenticated.');
+  }
+
+  // Check if user is admin (hardcoded list + metadata/config)
+  const callerEmail = request.auth.token.email?.toLowerCase();
+  const hardcodedAdmins = [
+    'rob@sagecg.com', 'rob@leaderreps.com', 
+    'cristina@leaderreps.com', 'cristina@leaderreps.biz',
+    'ryan@leaderreps.com', 'ryan@leaderreps.biz',
+    'jeff@leaderreps.com', 'jeff@leaderreps.biz'
+  ];
+  
+  let isAdmin = hardcodedAdmins.includes(callerEmail);
+  
+  if (!isAdmin) {
+    // Check dynamic admin list
+    try {
+      const configDoc = await db.collection('metadata').doc('config').get();
+      if (configDoc.exists) {
+        const adminEmails = configDoc.data().adminemails || [];
+        isAdmin = adminEmails.map(e => e.toLowerCase()).includes(callerEmail);
+      }
+    } catch (err) {
+      logger.warn('Could not check dynamic admin list:', err.message);
+    }
+  }
+  
+  if (!isAdmin) {
+    throw new HttpsError('permission-denied', 'Admin access required.');
+  }
+
+  const { email, confirm } = request.data || {};
+  
+  if (!email || typeof email !== 'string') {
+    throw new HttpsError('invalid-argument', 'Email address required.');
+  }
+  
+  if (confirm !== true) {
+    throw new HttpsError('invalid-argument', 'Must set confirm: true to delete user.');
+  }
+  
+  const targetEmail = email.toLowerCase().trim();
+  
+  // Safety check: Don't allow deleting admin accounts
+  if (hardcodedAdmins.includes(targetEmail)) {
+    throw new HttpsError('failed-precondition', 'Cannot delete admin accounts via this function.');
+  }
+  
+  logger.info(`[deleteTestUser] Admin ${callerEmail} requesting deletion of ${targetEmail}`);
+  
+  try {
+    // Step 1: Find user in Firestore by email
+    const usersSnap = await db.collection('users').where('email', '==', targetEmail).get();
+    
+    if (usersSnap.empty) {
+      // Also check case-insensitive
+      const usersSnapLower = await db.collection('users').where('email', '==', email.trim()).get();
+      if (usersSnapLower.empty) {
+        throw new HttpsError('not-found', `No user found with email: ${targetEmail}`);
+      }
+    }
+    
+    const userDoc = usersSnap.empty ? null : usersSnap.docs[0];
+    const userId = userDoc?.id;
+    const userData = userDoc?.data();
+    
+    // Step 2: Delete from Firebase Auth
+    let authDeleted = false;
+    try {
+      const authUser = await admin.auth().getUserByEmail(targetEmail);
+      await admin.auth().deleteUser(authUser.uid);
+      authDeleted = true;
+      logger.info(`[deleteTestUser] Deleted from Firebase Auth: ${authUser.uid}`);
+    } catch (authErr) {
+      if (authErr.code === 'auth/user-not-found') {
+        logger.info(`[deleteTestUser] User not found in Firebase Auth (already deleted or never existed)`);
+      } else {
+        logger.warn(`[deleteTestUser] Error deleting from Auth:`, authErr.message);
+      }
+    }
+    
+    // Step 3: Delete Firestore subcollections
+    let subcollectionsDeleted = [];
+    if (userId) {
+      const subcollections = await db.collection('users').doc(userId).listCollections();
+      for (const sub of subcollections) {
+        const subDocs = await sub.get();
+        const batch = db.batch();
+        let count = 0;
+        subDocs.forEach(d => {
+          batch.delete(d.ref);
+          count++;
+        });
+        if (count > 0) {
+          await batch.commit();
+          subcollectionsDeleted.push({ name: sub.id, count });
+          logger.info(`[deleteTestUser] Deleted ${count} docs from subcollection: ${sub.id}`);
+        }
+      }
+    }
+    
+    // Step 4: Delete main user document
+    let userDocDeleted = false;
+    if (userId) {
+      await db.collection('users').doc(userId).delete();
+      userDocDeleted = true;
+      logger.info(`[deleteTestUser] Deleted user document: ${userId}`);
+    }
+    
+    // Step 5: Log deletion for audit
+    await db.collection('admin_logs').add({
+      action: 'delete_test_user',
+      targetEmail: targetEmail,
+      targetUserId: userId || null,
+      targetDisplayName: userData?.displayName || userData?.name || null,
+      deletedBy: callerEmail,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      results: {
+        authDeleted,
+        userDocDeleted,
+        subcollectionsDeleted
+      }
+    });
+    
+    logger.info(`[deleteTestUser] Successfully deleted user: ${targetEmail}`);
+    
+    return {
+      success: true,
+      deletedEmail: targetEmail,
+      deletedUserId: userId || null,
+      authDeleted,
+      userDocDeleted,
+      subcollectionsDeleted
+    };
+    
+  } catch (err) {
+    logger.error(`[deleteTestUser] Error:`, err);
+    if (err instanceof HttpsError) throw err;
+    throw new HttpsError('internal', `Failed to delete user: ${err.message}`);
+  }
+});
+
 /**
  * Helper: Calculate the next valid send window start.
  * Advances to the next valid weekday (if weekdaysOnly) and sets the hour
