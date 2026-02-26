@@ -686,11 +686,16 @@ const DevelopmentJourneyWidget = () => {
       // Use prepRequirementsComplete from useDailyPlan for unified completion status
       // This checks prepStatus flags, legacy data, and action progress all in one place
       if (prepRequirementsComplete?.items?.length > 0) {
-        // Find matching item in prepRequirementsComplete by handler type or label
+        // Find matching item in prepRequirementsComplete by ID, handler type, or exact label
+        const actionLabel = (action.label || '').toLowerCase().trim();
         const matchingItem = prepRequirementsComplete.items.find(item => {
-          if (item.handlerType === handlerType) return true;
-          if (item.label?.toLowerCase().includes(labelLower.substring(0, 15))) return true;
-          if (labelLower.includes((item.label || '').toLowerCase().substring(0, 15))) return true;
+          // 1. Match by exact ID first (most reliable)
+          if (action.id && item.id && action.id === item.id) return true;
+          // 2. Match by handlerType (for interactive items)
+          if (item.handlerType && handlerType && item.handlerType === handlerType) return true;
+          // 3. Match by EXACT label (case-insensitive, trimmed) - NOT substring
+          const itemLabel = (item.label || '').toLowerCase().trim();
+          if (itemLabel && actionLabel && itemLabel === actionLabel) return true;
           return false;
         });
         if (matchingItem) {
