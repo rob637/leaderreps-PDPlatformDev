@@ -185,7 +185,7 @@ const PrepWelcomeBanner = () => {
     // Foundation phase - show week guidance
     if (isFoundationPhase) {
       if (currentWeekNumber === 1) {
-        return "Your Foundation journey has begun! Build daily leadership habits with your morning practice and evening reflection.";
+        return "Your Foundation journey has begun! Build daily leadership habits with your conditioning reps.";
       }
       if (currentWeekNumber >= 8) {
         return "You're in the final stretch! Finish strong and prepare for your leadership Ascent.";
