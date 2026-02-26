@@ -618,7 +618,7 @@ const MediaLibrary = () => {
                       {formatSize(asset.size)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {asset.createdAt?.toDate().toLocaleDateString()}
+                      {(asset.createdAt?.toDate?.() || (asset.createdAt ? new Date(asset.createdAt) : null))?.toLocaleDateString() || '—'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">

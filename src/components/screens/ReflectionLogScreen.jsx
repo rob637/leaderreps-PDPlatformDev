@@ -79,7 +79,7 @@ const ReflectionLogScreen = () => {
         if (!timestamp) return 'No Date';
         try {
             // Check if it's a Firestore Timestamp object
-            if (timestamp.toDate) {
+            if (typeof timestamp.toDate === 'function') {
                 return timestamp.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
             }
             // Otherwise, assume it might be an ISO string or Date object

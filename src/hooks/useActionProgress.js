@@ -112,7 +112,7 @@ const calculateStreak = (completedItems) => {
   const dates = completedItems
     .filter(i => i.completedAt)
     .map(i => {
-      const d = i.completedAt.toDate ? i.completedAt.toDate() : new Date(i.completedAt);
+      const d = i.completedAt?.toDate?.() || new Date(i.completedAt);
       return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     })
     .filter((d, i, arr) => arr.indexOf(d) === i)
@@ -181,7 +181,7 @@ const calculatePoints = (items) => {
       }
       
       if (item.completedAt) {
-        const date = item.completedAt.toDate ? item.completedAt.toDate() : new Date(item.completedAt);
+        const date = item.completedAt?.toDate?.() || new Date(item.completedAt);
         if (date.getHours() < 12) {
           points += POINTS.COMPLETE_EARLY;
         }
@@ -238,7 +238,7 @@ export const useActionProgress = () => {
     
     const earlyCompletions = completed.filter(i => {
       if (!i.completedAt) return false;
-      const date = i.completedAt.toDate ? i.completedAt.toDate() : new Date(i.completedAt);
+      const date = i.completedAt?.toDate?.() || new Date(i.completedAt);
       return date.getHours() < 12;
     }).length;
     

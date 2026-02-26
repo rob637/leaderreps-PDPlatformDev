@@ -182,7 +182,7 @@ const AdminDashboard = () => {
             // Format timestamp
             let timeStr = 'Recently';
             if (data.timestamp) {
-              const date = data.timestamp.toDate();
+              const date = data.timestamp?.toDate?.() || new Date(data.timestamp);
               const now = new Date();
               const diff = (now - date) / 1000; // seconds
               if (diff < 60) timeStr = 'Just now';

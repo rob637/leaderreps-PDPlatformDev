@@ -992,9 +992,9 @@ export const useDailyPlan = () => {
         // Cohort info (if available) - convert Firestore Timestamp to Date
         cohort: cohortData,
         cohortName: cohortData?.name,
-        cohortStartDate: cohortData?.startDate?.toDate ? cohortData.startDate.toDate() : 
-                         cohortData?.startDate?.seconds ? new Date(cohortData.startDate.seconds * 1000) :
-                         cohortData?.startDate ? new Date(cohortData.startDate) : null,
+        cohortStartDate: cohortData?.startDate?.toDate?.() || 
+                         (cohortData?.startDate?.seconds ? new Date(cohortData.startDate.seconds * 1000) :
+                         cohortData?.startDate ? new Date(cohortData.startDate) : null),
         facilitator: cohortData?.facilitator,
         // NOTE: Progress tracking is purely completion-based via prepRequirementsComplete
         // There are no "days" or "login counts" in the prep phase

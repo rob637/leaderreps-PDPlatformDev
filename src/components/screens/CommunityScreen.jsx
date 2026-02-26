@@ -342,7 +342,7 @@ const CommunityScreen = () => {
                     ownerId: t.authorId || t.ownerId,
                     rep: t.rep || (t.author ? t.author.substring(0, 2).toUpperCase() : 'U'), 
                     content: t.content || t.title,
-                    time: t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : 'Just now'
+                    time: t.createdAt?.toDate?.()?.toLocaleDateString() || 'Just now'
                 }));
                 setAllThreads(mappedThreads);
             } catch (error) {

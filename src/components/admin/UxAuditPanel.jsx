@@ -389,7 +389,7 @@ const AuditReportCard = ({ audit, onDelete }) => {
 
   const formatDate = (ts) => {
     if (!ts) return '—';
-    const date = ts.toDate ? ts.toDate() : new Date(ts);
+    const date = ts?.toDate?.() || new Date(ts);
     return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',

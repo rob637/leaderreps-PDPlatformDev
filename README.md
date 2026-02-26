@@ -35,7 +35,7 @@ A **complete leadership development ecosystem** combining:
 ### Daily Practice: The Arena
 What makes LeaderReps different:
 ✅ **10-15 minutes/day** — Fits any schedule
-✅ **Morning intention + Evening reflection** — Builds habits, not just knowledge
+✅ **Daily conditioning** — Builds habits, not just knowledge
 ✅ **Streak tracking & achievements** — Psychology that drives engagement
 ✅ **78% completion rate** — vs. industry average of ~20%
 

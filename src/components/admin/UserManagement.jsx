@@ -551,7 +551,7 @@ const UserManagement = () => {
     // Format date for datetime-local input (YYYY-MM-DDThh:mm)
     let dateStr = '';
     if (cohort.startDate) {
-      const date = cohort.startDate.toDate ? cohort.startDate.toDate() : new Date(cohort.startDate);
+      const date = cohort.startDate?.toDate?.() || new Date(cohort.startDate);
       if (!isNaN(date.getTime())) {
         // Adjust to local ISO string for input
         const offset = date.getTimezoneOffset() * 60000;
@@ -1115,7 +1115,7 @@ const UserManagement = () => {
                         {cohort.name}
                       </td>
                       <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
-                        {cohort.startDate?.toDate ? cohort.startDate.toDate().toLocaleDateString() : 'Unknown'}
+                        {cohort.startDate?.toDate?.()?.toLocaleDateString() || 'Unknown'}
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200">

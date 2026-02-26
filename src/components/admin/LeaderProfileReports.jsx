@@ -151,7 +151,7 @@ const LeaderProfileReports = () => {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">
-                    {profile.updatedAt?.toDate ? profile.updatedAt.toDate().toLocaleDateString() : 'N/A'}
+                    {profile.updatedAt?.toDate?.()?.toLocaleDateString() || 'N/A'}
                   </td>
                 </tr>
               ))}

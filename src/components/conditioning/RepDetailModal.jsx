@@ -119,7 +119,7 @@ const RepDetailModal = ({ isOpen, onClose, rep }) => {
   
   const formatDate = (timestamp) => {
     if (!timestamp) return null;
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const date = timestamp?.toDate?.() || new Date(timestamp);
     return date.toLocaleDateString('en-US', { 
       weekday: 'short', 
       month: 'short', 

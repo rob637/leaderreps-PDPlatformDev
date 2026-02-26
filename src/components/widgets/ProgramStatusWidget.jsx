@@ -10,7 +10,7 @@ const ProgramStatusWidget = () => {
   const [isFixing, setIsFixing] = useState(false);
 
   const startDate = userState?.startDate ? (
-    userState.startDate.toDate ? userState.startDate.toDate() : new Date(userState.startDate)
+    userState.startDate?.toDate?.() || new Date(userState.startDate)
   ) : null;
 
   const prepStartDate = startDate ? new Date(startDate.getTime() - (14 * 24 * 60 * 60 * 1000)) : null;

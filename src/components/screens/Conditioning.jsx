@@ -258,7 +258,7 @@ const RepCard = ({
   
   const formatDeadline = (deadline) => {
     if (!deadline) return 'End of week';
-    const d = deadline.toDate ? deadline.toDate() : new Date(deadline);
+    const d = deadline?.toDate?.() || new Date(deadline);
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
   
@@ -267,7 +267,7 @@ const RepCard = ({
     // States that can be overdue: committed, prepared, scheduled
     const activeStates = ['committed', 'prepared', 'scheduled', 'active'];
     if (!rep.deadline || !activeStates.includes(rep.status)) return false;
-    const deadline = rep.deadline.toDate ? rep.deadline.toDate() : new Date(rep.deadline);
+    const deadline = rep.deadline?.toDate?.() || new Date(rep.deadline);
     return deadline < new Date();
   }, [rep.deadline, rep.status]);
   

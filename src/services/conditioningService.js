@@ -921,7 +921,7 @@ export const conditioningService = {
     
     const overdueReps = activeReps.filter(rep => {
       if (!actionableStatuses.includes(rep.status)) return false;
-      const deadline = rep.deadline?.toDate ? rep.deadline.toDate() : new Date(rep.deadline);
+      const deadline = rep.deadline?.toDate?.() || new Date(rep.deadline);
       return deadline < startOfToday;
     });
     
@@ -1043,7 +1043,7 @@ export const conditioningService = {
     if (!completedAt) return EVIDENCE_LEVEL.LEVEL_2;
     
     const now = timeService.getNow();
-    const completed = completedAt.toDate ? completedAt.toDate() : new Date(completedAt);
+    const completed = completedAt?.toDate?.() || new Date(completedAt);
     
     // Same business day = Level 1 (within 24 hours and same calendar day)
     const hoursDiff = (now - completed) / (1000 * 60 * 60);
@@ -1692,7 +1692,7 @@ export const conditioningService = {
     const completedReps = reps.filter(r => r.status === REP_STATUS.COMPLETED && r.completedAt);
     if (completedReps.length >= 3) {
       const lateCompletions = completedReps.filter(r => {
-        const completedDay = (r.completedAt.toDate ? r.completedAt.toDate() : new Date(r.completedAt)).getDay();
+        const completedDay = (r.completedAt?.toDate?.() || new Date(r.completedAt)).getDay();
         return completedDay >= 5; // Friday = 5, Saturday = 6
       });
       
