@@ -194,6 +194,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   }, [developmentPlanData?.assessmentHistory]);
   
   // Notification Setup completion tracking
+  // Must use prepStatus.notifications (set explicitly when user completes the setup form)
+  // NOT notificationSettings.strategy (which can be set by defaults from other flows)
   const [notificationSetupComplete, setNotificationSetupComplete] = useState(false);
   useEffect(() => {
     const checkNotificationSettings = async () => {
@@ -202,9 +204,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-          const ns = userSnap.data().notificationSettings;
-          // Consider complete if a strategy has been explicitly set
-          setNotificationSetupComplete(ns && ns.strategy ? true : false);
+          const data = userSnap.data();
+          // Only mark complete if user explicitly completed notification setup
+          setNotificationSetupComplete(data.prepStatus?.notifications === true);
         }
       } catch (error) {
         console.warn('Could not check notification settings:', error);
