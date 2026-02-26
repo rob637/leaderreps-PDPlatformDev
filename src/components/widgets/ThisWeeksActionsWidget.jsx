@@ -401,7 +401,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         if (handlerType === 'leader-profile') handlerType = '';
       }
 
-      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'video-series'].includes(handlerType);
+      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
       
       // Auto-complete status for interactive items
       let autoComplete = undefined;
@@ -454,7 +454,15 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     if (currentPhase?.id === 'pre-start') {
       // Get prep phase actions from daily plan (progress-based, not day-based)
       // EXCLUDE explore-config - those are handled separately
-      const prepDays = dailyPlan.filter(d => d.phase === 'pre-start' && d.id !== 'explore-config');
+      // If onboarding-config and session1-config exist, skip legacy day-* docs to avoid duplicates
+      const hasOnboardingConfig = dailyPlan.some(d => d.id === 'onboarding-config' && d.phase === 'pre-start');
+      const hasSession1Config = dailyPlan.some(d => d.id === 'session1-config' && d.phase === 'pre-start');
+      const prepDays = dailyPlan.filter(d => {
+        if (d.phase !== 'pre-start') return false;
+        if (d.id === 'explore-config') return false;
+        if (hasOnboardingConfig && hasSession1Config && /^day-\d+$/.test(d.id)) return false;
+        return true;
+      });
       
       let allPrepActions = [];
       prepDays.forEach(day => {
@@ -857,7 +865,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 resourceId: action.resourceId,
                 resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
                 url: action.url || action.videoUrl || action.link || action.details?.externalUrl,
-                isInteractive: ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'video-series'].includes(handlerType),
+                isInteractive: ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType),
                 handlerType,
                 estimatedMinutes: action.estimatedMinutes,
                 duration: action.duration
@@ -1339,7 +1347,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         }
       }
       
-      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'video-series'].includes(handlerType);
+      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
       
       return {
         ...action,

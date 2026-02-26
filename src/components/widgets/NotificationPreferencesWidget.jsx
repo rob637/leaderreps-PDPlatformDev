@@ -98,9 +98,9 @@ const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
   const phoneInputRef = useRef(null);
   const emailInputRef = useRef(null);
 
-  // Check if selected strategy requires SMS
+  // Check if selected strategy requires SMS (SMS removed - no strategies require it)
   const strategyRequiresSMS = (strategy) => {
-    return strategy === 'smart_escalation' || strategy === 'full_accountability';
+    return false; // SMS functionality removed
   };
 
   // Check if selected strategy uses email

@@ -379,7 +379,36 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
         // Google Viewer (gview) often fails with "No preview available" for signed URLs or large files
         const isPdf = url && url.toLowerCase().includes('.pdf');
         if (isPdf) {
-           // Fix for broken tokens in 'vault' path: Strip token to rely on public access rules
+           // For signed URLs (GoogleAccessId or Signature in URL), use browser's native PDF viewer
+           // Google Docs Viewer cannot access authenticated/signed URLs
+           const isSignedUrl = url.includes('GoogleAccessId') || url.includes('Signature=');
+           
+           if (isSignedUrl) {
+             // Use browser's native PDF viewer - most modern browsers handle this well
+             return (
+               <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative">
+                 <iframe
+                   src={url}
+                   className="w-full h-full"
+                   title={title}
+                 />
+                 {/* Always show download link as fallback */}
+                 <div className="absolute bottom-4 right-4">
+                   <a
+                     href={url}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="bg-white/90 dark:bg-slate-800/90 hover:bg-white text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-2"
+                   >
+                     <Download className="w-3 h-3" />
+                     Download / Open Directly
+                   </a>
+                 </div>
+               </div>
+             );
+           }
+           
+           // For non-signed URLs, try Google Docs Viewer
            let pdfUrl = url;
            if (url.includes('firebasestorage.googleapis.com') && (url.includes('/vault%2F') || url.includes('/vault/'))) {
               try {

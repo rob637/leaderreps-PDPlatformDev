@@ -313,7 +313,7 @@ const notifyDailyPlanListeners = (days) => {
 
 export const useDailyPlan = () => {
   const { db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
-  const { getItemProgress } = useActionProgress();
+  const { getItemProgress, progressData: actionProgressData } = useActionProgress();
   const { isComplete: leaderProfileComplete } = useLeaderProfile();
   
   // Initialize from cache if available
@@ -548,7 +548,9 @@ export const useDailyPlan = () => {
   // This is COMPLETION-BASED, not day-based.
   const prepRequirementsComplete = useMemo(() => {
     // Get all action progress data for verb-matching fallback
-    const allProgressData = developmentPlanData?.actionProgress || {};
+    // Use actionProgressData from useActionProgress hook (users/{uid}/action_progress subcollection)
+    // NOT developmentPlanData?.actionProgress which may not exist
+    const allProgressData = actionProgressData || {};
     
     // Helper to check if an action is completed
     const isActionComplete = (actionId, actionLabel) => {
@@ -585,7 +587,19 @@ export const useDailyPlan = () => {
     };
     
     // Get all prep phase days from daily plan (phase-based, not time-based)
-    const prepDays = dailyPlan.filter(d => d.phase === 'pre-start');
+    // Use onboarding-config and session1-config if they exist (preferred),
+    // otherwise fall back to day-* documents. This avoids double-counting
+    // when both formats exist in Firestore.
+    const hasOnboardingConfig = dailyPlan.some(d => d.id === 'onboarding-config' && d.phase === 'pre-start');
+    const hasSession1Config = dailyPlan.some(d => d.id === 'session1-config' && d.phase === 'pre-start');
+    
+    const prepDays = dailyPlan.filter(d => {
+      if (d.phase !== 'pre-start') return false;
+      if (d.id === 'explore-config') return false; // Always excluded (optional items)
+      // If config documents exist, skip legacy day-* documents to avoid duplicates
+      if (hasOnboardingConfig && hasSession1Config && /^day-\d+$/.test(d.id)) return false;
+      return true;
+    });
     
     // Collect all prep actions from the daily plan
     const allPrepActions = [];
@@ -703,7 +717,7 @@ export const useDailyPlan = () => {
       // Progress percentage
       progressPercent: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
     };
-  }, [getItemProgress, developmentPlanData, leaderProfileComplete, dailyPlan, user]);
+  }, [getItemProgress, actionProgressData, developmentPlanData, leaderProfileComplete, dailyPlan, user]);
 
   // Auto-initialize startDate if missing (only for users WITHOUT a cohort)
   useEffect(() => {

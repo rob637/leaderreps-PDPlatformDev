@@ -314,9 +314,11 @@ exports.sendInvitationEmail = require("firebase-functions/v2/firestore").onDocum
 
   // Dynamically determine the app URL based on the Firebase project
   const projectId = process.env.GCLOUD_PROJECT || process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId;
-  const appDomain = projectId === 'leaderreps-test' 
-    ? 'leaderreps-test.web.app' 
-    : 'leaderreps-pd-platform.web.app';
+  const appDomain = projectId === 'leaderreps-prod'
+    ? 'arena.leaderreps.com'
+    : projectId === 'leaderreps-test' 
+      ? 'leaderreps-test.web.app' 
+      : 'leaderreps-pd-platform.web.app';
   
   // Use 'token' query param to match frontend AuthPanel expectation
   const inviteLink = `https://${appDomain}/auth?token=${token}`;
@@ -580,9 +582,11 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
   });
 
   const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
-  const appDomain = projectId === 'leaderreps-test' 
-    ? 'leaderreps-test.web.app' 
-    : 'leaderreps-pd-platform.web.app';
+  const appDomain = projectId === 'leaderreps-prod'
+    ? 'arena.leaderreps.com'
+    : projectId === 'leaderreps-test' 
+      ? 'leaderreps-test.web.app' 
+      : 'leaderreps-pd-platform.web.app';
   const appUrl = `https://${appDomain}`;
 
   const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps';
@@ -2463,9 +2467,11 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
 
   // Dynamically determine the app URL based on the Firebase project
   const projectId = process.env.GCLOUD_PROJECT || process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId;
-  const appDomain = projectId === 'leaderreps-test' 
-    ? 'leaderreps-test.web.app' 
-    : 'leaderreps-pd-platform.web.app';
+  const appDomain = projectId === 'leaderreps-prod'
+    ? 'arena.leaderreps.com'
+    : projectId === 'leaderreps-test' 
+      ? 'leaderreps-test.web.app' 
+      : 'leaderreps-pd-platform.web.app';
   const appUrl = `https://${appDomain}`;
 
   // Determine the link to include
@@ -2505,9 +2511,11 @@ async function sendEmailNotification(email, subject, message, options = {}) {
 
   // Dynamically determine the app URL based on the Firebase project
   const projectId = process.env.GCLOUD_PROJECT || process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId;
-  const appDomain = projectId === 'leaderreps-test' 
-    ? 'leaderreps-test.web.app' 
-    : 'leaderreps-pd-platform.web.app';
+  const appDomain = projectId === 'leaderreps-prod'
+    ? 'arena.leaderreps.com'
+    : projectId === 'leaderreps-test' 
+      ? 'leaderreps-test.web.app' 
+      : 'leaderreps-pd-platform.web.app';
   const appUrl = `https://${appDomain}`;
 
   let htmlMessage = message;

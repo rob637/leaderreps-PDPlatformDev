@@ -549,6 +549,14 @@ const Dashboard = () => {
 
   // Helper to check visibility based on Daily Plan config
   const shouldShow = (widgetId, defaultVal = true) => {
+    // PHASE-AWARE WIDGETS: These manage their own visibility internally
+    // via currentPhase checks and should NOT be blocked by dashboard config.
+    // They are only gated by the Feature Lab flag (isFeatureEnabled).
+    const SELF_MANAGED_WIDGETS = ['prep-welcome-banner'];
+    if (SELF_MANAGED_WIDGETS.includes(widgetId)) {
+      return true; // Let the component decide based on currentPhase
+    }
+
     // Legacy Mapping for backward compatibility
     const LEGACY_WIDGET_MAP = {
       'am-bookend-header': 'showAMBookend',

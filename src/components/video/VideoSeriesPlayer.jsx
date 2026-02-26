@@ -459,6 +459,23 @@ export default function VideoSeriesPlayer({
                   onLoadStart={() => {
                     console.log('[VideoSeriesPlayer] Video loading:', videoUrl, 'index:', currentVideoIndex);
                   }}
+                  onError={(e) => {
+                    const video = e.target;
+                    const error = video.error;
+                    console.error('[VideoSeriesPlayer] Video ERROR:', {
+                      code: error?.code,
+                      message: error?.message,
+                      videoUrl: videoUrl?.substring(0, 100),
+                      networkState: video.networkState,
+                      readyState: video.readyState
+                    });
+                  }}
+                  onLoadedData={() => {
+                    console.log('[VideoSeriesPlayer] Video loaded successfully, readyState:', videoRef.current?.readyState);
+                  }}
+                  onCanPlay={() => {
+                    console.log('[VideoSeriesPlayer] Video can play');
+                  }}
                   onEnded={() => {
                     console.log('[VideoSeriesPlayer] onEnded fired for video index:', currentVideoIndexRef.current, 'id:', currentVideo?.id);
                     // Mark as watched in background - don't await to avoid blocking goToNext
