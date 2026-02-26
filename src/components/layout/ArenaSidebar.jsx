@@ -14,9 +14,10 @@ import {
   Zap,
   Wrench,
   AlertTriangle,
-  Sparkles
+  Sparkles,
+  Megaphone
 } from 'lucide-react';
-import { CommunityIcon, CoachingIcon, LockerIcon } from '../icons';
+import { CommunityIcon, LockerIcon } from '../icons';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
@@ -83,7 +84,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     { type: 'section', label: 'Resources' },
     { id: 'community', label: 'Events', icon: CommunityIcon, flag: 'enableCommunity' },
     { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' }, // Using enableReadings as proxy for Content
-    { id: 'coaching-hub', label: 'Sessions', icon: CoachingIcon, flag: 'enableCoaching' },
+    { id: 'coaching-hub', label: 'Coaching', icon: Megaphone, flag: 'enableCoaching' },
     
     { type: 'section', label: 'Personal' },
     { id: 'locker', label: 'Your Locker', icon: LockerIcon },

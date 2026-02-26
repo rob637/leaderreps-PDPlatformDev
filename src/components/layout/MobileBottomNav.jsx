@@ -1,7 +1,7 @@
 // src/components/layout/MobileBottomNav.jsx
 import React from 'react';
-import { LayoutDashboard, BookOpen } from 'lucide-react';
-import { CommunityIcon, CoachingIcon, LockerIcon } from '../icons';
+import { LayoutDashboard, BookOpen, Megaphone } from 'lucide-react';
+import { CommunityIcon, LockerIcon } from '../icons';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 
@@ -36,8 +36,8 @@ const MobileBottomNav = ({ currentScreen }) => {
     },
     {
       id: 'coaching',
-      label: 'Sessions',
-      icon: CoachingIcon,
+      label: 'Coaching',
+      icon: Megaphone,
       screen: 'coaching-hub'
     },
     // Locker for all users - AI Coach not available on mobile
