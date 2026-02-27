@@ -378,11 +378,13 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
         // Google Viewer (gview) often fails with "No preview available" for signed URLs or large files
         const isPdf = url && url.toLowerCase().includes('.pdf');
         if (isPdf) {
-           // For signed URLs (GoogleAccessId or Signature in URL), use browser's native PDF viewer
+           // For signed URLs (GoogleAccessId or Signature in URL) or Firebase token URLs, use browser's native PDF viewer
            // Google Docs Viewer cannot access authenticated/signed URLs
            const isSignedUrl = url.includes('GoogleAccessId') || url.includes('Signature=');
+           const isFirebaseTokenUrl = url.includes('firebasestorage') && url.includes('token=');
+           const isFirebaseUrl = url.includes('firebasestorage.googleapis.com') || url.includes('firebasestorage.app');
            
-           if (isSignedUrl) {
+           if (isSignedUrl || isFirebaseTokenUrl || isFirebaseUrl) {
              // Use browser's native PDF viewer - most modern browsers handle this well
              return (
                <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative">

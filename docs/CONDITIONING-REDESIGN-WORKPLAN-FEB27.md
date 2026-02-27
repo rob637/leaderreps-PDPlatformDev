@@ -515,13 +515,13 @@ Step 4: Close
 
 ## Open Questions for Ryan
 
-1. **Close RR vs Evidence Capture**: Are these two separate user-facing steps, or should evidence capture BE the Close RR process?
+1. **Close RR vs Evidence Capture**: ✅ ANSWERED — Separate steps. Evidence Capture happens first, then Close RR.
 
-2. **Pass/Fail Criteria**: Is pass/fail determined solely by evidence quality, or does reflection matter? Who decides — the system, AI coach, or human trainer?
+2. **Pass/Fail Criteria**: ⏳ TBD — Not yet defined. Will need to determine later.
 
 3. **"Level 1 Evidence (Same day)"**: Need clarification on what this means in the current UI.
 
-4. **RepUp Review Rename**: What should we call the AI-generated feedback review? Options: "Coach Review", "AI Feedback", "Rep Analysis"?
+4. **RepUp Review Rename**: ✅ ANSWERED — Keep "RepUp Review" as-is. It's the AI review of the Rep.
 
 5. **Planned vs In-the-Moment tracking**: Do we differentiate these in analytics/progression differently?
 

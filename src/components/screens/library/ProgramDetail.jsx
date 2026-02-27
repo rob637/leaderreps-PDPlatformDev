@@ -159,7 +159,7 @@ const ProgramDetail = (props) => {
       subtitle={program.description}
       breadcrumbs={[
         { label: 'Home', path: 'dashboard' },
-        { label: 'Library', path: 'library' },
+        { label: 'Content', path: 'library' },
         { label: 'Programs', path: 'programs-index' },
         { label: program.label, path: null }
       ]}

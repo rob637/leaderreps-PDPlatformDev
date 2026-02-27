@@ -82,7 +82,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
     
     { type: 'section', label: 'Resources' },
-    { id: 'community', label: 'Events', icon: CommunityIcon, flag: 'enableCommunity' },
+    { id: 'community', label: 'Community', icon: CommunityIcon, flag: 'enableCommunity' },
     { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' }, // Using enableReadings as proxy for Content
     { id: 'coaching-hub', label: 'Coaching', icon: Megaphone, flag: 'enableCoaching' },
     

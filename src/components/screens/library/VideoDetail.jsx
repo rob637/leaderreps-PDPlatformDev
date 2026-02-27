@@ -45,7 +45,7 @@ const VideoDetail = (props) => {
 
   const breadcrumbs = [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     ...(fromProgram 
       ? [{ label: fromProgram.title, path: 'program-detail', params: { id: fromProgram.id } }] 
       : fromSkill

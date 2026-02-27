@@ -2,7 +2,7 @@
 // Admin dashboard for content management
 
 import React from 'react';
-import { BookOpen, Film, GraduationCap, ArrowLeft, Settings, Users, BrainCircuit, List, ClipboardEdit } from 'lucide-react';
+import { BookOpen, Film, GraduationCap, ArrowLeft, Settings, Users, BrainCircuit, List, ClipboardEdit, Wrench } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 
@@ -443,6 +443,14 @@ const ContentAdminHome = () => {
       description: 'Forms like Leader Profile & Baseline Assessment',
       color: '#0d9488',
       route: 'admin-wrapper-interactive'
+    },
+    {
+      id: 'tools',
+      label: 'Tools',
+      icon: Wrench,
+      description: 'Checklists, templates, and job aids',
+      color: COLORS.ORANGE,
+      route: 'admin-wrapper-tool'
     }
   ];
 

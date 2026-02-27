@@ -68,7 +68,7 @@ const SkillsIndex = () => {
       subtitle="Browse content by leadership capability — your discovery engine for targeted development"
       breadcrumbs={[
         { label: 'Home', path: 'dashboard' },
-        { label: 'Library', path: 'library' },
+        { label: 'Content', path: 'library' },
         { label: 'Skills', path: null }
       ]}
     >

@@ -191,7 +191,7 @@ const SkillDetail = (props) => {
       subtitle={skill.description}
       breadcrumbs={[
         { label: 'Home', path: 'dashboard' },
-        { label: 'Library', path: 'library' },
+        { label: 'Content', path: 'library' },
         { label: 'Skills', path: 'skills-index' },
         { label: skill.label, path: null }
       ]}

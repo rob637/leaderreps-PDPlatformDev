@@ -95,7 +95,7 @@ const MILESTONE_THEMES = {
   1: { 
     id: 1,
     name: 'Milestone 1', 
-    title: 'Foundation Basics', 
+    title: 'Reinforcing', 
     description: 'Core leadership fundamentals and self-awareness',
     icon: Target, 
     color: 'from-corporate-teal to-emerald-600', 
@@ -107,7 +107,7 @@ const MILESTONE_THEMES = {
   2: { 
     id: 2,
     name: 'Milestone 2', 
-    title: 'Communication Mastery', 
+    title: 'One-on-One (1:1)', 
     description: 'Effective communication and influence skills',
     icon: MessageSquare, 
     color: 'from-corporate-navy to-slate-700', 
@@ -119,7 +119,7 @@ const MILESTONE_THEMES = {
   3: { 
     id: 3,
     name: 'Milestone 3', 
-    title: 'Team Leadership', 
+    title: 'Redirecting', 
     description: 'Building and leading high-performing teams',
     icon: Users, 
     color: 'from-corporate-orange to-orange-600', 
@@ -131,7 +131,7 @@ const MILESTONE_THEMES = {
   4: { 
     id: 4,
     name: 'Milestone 4', 
-    title: 'Strategic Thinking', 
+    title: 'Readiness', 
     description: 'Strategic planning and decision-making',
     icon: Lightbulb, 
     color: 'from-corporate-teal to-teal-600', 
@@ -143,7 +143,7 @@ const MILESTONE_THEMES = {
   5: { 
     id: 5,
     name: 'Milestone 5', 
-    title: 'Executive Presence', 
+    title: 'Graduation', 
     description: 'Executive presence and organizational impact',
     icon: Trophy, 
     color: 'from-corporate-navy to-corporate-teal', 
@@ -838,18 +838,6 @@ const DevelopmentJourneyWidget = () => {
         });
       }
       
-      // Add Leader Certification action as the LAST item in the milestone
-      const certificationId = `milestone-${milestone}-certification`;
-      const certProgress = getItemProgress(certificationId);
-      const certificationAction = {
-        id: certificationId,
-        type: 'certification',
-        label: 'Leader Certification',
-        icon: '🏆',
-        dayId: `milestone-${milestone}`,
-        isCompleted: certProgress?.status === 'completed'
-      };
-      
       // Check completion status for regular actions
       const actionsWithStatus = actionsWithId.map(a => {
         const progress = getItemProgress(a.id);
@@ -857,8 +845,8 @@ const DevelopmentJourneyWidget = () => {
         return { ...a, isCompleted };
       });
       
-      // Combine all actions: regular, coaching, then certification last
-      const allActions = [...actionsWithStatus, ...coachingActions, certificationAction];
+      // Combine all actions: regular and coaching
+      const allActions = [...actionsWithStatus, ...coachingActions];
       const completedCount = allActions.filter(a => a.isCompleted).length;
       
       // If milestone is signed off by facilitator, it's 100% complete regardless of action status
@@ -884,7 +872,7 @@ const DevelopmentJourneyWidget = () => {
         isSignedOff: milestoneSignedOff, // Track signed-off status
         icon: 'target',
         description: milestoneTheme.description,
-        requiresApproval: true // Milestones require Leader Certification
+        requiresApproval: true // Milestones require facilitator approval
       });
     }
     

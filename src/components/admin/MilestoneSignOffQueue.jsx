@@ -33,11 +33,11 @@ import { functions } from '../../lib/firebase';
 
 // Milestone metadata - Updated to match 5-milestone structure
 const MILESTONES = {
-  1: { name: 'Foundation', title: 'Foundation Basics', emoji: '📍', color: 'emerald', description: 'Core leadership principles and self-awareness' },
-  2: { name: 'Feedback', title: 'Feedback Mastery', emoji: '🎯', color: 'blue', description: 'Delivering and receiving effective feedback' },
-  3: { name: 'Boundaries', title: 'Healthy Boundaries', emoji: '💡', color: 'amber', description: 'Setting and maintaining professional boundaries' },
-  4: { name: 'Delegation', title: 'Effective Delegation', emoji: '🚀', color: 'purple', description: 'Empowering others through delegation' },
-  5: { name: 'Mastery', title: 'Leadership Mastery', emoji: '🏆', color: 'rose', description: 'Integration and advanced leadership skills' }
+  1: { name: 'Reinforcing', title: 'Reinforcing', emoji: '📍', color: 'emerald', description: 'Core leadership principles and self-awareness' },
+  2: { name: 'One-on-One', title: 'One-on-One (1:1)', emoji: '🎯', color: 'blue', description: 'Personalized coaching sessions' },
+  3: { name: 'Redirecting', title: 'Redirecting', emoji: '💡', color: 'amber', description: 'Delivering and receiving effective feedback' },
+  4: { name: 'Readiness', title: 'Readiness', emoji: '🚀', color: 'purple', description: 'Handling resistance and pushback' },
+  5: { name: 'Graduate', title: 'Graduation', emoji: '🏆', color: 'rose', description: 'Program completion and graduation' }
 };
 
 const MilestoneSignOffQueue = () => {

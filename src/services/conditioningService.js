@@ -18,9 +18,18 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../lib/firebase';
 import { timeService } from './timeService';
 import { REP_TYPES, getRepType, isPrepRequired, LEGACY_REP_TYPE_MAPPING } from './repTaxonomy';
+import { 
+  REP_TYPES_V2, 
+  getRepTypeV2, 
+  getBehaviorFocusReminder, 
+  getActiveRepReminder,
+  getSuggestedSituations 
+} from './repTaxonomy';
 
 // Re-export REP_TYPES from repTaxonomy for backward compatibility
 export { REP_TYPES };
+// Re-export V2 types
+export { REP_TYPES_V2 };
 
 /**
  * Conditioning Layer Service
@@ -314,6 +323,93 @@ export const conditioningService = {
   },
   
   /**
+   * Commit a new leadership rep using V2 taxonomy (10 types, 3 categories)
+   * Supports both Planned and In-the-Moment commitment flows
+   */
+  commitRepV2: async (db, userId, repData) => {
+    if (!userId) throw new Error('User ID required');
+    if (!repData.person && !repData.allowSoloRep) throw new Error('Person is required');
+    if (!repData.repType) throw new Error('Rep type is required');
+    if (!repData.cohortId) throw new Error('Cohort ID is required');
+    if (!repData.commitmentType) throw new Error('Commitment type is required (planned or in_moment)');
+    
+    // Validate rep type exists in V2 taxonomy
+    const repTypeInfo = getRepTypeV2(repData.repType);
+    if (!repTypeInfo) {
+      throw new Error(`Invalid V2 rep type: ${repData.repType}`);
+    }
+    
+    const repId = `rep_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const weekId = getCurrentWeekId();
+    const { weekEnd } = getWeekBoundaries(weekId);
+    const now = new Date();
+    
+    // Build the rep document
+    const repDoc = {
+      id: repId,
+      taxonomyVersion: 'v2',  // Mark as V2 rep
+      
+      // Core fields
+      person: repData.person ? repData.person.trim() : 'Solo Rep',
+      repType: repData.repType,
+      category: repTypeInfo.category,
+      commitmentType: repData.commitmentType, // 'planned' or 'in_moment'
+      
+      // Status
+      status: repData.commitmentType === 'in_moment' ? REP_STATUS.EXECUTED : REP_STATUS.COMMITTED,
+      
+      // Timing
+      deadline: repData.deadline || Timestamp.fromDate(weekEnd),
+      weekId,
+      cohortId: repData.cohortId,
+      
+      // Timestamps
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      ...(repData.commitmentType === 'planned' && repData.scheduledFor && {
+        scheduledFor: repData.scheduledFor
+      }),
+      ...(repData.commitmentType === 'in_moment' && {
+        occurredAt: repData.occurredAt || Timestamp.fromDate(now),
+        executedAt: serverTimestamp()
+      }),
+      
+      // Situation (new in V2)
+      situation: {
+        selected: repData.situation?.selected || null,
+        customContext: repData.situation?.customContext || '',
+        isRequired: repData.situation?.selected === 'something_else'
+      },
+      
+      // Behavior focus (generated from taxonomy)
+      behaviorFocus: getBehaviorFocusReminder(repData.repType),
+      
+      // Active card reminder (if applicable)
+      ...(getActiveRepReminder(repData.repType) && {
+        activeReminder: getActiveRepReminder(repData.repType)
+      }),
+      
+      // Solo rep flag (for Lead Yourself types)
+      allowSoloRep: repTypeInfo.allowSoloRep || false,
+      
+      // Prep is optional by default in V2
+      prepOptional: true,
+      prepCompleted: false,
+      
+      // Optional fields
+      ...(repData.notes && { notes: repData.notes })
+    };
+    
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    await setDoc(repRef, repDoc);
+    
+    // Update weekly stats
+    await conditioningService.updateWeeklyStats(db, userId, weekId, repData.cohortId);
+    
+    return repId;
+  },
+
+  /**
    * Get a single rep by ID
    */
   getRep: async (db, userId, repId) => {
@@ -595,6 +691,48 @@ export const conditioningService = {
         inputMethod: prepData.inputMethod || 'manual',
         savedAt: serverTimestamp()
       }
+    });
+    
+    return true;
+  },
+  
+  /**
+   * V2: Save simplified prep (2 prompts max, 60-120 second alignment check)
+   * No save-and-linger - once saved, user proceeds to rep
+   */
+  savePrepV2: async (db, userId, repId, prepData) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    
+    // Can only prep from committed state
+    if (currentRep.status !== REP_STATUS.COMMITTED) {
+      throw new Error('Can only prep a committed rep');
+    }
+    
+    // V2 prep is just 2 prompts
+    const prep = {
+      prompt1: {
+        question: prepData.prompt1?.question || '',
+        answer: prepData.prompt1?.answer || ''
+      },
+      prompt2: {
+        question: prepData.prompt2?.question || '',
+        answer: prepData.prompt2?.answer || ''
+      },
+      completedAt: serverTimestamp(),
+      durationSeconds: prepData.durationSeconds || null
+    };
+    
+    await updateDoc(repRef, {
+      prep,
+      prepCompleted: true,
+      status: REP_STATUS.PREPARED,
+      preparedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     });
     
     return true;
@@ -1204,6 +1342,109 @@ export const conditioningService = {
     });
     
     return true;
+  },
+  
+  // ============================================
+  // V2: EVIDENCE + CLOSE RR (Separate Steps)
+  // ============================================
+  
+  /**
+   * V2: Submit evidence capture (Step 1 of closing a rep)
+   * This is separate from Close RR to maintain the two-step flow
+   */
+  submitEvidenceV2: async (db, userId, repId, evidenceData) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    
+    // For V2, can submit evidence if rep is committed, prepared, or executed
+    const validStatuses = [
+      REP_STATUS.COMMITTED,
+      REP_STATUS.PREPARED,
+      REP_STATUS.EXECUTED,
+      'active' // Legacy
+    ];
+    
+    if (!validStatuses.includes(currentRep.status)) {
+      throw new Error(`Cannot submit evidence for rep in '${currentRep.status}' status`);
+    }
+    
+    // Structure the V2 evidence data
+    const evidence = {
+      whatYouSaid: evidenceData.whatYouSaid || '',
+      howTheyResponded: evidenceData.howTheyResponded || '',
+      outcome: evidenceData.outcome || null,
+      submittedAt: serverTimestamp(),
+      inputMethod: evidenceData.inputMethod || 'written'
+    };
+    
+    // Transition to 'executed' status (evidence captured, awaiting Close RR)
+    await updateDoc(repRef, {
+      evidence,
+      status: REP_STATUS.EXECUTED,
+      executedAt: currentRep.executedAt || serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    
+    return evidence;
+  },
+  
+  /**
+   * V2: Close RR (Step 2 of closing a rep)
+   * Called after evidence has been submitted
+   * Adds reflection and finalizes the rep
+   */
+  closeRepV2: async (db, userId, repId, closureData) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    
+    // Must be in executed status (evidence already submitted)
+    if (currentRep.status !== REP_STATUS.EXECUTED) {
+      throw new Error(`Cannot close rep in '${currentRep.status}' status. Submit evidence first.`);
+    }
+    
+    // Check that evidence exists
+    if (!currentRep.evidence) {
+      throw new Error('Evidence must be submitted before closing rep');
+    }
+    
+    // Structure the Close RR data
+    const closeRR = {
+      reflection: {
+        whatWentWell: closureData.whatWentWell || null,
+        whatDifferent: closureData.whatDifferent || null
+      },
+      closedAt: serverTimestamp()
+    };
+    
+    // Transition to 'debriefed' status (rep is now complete)
+    await updateDoc(repRef, {
+      closeRR,
+      status: REP_STATUS.DEBRIEFED,
+      debriefedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    
+    // Run AI-powered quality assessment (RepUp Review)
+    const quality = await conditioningService.assessQualityWithAI(
+      { ...currentRep.evidence, reflection: closeRR.reflection },
+      currentRep
+    );
+    
+    // Store quality assessment
+    await updateDoc(repRef, {
+      qualityAssessment: quality,
+      updatedAt: serverTimestamp()
+    });
+    
+    return { closeRR, quality };
   },
   
   /**

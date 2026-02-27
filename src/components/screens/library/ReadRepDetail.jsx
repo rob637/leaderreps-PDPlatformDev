@@ -137,7 +137,7 @@ Keep responses concise (3-5 sentences), actionable, and directly answer the ques
   const ComplexityIcon = complexity.icon;
 
   const breadcrumbs = [
-    { label: 'Library', path: 'library' },
+    { label: 'Content', path: 'library' },
     ...(fromProgram 
       ? [{ label: fromProgram.title, path: 'program-detail', params: { id: fromProgram.id } }] 
       : fromSkill
@@ -234,6 +234,22 @@ Keep responses concise (3-5 sentences), actionable, and directly answer the ques
                 Executive Brief
               </div>
             </button>
+            {/* Show Document tab only if PDF exists */}
+            {(book.details?.pdfUrl || book.metadata?.pdfUrl || book.metadata?.fullFlyerHTML) && (
+              <button
+                onClick={() => setActiveTab('flyer')}
+                className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${
+                  activeTab === 'flyer' 
+                    ? 'border-corporate-teal text-corporate-teal bg-teal-50/30 dark:bg-teal-900/20/30' 
+                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Document
+                </div>
+              </button>
+            )}
             <button
               onClick={() => setActiveTab('action')}
               className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${
@@ -282,13 +298,38 @@ Keep responses concise (3-5 sentences), actionable, and directly answer the ques
             {activeTab === 'flyer' && (
               <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-200 h-full">
                 {(book.details?.pdfUrl || book.metadata?.pdfUrl) ? (
-                   <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative">
-                     <iframe 
-                       src={`https://docs.google.com/gview?url=${encodeURIComponent(book.details?.pdfUrl || book.metadata?.pdfUrl)}&embedded=true`}
-                       className="w-full h-full" 
-                       title="Flyer"
-                     />
-                   </div>
+                   (() => {
+                     const pdfUrl = book.details?.pdfUrl || book.metadata?.pdfUrl;
+                     // Check if this is a Firebase Storage URL (which requires auth and can't use gview)
+                     const isFirebaseStorage = pdfUrl.includes('firebasestorage.googleapis.com') || 
+                                               pdfUrl.includes('firebasestorage.app') ||
+                                               pdfUrl.includes('token=');
+                     return (
+                       <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative">
+                         {isFirebaseStorage ? (
+                           // Use native browser PDF viewer for Firebase Storage URLs
+                           <object
+                             data={pdfUrl}
+                             type="application/pdf"
+                             className="w-full h-full"
+                           >
+                             <iframe 
+                               src={pdfUrl}
+                               className="w-full h-full" 
+                               title="Document"
+                             />
+                           </object>
+                         ) : (
+                           // Use Google Docs Viewer for public URLs
+                           <iframe 
+                             src={`https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`}
+                             className="w-full h-full" 
+                             title="Document"
+                           />
+                         )}
+                       </div>
+                     );
+                   })()
                 ) : book.metadata?.fullFlyerHTML ? (
                   <div dangerouslySetInnerHTML={{ __html: book.metadata.fullFlyerHTML }} />
                 ) : (

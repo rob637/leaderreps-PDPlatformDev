@@ -220,6 +220,77 @@ export default function VideoSeriesCard({
     );
   }
 
+  // Bar variant - matches ContentListItem styling for consistency
+  if (variant === 'bar') {
+    return (
+      <>
+        <button
+          onClick={handleClick}
+          className="w-full text-left transition-all duration-150 rounded-xl border p-4 flex items-center gap-4 group relative
+            bg-white dark:bg-slate-800 hover:shadow-md cursor-pointer border-slate-200 dark:border-slate-700 hover:border-corporate-teal/50 active:scale-[0.99] active:bg-slate-50 mb-3"
+        >
+          {/* Icon */}
+          <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 group-hover:bg-opacity-80">
+            <ListVideo className="w-6 h-6" />
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-base font-bold truncate text-corporate-navy dark:text-white">
+                {series.title}
+              </h3>
+              {showProgress && !loadingProgress && progressInfo.percent === 100 && (
+                <CheckCircle2 className="w-4 h-4 text-corporate-teal flex-shrink-0" />
+              )}
+            </div>
+
+            {series.description && (
+              <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-1 mb-2">
+                {series.description}
+              </p>
+            )}
+
+            {/* Metadata Row */}
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+              <span className="flex items-center gap-1">
+                <PlayCircle className="w-3 h-3" />
+                {series.videos?.length || 0} videos
+              </span>
+              {totalDuration > 0 && (
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {formatDuration(totalDuration)}
+                </span>
+              )}
+              {showProgress && !loadingProgress && progressInfo.percent > 0 && progressInfo.percent < 100 && (
+                <span className="text-corporate-teal font-medium">
+                  {progressInfo.percent}% complete
+                </span>
+              )}
+            </div>
+          </div>
+
+          <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-corporate-teal transition-colors flex-shrink-0" />
+        </button>
+
+        {/* Player modal */}
+        {showPlayer && (
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+            <div className="w-full max-w-6xl h-[85vh]">
+              <VideoSeriesPlayer
+                series={series}
+                onClose={handleClosePlayer}
+                onComplete={handleSeriesComplete}
+                initialVideoIndex={nextVideoIndex}
+              />
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
   // Compact variant - smaller card for lists
   if (variant === 'compact') {
     return (

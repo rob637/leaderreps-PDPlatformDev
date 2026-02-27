@@ -24,7 +24,7 @@ const MobileBottomNav = ({ currentScreen }) => {
     // Community only shows during Ascent phase
     ...(isAscent ? [{
       id: 'community',
-      label: 'Events',
+      label: 'Community',
       icon: CommunityIcon,
       screen: 'community'
     }] : []),

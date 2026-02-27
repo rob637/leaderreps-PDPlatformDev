@@ -569,11 +569,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       
       // Milestone names mapping
       const milestoneNames = {
-        1: 'Foundation Basics',
-        2: 'Communication Mastery',
-        3: 'Team Leadership',
-        4: 'Strategic Thinking',
-        5: 'Executive Presence'
+        1: 'Deliberate Practice',
+        2: '1:1 Coaching',
+        3: 'Open Gym: Feedback',
+        4: 'Open Gym: Pushback',
+        5: 'Graduation'
       };
       
       // CHECK FOR UNVIEWED CERTIFICATES
@@ -756,11 +756,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     }
     
     const milestoneNames = {
-      1: 'Foundation Basics',
-      2: 'Communication Mastery',
-      3: 'Team Leadership',
-      4: 'Strategic Thinking',
-      5: 'Executive Presence'
+      1: 'Deliberate Practice',
+      2: '1:1 Coaching',
+      3: 'Open Gym: Feedback',
+      4: 'Open Gym: Pushback',
+      5: 'Graduation'
     };
     
     return {

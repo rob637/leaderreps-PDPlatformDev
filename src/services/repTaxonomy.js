@@ -682,7 +682,408 @@ export const getProgression = (repTypeId, difficultyLevel) => {
   return repType?.progression?.[difficultyLevel] || null;
 };
 
+// =========================================
+// V2 TAXONOMY (Feb 2026 - Ryan's Redesign)
+// 10 Rep Types in 3 Categories
+// =========================================
+
+/**
+ * V2 Rep Categories - Action-oriented groupings
+ */
+export const REP_CATEGORIES_V2 = {
+  LEAD_THE_WORK: {
+    id: 'lead_the_work',
+    label: 'Lead the Work',
+    shortLabel: 'Lead the Work',
+    description: 'Setting expectations, handoffs, follow-up, and boundaries',
+    icon: 'Briefcase',
+    color: 'teal',
+    order: 1
+  },
+  LEAD_THE_TEAM: {
+    id: 'lead_the_team',
+    label: 'Lead the Team',
+    shortLabel: 'Lead the Team',
+    description: 'Feedback, accountability, and handling reactions',
+    icon: 'Users',
+    color: 'navy',
+    order: 2
+  },
+  LEAD_YOURSELF: {
+    id: 'lead_yourself',
+    label: 'Lead Yourself',
+    shortLabel: 'Lead Yourself',
+    description: 'Vulnerability, curiosity, and self-leadership',
+    icon: 'User',
+    color: 'orange',
+    order: 3
+  }
+};
+
+/**
+ * V2 Rep Types - 10 Canonical Types
+ * No difficulty labels shown to users
+ * All prep is optional by default
+ */
+export const REP_TYPES_V2 = [
+  // =========================================
+  // LEAD THE WORK (4 types)
+  // =========================================
+  {
+    id: 'set_clear_expectations',
+    category: 'lead_the_work',
+    label: 'Set Clear Expectations',
+    shortLabel: 'Set Expectations',
+    description: 'Define the work and what success looks like',
+    order: 1,
+    prepOptional: true,
+    allowSoloRep: false
+  },
+  {
+    id: 'make_clean_handoff',
+    category: 'lead_the_work',
+    label: 'Make a Clean Handoff',
+    shortLabel: 'Clean Handoff',
+    description: 'Explicitly transfer ownership of the work',
+    order: 2,
+    prepOptional: true,
+    allowSoloRep: false
+  },
+  {
+    id: 'follow_up_work',
+    category: 'lead_the_work',
+    label: 'Follow-up on the Work',
+    shortLabel: 'Follow Up',
+    description: 'Check progress, remove obstacles, and reinforce ownership',
+    order: 3,
+    prepOptional: true,
+    allowSoloRep: false
+  },
+  {
+    id: 'hold_the_line',
+    category: 'lead_the_work',
+    label: 'Hold the Line',
+    shortLabel: 'Hold the Line',
+    description: 'Support development without taking back ownership',
+    order: 4,
+    prepOptional: true,
+    allowSoloRep: false
+  },
+
+  // =========================================
+  // LEAD THE TEAM (4 types)
+  // =========================================
+  {
+    id: 'deliver_reinforcing_feedback',
+    category: 'lead_the_team',
+    label: 'Deliver Reinforcing Feedback',
+    shortLabel: 'Reinforcing Feedback',
+    description: 'Build the noticing muscle and normalize feedback',
+    order: 1,
+    prepOptional: true,
+    allowSoloRep: false
+  },
+  {
+    id: 'deliver_redirecting_feedback',
+    category: 'lead_the_team',
+    label: 'Deliver Redirecting Feedback',
+    shortLabel: 'Redirecting Feedback',
+    description: 'Address performance gaps early, clearly, and directly',
+    order: 2,
+    prepOptional: true,
+    allowSoloRep: false
+  },
+  {
+    id: 'close_the_loop',
+    category: 'lead_the_team',
+    label: 'Close the Loop',
+    shortLabel: 'Close the Loop',
+    description: 'Verify that feedback actually drives behavior change',
+    order: 3,
+    prepOptional: true,
+    allowSoloRep: false
+  },
+  {
+    id: 'handle_pushback',
+    category: 'lead_the_team',
+    label: 'Handle Pushback',
+    shortLabel: 'Handle Pushback',
+    description: 'Stay composed and adapt when met with pushback',
+    order: 4,
+    prepOptional: true,
+    allowSoloRep: false
+  },
+
+  // =========================================
+  // LEAD YOURSELF (2 types)
+  // =========================================
+  {
+    id: 'lead_with_vulnerability',
+    category: 'lead_yourself',
+    label: 'Lead with Vulnerability',
+    shortLabel: 'Be Vulnerable',
+    description: 'Model vulnerability and build psychological safety',
+    order: 1,
+    prepOptional: true,
+    allowSoloRep: true
+  },
+  {
+    id: 'be_curious',
+    category: 'lead_yourself',
+    label: 'Be Curious',
+    shortLabel: 'Be Curious',
+    description: 'Lead with a coach-like mindset and create space',
+    order: 2,
+    prepOptional: true,
+    allowSoloRep: true
+  }
+];
+
+/**
+ * Suggested Situations - 2 options per rep type + "Something else"
+ * Used in the Situation step of both Planned and In-the-Moment flows
+ */
+export const SUGGESTED_SITUATIONS = {
+  'deliver_reinforcing_feedback': [
+    'A behavior I want to see repeated',
+    'Someone did something right that I don\'t want to overlook'
+  ],
+  'set_clear_expectations': [
+    'Work or outcomes need to be defined before starting',
+    'I\'ve seen confusion or missed expectations like this before'
+  ],
+  'make_clean_handoff': [
+    'Responsibility or work is being assigned or delegated',
+    'Ownership needs to be explicitly transferred'
+  ],
+  'follow_up_work': [
+    'Checking progress on previously assigned work',
+    'A task or project is in motion and needs accountability'
+  ],
+  'lead_with_vulnerability': [
+    'I need to own a miss, mistake, or impact',
+    'I need to name uncertainty or a learning edge first'
+  ],
+  'deliver_redirecting_feedback': [
+    'A behavior or result missed the standard',
+    'A pattern is starting to show up'
+  ],
+  'close_the_loop': [
+    'Checking whether prior feedback changed behavior',
+    'Reinforcing or re-addressing a previously named issue'
+  ],
+  'handle_pushback': [
+    'I expect defensiveness or resistance to feedback',
+    'Feedback has already met disagreement or emotion'
+  ],
+  'hold_the_line': [
+    'Someone is struggling after an assignment or feedback',
+    'I\'m tempted to fix or take over to move things forward'
+  ],
+  'be_curious': [
+    'Something feels off, but I don\'t know why yet',
+    'Early signals before jumping to conclusions'
+  ]
+};
+
+/**
+ * Behavior Focus Reminders - shown at commit time and on In-the-Moment type selection
+ */
+export const BEHAVIOR_FOCUS_REMINDERS = {
+  'deliver_reinforcing_feedback': 
+    'Notice the specific behavior and name why it matters so it gets repeated.',
+  'set_clear_expectations': 
+    'Be explicit about what success looks like and confirm shared understanding.',
+  'make_clean_handoff': 
+    'Transfer ownership clearly and confirm it is accepted.',
+  'follow_up_work': 
+    'Check progress against expectations without fixing or taking back ownership.',
+  'lead_with_vulnerability': 
+    'Go first and model vulnerability by owning a miss, asking for help, etc.',
+  'deliver_redirecting_feedback': 
+    'Name the behavior gap, its impact, and the expected change directly.',
+  'close_the_loop': 
+    'Verify that behavior actually changed and respond intentionally.',
+  'handle_pushback': 
+    'Acknowledge the reaction and hold the standard without arguing or retreating.',
+  'hold_the_line': 
+    'Support thinking while keeping ownership with the other person.',
+  'be_curious': 
+    'Seek to understand what\'s really happening without correcting or fixing.'
+};
+
+/**
+ * Active Rep Card Reminders - shown on committed rep cards (5 types only)
+ * These remind the leader what's required for the rep to "pass"
+ */
+export const ACTIVE_REP_REMINDERS = {
+  'set_clear_expectations': 
+    'You\'ll need to define what "good" or "done" looks like when submitting evidence.',
+  'make_clean_handoff': 
+    'This rep presumes expectations were clearly set. Ownership must be explicitly accepted to pass.',
+  'follow_up_work': 
+    'This rep should reference a prior handoff. Fixing or re-owning the work will fail this rep.',
+  'deliver_redirecting_feedback': 
+    'All CLEAR elements are required for this rep to pass.',
+  'close_the_loop': 
+    'This should link to a prior feedback rep. Closure must be based on observed behavior.'
+};
+
+/**
+ * Prep Prompts - Max 2 prompts per rep type, 60-120 second alignment check
+ * Hard character limits to prevent over-thinking
+ */
+export const PREP_PROMPTS = {
+  'deliver_reinforcing_feedback': [
+    { prompt: 'What behavior are you reinforcing?', maxChars: 100 },
+    { prompt: 'Why does it matter?', maxChars: 100 }
+  ],
+  'set_clear_expectations': [
+    { prompt: 'What does "done" or "good" look like?', maxChars: 100 },
+    { prompt: 'How will you confirm shared understanding?', maxChars: 100 }
+  ],
+  'make_clean_handoff': [
+    { prompt: 'What ownership are you transferring?', maxChars: 100 },
+    { prompt: 'How will you confirm they accept it?', maxChars: 100 }
+  ],
+  'follow_up_work': [
+    { prompt: 'What expectations are you checking against?', maxChars: 100 },
+    { prompt: 'What will you NOT fix or take back?', maxChars: 100 }
+  ],
+  'lead_with_vulnerability': [
+    { prompt: 'What are you owning or admitting?', maxChars: 100 },
+    { prompt: 'What makes this feel risky?', maxChars: 100 }
+  ],
+  'deliver_redirecting_feedback': [
+    { prompt: 'What behavior are you naming?', maxChars: 100 },
+    { prompt: 'What standard are you holding?', maxChars: 100 }
+  ],
+  'close_the_loop': [
+    { prompt: 'What prior feedback are you following up on?', maxChars: 100 },
+    { prompt: 'What behavior change are you looking for?', maxChars: 100 }
+  ],
+  'handle_pushback': [
+    { prompt: 'What reaction might show up?', maxChars: 100 },
+    { prompt: 'What boundary must you hold?', maxChars: 100 }
+  ],
+  'hold_the_line': [
+    { prompt: 'What are you most tempted to fix?', maxChars: 100 },
+    { prompt: 'What question will you ask instead?', maxChars: 100 }
+  ],
+  'be_curious': [
+    { prompt: 'What feels off that you want to explore?', maxChars: 100 },
+    { prompt: 'What assumption are you setting aside?', maxChars: 100 }
+  ]
+};
+
+/**
+ * Legacy V1 to V2 Rep Type Mapping
+ * Maps old 16-type taxonomy IDs to new 10-type taxonomy
+ */
+export const V1_TO_V2_REP_MAPPING = {
+  // Reinforcing types → deliver_reinforcing_feedback
+  'reinforce_public': 'deliver_reinforcing_feedback',
+  
+  // Redirecting types → deliver_redirecting_feedback or close_the_loop
+  'redirect_moment': 'deliver_redirecting_feedback',
+  'redirect_prepared': 'deliver_redirecting_feedback',
+  'redirect_pattern': 'deliver_redirecting_feedback',
+  'adjust_mid_feedback': 'handle_pushback',
+  'close_loop': 'close_the_loop',
+  
+  // Ambiguous/Emotional → be_curious or lead_with_vulnerability
+  'whats_going_on': 'be_curious',
+  'receive_feedback': 'lead_with_vulnerability',
+  'lead_vulnerability': 'lead_with_vulnerability',
+  
+  // Standards/Authority → various
+  'delegate_clean': 'make_clean_handoff',
+  'hold_line': 'hold_the_line',
+  'let_consequence': 'hold_the_line',
+  'say_no': 'set_clear_expectations',
+  
+  // Escalation/Decisions → various
+  'name_pattern_change': 'deliver_redirecting_feedback',
+  'coaching_to_consequence': 'deliver_redirecting_feedback',
+  'mediate_conflict': 'handle_pushback'
+};
+
+// =========================================
+// V2 HELPER FUNCTIONS
+// =========================================
+
+/**
+ * Get V2 rep type by ID
+ */
+export const getRepTypeV2 = (repTypeId) => {
+  // First try direct V2 match
+  let repType = REP_TYPES_V2.find(t => t.id === repTypeId);
+  
+  // If not found, try V1 to V2 mapping
+  if (!repType && V1_TO_V2_REP_MAPPING[repTypeId]) {
+    const mappedId = V1_TO_V2_REP_MAPPING[repTypeId];
+    repType = REP_TYPES_V2.find(t => t.id === mappedId);
+    if (repType) {
+      console.log(`[RepTaxonomy V2] Mapped V1 type "${repTypeId}" to V2 "${mappedId}"`);
+    }
+  }
+  
+  return repType || null;
+};
+
+/**
+ * Get V2 rep types by category (sorted by order)
+ */
+export const getRepTypesByCategoryV2 = (categoryId) => {
+  return REP_TYPES_V2
+    .filter(t => t.category === categoryId)
+    .sort((a, b) => a.order - b.order);
+};
+
+/**
+ * Get V2 category by ID
+ */
+export const getCategoryV2 = (categoryId) => {
+  return Object.values(REP_CATEGORIES_V2).find(c => c.id === categoryId) || null;
+};
+
+/**
+ * Get all V2 categories as array (sorted by order)
+ */
+export const getCategoriesArrayV2 = () => {
+  return Object.values(REP_CATEGORIES_V2).sort((a, b) => a.order - b.order);
+};
+
+/**
+ * Get suggested situations for a rep type
+ */
+export const getSuggestedSituations = (repTypeId) => {
+  return SUGGESTED_SITUATIONS[repTypeId] || [];
+};
+
+/**
+ * Get behavior focus reminder for a rep type
+ */
+export const getBehaviorFocusReminder = (repTypeId) => {
+  return BEHAVIOR_FOCUS_REMINDERS[repTypeId] || null;
+};
+
+/**
+ * Get active rep card reminder for a rep type (if applicable)
+ */
+export const getActiveRepReminder = (repTypeId) => {
+  return ACTIVE_REP_REMINDERS[repTypeId] || null;
+};
+
+/**
+ * Get prep prompts for a rep type
+ */
+export const getPrepPrompts = (repTypeId) => {
+  return PREP_PROMPTS[repTypeId] || [];
+};
+
 export default {
+  // V1 exports (backward compatibility)
   REP_CATEGORIES,
   REP_TYPES,
   DIFFICULTY_LEVELS,
@@ -698,5 +1099,22 @@ export default {
   getRubric,
   getStretchPrompts,
   getProgression,
-  sortByDifficulty
+  sortByDifficulty,
+  
+  // V2 exports (new taxonomy)
+  REP_CATEGORIES_V2,
+  REP_TYPES_V2,
+  SUGGESTED_SITUATIONS,
+  BEHAVIOR_FOCUS_REMINDERS,
+  ACTIVE_REP_REMINDERS,
+  PREP_PROMPTS,
+  V1_TO_V2_REP_MAPPING,
+  getRepTypeV2,
+  getRepTypesByCategoryV2,
+  getCategoryV2,
+  getCategoriesArrayV2,
+  getSuggestedSituations,
+  getBehaviorFocusReminder,
+  getActiveRepReminder,
+  getPrepPrompts
 };

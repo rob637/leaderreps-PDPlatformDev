@@ -129,6 +129,9 @@ const ScreenMap = {
   'admin-wrapper-interactive': lazy(() =>
     import('../components/admin/wrappers/InteractiveWrapper.jsx')
   ),
+  'admin-wrapper-tool': lazy(() =>
+    import('../components/admin/wrappers/ToolWrapper.jsx')
+  ),
   'admin-portal': lazy(() =>
     import('../components/admin/AdminPortal.jsx')
   ),

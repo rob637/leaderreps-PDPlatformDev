@@ -103,7 +103,7 @@ const ToolDetail = (props) => {
       title={tool.title} 
       subtitle="Tool & Resource"
       breadcrumbs={[
-        { label: 'Library', path: 'library' },
+        { label: 'Content', path: 'library' },
         ...(fromSkill
           ? [
               { label: 'Skills', path: 'skills-index' },

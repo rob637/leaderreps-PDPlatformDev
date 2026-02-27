@@ -310,7 +310,7 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
           <CheckCircle className="w-10 h-10 text-green-500" />
         </div>
         <h3 className="text-xl font-bold text-corporate-navy mb-2">Profile Complete!</h3>
-        <p className="text-slate-600 dark:text-slate-300">Your personalized journey is ready.</p>
+        <p className="text-slate-600 dark:text-slate-300">Your Leader Profile has been saved. You may access it in Your Locker.</p>
       </div>
     );
   }

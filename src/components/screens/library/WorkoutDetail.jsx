@@ -159,7 +159,7 @@ const WorkoutDetail = (props) => {
       subtitle={workout.description}
       breadcrumbs={[
         { label: 'Home', path: 'dashboard' },
-        { label: 'Library', path: 'library' },
+        { label: 'Content', path: 'library' },
         { label: 'Workouts', path: 'workouts-index' },
         { label: workout.label, path: null }
       ]}

@@ -12,27 +12,27 @@ import {
 // Milestone theme colors for certificates
 const MILESTONE_THEMES = {
   1: { 
-    name: 'Foundation Basics',
+    name: 'Reinforcing',
     color: '#47A88D', // corporate-teal
     gradient: 'from-corporate-teal to-emerald-600'
   },
   2: { 
-    name: 'Communication Mastery',
+    name: 'One-on-One (1:1)',
     color: '#002E47', // corporate-navy
     gradient: 'from-corporate-navy to-slate-700'
   },
   3: { 
-    name: 'Team Leadership',
+    name: 'Redirecting',
     color: '#E04E1B', // corporate-orange
     gradient: 'from-corporate-orange to-orange-600'
   },
   4: { 
-    name: 'Strategic Thinking',
+    name: 'Readiness',
     color: '#47A88D',
     gradient: 'from-corporate-teal to-teal-600'
   },
   5: { 
-    name: 'Executive Presence',
+    name: 'Graduation',
     color: '#002E47',
     gradient: 'from-corporate-navy to-corporate-teal'
   }
