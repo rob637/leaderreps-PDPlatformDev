@@ -251,17 +251,22 @@ const RepCard = ({
   rep, 
   onComplete, 
   onCancel, 
-  onAddDebrief, 
+  onAddDebrief,
+  onCloseRR, // V2: Close RR (replaces debrief for V2 reps)
   onCloseLoop,
   onViewDetail,
   onPractice, 
   onStateChange,
   onOpenPrep,
+  onQuickPrep, // V2: Quick prep modal
   evidence, 
   isLoading 
 }) => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+
+  // Detect if this is a V2 rep (has commitmentType field)
+  const isV2Rep = !!rep.commitmentType;
   
   const formatDeadline = (deadline) => {
     if (!deadline) return 'End of week';
@@ -309,8 +314,12 @@ const RepCard = ({
     }
     
     if (newState === 'debriefed') {
-      // Route to debrief
-      onAddDebrief?.(rep);
+      // Route to debrief/close RR based on rep version
+      if (isV2Rep) {
+        onCloseRR?.(rep);
+      } else {
+        onAddDebrief?.(rep);
+      }
       return;
     }
     
@@ -415,16 +424,16 @@ const RepCard = ({
             </div>
           )}
           
-          {/* Executed Rep - Needs Debrief */}
+          {/* Executed Rep - Needs Close RR (V2) or Debrief (V1) */}
           {rep.status === 'executed' && (
             <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
               <Button
-                onClick={() => onAddDebrief?.(rep)}
+                onClick={() => isV2Rep ? onCloseRR?.(rep) : onAddDebrief?.(rep)}
                 disabled={isLoading}
                 className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
               >
                 <FileText className="w-4 h-4 mr-2" />
-                Add Debrief to Complete
+                {isV2Rep ? 'Close RR' : 'Add Debrief to Complete'}
               </Button>
               <Button
                 onClick={() => setShowCancelModal(true)}
@@ -453,7 +462,7 @@ const RepCard = ({
                   
                   <div className="flex items-center gap-2 text-xs text-green-600 mb-2">
                       <CheckCircle className="w-3 h-3" />
-                      <span>Debrief submitted</span>
+                      <span>{isV2Rep ? 'RR Closed' : 'Debrief submitted'}</span>
                     </div>
                     <Button
                       onClick={() => onCloseLoop?.(rep)}
@@ -466,15 +475,15 @@ const RepCard = ({
                 </>
               ) : (
                 <Button
-                  onClick={() => onAddDebrief?.(rep)}
+                  onClick={() => isV2Rep ? onCloseRR?.(rep) : onAddDebrief?.(rep)}
                   disabled={isLoading}
                   variant="outline"
                   className="w-full py-2 border-corporate-navy text-corporate-navy hover:bg-corporate-navy/5"
                 >
                   <FileText className="w-4 h-4 mr-2" />
-                  Add Debrief
+                  {isV2Rep ? 'Close RR' : 'Add Debrief'}
                 </Button>
-              )}
+              )}}
             </div>
           )}
           
@@ -1150,7 +1159,9 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
                 onCancel={handleCancelRep}
                 onStateChange={handleStateChange}
                 onOpenPrep={handleOpenPrep}
+                onQuickPrep={handleOpenQuickPrep}
                 onAddDebrief={(rep) => setEvidenceModalRep(rep)}
+                onCloseRR={handleOpenCloseRR}
                 onCloseLoop={handleOpenLoopClosure}
                 onViewDetail={handleOpenRepDetail}
                 isLoading={isSubmitting}
@@ -1182,7 +1193,9 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
                 onCancel={() => {}}
                 onStateChange={handleStateChange}
                 onOpenPrep={handleOpenPrep}
+                onQuickPrep={handleOpenQuickPrep}
                 onAddDebrief={(rep) => setEvidenceModalRep(rep)}
+                onCloseRR={handleOpenCloseRR}
                 onCloseLoop={handleOpenLoopClosure}
                 onViewDetail={handleOpenRepDetail}
                 onPractice={handleStartPractice}
