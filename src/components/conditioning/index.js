@@ -33,3 +33,10 @@ export { default as VoiceInputButton, VoiceInputWithPreview } from './VoiceInput
 // Unified Modal & Voice Textarea
 export { default as ConditioningModal, StepIndicator } from './ConditioningModal';
 export { default as VoiceTextarea } from './VoiceTextarea';
+
+// V2 Components (Feb 2026 Redesign)
+export { default as RepTypePickerV2, RepTypeBadgeV2 } from './RepTypePickerV2';
+export { default as PlannedRepForm } from './PlannedRepForm';
+export { default as InMomentRepForm } from './InMomentRepForm';
+export { default as SituationStep } from './SituationStep';
+export { default as BehaviorFocusReminder, BehaviorFocusReminder as BFR, ActiveRepReminder } from './BehaviorFocusReminder';
