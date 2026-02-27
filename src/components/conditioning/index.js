@@ -40,3 +40,4 @@ export { default as PlannedRepForm } from './PlannedRepForm';
 export { default as InMomentRepForm } from './InMomentRepForm';
 export { default as SituationStep } from './SituationStep';
 export { default as BehaviorFocusReminder, BehaviorFocusReminder as BFR, ActiveRepReminder } from './BehaviorFocusReminder';
+export { default as CommitFlowSelector } from './CommitFlowSelector';

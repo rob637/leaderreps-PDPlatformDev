@@ -25,7 +25,8 @@ import {
   HighRiskPrepModal,
   MissedRepDebriefModal,
   LoopClosureModal,
-  RepDetailModal
+  RepDetailModal,
+  CommitFlowSelector
 } from '../conditioning';
 import { 
   Plus, Check, X, AlertTriangle, Clock, User, 
@@ -34,6 +35,10 @@ import {
   FileText, Lightbulb, Dumbbell, Sparkles, HelpCircle, ArrowRight
 } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
+
+// Feature flag for V2 commit flows (Feb 2026 redesign)
+// Set to true to use the new Planned/In-the-Moment flows
+const USE_V2_COMMIT_FLOW = true;
 
 // ============================================
 // STATUS BADGE COMPONENT (Updated for new states)
@@ -743,12 +748,25 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
     
     try {
       setIsSubmitting(true);
-      console.log('[Conditioning] Calling conditioningService.commitRep...');
-      const repId = await conditioningService.commitRep(db, userId, {
-        ...repData,
-        cohortId
-      });
-      console.log('[Conditioning] Rep committed successfully:', repId);
+      
+      // Check if this is a V2 flow (has commitmentType field)
+      if (repData.commitmentType) {
+        console.log('[Conditioning] Using V2 commitRepV2 flow:', repData.commitmentType);
+        const repId = await conditioningService.commitRepV2(db, userId, {
+          ...repData,
+          cohortId
+        });
+        console.log('[Conditioning] V2 Rep committed successfully:', repId);
+      } else {
+        // Legacy V1 flow
+        console.log('[Conditioning] Using V1 commitRep flow');
+        const repId = await conditioningService.commitRep(db, userId, {
+          ...repData,
+          cohortId
+        });
+        console.log('[Conditioning] Rep committed successfully:', repId);
+      }
+      
       setShowCommitForm(false);
       await loadData();
     } catch (err) {
@@ -1159,12 +1177,20 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       
       {/* Commit Form Modal */}
       {showCommitForm && (
-        <CommitRepForm
-          onSubmit={handleCommitRep}
-          onClose={() => setShowCommitForm(false)}
-          isLoading={isSubmitting}
-          activeRepsCount={activeReps.length}
-        />
+        USE_V2_COMMIT_FLOW ? (
+          <CommitFlowSelector
+            onSubmit={handleCommitRep}
+            onClose={() => setShowCommitForm(false)}
+            isLoading={isSubmitting}
+          />
+        ) : (
+          <CommitRepForm
+            onSubmit={handleCommitRep}
+            onClose={() => setShowCommitForm(false)}
+            isLoading={isSubmitting}
+            activeRepsCount={activeReps.length}
+          />
+        )
       )}
       
       {/* Structured Evidence Capture Modal (Sprint 3) */}
