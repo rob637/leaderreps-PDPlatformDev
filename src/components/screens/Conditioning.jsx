@@ -26,7 +26,9 @@ import {
   MissedRepDebriefModal,
   LoopClosureModal,
   RepDetailModal,
-  CommitFlowSelector
+  CommitFlowSelector,
+  QuickPrepModalV2,
+  CloseRRModal
 } from '../conditioning';
 import { 
   Plus, Check, X, AlertTriangle, Clock, User, 
@@ -953,6 +955,12 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   
   // Phase 5: Loop closure modal state
   const [loopClosureRep, setLoopClosureRep] = useState(null);
+
+  // V2: Close RR modal state (replaces "Debrief" for V2 reps)
+  const [closeRRModalRep, setCloseRRModalRep] = useState(null);
+
+  // V2: Quick Prep modal state
+  const [quickPrepModalRep, setQuickPrepModalRep] = useState(null);
   
   const handleOpenLoopClosure = (rep) => {
     setLoopClosureRep(rep);
@@ -978,6 +986,28 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   
   const handleOpenRepDetail = (rep) => {
     setDetailModalRep(rep);
+  };
+
+  // V2: Open Close RR modal (for V2 reps, replaces "Debrief")
+  const handleOpenCloseRR = (rep) => {
+    setCloseRRModalRep(rep);
+  };
+
+  // V2: Handle Close RR submission
+  const handleCloseRRSubmit = async () => {
+    setCloseRRModalRep(null);
+    await loadData();
+  };
+
+  // V2: Open Quick Prep modal
+  const handleOpenQuickPrep = (rep) => {
+    setQuickPrepModalRep(rep);
+  };
+
+  // V2: Handle Quick Prep save
+  const handleQuickPrepSave = async () => {
+    setQuickPrepModalRep(null);
+    await loadData();
   };
   
   // No cohort check
@@ -1244,6 +1274,24 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
           isOpen={true}
           onClose={() => setDetailModalRep(null)}
           rep={detailModalRep}
+        />
+      )}
+
+      {/* V2: Close RR Modal (replaces "Debrief" for V2 reps) */}
+      {closeRRModalRep && (
+        <CloseRRModal
+          rep={closeRRModalRep}
+          onClose={() => setCloseRRModalRep(null)}
+          onSubmit={handleCloseRRSubmit}
+        />
+      )}
+
+      {/* V2: Quick Prep Modal */}
+      {quickPrepModalRep && (
+        <QuickPrepModalV2
+          rep={quickPrepModalRep}
+          onClose={() => setQuickPrepModalRep(null)}
+          onSave={handleQuickPrepSave}
         />
       )}
     </PageLayout>
