@@ -483,7 +483,7 @@ const RepCard = ({
                   <FileText className="w-4 h-4 mr-2" />
                   {isV2Rep ? 'Close RR' : 'Add Debrief'}
                 </Button>
-              )}}
+              )}
             </div>
           )}
           

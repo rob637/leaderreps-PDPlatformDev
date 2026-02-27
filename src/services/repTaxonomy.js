@@ -1082,6 +1082,9 @@ export const getPrepPrompts = (repTypeId) => {
   return PREP_PROMPTS[repTypeId] || [];
 };
 
+// V2 alias for getPrepPrompts (same data, clearer naming)
+export const getPrepPromptsV2 = getPrepPrompts;
+
 export default {
   // V1 exports (backward compatibility)
   REP_CATEGORIES,
@@ -1116,5 +1119,6 @@ export default {
   getSuggestedSituations,
   getBehaviorFocusReminder,
   getActiveRepReminder,
-  getPrepPrompts
+  getPrepPrompts,
+  getPrepPromptsV2
 };

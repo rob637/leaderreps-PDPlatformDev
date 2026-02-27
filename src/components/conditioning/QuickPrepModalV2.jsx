@@ -4,7 +4,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { savePrepV2 } from '../../services/conditioningService.js';
+import conditioningService from '../../services/conditioningService.js';
 import { getPrepPromptsV2 } from '../../services/repTaxonomy.js';
 import { Button } from '../ui';
 import { 
@@ -151,7 +151,7 @@ const QuickPrepModalV2 = ({
         version: 'v2'
       };
       
-      await savePrepV2(db, userId, rep.id, prepData);
+      await conditioningService.savePrepV2(db, userId, rep.id, prepData);
       
       onSave?.(prepData);
       onClose?.();
@@ -179,7 +179,7 @@ const QuickPrepModalV2 = ({
         version: 'v2'
       };
       
-      await savePrepV2(db, userId, rep.id, prepData);
+      await conditioningService.savePrepV2(db, userId, rep.id, prepData);
       
       onSave?.(prepData);
       onClose?.();

@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { closeRepV2 } from '../../services/conditioningService.js';
+import conditioningService from '../../services/conditioningService.js';
 import { Button } from '../ui';
 import { 
   CheckSquare, Send, AlertCircle, MessageSquare
@@ -121,7 +121,7 @@ const CloseRRModal = ({
         closedAt: new Date().toISOString()
       };
       
-      await closeRepV2(db, userId, rep.id, closeData);
+      await conditioningService.closeRepV2(db, userId, rep.id, closeData);
       
       onSubmit?.(closeData);
       onClose?.();
