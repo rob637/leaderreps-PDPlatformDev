@@ -12,13 +12,17 @@ import {
 // Dimension icons - use string keys to avoid module initialization order issues
 const DIMENSION_ICONS = {
   specific_language: MessageSquare,
+  observed_response: Target,
+  // Legacy V1 dimensions
   clear_request: Target,
   named_commitment: Handshake,
   reflection: Lightbulb
 };
 
 const DIMENSION_LABELS = {
-  specific_language: 'Specific Language',
+  specific_language: 'What You Said',
+  observed_response: 'Their Response',
+  // Legacy V1 dimensions
   clear_request: 'Clear Request',
   named_commitment: 'Named Commitment',
   reflection: 'Reflection'

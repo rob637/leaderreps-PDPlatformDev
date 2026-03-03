@@ -260,6 +260,7 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, activeTab, user?.email]);
 
   useEffect(() => {

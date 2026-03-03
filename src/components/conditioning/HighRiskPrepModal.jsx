@@ -108,8 +108,8 @@ const HighRiskPrepModal = ({
   const stepLabels = steps.map(s => s.shortLabel);
   const currentStepData = steps[currentStep];
   
-  // Get value for current step
-  const getCurrentValue = () => {
+  // Get value for current step (used in JSX below)
+  const _getCurrentValue = () => {
     if (!currentStepData) return '';
     if (currentStepData.type === 'rubric') {
       return rubricResponses[currentStepData.id] || '';

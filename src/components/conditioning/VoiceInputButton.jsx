@@ -15,6 +15,10 @@ const isIOS = typeof navigator !== 'undefined' &&
   /iPad|iPhone|iPod/.test(navigator.userAgent) && 
   !window.MSStream;
 
+// Detect Android - has issues with continuous mode causing duplicate results
+const isAndroid = typeof navigator !== 'undefined' &&
+  /android/i.test(navigator.userAgent);
+
 // Detect Safari
 const isSafari = typeof navigator !== 'undefined' &&
   /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -41,6 +45,8 @@ const VoiceInputButton = ({
   const autoStopTimerRef = useRef(null);
   const startupTimerRef = useRef(null);
   const transcriptRef = useRef('');
+  const hasSubmittedRef = useRef(false); // Prevent duplicate submissions
+  const processedIndicesRef = useRef(new Set()); // Track processed final result indices (Android fix)
   // Store callbacks in refs to avoid re-creating recognition on every render
   const onTranscriptionRef = useRef(onTranscription);
   const onPartialTranscriptionRef = useRef(onPartialTranscription);
@@ -51,8 +57,9 @@ const VoiceInputButton = ({
     onPartialTranscriptionRef.current = onPartialTranscription;
   }, [onTranscription, onPartialTranscription]);
   
-  // iOS doesn't support continuous mode well - disable it
-  const effectiveContinuous = isIOS || isSafari ? false : continuous;
+  // iOS and Android don't support continuous mode well - disable it
+  // Android in particular has issues where results repeat many times
+  const effectiveContinuous = isIOS || isSafari || isAndroid ? false : continuous;
   
   // Initialize speech recognition (only once)
   useEffect(() => {
@@ -77,6 +84,8 @@ const VoiceInputButton = ({
       setIsRecording(true);
       setError(null);
       transcriptRef.current = '';
+      hasSubmittedRef.current = false; // Reset submission flag on new recording
+      processedIndicesRef.current = new Set(); // Reset processed indices (Android fix)
     };
     
     recognition.onend = () => {
@@ -94,9 +103,11 @@ const VoiceInputButton = ({
         startupTimerRef.current = null;
       }
       
-      // Send final transcription if we have content
-      if (transcriptRef.current.trim()) {
+      // Send final transcription if we have content (only once)
+      if (transcriptRef.current.trim() && !hasSubmittedRef.current) {
+        hasSubmittedRef.current = true;
         onTranscriptionRef.current?.(transcriptRef.current.trim());
+        transcriptRef.current = ''; // Clear after sending to prevent duplicates
       }
     };
     
@@ -104,26 +115,48 @@ const VoiceInputButton = ({
       let finalTranscript = '';
       let interimTranscript = '';
       
-      // Process all results from the beginning to build complete transcript
-      for (let i = 0; i < event.results.length; i++) {
+      // Process results - on mobile/non-continuous mode, use resultIndex to avoid reprocessing
+      // On continuous mode, rebuild from start to handle potential corrections
+      const startIndex = effectiveContinuous ? 0 : event.resultIndex;
+      
+      // For non-continuous mode, also include previously finalized content
+      if (!effectiveContinuous && transcriptRef.current) {
+        finalTranscript = transcriptRef.current + ' ';
+      }
+      
+      for (let i = startIndex; i < event.results.length; i++) {
         const result = event.results[i];
         const transcript = result[0].transcript;
         if (result.isFinal) {
+          // Android fix: Skip if we've already processed this index as final
+          // This prevents duplicate results when Android fires multiple onresult events
+          if (processedIndicesRef.current.has(i)) {
+            continue;
+          }
+          processedIndicesRef.current.add(i);
           finalTranscript += transcript + ' ';
         } else {
           interimTranscript += transcript;
         }
       }
       
-      // Store the complete final transcript (rebuilt each time)
-      if (finalTranscript.trim()) {
-        transcriptRef.current = finalTranscript.trim();
+      // Store the complete final transcript
+      const finalText = finalTranscript.trim();
+      if (finalText) {
+        transcriptRef.current = finalText;
       }
       
-      // Send partial transcription for live preview (final + interim)
-      const fullText = (finalTranscript + interimTranscript).trim();
-      if (onPartialTranscriptionRef.current && fullText) {
-        onPartialTranscriptionRef.current(fullText);
+      // Send partial transcription for live preview (final + interim combined)
+      // Avoid duplicating if interim is a subset of final (common on mobile)
+      let displayText = finalText;
+      if (interimTranscript.trim() && !finalText.endsWith(interimTranscript.trim())) {
+        displayText = (finalText + ' ' + interimTranscript).trim();
+      } else if (!finalText && interimTranscript.trim()) {
+        displayText = interimTranscript.trim();
+      }
+      
+      if (onPartialTranscriptionRef.current && displayText) {
+        onPartialTranscriptionRef.current(displayText);
       }
       
       // Auto-stop after silence (reset timer on any new result)
@@ -215,6 +248,8 @@ const VoiceInputButton = ({
       }
     } else {
       transcriptRef.current = '';
+      hasSubmittedRef.current = false; // Reset submission flag
+      processedIndicesRef.current = new Set(); // Reset processed indices (Android fix)
       setError(null);
       setIsStarting(true);
       

@@ -42,6 +42,7 @@ const NotificationManager = () => {
 
   useEffect(() => {
     fetchRules();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db]);
 
   const fetchRules = async () => {

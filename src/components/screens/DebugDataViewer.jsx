@@ -12,6 +12,11 @@ const DebugDataViewer = () => {
         navigate, isAdmin
     } = useAppServices();
 
+    // useMemo hooks must be called before any conditional returns
+    const formattedMetadata = useMemo(() => JSON.stringify(metadata || {}, null, 2), [metadata]);
+    const formattedDevPlanData = useMemo(() => JSON.stringify(developmentPlanData || {}, null, 2), [developmentPlanData]);
+    const formattedDailyPracticeData = useMemo(() => JSON.stringify(dailyPracticeData || {}, null, 2), [dailyPracticeData]);
+
     // Admin-only screen - redirect non-admins
     if (!isAdmin) {
         return (
@@ -27,10 +32,6 @@ const DebugDataViewer = () => {
             </div>
         );
     }
-
-    const formattedMetadata = useMemo(() => JSON.stringify(metadata || {}, null, 2), [metadata]);
-    const formattedDevPlanData = useMemo(() => JSON.stringify(developmentPlanData || {}, null, 2), [developmentPlanData]);
-    const formattedDailyPracticeData = useMemo(() => JSON.stringify(dailyPracticeData || {}, null, 2), [dailyPracticeData]);
 
     return (
         <div className="p-6 md:p-10 min-h-screen bg-slate-50 dark:bg-slate-800 animate-fade-in">

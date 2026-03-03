@@ -2,9 +2,10 @@
 // Phase 3: Display nudge notifications from trainer to leader
 // Uses real-time subscription for instant notification delivery
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, limit as firestoreLimit, onSnapshot } from 'firebase/firestore';
 import conditioningService from '../../services/conditioningService.js';
+import { formatNumericDate } from '../../services/dateUtils';
 import { Card } from '../ui';
 import { 
   MessageSquare, Clock, Heart, HelpCircle, AlertTriangle,
@@ -240,7 +241,7 @@ function getTimeAgo(date) {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
   
-  return date.toLocaleDateString();
+  return formatNumericDate(date);
 }
 
 export default TrainerNudgeNotification;

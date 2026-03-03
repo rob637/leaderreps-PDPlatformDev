@@ -1,18 +1,17 @@
 // src/components/conditioning/RepTypePickerV2.jsx
 // V2 Rep Type Picker - 3 categories (Lead the Work/Team/Yourself), 10 rep types
 // No difficulty labels, clean drill-down UX
+// Updated: Milestone-based unlocking (March 2026)
 
 import React, { useState, useMemo } from 'react';
 import { 
   Briefcase, Users, User,
-  ChevronRight, ChevronLeft, Check
+  ChevronRight, ChevronLeft, Check, Lock
 } from 'lucide-react';
-import { 
-  getCategoriesArrayV2, 
-  getRepTypesByCategoryV2, 
-  getRepTypeV2,
-  getBehaviorFocusReminder
-} from '../../services/repTaxonomy';
+// Use RepTypeContext for Firestore-driven rep type data
+import { useRepTypeContext } from '../../providers/RepTypeProvider';
+// Still need these from repTaxonomy until migrated to Firestore
+import { getBehaviorFocusReminder } from '../../services/repTaxonomy';
 
 // Icon mapping for V2 categories
 const CATEGORY_ICONS = {
@@ -46,9 +45,10 @@ const CATEGORY_COLORS = {
 // ============================================
 // CATEGORY CARD
 // ============================================
-const CategoryCard = ({ category, onClick, repCount }) => {
+const CategoryCard = ({ category, onClick, repCount, unlockedCount }) => {
   const Icon = CATEGORY_ICONS[category.id] || Briefcase;
   const colors = CATEGORY_COLORS[category.id] || CATEGORY_COLORS.lead_the_work;
+  const hasLocked = unlockedCount !== undefined && unlockedCount < repCount;
   
   return (
     <button
@@ -67,7 +67,10 @@ const CategoryCard = ({ category, onClick, repCount }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400 dark:text-slate-500">{repCount}</span>
+          <span className="text-xs text-gray-400 dark:text-slate-500">
+            {hasLocked ? `${unlockedCount}/${repCount}` : repCount}
+          </span>
+          {hasLocked && <Lock className="w-3.5 h-3.5 text-gray-400 dark:text-slate-500" />}
           <ChevronRight className="w-5 h-5 text-gray-400 dark:text-slate-500" />
         </div>
       </div>
@@ -76,32 +79,46 @@ const CategoryCard = ({ category, onClick, repCount }) => {
 };
 
 // ============================================
-// REP TYPE CARD (No difficulty labels)
+// REP TYPE CARD (With milestone locking support)
 // ============================================
-const RepTypeCard = ({ repType, isSelected, onClick }) => {
+const RepTypeCard = ({ repType, isSelected, onClick, unlockStatus }) => {
+  const isLocked = unlockStatus && !unlockStatus.unlocked;
+  
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={isLocked ? undefined : onClick}
+      disabled={isLocked}
       className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-        isSelected 
-          ? 'bg-corporate-teal/5 dark:bg-corporate-teal/10 border-corporate-teal ring-2 ring-corporate-teal' 
-          : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 hover:border-corporate-teal hover:shadow-sm'
+        isLocked
+          ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-60 cursor-not-allowed'
+          : isSelected 
+            ? 'bg-corporate-teal/5 dark:bg-corporate-teal/10 border-corporate-teal ring-2 ring-corporate-teal' 
+            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 hover:border-corporate-teal hover:shadow-sm'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <div className={`font-medium ${
-            isSelected ? 'text-corporate-teal' : 'text-corporate-navy dark:text-white'
+          <div className={`font-medium flex items-center gap-2 ${
+            isLocked 
+              ? 'text-slate-400 dark:text-slate-500'
+              : isSelected 
+                ? 'text-corporate-teal' 
+                : 'text-corporate-navy dark:text-white'
           }`}>
             {repType.label}
+            {isLocked && <Lock className="w-3.5 h-3.5" />}
           </div>
-          <div className="text-sm text-gray-600 dark:text-slate-400 mt-0.5">
-            {repType.description}
+          <div className={`text-sm mt-0.5 ${
+            isLocked 
+              ? 'text-slate-400 dark:text-slate-500' 
+              : 'text-gray-600 dark:text-slate-400'
+          }`}>
+            {isLocked ? unlockStatus.reason : repType.description}
           </div>
         </div>
         
-        {isSelected && (
+        {isSelected && !isLocked && (
           <div className="p-1 rounded-full bg-corporate-teal/10">
             <Check className="w-4 h-4 text-corporate-teal" />
           </div>
@@ -153,8 +170,19 @@ const RepTypePickerV2 = ({
   selectedCategory: selectedCategoryProp,
   onCategoryChange,
   // Show behavior focus reminder below selection
-  showBehaviorFocus = false
+  showBehaviorFocus = false,
+  // Milestone-based unlocking (new props)
+  milestoneProgress = {},
+  completedRepTypes = []
 }) => {
+  // Get rep type data from context (Firestore-driven with fallback)
+  const { 
+    getCategoriesArrayV2, 
+    getRepTypesByCategoryV2, 
+    getRepTypeV2,
+    isRepUnlocked 
+  } = useRepTypeContext();
+  
   // Internal state as fallback if not controlled by parent
   const [internalCategory, setInternalCategory] = useState(null);
   
@@ -206,11 +234,15 @@ const RepTypePickerV2 = ({
         <div className="space-y-2">
           {categories.map((category) => {
             const repTypes = getRepTypesByCategoryV2(category.id);
+            const unlockedCount = repTypes.filter(rt => 
+              isRepUnlocked(rt.id, milestoneProgress, completedRepTypes).unlocked
+            ).length;
             return (
               <CategoryCard
                 key={category.id}
                 category={category}
                 repCount={repTypes.length}
+                unlockedCount={unlockedCount}
                 onClick={() => setSelectedCategory(category.id)}
               />
             );
@@ -249,16 +281,20 @@ const RepTypePickerV2 = ({
       
       {/* Rep types list */}
       <div className="space-y-2">
-        {repTypesInCategory.map((repType) => (
-          <RepTypeCard
-            key={repType.id}
-            repType={repType}
-            isSelected={selectedRepTypeId === repType.id}
-            onClick={() => {
-              onSelect(repType.id);
-            }}
-          />
-        ))}
+        {repTypesInCategory.map((repType) => {
+          const unlockStatus = isRepUnlocked(repType.id, milestoneProgress, completedRepTypes);
+          return (
+            <RepTypeCard
+              key={repType.id}
+              repType={repType}
+              isSelected={selectedRepTypeId === repType.id}
+              unlockStatus={unlockStatus}
+              onClick={() => {
+                onSelect(repType.id);
+              }}
+            />
+          );
+        })}
       </div>
       
       {/* Show behavior focus for selected type */}

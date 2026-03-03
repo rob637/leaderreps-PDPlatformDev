@@ -214,7 +214,7 @@ const NotificationSettingsWidget = () => {
                 </p>
               </div>
             )}
-            */
+            */}
 
             <Button 
               className="w-full mt-4" 

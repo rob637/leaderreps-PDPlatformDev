@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Dumbbell, Target, CheckCircle, Clock,
+  Dumbbell, CheckCircle, Clock,
   ChevronRight, FileText
 } from 'lucide-react';
 import { Card } from '../ui';
@@ -85,22 +85,14 @@ const ConditioningWidget = ({ helpText }) => {
   const { weekStart, weekEnd } = getWeekBoundaries();
   const formatDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   
-  const requiredMet = weeklyStatus?.requiredRepCompleted || false;
   const completedCount = weeklyStatus?.totalCompleted || 0;
 
   // Handle navigation to conditioning screen
-  // Skip straight to commit form when no active reps and requirement not met
+  // Skip straight to commit form when no active reps (user wants extra practice)
   const handleNavigate = () => {
-    const shouldOpenCommitForm = !requiredMet && activeCount === 0;
+    const shouldOpenCommitForm = activeCount === 0;
     navigate?.('conditioning', shouldOpenCommitForm ? { openCommitForm: true } : undefined);
   };
-  
-  // Status subtitle text
-  const statusSubtext = requiredMet 
-    ? `${completedCount} rep${completedCount !== 1 ? 's' : ''} completed this week`
-    : (activeCount > 0 
-        ? `${activeCount} active rep${activeCount !== 1 ? 's' : ''} in progress`
-        : 'Commit to a rep to get started');
 
   return (
     <Card 
@@ -118,26 +110,26 @@ const ConditioningWidget = ({ helpText }) => {
           </div>
         ) : (
           <div className="space-y-3">
-            {/* Weekly Requirement Status */}
+            {/* Extra Practice Status */}
             <div className={`flex items-center gap-3 p-3 rounded-lg ${
-              requiredMet 
+              completedCount > 0 
                 ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
-                : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
+                : 'bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700'
             }`}>
-              {requiredMet ? (
+              {completedCount > 0 ? (
                 <>
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-green-800 dark:text-green-200 text-sm">Weekly Requirement Met!</p>
-                    <p className="text-xs text-green-600 dark:text-green-400">{completedCount} rep{completedCount !== 1 ? 's' : ''} completed this week</p>
+                    <p className="font-medium text-green-800 dark:text-green-200 text-sm">Extra Practice</p>
+                    <p className="text-xs text-green-600 dark:text-green-400">{completedCount} extra rep{completedCount !== 1 ? 's' : ''} completed this week</p>
                   </div>
                 </>
               ) : (
                 <>
-                  <Target className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                  <Dumbbell className="w-5 h-5 text-slate-500 dark:text-slate-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-amber-800 dark:text-amber-200 text-sm">1 Rep Required This Week</p>
-                    <p className="text-xs text-amber-600 dark:text-amber-400">{statusSubtext}</p>
+                    <p className="font-medium text-slate-700 dark:text-slate-200 text-sm">Extra Practice</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Add more reps beyond your action items</p>
                   </div>
                 </>
               )}

@@ -1,6 +1,7 @@
 // src/components/conditioning/PlannedRepForm.jsx
-// V2 Planned Rep commitment flow - 5 steps
-// Step 1: Type, Step 2: Who, Step 3: Situation, Step 4: When, Step 5: Commit
+// V2 Planned Rep commitment flow - 5 steps (Known Next Step)
+// Step 1: What Real Rep, Step 2: Who's it with, Step 3: Where, Step 4: Intent Lock + Time, Step 5: Commitment Lock
+// Supports draft auto-save and resume functionality
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Button } from '../ui';
@@ -11,32 +12,71 @@ import { BehaviorFocusReminder, ActiveRepReminder } from './BehaviorFocusReminde
 import VoiceTextarea from './VoiceTextarea';
 import { getRepTypeV2 } from '../../services/repTaxonomy';
 import { getWeekBoundaries } from '../../services/conditioningService';
+import { DRAFT_FLOW_TYPES } from '../../services/draftRepService';
+import { formatDisplayDate } from '../../services/dateUtils';
+import useDraftAutoSave from '../../hooks/useDraftAutoSave';
 import { Timestamp } from 'firebase/firestore';
 
 // ============================================
 // STEP CONFIGURATION
 // ============================================
 const TOTAL_STEPS = 5;
-const STEP_LABELS = ['Type', 'Who', 'Situation', 'When', 'Commit'];
+const STEP_LABELS = ['Rep Type', 'With', 'Context', 'Intent + Time', 'Lock In'];
 
 // ============================================
 // MAIN FORM COMPONENT
 // ============================================
-const PlannedRepForm = ({ onSubmit, onClose, isLoading }) => {
-  // Form state
-  const [repTypeId, setRepTypeId] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [person, setPerson] = useState('');
-  const [selectedSituation, setSelectedSituation] = useState(null);
-  const [customContext, setCustomContext] = useState('');
-  const [useEndOfWeek, setUseEndOfWeek] = useState(true);
-  const [customDeadline, setCustomDeadline] = useState('');
-  const [notes, setNotes] = useState('');
+const PlannedRepForm = ({ 
+  onSubmit, 
+  onClose, 
+  isLoading,
+  // Milestone-based unlocking props
+  milestoneProgress = {},
+  completedRepTypes = [],
+  // Optional: preselected rep type (from action item click)
+  preselectedRepType = null,
+  // Optional: initial draft data for resuming
+  initialDraft = null,
+  // Optional: source item ID for tracking
+  sourceItemId = null,
+  // Optional: disable auto-save (e.g., for quick flows)
+  disableAutoSave = false
+}) => {
+  // Initialize form state from draft if available
+  const draftFormData = initialDraft?.formData || {};
+  const draftStep = initialDraft?.currentStep ?? null;
   
-  // Step tracking
-  const [currentStep, setCurrentStep] = useState(0);
+  // Form state - use initialDraft > preselectedRepType > null
+  const [repTypeId, setRepTypeId] = useState(
+    draftFormData.repTypeId || preselectedRepType || null
+  );
+  const [selectedCategory, setSelectedCategory] = useState(
+    draftFormData.selectedCategory || null
+  );
+  const [person, setPerson] = useState(draftFormData.person || '');
+  const [selectedSituation, setSelectedSituation] = useState(
+    draftFormData.selectedSituation || null
+  );
+  const [customContext, setCustomContext] = useState(
+    draftFormData.customContext || ''
+  );
+  const [useEndOfWeek, setUseEndOfWeek] = useState(
+    draftFormData.useEndOfWeek ?? true
+  );
+  const [customDeadline, setCustomDeadline] = useState(
+    draftFormData.customDeadline || ''
+  );
+  const [notes, setNotes] = useState(draftFormData.notes || '');
+  
+  // Step tracking - use draft step if resuming, else step 1 if rep type is preselected
+  const initialStep = draftStep !== null 
+    ? draftStep 
+    : (preselectedRepType ? 1 : 0);
+  const [currentStep, setCurrentStep] = useState(initialStep);
   // eslint-disable-next-line no-unused-vars
-  const [visitedSteps, setVisitedSteps] = useState(new Set([0]));
+  const [visitedSteps, setVisitedSteps] = useState(
+    new Set(Array.from({ length: initialStep + 1 }, (_, i) => i))
+  );
   const [nextAttempted, setNextAttempted] = useState(false);
   
   const personInputRef = useRef(null);
@@ -45,6 +85,28 @@ const PlannedRepForm = ({ onSubmit, onClose, isLoading }) => {
   const selectedRepType = useMemo(() => {
     return repTypeId ? getRepTypeV2(repTypeId) : null;
   }, [repTypeId]);
+  
+  // Create form data object for auto-save
+  const formData = useMemo(() => ({
+    repTypeId,
+    selectedCategory,
+    person,
+    selectedSituation,
+    customContext,
+    useEndOfWeek,
+    customDeadline,
+    notes
+  }), [repTypeId, selectedCategory, person, selectedSituation, customContext, useEndOfWeek, customDeadline, notes]);
+  
+  // Auto-save draft as user progresses through form
+  const { clearDraft } = useDraftAutoSave({
+    flowType: DRAFT_FLOW_TYPES.PLANNED,
+    currentStep,
+    formData,
+    sourceItemId,
+    preselectedRepType,
+    enabled: !disableAutoSave
+  });
   
   // Calculate deadline dates
   const today = new Date().toISOString().split('T')[0];
@@ -154,7 +216,11 @@ const PlannedRepForm = ({ onSubmit, onClose, isLoading }) => {
       notes: notes.trim() || null
     };
     
+    // Submit the rep
     await onSubmit(repData);
+    
+    // Clear the draft on successful submission
+    await clearDraft();
   };
 
   // Render step content
@@ -168,6 +234,8 @@ const PlannedRepForm = ({ onSubmit, onClose, isLoading }) => {
             selectedCategory={selectedCategory}
             onCategoryChange={setSelectedCategory}
             headerText="Select the type of Real Rep"
+            milestoneProgress={milestoneProgress}
+            completedRepTypes={completedRepTypes}
           />
         );
         
@@ -229,7 +297,7 @@ const PlannedRepForm = ({ onSubmit, onClose, isLoading }) => {
                   End of week
                 </span>
                 <p className="text-xs text-gray-500 dark:text-slate-400">
-                  {weekEnd.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                  {formatDisplayDate(weekEnd)}
                 </p>
               </div>
             </label>
@@ -281,9 +349,9 @@ const PlannedRepForm = ({ onSubmit, onClose, isLoading }) => {
                 <span className="text-sm text-gray-500 dark:text-slate-400">Due</span>
                 <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
                   {useEndOfWeek 
-                    ? weekEnd.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                    ? formatDisplayDate(weekEnd)
                     : customDeadline 
-                      ? new Date(customDeadline).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                      ? formatDisplayDate(new Date(customDeadline + 'T12:00:00'))
                       : 'End of week'
                   }
                 </span>
@@ -317,8 +385,8 @@ const PlannedRepForm = ({ onSubmit, onClose, isLoading }) => {
     <ConditioningModal
       isOpen={true}
       onClose={onClose}
-      title="Commit to your Real Rep"
-      subtitle={selectedRepType ? selectedRepType.label : 'Select a rep type to begin'}
+      title="Lock In Your Real Rep"
+      subtitle={selectedRepType ? selectedRepType.label : 'What Real Rep will you own?'}
       currentStep={currentStep}
       totalSteps={TOTAL_STEPS}
       stepLabels={STEP_LABELS}

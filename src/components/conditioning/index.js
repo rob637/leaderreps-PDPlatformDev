@@ -43,3 +43,19 @@ export { default as BehaviorFocusReminder, BehaviorFocusReminder as BFR, ActiveR
 export { default as CommitFlowSelector } from './CommitFlowSelector';
 export { default as QuickPrepModalV2 } from './QuickPrepModalV2';
 export { default as CloseRRModal } from './CloseRRModal';
+export { default as EvidenceCaptureWizard } from './EvidenceCaptureWizard';
+
+// Draft/Resume Components
+export { default as RepDraftResumeCard } from './RepDraftResumeCard';
+
+// Shared Constants
+export {
+  REP_OUTCOME_OPTIONS,
+  RESPONSE_OPTIONS,
+  PUSHBACK_RESPONSE_OPTIONS,
+  BEHAVIOR_CHANGE_OPTIONS,
+  FEEDBACK_REP_TYPES,
+  PUSHBACK_LOG_OPTIONS,
+  CLOSE_LOOP_LOG_OPTIONS,
+  CLOSE_LOOP_OPTIONS
+} from './constants';

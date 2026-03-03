@@ -44,11 +44,11 @@ const DASHBOARD_FEATURES = [
   'weekly-focus',
   'grounding-rep',
   'win-the-day',
-  'conditioning',        // Conditioning widget - PRIMARY FOCUS for V1
-  'conditioning-tutorial', // Interactive tutorial for Conditioning
   'daily-plan',
   // 'daily-leader-reps', // REMOVED - replaced by conditioning widget
   'this-weeks-actions',
+  'conditioning',        // Conditioning widget - placed after Actions so actions can link to it
+  'conditioning-tutorial', // Interactive tutorial for Conditioning
   'notifications',
   'pm-bookend-header',
   'progress-feedback',
@@ -284,7 +284,7 @@ const Dashboard = () => {
       window.scrollTo({ top: 0, behavior: 'instant' });
       setShowPrepCompleteModal(true);
     }
-  }, [prepRequirementsComplete?.onboardingComplete, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.completedCount, currentPhase?.id, user?.uid]);
+  }, [prepRequirementsComplete?.onboardingComplete, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.completedCount, prepRequirementsComplete?.session1Complete, currentPhase?.id, user?.uid]);
   
   // Handle modal dismissal - persist the appropriate milestone key
   const handlePrepCompleteModalClose = () => {
@@ -606,6 +606,11 @@ const Dashboard = () => {
 
     // If in pre-start phase and this is a gated widget, check prep completion
     if (currentPhase?.id === 'pre-start' && PREP_GATED_WIDGETS.includes(widgetId)) {
+      // Special case: Conditioning is COMPLETELY HIDDEN during prep phase
+      // It only appears once Foundation starts (currentPhase !== 'pre-start')
+      if (widgetId === 'conditioning' || widgetId === 'conditioning-tutorial') {
+        return false;
+      }
       if (!prepRequirementsComplete?.allComplete) {
         // BLOCK - prep requirements not complete
         return false;

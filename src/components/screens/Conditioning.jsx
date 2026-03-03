@@ -2,6 +2,7 @@
 // Conditioning Layer - Real Leadership Rep Accountability
 // Mobile-first design for use between Foundation sessions
 // Updated for 16 Rep Types (020726)
+// Added draft resume support (030326)
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -9,9 +10,9 @@ import { useDailyPlan } from '../../hooks/useDailyPlan.js';
 import { useSafeNavigation } from '../../providers/NavigationProvider.jsx';
 import conditioningService, { 
   REP_STATUS, 
-  getWeekBoundaries,
   STATE_TRANSITIONS
 } from '../../services/conditioningService.js';
+import draftRepService, { hasMeaningfulProgress } from '../../services/draftRepService.js';
 import { REP_TYPES, getRepType, isPrepRequired } from '../../services/repTaxonomy.js';
 import { Card, Button, PageLayout } from '../ui';
 import { 
@@ -28,7 +29,9 @@ import {
   RepDetailModal,
   CommitFlowSelector,
   QuickPrepModalV2,
-  CloseRRModal
+  CloseRRModal,
+  EvidenceCaptureWizard,
+  RepDraftResumeCard
 } from '../conditioning';
 import { 
   Plus, Check, X, AlertTriangle, Clock, User, 
@@ -249,16 +252,17 @@ const TodaysFocusCard = ({ activeReps, onOpenPrep, onViewDetail, onAskCoach }) =
 // ============================================
 const RepCard = ({ 
   rep, 
-  onComplete, 
+  onComplete: _onComplete, 
   onCancel, 
   onAddDebrief,
   onCloseRR, // V2: Close RR (replaces debrief for V2 reps)
+  onCaptureEvidence, // V2: Open evidence capture wizard
   onCloseLoop,
   onViewDetail,
   onPractice, 
   onStateChange,
   onOpenPrep,
-  onQuickPrep, // V2: Quick prep modal
+  onQuickPrep: _onQuickPrep, // V2: Quick prep modal
   evidence, 
   isLoading 
 }) => {
@@ -405,12 +409,12 @@ const RepCard = ({
                 </Button>
               ) : (
                 <Button
-                  onClick={() => handleStateChange(rep.id, 'executed')}
+                  onClick={() => isV2Rep ? onCaptureEvidence?.(rep) : handleStateChange(rep.id, 'executed')}
                   disabled={isLoading}
                   className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
                 >
                   <Check className="w-4 h-4 mr-1" />
-                  Mark Executed
+                  {isV2Rep ? 'Mark Done' : 'Mark Executed'}
                 </Button>
               )}
               <Button
@@ -424,16 +428,23 @@ const RepCard = ({
             </div>
           )}
           
-          {/* Executed Rep - Needs Close RR (V2) or Debrief (V1) */}
+          {/* Executed Rep - Needs Evidence Capture (V2) or Debrief (V1) */}
           {rep.status === 'executed' && (
             <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
               <Button
-                onClick={() => isV2Rep ? onCloseRR?.(rep) : onAddDebrief?.(rep)}
+                onClick={() => {
+                  if (isV2Rep) {
+                    // V2: If no evidence yet, capture it; if evidence exists, close RR
+                    rep.evidence ? onCloseRR?.(rep) : onCaptureEvidence?.(rep);
+                  } else {
+                    onAddDebrief?.(rep);
+                  }
+                }}
                 disabled={isLoading}
                 className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
               >
                 <FileText className="w-4 h-4 mr-2" />
-                {isV2Rep ? 'Close RR' : 'Add Debrief to Complete'}
+                {isV2Rep ? (rep.evidence ? 'Complete Real Rep' : 'Capture Evidence') : 'Add Debrief to Complete'}
               </Button>
               <Button
                 onClick={() => setShowCancelModal(true)}
@@ -462,7 +473,7 @@ const RepCard = ({
                   
                   <div className="flex items-center gap-2 text-xs text-green-600 mb-2">
                       <CheckCircle className="w-3 h-3" />
-                      <span>{isV2Rep ? 'RR Closed' : 'Debrief submitted'}</span>
+                      <span>{isV2Rep ? 'Real Rep completed' : 'Debrief submitted'}</span>
                     </div>
                     <Button
                       onClick={() => onCloseLoop?.(rep)}
@@ -481,7 +492,7 @@ const RepCard = ({
                   className="w-full py-2 border-corporate-navy text-corporate-navy hover:bg-corporate-navy/5"
                 >
                   <FileText className="w-4 h-4 mr-2" />
-                  {isV2Rep ? 'Close RR' : 'Add Debrief'}
+                  {isV2Rep ? 'Complete Real Rep' : 'Add Debrief'}
                 </Button>
               )}
             </div>
@@ -667,14 +678,55 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   const [activeReps, setActiveReps] = useState([]);
   const [missedReps, setMissedReps] = useState([]);
   const [completedReps, setCompletedReps] = useState([]);
+  const [allTimeCompletedRepTypes, setAllTimeCompletedRepTypes] = useState([]);
   const [evidenceMap, setEvidenceMap] = useState({});
-  const [pendingRetries, setPendingRetries] = useState([]);
-  const [nudgeStatus, setNudgeStatus] = useState(null);
+  const [_pendingRetries, setPendingRetries] = useState([]);
+  const [_nudgeStatus, setNudgeStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCommitForm, setShowCommitForm] = useState(false);
   const [evidenceModalRep, setEvidenceModalRep] = useState(null);
   const [error, setError] = useState(null);
+  
+  // Draft state for resuming incomplete rep forms
+  const [activeDrafts, setActiveDrafts] = useState([]);
+  const [resumingDraft, setResumingDraft] = useState(null);
+  
+  // Load drafts
+  const loadDrafts = useCallback(async () => {
+    if (!userId || !db) return;
+    
+    try {
+      const drafts = await draftRepService.getAllDrafts(db, userId);
+      // Filter to only meaningful drafts (not empty)
+      const meaningfulDrafts = drafts.filter(d => hasMeaningfulProgress(d));
+      setActiveDrafts(meaningfulDrafts);
+    } catch (err) {
+      console.warn('Failed to load drafts:', err);
+      // Non-critical - don't show error to user
+    }
+  }, [userId, db]);
+  
+  // Handle draft resume
+  const handleResumeDraft = useCallback((draft) => {
+    setResumingDraft(draft);
+    setShowCommitForm(true);
+  }, []);
+  
+  // Handle draft discard
+  const handleDiscardDraft = useCallback(async (draft) => {
+    if (!userId || !db || !draft?.flowType) return;
+    
+    try {
+      // Include repType and sourceItemId for proper draft identification
+      const repType = draft.repType || draft.preselectedRepType || draft.formData?.repTypeId || null;
+      const sourceItemId = draft.sourceItemId || null;
+      await draftRepService.deleteDraft(db, userId, draft.flowType, repType, sourceItemId);
+      setActiveDrafts(prev => prev.filter(d => d.id !== draft.id));
+    } catch (err) {
+      console.error('Failed to discard draft:', err);
+    }
+  }, [userId, db]);
   
   // Load data
   const loadData = useCallback(async () => {
@@ -688,12 +740,13 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       await conditioningService.checkAndMarkOverdueReps(db, userId, cohortId);
       
       // Load all data in parallel
-      const [status, active, missed, nudge, retries] = await Promise.all([
+      const [status, active, missed, nudge, retries, completedTypes] = await Promise.all([
         conditioningService.getWeeklyStatus(db, userId, null, cohortId),
         conditioningService.getActiveReps(db, userId, cohortId),
         conditioningService.getMissedReps(db, userId, cohortId),
         conditioningService.getNudgeStatus(db, userId, cohortId),
-        conditioningService.getPendingRetries(db, userId)
+        conditioningService.getPendingRetries(db, userId),
+        conditioningService.getCompletedRepTypes(db, userId)
       ]);
       
       // Separate active reps from missed ones in the active list
@@ -724,6 +777,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       setWeeklyStatus(status);
       setActiveReps(currentWeekActive);
       setCompletedReps(completed);
+      setAllTimeCompletedRepTypes(completedTypes);
       setMissedReps(missed);
       setNudgeStatus(nudge);
       setPendingRetries(retries);
@@ -738,7 +792,8 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    loadDrafts();
+  }, [loadData, loadDrafts]);
   
   // Auto-open commit form if navigated with openCommitForm param
   useEffect(() => {
@@ -779,7 +834,9 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       }
       
       setShowCommitForm(false);
+      setResumingDraft(null); // Clear any resuming draft
       await loadData();
+      await loadDrafts(); // Reload drafts (in case form clears draft failed)
     } catch (err) {
       console.error('[Conditioning] Error committing rep:', err);
       setError(`Failed to commit rep: ${err.message}`);
@@ -818,7 +875,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
     }
   };
   
-  const handleRollForward = async (repId) => {
+  const _handleRollForward = async (repId) => {
     if (!userId || !cohortId || !db) return;
     
     try {
@@ -858,7 +915,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   };
   
   // Phase 2: Practice completed handler
-  const handlePracticeComplete = async () => {
+  const _handlePracticeComplete = async () => {
     await loadData();
   };
   
@@ -940,11 +997,11 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
     }
   };
   
-  const handleMissedModify = (rep) => {
+  const handleMissedModify = (_rep) => {
     // Close debrief modal and open commit form with rep data pre-filled
     setMissedDebriefRep(null);
     setShowCommitForm(true);
-    // Note: Could pass rep data to pre-fill the form in future enhancement
+    // Note: Could pass _rep data to pre-fill the form in future enhancement
   };
   
   const handleMissedCancel = async (repId, reason) => {
@@ -1018,6 +1075,20 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
     setQuickPrepModalRep(null);
     await loadData();
   };
+
+  // V2: Evidence Capture Wizard state
+  const [evidenceWizardRep, setEvidenceWizardRep] = useState(null);
+
+  // V2: Open Evidence Capture Wizard (for capturing evidence on V2 reps)
+  const handleOpenEvidenceWizard = (rep) => {
+    setEvidenceWizardRep(rep);
+  };
+
+  // V2: Handle Evidence Wizard submission
+  const handleEvidenceWizardSubmit = async () => {
+    setEvidenceWizardRep(null);
+    await loadData();
+  };
   
   // No cohort check
   if (!cohortId) {
@@ -1078,6 +1149,21 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
         
         {/* Compact Week Status */}
         <WeekStatusStrip weeklyStatus={weeklyStatus} />
+        
+        {/* Resume Draft Cards - show if there are meaningful drafts */}
+        {activeDrafts.length > 0 && (
+          <div className="space-y-2">
+            {activeDrafts.map(draft => (
+              <RepDraftResumeCard
+                key={draft.id}
+                draft={draft}
+                onResume={() => handleResumeDraft(draft)}
+                onDiscard={() => handleDiscardDraft(draft)}
+                compact={true}
+              />
+            ))}
+          </div>
+        )}
         
         {/* Add Rep button - prominent placement when user has active reps */}
         {activeReps.length > 0 && (
@@ -1162,6 +1248,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
                 onQuickPrep={handleOpenQuickPrep}
                 onAddDebrief={(rep) => setEvidenceModalRep(rep)}
                 onCloseRR={handleOpenCloseRR}
+                onCaptureEvidence={handleOpenEvidenceWizard}
                 onCloseLoop={handleOpenLoopClosure}
                 onViewDetail={handleOpenRepDetail}
                 isLoading={isSubmitting}
@@ -1196,6 +1283,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
                 onQuickPrep={handleOpenQuickPrep}
                 onAddDebrief={(rep) => setEvidenceModalRep(rep)}
                 onCloseRR={handleOpenCloseRR}
+                onCaptureEvidence={handleOpenEvidenceWizard}
                 onCloseLoop={handleOpenLoopClosure}
                 onViewDetail={handleOpenRepDetail}
                 onPractice={handleStartPractice}
@@ -1223,8 +1311,17 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
         USE_V2_COMMIT_FLOW ? (
           <CommitFlowSelector
             onSubmit={handleCommitRep}
-            onClose={() => setShowCommitForm(false)}
+            onClose={() => {
+              setShowCommitForm(false);
+              setResumingDraft(null);
+              // Reload drafts in case form was closed mid-edit
+              loadDrafts();
+            }}
             isLoading={isSubmitting}
+            milestoneProgress={user?.milestoneProgress || {}}
+            completedRepTypes={allTimeCompletedRepTypes}
+            preselectedRepType={navParams?.preselectedRepType}
+            initialDraft={resumingDraft}
           />
         ) : (
           <CommitRepForm
@@ -1305,6 +1402,15 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
           rep={quickPrepModalRep}
           onClose={() => setQuickPrepModalRep(null)}
           onSave={handleQuickPrepSave}
+        />
+      )}
+
+      {/* V2: Evidence Capture Wizard */}
+      {evidenceWizardRep && (
+        <EvidenceCaptureWizard
+          rep={evidenceWizardRep}
+          onClose={() => setEvidenceWizardRep(null)}
+          onSubmit={handleEvidenceWizardSubmit}
         />
       )}
     </PageLayout>

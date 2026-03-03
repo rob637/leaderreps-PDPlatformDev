@@ -534,6 +534,8 @@ export const useDailyPlan = () => {
       // Prioritize user doc fields for cohort sync (CohortManager updates user doc)
       startDate: user?.startDate || baseData.startDate,
       cohortId: user?.cohortId || baseData.cohortId,
+      // Session attendance is stored on user doc, marked by facilitators
+      sessionAttendance: user?.sessionAttendance || {},
       dailyProgress,
       prepPhaseFirstVisit: baseData.prepPhaseFirstVisit || null,
       onboardingCompleted: baseData.onboardingCompleted || {}

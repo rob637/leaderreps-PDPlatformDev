@@ -80,12 +80,13 @@ const ProspectsList = ({ prospects }) => {
           aVal = (a.company || '').toLowerCase();
           bVal = (b.company || '').toLowerCase();
           break;
-        case 'stage':
+        case 'stage': {
           // Sort by stage order in pipeline
           const stageOrder = PIPELINE_STAGES.reduce((acc, s, i) => ({ ...acc, [s.id]: i }), {});
           aVal = stageOrder[a.stage] ?? 999;
           bVal = stageOrder[b.stage] ?? 999;
           break;
+        }
         case 'lastActivity':
           aVal = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
           bVal = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);

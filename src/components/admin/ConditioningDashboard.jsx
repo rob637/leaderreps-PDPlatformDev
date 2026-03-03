@@ -221,8 +221,11 @@ const StatsSummary = ({ cohortSummary }) => {
 // QUALITY METRICS (Phase 2)
 // ============================================
 // Using string keys directly to avoid TDZ issues with computed property keys at module level
+// V2: 3 dimensions (specific_language, observed_response, reflection)
 const DIMENSION_CONFIG = {
-  'specific_language': { icon: MessageSquare, label: 'Specific Language', color: 'blue' },
+  'specific_language': { icon: MessageSquare, label: 'What You Said', color: 'blue' },
+  'observed_response': { icon: Target, label: 'Their Response', color: 'green' },
+  // Legacy V1 dimensions
   'clear_request': { icon: Target, label: 'Clear Request', color: 'green' },
   'named_commitment': { icon: Handshake, label: 'Named Commitment', color: 'amber' },
   'reflection': { icon: Lightbulb, label: 'Reflection', color: 'purple' }

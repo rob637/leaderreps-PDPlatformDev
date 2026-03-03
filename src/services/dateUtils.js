@@ -273,6 +273,81 @@ export const getBrowserTimezone = () => {
   }
 };
 
+// ============================================
+// STANDARD DATE FORMATS (US Format)
+// ============================================
+
+/**
+ * Format date in standard US format: "Weekday, Mon D" (e.g., "Sunday, Mar 2")
+ * This is the default display format for conditioning and scheduling UI
+ * @param {Date|string|number} date - Date to format
+ * @param {object} options - Optional overrides
+ * @returns {string} - Formatted date string
+ */
+export const formatDisplayDate = (date, options = {}) => {
+  if (!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return '';
+  
+  const defaults = {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    ...options
+  };
+  
+  return d.toLocaleDateString('en-US', defaults);
+};
+
+/**
+ * Format date in short US format: "Mon D" (e.g., "Mar 2")
+ * For compact displays
+ * @param {Date|string|number} date - Date to format
+ * @returns {string} - Formatted date string
+ */
+export const formatShortDate = (date) => {
+  if (!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return '';
+  
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+/**
+ * Format date in US numeric format: "M/D/YYYY" (e.g., "3/2/2026")
+ * For forms and data display
+ * @param {Date|string|number} date - Date to format
+ * @returns {string} - Formatted date string
+ */
+export const formatNumericDate = (date) => {
+  if (!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return '';
+  
+  return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+};
+
+/**
+ * Format date with time in US format: "Mon, Mar 2, 10:30 AM"
+ * For timestamps and event displays
+ * @param {Date|string|number|object} date - Date to format (supports Firestore Timestamp)
+ * @returns {string} - Formatted date/time string
+ */
+export const formatDisplayDateTime = (date) => {
+  if (!date) return '';
+  // Handle Firestore Timestamp objects
+  const d = date?.toDate?.() || (date instanceof Date ? date : new Date(date));
+  if (isNaN(d.getTime())) return '';
+  
+  return d.toLocaleDateString('en-US', { 
+    weekday: 'short', 
+    month: 'short', 
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+};
+
 export default {
   DEFAULT_TIMEZONE,
   COMMON_TIMEZONES,
@@ -286,5 +361,9 @@ export default {
   formatTimeInTimezone,
   getStartOfDayInTimezone,
   isValidTimezone,
-  getBrowserTimezone
+  getBrowserTimezone,
+  formatDisplayDate,
+  formatShortDate,
+  formatNumericDate,
+  formatDisplayDateTime
 };

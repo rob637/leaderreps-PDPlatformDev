@@ -291,8 +291,8 @@ const StructuredEvidenceModal = ({ rep, onClose, onSubmit, isLoading }) => {
   // Track which steps have been visited (to show validation after interaction)
   const [visitedSteps, setVisitedSteps] = useState(new Set([0]));
   
-  // Ref for focusing text inputs
-  const whatSaidRef = useRef(null);
+  // Ref for focusing text inputs (reserved for future use)
+  const _whatSaidRef = useRef(null);
   
   // Total steps
   const TOTAL_STEPS = 5;

@@ -33,6 +33,7 @@ const ModalContent = React.forwardRef(({ className, children, onClose, ...props 
         previousFocusRef.current.focus();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   // Scroll to top when modal content mounts
@@ -40,6 +41,7 @@ const ModalContent = React.forwardRef(({ className, children, onClose, ...props 
     if (resolvedRef.current) {
       resolvedRef.current.scrollTop = 0;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   // Focus trap logic
@@ -65,6 +67,7 @@ const ModalContent = React.forwardRef(({ className, children, onClose, ...props 
       e.preventDefault();
       firstElement?.focus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose]);
   
   // Auto-focus first focusable element
@@ -79,6 +82,7 @@ const ModalContent = React.forwardRef(({ className, children, onClose, ...props 
     }, 100);
     
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   return (

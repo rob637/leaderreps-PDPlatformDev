@@ -29,12 +29,14 @@ import { FadeIn, SlideIn } from '../motion';
  * @param {boolean} centerHeader - Whether to center the header (default: true)
  * @param {React.ReactNode} sidebar - Optional sidebar content for two-column layout
  * @param {boolean} sidebarLeft - Put sidebar on left (default: false, sidebar on right)
+ * @param {boolean} hideHeader - Hide the title/subtitle header (useful when page has its own hero)
  */
 export const PageLayout = ({
   title,
   icon: Icon,
   subtitle,
   description, // Alias for subtitle (backward compatibility)
+  hideHeader = false,
   backTo = 'dashboard',
   backLabel = 'Back to Dashboard',
   navigate: propNavigate,
@@ -94,37 +96,39 @@ export const PageLayout = ({
           />
         )}
 
-        {/* Header - Premium typography */}
-        <FadeIn delay={0.1}>
-          <header className={`mb-10 ${centerHeader ? 'text-center' : ''}`}>
-            <div className={`flex items-center gap-4 mb-3 ${centerHeader ? 'justify-center' : ''}`}>
-              {Icon && <Icon className={`w-7 h-7 ${iconColorClass}`} />}
-              <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy dark:text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                {title}
-              </h1>
-            </div>
+        {/* Header - Premium typography (can be hidden when page has its own hero) */}
+        {!hideHeader && (
+          <FadeIn delay={0.1}>
+            <header className={`mb-10 ${centerHeader ? 'text-center' : ''}`}>
+              <div className={`flex items-center gap-4 mb-3 ${centerHeader ? 'justify-center' : ''}`}>
+                {Icon && <Icon className={`w-7 h-7 ${iconColorClass}`} />}
+                <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy dark:text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                  {title}
+                </h1>
+              </div>
+              
+              {sub && (
+                <p className={`text-slate-500 dark:text-slate-400 text-base sm:text-lg mt-2 leading-relaxed ${centerHeader ? 'max-w-2xl mx-auto' : ''}`} style={{ fontFamily: 'var(--font-body)' }}>
+                  {sub}
+                </p>
+              )}
             
-            {sub && (
-              <p className={`text-slate-500 dark:text-slate-400 text-base sm:text-lg mt-2 leading-relaxed ${centerHeader ? 'max-w-2xl mx-auto' : ''}`} style={{ fontFamily: 'var(--font-body)' }}>
-                {sub}
-              </p>
+            {badge && (
+              <div className={`mt-3 ${centerHeader ? 'flex justify-center' : ''}`}>
+                <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold">
+                  {badge}
+                </span>
+              </div>
             )}
-          
-          {badge && (
-            <div className={`mt-3 ${centerHeader ? 'flex justify-center' : ''}`}>
-              <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold">
-                {badge}
-              </span>
-            </div>
-          )}
-          
-          {headerActions && (
-            <div className={`mt-4 ${centerHeader ? 'flex justify-center' : ''}`}>
-              {headerActions}
-            </div>
-          )}
-        </header>
-        </FadeIn>
+            
+            {headerActions && (
+              <div className={`mt-4 ${centerHeader ? 'flex justify-center' : ''}`}>
+                {headerActions}
+              </div>
+            )}
+          </header>
+          </FadeIn>
+        )}
 
         {/* Page Content - Animated with stagger */}
         <SlideIn direction="up" delay={0.2}>

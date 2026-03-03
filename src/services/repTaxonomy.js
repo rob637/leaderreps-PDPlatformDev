@@ -2,6 +2,72 @@
 // Rep Taxonomy - 16 Canonical Leadership Rep Types
 // Based on Ryan's Conditioning Layer specifications (020726)
 
+// ============================================
+// DYNAMIC FIRESTORE CACHE
+// Populated by RepTypeProvider on startup
+// Helper functions check this cache first before falling back to hardcoded data
+// ============================================
+let _dynamicCache = {
+  isHydrated: false,
+  repTypes: null,
+  repTypesById: null,
+  situations: null,    // { repTypeId: [ situations ] }
+  prompts: null,       // { repTypeId: { behaviorFocus, activeReminder } }
+  categories: null,
+  milestones: null
+};
+
+/**
+ * Hydrate the dynamic cache with Firestore data
+ * Called by RepTypeProvider after loading data from Firestore
+ */
+export const hydrateTaxonomyCache = ({
+  repTypes = null,
+  categories = null,
+  milestones = null,
+  situations = null,
+  prompts = null
+}) => {
+  if (repTypes) {
+    _dynamicCache.repTypes = repTypes;
+    _dynamicCache.repTypesById = {};
+    repTypes.forEach(rt => {
+      _dynamicCache.repTypesById[rt.id] = rt;
+    });
+  }
+  if (categories) _dynamicCache.categories = categories;
+  if (milestones) _dynamicCache.milestones = milestones;
+  if (situations) _dynamicCache.situations = situations;
+  if (prompts) _dynamicCache.prompts = prompts;
+  
+  _dynamicCache.isHydrated = true;
+  console.log('[repTaxonomy] Cache hydrated from Firestore', {
+    repTypes: repTypes?.length || 0,
+    situations: situations ? Object.keys(situations).length : 0,
+    prompts: prompts ? Object.keys(prompts).length : 0
+  });
+};
+
+/**
+ * Clear the cache (for testing)
+ */
+export const clearTaxonomyCache = () => {
+  _dynamicCache = {
+    isHydrated: false,
+    repTypes: null,
+    repTypesById: null,
+    situations: null,
+    prompts: null,
+    categories: null,
+    milestones: null
+  };
+};
+
+/**
+ * Check if cache is hydrated
+ */
+export const isTaxonomyCacheHydrated = () => _dynamicCache.isHydrated;
+
 /**
  * Rep Categories - High-level groupings for drill-down picker
  */
@@ -840,6 +906,166 @@ export const REP_TYPES_V2 = [
 ];
 
 /**
+ * MILESTONE UNLOCKING CONFIGURATION
+ * ==================================
+ * Maps Foundation milestones (1-5) to which rep types unlock.
+ * Users see ALL rep types from Day 1, but can only commit to unlocked ones.
+ * 
+ * Milestone 1: Core foundation reps
+ * Milestone 2: Follow-up and vulnerability
+ * Milestone 3: Redirecting feedback and closing loops
+ * Milestone 4: Handling resistance and holding accountability
+ * Milestone 5: Curiosity and coaching mindset
+ */
+export const MILESTONE_REP_UNLOCKS = {
+  1: ['set_clear_expectations', 'deliver_reinforcing_feedback'],
+  2: ['follow_up_work', 'lead_with_vulnerability'],
+  3: ['deliver_redirecting_feedback', 'close_the_loop'],
+  4: ['handle_pushback', 'hold_the_line'],
+  5: ['be_curious']
+};
+
+/**
+ * LINKED REPS CONFIGURATION
+ * ==========================
+ * Some reps become available only after completing a "parent" rep.
+ * Example: "Make a Clean Handoff" becomes available after completing
+ * "Set Clear Expectations" or "Deliver Reinforcing Feedback".
+ * 
+ * Key: rep type ID that requires a parent
+ * Value: array of parent rep type IDs (any one unlocks it)
+ */
+export const LINKED_REPS = {
+  'make_clean_handoff': ['set_clear_expectations', 'deliver_reinforcing_feedback']
+};
+
+/**
+ * Get all rep types unlocked by a given milestone (cumulative)
+ * Milestone 2 includes all of Milestone 1, etc.
+ * @param {number} milestoneNumber - 1 to 5
+ * @returns {string[]} Array of unlocked rep type IDs
+ */
+export const getUnlockedRepsByMilestone = (milestoneNumber) => {
+  const unlocked = [];
+  for (let m = 1; m <= milestoneNumber; m++) {
+    if (MILESTONE_REP_UNLOCKS[m]) {
+      unlocked.push(...MILESTONE_REP_UNLOCKS[m]);
+    }
+  }
+  return unlocked;
+};
+
+/**
+ * Get the milestone number that unlocks a specific rep type
+ * @param {string} repTypeId - The rep type ID
+ * @returns {number|null} Milestone number (1-5) or null if not milestone-gated
+ */
+export const getMilestoneForRep = (repTypeId) => {
+  for (const [milestone, reps] of Object.entries(MILESTONE_REP_UNLOCKS)) {
+    if (reps.includes(repTypeId)) {
+      return parseInt(milestone, 10);
+    }
+  }
+  // Check if it's a linked rep (not directly unlocked by milestone)
+  if (LINKED_REPS[repTypeId]) {
+    return null; // Linked reps don't have a specific milestone
+  }
+  return null;
+};
+
+/**
+ * Check if a rep type is unlocked for a user based on their milestone progress
+ * @param {string} repTypeId - The rep type ID
+ * @param {Object} milestoneProgress - User's milestoneProgress object from Firestore
+ * @param {string[]} completedRepTypes - Array of rep type IDs the user has completed
+ * @returns {{ unlocked: boolean, reason: string, milestone?: number }}
+ */
+export const isRepUnlocked = (repTypeId, milestoneProgress = {}, completedRepTypes = []) => {
+  // Check for prerequisites (linked reps) - first from Firestore cache, then hardcoded fallback
+  let prerequisiteRepIds = null;
+  
+  // Check dynamic cache first (loaded from Firestore)
+  if (_dynamicCache.isHydrated && _dynamicCache.repTypesById && _dynamicCache.repTypesById[repTypeId]) {
+    const repType = _dynamicCache.repTypesById[repTypeId];
+    if (repType.prerequisiteRepIds && repType.prerequisiteRepIds.length > 0) {
+      prerequisiteRepIds = repType.prerequisiteRepIds;
+    }
+  }
+  
+  // Fall back to hardcoded LINKED_REPS if not in cache
+  if (!prerequisiteRepIds && LINKED_REPS[repTypeId]) {
+    prerequisiteRepIds = LINKED_REPS[repTypeId];
+  }
+  
+  // If this rep has prerequisites, check if user has completed any of them
+  if (prerequisiteRepIds && prerequisiteRepIds.length > 0) {
+    const hasCompletedPrereq = prerequisiteRepIds.some(parentId => completedRepTypes.includes(parentId));
+    if (hasCompletedPrereq) {
+      return { unlocked: true, reason: 'Unlocked by completing prerequisite rep' };
+    }
+    // Find which reps could unlock this
+    const parentLabels = prerequisiteRepIds.map(id => {
+      // Try cache first
+      if (_dynamicCache.repTypesById && _dynamicCache.repTypesById[id]) {
+        return _dynamicCache.repTypesById[id].shortLabel || _dynamicCache.repTypesById[id].label;
+      }
+      // Fall back to hardcoded
+      const rep = REP_TYPES_V2.find(r => r.id === id);
+      return rep?.shortLabel || id;
+    });
+    return { 
+      unlocked: false, 
+      reason: `Complete "${parentLabels.join('" or "')}" first`,
+      isLinkedRep: true
+    };
+  }
+  
+  // Check milestone-based unlocking
+  const requiredMilestone = getMilestoneForRep(repTypeId);
+  if (requiredMilestone === null) {
+    // Not gated by milestone - always available
+    return { unlocked: true, reason: 'Always available' };
+  }
+  
+  // Check if user has completed or is on this milestone
+  // Milestone 1 is always unlocked (starting point)
+  if (requiredMilestone === 1) {
+    return { unlocked: true, reason: 'Milestone 1 (starting reps)', milestone: 1 };
+  }
+  
+  // For milestones 2-5, check if previous milestone is signed off
+  const previousMilestone = `milestone_${requiredMilestone - 1}`;
+  const prevMilestoneData = milestoneProgress[previousMilestone] || {};
+  const isUnlocked = prevMilestoneData.signedOff === true;
+  
+  if (isUnlocked) {
+    return { unlocked: true, reason: `Milestone ${requiredMilestone}`, milestone: requiredMilestone };
+  }
+  
+  return { 
+    unlocked: false, 
+    reason: `Unlocks at Milestone ${requiredMilestone}`,
+    milestone: requiredMilestone
+  };
+};
+
+/**
+ * Get all available (unlocked) rep types for a user
+ * @param {Object} milestoneProgress - User's milestoneProgress object
+ * @param {string[]} completedRepTypes - Array of completed rep type IDs
+ * @returns {Object[]} Array of rep type objects with unlocked status
+ */
+export const getAvailableRepTypes = (milestoneProgress = {}, completedRepTypes = []) => {
+  return REP_TYPES_V2.map(repType => {
+    const unlockStatus = isRepUnlocked(repType.id, milestoneProgress, completedRepTypes);
+    return {
+      ...repType,
+      ...unlockStatus
+    };
+  });
+};
+
+/**
  * Suggested Situations - 2 options per rep type + "Something else"
  * Used in the Situation step of both Planned and In-the-Moment flows
  */
@@ -1056,22 +1282,40 @@ export const getCategoriesArrayV2 = () => {
 
 /**
  * Get suggested situations for a rep type
+ * Uses Firestore cache if available, falls back to hardcoded data
  */
 export const getSuggestedSituations = (repTypeId) => {
+  // Check dynamic cache first (populated by RepTypeProvider from Firestore)
+  if (_dynamicCache.isHydrated && _dynamicCache.situations && _dynamicCache.situations[repTypeId]) {
+    return _dynamicCache.situations[repTypeId];
+  }
+  // Fall back to hardcoded data
   return SUGGESTED_SITUATIONS[repTypeId] || [];
 };
 
 /**
  * Get behavior focus reminder for a rep type
+ * Uses Firestore cache if available, falls back to hardcoded data
  */
 export const getBehaviorFocusReminder = (repTypeId) => {
+  // Check dynamic cache first
+  if (_dynamicCache.isHydrated && _dynamicCache.prompts && _dynamicCache.prompts[repTypeId]?.behaviorFocus) {
+    return _dynamicCache.prompts[repTypeId].behaviorFocus;
+  }
+  // Fall back to hardcoded data
   return BEHAVIOR_FOCUS_REMINDERS[repTypeId] || null;
 };
 
 /**
  * Get active rep card reminder for a rep type (if applicable)
+ * Uses Firestore cache if available, falls back to hardcoded data
  */
 export const getActiveRepReminder = (repTypeId) => {
+  // Check dynamic cache first
+  if (_dynamicCache.isHydrated && _dynamicCache.prompts && _dynamicCache.prompts[repTypeId]?.activeReminder) {
+    return _dynamicCache.prompts[repTypeId].activeReminder;
+  }
+  // Fall back to hardcoded data
   return ACTIVE_REP_REMINDERS[repTypeId] || null;
 };
 
@@ -1120,5 +1364,13 @@ export default {
   getBehaviorFocusReminder,
   getActiveRepReminder,
   getPrepPrompts,
-  getPrepPromptsV2
+  getPrepPromptsV2,
+  
+  // Milestone unlocking exports
+  MILESTONE_REP_UNLOCKS,
+  LINKED_REPS,
+  getUnlockedRepsByMilestone,
+  getMilestoneForRep,
+  isRepUnlocked,
+  getAvailableRepTypes
 };

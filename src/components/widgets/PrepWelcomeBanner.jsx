@@ -95,6 +95,30 @@ const PrepWelcomeBanner = () => {
     return Math.ceil(phaseDayNumber / 7) || 1;
   }, [currentPhase?.id, phaseDayNumber]);
   
+  // Calculate milestone progress for Foundation phase
+  // Milestones 1-5 are tracked in user.milestoneProgress
+  const { currentMilestone, completedMilestones } = useMemo(() => {
+    if (currentPhase?.id !== 'start') {
+      return { currentMilestone: 0, completedMilestones: 0 };
+    }
+    
+    const milestoneProgress = user?.milestoneProgress || {};
+    let completed = 0;
+    
+    // Count completed milestones (1-5)
+    for (let m = 1; m <= 5; m++) {
+      const mData = milestoneProgress[`milestone_${m}`] || {};
+      if (mData.completed || mData.certifiedAt) {
+        completed++;
+      }
+    }
+    
+    // Current milestone is the next one to complete (or last if all done)
+    const current = Math.min(completed + 1, 5);
+    
+    return { currentMilestone: current, completedMilestones: completed };
+  }, [currentPhase?.id, user?.milestoneProgress]);
+  
   // Only show in Prep Phase or Foundation (start) Phase
   if (currentPhase?.id !== 'pre-start' && currentPhase?.id !== 'start') {
     return null;
@@ -149,13 +173,13 @@ const PrepWelcomeBanner = () => {
 
   // Build headline - progress-based, not day-based
   const getPersonalizedHeadline = () => {
-    // Foundation phase - show week-based encouragement
+    // Foundation phase - show milestone-based encouragement
     if (isFoundationPhase) {
-      if (currentWeekNumber === 1) {
+      if (completedMilestones === 0) {
         return `Let's Go, ${firstName}!`;
       }
-      if (currentWeekNumber >= 8) {
-        return `Final Week, ${firstName}!`;
+      if (completedMilestones >= 5) {
+        return `You Did It, ${firstName}!`;
       }
       return `Keep Going, ${firstName}!`;
     }
@@ -182,15 +206,15 @@ const PrepWelcomeBanner = () => {
 
   // Get the subtext - progress-based messaging
   const getSubtext = () => {
-    // Foundation phase - show week guidance
+    // Foundation phase - show milestone-based guidance
     if (isFoundationPhase) {
-      if (currentWeekNumber === 1) {
-        return "Your Foundation journey has begun! Build daily leadership habits with your conditioning reps.";
+      if (completedMilestones === 0) {
+        return "Your Foundation journey has begun! Complete milestones by practicing Real Reps and earning certifications.";
       }
-      if (currentWeekNumber >= 8) {
-        return "You're in the final stretch! Finish strong and prepare for your leadership Ascent.";
+      if (completedMilestones >= 5) {
+        return "Congratulations! You've completed all 5 Foundation milestones. Prepare for your leadership Ascent!";
       }
-      return `Week ${currentWeekNumber} of your Foundation. Stay consistent with your daily practices to build lasting leadership habits.`;
+      return `Milestone ${currentMilestone} of 5. Progress at your own pace — the Foundation is milestone-driven, not time-driven.`;
     }
     
     // After prep requirements complete, show success message
@@ -241,7 +265,7 @@ const PrepWelcomeBanner = () => {
                 {isFoundationPhase ? (
                   <>
                     <Flame className="w-4 h-4" />
-                    <span>Foundation Week {currentWeekNumber}</span>
+                    <span>Foundation Milestone {currentMilestone}</span>
                   </>
                 ) : (
                   <>
@@ -296,14 +320,14 @@ const PrepWelcomeBanner = () => {
             />
           </div>
 
-          {/* Right Visual - Countdown/Week Display - Clean and simple */}
+          {/* Right Visual - Countdown/Milestone Display - Clean and simple */}
           <div className="hidden lg:flex flex-col items-center gap-3">
             {/* Circle Display - Simplified */}
             <div className="relative w-24 h-24 rounded-full flex items-center justify-center shadow-md bg-gradient-to-br from-corporate-teal to-emerald-600 shadow-corporate-teal/20">
               {isFoundationPhase ? (
                 <div className="text-center">
-                  <span className="text-3xl font-bold text-white">{currentWeekNumber}</span>
-                  <span className="block text-xs text-white/80 font-medium">of 8</span>
+                  <span className="text-3xl font-bold text-white">{currentMilestone}</span>
+                  <span className="block text-xs text-white/80 font-medium">of 5</span>
                 </div>
               ) : isLaunch ? (
                 <Rocket className="w-10 h-10 text-white" />
@@ -317,7 +341,7 @@ const PrepWelcomeBanner = () => {
               )}
             </div>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              {isFoundationPhase ? 'Foundation Week' : 'until Session One'}
+              {isFoundationPhase ? 'Foundation Milestone' : 'until Session One'}
             </span>
             
             {/* Session One Date - Show actual date from cohort (only in prep phase) */}

@@ -142,7 +142,7 @@ export default function SettingsPage() {
   const handleDisconnectGmail = async () => {
     if (confirm('Disconnect Gmail? Your email sync history will be preserved.')) {
       setDisconnectingGmail(true);
-      await disconnectGmail(user.uid);
+      await useGmailStore.getState().disconnect(user.uid);
       setDisconnectingGmail(false);
     }
   };

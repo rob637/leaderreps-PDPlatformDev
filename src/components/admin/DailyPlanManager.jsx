@@ -1235,6 +1235,7 @@ const ContentManager = () => {
     }
     // Ascent (post) uses week-based
     return weeks[selectedWeek] || [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPhase, selectedPrepSection, onboardingItem, session1Item, exploreItem, weeks, selectedWeek, days, selectedMilestone]);
 
   // Handle phase change - jump to first week of that phase

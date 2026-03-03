@@ -45,7 +45,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
         focusArea: rep.focusArea || rep.dimension || 'General'
       };
     });
-  }, [plan, globalMetadata]);
+  }, [plan]);
 
   // FIXED: Group by focus area instead of tier
   const skillsByFocusArea = useMemo(() => {

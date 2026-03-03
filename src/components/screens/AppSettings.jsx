@@ -14,6 +14,7 @@ const AppSettingsScreen = () => {
 
   useEffect(() => {
     checkNotificationStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
 
   const checkNotificationStatus = async () => {

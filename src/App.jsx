@@ -39,6 +39,7 @@ import { NotificationProvider } from './providers/NotificationProvider.jsx';
 import { TimeProvider } from './providers/TimeProvider.jsx';
 import { AccessControlProvider } from './providers/AccessControlProvider.jsx';
 import { ThemeProvider } from './providers/ThemeProvider.jsx';
+import { RepTypeProvider } from './providers/RepTypeProvider.jsx';
 
 // --- Mobile Experience Enhancements ---
 import { OfflineProvider } from './components/offline/useOffline.jsx';
@@ -217,6 +218,7 @@ function App() {
             navigate={navigate}
             user={user}
           >
+            <RepTypeProvider>
             <FeatureProvider db={firebaseServices?.db}>
               <LayoutProvider>
                 <AccessControlProvider>
@@ -248,6 +250,7 @@ function App() {
                 </AccessControlProvider>
               </LayoutProvider>
             </FeatureProvider>
+            </RepTypeProvider>
           </DataProvider>
         </OfflineProvider>
       </TimeProvider>

@@ -1,9 +1,8 @@
 // src/components/conditioning/CloseRRModal.jsx
-// V2 Close RR - Quick reflection to close the loop on a rep
-// SEPARATE from Evidence Capture (which captures detailed evidence/takeaways)
-// This is the "debrief" step renamed to "Close RR"
+// V2 Close RR - Combined evidence capture + reflection to close a rep
+// Single modal flow: outcome → evidence (if applicable) → reflection → done
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import conditioningService from '../../services/conditioningService.js';
 import { Button } from '../ui';
@@ -12,16 +11,7 @@ import {
 } from 'lucide-react';
 import ConditioningModal from './ConditioningModal';
 import VoiceTextarea from './VoiceTextarea';
-
-// ============================================
-// OUTCOME OPTIONS
-// ============================================
-const OUTCOME_OPTIONS = [
-  { id: 'did_it', label: 'Did it', icon: '✅', description: 'Executed the rep as planned' },
-  { id: 'partial', label: 'Partially', icon: '⚠️', description: 'Some of it happened' },
-  { id: 'missed', label: 'Missed it', icon: '❌', description: 'Didn\'t get to it' },
-  { id: 'pivoted', label: 'Pivoted', icon: '🔄', description: 'Did something different' }
-];
+import { REP_OUTCOME_OPTIONS as OUTCOME_OPTIONS } from './constants';
 
 // ============================================
 // OUTCOME SELECTOR
@@ -74,13 +64,44 @@ const CloseRRModal = ({
   
   // State
   const [outcome, setOutcome] = useState(null);
+  const [whatYouSaid, setWhatYouSaid] = useState('');
+  const [howTheyResponded, setHowTheyResponded] = useState('');
   const [reflection, setReflection] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [showValidation, setShowValidation] = useState(false);
   
+  // Check if rep already has evidence (came from a different flow)
+  const hasExistingEvidence = !!rep?.evidence;
+  
+  // Determine if evidence capture is needed based on outcome
+  // Evidence required for: did_it, partial, pivoted (not for missed - nothing to capture)
+  const needsEvidence = useMemo(() => {
+    if (hasExistingEvidence) return false; // Already has evidence
+    return outcome && outcome !== 'missed';
+  }, [outcome, hasExistingEvidence]);
+  
   // Validation
-  const isValid = outcome && reflection.trim().length >= 15;
+  const isValid = useMemo(() => {
+    if (!outcome) return false;
+    if (!reflection.trim() || reflection.trim().length < 15) return false;
+    if (needsEvidence && whatYouSaid.trim().length < 10) return false;
+    return true;
+  }, [outcome, reflection, needsEvidence, whatYouSaid]);
+  
+  // Get dynamic evidence prompt based on outcome
+  const getEvidencePrompt = () => {
+    switch (outcome) {
+      case 'did_it':
+        return 'What did you say or do?';
+      case 'partial':
+        return 'What part did you do?';
+      case 'pivoted':
+        return 'What did you do instead?';
+      default:
+        return 'What happened?';
+    }
+  };
   
   // Get dynamic reflection prompt based on outcome
   const getReflectionPrompt = () => {
@@ -104,6 +125,8 @@ const CloseRRModal = ({
     if (!isValid) {
       if (!outcome) {
         setError('Please select what happened');
+      } else if (needsEvidence && whatYouSaid.trim().length < 10) {
+        setError('Please describe what you said or did (at least 10 characters)');
       } else {
         setError('Please add a brief reflection (at least 15 characters)');
       }
@@ -114,10 +137,25 @@ const CloseRRModal = ({
       setIsSubmitting(true);
       setError(null);
       
+      // Step 1: Submit evidence if needed (and not already present)
+      if (needsEvidence && !hasExistingEvidence) {
+        const evidenceData = {
+          whatYouSaid: whatYouSaid.trim(),
+          howTheyResponded: howTheyResponded.trim(),
+          outcome,
+          inputMethod: 'written'
+        };
+        await conditioningService.submitEvidenceV2(db, userId, rep.id, evidenceData);
+      }
+      
+      // Step 2: Close the rep with reflection
       const closeData = {
         outcome,
         outcomeLabelLabel: OUTCOME_OPTIONS.find(o => o.id === outcome)?.label,
         reflection: reflection.trim(),
+        // Map to what closeRepV2 expects
+        whatWentWell: reflection.trim(),
+        whatDifferent: '',
         closedAt: new Date().toISOString()
       };
       
@@ -127,7 +165,7 @@ const CloseRRModal = ({
       onClose?.();
     } catch (err) {
       console.error('Error closing rep:', err);
-      setError('Failed to close rep. Please try again.');
+      setError(err.message || 'Failed to close rep. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -137,7 +175,7 @@ const CloseRRModal = ({
     <ConditioningModal
       isOpen={true}
       onClose={onClose}
-      title="Close RR"
+      title="Complete Real Rep"
       icon={CheckSquare}
       subtitle={`${rep?.person || 'Your Rep'} • ${rep?.repType || ''}`}
     >
@@ -162,6 +200,32 @@ const CloseRRModal = ({
           selectedOutcome={outcome} 
           onSelect={setOutcome} 
         />
+        
+        {/* Evidence Capture (appears after outcome selected, if needed) */}
+        {needsEvidence && (
+          <div className="animate-in slide-in-from-top-2 duration-200 space-y-4">
+            <VoiceTextarea
+              id="close-what-said"
+              label={getEvidencePrompt()}
+              value={whatYouSaid}
+              onChange={setWhatYouSaid}
+              placeholder="Briefly describe what you said or did..."
+              rows={2}
+              minLength={10}
+              error={showValidation && whatYouSaid.trim().length < 10 ? 'Add a brief description' : null}
+              autoFocus
+            />
+            
+            <VoiceTextarea
+              id="close-their-response"
+              label="How did they respond?"
+              value={howTheyResponded}
+              onChange={setHowTheyResponded}
+              placeholder="Their reaction or response (optional)..."
+              rows={2}
+            />
+          </div>
+        )}
         
         {/* Reflection (appears after outcome selected) */}
         {outcome && (
@@ -198,11 +262,6 @@ const CloseRRModal = ({
           <Send className="w-4 h-4" />
           Close Rep
         </Button>
-        
-        {/* Note about Evidence Capture */}
-        <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-          You can add detailed evidence & takeaways separately after closing.
-        </p>
       </div>
     </ConditioningModal>
   );

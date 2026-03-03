@@ -2,35 +2,74 @@
 
 ## Overview
 
-Your app has two distinct types of data:
+Your app has THREE distinct types of data, each with a different sync direction:
 
-| Type | Description | Migrates? |
-|------|-------------|-----------|
-| **Application Data** | System config, content libraries, plans, LOVs | ✅ YES |
-| **User Data** | User profiles, progress, achievements, cohorts | ❌ NO |
+| Type | Direction | Description |
+|------|-----------|-------------|
+| **Code** | Dev → Test → Prod | React code, cloud functions, firestore rules |
+| **Content** | Prod → Test → Dev | Videos, readings, media vault, content library |
+| **Config/Structure** | Dev → Test → Prod | Feature flags, daily plan structure, LOVs |
+| **User Data** | ❌ Never migrates | User profiles, progress, cohort membership |
+
+### Why Content Flows FROM Production
+
+Content authors (non-developers) work in Production because:
+- Real CDN URLs for video/image previews
+- Production-quality media playback
+- No risk of test data appearing in real content
+
+**After editing content in Prod, immediately sync down:**
+```bash
+npm run data:sync-content-from-prod
+```
+
+### Why Config Flows TO Production
+
+Configuration tied to code changes (new days in daily plan, feature flags, LOVs) 
+should be developed and tested before going live:
+```bash
+npm run data:sync-config-to-prod
+```
+
+---
+
+## Quick Reference - Which Command?
+
+| I just... | Run this |
+|-----------|----------|
+| Edited videos/content in Prod | `npm run data:sync-content-from-prod` |
+| Added new days to Daily Plan in Dev | `npm run data:sync-config-to-prod -- --to-test-only` (then deploy code) |
+| Changed feature flags in Dev | `npm run data:sync-config-to-prod -- --to-test-only` |
+| Need to sync everything from Prod | `npm run data:sync-content-from-prod` |
 
 ---
 
 ## Data Categories
 
-### 📦 Application Data (SHOULD Migrate)
+### 📦 Application Data (Split by Direction)
 
-These collections contain system-wide data that should be the same across environments:
-
+#### Content Data (Prod → Dev direction)
 | Collection | Purpose | Notes |
 |------------|---------|-------|
-| `development_plan_v1` | 26-week master plan | Created in Dev Plan Manager |
-| `daily_plan_v1` | Day-by-Day Daily Plan | Prep phase + daily content |
-| `system_lovs` | Lists of Values (dropdowns) | Created in LOV Manager |
-| `content_readings` | Reading library | Created in Content Manager |
-| `content_videos` | Video library | Created in Content Manager |
-| `content_courses` | Course catalog | Created in Content Manager |
-| `content_coaching` | Coaching scenarios | Created in Coaching Manager |
-| `content_library` | Unified content | All content types |
+| `media_assets` | Media Vault | Videos, images, documents |
+| `content_library` | Unified Content Library | All content types |
+| `content` | Legacy content | Migration holdover |
+| `content_videos` | Video library | Individual videos |
+| `content_readings` | Reading library | Articles, PDFs |
+| `content_documents` | Document wrappers | Linked documents |
 | `skills` | Skills Taxonomy | Skill definitions |
-| `metadata/*` | App config, catalogs | Admin emails, etc. |
+| `video_series` | Video playlists | Multi-video series |
+
+#### Config Data (Dev → Prod direction)
+| Collection | Purpose | Notes |
+|------------|---------|-------|
+| `development_plan_v1` | 26-week master plan | Structure changes |
+| `daily_plan_v1` | Day-by-Day Daily Plan | New days, structure |
+| `system_lovs` | Lists of Values | Dropdowns |
 | `config/*` | Feature flags | Widget visibility |
-| `global/*` | Global metadata | Shared app settings |
+| `metadata/*` | App config | Admin emails, etc. |
+| `coaching_session_types` | Coaching types | Session structure |
+| `community_session_types` | Community types | Event structure |
 
 ### 👤 User Data (Should NOT Migrate)
 
@@ -47,34 +86,49 @@ These collections contain user-specific data:
 
 ---
 
-## Migration Workflow
+## Migration Workflows
 
-### Scenario 1: Initial Test Environment Setup
+### Scenario 1: Content Created/Edited in Production (MOST COMMON)
 
+After adding videos, readings, or media in Prod:
 ```bash
-# 1. Export from Dev
-npm run data:export dev
+npm run data:sync-content-from-prod
+```
+This exports from Prod and imports to both Test and Dev.
 
-# 2. Import to Test
-npm run data:import test ./data-exports/app-data-dev-2024-12-03.json
+### Scenario 2: Config/Structure Changes in Dev
+
+After adding new days to Daily Plan or changing feature flags:
+```bash
+# First, sync content FROM prod so you don't lose recent content
+npm run data:sync-content-from-prod
+
+# Then push your config changes (to Test only for QA first)
+npm run data:sync-config-to-prod -- --to-test-only
+
+# After QA approval, push to Prod
+npm run data:sync-config-to-prod
 ```
 
-### Scenario 2: Sync Changes to Test After Dev Updates
+### Scenario 3: Initial Test Environment Setup
 
 ```bash
-# After making changes in Dev (LOVs, content, daily plan)
-node scripts/migrate-app-data.js export dev
-node scripts/migrate-app-data.js import test ./data-exports/app-data-dev-YYYY-MM-DD.json
+# If Prod has the canonical data:
+npm run data:sync-content-from-prod
+
+# If Dev has the canonical data:
+npm run data:sync-config-to-prod -- --to-test-only
 ```
 
-### Scenario 3: Promote Test to Production
+### Manual Export/Import (Advanced)
 
+For granular control, use the raw commands:
 ```bash
-# Export from Test (after QA approval)
-node scripts/migrate-app-data.js export test
+# Export from any environment
+npm run data:export dev   # or test, prod
 
-# Import to Production
-node scripts/migrate-app-data.js import prod ./data-exports/app-data-test-YYYY-MM-DD.json
+# Import to any environment
+npm run data:import test ./data-exports/app-data-prod-YYYY-MM-DD.json
 ```
 
 ---

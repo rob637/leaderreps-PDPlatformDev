@@ -1,6 +1,7 @@
 // src/components/conditioning/InMomentRepForm.jsx
-// V2 In-the-Moment Rep logging flow - 4 steps
-// Step 1: Type (+ behavior focus), Step 2: Who, Step 3: Situation, Step 4: When + Log
+// V2 In-the-Moment Rep flow - 4 steps (Don't Know | Found Myself In)
+// Step 1: I'm in a moment right now (select rep), Step 2: It's with..., Step 3: Where is this happening, Step 4: Execute
+// Supports draft auto-save and resume functionality
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Button } from '../ui';
@@ -10,13 +11,15 @@ import SituationStep from './SituationStep';
 import { BehaviorFocusReminder } from './BehaviorFocusReminder';
 import { getRepTypeV2 } from '../../services/repTaxonomy';
 import { getWeekBoundaries } from '../../services/conditioningService';
+import { DRAFT_FLOW_TYPES } from '../../services/draftRepService';
+import useDraftAutoSave from '../../hooks/useDraftAutoSave';
 import { Timestamp } from 'firebase/firestore';
 
 // ============================================
 // STEP CONFIGURATION
 // ============================================
 const TOTAL_STEPS = 4;
-const STEP_LABELS = ['Type', 'Who', 'Situation', 'When'];
+const STEP_LABELS = ['Rep Type', 'With', 'Context', 'Execute'];
 
 // ============================================
 // WHEN OPTIONS
@@ -31,24 +34,84 @@ const WHEN_OPTIONS = [
 // ============================================
 // MAIN FORM COMPONENT
 // ============================================
-const InMomentRepForm = ({ onSubmit, onClose, isLoading }) => {
-  // Form state
-  const [repTypeId, setRepTypeId] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [person, setPerson] = useState('');
-  const [selectedSituation, setSelectedSituation] = useState(null);
-  const [customContext, setCustomContext] = useState('');
-  const [whenOption, setWhenOption] = useState('just_now');
-  const [specificDate, setSpecificDate] = useState('');
-  const [specificTime, setSpecificTime] = useState('');
+const InMomentRepForm = ({ 
+  onSubmit, 
+  onClose, 
+  isLoading,
+  // Milestone-based unlocking props
+  milestoneProgress = {},
+  completedRepTypes = [],
+  // Optional: preselected rep type (from action item click)
+  preselectedRepType = null,
+  // Optional: initial draft data for resuming
+  initialDraft = null,
+  // Optional: source item ID for tracking
+  sourceItemId = null,
+  // Optional: disable auto-save
+  disableAutoSave = false
+}) => {
+  // Initialize form state from draft if available
+  const draftFormData = initialDraft?.formData || {};
+  const draftStep = initialDraft?.currentStep ?? null;
   
-  // Step tracking
-  const [currentStep, setCurrentStep] = useState(0);
+  // Form state - use initialDraft > preselectedRepType > null
+  const [repTypeId, setRepTypeId] = useState(
+    draftFormData.repTypeId || preselectedRepType || null
+  );
+  const [selectedCategory, setSelectedCategory] = useState(
+    draftFormData.selectedCategory || null
+  );
+  const [person, setPerson] = useState(draftFormData.person || '');
+  const [selectedSituation, setSelectedSituation] = useState(
+    draftFormData.selectedSituation || null
+  );
+  const [customContext, setCustomContext] = useState(
+    draftFormData.customContext || ''
+  );
+  const [whenOption, setWhenOption] = useState(
+    draftFormData.whenOption || 'just_now'
+  );
+  const [specificDate, setSpecificDate] = useState(
+    draftFormData.specificDate || ''
+  );
+  const [specificTime, setSpecificTime] = useState(
+    draftFormData.specificTime || ''
+  );
+  
+  // Step tracking - use draft step if resuming, else step 1 if rep type is preselected
+  const initialStep = draftStep !== null 
+    ? draftStep 
+    : (preselectedRepType ? 1 : 0);
+  const [currentStep, setCurrentStep] = useState(initialStep);
   // eslint-disable-next-line no-unused-vars
-  const [visitedSteps, setVisitedSteps] = useState(new Set([0]));
+  const [visitedSteps, setVisitedSteps] = useState(
+    new Set(Array.from({ length: initialStep + 1 }, (_, i) => i))
+  );
   const [nextAttempted, setNextAttempted] = useState(false);
   
   const personInputRef = useRef(null);
+  
+  // Create form data object for auto-save
+  const formData = useMemo(() => ({
+    repTypeId,
+    selectedCategory,
+    person,
+    selectedSituation,
+    customContext,
+    whenOption,
+    specificDate,
+    specificTime
+  }), [repTypeId, selectedCategory, person, selectedSituation, customContext, whenOption, specificDate, specificTime]);
+  
+  // Auto-save draft as user progresses through form
+  const { clearDraft } = useDraftAutoSave({
+    flowType: DRAFT_FLOW_TYPES.IN_MOMENT,
+    currentStep,
+    formData,
+    sourceItemId,
+    preselectedRepType,
+    enabled: !disableAutoSave
+  });
   
   // Get selected rep type info
   const selectedRepType = useMemo(() => {
@@ -187,7 +250,11 @@ const InMomentRepForm = ({ onSubmit, onClose, isLoading }) => {
       deadline: Timestamp.fromDate(weekEnd)
     };
     
+    // Submit the rep
     await onSubmit(repData);
+    
+    // Clear the draft on successful submission
+    await clearDraft();
   };
 
   // Render step content
@@ -203,6 +270,8 @@ const InMomentRepForm = ({ onSubmit, onClose, isLoading }) => {
               onCategoryChange={setSelectedCategory}
               headerText="What Real Rep did you just run?"
               showBehaviorFocus={true}
+              milestoneProgress={milestoneProgress}
+              completedRepTypes={completedRepTypes}
             />
           </div>
         );
@@ -332,8 +401,8 @@ const InMomentRepForm = ({ onSubmit, onClose, isLoading }) => {
     <ConditioningModal
       isOpen={true}
       onClose={onClose}
-      title="Log a Real Rep"
-      subtitle={selectedRepType ? selectedRepType.label : 'What rep did you just run?'}
+      title="I'm in a Moment Right Now"
+      subtitle={selectedRepType ? selectedRepType.label : 'What Real Rep are you running?'}
       currentStep={currentStep}
       totalSteps={TOTAL_STEPS}
       stepLabels={STEP_LABELS}

@@ -13,12 +13,14 @@ import {
   PlusCircle,
   Layers,
   ClipboardEdit,
-  ListVideo
+  ListVideo,
+  Dumbbell
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { getAllContentAdmin, CONTENT_COLLECTIONS } from '../../services/contentService';
 import { UNIFIED_COLLECTION, CONTENT_TYPES as UNIFIED_TYPES } from '../../services/unifiedContentService';
 import { COMMUNITY_SESSION_TYPES_COLLECTION, COACHING_SESSION_TYPES_COLLECTION } from '../../data/Constants';
+import { REP_TYPES_V2, getRepTypeV2 } from '../../services/repTaxonomy';
 import { doc, getDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 
 const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
@@ -89,6 +91,21 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               description: d.data().description || `${(d.data().videos || []).length} videos`
             }));
             allResources = vsData;
+            break;
+          }
+          case 'conditioning': {
+            // Load conditioning rep types from repTaxonomy (V2)
+            // These are static, not from Firestore
+            const repTypes = REP_TYPES_V2.map(rt => ({
+              id: rt.id,
+              title: rt.label,
+              description: rt.description || '',
+              resourceType: 'conditioning_rep',
+              repTypeId: rt.id,
+              category: rt.category,
+              behaviorFocus: rt.behaviorFocus || null
+            }));
+            allResources = repTypes;
             break;
           }
           default:
@@ -267,6 +284,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
       case 'coaching': return MessageSquare;
       case 'interactive': return ClipboardEdit;
       case 'video_series': return ListVideo;
+      case 'conditioning_rep': return Dumbbell;
       default: return LinkIcon;
     }
   };
@@ -292,6 +310,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               selectedResource.resourceType === 'coaching' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' :
               selectedResource.resourceType === 'interactive' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-600' :
               selectedResource.resourceType === 'video_series' ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600' :
+              selectedResource.resourceType === 'conditioning_rep' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' :
               'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
             }`}>
               {React.createElement(getIcon(selectedResource.resourceType), { size: 12 })}
@@ -329,13 +348,20 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
             {/* Category Tabs */}
             <div className="flex border-b bg-white dark:bg-slate-800">
-              {['content', 'video-series', 'community', 'coaching'].map(cat => {
-              const label = cat === 'video-series' ? 'Video Series' : cat.charAt(0).toUpperCase() + cat.slice(1);
+              {['content', 'video-series', 'conditioning', 'community', 'coaching'].map(cat => {
+              const labelMap = {
+                'content': 'Content',
+                'video-series': 'Video Series',
+                'conditioning': 'Real Reps',
+                'community': 'Community',
+                'coaching': 'Coaching'
+              };
+              const label = labelMap[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
               return (
                 <button 
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
-                  className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  className={`flex-1 py-3 text-xs font-medium border-b-2 transition-colors ${
                     activeCategory === cat 
                       ? 'border-corporate-teal text-corporate-teal bg-teal-50/50 dark:bg-teal-900/20/50' 
                       : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 hover:bg-slate-50'

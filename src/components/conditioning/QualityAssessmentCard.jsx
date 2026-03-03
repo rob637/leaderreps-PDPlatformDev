@@ -10,12 +10,19 @@ import {
 } from 'lucide-react';
 
 // Dimension icons and labels - use string keys to avoid module initialization order issues
+// V2: 3 dimensions (specific_language, observed_response, reflection)
 const DIMENSION_CONFIG = {
   specific_language: {
     icon: MessageSquare,
-    label: 'Specific Language',
-    description: 'Used actual words or close paraphrase'
+    label: 'What You Said',
+    description: 'Described specifically what you said or did'
   },
+  observed_response: {
+    icon: Target,
+    label: 'Their Response',
+    description: 'Described how they responded'
+  },
+  // Legacy V1 dimensions (for backward compatibility with old reps)
   clear_request: {
     icon: Target,
     label: 'Clear Request',
@@ -29,16 +36,20 @@ const DIMENSION_CONFIG = {
   reflection: {
     icon: Lightbulb,
     label: 'Reflection',
-    description: 'Reflected on lessons learned'
+    description: 'What went well & what to do differently'
   }
 };
 
 // Coaching question prompts for each dimension - designed to prompt reflection, not give answers
+// V2: Updated for 3-dimension format
 const PRACTICE_PROMPTS = {
   specific_language: 
     'Think back to that moment. If you were watching a video replay, what exact words would you hear yourself saying? Close your eyes and try to remember.',
+  observed_response:
+    'How did they react in the moment? What did you notice about their body language, tone, or words?',
+  // Legacy V1 prompts (for backward compatibility)
   clear_request: 
-    'What do you actually need from this person? And how might you say that in a way that makes the ask crystal clear? What words would leave no ambiguity?',
+    'What do you actually need from this person? And how might you say that in a way that makes the ask crystal clear?',
   named_commitment: 
     'What would a real commitment sound like from them? What specific action and timeline would you want them to agree to?',
   reflection: 

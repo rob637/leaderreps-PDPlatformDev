@@ -38,6 +38,7 @@ import LOVManager from './LOVManager';
 import DailyRepsLibrary from './DailyRepsLibrary';
 import ContentManager from './DailyPlanManager';
 import MilestoneSignOffQueue from './MilestoneSignOffQueue';
+import SessionAttendanceQueue from './SessionAttendanceQueue';
 import CoachingCertificationQueue from './CoachingCertificationQueue';
 import CohortManager from './CohortManager';
 import UserManagement from './UserManagement';
@@ -45,6 +46,7 @@ import LeaderProfileReports from './LeaderProfileReports';
 import NotificationManager from './NotificationManager';
 import CommunicationsManager from './CommunicationsManager';
 import ConditioningDashboard from './ConditioningDashboard';
+import ConditioningConfig from './ConditioningConfig';
 import UxAuditPanel from './UxAuditPanel';
 import VideoSeriesManager from './VideoSeriesManager';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav';
@@ -152,6 +154,7 @@ const AdminPortal = () => {
     {
       title: 'Facilitator',
       items: [
+        { id: 'session-attendance', label: 'Session Attendance', icon: BookOpen },
         { id: 'sign-off-queue', label: 'Sign-Off Queue', icon: CheckCircle },
         { id: 'coaching-cert', label: 'Leader Certification', icon: Award },
         { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
@@ -161,6 +164,7 @@ const AdminPortal = () => {
     {
       title: 'Advanced Management',
       items: [
+        { id: 'conditioning-config', label: 'Conditioning Config', icon: Dumbbell },
         { id: 'daily-reps', label: 'Daily Reps', icon: Dumbbell },
         { id: 'community', label: 'Community', icon: Users },
         { id: 'coaching', label: 'Coaching', icon: BrainCircuit },
@@ -200,6 +204,8 @@ const AdminPortal = () => {
         return <ContentManager />;
       case 'sign-off-queue':
         return <MilestoneSignOffQueue />;
+      case 'session-attendance':
+        return <SessionAttendanceQueue />;
       case 'coaching-cert':
         return <CoachingCertificationQueue />;
       // 'library' tab removed - Programs/Workouts/Skills now managed as LOVs
@@ -233,6 +239,8 @@ const AdminPortal = () => {
         return <LeaderProfileReports />;
       case 'conditioning':
         return <ConditioningDashboard />;
+      case 'conditioning-config':
+        return <ConditioningConfig />;
       case 'ux-audit':
         return <UxAuditPanel />;
       case 'video-series':

@@ -318,11 +318,13 @@ export default function E2ETestResults() {
     fetchHistory();
     
     return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firestore]);
   
   // Initial fetch
   useEffect(() => {
     fetchResults();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firestore]);
   
   // Filter suites

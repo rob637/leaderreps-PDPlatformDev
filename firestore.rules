@@ -273,6 +273,72 @@ service cloud.firestore {
     // CONDITIONING LAYER COLLECTIONS
     // ============================================
     
+    // Conditioning Configuration Collections - Read by all authenticated, write by admin
+    // These define the rep types, categories, situations, prompts, and milestone unlocks
+    match /conditioning_rep_types/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /conditioning_categories/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /conditioning_situations/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /conditioning_prompts/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /conditioning_milestone_config/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /conditioning_milestones/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /conditioning_quality_dimensions/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /conditioning_coach_prompts/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    // Conditioning Prep Prompts - Optional prep alignment questions per rep type
+    match /conditioning_prep_prompts/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    // Conditioning Debrief Standards - Pass criteria and coaching prompts for system scoring
+    match /conditioning_debrief_standards/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    // Conditioning Linked Reps - Which RRs auto-create follow-up RRs
+    match /conditioning_linked_reps/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    // Conditioning Complete Config - Questions for completing the conditioning loop
+    match /conditioning_complete_config/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
     // Conditioning Nudges - Trainers send to leaders
     // Trainers (admins) can create and read all nudges for their cohorts
     // Target users can read their own nudges

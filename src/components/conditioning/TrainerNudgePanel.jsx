@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import conditioningService from '../../services/conditioningService.js';
+import { formatDisplayDateTime } from '../../services/dateUtils';
 import { Card, Button } from '../ui';
 import { 
   Send, MessageSquare, AlertTriangle, Heart, HelpCircle,
@@ -423,7 +424,7 @@ const NudgeHistory = ({ nudges, isLoading }) => {
                       {config.label}
                     </span>
                     <span className="text-xs text-gray-400">
-                      {sentDate.toLocaleDateString()} {sentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {formatDisplayDateTime(sentDate)}
                     </span>
                   </div>
                   <p className="text-sm text-gray-700 dark:text-gray-200 line-clamp-2">{nudge.message}</p>

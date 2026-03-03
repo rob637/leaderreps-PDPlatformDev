@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import ConditioningModal from './ConditioningModal';
 import VoiceTextarea from './VoiceTextarea';
+import { formatShortDate } from '../../services/dateUtils';
 
 // ============================================
 // OUTCOME OPTIONS
@@ -56,7 +57,7 @@ const OUTCOME_OPTIONS = [
 // ============================================
 // OUTCOME SELECTOR
 // ============================================
-const OutcomeSelector = ({ value, onChange, showError = false }) => {
+const OutcomeSelector = ({ value, onChange, showError: _showError = false }) => {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-corporate-navy">
@@ -146,7 +147,7 @@ const LoopClosureModal = ({
         rep.debriefedAt ? (
           <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
             <Calendar className="w-3 h-3" />
-            <span>Debriefed {new Date(rep.debriefedAt.toDate?.() || rep.debriefedAt).toLocaleDateString()}</span>
+            <span>Debriefed {formatShortDate(rep.debriefedAt)}</span>
           </div>
         ) : null
       }

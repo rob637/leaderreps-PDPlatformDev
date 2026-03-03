@@ -185,7 +185,7 @@ export const useDayBasedAccessControl = () => {
       // Locker is always available
       isLockerZoneOpen: true
     };
-  }, [currentDayData, effectiveDayNumber]);
+  }, [currentDayData, effectiveDayNumber, prepStatus.isComplete]);
 
   // --- HELPER FUNCTIONS ---
   const isContentUnlocked = (contentId) => {

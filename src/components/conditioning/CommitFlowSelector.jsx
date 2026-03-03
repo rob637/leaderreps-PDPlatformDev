@@ -1,6 +1,7 @@
 // src/components/conditioning/CommitFlowSelector.jsx
 // V2 Entry point - lets users choose between Planned RR and In-the-Moment RR
 // Used as the new commit modal entry point
+// Supports resuming from drafts
 
 import React, { useState } from 'react';
 import { Calendar, Clock, ChevronRight } from 'lucide-react';
@@ -8,6 +9,7 @@ import ConditioningModal from './ConditioningModal';
 import PlannedRepForm from './PlannedRepForm';
 import InMomentRepForm from './InMomentRepForm';
 import { Button } from '../ui';
+import { DRAFT_FLOW_TYPES } from '../../services/draftRepService';
 
 // ============================================
 // FLOW OPTION CARD
@@ -61,39 +63,66 @@ const CommitFlowSelector = ({
   onClose, 
   isLoading,
   // Optional: start with a specific flow
-  initialFlow = null
+  initialFlow = null,
+  // Milestone-based unlocking props
+  milestoneProgress = {},
+  completedRepTypes = [],
+  // Optional: preselect a rep type (from action item click)
+  preselectedRepType = null,
+  // Optional: initial draft data for resuming
+  initialDraft = null,
+  // Optional: source item ID for tracking
+  sourceItemId = null
 }) => {
-  const [selectedFlow, setSelectedFlow] = useState(initialFlow);
+  // Determine initial flow from draft, preselect, or explicit prop
+  const getInitialFlow = () => {
+    if (initialFlow) return initialFlow;
+    if (initialDraft?.flowType) return initialDraft.flowType;
+    if (preselectedRepType) return DRAFT_FLOW_TYPES.PLANNED;
+    return null;
+  };
+  
+  const [selectedFlow, setSelectedFlow] = useState(getInitialFlow);
   
   // If a flow is selected, render that form
-  if (selectedFlow === 'planned') {
+  if (selectedFlow === 'planned' || selectedFlow === DRAFT_FLOW_TYPES.PLANNED) {
     return (
       <PlannedRepForm
         onSubmit={onSubmit}
         onClose={() => {
-          if (initialFlow) {
+          if (initialFlow || preselectedRepType || initialDraft) {
             onClose();
           } else {
             setSelectedFlow(null);
           }
         }}
         isLoading={isLoading}
+        milestoneProgress={milestoneProgress}
+        completedRepTypes={completedRepTypes}
+        preselectedRepType={preselectedRepType || initialDraft?.preselectedRepType}
+        initialDraft={initialDraft?.flowType === DRAFT_FLOW_TYPES.PLANNED ? initialDraft : null}
+        sourceItemId={sourceItemId || initialDraft?.sourceItemId}
       />
     );
   }
   
-  if (selectedFlow === 'in_moment') {
+  if (selectedFlow === 'in_moment' || selectedFlow === DRAFT_FLOW_TYPES.IN_MOMENT) {
     return (
       <InMomentRepForm
         onSubmit={onSubmit}
         onClose={() => {
-          if (initialFlow) {
+          if (initialFlow || initialDraft) {
             onClose();
           } else {
             setSelectedFlow(null);
           }
         }}
         isLoading={isLoading}
+        milestoneProgress={milestoneProgress}
+        completedRepTypes={completedRepTypes}
+        preselectedRepType={preselectedRepType || initialDraft?.preselectedRepType}
+        initialDraft={initialDraft?.flowType === DRAFT_FLOW_TYPES.IN_MOMENT ? initialDraft : null}
+        sourceItemId={sourceItemId || initialDraft?.sourceItemId}
       />
     );
   }

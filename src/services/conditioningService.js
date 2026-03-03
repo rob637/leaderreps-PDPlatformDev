@@ -118,11 +118,14 @@ export const EVIDENCE_LEVEL = {
 };
 
 // Quality assessment dimensions
+// V2: 3 dimensions (specific_language, observed_response, reflection)
 export const QUALITY_DIMENSIONS = {
-  SPECIFIC_LANGUAGE: 'specific_language',    // Did they use specific language?
-  CLEAR_REQUEST: 'clear_request',            // Was there a clear request/ask?
-  NAMED_COMMITMENT: 'named_commitment',      // Was a commitment named (or explicitly absent)?
-  REFLECTION: 'reflection'                   // Did they reflect on the outcome?
+  SPECIFIC_LANGUAGE: 'specific_language',    // Did they describe specifically what they said/did?
+  OBSERVED_RESPONSE: 'observed_response',    // Did they describe how the person responded?
+  REFLECTION: 'reflection',                  // Did they reflect on what went well & what to do differently?
+  // Legacy V1 dimensions (for backward compatibility with old reps)
+  CLEAR_REQUEST: 'clear_request',
+  NAMED_COMMITMENT: 'named_commitment'
 };
 
 // ============================================
@@ -397,7 +400,10 @@ export const conditioningService = {
       prepCompleted: false,
       
       // Optional fields
-      ...(repData.notes && { notes: repData.notes })
+      ...(repData.notes && { notes: repData.notes }),
+      
+      // Source tracking (for action item → rep linkage)
+      ...(repData.sourceItemId && { sourceItemId: repData.sourceItemId })
     };
     
     const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
@@ -416,6 +422,81 @@ export const conditioningService = {
     const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
     const repSnap = await getDoc(repRef);
     return repSnap.exists() ? { id: repSnap.id, ...repSnap.data() } : null;
+  },
+  
+  /**
+   * Find an active rep by sourceItemId (for action item → rep linkage)
+   * Returns the first active rep that was created from the given action item
+   */
+  getActiveRepBySourceItemId: async (db, userId, sourceItemId, cohortId = null) => {
+    if (!sourceItemId) return null;
+    
+    const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+    
+    // Active statuses (not yet fully complete)
+    const activeStatuses = [
+      'committed',
+      'prepared',
+      'scheduled',
+      'executed',
+      'follow_up_pending',
+      'active'
+    ];
+    
+    let q;
+    if (cohortId) {
+      q = query(
+        repsRef,
+        where('sourceItemId', '==', sourceItemId),
+        where('status', 'in', activeStatuses),
+        where('cohortId', '==', cohortId),
+        firestoreLimit(1)
+      );
+    } else {
+      q = query(
+        repsRef,
+        where('sourceItemId', '==', sourceItemId),
+        where('status', 'in', activeStatuses),
+        firestoreLimit(1)
+      );
+    }
+    
+    const snapshot = await getDocs(q);
+    return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+  },
+  
+  /**
+   * Check if a rep has been completed for a given sourceItemId
+   * Returns the completed rep if found, null otherwise
+   */
+  getCompletedRepBySourceItemId: async (db, userId, sourceItemId, cohortId = null) => {
+    if (!sourceItemId) return null;
+    
+    const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+    
+    // Completed statuses
+    const completedStatuses = ['debriefed', 'loop_closed', 'completed'];
+    
+    let q;
+    if (cohortId) {
+      q = query(
+        repsRef,
+        where('sourceItemId', '==', sourceItemId),
+        where('status', 'in', completedStatuses),
+        where('cohortId', '==', cohortId),
+        firestoreLimit(1)
+      );
+    } else {
+      q = query(
+        repsRef,
+        where('sourceItemId', '==', sourceItemId),
+        where('status', 'in', completedStatuses),
+        firestoreLimit(1)
+      );
+    }
+    
+    const snapshot = await getDocs(q);
+    return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
   },
   
   /**
@@ -905,6 +986,35 @@ export const conditioningService = {
     }
     
     return reps.slice(0, limitCount);
+  },
+  
+  /**
+   * Get unique rep types the user has ever completed successfully
+   * Used for linked rep unlocking (e.g., "Make a Clean Handoff" unlocks after completing "Set Expectations")
+   * @returns {string[]} Array of unique rep type IDs
+   */
+  getCompletedRepTypes: async (db, userId) => {
+    const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+    
+    // Completed states (fully finished reps)
+    const completedStates = ['debriefed', 'follow_up_pending', 'loop_closed', 'completed'];
+    
+    const q = query(
+      repsRef,
+      where('status', 'in', completedStates)
+    );
+    
+    const snapshot = await getDocs(q);
+    const repTypes = new Set();
+    
+    snapshot.docs.forEach(doc => {
+      const repType = doc.data().repType;
+      if (repType) {
+        repTypes.add(repType);
+      }
+    });
+    
+    return Array.from(repTypes);
   },
   
   /**
@@ -1448,6 +1558,136 @@ export const conditioningService = {
   },
   
   /**
+   * Create a linked rep that continues from a completed rep
+   * For example, completing "Delegate a Task" might create "Make a Clean Handoff"
+   * 
+   * @param {Object} db - Firestore instance
+   * @param {string} userId - User ID
+   * @param {string} sourceRepId - ID of the completed source rep
+   * @param {string} linkedRepTypeId - Rep type ID for the linked rep
+   * @param {Object} options - Additional options
+   * @returns {Promise<string>} - ID of the newly created linked rep
+   */
+  createLinkedRep: async (db, userId, sourceRepId, linkedRepTypeId, options = {}) => {
+    // Get the source rep to copy context from
+    const sourceRepRef = doc(db, 'users', userId, 'conditioning_reps', sourceRepId);
+    const sourceRepSnap = await getDoc(sourceRepRef);
+    
+    if (!sourceRepSnap.exists()) {
+      throw new Error('Source rep not found for linked rep creation');
+    }
+    
+    const sourceRep = sourceRepSnap.data();
+    
+    // Calculate deadline (default: 7 days from now, or end of week)
+    const deadline = options.deadline || (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      return Timestamp.fromDate(d);
+    })();
+    
+    // Create the linked rep
+    const newRep = {
+      // Core identity
+      repTypeId: linkedRepTypeId,
+      repType: linkedRepTypeId, // Legacy compatibility
+      status: REP_STATUS.COMMITTED,
+      flowType: 'linked', // Special flow type for linked reps
+      
+      // Context carried from source rep
+      person: options.person || sourceRep.person,
+      context: options.context || `Follow-up from: ${sourceRep.repType}`,
+      situation: options.situation || sourceRep.situation,
+      
+      // Link back to source
+      linkedFrom: {
+        repId: sourceRepId,
+        repType: sourceRep.repType,
+        createdAt: serverTimestamp()
+      },
+      requiresPrerequisite: true, // This rep requires the source rep as prerequisite
+      
+      // Timeline
+      cohortId: sourceRep.cohortId,
+      weekId: sourceRep.weekId,
+      deadline,
+      
+      // Notes
+      notes: options.notes || `Auto-created follow-up rep from "${sourceRep.repType}"`,
+      
+      // Metadata
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    
+    // Add to collection
+    const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+    const newRepRef = await addDoc(repsRef, newRep);
+    
+    // Update source rep to track the linked rep
+    await updateDoc(sourceRepRef, {
+      linkedRepId: newRepRef.id,
+      linkedRepType: linkedRepTypeId,
+      updatedAt: serverTimestamp()
+    });
+    
+    console.log(`[conditioningService] Created linked rep ${newRepRef.id} (${linkedRepTypeId}) from source ${sourceRepId}`);
+    
+    return newRepRef.id;
+  },
+  
+  /**
+   * Check if a rep type should create a linked rep on completion
+   * Uses admin-configured linked reps data from Firestore
+   * 
+   * @param {Object} db - Firestore instance 
+   * @param {string} repTypeId - The rep type being completed
+   * @returns {Promise<string|null>} - The linked rep type ID to create, or null
+   */
+  getLinkedRepTypeForCompletion: async (db, repTypeId) => {
+    try {
+      const linkedRepRef = doc(db, 'conditioning_linked_reps', repTypeId);
+      const linkedRepSnap = await getDoc(linkedRepRef);
+      
+      if (!linkedRepSnap.exists()) return null;
+      
+      const config = linkedRepSnap.data();
+      return config.createsLinkedRepId || null;
+    } catch (error) {
+      console.error('[conditioningService] Error checking linked rep config:', error);
+      return null;
+    }
+  },
+  
+  /**
+   * Check if a rep type requires a prerequisite rep to be completed first
+   * 
+   * @param {Object} db - Firestore instance
+   * @param {string} repTypeId - The rep type to check
+   * @returns {Promise<Object|null>} - Prerequisite config or null
+   */
+  checkPrerequisiteRequirement: async (db, repTypeId) => {
+    try {
+      const linkedRepRef = doc(db, 'conditioning_linked_reps', repTypeId);
+      const linkedRepSnap = await getDoc(linkedRepRef);
+      
+      if (!linkedRepSnap.exists()) return null;
+      
+      const config = linkedRepSnap.data();
+      if (!config.requiresPrerequisite) return null;
+      
+      return {
+        required: true,
+        prerequisiteRepType: config.prerequisiteRepType,
+        message: config.prerequisiteMessage || 'This rep requires a prior action to be completed first.'
+      };
+    } catch (error) {
+      console.error('[conditioningService] Error checking prerequisite:', error);
+      return null;
+    }
+  },
+
+  /**
    * Get reps that need follow-up (debriefed but not loop_closed, past reminder date)
    */
   getRepsNeedingFollowUp: async (db, userId, cohortId = null) => {
@@ -1514,69 +1754,57 @@ export const conditioningService = {
   
   /**
    * Basic rule-based quality assessment (fallback when AI is unavailable)
-   * Returns dimension scores and overall assessment
+   * V2: Returns 3 dimension scores (specific_language, observed_response, reflection)
    */
   assessQualityBasic: (evidence, _rep) => {
+    // Support both V1 and V2 evidence formats
     const responses = evidence.responses || {};
     const dimensions = {};
     let passedCount = 0;
-    const totalDimensions = 4;
+    const totalDimensions = 3;
     
-    // Check for specific language
-    const whatSaid = responses.what_said || responses.what_happened || '';
-    const hasSpecificLanguage = whatSaid.length >= 20 && /["']/.test(whatSaid);
+    // V2 fields (primary) with V1 fallbacks
+    const whatSaid = evidence.whatYouSaid || responses.what_said || responses.what_happened || '';
+    const theirResponse = evidence.howTheyResponded || responses.their_response || '';
+    const whatWentWell = evidence.reflection?.whatWentWell || '';
+    const whatDifferent = evidence.reflection?.whatDifferent || responses.next_time || responses.learning || '';
+    
+    // Dimension 1: SPECIFIC_LANGUAGE - Did they describe what they said/did?
+    const hasSpecificLanguage = whatSaid.length >= 20;
     dimensions[QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE] = {
       passed: hasSpecificLanguage,
       feedback: hasSpecificLanguage 
-        ? 'You captured specific language. What made you choose those words?'
-        : 'Can you remember the exact words you used? Close your eyes and replay the moment.',
-      coachingQuestion: hasSpecificLanguage ? null : 'If you were watching a video of this conversation, what exact words would you hear yourself saying?'
+        ? 'You captured what you said/did. Nice work being specific.'
+        : 'Can you remember what you actually said or did? Replay the moment.',
+      coachingQuestion: hasSpecificLanguage ? null : 'If you were watching a video of this moment, what would you see yourself doing or hear yourself saying?'
     };
     if (dimensions[QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE].passed) passedCount++;
     
-    // Check for clear request
-    const commitment = responses.commitment || responses.outcome || '';
-    const hasRequest = /ask|request|commit|agree|will you|can you|would you/i.test(whatSaid);
-    const clearRequestPassed = hasRequest || whatSaid.length >= 50;
-    dimensions[QUALITY_DIMENSIONS.CLEAR_REQUEST] = {
-      passed: clearRequestPassed,
-      feedback: clearRequestPassed 
-        ? 'Your request came through. How do you think it landed?'
-        : 'What was your actual ask? What did you need from them?',
-      coachingQuestion: clearRequestPassed ? null : 'If someone asked "what did you actually request?", what would you tell them?'
+    // Dimension 2: OBSERVED_RESPONSE - Did they describe how the person responded?
+    const hasResponse = theirResponse.length >= 5;
+    dimensions[QUALITY_DIMENSIONS.OBSERVED_RESPONSE] = {
+      passed: hasResponse,
+      feedback: hasResponse 
+        ? 'You noted how they responded. What did that tell you?'
+        : 'How did they react? What did you notice?',
+      coachingQuestion: hasResponse ? null : 'What did you observe when you finished? Their expression, their words, their body language?'
     };
-    if (dimensions[QUALITY_DIMENSIONS.CLEAR_REQUEST].passed) passedCount++;
+    if (dimensions[QUALITY_DIMENSIONS.OBSERVED_RESPONSE].passed) passedCount++;
     
-    // Check for named commitment
-    const hasCommitment = commitment.length >= 10 && 
-      !/no commitment|none|n\/a|nothing/i.test(commitment);
-    const explicitlyNoCommitment = /no commitment|chose not to|decided against/i.test(commitment);
-    const commitmentPassed = hasCommitment || explicitlyNoCommitment;
-    dimensions[QUALITY_DIMENSIONS.NAMED_COMMITMENT] = {
-      passed: commitmentPassed,
-      feedback: hasCommitment 
-        ? 'You named a commitment. How confident are you they\'ll follow through?'
-        : explicitlyNoCommitment
-        ? 'You made a conscious choice about commitment. What drove that decision?'
-        : 'Did you get a commitment? If not, what held you back from asking?',
-      coachingQuestion: commitmentPassed ? null : 'What specific commitment would you want from them? What would make it real?'
-    };
-    if (dimensions[QUALITY_DIMENSIONS.NAMED_COMMITMENT].passed) passedCount++;
-    
-    // Check for reflection
-    const nextTime = responses.next_time || responses.learning || '';
-    const reflectionPassed = nextTime.length >= 15;
+    // Dimension 3: REFLECTION - Did they reflect on what went well & what to do differently?
+    const combinedReflection = [whatWentWell, whatDifferent].filter(Boolean).join(' ');
+    const reflectionPassed = combinedReflection.length >= 15;
     dimensions[QUALITY_DIMENSIONS.REFLECTION] = {
       passed: reflectionPassed,
       feedback: reflectionPassed
-        ? 'Good reflection. How will you remember this lesson next time?'
-        : 'What surprised you? What would you do differently?',
-      coachingQuestion: reflectionPassed ? null : 'If you could replay this moment, what would you change and why?'
+        ? 'Good reflection. How will you apply this next time?'
+        : 'What went well? What would you do differently?',
+      coachingQuestion: reflectionPassed ? null : 'If you could replay this moment, what would you keep and what would you change?'
     };
     if (dimensions[QUALITY_DIMENSIONS.REFLECTION].passed) passedCount++;
     
-    // Overall assessment
-    const meetsStandard = passedCount >= 3; // Pass 3 of 4 dimensions
+    // Overall assessment - pass 2 of 3 dimensions
+    const meetsStandard = passedCount >= 2;
     
     return {
       dimensions,
@@ -1601,11 +1829,27 @@ export const conditioningService = {
     try {
       const assessRepQuality = httpsCallable(functions, 'assessRepQuality');
       
+      // Map V2 evidence format to cloud function expected format
+      // V2 evidence has: whatYouSaid, howTheyResponded, outcome, reflection.whatWentWell/whatDifferent
+      const structured = {
+        what_said: evidence.whatYouSaid || evidence.responses?.what_said || '',
+        their_response: evidence.howTheyResponded || evidence.responses?.their_response || '',
+        response_type: evidence.responseType || evidence.outcome || '',
+        outcome: evidence.outcome || '',
+        // Reflection is now in the separate reflection object
+        what_went_well: evidence.reflection?.whatWentWell || '',
+        what_different: evidence.reflection?.whatDifferent || '',
+        reflection: [
+          evidence.reflection?.whatWentWell || '',
+          evidence.reflection?.whatDifferent || ''
+        ].filter(Boolean).join(' | ')
+      };
+      
       const result = await assessRepQuality({
         repType: rep.repType,
         person: rep.person,
         responses: evidence.responses || {},
-        structured: evidence.structured || {}  // Include structured evidence data
+        structured  // Include properly mapped V2 evidence
       });
       
       return result.data;
@@ -1708,6 +1952,9 @@ export const conditioningService = {
     const prompts = {
       [QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE]: 
         'Think back to that moment. If you were watching a video replay, what exact words would you hear yourself saying?',
+      [QUALITY_DIMENSIONS.OBSERVED_RESPONSE]:
+        'How did they react when you finished? What did you notice about their body language, tone, or words?',
+      // Legacy V1 dimensions (for backward compatibility)
       [QUALITY_DIMENSIONS.CLEAR_REQUEST]: 
         'What do you actually need from this person? How might you say that in a way that makes the ask crystal clear?',
       [QUALITY_DIMENSIONS.NAMED_COMMITMENT]: 
@@ -1744,6 +1991,15 @@ export const conditioningService = {
           return { passed: false, feedback: 'Good detail. Can you put the exact phrase in quotes so it\'s clear what you said?' };
         }
         return { passed: false, feedback: 'Close your eyes and replay the moment. What words came out of your mouth?' };
+      
+      case QUALITY_DIMENSIONS.OBSERVED_RESPONSE:
+        if (text.length < 5) {
+          return { passed: false, feedback: 'How did they react? What did you notice?' };
+        }
+        if (text.length >= 15) {
+          return { passed: true, feedback: 'Good observation. What did their response tell you about how it landed?' };
+        }
+        return { passed: false, feedback: 'Can you say more about how they responded? Body language, tone, words?' };
         
       case QUALITY_DIMENSIONS.CLEAR_REQUEST:
         if (text.length < 10) {

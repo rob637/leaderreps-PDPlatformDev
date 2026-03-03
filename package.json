@@ -1,7 +1,7 @@
 {
   "name": "leader-reps-pdp",
   "private": true,
-  "version": "1.5.55",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -49,6 +49,8 @@
     "data:export": "node scripts/migrate-app-data.cjs export",
     "data:import": "node scripts/migrate-app-data.cjs import",
     "data:list": "node scripts/migrate-app-data.cjs list",
+    "data:sync-content-from-prod": "node scripts/sync-content-from-prod.cjs",
+    "data:sync-config-to-prod": "node scripts/sync-config-to-prod.cjs",
     "storage:copy": "node scripts/copy-storage-files.cjs",
     "storage:rewrite-urls": "node scripts/rewrite-storage-urls.cjs",
     "cleanup:dev-preview": "node scripts/cleanup-test-users.cjs dev --dry-run",

@@ -1304,17 +1304,20 @@ exports.assessRepQuality = onCall(
       throw new HttpsError('invalid-argument', 'repType and (responses or structured) are required');
     }
     
-    // Support both old "responses" format and new "structured" format
-    // Structured format has: what_said, commitment, reflection, context_moment, their_response, etc.
+    // Support both old "responses" format and new V2 "structured" format
+    // V2 structured format has: what_said, their_response, response_type, outcome, what_went_well, what_different, reflection
     const data = structured || responses || {};
     
+    // V2 fields
     const whatSaid = data.what_said || data.what_happened || '';
-    const commitment = data.commitment || data.outcome || '';
-    const reflection = data.reflection || data.next_time || data.learning || '';
     const theirResponse = Array.isArray(data.their_response) ? data.their_response.join(', ') : (data.their_response || '');
-    const contextMoment = data.context_moment || data.when_happened || '';
+    const responseType = data.response_type || data.outcome || '';
+    const whatWentWell = data.what_went_well || '';
+    const whatDifferent = data.what_different || '';
+    // Combined reflection (V2 has two parts, V1 had one)
+    const reflection = data.reflection || [whatWentWell, whatDifferent].filter(Boolean).join(' | ') || '';
     
-    logger.info("assessRepQuality input", { repType, person, whatSaid: whatSaid.substring(0, 100), commitment: commitment.substring(0, 100), reflection: reflection.substring(0, 100) });
+    logger.info("assessRepQuality input", { repType, person, whatSaid: whatSaid.substring(0, 100), theirResponse: theirResponse.substring(0, 50), reflection: reflection.substring(0, 100) });
     
     // Get the API key from environment variable (functions/.env)
     const apiKey = process.env.GEMINI_API_KEY;
@@ -1324,35 +1327,48 @@ exports.assessRepQuality = onCall(
       throw new HttpsError('internal', 'AI service not configured');
     }
     
-    // Rep type descriptions for context
+    // Rep type descriptions for context (V2 rep types)
     const repTypeDescriptions = {
-      'reinforce_public': 'Reinforcing behavior in public - recognizing someone\'s positive contribution in front of others. NOTE: This rep type is about GIVING praise/recognition, not asking for something.',
-      'public_praise': 'Reinforcing behavior in public - recognizing someone\'s positive contribution in front of others. NOTE: This rep type is about GIVING praise/recognition, not asking for something.',
+      // Build the Team
+      'set_clear_expectations': 'Setting clear expectations - defining what success looks like for someone',
+      'address_behavior': 'Addressing behavior - giving direct feedback on specific actions that need to change',
+      'recognize_contributions': 'Recognizing contributions - acknowledging and appreciating someone\\'s work or effort',
+      'coach_for_development': 'Coaching for development - helping someone grow through questions and guidance',
+      // Lead the Work  
+      'prioritize_and_focus': 'Prioritizing and focusing - making decisions about what matters most',
+      'clarify_decision': 'Clarifying a decision - communicating the what/why of a decision to get alignment',
+      'set_boundaries': 'Setting boundaries - saying no or establishing limits on time/scope/resources',
+      'delegate_with_accountability': 'Delegating with accountability - assigning ownership with clear expectations',
+      // Lead Yourself
+      'make_a_tough_ask': 'Making a tough ask - requesting something that feels uncomfortable or risky',
+      'speak_up_in_the_moment': 'Speaking up in the moment - saying something important when it would be easier to stay silent',
+      // Legacy V1 types (for backward compatibility)
+      'reinforce_public': 'Reinforcing behavior in public - recognizing someone\\'s positive contribution in front of others',
+      'public_praise': 'Reinforcing behavior in public - recognizing someone\\'s positive contribution in front of others',
       'direct_feedback': 'Providing honest, direct feedback to help someone improve',
       'difficult_conversation': 'Having a challenging but necessary conversation with someone',
       'delegation': 'Delegating responsibility with clear expectations and accountability',
       'boundary_setting': 'Setting or maintaining a professional boundary',
       'vision_casting': 'Articulating vision, direction, or inspiring others',
       'coaching': 'Coaching or mentoring someone to develop their skills',
-      'recognition': 'Recognizing or appreciating someone\'s contribution. NOTE: This rep type is about GIVING praise/recognition, not asking for something.',
+      'recognition': 'Recognizing or appreciating someone\\'s contribution',
       'tough_request': 'Making a tough or uncomfortable ask of someone',
       'redirect_private': 'Redirecting behavior privately - giving constructive feedback one-on-one'
     };
     
     const repDescription = repTypeDescriptions[repType] || repType;
     
-    const prompt = `You are evaluating a leadership practice exercise ("rep") for quality and constructiveness.
+    const prompt = `You are evaluating a leadership practice exercise ("Real Rep") for quality and constructiveness.
 
 CONTEXT:
 - Rep Type: ${repDescription}
 - Person involved: ${person || 'Not specified'}
-- Context/When: ${contextMoment || 'Not specified'}
 
 USER'S EVIDENCE:
 1. What they said/did: "${whatSaid}"
-2. Their response: "${theirResponse}"
-3. Commitment/Outcome: "${commitment}"
-4. Reflection: "${reflection}"
+2. How they responded: "${theirResponse}" (${responseType})
+3. What went well: "${whatWentWell}"
+4. What they'd do differently: "${whatDifferent}"
 
 CRITICAL QUALITY REQUIREMENTS - READ FIRST:
 You must evaluate whether the content represents a REAL, PROFESSIONAL LEADERSHIP interaction.
@@ -1366,28 +1382,23 @@ FAIL any dimension if the content is:
 A PASS requires evidence of a GENUINE PROFESSIONAL LEADERSHIP interaction - something that would happen in a workplace, team, or professional context.
 
 EVALUATION CRITERIA:
-Evaluate this leadership rep on 4 dimensions. For each dimension, determine if it PASSES or FAILS:
+Evaluate this leadership rep on 3 dimensions. For each dimension, determine if it PASSES or FAILS:
 
-1. SPECIFIC_LANGUAGE: Did they use specific, MEANINGFUL language showing what they actually said IN A PROFESSIONAL CONTEXT?
-   - PASS: Contains actual words/phrases that form coherent sentences showing real WORKPLACE communication
-   - FAIL: Gibberish, random characters, non-professional content, or empty
+1. SPECIFIC_LANGUAGE: Did they describe specifically what they SAID or DID in this leadership moment?
+   - PASS: Contains actual words/phrases or specific actions showing real WORKPLACE communication
+   - FAIL: Gibberish, random characters, vague ("talked to them"), non-professional content, or empty
 
-2. CLEAR_REQUEST: Did they have a clear PROFESSIONAL purpose or make a WORK-RELATED request?
-   - For reinforce_public/recognition/public_praise: A clear, PROFESSIONAL statement of praise for work/contribution counts as a PASS
-   - For other rep types: A clear work-related ask, request, or expectation being set
-   - FAIL: No clear purpose, gibberish, non-professional content, OR inappropriate content
-   
-3. NAMED_COMMITMENT: Did they obtain or note a MEANINGFUL PROFESSIONAL outcome/commitment?
-   - PASS: Named what the other person agreed to DO AT WORK, their professional response
-   - For recognition reps: Noting the person's genuine response to workplace recognition counts as a PASS
-   - FAIL: Missing, gibberish, non-professional commitments (e.g., "marry me"), or placeholder text
+2. OBSERVED_RESPONSE: Did they describe how the other person responded to their leadership action?
+   - PASS: Describes the other person's reaction, response, or behavior (even if brief)
+   - For recognition/praise reps: Noting genuine acknowledgment or appreciation counts as a PASS
+   - FAIL: Missing, gibberish, or no observable response described
 
-4. REFLECTION: Did they reflect MEANINGFULLY on the LEADERSHIP experience?
-   - PASS: Genuine insight about the leadership interaction, what they learned about leading others
-   - FAIL: Empty, gibberish, unrelated reflections, or generic platitudes without substance
+3. REFLECTION: Did they reflect MEANINGFULLY on what went well AND what they'd do differently?
+   - PASS: Shows genuine insight - ideally addresses both what worked and what could improve
+   - FAIL: Empty, gibberish, or generic platitudes without substance ("it was fine")
 
 SPECIAL RULES FOR REP TYPES:
-- For reinforce_public, public_praise, recognition: These are about GIVING appreciation FOR PROFESSIONAL CONTRIBUTIONS. Don't fail "clear_request" just because there's no ask - the praise itself IS the purpose.
+- For recognition reps (recognize_contributions, reinforce_public, public_praise): The "response" can simply be how the person received the recognition.
 - Be generous in interpretation - if they provided real PROFESSIONAL details, give credit even if format isn't perfect.
 
 CRITICAL QUALITY CHECK - IS_CONSTRUCTIVE:
@@ -1417,9 +1428,9 @@ For each failed dimension, provide a "coachingQuestion" - a reflective question 
 Examples of GOOD coaching questions:
 - "Close your eyes and replay the moment. What exact words came out of your mouth?"
 - "If you were watching a video of this conversation, what would you hear yourself saying?"
-- "What did you actually need from them? How might you express that clearly?"
-- "What commitment would make you confident they'll follow through?"
+- "How did they react in the moment? What did you notice about their body language or tone?"
 - "What surprised you about how this went? What would you do differently?"
+- "What's the biggest thing you learned from how this played out?"
 
 Examples of BAD (prescriptive) responses - DO NOT USE:
 - "Try something like: 'Bill, I wanted to recognize you...'" ← Never give scripts
@@ -1433,22 +1444,17 @@ Respond ONLY with valid JSON in this exact format:
       "passed": boolean,
       "feedback": "brief explanation of what was good or what's missing",
       "quote": "the specific language they used if any, or null",
-      "coachingQuestion": "if FAILED, a reflective question to help them discover what they said"
+      "coachingQuestion": "if FAILED, a reflective question to help them recall what they said"
     },
-    "clear_request": {
+    "observed_response": {
       "passed": boolean,
       "feedback": "brief explanation of what was good or what's missing",
-      "coachingQuestion": "if FAILED, a question to help them clarify their purpose/ask"
-    },
-    "named_commitment": {
-      "passed": boolean,
-      "feedback": "brief explanation of what was good or what's missing",
-      "coachingQuestion": "if FAILED, a question about what commitment they sought"
+      "coachingQuestion": "if FAILED, a question to help them recall how the person responded"
     },
     "reflection": {
       "passed": boolean,
       "feedback": "brief explanation of what was good or what's missing",
-      "coachingQuestion": "if FAILED, a question to prompt deeper reflection"
+      "coachingQuestion": "if FAILED, a question to prompt deeper reflection on what went well or what to change"
     }
   },
   "isConstructive": boolean,
@@ -1479,19 +1485,18 @@ Respond ONLY with valid JSON in this exact format:
         throw new HttpsError('internal', 'AI response was not valid JSON');
       }
       
-      // Calculate passed count
+      // Calculate passed count (V2: 3 dimensions)
       const dimensions = assessment.dimensions || {};
       let passedCount = 0;
-      const totalDimensions = 4;
+      const totalDimensions = 3;
       
       if (dimensions.specific_language?.passed) passedCount++;
-      if (dimensions.clear_request?.passed) passedCount++;
-      if (dimensions.named_commitment?.passed) passedCount++;
+      if (dimensions.observed_response?.passed) passedCount++;
       if (dimensions.reflection?.passed) passedCount++;
       
-      // Overall assessment - must be constructive AND pass 3/4 dimensions
+      // Overall assessment - must be constructive AND pass 2/3 dimensions
       const isConstructive = assessment.isConstructive !== false;
-      const meetsStandard = isConstructive && passedCount >= 3;
+      const meetsStandard = isConstructive && passedCount >= 2;
       
       logger.info("Rep quality assessment completed", { 
         repType, 

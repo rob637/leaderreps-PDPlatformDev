@@ -1,42 +1,31 @@
 const admin = require('firebase-admin');
-const serviceAccount = require('/workspaces/leaderreps-PDPlatformDev/leaderreps-prod-firebase-adminsdk.json');
+const serviceAccount = require('/workspaces/leaderreps-PDPlatformDev/leaderreps-pd-platform-firebase-adminsdk.json');
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-
-const db = admin.firestore();
-
-async function checkProgress() {
-  // Get test user by email
-  const email = 'ryan@leaderreps.com';
-  const usersSnap = await db.collection('users').where('email', '==', email).get();
-  
-  if (usersSnap.empty) {
-    console.log('User not found');
-    process.exit(1);
-  }
-  
-  const userDoc = usersSnap.docs[0];
-  console.log('User ID:', userDoc.id);
-  
-  // Get all action_progress entries
-  const progressSnap = await db.collection('users').doc(userDoc.id).collection('action_progress').get();
-  
-  console.log('\n=== Action Progress Entries ===');
-  progressSnap.docs.forEach(doc => {
-    const data = doc.data();
-    if (data.label && (
-      data.label.toLowerCase().includes('download') ||
-      data.label.toLowerCase().includes('watch') ||
-      data.label.toLowerCase().includes('session')
-    )) {
-      console.log(`\nID: ${doc.id}`);
-      console.log(`Label: ${data.label}`);
-      console.log(`Status: ${data.status}`);
-      console.log(`Completed: ${data.completedAt?.toDate?.() || data.completedAt || 'N/A'}`);
-    }
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
   });
 }
 
-checkProgress().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+const db = admin.firestore();
+const userId = 'CNZfMN20DqQWRrH4z0w7nf24Qmm1';
+
+async function main() {
+  const actionProgress = await db.collection('users').doc(userId)
+    .collection('action_progress').get();
+  
+  console.log('action_progress docs:', actionProgress.size);
+  actionProgress.docs.forEach(doc => {
+    const data = doc.data();
+    console.log(`\n${doc.id}:`);
+    console.log(`  completed: ${data.completed}`);
+    console.log(`  completedAt: ${data.completedAt?.toDate?.() || data.completedAt}`);
+    console.log(`  title: ${data.title || 'N/A'}`);
+    console.log(`  phase: ${data.phase || 'N/A'}`);
+    console.log(`  group: ${data.group || 'N/A'}`);
+  });
+  
+  process.exit(0);
+}
+
+main().catch(e => { console.error(e); process.exit(1); });
