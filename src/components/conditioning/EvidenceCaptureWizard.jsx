@@ -9,25 +9,42 @@ import conditioningService from '../../services/conditioningService.js';
 import { getRepTypeV2 } from '../../services/repTaxonomy.js';
 import { formatDisplayDateTime } from '../../services/dateUtils.js';
 import { saveEvidenceDraft, getEvidenceDraft, deleteEvidenceDraft, hasEvidenceProgress } from '../../services/draftRepService.js';
+import { useDevPlan } from '../../hooks/useDevPlan.js';
+import { doc, updateDoc, getDoc } from 'firebase/firestore'; // Added imports for direct document operations
 import { Button } from '../ui';
 import { 
   ChevronLeft, ChevronRight, Check, User, Calendar, Target,
   MessageSquare, AlertCircle, Camera, FileText, Mic, Image,
-  Link2, Plus, X, CheckCircle2, Award
+  Link2, Plus, X, CheckCircle2, Award, RotateCw, // Added RotateCw icon
+  Square, Trash2, Play, Pause, RotateCcw, Save // Added icons for media capture
 } from 'lucide-react';
 import ConditioningModal from './ConditioningModal';
 import VoiceTextarea from './VoiceTextarea';
 import QualityAssessmentCard from './QualityAssessmentCard';
 import { 
-  REP_OUTCOME_OPTIONS as OUTCOME_OPTIONS,
   RESPONSE_OPTIONS,
   PUSHBACK_RESPONSE_OPTIONS,
   BEHAVIOR_CHANGE_OPTIONS,
   FEEDBACK_REP_TYPES,
   PUSHBACK_LOG_OPTIONS,
   CLOSE_LOOP_LOG_OPTIONS,
-  CLOSE_LOOP_OPTIONS
+  CLOSE_LOOP_OPTIONS,
+  getSCEEvidenceQuestions,
+  getSCESituationBranch,
+  getSCECompleteLoopQuestions,
+  getSCEResponseOptions,
+  // New imports for DRF and Self-Assessment
+  DRF_EVIDENCE_QUESTIONS,
+  DRF_COMPLETE_LOOP,
+  DRF_SELF_ASSESSMENT,
+  DRF_RESPONSE_OPTIONS, // Added
+  getSCESelfAssessment,
+  SCE_SELF_ASSESS_DELEGATING,        // Add if needed directly, or rely on helper
+  SCE_SELF_ASSESS_ASSIGNING_TASK,
+  SCE_SELF_ASSESS_BEHAVIORAL_STANDARDS,
+  SCE_SELF_ASSESS_RESETTING
 } from './constants';
+import { uploadMediaAsset } from '../../services/mediaService.js';
 
 // ============================================
 // SCREEN 1: EVIDENCE OVERVIEW
@@ -96,9 +113,9 @@ const ScreenOverview = ({ rep, onNext }) => {
 
       <Button
         onClick={onNext}
-        className="w-full bg-corporate-teal hover:bg-corporate-teal/90 text-white mt-4"
+        className="w-full mt-4"
       >
-        Continue
+        Next
         <ChevronRight className="w-4 h-4 ml-2" />
       </Button>
     </div>
@@ -127,6 +144,7 @@ const ScreenWhatHappened = ({ value, onChange, onNext, onBack, showValidation })
         placeholder="Describe the observable behavior..."
         rows={4}
         minLength={20}
+        required
         error={showValidation && !isValid ? 'Please provide more detail (at least 20 characters)' : null}
         autoFocus
       />
@@ -150,9 +168,359 @@ const ScreenWhatHappened = ({ value, onChange, onNext, onBack, showValidation })
         <Button
           onClick={onNext}
           disabled={!isValid}
-          className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white"
+          className="flex-1"
         >
-          Continue
+          Next
+          <ChevronRight className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// SCREEN 2-STRUCTURED: STRUCTURED EVIDENCE (SCE & DRF)
+// Situation-specific evidence capture for SCE and DRF rep types
+// ============================================
+const ScreenStructuredEvidence = ({ 
+  rep, 
+  responses, 
+  setResponses, 
+  showOwnershipWarning,
+  setShowOwnershipWarning,
+  onNext, 
+  onBack, 
+  showValidation
+}) => {
+  const isDRF = rep?.repType === 'deliver_reinforcing_feedback';
+  
+  // Get situation from rep data
+  const situationText = typeof rep?.situation === 'object' 
+    ? (rep.situation.selected || '') 
+    : (rep?.situation || '');
+  
+  // Get questions and context based on rep type
+  const { questions, header } = useMemo(() => {
+    if (isDRF) {
+      return { 
+        questions: DRF_EVIDENCE_QUESTIONS,
+        header: 'Evidence: Reinforcing Feedback'
+      };
+    }
+    
+    // SCE Logic
+    const qs = getSCEEvidenceQuestions(situationText);
+    const branch = getSCESituationBranch(situationText);
+    
+    let hdr = 'Evidence Capture';
+    switch (branch) {
+      case 'assigning_task': hdr = 'Evidence: Assigning a Task'; break;
+      case 'delegating': hdr = 'Evidence: Delegating Responsibility'; break;
+      case 'behavioral_standards': hdr = 'Evidence: Setting Standards'; break;
+      case 'resetting': hdr = 'Evidence: Resetting Expectations'; break;
+    }
+    
+    return { questions: qs, header: hdr };
+  }, [rep, isDRF, situationText]);
+  
+  // Validation - check all required fields are filled
+  const isValid = useMemo(() => {
+    return questions
+      .filter(q => q.required)
+      .every(q => {
+        const val = responses[q.id];
+        if (q.type === 'checkbox_group') {
+           // If required: true, check length > 0.
+           return val && val.length > 0;
+        }
+        if (q.type === 'yes_no_comment' || q.type === 'options' || q.type === 'ownership_check') {
+          return val && val.selected;
+        }
+        return val && val.trim && val.trim().length >= 10;
+      });
+  }, [questions, responses]);
+
+  // Handle text field change
+  const handleTextChange = (id, value) => {
+    setResponses(prev => ({ ...prev, [id]: value }));
+  };
+
+  // Handle option selection (yes/no, single choice)
+  const handleOptionSelect = (id, selected, question) => {
+    setResponses(prev => ({ ...prev, [id]: { selected, comment: prev[id]?.comment || '' } }));
+    
+    // Check for ownership warning on resetting expectations
+    if (id === 'ownership_same' && selected === 'No - Ownership changed' && question.warningOnNo) {
+      setShowOwnershipWarning(true);
+    }
+  };
+  
+  // Handle multi-select checkbox group
+  const handleMultiSelect = (id, optionId) => {
+    setResponses(prev => {
+      const current = prev[id] || [];
+      const exists = current.includes(optionId);
+      const updated = exists 
+        ? current.filter(x => x !== optionId) 
+        : [...current, optionId];
+      return { ...prev, [id]: updated };
+    });
+  };
+
+  // Handle comment for option-based questions
+  const handleCommentChange = (id, comment) => {
+    setResponses(prev => ({ ...prev, [id]: { ...prev[id], comment } }));
+  };
+
+  // Render individual question based on type
+  const renderQuestion = (q, idx) => {
+    const value = responses[q.id];
+    const hasError = showValidation && q.required && (!value || (typeof value === 'string' && value.trim().length < 10));
+
+    // Text-based question
+    if (!q.type || q.type === 'text') {
+      return (
+        <div key={q.id} className="space-y-1">
+          <VoiceTextarea
+            id={`struct-${q.id}`}
+            label={q.prompt}
+            value={value || ''}
+            onChange={(val) => handleTextChange(q.id, val)}
+            placeholder={q.placeholder || ''}
+            rows={3}
+            minLength={q.required ? 10 : null}
+            required={q.required}
+            error={hasError ? 'This field is required (min 10 chars)' : null}
+            autoFocus={idx === 0}
+          />
+          {q.hint && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 ml-1">{q.hint}</p>
+          )}
+        </div>
+      );
+    }
+    
+    // Checkbox Group (Multi-select)
+    if (q.type === 'checkbox_group') {
+      const selected = value || [];
+      return (
+        <div key={q.id} className="space-y-2">
+          <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+            {q.prompt}
+          </label>
+          <div className="space-y-2">
+            {q.options.map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => handleMultiSelect(q.id, opt.id)}
+                className={`w-full p-3 rounded-lg border-2 text-left transition-all flex items-center justify-between ${
+                  selected.includes(opt.id)
+                    ? 'border-corporate-teal bg-corporate-teal/10'
+                    : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
+                }`}
+              >
+                <span className={selected.includes(opt.id) ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                  {opt.label}
+                </span>
+                {selected.includes(opt.id) && <Check className="w-4 h-4 text-corporate-teal" />}
+              </button>
+            ))}
+          </div>
+          {hasError && (
+            <p className="text-xs text-red-500">Please select at least one option</p>
+          )}
+        </div>
+      );
+    }
+
+    // Yes/No with optional comment
+    if (q.type === 'yes_no_comment') {
+      return (
+        <div key={q.id} className="space-y-2">
+          <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+            {q.prompt}
+          </label>
+          <div className="flex gap-2">
+            {['Yes', 'No'].map(opt => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => handleOptionSelect(q.id, opt, q)}
+                className={`flex-1 p-3 rounded-lg border-2 transition-all ${
+                  value?.selected === opt
+                    ? 'border-corporate-teal bg-corporate-teal/10'
+                    : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
+                }`}
+              >
+                <span className={value?.selected === opt ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                  {opt}
+                </span>
+              </button>
+            ))}
+          </div>
+          {value?.selected && (
+            <VoiceTextarea
+              id={`struct-${q.id}-comment`}
+              label="What did they say?"
+              value={value?.comment || ''}
+              onChange={(val) => handleCommentChange(q.id, val)}
+              placeholder="Describe as close to verbatim as possible..."
+              rows={2}
+            />
+          )}
+          {hasError && (
+            <p className="text-xs text-red-500">Please select an option</p>
+          )}
+        </div>
+      );
+    }
+
+    // Single-select options
+    if (q.type === 'options') {
+      return (
+        <div key={q.id} className="space-y-2">
+          <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+            {q.prompt}
+          </label>
+          <div className="space-y-2">
+            {q.options.map(opt => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => handleOptionSelect(q.id, opt, q)}
+                className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+                  value?.selected === opt
+                    ? 'border-corporate-teal bg-corporate-teal/10'
+                    : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
+                }`}
+              >
+                <span className={value?.selected === opt ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                  {opt}
+                </span>
+              </button>
+            ))}
+          </div>
+          {hasError && (
+            <p className="text-xs text-red-500">Please select an option</p>
+          )}
+        </div>
+      );
+    }
+
+    // Ownership check (special handling for resetting expectations)
+    if (q.type === 'ownership_check') {
+      return (
+        <div key={q.id} className="space-y-2">
+          <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+            {q.prompt}
+          </label>
+          <div className="space-y-2">
+            {q.options.map(opt => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => handleOptionSelect(q.id, opt, q)}
+                className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+                  value?.selected === opt
+                    ? 'border-corporate-teal bg-corporate-teal/10'
+                    : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
+                }`}
+              >
+                <span className={value?.selected === opt ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                  {opt}
+                </span>
+              </button>
+            ))}
+          </div>
+          {hasError && (
+            <p className="text-xs text-red-500">Please select an option</p>
+          )}
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  if (questions.length === 0) {
+    // Fallback to generic if no situation-specific questions
+    return null;
+  }
+
+  return (
+    <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+      <div className="text-center mb-4">
+        <h3 className="text-lg font-semibold text-corporate-navy dark:text-white">
+          {header}
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Capture the specifics of what happened
+        </p>
+      </div>
+
+      <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4">
+        <Camera className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+        <p className="text-sm text-blue-700 dark:text-blue-300">
+          Use specific wording. Describe as close to verbatim as possible.
+        </p>
+      </div>
+
+      <div className="space-y-5">
+        {questions.map((q, idx) => renderQuestion(q, idx))}
+      </div>
+
+      {/* Ownership Warning Modal */}
+      {showOwnershipWarning && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-sm w-full shadow-xl">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-corporate-navy dark:text-white mb-2">
+                  Ownership Changed
+                </h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  If ownership changed, this RR should be an "Assigning a task" or "Delegating ongoing ownership" RR. Consider going back and selecting the proper RR.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <Button
+                onClick={onBack}
+                variant="outline"
+                className="flex-1"
+              >
+                Go Back
+              </Button>
+              <Button
+                onClick={() => setShowOwnershipWarning(false)}
+                className="flex-1"
+              >
+                Continue Anyway
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-3 mt-4 sticky bottom-0 bg-white dark:bg-slate-900 pt-2">
+        <Button
+          onClick={onBack}
+          variant="outline"
+          className="flex-1"
+        >
+          <ChevronLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+        <Button
+          onClick={onNext}
+          disabled={!isValid}
+          className="flex-1"
+        >
+          Next
           <ChevronRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
@@ -167,6 +535,8 @@ const ScreenResponseDynamics = ({
   rep,
   response,
   setResponse,
+  otherResponseText,
+  setOtherResponseText,
   pushbackLogOption,
   setPushbackLogOption,
   pushbackResponses,
@@ -182,30 +552,43 @@ const ScreenResponseDynamics = ({
   behaviorChangeNote,
   setBehaviorChangeNote,
   onNext,
-  onBack
-  // showValidation - reserved for future use
+  onBack,
+  isLevel3OrHigher = false // Default to false
 }) => {
   const isFeedbackRep = FEEDBACK_REP_TYPES.includes(rep?.repType);
+  const isReinforcingFeedback = rep?.repType === 'deliver_reinforcing_feedback';
   
-  // Determine if pushback prompts should show
-  const showPushbackPrompt = isFeedbackRep && ['disengaged', 'some_resistance', 'strong_pushback'].includes(response);
+  // Use DRF-specific response options for reinforcing feedback
+  let responseOptions = RESPONSE_OPTIONS;
+  if (isReinforcingFeedback) {
+    responseOptions = DRF_RESPONSE_OPTIONS;
+  } else if (rep?.repType === 'set_clear_expectations') {
+    responseOptions = getSCEResponseOptions(typeof rep?.situation === 'object' ? (rep?.situation?.selected || '') : (rep?.situation || ''));
+  }
+  const responseLabel = isReinforcingFeedback
+    ? 'How did the other person react/respond?'
+    : 'How did the other person respond?';
+  
+  // Determine if pushback prompts should show (not applicable for reinforcing feedback)
+  const showPushbackPrompt = isFeedbackRep && !isReinforcingFeedback && ['disengaged', 'some_resistance', 'strong_pushback'].includes(response);
   const showPushbackEvidence = pushbackLogOption === 'link';
   
   // Determine if close loop prompts should show (after pushback logic is resolved)
   const pushbackLogComplete = !showPushbackPrompt || pushbackLogOption;
-  const showCloseLoopPrompt = isFeedbackRep && pushbackLogComplete;
+  const showCloseLoopPrompt = isFeedbackRep && pushbackLogComplete && isLevel3OrHigher;
   const showCloseLoopEvidence = closeLoopLogOption === 'link';
   
   // Validation
   const isValid = useMemo(() => {
     if (!response) return false;
+    if (response === 'other' && (isReinforcingFeedback || rep?.repType === 'set_clear_expectations') && (!otherResponseText || otherResponseText.trim().length < 5)) return false;
     if (showPushbackPrompt && !pushbackLogOption) return false;
     if (showPushbackEvidence && pushbackResponses.length === 0) return false;
     if (showCloseLoopPrompt && !closeLoopOption) return false;
     if (closeLoopOption === 'yes' && !closeLoopLogOption) return false;
     if (showCloseLoopEvidence && !behaviorChange) return false;
     return true;
-  }, [response, showPushbackPrompt, pushbackLogOption, showPushbackEvidence, pushbackResponses, showCloseLoopPrompt, closeLoopOption, closeLoopLogOption, showCloseLoopEvidence, behaviorChange]);
+  }, [response, isReinforcingFeedback, otherResponseText, showPushbackPrompt, pushbackLogOption, showPushbackEvidence, pushbackResponses, showCloseLoopPrompt, closeLoopOption, closeLoopLogOption, showCloseLoopEvidence, behaviorChange]);
 
   // Toggle pushback response checkbox
   const togglePushbackResponse = (id) => {
@@ -214,8 +597,8 @@ const ScreenResponseDynamics = ({
     );
   };
 
-  // Simple flow for non-feedback reps
-  if (!isFeedbackRep) {
+  // Simple flow for non-feedback reps (and reinforcing feedback)
+  if (!isFeedbackRep || isReinforcingFeedback) {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center mb-4">
@@ -226,10 +609,10 @@ const ScreenResponseDynamics = ({
 
         <div className="space-y-2">
           <label className="block text-sm font-medium text-corporate-navy dark:text-white">
-            How did the other person respond?
+            {responseLabel}
           </label>
           <div className="space-y-2">
-            {RESPONSE_OPTIONS.map((option) => (
+            {responseOptions.map((option) => (
               <button
                 key={option.id}
                 type="button"
@@ -246,6 +629,24 @@ const ScreenResponseDynamics = ({
               </button>
             ))}
           </div>
+
+          {/* Other text field for DRF */}
+          {(isReinforcingFeedback || rep?.repType === 'set_clear_expectations') && response === 'other' && (
+            <div className="mt-3 animate-in slide-in-from-top-2">
+              <VoiceTextarea
+                id="drf-other-response"
+                label="Describe their response"
+                value={otherResponseText}
+                onChange={setOtherResponseText}
+                placeholder="What did they say or do?"
+                rows={3}
+                minLength={5}
+                required
+                error={otherResponseText.trim().length > 0 && otherResponseText.trim().length < 5 ? 'Please provide more detail (min 5 chars)' : null}
+                autoFocus
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 mt-4">
@@ -255,10 +656,10 @@ const ScreenResponseDynamics = ({
           </Button>
           <Button
             onClick={onNext}
-            disabled={!response}
-            className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white"
+            disabled={!isValid}
+            className="flex-1"
           >
-            Continue
+            Next
             <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
@@ -278,10 +679,10 @@ const ScreenResponseDynamics = ({
       {/* Conditional A: Pushback Detection */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-corporate-navy dark:text-white">
-          How did the other person respond?
+          {responseLabel}
         </label>
         <div className="space-y-2">
-          {RESPONSE_OPTIONS.map((option) => (
+          {responseOptions.map((option) => (
             <button
               key={option.id}
               type="button"
@@ -472,9 +873,9 @@ const ScreenResponseDynamics = ({
         <Button
           onClick={onNext}
           disabled={!isValid}
-          className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white"
+          className="flex-1"
         >
-          Continue
+          Next
           <ChevronRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
@@ -486,16 +887,189 @@ const ScreenResponseDynamics = ({
 // SCREEN 4: ARTIFACTS & NOTES
 // ============================================
 const ScreenArtifacts = ({ 
+  db,
+  storage,
+  userId,
+  repId,
   notes, 
   setNotes, 
-  // artifacts and setArtifacts reserved for future file upload feature
-  // eslint-disable-next-line no-unused-vars
-  artifacts: _artifacts,
-  // eslint-disable-next-line no-unused-vars
-  setArtifacts: _setArtifacts,
+  artifacts = [], 
+  setArtifacts,
   onNext, 
   onBack
 }) => {
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Capture Modes: 'voice', 'transcript', null
+  const [captureMode, setCaptureMode] = useState(null);
+
+  // Voice Recording State
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const timerRef = useRef(null);
+  const audioPlayerRef = useRef(null);
+
+  // Transcript State
+  const [transcriptText, setTranscriptText] = useState('');
+
+  // Cleanup audio URL on unmount
+  useEffect(() => {
+    return () => {
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [audioUrl]);
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadFile(file);
+  };
+
+  const uploadFile = async (file) => {
+    try {
+      setIsUploading(true);
+      const folder = `users/${userId}/reps/${repId}/artifacts`;
+      
+      const asset = await uploadMediaAsset(
+        { storage, db }, 
+        file, 
+        folder,
+        {
+          uploadedBy: userId,
+          repId: repId,
+          isUserArtifact: true
+        }
+      );
+      
+      setArtifacts(prev => [...prev, {
+        id: asset.id,
+        name: asset.title, 
+        url: asset.url,
+        type: asset.type,
+        mimeType: asset.mimeType,
+        size: asset.size,
+        createdAt: new Date().toISOString()
+      }]);
+      
+      // Reset capture mode after successful upload
+      resetCaptureMode();
+
+    } catch (err) {
+      console.error('Error uploading artifact:', err);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removeArtifact = (id) => {
+    setArtifacts(prev => prev.filter(a => a.id !== id));
+  };
+  
+  const triggerUpload = (acceptTypes) => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = acceptTypes;
+      fileInputRef.current.click();
+    }
+  };
+
+  // Voice Recording Logic
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        setAudioBlob(blob);
+        setAudioUrl(url);
+        
+        // Stop all tracks to release mic
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+
+    } catch (err) {
+      console.error('Error accessing microphone:', err);
+      alert('Could not access microphone. Please check permissions.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const saveRecording = async () => {
+    if (!audioBlob) return;
+    const filename = `voice-memo-${new Date().getTime()}.webm`;
+    const file = new File([audioBlob], filename, { type: 'audio/webm' });
+    await uploadFile(file);
+  };
+
+  const togglePlayback = () => {
+    if (audioPlayerRef.current) {
+      if (isPlayingPreview) {
+        audioPlayerRef.current.pause();
+      } else {
+        audioPlayerRef.current.play();
+      }
+      setIsPlayingPreview(!isPlayingPreview);
+    }
+  };
+
+  // Transcript Logic
+  const saveTranscript = async () => {
+    if (!transcriptText.trim()) return;
+    const filename = `transcript-${new Date().getTime()}.txt`;
+    const blob = new Blob([transcriptText], { type: 'text/plain' });
+    const file = new File([blob], filename, { type: 'text/plain' });
+    await uploadFile(file);
+  };
+
+  const resetCaptureMode = () => {
+    setCaptureMode(null);
+    setAudioBlob(null);
+    setAudioUrl(null);
+    setTranscriptText('');
+    setIsRecording(false);
+    setRecordingTime(0);
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+
   return (
     <div className="p-4 space-y-4">
       <div className="text-center mb-4">
@@ -516,51 +1090,219 @@ const ScreenArtifacts = ({
         rows={3}
       />
 
-      {/* Artifact upload placeholder - could add file upload later */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-corporate-navy dark:text-white">
-          Attachments
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            disabled
-            className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 text-center text-gray-400 cursor-not-allowed"
-          >
-            <Image className="w-6 h-6 mx-auto mb-1" />
-            <span className="text-xs">Screenshot</span>
-          </button>
-          <button
-            type="button"
-            disabled
-            className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 text-center text-gray-400 cursor-not-allowed"
-          >
-            <FileText className="w-6 h-6 mx-auto mb-1" />
-            <span className="text-xs">Document</span>
-          </button>
-          <button
-            type="button"
-            disabled
-            className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 text-center text-gray-400 cursor-not-allowed"
-          >
-            <Mic className="w-6 h-6 mx-auto mb-1" />
-            <span className="text-xs">Voice memo</span>
-          </button>
-          <button
-            type="button"
-            disabled
-            className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 text-center text-gray-400 cursor-not-allowed"
-          >
-            <MessageSquare className="w-6 h-6 mx-auto mb-1" />
-            <span className="text-xs">Transcript</span>
-          </button>
+      {/* Artifact List */}
+      {artifacts.length > 0 && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+            Attached Files
+          </label>
+          <div className="space-y-2">
+            {artifacts.map((file) => (
+              <div key={file.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="p-2 bg-white dark:bg-slate-700 rounded-lg flex-shrink-0">
+                    {file.type === 'IMAGE' ? <Image className="w-4 h-4 text-blue-500" /> : 
+                     (file.mimeType?.includes('audio') || file.type === 'AUDIO') ? <Mic className="w-4 h-4 text-pink-500" /> :
+                     <FileText className="w-4 h-4 text-gray-500" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-corporate-navy dark:text-white truncate">
+                      {file.name}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => removeArtifact(file.id)}
+                  className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          Attachment support coming soon
-        </p>
-      </div>
+      )}
 
-      <p className="text-xs text-gray-500 dark:text-gray-400 text-center italic">
+      {/* Hidden File Input */}
+      <input 
+        type="file" 
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+
+      {/* Active Capture Mode UI */}
+      {captureMode === 'voice' && (
+        <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-corporate-teal/20 animate-in fade-in slide-in-from-bottom-4">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-medium text-corporate-navy dark:text-white flex items-center gap-2">
+              <Mic className="w-4 h-4 text-corporate-teal" />
+              Voice Memo
+            </h4>
+            <button onClick={resetCaptureMode} className="text-gray-400 hover:text-gray-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="flex flex-col items-center justify-center py-4 space-y-4">
+            <div className="text-3xl font-mono font-bold text-corporate-navy dark:text-white">
+              {formatTime(recordingTime)}
+            </div>
+            
+            {/* Visualizer placeholder */}
+            {isRecording && (
+              <div className="flex items-end gap-1 h-8">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="w-1 bg-corporate-teal animate-pulse" style={{ height: `${Math.random() * 100}%`, animationDelay: `${i * 0.1}s` }} />
+                ))}
+              </div>
+            )}
+
+            {!audioBlob ? (
+              <div className="flex gap-4">
+                {!isRecording ? (
+                  <Button onClick={startRecording} className="bg-red-500 hover:bg-red-600 text-white rounded-full w-12 h-12 p-0 flex items-center justify-center">
+                    <Mic className="w-6 h-6" />
+                  </Button>
+                ) : (
+                  <Button onClick={stopRecording} className="bg-corporate-navy hover:bg-corporate-navy/90 text-white rounded-full w-12 h-12 p-0 flex items-center justify-center">
+                    <Square className="w-5 h-5 fill-current" />
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="w-full space-y-4">
+                <audio 
+                  ref={audioPlayerRef} 
+                  src={audioUrl} 
+                  onEnded={() => setIsPlayingPreview(false)}
+                  className="hidden" 
+                />
+                
+                <div className="flex items-center justify-between bg-white dark:bg-slate-700 p-3 rounded-lg">
+                  <button onClick={togglePlayback} className="p-2 rounded-full bg-corporate-teal/10 text-corporate-teal hover:bg-corporate-teal/20">
+                    {isPlayingPreview ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                  </button>
+                  <div className="flex-1 mx-3 h-1 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
+                    <div className="h-full bg-corporate-teal w-full" />
+                  </div>
+                  <span className="text-xs text-gray-500">{formatTime(recordingTime)}</span>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button onClick={() => setAudioBlob(null)} variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Discard
+                  </Button>
+                  <Button onClick={saveRecording} className="flex-1 bg-corporate-teal text-white">
+                    <Save className="w-4 h-4 mr-2" />
+                    Save
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {captureMode === 'transcript' && (
+        <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-corporate-teal/20 animate-in fade-in slide-in-from-bottom-4">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-medium text-corporate-navy dark:text-white flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-corporate-teal" />
+              Transcript
+            </h4>
+            <button onClick={resetCaptureMode} className="text-gray-400 hover:text-gray-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <textarea
+              value={transcriptText}
+              onChange={(e) => setTranscriptText(e.target.value)}
+              placeholder="Paste or type conversation transcript here..."
+              className="w-full h-40 p-3 text-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-corporate-teal focus:border-transparent resize-none"
+              autoFocus
+            />
+            
+            <div className="flex gap-2">
+              <Button onClick={resetCaptureMode} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+              <Button 
+                onClick={saveTranscript} 
+                className="flex-1 bg-corporate-teal text-white disabled:opacity-50"
+                disabled={!transcriptText.trim()}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save Transcript
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mode Selection Buttons (hidden when active mode) */}
+      {!captureMode && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+            Add Attachment
+          </label>
+          
+          {isUploading ? (
+            <div className="flex items-center justify-center p-8 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-6 h-6 border-2 border-corporate-teal border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-gray-500">Uploading...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => triggerUpload('image/*')}
+                className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-all text-center text-gray-500 hover:text-corporate-teal"
+              >
+                <Image className="w-6 h-6 mx-auto mb-1" />
+                <span className="text-xs font-medium">Screenshot</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setCaptureMode('voice')} // Open Voice Recorder
+                className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-all text-center text-gray-500 hover:text-corporate-teal"
+              >
+                <Mic className="w-6 h-6 mx-auto mb-1" />
+                <span className="text-xs font-medium">Voice memo</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setCaptureMode('transcript')} // Open Transcript Editor
+                className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-all text-center text-gray-500 hover:text-corporate-teal"
+              >
+                <MessageSquare className="w-6 h-6 mx-auto mb-1" />
+                <span className="text-xs font-medium">Transcript</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => triggerUpload('.pdf,.doc,.docx,.txt')}
+                className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-all text-center text-gray-500 hover:text-corporate-teal"
+              >
+                <FileText className="w-6 h-6 mx-auto mb-1" />
+                <span className="text-xs font-medium">Document</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <p className="text-xs text-gray-500 dark:text-gray-400 text-center italic mt-2">
         Only add what helps capture what happened. More is not always better.
       </p>
 
@@ -571,149 +1313,350 @@ const ScreenArtifacts = ({
         </Button>
         <Button
           onClick={onNext}
-          className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white"
+          disabled={isUploading || isRecording}
+          className="flex-1"
         >
-          Continue
-          <ChevronRight className="w-4 h-4 mr-2" />
+          Next
+          <ChevronRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
     </div>
   );
 };
 
-// NOTE: OUTCOME_OPTIONS imported from './constants'
-
 // ============================================
-// SCREEN 5: CLOSE RR (Reflection)
+// SCREEN 5: CLOSE RR (Reflection & Assessment)
 // ============================================
 const ScreenCloseRR = ({
+  rep,
   outcome,
   setOutcome,
-  whatWentWell,
-  setWhatWentWell,
-  whatDifferent,
-  setWhatDifferent,
+  selfAssessmentResponses = {},
+  setSelfAssessmentResponses = () => {},
+  nextTimeReflection = '',
+  setNextTimeReflection = () => {},
   onSubmit,
   onBack,
   isSubmitting,
-  showValidation
 }) => {
+  // Automatically select 'did_it' if not already set, to hide "What happened?" but keep logic
+  useEffect(() => {
+    if (!outcome) {
+      setOutcome('did_it');
+    }
+  }, [outcome, setOutcome]);
+
+  // Determine relevant self-assessment questions
+  const selfAssessQuestions = useMemo(() => {
+    if (rep?.repType === 'deliver_reinforcing_feedback') {
+      return DRF_SELF_ASSESSMENT;
+    }
+    if (rep?.repType === 'set_clear_expectations') {
+      const situationText = typeof rep?.situation === 'object' 
+        ? (rep.situation.selected || '') 
+        : (rep?.situation || '');
+      return getSCESelfAssessment(situationText);
+    }
+    return [];
+  }, [rep]);
+
   // Validation
-  const isValid = outcome && whatWentWell.trim().length >= 10;
-
-  // Get dynamic prompt based on outcome
-  const getWhatWentWellPrompt = () => {
-    switch (outcome) {
-      case 'did_it':
-        return 'What went well?';
-      case 'partial':
-        return 'What part worked?';
-      case 'missed':
-        return 'What got in the way?';
-      case 'pivoted':
-        return 'What did you do instead?';
-      default:
-        return 'What went well?';
-    }
-  };
-
-  const getWhatDifferentPrompt = () => {
-    switch (outcome) {
-      case 'did_it':
-        return 'What would you do differently next time?';
-      case 'partial':
-        return 'What would help you complete it fully next time?';
-      case 'missed':
-        return 'What will you do differently to make it happen?';
-      case 'pivoted':
-        return 'What did you learn from this pivot?';
-      default:
-        return 'What would you do differently?';
-    }
+  const isAssessmentComplete = useMemo(() => {
+    if (outcome === 'missed' || selfAssessQuestions.length === 0) return true;
+    return selfAssessQuestions.every(q => {
+      const val = selfAssessmentResponses[q.id];
+      return val && val.length > 0;
+    });
+  }, [selfAssessQuestions, selfAssessmentResponses, outcome]);
+  
+  const handleAssessmentSelect = (qId, option) => {
+    setSelfAssessmentResponses(prev => ({ ...prev, [qId]: option }));
   };
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
       <div className="text-center mb-4">
         <h3 className="text-lg font-semibold text-corporate-navy dark:text-white">
-          Complete Real Rep
+          Rep Evaluation
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           How did you do executing the rep?
         </p>
       </div>
 
-      {/* Outcome Selection */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-corporate-navy dark:text-white">
-          What happened?
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          {OUTCOME_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setOutcome(option.id)}
-              className={`p-3 rounded-lg border-2 text-left transition-all ${
-                outcome === option.id
-                  ? 'border-corporate-teal bg-corporate-teal/10 dark:bg-corporate-teal/20'
-                  : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{option.icon}</span>
-                <span className={`font-medium ${
-                  outcome === option.id 
-                    ? 'text-corporate-teal' 
-                    : 'text-corporate-navy dark:text-white'
-                }`}>
-                  {option.label}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
+      {/* "What Happened?" Section Removed - defaults to 'did_it' (Completed Rep) */}
+      
+      <div className="animate-in fade-in duration-200 space-y-4">
+          
+        {/* Self Assessment Section */}
+        {selfAssessQuestions.length > 0 && (
+          <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg space-y-4 border border-gray-200 dark:border-slate-700">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-corporate-navy dark:text-white flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-corporate-teal" />
+                Self-Assessment
+              </h4>
+            </div>
+            <div className="space-y-6">
+              {selfAssessQuestions.map((q) => (
+                <div key={q.id} className="space-y-2">
+                  <label className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {q.prompt}
+                  </label>
+                  <div className="space-y-1">
+                    {q.options.map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => handleAssessmentSelect(q.id, opt)}
+                        className={`w-full p-3 rounded-lg border text-left text-sm transition-all ${
+                          selfAssessmentResponses[q.id] === opt
+                            ? 'border-corporate-teal bg-corporate-teal/10 text-corporate-teal font-semibold shadow-sm'
+                            : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-600 dark:text-gray-400 hover:border-corporate-teal/30 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 ${
+                            selfAssessmentResponses[q.id] === opt
+                              ? 'border-corporate-teal bg-corporate-teal'
+                              : 'border-gray-300 dark:border-gray-500'
+                          }`}>
+                            {selfAssessmentResponses[q.id] === opt && <Check className="w-3.5 h-3.5 text-white" />}
+                          </div>
+                          <span>{opt}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  {!selfAssessmentResponses[q.id] && (
+                    <p className="text-sm text-red-600">Please select an option</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* DRF: Reflection */}
+        {rep?.repType === 'deliver_reinforcing_feedback' && (
+          <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg space-y-2 border border-gray-200 dark:border-slate-700">
+            <label className="text-sm font-medium text-gray-800 dark:text-gray-200">
+              To make my reinforcing feedback even clearer next time, I will ______ .
+            </label>
+            <textarea
+              value={nextTimeReflection}
+              onChange={(e) => setNextTimeReflection(e.target.value)}
+              placeholder=""
+              rows={3}
+              className="w-full p-3 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal resize-none"
+            />
+          </div>
+        )}
+
+        {/* SCE: "Next time I will clarify expectations earlier when..." reflection */}
+        {rep?.repType === 'set_clear_expectations' && (
+          <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg space-y-2 border border-gray-200 dark:border-slate-700">
+            <label className="text-sm font-medium text-gray-800 dark:text-gray-200">
+              {(() => {
+                const text = typeof rep?.situation === 'object' ? (rep.situation.selected || '') : (rep?.situation || '');
+                const lower = text.toLowerCase();
+                if (lower.includes('assigning a task')) return "Next time I will be more explicit about ______ .";
+                if (lower.includes('delegating ongoing ownership')) return "Next time I delegate, I'll clarify ______ more/sooner.";
+                if (lower.includes('behavioral standards')) return "Next time I establish a standard, I will be clearer about ______ .";
+                return "Next time I will clarify expectations earlier when ______ .";
+              })()}
+            </label>
+            <textarea
+              value={nextTimeReflection}
+              onChange={(e) => setNextTimeReflection(e.target.value)}
+              placeholder=""
+              rows={3}
+              className="w-full p-3 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal resize-none"
+            />
+          </div>
+        )}
+
       </div>
 
-      {/* Reflection fields appear after outcome selected */}
-      {outcome && (
-        <div className="animate-in slide-in-from-top-2 duration-200 space-y-4">
-          <VoiceTextarea
-            id="what-went-well"
-            label={getWhatWentWellPrompt()}
-            value={whatWentWell}
-            onChange={setWhatWentWell}
-            placeholder="Brief reflection..."
-            rows={2}
-            minLength={10}
-            error={showValidation && whatWentWell.trim().length < 10 ? 'Add a brief reflection (at least 10 characters)' : null}
-            autoFocus
-          />
-
-          <VoiceTextarea
-            id="what-different"
-            label={getWhatDifferentPrompt()}
-            value={whatDifferent}
-            onChange={setWhatDifferent}
-            placeholder="Optional but encouraged..."
-            rows={2}
-          />
-        </div>
-      )}
-
-      <div className="flex gap-3 mt-4">
+      <div className="flex gap-3 mt-4 sticky bottom-0 bg-white dark:bg-slate-900 pt-2 border-t border-slate-100 dark:border-slate-800">
         <Button onClick={onBack} variant="outline" className="flex-1">
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
         <Button
           onClick={onSubmit}
-          disabled={!isValid || isSubmitting}
+          disabled={!isAssessmentComplete || isSubmitting}
           loading={isSubmitting}
-          className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white"
+          className="flex-1"
         >
           <Check className="w-4 h-4 mr-2" />
-          Complete Rep
+          Submit Evidence
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// SCREEN 7: COMPLETE THE LOOP (Generic)
+// ============================================
+const ScreenCompleteLoop = ({
+  rep,
+  completeLoopResponses,
+  setCompleteLoopResponses,
+  onSubmit, // handleCompleteLoopSubmit
+  isSubmitting
+}) => {
+  // Get situation-specific Complete the Loop questions
+  const completeLoopQuestions = useMemo(() => {
+    if (rep?.repType === 'deliver_reinforcing_feedback' || rep?.repType === 'reinforce_public') {
+      return DRF_COMPLETE_LOOP;
+    }
+    const situationText = typeof rep?.situation === 'object' 
+      ? (rep.situation.selected || '') 
+      : (rep?.situation || '');
+    return getSCECompleteLoopQuestions(situationText);
+  }, [rep]);
+
+  // Handle Complete the Loop field changes
+  const handleCompleteLoopChange = (id, value) => {
+    setCompleteLoopResponses(prev => ({ ...prev, [id]: value }));
+  };
+
+  const isValid = useMemo(() => {
+    return completeLoopQuestions.every(q => {
+      const val = completeLoopResponses[q.id];
+      if (q.type === 'text') return val && val.trim().length > 0;
+      if (q.type === 'date') return !!val;
+      if (q.type === 'date_optional') return val === 'no' || (val && val !== 'yes_pending' && val.trim().length > 0);
+      return true;
+    });
+  }, [completeLoopQuestions, completeLoopResponses]);
+
+  return (
+    <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+      <div className="text-center mb-4">
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-corporate-teal/10 rounded-full mb-3">
+          <RotateCw className="w-6 h-6 text-corporate-teal" />
+        </div>
+        <h3 className="text-lg font-semibold text-corporate-navy dark:text-white">
+          Plan Follow-up
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Set yourself up for follow-through
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {completeLoopQuestions.map((q) => {
+          if (q.type === 'text') {
+            return (
+              <VoiceTextarea
+                key={q.id}
+                id={`complete-loop-${q.id}`}
+                label={q.prompt}
+                value={completeLoopResponses[q.id] || ''}
+                onChange={(val) => handleCompleteLoopChange(q.id, val)}
+                placeholder="Your answer..."
+                rows={2}
+              />
+            );
+          }
+          
+          if (q.type === 'date') {
+            return (
+              <div key={q.id} className="space-y-2">
+                <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+                  {q.prompt}
+                </label>
+                <input
+                  type="date"
+                  value={completeLoopResponses[q.id] || ''}
+                  onChange={(e) => handleCompleteLoopChange(q.id, e.target.value)}
+                  className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-corporate-navy dark:text-white"
+                />
+              </div>
+            );
+          }
+
+          if (q.type === 'date_optional') {
+            const hasDraftValue = completeLoopResponses[q.id] !== undefined;
+            const isNo = completeLoopResponses[q.id] === 'no';
+            const isYes = hasDraftValue && !isNo;
+
+            return (
+              <div key={q.id} className="space-y-3">
+                <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+                  {q.prompt}
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCompleteLoopChange(q.id, completeLoopResponses[q.id] === 'no' ? 'yes_pending' : (completeLoopResponses[q.id] || 'yes_pending'))}
+                    className={`flex-1 p-2 border rounded-md text-sm font-medium transition-colors ${
+                      isYes 
+                        ? 'border-corporate-teal bg-corporate-teal/10 text-corporate-teal' 
+                        : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:border-corporate-teal/50'
+                    }`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCompleteLoopChange(q.id, 'no')}
+                    className={`flex-1 p-2 border rounded-md text-sm font-medium transition-colors ${
+                      isNo 
+                        ? 'border-corporate-teal bg-corporate-teal/10 text-corporate-teal' 
+                        : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:border-corporate-teal/50'
+                    }`}
+                  >
+                    No
+                  </button>
+                </div>
+                
+                {isYes && (
+                  <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Set date (required):
+                    </label>
+                    <input
+                      type="date"
+                      value={completeLoopResponses[q.id] === 'yes_pending' ? '' : (completeLoopResponses[q.id] || '')}
+                      onChange={(e) => handleCompleteLoopChange(q.id, e.target.value)}
+                      className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-corporate-navy dark:text-white"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          }
+          
+          if (q.type === 'auto_fill_person') {
+            return (
+              <div key={q.id} className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                <label className="block text-sm font-medium text-corporate-navy dark:text-white mb-1">
+                  {q.prompt}
+                </label>
+                <span className="text-sm text-corporate-teal font-medium">
+                  {rep?.person || 'Not specified'}
+                </span>
+              </div>
+            );
+          }
+          
+          return null;
+        })}
+      </div>
+
+       <div className="flex gap-3 mt-4 sticky bottom-0 bg-white dark:bg-slate-900 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <Button
+          onClick={onSubmit}
+          disabled={!isValid || isSubmitting}
+          loading={isSubmitting}
+          className="w-full"
+        >
+          <Check className="w-4 h-4 mr-2" />
+          Complete the Rep
         </Button>
       </div>
     </div>
@@ -754,7 +1697,7 @@ const ScreenRepUpReview = ({ qualityAssessment, onDone }) => {
 
       <Button
         onClick={onDone}
-        className="w-full bg-corporate-teal hover:bg-corporate-teal/90 text-white mt-4"
+        className="w-full mt-4"
       >
         <Check className="w-4 h-4 mr-2" />
         Done
@@ -779,7 +1722,7 @@ const ConfirmationPopup = ({ message, onClose }) => (
       </div>
       <Button
         onClick={onClose}
-        className="w-full mt-4 bg-corporate-teal hover:bg-corporate-teal/90 text-white"
+        className="w-full mt-4"
       >
         Got it
       </Button>
@@ -790,26 +1733,249 @@ const ConfirmationPopup = ({ message, onClose }) => (
 // ============================================
 // MAIN WIZARD COMPONENT
 // ============================================
-const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
-  const { db, user } = useAppServices();
+const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence' }) => {
+  const { db, user, storage } = useAppServices();
   const userId = user?.uid;
+
+  // Track freshly fetched reviewViewedAt from Firestore (in case prop is stale)
+  const [freshReviewViewedAt, setFreshReviewViewedAt] = useState(null);
+  const freshDataCheckedRef = useRef(false);
+
+  // Fetch fresh data from Firestore to check if reviewViewedAt was set (handles stale prop data)
+  useEffect(() => {
+    if (freshDataCheckedRef.current) return;
+    const isSCERep = rep?.repType === 'set_clear_expectations';
+    const isDRFRep = rep?.repType === 'deliver_reinforcing_feedback' || rep?.repType === 'reinforce_public';
+    
+    // Only check fresh data for debriefed SCE/DRF reps that don't have reviewViewedAt in prop
+    if (rep?.status === 'debriefed' && !rep?.reviewViewedAt && (isSCERep || isDRFRep) && db && user?.uid && rep?.id) {
+      freshDataCheckedRef.current = true;
+      const checkFreshData = async () => {
+        try {
+          const repRef = doc(db, 'users', user.uid, 'conditioning_reps', rep.id);
+          const repSnap = await getDoc(repRef);
+          if (repSnap.exists()) {
+            const freshData = repSnap.data();
+            if (freshData.reviewViewedAt) {
+              setFreshReviewViewedAt(freshData.reviewViewedAt);
+            }
+          }
+        } catch (err) {
+          console.error('Error checking fresh rep data:', err);
+        }
+      };
+      checkFreshData();
+    }
+  }, [rep?.status, rep?.reviewViewedAt, rep?.repType, rep?.id, db, user?.uid]);
+
+  // Guard: route reps to the correct mode based on status
+  // Flow: 1) Commit (committed) -> 2) Evidence (executed) -> 3) Debrief (debriefed) -> 4) Follow-up (loop_closed)
+  const effectiveMode = useMemo(() => {
+    const isSCERep = rep?.repType === 'set_clear_expectations';
+    const isDRFRep = rep?.repType === 'deliver_reinforcing_feedback' || rep?.repType === 'reinforce_public';
+    
+    // Session 3: Debrief - rep has evidence but AI assessment not yet triggered
+    // Status is 'executed' with evidence -> open in 'review' mode to trigger AI and show assessment
+    if (rep?.status === 'executed' && rep?.evidence && (isSCERep || isDRFRep)) {
+      return 'review';
+    }
+    
+    // Session 4: Follow-up - rep is debriefed (AI assessment done)
+    if (rep?.status === 'debriefed') {
+      // If explicitly opened in 'plan' mode, allow it
+      if (initialMode === 'plan') return 'plan';
+      // If review has already been seen (via reviewViewedAt flag or fresh data), go to plan follow-up
+      if (rep?.reviewViewedAt || freshReviewViewedAt) return 'plan';
+      // Otherwise show review first to display AI assessment
+      return 'review';
+    }
+    
+    return initialMode;
+  }, [rep?.status, rep?.evidence, rep?.repType, rep?.reviewViewedAt, freshReviewViewedAt, initialMode]);
+  
+  // Get current week to check level/milestone
+  const { currentWeek } = useDevPlan();
+  
+  // Calculate Level 3 status (Assuming Level 3 starts at level 300 or Week 9+)
+  // This defaults to false for current users in weeks 1-8 (levels 100-200)
+  const isLevel3OrHigher = useMemo(() => {
+    const level = parseInt(currentWeek?.level || '0', 10);
+    // Alternatively check weekNumber if level isn't reliable
+    // const week = currentWeek?.weekNumber || 0;
+    return level >= 300; 
+  }, [currentWeek]);
   
   // Draft loading state
   const [draftLoaded, setDraftLoaded] = useState(false);
   const saveTimeoutRef = useRef(null);
+  const latestDraftState = useRef({});
   
-  // Screen state
-  const [currentScreen, setCurrentScreen] = useState(1);
+  // Rep type check for SCE and DRF
+  const isSCERep = rep?.repType === 'set_clear_expectations';
+  const isDRFRep = rep?.repType === 'deliver_reinforcing_feedback' || rep?.repType === 'reinforce_public';
+
+  // Screen state - determine initial screen based on mode
+  const getInitialScreen = () => {
+    switch(effectiveMode) {
+      case 'review': return 6;
+      case 'plan': return 7;
+      default: return 1;
+    }
+  };
+  
+  const [currentScreen, setCurrentScreen] = useState(getInitialScreen());
   const [showValidation, setShowValidation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [confirmationMessage, setConfirmationMessage] = useState(null);
   
-  // Screen 2: What Happened
+  // Sync currentScreen when effectiveMode changes (e.g., when rep data loads)
+  const prevEffectiveModeRefSync = useRef(effectiveMode);
+  useEffect(() => {
+    if (prevEffectiveModeRefSync.current !== effectiveMode) {
+      // Mode changed - update screen to match
+      const targetScreen = effectiveMode === 'review' ? 6 : effectiveMode === 'plan' ? 7 : 1;
+      
+      // If we are switching into a strict single-screen mode (review or plan), ALWAYS force it
+      if (effectiveMode === 'plan' || effectiveMode === 'review') {
+        setCurrentScreen(targetScreen);
+      } else {
+        // Otherwise, only update if we're predictably at a starting screen
+        const currentStartScreen = prevEffectiveModeRefSync.current === 'review' ? 6 : prevEffectiveModeRefSync.current === 'plan' ? 7 : 1;
+        if (currentScreen === currentStartScreen || currentScreen === 1) {
+          setCurrentScreen(targetScreen);
+        }
+      }
+      
+      prevEffectiveModeRefSync.current = effectiveMode;
+    }
+  }, [effectiveMode, currentScreen]);
+
+  // Update QA from rep if in review mode, or trigger AI assessment if needed
+  const [isLoadingAssessment, setIsLoadingAssessment] = useState(false);
+  const assessmentTriggeredRef = useRef(false);
+  
+  useEffect(() => {
+    // If rep already has qualityAssessment, just load it and return
+    // No need to re-trigger AI - assessment already exists
+    if (rep?.qualityAssessment) {
+      setQualityAssessment(rep.qualityAssessment);
+      return;
+    }
+    
+    // If review was already viewed (from prop or fresh fetch), don't retrigger AI - user should be in plan mode
+    if (rep?.reviewViewedAt || freshReviewViewedAt) {
+      return;
+    }
+    
+    // Session 3 (Debrief): rep is 'executed' with evidence but no AI assessment yet
+    // We need to trigger closeRepV2 to get the AI assessment
+    const isSCERep = rep?.repType === 'set_clear_expectations';
+    const isDRFRepLocal = rep?.repType === 'deliver_reinforcing_feedback' || rep?.repType === 'reinforce_public';
+    
+    // Only trigger AI assessment if:
+    // 1. effectiveMode is 'review'
+    // 2. status is 'executed' (not yet debriefed)
+    // 3. has evidence
+    // 4. is SCE or DRF rep
+    // 5. no qualityAssessment already exists (checked above but double-check)
+    if (effectiveMode === 'review' && rep?.status === 'executed' && rep?.evidence && (isSCERep || isDRFRepLocal) && !rep?.qualityAssessment) {
+      // Only trigger once per wizard session
+      if (assessmentTriggeredRef.current) return;
+      assessmentTriggeredRef.current = true;
+      
+      const triggerAssessment = async () => {
+        if (!db || !user?.uid || !rep?.id) return;
+        
+        setIsLoadingAssessment(true);
+        try {
+          // Get reflection data from evidence
+          const closeData = {
+            outcome: rep.outcome || rep.evidence?.outcome || 'executed',
+            whatWentWell: rep.evidence?.whatWentWell || '',
+            whatDifferent: rep.evidence?.whatDifferent || ''
+          };
+          
+          // Trigger AI assessment - this sets status to 'debriefed'
+          const { quality } = await conditioningService.closeRepV2(db, user.uid, rep.id, closeData);
+          setQualityAssessment(quality);
+        } catch (err) {
+          console.error('Error triggering AI assessment:', err);
+          setError('Failed to load AI assessment. Please try again.');
+        } finally {
+          setIsLoadingAssessment(false);
+        }
+      };
+      
+      triggerAssessment();
+      return;
+    }
+    
+    // FALLBACK: If status is 'debriefed' but we don't have qualityAssessment in the passed data
+    // (stale data scenario), fetch fresh data from Firestore
+    if (effectiveMode === 'review' && rep?.status === 'debriefed' && !rep?.qualityAssessment && (isSCERep || isDRFRepLocal)) {
+      // Only trigger once per wizard session
+      if (assessmentTriggeredRef.current) return;
+      assessmentTriggeredRef.current = true;
+      
+      const fetchFreshAssessment = async () => {
+        if (!db || !user?.uid || !rep?.id) return;
+        
+        setIsLoadingAssessment(true);
+        try {
+          // Fetch fresh rep data from Firestore
+          const repRef = doc(db, 'users', user.uid, 'conditioning_reps', rep.id);
+          const repSnap = await getDoc(repRef);
+          
+          if (repSnap.exists()) {
+            const freshRep = repSnap.data();
+            if (freshRep.qualityAssessment) {
+              setQualityAssessment(freshRep.qualityAssessment);
+            } else {
+              // AI hasn't run yet for some reason - show error
+              setError('Assessment not found. The AI may not have completed. Please try again.');
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching fresh assessment:', err);
+          setError('Failed to load assessment. Please try again.');
+        } finally {
+          setIsLoadingAssessment(false);
+        }
+      };
+      
+      fetchFreshAssessment();
+      return;
+    }
+    
+    // Load existing loop responses if in plan mode
+    if (effectiveMode === 'plan') {
+       const existingResponses = isDRFRep 
+        ? rep?.evidence?.drfEvidence?.completeLoopResponses 
+        : rep?.evidence?.sceEvidence?.completeLoopResponses;
+       
+       if (existingResponses) {
+         setCompleteLoopResponses(existingResponses);
+       }
+    }
+  }, [effectiveMode, rep, isDRFRep, db, user?.uid, freshReviewViewedAt]);
+
+  // Screen 2: What Happened (generic)
   const [whatHappened, setWhatHappened] = useState('');
+  
+  // Screen 2-SCE: Set Clear Expectations responses (situation-specific)
+  const [sceResponses, setSceResponses] = useState({});
+  const [showOwnershipWarning, setShowOwnershipWarning] = useState(false);
+
+  // Screen 2-DRF: Deliver Reinforcing Feedback responses
+  const [drfResponses, setDrfResponses] = useState({});
+  
+  // Screen 5-Assessment: Self-assessment checkboxes
+  const [selfAssessmentResponses, setSelfAssessmentResponses] = useState({});
   
   // Screen 3: Response & Dynamics
   const [response, setResponse] = useState(null);
+  const [otherResponseText, setOtherResponseText] = useState(''); // Added for DRF "Other" option
   const [pushbackLogOption, setPushbackLogOption] = useState(null);
   const [pushbackResponses, setPushbackResponses] = useState([]);
   const [pushbackNote, setPushbackNote] = useState('');
@@ -826,6 +1992,8 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
   const [outcome, setOutcome] = useState(null);
   const [whatWentWell, setWhatWentWell] = useState('');
   const [whatDifferent, setWhatDifferent] = useState('');
+  const [nextTimeReflection, setNextTimeReflection] = useState(''); // DRF/SCE: "Next time I will..." commitment
+  const [completeLoopResponses, setCompleteLoopResponses] = useState({});
   
   // Screen 6: RepUp Review (AI feedback)
   const [qualityAssessment, setQualityAssessment] = useState(null);
@@ -835,6 +2003,12 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
   
   // Separate rep evidence prompt
   const [showSeparateRepPrompt, setShowSeparateRepPrompt] = useState(false);
+
+  // Keep a ref of the very latest effectiveMode so async draft load doesn't use stale closure
+  const latestEffectiveModeRef = useRef(effectiveMode);
+  useEffect(() => {
+    latestEffectiveModeRef.current = effectiveMode;
+  }, [effectiveMode]);
 
   // Load draft on mount
   useEffect(() => {
@@ -849,9 +2023,23 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
         if (draft && hasEvidenceProgress(draft)) {
           // Restore state from draft
           const fd = draft.formData || {};
-          setCurrentScreen(draft.currentScreen || 1);
+          
+          // Determine correct screen to apply (respecting mode overrides)
+          const currentMode = latestEffectiveModeRef.current;
+          let targetScreen = draft.currentScreen || 1;
+          if (currentMode === 'review') {
+            targetScreen = 6;
+          } else if (currentMode === 'plan') {
+            targetScreen = 7;
+          }
+          
+          setCurrentScreen(targetScreen);
           setWhatHappened(fd.whatHappened || '');
+          setSceResponses(fd.sceResponses || {});
+          setDrfResponses(fd.drfResponses || {});
+          setSelfAssessmentResponses(fd.selfAssessmentResponses || {});
           setResponse(fd.response || null);
+          setOtherResponseText(fd.otherResponseText || '');
           setPushbackLogOption(fd.pushbackLogOption || null);
           setPushbackResponses(fd.pushbackResponses || []);
           setPushbackNote(fd.pushbackNote || '');
@@ -864,6 +2052,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
           setOutcome(fd.outcome || null);
           setWhatWentWell(fd.whatWentWell || '');
           setWhatDifferent(fd.whatDifferent || '');
+          setCompleteLoopResponses(fd.completeLoopResponses || {});
         }
       } catch (err) {
         console.warn('Failed to load evidence draft:', err);
@@ -889,7 +2078,11 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
         await saveEvidenceDraft(db, userId, rep.id, {
           currentScreen,
           whatHappened,
+          sceResponses,
+          drfResponses, // New
+          selfAssessmentResponses, // New
           response,
+          otherResponseText, // Added
           pushbackLogOption,
           pushbackResponses,
           pushbackNote,
@@ -901,7 +2094,8 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
           artifacts,
           outcome,
           whatWentWell,
-          whatDifferent
+          whatDifferent,
+          completeLoopResponses
         });
       } catch (err) {
         console.warn('Failed to save evidence draft:', err);
@@ -915,10 +2109,76 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
     };
   }, [
     draftLoaded, db, userId, rep?.id,
-    currentScreen, whatHappened, response, pushbackLogOption, pushbackResponses,
+    currentScreen, whatHappened, sceResponses, drfResponses, selfAssessmentResponses, response, otherResponseText, pushbackLogOption, pushbackResponses,
     pushbackNote, closeLoopOption, closeLoopLogOption, behaviorChange,
-    behaviorChangeNote, notes, artifacts, outcome, whatWentWell, whatDifferent
+    behaviorChangeNote, notes, artifacts, outcome, whatWentWell, whatDifferent, completeLoopResponses
   ]);
+
+  // Update ref with latest state for unmount save
+  useEffect(() => {
+    latestDraftState.current = {
+      isSubmitting,
+      draftLoaded,
+      currentScreen,
+      whatHappened,
+      sceResponses,
+      drfResponses,
+      selfAssessmentResponses,
+      response,
+      otherResponseText, // Added
+      pushbackLogOption,
+      pushbackResponses,
+      pushbackNote,
+      closeLoopOption,
+      closeLoopLogOption,
+      behaviorChange,
+      behaviorChangeNote,
+      notes,
+      artifacts,
+      outcome,
+      whatWentWell,
+      whatDifferent,
+      completeLoopResponses
+    };
+  }, [
+    isSubmitting, draftLoaded,
+    currentScreen, whatHappened, sceResponses, drfResponses, selfAssessmentResponses, response, otherResponseText, pushbackLogOption, pushbackResponses,
+    pushbackNote, closeLoopOption, closeLoopLogOption, behaviorChange,
+    behaviorChangeNote, notes, artifacts, outcome, whatWentWell, whatDifferent, completeLoopResponses
+  ]);
+
+  // Save draft on unmount (if not submitting)
+  useEffect(() => {
+    return () => {
+      const state = latestDraftState.current;
+      // Only save if we are not in the middle of submitting and draft was loaded
+      if (state.draftLoaded && db && userId && rep?.id && !state.isSubmitting) {
+        saveEvidenceDraft(db, userId, rep.id, {
+          currentScreen: state.currentScreen,
+          whatHappened: state.whatHappened,
+          sceResponses: state.sceResponses,
+          drfResponses: state.drfResponses,
+          selfAssessmentResponses: state.selfAssessmentResponses,
+          response: state.response,
+          pushbackLogOption: state.pushbackLogOption,
+          pushbackResponses: state.pushbackResponses,
+          pushbackNote: state.pushbackNote,
+          closeLoopOption: state.closeLoopOption,
+          closeLoopLogOption: state.closeLoopLogOption,
+          behaviorChange: state.behaviorChange,
+          behaviorChangeNote: state.behaviorChangeNote,
+          notes: state.notes,
+          artifacts: state.artifacts,
+          outcome: state.outcome,
+          whatWentWell: state.whatWentWell,
+          whatDifferent: state.whatDifferent,
+          completeLoopResponses: state.completeLoopResponses
+        }).catch(err => {
+          console.warn('Failed to save draft on close:', err);
+        });
+      }
+    };
+  }, [db, userId, rep?.id]); // Run cleanup on unmount or rep change
 
   // Navigation
   const handleNext = useCallback(() => {
@@ -938,15 +2198,16 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
         person: rep.person,
         situation: `${RESPONSE_OPTIONS.find(o => o.id === response)?.label || 'Pushback occurred'}`,
         context: `Linked from ${rep.repType} evidence capture`,
+        linkedFromRepId: rep.id,
         commitmentType: 'in_moment',
         cohortId: rep.cohortId,
         weekId: rep.weekId
       };
       
-      const newRepId = await conditioningService.createRepV2(db, userId, newRepData);
+      const newRepId = await conditioningService.commitRepV2(db, userId, newRepData);
       
-      // Mark as executed (needs evidence)
-      await conditioningService.transitionRepState(db, userId, newRepId, 'executed');
+      // Rep is already marked as 'executed' by commitRepV2 when type is 'in_moment'
+      // No need to transition state manually
       
       setCreatedReps(prev => [...prev, { type: 'handle_pushback', id: newRepId }]);
       setConfirmationMessage('A new Real Rep (Handle Pushback) has been created and will be available once you\'ve completed capturing evidence.');
@@ -964,15 +2225,16 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
         person: rep.person,
         situation: 'Verifying behavior change from previous feedback',
         context: `Linked from ${rep.repType} evidence capture`,
+        linkedFromRepId: rep.id,
         commitmentType: 'in_moment',
         cohortId: rep.cohortId,
         weekId: rep.weekId
       };
       
-      const newRepId = await conditioningService.createRepV2(db, userId, newRepData);
+      const newRepId = await conditioningService.commitRepV2(db, userId, newRepData);
       
-      // Mark as executed (needs evidence)
-      await conditioningService.transitionRepState(db, userId, newRepId, 'executed');
+      // Rep is already marked as 'executed' by commitRepV2 when type is 'in_moment'
+      // No need to transition state manually
       
       setCreatedReps(prev => [...prev, { type: 'close_the_loop', id: newRepId }]);
       setConfirmationMessage('A new Real Rep (Close the Loop) has been created and will be available once you\'ve completed capturing evidence.');
@@ -1021,12 +2283,43 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
       }
       
       // Build evidence data
+      let responseLabel = "";
+      if (isDRFRep) responseLabel = DRF_RESPONSE_OPTIONS.find(o => o.id === response)?.label || "";
+      else if (isSCERep) responseLabel = getSCEResponseOptions(typeof rep?.situation === 'object' ? (rep?.situation?.selected || '') : (rep?.situation || '')).find(o => o.id === response)?.label || "";
+      else responseLabel = RESPONSE_OPTIONS.find(o => o.id === response)?.label || "";
       const evidenceData = {
-        whatYouSaid: whatHappened,
-        howTheyResponded: RESPONSE_OPTIONS.find(o => o.id === response)?.label || '',
+        whatYouSaid: (isSCERep || isDRFRep) ? null : whatHappened,
+        howTheyResponded: response === 'other' && (isDRFRep || isSCERep) ? `Other: ${otherResponseText}` : responseLabel,
         responseType: response,
+        otherResponseText: (response === 'other' && (isDRFRep || isSCERep)) ? otherResponseText : null,
         outcome,
         inputMethod: 'written',
+        
+        // Set Clear Expectations - situation-specific evidence
+        sceEvidence: isSCERep ? {
+          situationBranch: getSCESituationBranch(
+            typeof rep?.situation === 'object' 
+              ? (rep.situation.selected || '') 
+              : (rep?.situation || '')
+          ),
+          responses: sceResponses,
+          // completeLoopResponses moved to separate step
+          completeLoopResponses: null
+        } : null,
+
+        // Deliver Reinforcing Feedback - specific evidence from requirements
+        drfEvidence: isDRFRep ? {
+          responses: drfResponses,
+          // DRF Reflection
+          nextTimeReflection: nextTimeReflection.trim() || null,
+          // completeLoopResponses moved to separate step
+          completeLoopResponses: null
+        } : null,
+        
+        // Self Assessment (checkboxes) from Step 5
+        selfAssessment: (isSCERep || isDRFRep) ? {
+          responses: selfAssessmentResponses
+        } : null,
         
         // Include linked evidence
         linkedPushback: pushbackLogOption === 'link' ? {
@@ -1047,28 +2340,29 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
         separateRepsCreated: createdReps.length > 0 ? createdReps : null
       };
       
-      // Step 1: Submit evidence using V2 method
+      // Submit evidence (rep stays open — it closes after Plan Follow-up)
       await conditioningService.submitEvidenceV2(db, userId, rep.id, evidenceData);
-      
-      // Step 2: Close the rep with reflection and get AI feedback
-      const closeData = {
-        outcome,
-        whatWentWell: whatWentWell.trim(),
-        whatDifferent: whatDifferent.trim()
-      };
-      
-      const { quality } = await conditioningService.closeRepV2(db, userId, rep.id, closeData);
-      
-      // Store quality assessment for display
-      setQualityAssessment(quality);
       
       // Clear draft on successful submission
       await deleteEvidenceDraft(db, userId, rep.id).catch(() => {});
       
-      // Always go to screen 6 (RepUp Review) to show AI feedback
-      // Separate rep prompt will show when user clicks Done if needed
-      setCurrentScreen(6);
-      setIsSubmitting(false);
+      // For SCE/DRF reps: evidence capture is session 2 of 4
+      // Do NOT trigger AI assessment here - that happens in session 3 (debrief)
+      // Status stays 'executed', user returns to dashboard
+      if (isSCERep || isDRFRep) {
+        finishWizard();
+        return;
+      }
+      
+      // For non-SCE/DRF reps: close the rep now and trigger AI assessment
+      const closeData = {
+        outcome,
+        whatWentWell: whatWentWell.trim() || '',
+        whatDifferent: whatDifferent.trim() || ''
+      };
+      await conditioningService.closeRepV2(db, userId, rep.id, closeData);
+      
+      finishWizard();
     } catch (err) {
       console.error('Error submitting:', err);
       setError(err.message || 'Failed to complete rep. Please try again.');
@@ -1077,8 +2371,45 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
     }
   };
 
-  // Handle RepUp Review completion
-  const handleRepUpDone = () => {
+  // Submit Complete the Loop data AND close the rep
+  const handleCompleteLoopSubmit = async () => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      if (rep?.id && userId) {
+        const repRef = doc(db, 'users', userId, 'conditioning_reps', rep.id);
+        
+        // Save complete loop responses and update status to 'loop_closed'
+        const fieldPath = isDRFRep 
+          ? 'evidence.drfEvidence.completeLoopResponses'
+          : 'evidence.sceEvidence.completeLoopResponses';
+          
+        await updateDoc(repRef, {
+          [fieldPath]: completeLoopResponses,
+          status: 'loop_closed',
+          loopClosedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
+      
+      finishWizard();
+      
+    } catch (err) {
+      console.error('Error saving loop plan:', err);
+      setError('Failed to save your follow-up plan.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Helper to close wizard
+  const finishWizard = () => {
+    // Notify other components to refresh data
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('conditioning-data-changed'));
+    }, 100);
+
     // If we created separate reps during this flow, show prompt before closing
     if (createdReps.length > 0) {
       setShowSeparateRepPrompt(true);
@@ -1089,16 +2420,48 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
     onClose?.();
   };
 
+  // Handle RepUp Review completion
+  const handleRepUpDone = async () => {
+    // Mark review as viewed and close - Plan Follow-up is a separate session
+    if (effectiveMode === 'review') {
+      try {
+        if (db && user?.uid && rep?.id) {
+          const repRef = doc(db, 'users', user.uid, 'conditioning_reps', rep.id);
+          await updateDoc(repRef, { reviewViewedAt: new Date().toISOString() });
+        }
+      } catch (e) {
+        console.warn('Failed to mark review viewed:', e);
+      }
+      // Close wizard - user will return later for Plan Follow-up
+      finishWizard();
+      return;
+    }
+
+    // Check if we should go to Complete the Loop step
+    // Only for SCE and DRF reps that weren't missed
+    const hasLoopQuestions = (isSCERep || isDRFRep) && outcome !== 'missed';
+    
+    if (hasLoopQuestions) {
+      setCurrentScreen(7);
+      return;
+    }
+    
+    finishWizard();
+  };
+
   return (
     <>
       <ConditioningModal
         isOpen={true}
-        onClose={currentScreen === 6 ? handleRepUpDone : onClose}
-        title={currentScreen === 6 ? "RepUp Review" : "Capture Evidence"}
-        icon={currentScreen === 6 ? Award : Camera}
+        onClose={onClose}
+        title={currentScreen === 6 ? "RepUp Review" : (currentScreen === 7 ? "Plan Follow-up" : "Capture Evidence")}
+        icon={currentScreen === 6 ? Award : (currentScreen === 7 ? RotateCw : Camera)}
         currentStep={currentScreen - 1}
-        totalSteps={6}
-        stepLabels={['Overview', 'What Happened', 'Response', 'Artifacts', 'Complete', 'Review']}
+        totalSteps={effectiveMode === 'review' ? 1 : effectiveMode === 'plan' ? 1 : 5}
+        stepLabels={(isSCERep || isDRFRep) 
+          ? ['Overview', 'Evidence', 'Response', 'Artifacts', 'Complete']
+          : ['Overview', 'What Happened', 'Response', 'Artifacts', 'Complete']
+        }
       >
         {/* Error display */}
         {error && (
@@ -1113,10 +2476,23 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
           <ScreenOverview rep={rep} onNext={handleNext} />
         )}
         
-        {currentScreen === 2 && (
+        {currentScreen === 2 && !isSCERep && !isDRFRep && (
           <ScreenWhatHappened
             value={whatHappened}
             onChange={setWhatHappened}
+            onNext={handleNext}
+            onBack={handleBack}
+            showValidation={showValidation}
+          />
+        )}
+        
+        {currentScreen === 2 && (isSCERep || isDRFRep) && (
+          <ScreenStructuredEvidence
+            rep={rep}
+            responses={isSCERep ? sceResponses : drfResponses}
+            setResponses={isSCERep ? setSceResponses : setDrfResponses}
+            showOwnershipWarning={showOwnershipWarning}
+            setShowOwnershipWarning={setShowOwnershipWarning}
             onNext={handleNext}
             onBack={handleBack}
             showValidation={showValidation}
@@ -1128,6 +2504,8 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
             rep={rep}
             response={response}
             setResponse={setResponse}
+            otherResponseText={otherResponseText}
+            setOtherResponseText={setOtherResponseText}
             pushbackLogOption={pushbackLogOption}
             setPushbackLogOption={setPushbackLogOption}
             pushbackResponses={pushbackResponses}
@@ -1145,11 +2523,16 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
             onNext={handleScreen3Next}
             onBack={handleBack}
             showValidation={showValidation}
+            isLevel3OrHigher={isLevel3OrHigher}
           />
         )}
         
         {currentScreen === 4 && (
           <ScreenArtifacts
+            db={db}
+            storage={storage}
+            userId={userId}
+            repId={rep?.id}
             notes={notes}
             setNotes={setNotes}
             artifacts={artifacts}
@@ -1161,16 +2544,17 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
         
         {currentScreen === 5 && (
           <ScreenCloseRR
+            rep={rep}
             outcome={outcome}
             setOutcome={setOutcome}
-            whatWentWell={whatWentWell}
-            setWhatWentWell={setWhatWentWell}
-            whatDifferent={whatDifferent}
-            setWhatDifferent={setWhatDifferent}
+            selfAssessmentResponses={selfAssessmentResponses}
+            setSelfAssessmentResponses={setSelfAssessmentResponses}
+            nextTimeReflection={nextTimeReflection}
+            setNextTimeReflection={setNextTimeReflection}
+            // Removed completeLoopResponses props from Step 5
             onSubmit={handleSubmit}
             onBack={handleBack}
             isSubmitting={isSubmitting}
-            showValidation={showValidation}
           />
         )}
         
@@ -1178,6 +2562,16 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
           <ScreenRepUpReview
             qualityAssessment={qualityAssessment}
             onDone={handleRepUpDone}
+          />
+        )}
+
+        {currentScreen === 7 && (
+          <ScreenCompleteLoop
+            rep={rep}
+            completeLoopResponses={completeLoopResponses}
+            setCompleteLoopResponses={setCompleteLoopResponses}
+            onSubmit={handleCompleteLoopSubmit}
+            isSubmitting={isSubmitting}
           />
         )}
       </ConditioningModal>
@@ -1221,7 +2615,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit }) => {
                 onSubmit?.({ qualityAssessment, createdReps });
                 onClose?.();
               }}
-              className="w-full bg-corporate-teal hover:bg-corporate-teal/90 text-white"
+              className="w-full"
             >
               <Check className="w-4 h-4 mr-2" />
               Got It
