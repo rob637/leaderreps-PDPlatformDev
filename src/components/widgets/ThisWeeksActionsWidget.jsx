@@ -882,11 +882,10 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // SKIP if all prep requirements are already complete - don't show completed phases
     if (currentPhase?.id === 'start' && !prepRequirementsComplete?.allComplete) {
       // Check for incomplete prep phase daily plan items (including interactive items)
-      // Include session1-config items (Watch Session 1 Video, Setup Notifications) for carryover
-      // Exclude only onboarding-config (duplicate of day-001 items) and explore-config
+      // Include onboarding-config (LeaderProfile, BaselineAssessment) and session1-config
+      // Exclude only explore-config (optional exploration items)
       const prepDays = dailyPlan.filter(d => 
         d.phase === 'pre-start' && 
-        d.id !== 'onboarding-config' && 
         d.id !== 'explore-config'
       );
       
