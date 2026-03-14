@@ -182,6 +182,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   const [priorWeekExpanded, setPriorWeekExpanded] = useState(false);
   
   // Preserve carried over items even after completion (ref to avoid re-render loops)
+  // This ref remembers which items were incomplete when user first entered Level 1
   const preservedCarriedOverRef = useRef([]);
   const [preservedCarriedOver, setPreservedCarriedOver] = useState([]);
 
@@ -877,96 +878,57 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     const explicitCarryOver = getCarriedOverItems(currentWeekNumber);
     carriedItems.push(...explicitCarryOver);
     
-    // Check for incomplete prep phase items (interactive items)
-    // These should carry over to Start phase if not completed
-    // SKIP if all prep requirements are already complete - don't show completed phases
+    // Carry over ALL prep phase items (completed and incomplete) to Start phase
+    // Use prepRequirementsComplete.items which already has completion status
+    // Items stay visible after completion - they only disappear when ALL prep is complete
     if (currentPhase?.id === 'start' && !prepRequirementsComplete?.allComplete) {
-      // Check for incomplete prep phase daily plan items (including interactive items)
-      // Include onboarding-config (LeaderProfile, BaselineAssessment) and session1-config
-      // Exclude only explore-config (optional exploration items)
-      const prepDays = dailyPlan.filter(d => 
-        d.phase === 'pre-start' && 
-        d.id !== 'explore-config'
-      );
-      
-      prepDays.forEach(day => {
-        if (day.actions && Array.isArray(day.actions)) {
-          day.actions.forEach((action, idx) => {
-            // Skip if not required
-            if (action.optional || action.required === false) return;
-            
-            // Check if completed
-            const actionId = action.id || `daily-${day.id}-${(action.label || '').toLowerCase().replace(/\s+/g, '-').substring(0, 20)}-${idx}`;
-            
-            // Check interactive items by handlerType
-            let handlerType = action.handlerType || '';
-            
-            // Standardize handlerType if present
-            if (handlerType) {
-              handlerType = handlerType.replace('_', '-').toLowerCase();
-            } else {
-              // Failsafe: Infer handlerType from ID, resourceId, or label
-              const labelLower = (action.label || '').toLowerCase();
-              if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile' || labelLower.includes('leader profile')) {
-                handlerType = 'leader-profile';
-              } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline') || labelLower.includes('skills assessment')) {
-                handlerType = 'baseline-assessment';
-              } else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('setup notification')) {
-                handlerType = 'notification-setup';
-              } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
-                handlerType = 'conditioning-tutorial';
-              } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation expectation') || labelLower.includes('foundation commitment')) {
-                handlerType = 'foundation-commitment';
-              } else if (action.resourceType === 'video_series') {
-                handlerType = 'video-series';
+      // Use prepRequirementsComplete.items - it already has all required items with completion status
+      if (Array.isArray(prepRequirementsComplete?.items)) {
+        prepRequirementsComplete.items.forEach(item => {
+          // Skip daily reps (handled separately)
+          if (item.type === 'daily_rep') return;
+          
+          // Find the full action from daily plan for additional fields
+          const prepDays = dailyPlan.filter(d => d.phase === 'pre-start' && d.id !== 'explore-config');
+          let fullAction = null;
+          prepDays.forEach(day => {
+            if (day.actions && !fullAction) {
+              fullAction = day.actions.find(a => 
+                a.id === item.id || 
+                (a.label || '').toLowerCase().trim() === (item.label || '').toLowerCase().trim()
+              );
+              if (fullAction) {
+                fullAction = { ...fullAction, dayId: day.id, dayNumber: day.dayNumber };
               }
             }
-            
-            let isComplete = false;
-            
-            if (handlerType === 'leader-profile') {
-              isComplete = leaderProfileComplete;
-            } else if (handlerType === 'baseline-assessment') {
-              isComplete = baselineAssessmentComplete;
-            } else if (handlerType === 'notification-setup') {
-              isComplete = notificationSetupComplete;
-            } else if (handlerType === 'foundation-commitment') {
-              isComplete = foundationCommitmentComplete;
-            } else if (handlerType === 'conditioning-tutorial') {
-              isComplete = conditioningTutorialComplete;
-            } else if (handlerType === 'video-series') {
-              isComplete = videoSeriesComplete;
-            } else {
-              isComplete = isActionCompleted(actionId, action.label);
-            }
-            
-            if (!isComplete) {
-              // Skip daily reps
-              if (action.type === 'daily_rep') return;
-              
-              carriedItems.push({
-                ...action,
-                id: actionId,
-                label: action.label || 'Preparation Action',
-                required: true,
-                category: action.type === 'onboarding' ? 'Onboarding' : 'Preparation',
-                fromDailyPlan: true,
-                dayId: day.id,
-                dayNumber: day.dayNumber,
-                carriedOver: true,
-                fromWeek: 0,
-                resourceId: action.resourceId,
-                resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
-                url: action.url || action.videoUrl || action.link || action.details?.externalUrl,
-                isInteractive: ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType),
-                handlerType,
-                estimatedMinutes: action.estimatedMinutes,
-                duration: action.duration
-              });
-            }
           });
-        }
-      });
+          
+          const handlerType = item.handlerType || fullAction?.handlerType || '';
+          const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
+          
+          carriedItems.push({
+            ...(fullAction || {}),
+            id: item.id,
+            label: item.label || 'Preparation Action',
+            required: true,
+            category: item.prepSection === 'session1' ? 'Session 1 Prep' : 'Onboarding',
+            fromDailyPlan: true,
+            dayId: fullAction?.dayId || 'onboarding-config',
+            dayNumber: fullAction?.dayNumber || 0,
+            carriedOver: true,
+            fromWeek: 0,
+            resourceId: fullAction?.resourceId,
+            resourceType: (fullAction?.resourceType || item.type || 'content').toLowerCase(),
+            url: fullAction?.url || fullAction?.videoUrl || fullAction?.link,
+            isInteractive,
+            handlerType,
+            estimatedMinutes: fullAction?.estimatedMinutes,
+            duration: fullAction?.duration,
+            // Store completion status from prepRequirementsComplete for tracking
+            prepComplete: item.complete
+          });
+        });
+      }
       
       // **NEW: Check for incomplete items from ALL prior weeks (not just prep)**
       // Loop through weeks 1 to currentWeekNumber - 1
@@ -1104,59 +1066,51 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
     return carriedItems;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, progressData, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete, dailyPlan, userState?.dailyProgress, userState?.sessionAttendance, prepRequirementsComplete?.allComplete]);
+  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, progressData, dailyPlan, userState?.dailyProgress, userState?.sessionAttendance, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.items]);
 
-  // Preserve carried over items - merge new items but keep completed ones
+  // Preserve carried over items - merge new items and update completion status
   useEffect(() => {
     if (carriedOverItems.length > 0) {
-      // Add any new items to the preserved list
       const existingIds = new Set(preservedCarriedOverRef.current.map(i => i.id));
       const newItems = carriedOverItems.filter(item => !existingIds.has(item.id));
-      if (newItems.length > 0) {
-        preservedCarriedOverRef.current = [...preservedCarriedOverRef.current, ...newItems];
+      
+      // Update completion status for existing items (from prepRequirementsComplete)
+      const updatedItems = preservedCarriedOverRef.current.map(existing => {
+        const updated = carriedOverItems.find(item => item.id === existing.id);
+        if (updated && updated.prepComplete !== undefined) {
+          return { ...existing, prepComplete: updated.prepComplete };
+        }
+        return existing;
+      });
+      
+      if (newItems.length > 0 || JSON.stringify(updatedItems) !== JSON.stringify(preservedCarriedOverRef.current)) {
+        preservedCarriedOverRef.current = [...updatedItems, ...newItems];
         setPreservedCarriedOver([...preservedCarriedOverRef.current]);
       }
     }
   }, [carriedOverItems]);
   
   // Use preserved items if available, otherwise use current carriedOverItems
-  // Filter out prep items when all prep is complete (completed phases shouldn't carry forward)
-  // Also filter out any individually completed items
+  // Keep ALL items visible (even completed ones) - they only disappear when:
+  // 1. All prep is complete (collapsed into celebration banner)
+  // 2. User advances to next level/milestone
   const displayedCarriedOverItems = useMemo(() => {
     const baseItems = preservedCarriedOver.length > 0 ? preservedCarriedOver : carriedOverItems;
     
-    // If all prep is complete, filter out ALL prep items
+    // If all prep is complete, filter out ALL prep items (they collapse into celebration)
     if (prepRequirementsComplete?.allComplete) {
       return baseItems.filter(item => 
         item.fromWeek !== 0 && 
         item.category !== 'Preparation' && 
-        item.category !== 'Onboarding'
+        item.category !== 'Onboarding' &&
+        item.category !== 'Session 1 Prep'
       );
     }
     
-    // Even if not all prep is complete, filter out items that ARE individually complete
-    // This handles cases where an item is complete but wasn't detected properly initially
-    return baseItems.filter(item => {
-      // Check if this specific item is complete
-      if (item.isInteractive) {
-        if (item.handlerType === 'leader-profile') return !leaderProfileComplete;
-        if (item.handlerType === 'baseline-assessment') return !baselineAssessmentComplete;
-        if (item.handlerType === 'notification-setup') return !notificationSetupComplete;
-        if (item.handlerType === 'foundation-commitment') return !foundationCommitmentComplete;
-        if (item.handlerType === 'conditioning-tutorial') return !conditioningTutorialComplete;
-        if (item.handlerType === 'video-series') return !videoSeriesComplete;
-      }
-      // Check prepRequirementsComplete.items for this item
-      if (prepRequirementsComplete?.items) {
-        const prepItem = prepRequirementsComplete.items.find(p => 
-          p.id === item.id || 
-          (p.label && item.label && p.label.toLowerCase() === item.label.toLowerCase())
-        );
-        if (prepItem?.complete) return false; // Filter out - it's complete
-      }
-      return true; // Keep - not found or not complete
-    });
-  }, [preservedCarriedOver, carriedOverItems, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.items, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete]);
+    // Keep ALL items visible - don't filter out completed ones
+    // The ActionItem component will show them as completed (with checkmark)
+    return baseItems;
+  }, [preservedCarriedOver, carriedOverItems, prepRequirementsComplete?.allComplete]);
 
   // Calculate progress
   const completedItems = useMemo(() => {
@@ -2189,8 +2143,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // This ensures the checkbox state matches the DevelopmentJourneyWidget counter
     let isCompleted;
     
-    // FIRST: Check facilitator-controlled session attendance (Deliberate Practice sessions)
+    // FIRST: Check if this is a carried-over prep item with prepComplete already set
+    // This avoids re-looking up completion status (already calculated from prepRequirementsComplete)
+    if (item.carriedOver && item.prepComplete !== undefined) {
+      isCompleted = item.prepComplete;
+    // SECOND: Check facilitator-controlled session attendance (Deliberate Practice sessions)
     // These sessions are marked as attended by facilitators via SessionAttendanceQueue
+    } else {
     const sessionAttendance = userState?.sessionAttendance || {};
     if (item.id && sessionAttendance[item.id]?.attended === true) {
       isCompleted = true;
@@ -2244,6 +2203,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       isCompleted = (progress.status === 'completed' || completedItems.includes(item.id));
     }
     } // end else for session attendance check
+    } // end else for prepComplete check
     const isSkipped = progress.status === 'skipped';
     const Icon = item.isInteractive 
       ? (item.icon === 'User' ? User : item.icon === 'Bell' ? Bell : ClipboardCheck)
