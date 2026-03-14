@@ -31,7 +31,7 @@ const RepTypeContext = createContext(null);
 // PROVIDER
 // ============================================
 export const RepTypeProvider = ({ children }) => {
-  const { db } = useAppServices();
+  const { db, user } = useAppServices();
   
   // State
   const [categories, setCategories] = useState([]);
@@ -48,10 +48,17 @@ export const RepTypeProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [usingFirestore, setUsingFirestore] = useState(false);
 
-  // Load data from Firestore
+  // Load data from Firestore - only after user is authenticated
   useEffect(() => {
-    if (!db) {
-      // No db yet - use fallback
+    if (!db || !user?.uid) {
+      // No db or no user yet - use fallback (silently for unauthenticated state)
+      if (!user?.uid) {
+        // Don't log errors for unauthenticated state - this is expected on login page
+        setCategories(getCategoriesArrayFallback());
+        setRepTypes([...REP_TYPES_V2]);
+        setLoading(false);
+        return;
+      }
       console.log('[RepTypeProvider] No db available, using fallback data');
       setCategories(getCategoriesArrayFallback());
       setRepTypes([...REP_TYPES_V2]);
@@ -127,7 +134,7 @@ export const RepTypeProvider = ({ children }) => {
     };
 
     loadData();
-  }, [db]);
+  }, [db, user?.uid]);
 
   // ============================================
   // DERIVED DATA & HELPERS
