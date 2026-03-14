@@ -697,7 +697,7 @@ const MILESTONES = [
     description: 'Building accountability and vulnerability',
     theme: 'follow_through',
     icon: 'CheckCircle',
-    requiredRepCount: 4,
+    requiredRepCount: 3,
     sortOrder: 2,
     isActive: true
   },

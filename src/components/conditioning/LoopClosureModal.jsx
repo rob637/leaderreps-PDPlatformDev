@@ -61,7 +61,7 @@ const OutcomeSelector = ({ value, onChange, showError: _showError = false }) => 
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-corporate-navy">
-        What happened after the conversation? <span className="text-red-500">*</span>
+        What happened after the conversation?
       </label>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
         Close the loop on this rep by recording the follow-up outcome.

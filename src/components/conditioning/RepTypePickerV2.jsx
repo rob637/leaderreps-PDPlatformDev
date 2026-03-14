@@ -171,7 +171,9 @@ const RepTypePickerV2 = ({
   onCategoryChange,
   // Show behavior focus reminder below selection
   showBehaviorFocus = false,
-  // Milestone-based unlocking (new props)
+  // Session-based unlocking (primary)
+  sessionAttendance = null,
+  // Milestone-based unlocking (legacy fallback)
   milestoneProgress = {},
   completedRepTypes = []
 }) => {
@@ -233,9 +235,10 @@ const RepTypePickerV2 = ({
         </label>
         <div className="space-y-2">
           {categories.map((category) => {
-            const repTypes = getRepTypesByCategoryV2(category.id);
+            const repTypes = getRepTypesByCategoryV2(category.id)
+              .filter(rt => rt.id !== 'make_clean_handoff'); // Turned off for now: moved to later level
             const unlockedCount = repTypes.filter(rt => 
-              isRepUnlocked(rt.id, milestoneProgress, completedRepTypes).unlocked
+              isRepUnlocked(rt.id, milestoneProgress, completedRepTypes, sessionAttendance).unlocked
             ).length;
             return (
               <CategoryCard
@@ -253,7 +256,8 @@ const RepTypePickerV2 = ({
   }
   
   // Rep type selection within category
-  const repTypesInCategory = getRepTypesByCategoryV2(selectedCategory);
+  const repTypesInCategory = getRepTypesByCategoryV2(selectedCategory)
+    .filter(rt => rt.id !== 'make_clean_handoff'); // Turned off for now: moved to later level
   const categoryInfo = categories.find(c => c.id === selectedCategory);
   const colors = CATEGORY_COLORS[selectedCategory] || CATEGORY_COLORS.lead_the_work;
   const Icon = CATEGORY_ICONS[selectedCategory] || Briefcase;
@@ -282,7 +286,7 @@ const RepTypePickerV2 = ({
       {/* Rep types list */}
       <div className="space-y-2">
         {repTypesInCategory.map((repType) => {
-          const unlockStatus = isRepUnlocked(repType.id, milestoneProgress, completedRepTypes);
+          const unlockStatus = isRepUnlocked(repType.id, milestoneProgress, completedRepTypes, sessionAttendance);
           return (
             <RepTypeCard
               key={repType.id}
@@ -316,6 +320,7 @@ const RepTypePickerV2 = ({
 // V2 REP TYPE BADGE (for display)
 // ============================================
 export const RepTypeBadgeV2 = ({ repTypeId, showCategory = false }) => {
+  const { getRepTypeV2 } = useRepTypeContext();
   const repType = getRepTypeV2(repTypeId);
   if (!repType) return null;
   

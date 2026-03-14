@@ -64,7 +64,9 @@ const CommitFlowSelector = ({
   isLoading,
   // Optional: start with a specific flow
   initialFlow = null,
-  // Milestone-based unlocking props
+  // Session-based unlocking (primary)
+  sessionAttendance = null,
+  // Milestone-based unlocking props (legacy fallback)
   milestoneProgress = {},
   completedRepTypes = [],
   // Optional: preselect a rep type (from action item click)
@@ -97,6 +99,7 @@ const CommitFlowSelector = ({
           }
         }}
         isLoading={isLoading}
+        sessionAttendance={sessionAttendance}
         milestoneProgress={milestoneProgress}
         completedRepTypes={completedRepTypes}
         preselectedRepType={preselectedRepType || initialDraft?.preselectedRepType}
@@ -118,6 +121,7 @@ const CommitFlowSelector = ({
           }
         }}
         isLoading={isLoading}
+        sessionAttendance={sessionAttendance}
         milestoneProgress={milestoneProgress}
         completedRepTypes={completedRepTypes}
         preselectedRepType={preselectedRepType || initialDraft?.preselectedRepType}

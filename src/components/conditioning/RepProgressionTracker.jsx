@@ -60,11 +60,11 @@ const STATE_CONFIG = {
     description: 'Tracking behavior change'
   },
   loop_closed: {
-    label: 'Loop Closed',
-    shortLabel: 'Closed',
+    label: 'Rep Complete',
+    shortLabel: 'Complete',
     icon: CircleCheck,
     color: 'emerald',
-    description: 'Rep complete - loop closed'
+    description: 'Rep fully complete'
   },
   missed: {
     label: 'Missed',

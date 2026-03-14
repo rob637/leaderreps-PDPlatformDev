@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
-import { Card, Button, Input, Select, Badge, TextArea } from '../ui';
+import { Card, Button, Input, Select, Badge, Textarea } from '../ui';
 import { 
   Mail, MessageSquare, Bell, Save, RefreshCw, Eye, 
   ChevronDown, ChevronRight, AlertCircle, CheckCircle,

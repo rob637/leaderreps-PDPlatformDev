@@ -9,7 +9,8 @@
  * Format date for calendar URLs (YYYYMMDDTHHMMSSZ)
  */
 const formatCalendarDate = (date) => {
-  const d = new Date(date);
+  const d = date?.toDate?.() || new Date(date);
+  if (isNaN(d.getTime())) return '';
   return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 };
 
@@ -26,7 +27,7 @@ export const generateGoogleCalendarUrl = ({
   durationMinutes = 60
 }) => {
   // Parse date and time
-  let start = new Date(startDate);
+  let start = startDate?.toDate?.() || new Date(startDate);
   if (startTime) {
     const [hours, minutes] = startTime.split(':').map(Number);
     start.setHours(hours, minutes, 0, 0);
@@ -57,7 +58,7 @@ export const generateOutlookCalendarUrl = ({
   startTime,
   durationMinutes = 60
 }) => {
-  let start = new Date(startDate);
+  let start = startDate?.toDate?.() || new Date(startDate);
   if (startTime) {
     const [hours, minutes] = startTime.split(':').map(Number);
     start.setHours(hours, minutes, 0, 0);
@@ -70,8 +71,8 @@ export const generateOutlookCalendarUrl = ({
     rru: 'addevent',
     subject: title,
     body: description || '',
-    startdt: start.toISOString(),
-    enddt: end.toISOString(),
+    startdt: isNaN(start.getTime()) ? '' : start.toISOString(),
+    enddt: isNaN(end.getTime()) ? '' : end.toISOString(),
     location: location || ''
   });
   
@@ -90,7 +91,7 @@ export const generateICSContent = ({
   durationMinutes = 60,
   uid
 }) => {
-  let start = new Date(startDate);
+  let start = startDate?.toDate?.() || new Date(startDate);
   if (startTime) {
     const [hours, minutes] = startTime.split(':').map(Number);
     start.setHours(hours, minutes, 0, 0);

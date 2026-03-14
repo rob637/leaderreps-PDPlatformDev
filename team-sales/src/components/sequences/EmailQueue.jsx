@@ -37,6 +37,9 @@ import {
 import { useSequenceStore, substituteVariables } from '../../stores/sequenceStore';
 import { useOutreachStore } from '../../stores/outreachStore';
 import { useGmailStore } from '../../stores/gmailStore';
+import { usePersonaStore } from '../../stores/personaStore';
+import { useAuthStore } from '../../stores/authStore';
+import { TEAM_MEMBERS, getCanonicalEmail } from '../../config/team';
 import { sendEmailAsTeamAccount } from '../../lib/gmail';
 import { checkAllAccountsForReplies } from '../../services/replyDetectionService';
 import { formatDistanceToNow, format, isToday, isTomorrow, isPast, addDays } from 'date-fns';
@@ -110,13 +113,26 @@ export default function EmailQueue() {
     };
   }, [initialize, cleanup, initOutreach, cleanupOutreach, loadConnectedAccounts]);
   
-  // Set initial sender when accounts load — default to jeff@leaderreps.biz
+  // Set initial sender based on active persona
+  const { user } = useAuthStore();
+  const { getActivePersona, getActiveEmail } = usePersonaStore();
+  const activePersona = getActivePersona(user?.email);
+  const activeEmail = getActiveEmail(user?.email);
+  
   useEffect(() => {
-    if (connectedAccounts.length > 0 && !selectedSender) {
-      const jeff = connectedAccounts.find(a => a.email === 'jeff@leaderreps.biz');
-      setSelectedSender(jeff ? jeff.email : connectedAccounts[0].email);
+    if (connectedAccounts.length > 0) {
+      // Try to find a connected account matching the active persona
+      const personaName = activePersona?.name?.toLowerCase();
+      const personaMatch = personaName 
+        ? connectedAccounts.find(a => a.email?.toLowerCase().includes(personaName))
+        : null;
+      if (personaMatch) {
+        setSelectedSender(personaMatch.email);
+      } else if (!selectedSender) {
+        setSelectedSender(connectedAccounts[0].email);
+      }
     }
-  }, [connectedAccounts, selectedSender]);
+  }, [connectedAccounts, activePersona]);
   
   // Compute pending emails from active enrollments
   const pendingEmails = useMemo(() => {

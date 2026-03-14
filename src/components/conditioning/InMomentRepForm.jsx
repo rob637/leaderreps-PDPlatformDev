@@ -10,7 +10,6 @@ import RepTypePickerV2 from './RepTypePickerV2';
 import SituationStep from './SituationStep';
 import { BehaviorFocusReminder } from './BehaviorFocusReminder';
 import { getRepTypeV2 } from '../../services/repTaxonomy';
-import { getWeekBoundaries } from '../../services/conditioningService';
 import { DRAFT_FLOW_TYPES } from '../../services/draftRepService';
 import useDraftAutoSave from '../../hooks/useDraftAutoSave';
 import { Timestamp } from 'firebase/firestore';
@@ -19,7 +18,7 @@ import { Timestamp } from 'firebase/firestore';
 // STEP CONFIGURATION
 // ============================================
 const TOTAL_STEPS = 4;
-const STEP_LABELS = ['Rep Type', 'With', 'Context', 'Execute'];
+const STEP_LABELS = ['Rep Type', 'With', 'Situation', 'When'];
 
 // ============================================
 // WHEN OPTIONS
@@ -38,7 +37,9 @@ const InMomentRepForm = ({
   onSubmit, 
   onClose, 
   isLoading,
-  // Milestone-based unlocking props
+  // Session-based unlocking (primary)
+  sessionAttendance = null,
+  // Milestone-based unlocking props (legacy fallback)
   milestoneProgress = {},
   completedRepTypes = [],
   // Optional: preselected rep type (from action item click)
@@ -128,7 +129,7 @@ const InMomentRepForm = ({
   const isStepValid = useMemo(() => {
     switch (currentStep) {
       case 0: return !!repTypeId;
-      case 1: return person.trim().length > 0 || selectedRepType?.allowSoloRep;
+      case 1: return person.trim().length > 0;
       case 2: {
         if (!selectedSituation) return false;
         if (selectedSituation === 'something_else' && !customContext.trim()) return false;
@@ -141,7 +142,7 @@ const InMomentRepForm = ({
       }
       default: return true;
     }
-  }, [currentStep, repTypeId, person, selectedRepType, selectedSituation, customContext, whenOption, specificDate]);
+  }, [currentStep, repTypeId, person, selectedSituation, customContext, whenOption, specificDate]);
 
   // Navigation handlers
   const handleNext = () => {
@@ -235,11 +236,12 @@ const InMomentRepForm = ({
   const handleSubmit = async () => {
     if (isLoading) return;
     
-    const { weekEnd } = getWeekBoundaries();
+    // For in-the-moment reps, use current date as deadline since it's already executed
+    const now = new Date();
     
     const repData = {
       repType: repTypeId,
-      person: person.trim() || (selectedRepType?.allowSoloRep ? 'Solo Rep' : ''),
+      person: person.trim(),
       commitmentType: 'in_moment',
       situation: {
         selected: selectedSituation,
@@ -247,7 +249,7 @@ const InMomentRepForm = ({
         isRequired: selectedSituation === 'something_else'
       },
       occurredAt: getOccurredAt(),
-      deadline: Timestamp.fromDate(weekEnd)
+      deadline: Timestamp.fromDate(now)
     };
     
     // Submit the rep
@@ -270,6 +272,7 @@ const InMomentRepForm = ({
               onCategoryChange={setSelectedCategory}
               headerText="What Real Rep did you just run?"
               showBehaviorFocus={true}
+              sessionAttendance={sessionAttendance}
               milestoneProgress={milestoneProgress}
               completedRepTypes={completedRepTypes}
             />
@@ -280,7 +283,7 @@ const InMomentRepForm = ({
         return (
           <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">
-              Who was involved?
+              Who did you complete this rep with?
             </label>
             <input
               ref={personInputRef}
@@ -288,23 +291,10 @@ const InMomentRepForm = ({
               value={person}
               onChange={(e) => setPerson(e.target.value)}
               placeholder="Enter their name..."
-              className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 dark:bg-slate-800 dark:text-white"
+              className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 bg-white text-slate-900 dark:bg-slate-800 dark:text-white"
             />
-            {selectedRepType?.allowSoloRep && (
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={person === '' || person === 'Solo Rep'}
-                  onChange={(e) => setPerson(e.target.checked ? 'Solo Rep' : '')}
-                  className="rounded text-corporate-teal"
-                />
-                <span className="text-sm text-gray-600 dark:text-slate-400">
-                  This was a solo rep (no other person involved)
-                </span>
-              </label>
-            )}
-            {nextAttempted && !isStepValid && !selectedRepType?.allowSoloRep && (
-              <p className="text-sm text-red-600">Please enter a name</p>
+            {nextAttempted && !isStepValid && (
+              <p className="text-sm text-corporate-orange">Please enter a name</p>
             )}
           </div>
         );
@@ -318,6 +308,7 @@ const InMomentRepForm = ({
             onSituationChange={setSelectedSituation}
             onCustomContextChange={setCustomContext}
             isInMoment={true}
+            error={nextAttempted && !isStepValid ? 'Please select a situation' : null}
           />
         );
         
@@ -365,26 +356,29 @@ const InMomentRepForm = ({
             
             {/* Specific date/time inputs */}
             {whenOption === 'specific' && (
-              <div className="flex gap-2">
-                <input
-                  type="date"
-                  value={specificDate}
-                  onChange={(e) => setSpecificDate(e.target.value)}
-                  min={minDate}
-                  max={today}
-                  className="flex-1 p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 dark:bg-slate-800 dark:text-white dark:[color-scheme:dark]"
-                />
-                <input
-                  type="time"
-                  value={specificTime}
-                  onChange={(e) => setSpecificTime(e.target.value)}
-                  className="w-32 p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 dark:bg-slate-800 dark:text-white dark:[color-scheme:dark]"
-                />
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-corporate-teal">Date & Time</span>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={specificDate}
+                    onChange={(e) => setSpecificDate(e.target.value)}
+                    min={minDate}
+                    max={today}
+                    className="flex-1 p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 bg-white text-slate-900 dark:bg-slate-800 dark:text-white dark:[color-scheme:dark]"
+                  />
+                  <input
+                    type="time"
+                    value={specificTime}
+                    onChange={(e) => setSpecificTime(e.target.value)}
+                    className="w-32 p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 bg-white text-slate-900 dark:bg-slate-800 dark:text-white dark:[color-scheme:dark]"
+                  />
+                </div>
               </div>
             )}
             
             {nextAttempted && whenOption === 'specific' && !specificDate && (
-              <p className="text-sm text-red-600">Please select a date</p>
+              <p className="text-sm text-corporate-orange">Please select a date</p>
             )}
             
             {/* Behavior Focus Reminder on final step */}
@@ -419,7 +413,7 @@ const InMomentRepForm = ({
           {currentStep < TOTAL_STEPS - 1 ? (
             <Button
               onClick={handleNext}
-              disabled={!isStepValid && nextAttempted}
+              disabled={!isStepValid}
               className="bg-corporate-teal hover:bg-corporate-teal/90 text-white"
             >
               Next
@@ -430,7 +424,7 @@ const InMomentRepForm = ({
               disabled={isLoading}
               className="bg-corporate-teal hover:bg-corporate-teal/90 text-white"
             >
-              {isLoading ? 'Logging...' : 'Log In-the-moment RR'}
+              {isLoading ? 'Logging...' : 'Log In-the-moment Rep'}
             </Button>
           )}
         </div>

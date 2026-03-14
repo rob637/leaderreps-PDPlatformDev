@@ -87,7 +87,7 @@ const PMReflectionWidget = ({
           <textarea 
             value={reflectionGood}
             onChange={(e) => setReflectionGood(e.target.value)}
-            className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+            className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-corporate-teal outline-none transition-all text-sm"
             rows={1}
             placeholder="Celebrate a win..."
           />
@@ -100,7 +100,7 @@ const PMReflectionWidget = ({
           <textarea 
             value={reflectionBetter}
             onChange={(e) => setReflectionBetter(e.target.value)}
-            className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+            className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-corporate-teal outline-none transition-all text-sm"
             rows={1}
             placeholder="Identify an improvement..."
           />
@@ -113,7 +113,7 @@ const PMReflectionWidget = ({
           <textarea 
             value={reflectionBest}
             onChange={(e) => setReflectionBest(e.target.value)}
-            className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+            className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-corporate-teal outline-none transition-all text-sm"
             rows={1}
             placeholder="What will I do 1% better tomorrow?"
           />

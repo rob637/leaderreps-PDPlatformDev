@@ -135,6 +135,18 @@ const ScreenMap = {
   'admin-portal': lazy(() =>
     import('../components/admin/AdminPortal.jsx')
   ),
+  'admin-hub': lazy(() =>
+    import('../components/admin/AdminHub.jsx')
+  ),
+  'config-center': lazy(() =>
+    import('../components/admin/AppConfigCenter.jsx')
+  ),
+  'facilitator-center': lazy(() =>
+    import('../components/admin/FacilitatorCenter.jsx')
+  ),
+  'system-center': lazy(() =>
+    import('../components/admin/SystemAdminCenter.jsx')
+  ),
   
   // Feature Lab Screens
   'reading-hub': lazy(() => import('../components/screens/features/ReadingHub.jsx')),

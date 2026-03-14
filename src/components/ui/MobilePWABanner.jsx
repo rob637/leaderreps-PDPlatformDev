@@ -79,7 +79,8 @@ const MobilePWABanner = () => {
     }
   };
 
-  const handleDismiss = () => {
+  const handleDismiss = (e) => {
+    e.stopPropagation();
     setShowBanner(false);
     localStorage.setItem('pwa-banner-dismissed', Date.now().toString());
   };
@@ -95,7 +96,7 @@ const MobilePWABanner = () => {
     <>
       {/* Main Install Banner */}
       <div 
-        className="fixed bottom-[72px] left-4 right-4 z-40 animate-in slide-in-from-bottom duration-500"
+        className="fixed bottom-[72px] left-4 right-4 z-50 animate-in slide-in-from-bottom duration-500"
         style={{ fontFamily: 'var(--font-body)' }}
       >
         <div className="bg-gradient-to-r from-corporate-navy to-corporate-navy/95 rounded-2xl shadow-2xl p-4 border border-white/10">
@@ -115,13 +116,13 @@ const MobilePWABanner = () => {
               </p>
             </div>
 
-            {/* Dismiss button */}
+            {/* Dismiss button - larger touch target for mobile */}
             <button
               onClick={handleDismiss}
-              className="flex-shrink-0 p-1.5 -mt-1 -mr-1 bg-white/20 dark:bg-slate-800/20 hover:bg-white/30 rounded-full text-white transition-colors"
+              className="flex-shrink-0 p-2.5 -mt-2 -mr-2 hover:bg-white/20 rounded-full text-white transition-colors"
               aria-label="Dismiss"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 

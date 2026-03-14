@@ -7,6 +7,7 @@
  * - geminiProxy: Secure proxy for Gemini AI API calls
  * - scheduledNotificationCheck: Checks for scheduled notifications every 15 minutes
  * - onCoachingRegistration: Sends confirmation + ICS calendar to leader and notification to facilitator
+ * - onCoachingCancellation: Sends cancellation emails when a registration is cancelled
  * - scheduledCoachingReminders: Sends 24-hour and 1-hour reminders for upcoming coaching sessions
  */
 
@@ -76,6 +77,44 @@ const applyTemplateVariables = (text, variables = {}) => {
   });
   
   return result;
+};
+
+/**
+ * Determine if a given date is during Eastern Daylight Time (EDT)
+ * DST in US: Starts 2nd Sunday of March at 2AM, ends 1st Sunday of November at 2AM
+ * @param {Date} date - The date to check
+ * @returns {boolean} True if the date is during EDT (summer time)
+ */
+const isEasternDST = (date) => {
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth(); // 0-indexed
+  
+  // January, February, December - always EST (standard time)
+  if (month < 2 || month > 10) return false;
+  
+  // April through October - always EDT (daylight time)
+  if (month > 2 && month < 10) return true;
+  
+  // March - DST starts 2nd Sunday
+  if (month === 2) {
+    // Find 2nd Sunday of March
+    const firstDayOfMarch = new Date(Date.UTC(year, 2, 1));
+    const firstSunday = 1 + (7 - firstDayOfMarch.getUTCDay()) % 7;
+    const secondSunday = firstSunday + 7;
+    const dstStartDate = new Date(Date.UTC(year, 2, secondSunday, 7, 0, 0)); // 2AM EST = 7AM UTC
+    return date >= dstStartDate;
+  }
+  
+  // November - DST ends 1st Sunday
+  if (month === 10) {
+    // Find 1st Sunday of November
+    const firstDayOfNov = new Date(Date.UTC(year, 10, 1));
+    const firstSunday = 1 + (7 - firstDayOfNov.getUTCDay()) % 7;
+    const dstEndDate = new Date(Date.UTC(year, 10, firstSunday, 6, 0, 0)); // 2AM EDT = 6AM UTC
+    return date < dstEndDate;
+  }
+  
+  return false;
 };
 
 /**
@@ -457,7 +496,7 @@ const formatLocalDateICS = (date) => {
   return `${year}${month}${day}T${hours}${minutes}${seconds}`;
 };
 
-const generateICSContent = ({ title, description, location, startDate, startTime, durationMinutes = 60, uid }) => {
+const generateICSContent = ({ title, description, location, startDate, startTime, durationMinutes = 60, uid, organizerEmail, organizerName, attendeeEmail, attendeeName }) => {
   // Parse the date string - expects format like "2026-03-12" or ISO string
   // startDate comes from Firestore, could be a string or Date
   let dateStr = startDate;
@@ -523,13 +562,8 @@ const generateICSContent = ({ title, description, location, startDate, startTime
     'END:VTIMEZONE'
   ].join('\r\n');
   
-  return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//LeaderReps//Coaching Session//EN',
-    'CALSCALE:GREGORIAN',
-    'METHOD:REQUEST',
-    vtimezone,
+  // Build event lines
+  const eventLines = [
     'BEGIN:VEVENT',
     `UID:${uid || `${Date.now()}@leaderreps.com`}`,
     `DTSTAMP:${formatCalendarDateICS(now)}`,
@@ -539,8 +573,31 @@ const generateICSContent = ({ title, description, location, startDate, startTime
     `DESCRIPTION:${(description || '').replace(/\n/g, '\\n')}`,
     `LOCATION:${location || 'Virtual Session'}`,
     'STATUS:CONFIRMED',
-    'SEQUENCE:0',
-    'END:VEVENT',
+    'SEQUENCE:0'
+  ];
+  
+  // Add ORGANIZER if provided (required for RSVP to work)
+  if (organizerEmail) {
+    const orgName = organizerName || 'LeaderReps Trainer';
+    eventLines.push(`ORGANIZER;CN=${orgName}:mailto:${organizerEmail}`);
+  }
+  
+  // Add ATTENDEE if provided (required for RSVP to work)
+  if (attendeeEmail) {
+    const attName = attendeeName || 'Participant';
+    eventLines.push(`ATTENDEE;CN=${attName};RSVP=TRUE;PARTSTAT=NEEDS-ACTION:mailto:${attendeeEmail}`);
+  }
+  
+  eventLines.push('END:VEVENT');
+  
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//LeaderReps//Coaching Session//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:REQUEST',
+    vtimezone,
+    eventLines.join('\r\n'),
     'END:VCALENDAR'
   ].join('\r\n');
 };
@@ -550,20 +607,31 @@ const generateICSContent = ({ title, description, location, startDate, startTime
  * Sends email notifications to facilitators when a user registers for a coaching session.
  * Also sends confirmation to the user with calendar attachment.
  */
-exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDocumentCreated("coaching_registrations/{registrationId}", async (event) => {
-  const snapshot = event.data;
-  if (!snapshot) {
-    logger.error("No data associated with the event");
+exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDocumentWritten("coaching_registrations/{registrationId}", async (event) => {
+  const afterSnapshot = event.data?.after;
+  const beforeSnapshot = event.data?.before;
+  
+  if (!afterSnapshot || !afterSnapshot.exists) {
+    // Document deleted or no data
     return;
   }
 
-  const registration = snapshot.data();
-  logger.info("New coaching registration:", { id: event.params.registrationId, sessionId: registration.sessionId });
+  const registration = afterSnapshot.data();
+  const beforeRegistration = beforeSnapshot && beforeSnapshot.exists ? beforeSnapshot.data() : null;
 
-  // Skip if this is a cancelled or no-show status (edge case)
-  if (registration.status === 'CANCELLED' || registration.status === 'NO_SHOW') {
-    return;
+  // We only send the email if it transitions to REGISTERED 
+  // (either it's new and registered, or changed from CANCELLED to REGISTERED)
+  const currentStatus = (registration.status || '').toLowerCase();
+  const previousStatus = beforeRegistration ? (beforeRegistration.status || '').toLowerCase() : '';
+  
+  const isNowRegistered = currentStatus !== 'cancelled' && currentStatus !== 'no_show';
+  const wasRegistered = beforeRegistration ? (previousStatus !== 'cancelled' && previousStatus !== 'no_show') : false;
+
+  if (!isNowRegistered || wasRegistered) {
+    return; // Not a new registration event (either cancelling, or already registered and just updating other fields)
   }
+
+  logger.info("New coaching registration (or switch):", { id: event.params.registrationId, sessionId: registration.sessionId });
 
   const emailUser = process.env.EMAIL_USER;
   const emailPass = process.env.EMAIL_PASS;
@@ -691,7 +759,12 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
     startDate: registration.sessionDate,
     startTime: registration.sessionTime,
     durationMinutes: 60,
-    uid: `${event.params.registrationId}@leaderreps.com`
+    uid: `${event.params.registrationId}@leaderreps.com`,
+    // Add organizer (trainer) and attendee (participant) for RSVP functionality
+    organizerEmail: registration.coachEmail || emailUser,
+    organizerName: registration.coach || 'LeaderReps Trainer',
+    attendeeEmail: registration.userEmail,
+    attendeeName: registration.userName
   });
 
   // 2. Send confirmation to the user with calendar attachment
@@ -718,7 +791,7 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
               <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Coaching Session'}</p>
               <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
               <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
-              ${registration.coach ? `<p style="margin: 8px 0;"><strong>Coach:</strong> ${registration.coach}</p>` : ''}
+              ${registration.coach ? `<p style="margin: 8px 0;"><strong>Trainer:</strong> ${registration.coach}</p>` : ''}
             </div>
             <p style="text-align: center; margin: 16px 0;">
               <span style="background: #e0f2fe; color: #0369a1; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Calendar invite attached - open the .ics file to add to your calendar</span>
@@ -734,7 +807,7 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
             </p>
           </div>
           <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
-            <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email or contact your coach directly.</p>
+            <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email or contact your trainer directly.</p>
           </div>
         </div>
       `;
@@ -772,6 +845,177 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
     });
   } catch (error) {
     logger.error("Failed to update registration with notification timestamp:", error);
+  }
+});
+
+/**
+ * COACHING REGISTRATION CANCELLATION
+ * Sends cancellation emails when a registration status changes to 'cancelled'.
+ * Notifies both the participant and the coach.
+ */
+exports.onCoachingCancellation = require("firebase-functions/v2/firestore").onDocumentUpdated("coaching_registrations/{registrationId}", async (event) => {
+  const beforeData = event.data.before.data();
+  const afterData = event.data.after.data();
+  
+  // Only trigger when status changes TO cancelled (not when already cancelled)
+  const wasCancelled = (beforeData.status || '').toLowerCase() === 'cancelled';
+  const isCancelled = (afterData.status || '').toLowerCase() === 'cancelled';
+  
+  if (wasCancelled || !isCancelled) {
+    // Either was already cancelled, or isn't being cancelled now
+    return;
+  }
+  
+  logger.info("Coaching registration cancelled:", { 
+    id: event.params.registrationId, 
+    sessionId: afterData.sessionId,
+    previousStatus: beforeData.status 
+  });
+
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+
+  if (!emailUser || !emailPass) {
+    logger.warn("Email credentials not configured. Skipping cancellation notification.");
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: emailUser,
+      pass: emailPass,
+    },
+  });
+
+  const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+  const appDomain = projectId === 'leaderreps-prod'
+    ? 'arena.leaderreps.com'
+    : projectId === 'leaderreps-test' 
+      ? 'leaderreps-test.web.app' 
+      : 'leaderreps-pd-platform.web.app';
+  const appUrl = `https://${appDomain}`;
+
+  const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps';
+  const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
+
+  // Format date nicely
+  const sessionDate = afterData.sessionDate 
+    ? new Date(afterData.sessionDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    : 'Date TBD';
+  const sessionTime = afterData.sessionTime || 'Time TBD';
+
+  // Get coachEmail - try registration first, then look up from session
+  let coachEmail = afterData.coachEmail;
+  if (!coachEmail && afterData.sessionId) {
+    try {
+      const sessionDoc = await admin.firestore()
+        .collection('coaching_sessions')
+        .doc(afterData.sessionId)
+        .get();
+      if (sessionDoc.exists) {
+        coachEmail = sessionDoc.data().coachEmail;
+        logger.info("Looked up coachEmail from session:", { coachEmail, sessionId: afterData.sessionId });
+      }
+    } catch (lookupErr) {
+      logger.warn("Could not look up coachEmail from session:", lookupErr.message);
+    }
+  }
+
+  // 1. Send cancellation notification to the coach
+  if (coachEmail) {
+    const coachSubject = `❌ Session Cancelled: ${afterData.userName || 'A participant'} - ${afterData.sessionTitle || 'Coaching Session'}`;
+    const coachHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">Session Cancelled</h2>
+        </div>
+        <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin-top: 0;"><strong>${afterData.userName || 'A participant'}</strong> has cancelled their coaching session.</p>
+          <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #fecaca; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #991b1b;">Cancelled Session Details</h3>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${afterData.sessionTitle || 'Coaching Session'}</p>
+            <p style="margin: 8px 0;"><strong>Type:</strong> ${afterData.sessionType || '1:1 Coaching'}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+          </div>
+          <p style="text-align: center; margin-top: 24px;">
+            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
+          </p>
+        </div>
+        <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin: 0; color: #64748b; font-size: 12px;">This is an automated notification from LeaderReps.</p>
+        </div>
+      </div>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: coachEmail,
+        subject: coachSubject,
+        html: coachHtml,
+      });
+      logger.info(`Coach cancellation notification sent to ${coachEmail}`);
+    } catch (error) {
+      logger.error(`Failed to send coach cancellation to ${coachEmail}:`, error);
+    }
+  }
+
+  // 2. Send cancellation confirmation to the participant
+  if (afterData.userEmail) {
+    const userSubject = `❌ Session Cancelled: ${afterData.sessionTitle || 'Coaching Session'}`;
+    const userHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">Session Cancelled</h2>
+        </div>
+        <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin-top: 0;">Hi ${afterData.userName || 'there'},</p>
+          <p>Your coaching session has been cancelled.</p>
+          <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #fecaca; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #991b1b;">Cancelled Session</h3>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${afterData.sessionTitle || 'Coaching Session'}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+            ${afterData.coach ? `<p style="margin: 8px 0;"><strong>Trainer:</strong> ${afterData.coach}</p>` : ''}
+          </div>
+          <p style="text-align: center; margin: 16px 0;">
+            <span style="background: #fef2f2; color: #991b1b; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Please remove this from your calendar</span>
+          </p>
+          <p>You can schedule a new session anytime from the Coaching Hub.</p>
+          <p style="text-align: center; margin-top: 24px;">
+            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Browse Sessions</a>
+          </p>
+        </div>
+        <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email or contact your trainer directly.</p>
+        </div>
+      </div>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: afterData.userEmail,
+        subject: userSubject,
+        html: userHtml,
+      });
+      logger.info(`User cancellation confirmation sent to ${afterData.userEmail}`);
+    } catch (error) {
+      logger.error(`Failed to send user cancellation to ${afterData.userEmail}:`, error);
+    }
+  }
+
+  // Update registration to mark cancellation notification sent
+  try {
+    await event.data.after.ref.update({
+      cancellationNotificationSentAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (error) {
+    logger.error("Failed to update registration with cancellation timestamp:", error);
   }
 });
 
@@ -838,23 +1082,44 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
     
     if (!registration.sessionDate) continue;
     
-    // Parse session datetime
-    let sessionStart = new Date(registration.sessionDate);
+    // Parse session datetime - sessions are in America/New_York timezone
+    // The sessionDate is stored as "YYYY-MM-DD" (local date, no timezone)
+    // The sessionTime is stored as "HH:MM AM/PM" (local time)
+    // We need to interpret these as Eastern Time and convert to UTC for comparison
+    
+    // Parse the time components first
+    let sessionHours = 0;
+    let sessionMinutes = 0;
     if (registration.sessionTime) {
       const timeParts = registration.sessionTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
       if (timeParts) {
-        let hours = parseInt(timeParts[1]);
-        const minutes = parseInt(timeParts[2]);
+        sessionHours = parseInt(timeParts[1]);
+        sessionMinutes = parseInt(timeParts[2]);
         const meridiem = timeParts[3];
         if (meridiem) {
-          if (meridiem.toUpperCase() === 'PM' && hours !== 12) hours += 12;
-          if (meridiem.toUpperCase() === 'AM' && hours === 12) hours = 0;
+          if (meridiem.toUpperCase() === 'PM' && sessionHours !== 12) sessionHours += 12;
+          if (meridiem.toUpperCase() === 'AM' && sessionHours === 12) sessionHours = 0;
         }
-        sessionStart.setHours(hours, minutes, 0, 0);
       }
     }
     
-    const hoursUntilSession = (sessionStart - now) / (1000 * 60 * 60);
+    // Parse date components (YYYY-MM-DD)
+    const dateParts = registration.sessionDate.split('-');
+    const year = parseInt(dateParts[0]);
+    const month = parseInt(dateParts[1]) - 1; // JS months are 0-indexed
+    const day = parseInt(dateParts[2]);
+    
+    // Determine if DST is in effect for America/New_York
+    // DST starts 2nd Sunday of March, ends 1st Sunday of November
+    const sessionDateForDST = new Date(Date.UTC(year, month, day, 12, 0, 0)); // noon to avoid edge cases
+    const isDST = isEasternDST(sessionDateForDST);
+    const easternOffset = isDST ? 4 : 5; // EDT = UTC-4, EST = UTC-5
+    
+    // Create session start time in UTC by adding the Eastern offset
+    // e.g., 10:00 AM Eastern = 14:00 UTC (during EDT) or 15:00 UTC (during EST)
+    const sessionStartUTC = new Date(Date.UTC(year, month, day, sessionHours + easternOffset, sessionMinutes, 0, 0));
+    
+    const hoursUntilSession = (sessionStartUTC - now) / (1000 * 60 * 60);
     
     // Skip sessions in the past or too far in the future
     if (hoursUntilSession < 0 || hoursUntilSession > 25) continue;
@@ -896,7 +1161,11 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
       startDate: registration.sessionDate,
       startTime: registration.sessionTime,
       durationMinutes: 60,
-      uid: `${doc.id}@leaderreps.com`
+      uid: `${doc.id}@leaderreps.com`,
+      organizerEmail: registration.coachEmail || emailUser,
+      organizerName: registration.coach || 'LeaderReps Trainer',
+      attendeeEmail: registration.userEmail,
+      attendeeName: registration.userName
     });
     
     // Determine which template to use
@@ -934,7 +1203,7 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
                 <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Coaching Session'}</p>
                 <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
                 <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
-                ${registration.coach ? `<p style="margin: 8px 0;"><strong>Coach:</strong> ${registration.coach}</p>` : ''}
+                ${registration.coach ? `<p style="margin: 8px 0;"><strong>Trainer:</strong> ${registration.coach}</p>` : ''}
               </div>
               <p style="text-align: center; margin-top: 24px;">
                 <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
@@ -1261,6 +1530,1104 @@ exports.geminiProxy = onRequest(
   }
 );
 
+// ================================================================
+// DRF EVALUATION FUNCTION
+// Implements the LeaderReps AI Evaluation Specification for 
+// Deliver Reinforcing Feedback Real Reps
+// ================================================================
+async function assessDRFRep(data, person, repType, previousQuestions = []) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    logger.error("GEMINI_API_KEY is not configured");
+    throw new HttpsError('internal', 'AI service not configured');
+  }
+
+  // Extract DRF-specific evidence
+  const drfResponses = data.drf_responses || {};
+  const commitContext = data.commit_context || '';
+  const selfAssessment = data.self_assessment || {};
+  const responseType = data.response_type || '';
+  const notes = data.notes || '';
+  const situationBranch = data.situation_branch || '';
+
+  // Build evidence summary from structured DRF fields
+  const evidenceLines = [];
+  if (drfResponses.describe_behavior) {
+    evidenceLines.push(`- Behavior described: ${drfResponses.describe_behavior}`);
+  }
+  if (drfResponses.why_matters) {
+    evidenceLines.push(`- Why it matters: ${drfResponses.why_matters}`);
+  }
+
+  // Self-assessment context
+  const selfAssessmentLines = Object.entries(selfAssessment)
+    .filter(([, v]) => v && String(v).trim())
+    .map(([key, val]) => {
+      const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      return `- ${label}: ${val}`;
+    })
+    .join('\n');
+
+  // Situation type descriptions for coaching tone
+  const situationDescriptions = {
+    'reinforcing_behavior': 'Reinforcing a behavior I want repeated',
+    'acknowledging_improvement': 'Acknowledging improvement after prior feedback',
+    'recognizing_follow_through': 'Recognizing strong follow-through',
+    'reinforcing_ownership': 'Reinforcing ownership taken without prompting'
+  };
+
+  const situationLabel = situationDescriptions[situationBranch] || situationBranch || 'Not specified';
+
+  const prompt = `You are evaluating a leadership practice exercise ("Real Rep") for Deliver Reinforcing Feedback.
+
+DEFINITION:
+Deliver Reinforcing Feedback occurs when a leader:
+- notices a specific behavior
+- communicates that behavior
+- explains why the behavior matters
+- signals that the behavior should continue
+The purpose is to reinforce repeatable leadership behaviors, not simply praise outcomes.
+
+CONTEXT:
+- Situation type: ${situationLabel}
+${commitContext ? `- Situation context (optional note): ${commitContext}` : ''}
+- Person involved: ${person || 'Not specified'}
+- Their response: ${responseType || 'Not specified'}
+
+EVIDENCE PROVIDED:
+${evidenceLines.join('\n') || '(No structured evidence provided)'}
+${selfAssessmentLines ? `\nSelf-Assessment:\n${selfAssessmentLines}` : ''}
+${notes ? `\nAdditional notes: ${notes}` : ''}
+
+INPUT VALIDITY CHECK (CRITICAL - EVALUATE FIRST):
+Before scoring ANY condition, check if the evidence contains GIBBERISH or NONSENSE:
+- Random characters or keyboard mashing (e.g., "asdf", "qwerty", "jjjj", "asddfasfdasfd")
+- Meaningless text that does not form coherent sentences
+- Placeholder text (e.g., "test", "xxx", "lorem ipsum")
+- Single repeated characters or words
+- Content unrelated to workplace leadership (personal relationships, jokes, etc.)
+
+If ANY evidence field contains gibberish or nonsense:
+1. Set repValidity to "invalid"
+2. Set invalidReason to describe the specific gibberish detected (quote it)
+3. ALL conditions MUST score 0 with label "None"
+4. Do NOT attempt to interpret or find meaning in nonsense text
+
+EVALUATION INSTRUCTIONS:
+First determine if this rep is Valid or Invalid.
+A rep is Valid if the leader clearly delivered reinforcing feedback.
+Reinforcing feedback requires:
+- noticing a specific behavior
+- communicating the behavior
+- explaining why it matters
+
+A rep is Invalid if:
+- the evidence contains gibberish, random characters, or nonsense text
+- the response does not describe feedback delivered
+- the response contains only general praise
+- the response contains no usable evidence
+Example invalid evidence: "I told them good job." or "asdfasdf"
+
+If Invalid, set repValidity to "invalid" and stop — all conditions score 0.
+
+COMBINED EVIDENCE RULE:
+The AI may use all evidence fields, including optional notes.
+Secondary notes may clarify the overall evidence but do not guarantee score points individually.
+Optional notes may clarify evidence but do not add bonus points.
+A single statement may satisfy multiple conditions.
+Example:
+"You stayed late to help the new rep. That helped them ramp faster."
+Behavior = observable action, Impact = why it matters.
+Each condition must still be scored independently.
+Optional notes may clarify evidence but do not add bonus points.
+
+SCORING RULES:
+Score each condition 0-3:
+3 = Strong evidence
+2 = Adequate evidence
+1 = Weak evidence
+0 = No usable evidence
+
+CONDITION 1 — OBSERVABLE BEHAVIOR CLEARLY NAMED (Critical Condition — Camera Test)
+Did the leader clearly describe the behavior being reinforced?
+The behavior description should pass the Camera Test: a neutral observer should be able to see the behavior occurring.
+3: Behavior clearly observable (e.g., "You stayed late to help the new rep learn the CRM.")
+2: Behavior identifiable but slightly general (e.g., "You did a nice job helping the team.")
+1: Behavior vague or interpreted (e.g., "You showed great leadership.")
+0: No behavior evidence (e.g., "Great job." / "Nice work.")
+
+CONDITION 2 — IMPACT OR MEANING EXPLAINED
+Did the leader explain why the behavior matters?
+Impact connects behavior to: team effectiveness, results, culture, standards, or learning.
+3: Impact clearly stated (e.g., "That helped the team ramp faster.")
+2: Impact implied but not clearly explained (e.g., "That really helped.")
+1: Impact vague or generic (e.g., "That was awesome.")
+0: No impact stated.
+
+CONDITION 3 — REINFORCEMENT OF REPEAT BEHAVIOR
+Did the leader reinforce or encourage repeating the behavior?
+Reinforcement can be explicit or implied.
+3: Clear encouragement to repeat (e.g., "Keep doing that." / "That's exactly the approach we want to see.")
+2: Encouragement implied (e.g., "I appreciate you doing that.")
+1: Positive tone but no reinforcement signal (e.g., "Nice." / "Good.")
+0: No reinforcement present.
+
+AUTOMATIC FAIL CONDITIONS:
+The rep automatically fails if:
+- any condition scores 0
+- two conditions score 1
+- Observable Behavior Clearly Named = 1
+Behavior specificity is a critical leadership behavior. This prevents generic praise from passing.
+
+PASS RULE:
+A rep passes if: repValidity = Valid AND no automatic fail conditions triggered AND total score >= 5.
+Total score = sum of all three condition scores (range 3-9).
+
+SIMPLICITY RULE:
+Do not penalize short reinforcing feedback.
+Example strong feedback: "You summarized the client concerns clearly. That helped the team align."
+Simplicity is acceptable when the behavior is observable and the impact is understandable.
+Only penalize feedback that is generic praise, non-observable, or lacking meaning.
+
+COACHING QUESTIONS (1-2):
+Generate 1-2 coaching questions addressing the lowest scoring condition.
+Reference the leader's evidence when possible.
+Question rotation rule:
+Question 1 -> Reflection or Counterfactual frame
+Question 2 -> Forward-Looking frame
+CRITICAL: The AI should avoid repeating the same question structure across consecutive reps.
+${previousQuestions && previousQuestions.length > 0 ? `For context, here are the coaching questions from their PREVIOUS rep. DO NOT repeat these topics or structures:\n${previousQuestions.map(q => `- ${q}`).join('\n')}` : ''}
+
+Question examples:
+- Reflection: "What made that behavior stand out to you in the moment?"
+- Counterfactual: "What might have happened if you had named the impact more clearly?"
+- Forward-Looking: "What's one way you might reinforce that behavior even more clearly next time?"
+
+REFLECTION PROMPT (Optional):
+A short prompt encouraging the leader to apply the lesson in the next rep.
+Encourage reflection, not instruction.
+Example: "Before your next rep, consider one behavior you want to intentionally notice and reinforce."
+
+${situationBranch ? `SITUATION-AWARE COACHING:\nReference the selected situation type (${situationLabel}) in your coaching when relevant.` : ''}
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "repValidity": "valid" or "invalid",
+  "invalidReason": "Reason if invalid, null if valid",
+  "conditions": {
+    "behavior_named": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    },
+    "impact_explained": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    },
+    "reinforcement_given": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    }
+  },
+  "autoFailTriggered": boolean,
+  "autoFailReason": "Reason if auto-fail, null otherwise",
+  "totalScore": number,
+  "repPassed": boolean,
+  "coachingQuestions": ["question1", "question2"],
+  "reflectionPrompt": "Optional short reflection prompt or null",
+  "summary": "2-sentence evaluation summary"
+}`;
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        responseMimeType: 'application/json'
+      }
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    let assessment;
+    try {
+      assessment = JSON.parse(text);
+    } catch (parseErr) {
+      logger.error("Failed to parse DRF AI response as JSON", { text, error: parseErr });
+      throw new HttpsError('internal', 'AI response was not valid JSON');
+    }
+
+    const conditions = assessment.conditions || {};
+    const totalScore = (conditions.behavior_named?.score || 0) + 
+                       (conditions.impact_explained?.score || 0) + 
+                       (conditions.reinforcement_given?.score || 0);
+
+    // Validate auto-fail conditions server-side
+    const scores = [
+      conditions.behavior_named?.score || 0,
+      conditions.impact_explained?.score || 0,
+      conditions.reinforcement_given?.score || 0
+    ];
+    const hasZero = scores.some(s => s === 0);
+    const onesCount = scores.filter(s => s === 1).length;
+    const behaviorIsOne = (conditions.behavior_named?.score || 0) === 1;
+    const autoFailTriggered = hasZero || onesCount >= 2 || behaviorIsOne;
+
+    const isValid = assessment.repValidity !== 'invalid';
+    const repPassed = isValid && !autoFailTriggered && totalScore >= 5;
+
+    logger.info("DRF rep assessment completed", { 
+      repType, totalScore, repPassed, autoFailTriggered, isValid
+    });
+
+    return {
+      evaluationType: 'drf_scored',
+      repValidity: assessment.repValidity || 'valid',
+      invalidReason: assessment.invalidReason || null,
+      conditions,
+      autoFailTriggered,
+      autoFailReason: autoFailTriggered ? (assessment.autoFailReason || 'Automatic fail condition met') : null,
+      totalScore,
+      maxScore: 9,
+      repPassed,
+      coachingQuestions: assessment.coachingQuestions || [],
+      reflectionPrompt: assessment.reflectionPrompt || null,
+      summary: assessment.summary || (repPassed ? 'Rep Passed' : 'Rep Not Passed'),
+      // Backward-compatible fields
+      meetsStandard: repPassed,
+      isConstructive: isValid,
+      constructiveFeedback: !isValid ? (assessment.invalidReason || 'This rep does not contain valid evidence') : null,
+      assessedAt: new Date().toISOString(),
+      assessedBy: 'ai'
+    };
+
+  } catch (error) {
+    logger.error("Error in assessDRFRep", error);
+    if (error.code) throw error;
+    throw new HttpsError('internal', 'Failed to assess DRF rep quality');
+  }
+}
+
+// ================================================================
+// SCE EVALUATION FUNCTION
+// Implements the LeaderReps AI Evaluation Specification for 
+// Set Clear Expectations Real Reps
+// ================================================================
+async function assessSCERep(data, person, repType, previousQuestions = []) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    logger.error("GEMINI_API_KEY is not configured");
+    throw new HttpsError('internal', 'AI service not configured');
+  }
+
+  // Extract SCE-specific evidence
+  const situationBranch = data.situation_branch || '';
+  const commitContext = data.commit_context || '';
+  const sceResponses = data.sce_responses || {};
+  const selfAssessment = data.self_assessment || {};
+  const responseType = data.response_type || data.outcome || '';
+  const notes = data.notes || '';
+
+  // Build evidence summary from structured SCE fields
+  const evidenceLines = Object.entries(sceResponses)
+    .filter(([, v]) => v && String(v).trim())
+    .map(([key, val]) => {
+      const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      // Handle yes/no/comment fields
+      if (typeof val === 'object' && val !== null) {
+        const parts = [];
+        if (val.answer) parts.push(val.answer);
+        if (val.comment) parts.push(val.comment);
+        return `- ${label}: ${parts.join(' — ')}`;
+      }
+      return `- ${label}: ${val}`;
+    })
+    .join('\n');
+
+  // Situation type descriptions for coaching tone
+  const situationDescriptions = {
+    'assigning_task': 'Assigning a task and defining what done looks like',
+    'delegating': 'Delegating ongoing ownership of a responsibility',
+    'behavioral_standards': 'Setting or clarifying behavioral standards',
+    'resetting': 'Resetting expectations without changing ownership'
+  };
+
+  const situationLabel = situationDescriptions[situationBranch] || situationBranch || 'Not specified';
+
+  const prompt = `You are evaluating a leadership practice exercise ("Real Rep") for Set Clear Expectations.
+
+DEFINITION:
+Set Clear Expectations occurs when a leader explicitly defines what work or behavior is expected and what success looks like.
+The goal is to eliminate ambiguity before execution begins.
+This Real Rep also verifies that the expectation is understood and responsibility for the outcome is clear.
+
+CONTEXT:
+- Situation type: ${situationLabel}
+${commitContext ? `- Situation context (optional note): ${commitContext}` : ''}
+- Person involved: ${person || 'Not specified'}
+- Their response: ${responseType || 'Not specified'}
+
+EVIDENCE PROVIDED:
+${evidenceLines || '(No structured evidence provided)'}
+${notes ? `\nAdditional notes: ${notes}` : ''}
+
+INPUT VALIDITY CHECK (CRITICAL - EVALUATE FIRST):
+Before scoring ANY condition, check if the evidence contains GIBBERISH or NONSENSE:
+- Random characters or keyboard mashing (e.g., "asdf", "qwerty", "jjjj", "asddfasfdasfd")
+- Meaningless text that does not form coherent sentences
+- Placeholder text (e.g., "test", "xxx", "lorem ipsum")
+- Single repeated characters or words
+- Content unrelated to workplace leadership (personal relationships, jokes, etc.)
+
+If ANY evidence field contains gibberish or nonsense:
+1. Set repValidity to "invalid"
+2. Set invalidReason to describe the specific gibberish detected (quote it)
+3. ALL conditions MUST score 0 with label "None"
+4. Do NOT attempt to interpret or find meaning in nonsense text
+
+EVALUATION INSTRUCTIONS:
+First determine if this rep is Valid or Invalid.
+A rep is Valid if the leader clearly attempted to define expectations for work or behavior.
+A rep is Invalid if:
+- the evidence contains gibberish, random characters, or nonsense text
+- the response does not describe expectation-setting
+- the response is unrelated to the Real Rep
+- the response contains no usable evidence
+
+If Invalid, set repValidity to "invalid" and stop — all conditions score 0.
+
+SCORING RULES:
+Score each condition 0–3:
+3 = Strong evidence
+2 = Adequate evidence
+1 = Weak evidence
+0 = No usable evidence
+
+The AI may use all available evidence fields, including optional notes. A single statement may satisfy multiple conditions, but each condition must still be scored independently.
+When evaluating evidence, you may use information across fields if the evidence collectively clarifies the expectation or success criteria.
+Optional notes may clarify evidence but do not add bonus points.
+
+CONDITION 1 — EXPECTATION CLEARLY STATED
+Did the leader clearly state the expected task, deliverable, or behavior?
+The expectation should include: an action, a clear object or outcome, a specific instruction.
+3: Expectation clear and actionable (e.g., "Prepare a three-slide summary of the risks")
+2: Expectation understandable but slightly vague (e.g., "Put together a summary of the risks")
+1: Expectation vague or incomplete (e.g., "Handle this")
+0: No usable expectation
+
+CONDITION 2 — SUCCESS CLEARLY DEFINED (Critical Condition)
+Did the leader define what "done" looks like?
+Success criteria should allow the work to be inspected or evaluated.
+Indicators: scope, quantity, deadline, format, quality, measurable outcome.
+3: Success criteria clearly define inspectable results (e.g., "Include the three risks and recommended actions")
+2: Outcome partially defined (e.g., "Include the key risks")
+1: Outcome unclear (e.g., "Make sure it's good")
+0: No success criteria provided
+
+CONDITION 3 — SHARED UNDERSTANDING CONFIRMED
+Did the leader confirm alignment?
+Alignment may be demonstrated through restating, acknowledging, or confirming understanding.
+3: Expectation or success criteria restated (e.g., "So you want three slides by Thursday")
+2: Acknowledgement without restatement (e.g., "Got it")
+1: Alignment assumed but not tested
+0: No usable alignment evidence
+
+CONDITION 4 — OWNERSHIP CLEARLY ESTABLISHED
+Did the leader ensure it was clear who is responsible for delivering the outcome?
+Responsibility may be newly transferred or reaffirmed.
+3: Responsibility clearly accepted or reaffirmed (e.g., "I'll take care of the report and have it ready Thursday")
+2: Ownership implied but not explicit (e.g., "I'll handle it")
+1: Ownership uncertain or hesitant (e.g., "I'll try") — statements expressing hesitation automatically score 1 or lower
+0: No ownership evidence
+
+AUTOMATIC FAIL CONDITIONS:
+The rep automatically fails if:
+- any condition scores 0
+- two conditions score 1
+- Expectation clearly stated = 1
+- Success clearly defined = 1
+Expectation clarity and success definition are non-negotiable leadership behaviors.
+Ownership is not a non-negotiable fail condition because ownership may already exist.
+Evaluate automatic fail conditions BEFORE calculating total score.
+
+PASS RULE:
+A rep passes if: repValidity = Valid AND no automatic fail conditions triggered AND total score >= 6.
+Total score = sum of all four condition scores (range 4–12).
+
+SIMPLICITY RULE:
+Do not penalize simple expectations. "Send the client update by Thursday" can still score Strong.
+Weak scores should occur only when expectations are vague, generalized, incomplete, or non-inspectable.
+
+COACHING QUESTIONS (1–2):
+Generate 1-2 coaching questions addressing the lowest scoring condition.
+Reference the leader's evidence when possible.
+Question rotation rule:
+Question 1 -> Reflection or Counterfactual frame
+Question 2 -> Forward-Looking frame
+CRITICAL: The AI should avoid repeating the same question structure across consecutive reps.
+${previousQuestions && previousQuestions.length > 0 ? `For context, here are the coaching questions from their PREVIOUS rep. DO NOT repeat these topics or structures:\n${previousQuestions.map(q => `- ${q}`).join('\n')}` : ''}
+
+Question examples:
+- Reflection: "What signal told you they fully understood the expectation?"
+- Counterfactual: "What might have happened if you asked them to summarize what 'done' looks like?"
+- Forward-Looking: "What's one simple way you might confirm ownership next time?"
+
+REFLECTION PROMPT (Optional):
+A short prompt encouraging the leader to apply the lesson in the next rep.
+Encourage reflection, not instruction.
+
+${situationBranch ? `SITUATION-AWARE COACHING:
+Reference the selected situation type (${situationLabel}) in your coaching when relevant.` : ''}
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "repValidity": "valid" or "invalid",
+  "invalidReason": "Reason if invalid, null if valid",
+  "conditions": {
+    "expectation_stated": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    },
+    "success_defined": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    },
+    "understanding_confirmed": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    },
+    "ownership_established": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    }
+  },
+  "autoFailTriggered": boolean,
+  "autoFailReason": "Reason if auto-fail, null otherwise",
+  "totalScore": number,
+  "repPassed": boolean,
+  "coachingQuestions": ["question1", "question2"],
+  "reflectionPrompt": "Optional short reflection prompt or null",
+  "summary": "2-sentence evaluation summary"
+}`;
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        responseMimeType: 'application/json'
+      }
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    let assessment;
+    try {
+      assessment = JSON.parse(text);
+    } catch (parseErr) {
+      logger.error("Failed to parse SCE AI response as JSON", { text, error: parseErr });
+      throw new HttpsError('internal', 'AI response was not valid JSON');
+    }
+
+    const conditions = assessment.conditions || {};
+    const totalScore = (conditions.expectation_stated?.score || 0) + 
+                       (conditions.success_defined?.score || 0) + 
+                       (conditions.understanding_confirmed?.score || 0) + 
+                       (conditions.ownership_established?.score || 0);
+
+    // Validate auto-fail conditions server-side
+    const scores = [
+      conditions.expectation_stated?.score || 0,
+      conditions.success_defined?.score || 0,
+      conditions.understanding_confirmed?.score || 0,
+      conditions.ownership_established?.score || 0
+    ];
+    const hasZero = scores.some(s => s === 0);
+    const onesCount = scores.filter(s => s === 1).length;
+    const expectationIsOne = (conditions.expectation_stated?.score || 0) === 1;
+    const successIsOne = (conditions.success_defined?.score || 0) === 1;
+    const autoFailTriggered = hasZero || onesCount >= 2 || expectationIsOne || successIsOne;
+
+    const isValid = assessment.repValidity !== 'invalid';
+    const repPassed = isValid && !autoFailTriggered && totalScore >= 6;
+
+    logger.info("SCE rep assessment completed", { 
+      repType, totalScore, repPassed, autoFailTriggered, isValid
+    });
+
+    return {
+      // SCE-specific format
+      evaluationType: 'sce_scored',
+      repValidity: assessment.repValidity || 'valid',
+      invalidReason: assessment.invalidReason || null,
+      conditions,
+      autoFailTriggered,
+      autoFailReason: autoFailTriggered ? (assessment.autoFailReason || 'Automatic fail condition met') : null,
+      totalScore,
+      maxScore: 12,
+      repPassed,
+      coachingQuestions: assessment.coachingQuestions || [],
+      reflectionPrompt: assessment.reflectionPrompt || null,
+      summary: assessment.summary || (repPassed ? 'Rep Passed' : 'Rep Not Passed'),
+      // Backward-compatible fields for QualityAssessmentCard
+      meetsStandard: repPassed,
+      isConstructive: isValid,
+      constructiveFeedback: !isValid ? (assessment.invalidReason || 'This rep does not contain valid evidence') : null,
+      assessedAt: new Date().toISOString(),
+      assessedBy: 'ai'
+    };
+
+  } catch (error) {
+    logger.error("Error in assessSCERep", error);
+    if (error.code) throw error;
+    throw new HttpsError('internal', 'Failed to assess SCE rep quality');
+  }
+}
+
+// ================================================================
+// FUW (Follow-Up on the Work) EVALUATION FUNCTION
+// ================================================================
+async function assessFUWRep(data, person, repType, previousQuestions = []) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    logger.error("GEMINI_API_KEY is not configured");
+    throw new HttpsError('internal', 'AI service not configured');
+  }
+
+  // Extract FUW-specific evidence
+  const fuwResponses = data.fuw_responses || data.sce_responses || {};
+  const selfAssessment = data.self_assessment || {};
+  const responseType = data.response_type || '';
+  const notes = data.notes || '';
+  const situationBranch = data.situation_branch || '';
+
+  // Build evidence summary from structured FUW fields
+  // FUW_EVIDENCE_QUESTIONS capture: status_question, vague_response, validation_question, obstacle_question
+  const evidenceLines = [];
+  if (fuwResponses.status_question) {
+    evidenceLines.push(`- Status question asked: "${fuwResponses.status_question}"`);
+  }
+  if (fuwResponses.vague_response) {
+    const vagueLabel = typeof fuwResponses.vague_response === 'object' 
+      ? fuwResponses.vague_response.selected 
+      : fuwResponses.vague_response;
+    evidenceLines.push(`- Was the response vague?: ${vagueLabel}`);
+  }
+  if (fuwResponses.validation_question) {
+    evidenceLines.push(`- Follow-up validation question: "${fuwResponses.validation_question}"`);
+  }
+  if (fuwResponses.obstacle_question) {
+    evidenceLines.push(`- Obstacle/risk question: "${fuwResponses.obstacle_question}"`);
+  }
+  // Fallback to legacy field names if new fields aren't present
+  if (evidenceLines.length === 0) {
+    if (fuwResponses.what_said) {
+      evidenceLines.push(`- What you said: ${fuwResponses.what_said}`);
+    }
+    if (fuwResponses.what_they_said) {
+      evidenceLines.push(`- What they said: ${fuwResponses.what_they_said}`);
+    }
+    if (fuwResponses.their_response) {
+      evidenceLines.push(`- Their response: ${fuwResponses.their_response}`);
+    }
+  }
+
+  // Self-assessment context
+  const selfAssessmentLines = Object.entries(selfAssessment)
+    .filter(([, v]) => v && String(v).trim())
+    .map(([key, val]) => {
+      const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      return `- ${label}: ${val}`;
+    })
+    .join('\n');
+
+  // Situation type descriptions for coaching tone
+  const situationDescriptions = {
+    'checking_progress': 'Checking in on delegated work',
+    'following_up_commitment': 'Following up on a commitment',
+    'inspecting_milestone': 'Inspecting a milestone'
+  };
+
+  const situationLabel = situationDescriptions[situationBranch] || situationBranch || 'Not specified';
+
+  const prompt = `You are evaluating a leadership practice exercise ("Real Rep") for Follow-Up on the Work.
+
+DEFINITION:
+Follow-Up on the Work occurs when a leader:
+- checks in on delegated or assigned work
+- asks about progress in a way that makes execution visible
+- maintains the direct's ownership without taking back the work
+The purpose is to ensure work stays on track while keeping ownership with the direct.
+
+CONTEXT:
+- Situation type: ${situationLabel}
+- Person involved: ${person || 'Not specified'}
+- Their response: ${responseType || 'Not specified'}
+
+EVIDENCE PROVIDED:
+${evidenceLines.join('\n') || '(No structured evidence provided)'}
+${selfAssessmentLines ? `\nSelf-Assessment:\n${selfAssessmentLines}` : ''}
+${notes ? `\nAdditional notes: ${notes}` : ''}
+
+INPUT VALIDITY CHECK (CRITICAL - EVALUATE FIRST):
+Before scoring ANY condition, check if the evidence contains GIBBERISH or NONSENSE:
+- Random characters or keyboard mashing (e.g., "asdf", "qwerty", "jjjj")
+- Meaningless text that does not form coherent sentences
+- Placeholder text (e.g., "test", "xxx", "lorem ipsum")
+- Single repeated characters or words
+- Content unrelated to workplace leadership
+
+If ANY evidence field contains gibberish or nonsense:
+1. Set repValidity to "invalid"
+2. Set invalidReason to describe the specific gibberish detected
+3. ALL conditions MUST score 0 with label "None"
+4. Do NOT attempt to interpret or find meaning in nonsense text
+
+EVALUATION INSTRUCTIONS:
+First determine if this rep is Valid or Invalid.
+A rep is Valid if the leader clearly followed up on work.
+Following up requires:
+- referencing specific work
+- asking about progress or status
+- keeping ownership with the direct
+
+A rep is Invalid if:
+- the evidence contains gibberish, random characters, or nonsense text
+- the response does not describe a follow-up interaction
+- the response contains no usable evidence
+
+If Invalid, set repValidity to "invalid" and stop — all conditions score 0.
+
+SCORING RULES:
+Score each condition 0-3:
+3 = Strong evidence
+2 = Adequate evidence
+1 = Weak evidence
+0 = No usable evidence
+
+CONDITION 1 — WORK ANCHORED & STATUS REQUESTED (Critical Condition)
+Did the leader ask about progress while referencing the specific work?
+3: Clear work reference and progress request (e.g., "Where are you with the client proposal?")
+2: Work referenced but slightly general (e.g., "How's the proposal going?")
+1: Progress asked but work not clearly referenced (e.g., "Any updates?")
+0: No progress question
+
+CONDITION 2 — PROGRESS VISIBILITY
+Did the interaction reveal real execution progress?
+3: Leader validated progress with inspection (e.g., "What's left to finish?")
+2: Progress became visible without explicit validation (e.g., Direct clearly explained remaining work)
+1: Leader accepted vague reassurance (e.g., "It's going well")
+0: No visibility into progress
+
+CONDITION 3 — OWNERSHIP PRESERVED
+Did the work remain owned by the direct?
+3: Ownership clearly reinforced (e.g., "What's your next step?" / "Keep me posted")
+2: Ownership implied but not clearly reinforced (e.g., "Okay")
+1: Leader begins directing execution heavily (prescribing solutions)
+0: Leader takes back the work (e.g., "Send it to me and I'll finish it")
+
+AUTOMATIC FAIL CONDITIONS:
+The rep automatically fails if:
+- any condition scores 0
+- two conditions score 1
+- Work Anchored & Status Requested = 1
+Work anchoring is critical — vague check-ins don't demonstrate the behavior.
+
+PASS RULE:
+A rep passes if: repValidity = Valid AND no automatic fail conditions triggered AND total score >= 6.
+Total score = sum of all three condition scores (range 3-9).
+
+COACHING QUESTIONS (1-2):
+Generate 1-2 coaching questions addressing the lowest scoring condition.
+Reference the leader's evidence when possible.
+Question frames:
+- Reflection: "What made you choose that approach to checking in?"
+- Counterfactual: "What might have changed if you had asked about specific milestones?"
+- Forward-Looking: "What's one question you could ask next time to make progress more visible?"
+
+${previousQuestions && previousQuestions.length > 0 ? `For context, here are the coaching questions from their PREVIOUS rep. DO NOT repeat these topics:\n${previousQuestions.map(q => `- ${q}`).join('\n')}` : ''}
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "repValidity": "valid" or "invalid",
+  "invalidReason": "Reason if invalid, null if valid",
+  "conditions": {
+    "work_anchored": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    },
+    "progress_visible": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    },
+    "ownership_preserved": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    }
+  },
+  "autoFailTriggered": boolean,
+  "autoFailReason": "Reason if auto-fail, null otherwise",
+  "totalScore": number,
+  "repPassed": boolean,
+  "coachingQuestions": ["question1", "question2"],
+  "reflectionPrompt": "Optional short reflection prompt or null",
+  "summary": "2-sentence evaluation summary"
+}`;
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        responseMimeType: 'application/json'
+      }
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    let assessment;
+    try {
+      assessment = JSON.parse(text);
+    } catch (parseErr) {
+      logger.error("Failed to parse FUW AI response as JSON", { text, error: parseErr });
+      throw new HttpsError('internal', 'AI response was not valid JSON');
+    }
+
+    const conditions = assessment.conditions || {};
+    const totalScore = (conditions.work_anchored?.score || 0) + 
+                       (conditions.progress_visible?.score || 0) + 
+                       (conditions.ownership_preserved?.score || 0);
+
+    // Validate auto-fail conditions server-side
+    const scores = [
+      conditions.work_anchored?.score || 0,
+      conditions.progress_visible?.score || 0,
+      conditions.ownership_preserved?.score || 0
+    ];
+    const hasZero = scores.some(s => s === 0);
+    const onesCount = scores.filter(s => s === 1).length;
+    const workAnchoredIsOne = (conditions.work_anchored?.score || 0) === 1;
+    const autoFailTriggered = hasZero || onesCount >= 2 || workAnchoredIsOne;
+
+    const isValid = assessment.repValidity !== 'invalid';
+    const repPassed = isValid && !autoFailTriggered && totalScore >= 6;
+
+    logger.info("FUW rep assessment completed", { 
+      repType, totalScore, repPassed, autoFailTriggered, isValid
+    });
+
+    return {
+      evaluationType: 'fuw_scored',
+      repValidity: assessment.repValidity || 'valid',
+      invalidReason: assessment.invalidReason || null,
+      conditions,
+      autoFailTriggered,
+      autoFailReason: autoFailTriggered ? (assessment.autoFailReason || 'Automatic fail condition met') : null,
+      totalScore,
+      maxScore: 9,
+      repPassed,
+      coachingQuestions: assessment.coachingQuestions || [],
+      reflectionPrompt: assessment.reflectionPrompt || null,
+      summary: assessment.summary || (repPassed ? 'Rep Passed' : 'Rep Not Passed'),
+      meetsStandard: repPassed,
+      isConstructive: isValid,
+      constructiveFeedback: !isValid ? (assessment.invalidReason || 'This rep does not contain valid evidence') : null,
+      assessedAt: new Date().toISOString(),
+      assessedBy: 'ai'
+    };
+
+  } catch (error) {
+    logger.error("Error in assessFUWRep", error);
+    if (error.code) throw error;
+    throw new HttpsError('internal', 'Failed to assess FUW rep quality');
+  }
+}
+
+// ================================================================
+// LWV (Lead With Vulnerability) EVALUATION FUNCTION
+// ================================================================
+async function assessLWVRep(data, person, repType, previousQuestions = []) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    logger.error("GEMINI_API_KEY is not configured");
+    throw new HttpsError('internal', 'AI service not configured');
+  }
+
+  // Extract LWV-specific evidence
+  const lwvResponses = data.lwv_responses || data.sce_responses || {};
+  const selfAssessment = data.self_assessment || {};
+  const responseType = data.response_type || '';
+  const notes = data.notes || '';
+  const situationBranch = data.situation_branch || '';
+
+  // Build evidence summary from structured LWV fields
+  // LWV_EVIDENCE_QUESTIONS capture: vulnerability_statement, forward_statement
+  const evidenceLines = [];
+  if (lwvResponses.vulnerability_statement) {
+    evidenceLines.push(`- Vulnerability statement: "${lwvResponses.vulnerability_statement}"`);
+  }
+  if (lwvResponses.forward_statement) {
+    evidenceLines.push(`- Forward/learning statement: "${lwvResponses.forward_statement}"`);
+  }
+  // Fallback to legacy field names if new fields aren't present
+  if (evidenceLines.length === 0) {
+    if (lwvResponses.what_said) {
+      evidenceLines.push(`- What you said: ${lwvResponses.what_said}`);
+    }
+    if (lwvResponses.what_they_said) {
+      evidenceLines.push(`- What they said: ${lwvResponses.what_they_said}`);
+    }
+    if (lwvResponses.their_response) {
+      evidenceLines.push(`- Their response: ${lwvResponses.their_response}`);
+    }
+  }
+
+  // Self-assessment context
+  const selfAssessmentLines = Object.entries(selfAssessment)
+    .filter(([, v]) => v && String(v).trim())
+    .map(([key, val]) => {
+      const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      return `- ${label}: ${val}`;
+    })
+    .join('\n');
+
+  // Situation type descriptions for coaching tone
+  const situationDescriptions = {
+    'owning_mistake': 'Owning a mistake you made',
+    'sharing_gap': 'Sharing a gap in your knowledge or skill',
+    'modeling_learning': 'Modeling learning in front of the team'
+  };
+
+  const situationLabel = situationDescriptions[situationBranch] || situationBranch || 'Not specified';
+
+  const prompt = `You are evaluating a leadership practice exercise ("Real Rep") for Lead With Vulnerability.
+
+DEFINITION:
+Lead With Vulnerability occurs when a leader:
+- takes personal responsibility for a mistake, miss, or learning gap
+- communicates ownership clearly and specifically
+- connects the ownership to forward action or learning
+The purpose is to model accountability and create psychological safety for others to own mistakes.
+
+CONTEXT:
+- Situation type: ${situationLabel}
+- Person involved: ${person || 'Not specified'}
+- Their response: ${responseType || 'Not specified'}
+
+EVIDENCE PROVIDED:
+${evidenceLines.join('\n') || '(No structured evidence provided)'}
+${selfAssessmentLines ? `\nSelf-Assessment:\n${selfAssessmentLines}` : ''}
+${notes ? `\nAdditional notes: ${notes}` : ''}
+
+INPUT VALIDITY CHECK (CRITICAL - EVALUATE FIRST):
+Before scoring ANY condition, check if the evidence contains GIBBERISH or NONSENSE:
+- Random characters or keyboard mashing (e.g., "asdf", "qwerty", "jjjj")
+- Meaningless text that does not form coherent sentences
+- Placeholder text (e.g., "test", "xxx", "lorem ipsum")
+- Single repeated characters or words
+- Content unrelated to workplace leadership
+
+If ANY evidence field contains gibberish or nonsense:
+1. Set repValidity to "invalid"
+2. Set invalidReason to describe the specific gibberish detected
+3. ALL conditions MUST score 0 with label "None"
+4. Do NOT attempt to interpret or find meaning in nonsense text
+
+EVALUATION INSTRUCTIONS:
+First determine if this rep is Valid or Invalid.
+A rep is Valid if the leader clearly led with vulnerability.
+Leading with vulnerability requires:
+- taking personal ownership of a mistake or gap
+- communicating that ownership to others
+- NOT deflecting blame to external factors or other people
+
+A rep is Invalid if:
+- the evidence contains gibberish, random characters, or nonsense text
+- the response does not describe owning a mistake or gap
+- the leader deflected blame entirely
+- the response contains no usable evidence
+
+If Invalid, set repValidity to "invalid" and stop — all conditions score 0.
+
+SCORING RULES:
+Score each condition 0-3:
+3 = Strong evidence
+2 = Adequate evidence
+1 = Weak evidence
+0 = No usable evidence
+
+CONDITION 1 — OWNERSHIP PRESENT (Critical Condition)
+Did the leader take personal responsibility for a mistake or learning gap?
+3: Clear personal ownership with no deflection (e.g., "I rushed that decision and missed something important.")
+2: Ownership present but slightly hedged (e.g., "I should have handled that differently.")
+1: Ownership implied but not direct (e.g., "Things could have gone better.")
+0: No ownership or deflection to others (e.g., "The team didn't execute well.")
+
+CONDITION 2 — STATEMENT CLARITY
+Was the ownership statement clear and specific?
+3: Clear, specific ownership that names the miss (e.g., "I didn't give you enough context on the deadline.")
+2: Ownership stated but slightly general (e.g., "I should have communicated better.")
+1: Ownership vague or abstract (e.g., "I made a mistake.")
+0: No clear statement of ownership
+
+CONDITION 3 — FORWARD STRENGTH
+Did the leader connect the ownership to forward action?
+3: Clear forward commitment with specific action (e.g., "Next time I'll brief you before the meeting.")
+2: Forward action implied but not specific (e.g., "I'll do better next time.")
+1: Forward action vague or absent (acknowledged miss but no forward look)
+0: No forward action or stuck in the past
+
+AUTOMATIC FAIL CONDITIONS:
+The rep automatically fails if:
+- Ownership Present < 2 (Critical condition must be at least Adequate)
+- any condition scores 0
+- two conditions score 1
+Ownership is the defining behavior — without clear ownership, this is not vulnerability.
+
+PASS RULE:
+A rep passes if: repValidity = Valid AND no automatic fail conditions triggered AND total score >= 6.
+Total score = sum of all three condition scores (range 3-9).
+
+COACHING QUESTIONS (1-2):
+Generate 1-2 coaching questions addressing the lowest scoring condition.
+Reference the leader's evidence when possible.
+Be encouraging — vulnerability is hard.
+Question frames:
+- Reflection: "What made you decide to share that with your team?"
+- Counterfactual: "How might your team have responded if you had been more specific about what you'd do differently?"
+- Forward-Looking: "What's one way you could model vulnerability again this week?"
+
+${previousQuestions && previousQuestions.length > 0 ? `For context, here are the coaching questions from their PREVIOUS rep. DO NOT repeat these topics:\n${previousQuestions.map(q => `- ${q}`).join('\n')}` : ''}
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "repValidity": "valid" or "invalid",
+  "invalidReason": "Reason if invalid, null if valid",
+  "conditions": {
+    "ownership_present": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    },
+    "statement_clarity": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    },
+    "forward_strength": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    }
+  },
+  "autoFailTriggered": boolean,
+  "autoFailReason": "Reason if auto-fail, null otherwise",
+  "totalScore": number,
+  "repPassed": boolean,
+  "coachingQuestions": ["question1", "question2"],
+  "reflectionPrompt": "Optional short reflection prompt or null",
+  "summary": "2-sentence evaluation summary"
+}`;
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        responseMimeType: 'application/json'
+      }
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    let assessment;
+    try {
+      assessment = JSON.parse(text);
+    } catch (parseErr) {
+      logger.error("Failed to parse LWV AI response as JSON", { text, error: parseErr });
+      throw new HttpsError('internal', 'AI response was not valid JSON');
+    }
+
+    const conditions = assessment.conditions || {};
+    const totalScore = (conditions.ownership_present?.score || 0) + 
+                       (conditions.statement_clarity?.score || 0) + 
+                       (conditions.forward_strength?.score || 0);
+
+    // Validate auto-fail conditions server-side
+    const scores = [
+      conditions.ownership_present?.score || 0,
+      conditions.statement_clarity?.score || 0,
+      conditions.forward_strength?.score || 0
+    ];
+    const hasZero = scores.some(s => s === 0);
+    const onesCount = scores.filter(s => s === 1).length;
+    const ownershipBelowTwo = (conditions.ownership_present?.score || 0) < 2;
+    const autoFailTriggered = hasZero || onesCount >= 2 || ownershipBelowTwo;
+
+    const isValid = assessment.repValidity !== 'invalid';
+    const repPassed = isValid && !autoFailTriggered && totalScore >= 6;
+
+    logger.info("LWV rep assessment completed", { 
+      repType, totalScore, repPassed, autoFailTriggered, isValid
+    });
+
+    return {
+      evaluationType: 'lwv_scored',
+      repValidity: assessment.repValidity || 'valid',
+      invalidReason: assessment.invalidReason || null,
+      conditions,
+      autoFailTriggered,
+      autoFailReason: autoFailTriggered ? (assessment.autoFailReason || 'Automatic fail condition met') : null,
+      totalScore,
+      maxScore: 9,
+      repPassed,
+      coachingQuestions: assessment.coachingQuestions || [],
+      reflectionPrompt: assessment.reflectionPrompt || null,
+      summary: assessment.summary || (repPassed ? 'Rep Passed' : 'Rep Not Passed'),
+      meetsStandard: repPassed,
+      isConstructive: isValid,
+      constructiveFeedback: !isValid ? (assessment.invalidReason || 'This rep does not contain valid evidence') : null,
+      assessedAt: new Date().toISOString(),
+      assessedBy: 'ai'
+    };
+
+  } catch (error) {
+    logger.error("Error in assessLWVRep", error);
+    if (error.code) throw error;
+    throw new HttpsError('internal', 'Failed to assess LWV rep quality');
+  }
+}
+
 /**
  * ASSESS REP QUALITY (Gen 2 - HTTPS Callable)
  * Uses AI to evaluate the semantic quality of leadership rep evidence.
@@ -1308,6 +2675,49 @@ exports.assessRepQuality = onCall(
     // V2 structured format has: what_said, their_response, response_type, outcome, what_went_well, what_different, reflection
     const data = structured || responses || {};
     
+    // Fetch previous rep coaching questions to avoid duplication (in-memory sort to avoid index requirements)
+    let previousQuestions = [];
+    const uid = request.auth?.uid;
+    if (uid) {
+      try {
+        const pastRepsSnap = await db.collection('users').doc(uid).collection('conditioning_reps')
+          .where('repType', '==', repType)
+          .get();
+        if (!pastRepsSnap.empty) {
+          const reps = [];
+          pastRepsSnap.forEach(doc => {
+            const d = doc.data();
+            if (d.status === 'debriefed' || d.status === 'loop_closed') {
+              reps.push({
+                t: d.debriefedAt?.toMillis ? d.debriefedAt.toMillis() : (d.createdAt?.toMillis ? d.createdAt.toMillis() : 0),
+                q: d.qualityAssessment?.coachingQuestions || []
+              });
+            }
+          });
+          reps.sort((a, b) => b.t - a.t);
+          if (reps.length > 0 && reps[0].q.length > 0) {
+            previousQuestions = reps[0].q;
+          }
+        }
+      } catch (err) {
+        logger.warn("Could not fetch previous rep questions", { error: err.message });
+      }
+    }
+
+    // Route rep-specific evaluations to dedicated assessment functions
+    if (repType === 'set_clear_expectations') {
+      return await assessSCERep(data, person, repType, previousQuestions);
+    }
+    if (repType === 'deliver_reinforcing_feedback') {
+      return await assessDRFRep(data, person, repType, previousQuestions);
+    }
+    if (repType === 'follow_up_work') {
+      return await assessFUWRep(data, person, repType, previousQuestions);
+    }
+    if (repType === 'lead_with_vulnerability') {
+      return await assessLWVRep(data, person, repType, previousQuestions);
+    }
+    
     // V2 fields
     const whatSaid = data.what_said || data.what_happened || '';
     const theirResponse = Array.isArray(data.their_response) ? data.their_response.join(', ') : (data.their_response || '');
@@ -1332,7 +2742,7 @@ exports.assessRepQuality = onCall(
       // Build the Team
       'set_clear_expectations': 'Setting clear expectations - defining what success looks like for someone',
       'address_behavior': 'Addressing behavior - giving direct feedback on specific actions that need to change',
-      'recognize_contributions': 'Recognizing contributions - acknowledging and appreciating someone\\'s work or effort',
+      'recognize_contributions': 'Recognizing contributions - acknowledging and appreciating someone\'s work or effort',
       'coach_for_development': 'Coaching for development - helping someone grow through questions and guidance',
       // Lead the Work  
       'prioritize_and_focus': 'Prioritizing and focusing - making decisions about what matters most',
@@ -1343,15 +2753,15 @@ exports.assessRepQuality = onCall(
       'make_a_tough_ask': 'Making a tough ask - requesting something that feels uncomfortable or risky',
       'speak_up_in_the_moment': 'Speaking up in the moment - saying something important when it would be easier to stay silent',
       // Legacy V1 types (for backward compatibility)
-      'reinforce_public': 'Reinforcing behavior in public - recognizing someone\\'s positive contribution in front of others',
-      'public_praise': 'Reinforcing behavior in public - recognizing someone\\'s positive contribution in front of others',
+      'reinforce_public': 'Reinforcing behavior in public - recognizing someone\'s positive contribution in front of others',
+      'public_praise': 'Reinforcing behavior in public - recognizing someone\'s positive contribution in front of others',
       'direct_feedback': 'Providing honest, direct feedback to help someone improve',
       'difficult_conversation': 'Having a challenging but necessary conversation with someone',
       'delegation': 'Delegating responsibility with clear expectations and accountability',
       'boundary_setting': 'Setting or maintaining a professional boundary',
       'vision_casting': 'Articulating vision, direction, or inspiring others',
       'coaching': 'Coaching or mentoring someone to develop their skills',
-      'recognition': 'Recognizing or appreciating someone\\'s contribution',
+      'recognition': 'Recognizing or appreciating someone\'s contribution',
       'tough_request': 'Making a tough or uncomfortable ask of someone',
       'redirect_private': 'Redirecting behavior privately - giving constructive feedback one-on-one'
     };
@@ -1417,50 +2827,52 @@ If isConstructive is false, "constructiveFeedback" MUST be specific:
 - Explain clearly why it is inappropriate for a professional leader.
 - Do NOT use generic phrases like "lacks essential elements". Be direct about the issue.
 
-COACHING GUIDANCE (CRITICAL - FOLLOW EXACTLY):
-You are a COACH, not a teacher. When a dimension FAILS, use QUESTIONS to prompt reflection, NOT prescriptive examples or scripts.
+COACHING GUIDANCE (CRITICAL - SOCRATIC & OPEN-ENDED):
+You are a SOCRATIC COACH. Your goal is to stimulate deep reflection, NOT to correct or validate.
 
-NEVER say "Try something like..." or give them words to copy.
-ALWAYS ask questions that help them discover the answer themselves.
+When providing feedback or asking follow-up questions:
+1. NEVER be prescriptive. Do not say "Try this next time" or "You should have said...".
+2. ALWAYS ask open-ended questions that force the leader to think for themselves.
+3. If they missed something, ask "What prevented you from...?" or "What would have happened if...?"
+4. If they did well, ask "What made that effective?" or "How did that land for them?"
+5. Focus on the "Camera Test": Ask them to describe observable behaviors rather than interpretations.
 
-For each failed dimension, provide a "coachingQuestion" - a reflective question that helps them think deeper.
+Examples of SOCRATIC questions:
+- "If you were watching a video of this interaction, what exactly would you see and hear?"
+- "What evidence do you have that they understood your message?"
+- "How did their body language shift when you said that?"
+- "What outcome were you hoping for, and where specifically did it diverge?"
+- "What is one thing you would change if you could replay this moment?"
 
-Examples of GOOD coaching questions:
-- "Close your eyes and replay the moment. What exact words came out of your mouth?"
-- "If you were watching a video of this conversation, what would you hear yourself saying?"
-- "How did they react in the moment? What did you notice about their body language or tone?"
-- "What surprised you about how this went? What would you do differently?"
-- "What's the biggest thing you learned from how this played out?"
-
-Examples of BAD (prescriptive) responses - DO NOT USE:
-- "Try something like: 'Bill, I wanted to recognize you...'" ← Never give scripts
-- "You should say: 'I need you to...'" ← Never prescribe words
-- "A good example would be..." ← Never give examples
+Avoid these patterns:
+- "Good job listing specific actions." (Too validation-heavy)
+- "Next time, try using the XYZ framework." (Too prescriptive)
+- "You missed describing their reaction." (Too corrective - instead ask: "How did they respond?")
 
 Respond ONLY with valid JSON in this exact format:
 {
   "dimensions": {
     "specific_language": {
       "passed": boolean,
-      "feedback": "brief explanation of what was good or what's missing",
+      "feedback": "Socratic question or observation about their specific language",
       "quote": "the specific language they used if any, or null",
-      "coachingQuestion": "if FAILED, a reflective question to help them recall what they said"
+      "coachingQuestion": "Reflective question to deepen their awareness of what they said"
     },
     "observed_response": {
       "passed": boolean,
-      "feedback": "brief explanation of what was good or what's missing",
-      "coachingQuestion": "if FAILED, a question to help them recall how the person responded"
+      "feedback": "Socratic question or observation about the other person's response",
+      "coachingQuestion": "Reflective question to help them recall the other person's reaction"
     },
     "reflection": {
       "passed": boolean,
-      "feedback": "brief explanation of what was good or what's missing",
-      "coachingQuestion": "if FAILED, a question to prompt deeper reflection on what went well or what to change"
+      "feedback": "Socratic question or observation about their reflection",
+      "coachingQuestion": "Reflective question to deepen their learning"
     }
   },
   "isConstructive": boolean,
-  "constructiveFeedback": "if not constructive, explain why - be direct about the specific issue",
-  "summary": "2-sentence overall assessment",
-  "coachingTip": "one reflective question to consider before their next rep"
+  "constructiveFeedback": "If not constructive, ask a question to help them understand why",
+  "summary": "2-sentence Socratic summary helping them see their rep objectively",
+  "coachingTip": "One powerful open-ended question to carry into their next rep"
 }`;
 
     try {
@@ -2218,6 +3630,140 @@ async function handleTestEmailSms(email, phone, message, type) {
 
   return { success: true, results };
 }
+
+/**
+ * SCHEDULED FOLLOW-UP REMINDERS
+ * Runs every 6 hours to check for rep follow-up reminders that are due.
+ * When a user completes a rep and requests a follow-up reminder, the reminder date
+ * is stored in the 'follow_up_reminders' collection. This function checks for 
+ * reminders where the date has passed and sends push + email notifications.
+ */
+exports.scheduledFollowUpReminders = onSchedule("every 6 hours", async (event) => {
+  logger.info("Starting scheduled follow-up reminder check...");
+  
+  try {
+    // 1. Get all unsent reminders where the date has passed
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    
+    const remindersSnap = await db.collection('follow_up_reminders')
+      .where('sent', '==', false)
+      .get();
+    
+    if (remindersSnap.empty) {
+      logger.info("No pending follow-up reminders found.");
+      return;
+    }
+    
+    let sentCount = 0;
+    let skippedCount = 0;
+    
+    for (const reminderDoc of remindersSnap.docs) {
+      const reminder = reminderDoc.data();
+      
+      // Check if reminder date has passed (compare as strings: YYYY-MM-DD)
+      if (reminder.reminderDate > todayStr) {
+        skippedCount++;
+        continue; // Not yet due
+      }
+      
+      // Get user data for notification delivery
+      const userDoc = await db.collection('users').doc(reminder.userId).get();
+      if (!userDoc.exists) {
+        logger.warn(`User ${reminder.userId} not found for reminder ${reminderDoc.id}`);
+        // Mark as sent to avoid retrying
+        await reminderDoc.ref.update({ sent: true, sentAt: now.toISOString(), error: 'user_not_found' });
+        continue;
+      }
+      
+      const user = userDoc.data();
+      const settings = user.notificationSettings || {};
+      const strategy = settings.strategy || 'smart_escalation';
+      const isTestUser = user.isTestUser === true;
+      const overrideEmail = user.testNotificationRecipient;
+      
+      // Determine notification channels
+      let sendPush = false;
+      // ALWAYS send email for explicitly requested follow-up reminders
+      let sendEmail = true; 
+      
+      if (strategy !== 'disabled' && settings.enabled !== false) {
+        switch (strategy) {
+          case 'push_only':
+            sendPush = true;
+            break;
+          case 'email_only':
+            // sendEmail is already true
+            break;
+          case 'full_accountability':
+          case 'smart_escalation':
+          default:
+            sendPush = settings.channels?.push !== false;
+            break;
+        }
+      }
+      
+      // Build notification content
+      const personText = reminder.person ? ` with ${reminder.person}` : '';
+      const repLabel = reminder.repTypeLabel || 'Rep';
+      const title = '🔔 Follow-Up Reminder';
+      const message = `Time to follow up on your ${repLabel} rep${personText}. Check in on progress and give additional feedback if needed.`;
+      
+      // Send push notification
+      if (sendPush && user.fcmToken) {
+        try {
+          await admin.messaging().send({
+            token: user.fcmToken,
+            notification: {
+              title,
+              body: message
+            },
+            data: {
+              url: '/conditioning',
+              type: 'follow_up_reminder',
+              repId: reminder.repId || ''
+            }
+          });
+          logger.info(`Follow-up push sent to ${user.email} for rep ${reminder.repId}`);
+        } catch (pushErr) {
+          logger.warn(`Follow-up push failed for ${user.email}: ${pushErr.message}`);
+        }
+      }
+      
+      // Send email notification
+      if (sendEmail && user.email) {
+        const targetEmail = isTestUser ? (overrideEmail || null) : user.email;
+        if (targetEmail) {
+          const subjectPrefix = isTestUser ? `[TEST for ${user.email}] ` : '';
+          await sendEmailNotification(
+            targetEmail,
+            `${subjectPrefix}${title}`,
+            message,
+            { linkText: 'Check in on progress', linkUrl: '/conditioning' }
+          );
+          if (isTestUser) {
+            logger.info(`🧪 Follow-up email redirected: ${user.email} -> ${overrideEmail}`);
+          }
+        } else if (isTestUser) {
+          logger.info(`🧪 Test user ${user.email} has no override email, skipping follow-up email`);
+        }
+      }
+      
+      // Mark reminder as sent
+      await reminderDoc.ref.update({
+        sent: true,
+        sentAt: now.toISOString()
+      });
+      
+      sentCount++;
+    }
+    
+    logger.info(`Follow-up reminders: ${sentCount} sent, ${skippedCount} not yet due.`);
+    
+  } catch (error) {
+    logger.error("Error in scheduledFollowUpReminders", error);
+  }
+});
 
 /**
  * SCHEDULED NOTIFICATION CHECK
@@ -6018,7 +7564,8 @@ function addDays(date, days) {
  */
 exports.deleteTestUser = onCall({ 
   cors: true, 
-  region: "us-central1"
+  region: "us-central1",
+  invoker: "public"  // Required for CORS preflight in Gen 2 - auth is still enforced in code
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Must be authenticated.');
@@ -6191,3 +7738,116 @@ function getNextSendWindowStart(fromDate, startHour, endHour, tz, weekdaysOnly) 
 
   return next;
 }
+
+// ============================================
+// BUG REPORT EMAIL NOTIFICATION
+// ============================================
+
+/**
+ * onBugReport: Firestore trigger on bug_reports collection.
+ * Sends an email notification to rob@leaderreps.com when a user submits a bug report.
+ */
+exports.onBugReport = require("firebase-functions/v2/firestore").onDocumentCreated("bug_reports/{reportId}", async (event) => {
+  const snapshot = event.data;
+  if (!snapshot) {
+    logger.error("onBugReport: No data associated with the event");
+    return;
+  }
+
+  const report = snapshot.data();
+  const reportId = event.params.reportId;
+  logger.info("New bug report submitted:", { id: reportId, userId: report.userId });
+
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+
+  if (!emailUser || !emailPass) {
+    logger.warn("Email credentials not configured. Skipping bug report notification.");
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: emailUser,
+      pass: emailPass,
+    },
+  });
+
+  // Look up the user's display name or email
+  let userName = "Unknown User";
+  let userEmail = "";
+  try {
+    if (report.userId) {
+      const userRecord = await admin.auth().getUser(report.userId);
+      userName = userRecord.displayName || userRecord.email || report.userId;
+      userEmail = userRecord.email || "";
+    }
+  } catch (err) {
+    logger.warn("Could not look up user for bug report:", err.message);
+  }
+
+  const systemInfo = report.systemInfo || {};
+  const timestamp = systemInfo.timestamp || new Date().toISOString();
+
+  const emailHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+        <h2 style="color: white; margin: 0;">🐛 New Bug Report</h2>
+      </div>
+      <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px 12px; font-weight: bold; color: #334155; width: 120px;">Reported by</td>
+            <td style="padding: 8px 12px; color: #475569;">${userName}${userEmail ? ` (${userEmail})` : ""}</td>
+          </tr>
+          <tr style="background: #f1f5f9;">
+            <td style="padding: 8px 12px; font-weight: bold; color: #334155;">Page</td>
+            <td style="padding: 8px 12px; color: #475569;">${systemInfo.screen || "N/A"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 12px; font-weight: bold; color: #334155;">Time</td>
+            <td style="padding: 8px 12px; color: #475569;">${timestamp}</td>
+          </tr>
+          <tr style="background: #f1f5f9;">
+            <td style="padding: 8px 12px; font-weight: bold; color: #334155;">Viewport</td>
+            <td style="padding: 8px 12px; color: #475569;">${systemInfo.viewport || "N/A"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 12px; font-weight: bold; color: #334155;">Browser</td>
+            <td style="padding: 8px 12px; color: #475569; word-break: break-all;">${systemInfo.userAgent || "N/A"}</td>
+          </tr>
+        </table>
+
+        <div style="margin-top: 20px; padding: 16px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h3 style="margin: 0 0 8px 0; color: #002E47; font-size: 15px;">Description</h3>
+          <p style="margin: 0; color: #334155; white-space: pre-wrap;">${report.description || "No description provided"}</p>
+        </div>
+
+        ${report.steps ? `
+        <div style="margin-top: 12px; padding: 16px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h3 style="margin: 0 0 8px 0; color: #002E47; font-size: 15px;">Steps to Reproduce</h3>
+          <p style="margin: 0; color: #334155; white-space: pre-wrap;">${report.steps}</p>
+        </div>
+        ` : ""}
+      </div>
+      <div style="background: #f1f5f9; padding: 12px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+        <p style="margin: 0; color: #64748b; font-size: 12px;">Report ID: ${reportId}</p>
+      </div>
+    </div>
+  `;
+
+  const mailOptions = {
+    from: `"LeaderReps Platform" <${emailUser}>`,
+    to: "rob@leaderreps.com",
+    subject: `🐛 Bug Report: ${(report.description || "").substring(0, 60)}${(report.description || "").length > 60 ? "..." : ""}`,
+    html: emailHtml,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    logger.info("Bug report email sent to rob@leaderreps.com", { reportId });
+  } catch (err) {
+    logger.error("Failed to send bug report email:", err);
+  }
+});

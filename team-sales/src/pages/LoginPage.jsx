@@ -70,7 +70,7 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-teal focus:border-brand-teal outline-none transition"
-                placeholder="you@leaderreps.com"
+                placeholder="you@leaderreps.biz"
                 required
                 disabled={isSubmitting}
               />

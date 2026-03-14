@@ -26,8 +26,11 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
  * 
  * Rep does NOT duplicate dashboard widgets - it guides TO them.
  */
-const RepCoach = () => {
+const RepCoach = ({ mode }) => {
   const { user, navigate, dailyPracticeData } = useAppServices();
+  
+  // Help mode = simple "How can I help you?" experience
+  const isHelpMode = mode === 'help';
   
   const {
     loading: dailyPlanLoading,
@@ -198,6 +201,20 @@ const RepCoach = () => {
     if (dailyPlanLoading || hasInitialized.current) return;
     hasInitialized.current = true;
     
+    // Help mode: Simple "How can I help you?" experience
+    if (isHelpMode) {
+      setTimeout(() => {
+        setMessages([{
+          sender: 'rep',
+          content: `Hi ${firstName}! 👋\n\nHow can I help you today?\n\nI can answer questions about leadership, delegation, feedback, time management, or anything else on your mind.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
+        setSessionState('questions');
+      }, 500);
+      return;
+    }
+    
+    // Standard check-in mode
     let contextMessage = "";
     if (isPrep) {
       contextMessage = prepComplete
@@ -215,15 +232,13 @@ const RepCoach = () => {
       }]);
     }, 500);
 
+    // Skip to guidance state - let user drive the conversation
     setTimeout(() => {
-      addRepMessage(
-        "Here's how your community is doing. You're part of a team of leaders growing together!",
-        1500,
-        'cohort-pulse'
-      );
-      setSessionState('cohort');
+      const nextStep = getNextStepMessage();
+      addRepMessage(nextStep.message, 1500, 'next-step', { cta: nextStep.cta, allDone: nextStep.allDone });
+      setSessionState('guidance');
     }, 2500);
-  }, [dailyPlanLoading, firstName, greeting, phaseDisplay, isPrep, prepComplete, addRepMessage]);
+  }, [dailyPlanLoading, firstName, greeting, phaseDisplay, isPrep, prepComplete, addRepMessage, getNextStepMessage, isHelpMode]);
 
   // Handle cohort continue - show next step guidance
   const handleCohortContinue = useCallback(() => {
@@ -291,10 +306,10 @@ const RepCoach = () => {
   // Loading
   if (dailyPlanLoading) {
     return (
-      <div className="min-h-screen bg-rep-warm-white flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <RepAvatar size="lg" />
-          <p className="text-rep-text-secondary animate-pulse">Loading your session...</p>
+          <p className="text-slate-500 dark:text-slate-400 animate-pulse">Loading your session...</p>
         </div>
       </div>
     );
@@ -303,7 +318,7 @@ const RepCoach = () => {
   // Complete screen
   if (sessionState === 'complete') {
     return (
-      <div className="min-h-screen bg-rep-warm-white">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
         <RepSessionComplete
           userName={firstName}
           streak={7}
@@ -320,13 +335,13 @@ const RepCoach = () => {
   const TimeIcon = timeOfDay === 'morning' ? Sun : timeOfDay === 'evening' ? Moon : Coffee;
 
   return (
-    <div className="min-h-screen bg-rep-warm-white flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-gray-100">
+      <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between px-4 py-3">
           <button 
             onClick={() => navigate('dashboard')}
-            className="p-2 -ml-2 text-rep-text-secondary hover:text-rep-text-primary transition-colors"
+            className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -334,12 +349,12 @@ const RepCoach = () => {
           <div className="flex items-center gap-2">
             <RepAvatar size="sm" />
             <div>
-              <h1 className="font-semibold text-rep-text-primary text-sm">Rep</h1>
-              <p className="text-xs text-rep-text-secondary">Your Leadership Coach</p>
+              <h1 className="font-semibold text-slate-900 dark:text-white text-sm">Rep</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Your Leadership Coach</p>
             </div>
           </div>
 
-          <button className="p-2 -mr-2 text-rep-text-secondary hover:text-rep-text-primary transition-colors">
+          <button className="p-2 -mr-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
             <MoreVertical className="w-5 h-5" />
           </button>
         </div>
@@ -435,7 +450,7 @@ const RepCoach = () => {
       </main>
 
       {/* Input */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-100 p-4">
+      <footer className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-2">
             <input

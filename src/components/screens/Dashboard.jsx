@@ -27,7 +27,7 @@ import { FadeIn, Stagger } from '../motion';
 // useAccessControlContext available if needed
 import ProgramStatusWidget from '../widgets/ProgramStatusWidget';
 import ConditioningWidget from '../widgets/ConditioningWidget';
-import NotificationSetupWidget from '../widgets/NotificationSetupWidget';
+import NotificationsWidget from '../widgets/NotificationsWidget';
 import ConditioningTutorialWidget from '../widgets/ConditioningTutorialWidget';
 import PrepCompleteModal from '../modals/PrepCompleteModal';
 // NOTE: LeaderProfileWidget and BaselineAssessmentWidget removed - now handled as 
@@ -47,8 +47,6 @@ const DASHBOARD_FEATURES = [
   'daily-plan',
   // 'daily-leader-reps', // REMOVED - replaced by conditioning widget
   'this-weeks-actions',
-  'conditioning',        // Conditioning widget - placed after Actions so actions can link to it
-  'conditioning-tutorial', // Interactive tutorial for Conditioning
   'notifications',
   'pm-bookend-header',
   'progress-feedback',
@@ -247,14 +245,14 @@ const Dashboard = () => {
     // Only act during prep phase
     if (currentPhase?.id !== 'pre-start') return;
     
-    // Need user ID to make localStorage key user-specific
+    // Need user ID for logging
     const userId = user?.uid;
     if (!userId) return;
     
-    const onboardingKey = `onboardingCompleteModalSeen_${userId}`;
-    const allPrepKey = `prepCompleteModalSeen_${userId}`;
-    const hasSeenOnboarding = localStorage.getItem(onboardingKey) === 'true';
-    const hasSeenAllPrep = localStorage.getItem(allPrepKey) === 'true';
+    // Read modal seen flags from Firestore (syncs across devices)
+    const modalsSeen = developmentPlanData?.uiState?.modalsSeen || {};
+    const hasSeenOnboarding = modalsSeen.onboardingComplete === true;
+    const hasSeenAllPrep = modalsSeen.prepComplete === true;
     
     console.log('[PrepCompleteModal] Check:', {
       phase: currentPhase?.id,
@@ -284,18 +282,15 @@ const Dashboard = () => {
       window.scrollTo({ top: 0, behavior: 'instant' });
       setShowPrepCompleteModal(true);
     }
-  }, [prepRequirementsComplete?.onboardingComplete, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.completedCount, prepRequirementsComplete?.session1Complete, currentPhase?.id, user?.uid]);
+  }, [prepRequirementsComplete?.onboardingComplete, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.completedCount, prepRequirementsComplete?.session1Complete, currentPhase?.id, user?.uid, developmentPlanData?.uiState?.modalsSeen]);
   
-  // Handle modal dismissal - persist the appropriate milestone key
+  // Handle modal dismissal - persist to Firestore (syncs across devices)
   const handlePrepCompleteModalClose = () => {
     setShowPrepCompleteModal(false);
-    const userId = user?.uid;
-    if (userId) {
-      if (prepMilestone === 'onboarding') {
-        localStorage.setItem(`onboardingCompleteModalSeen_${userId}`, 'true');
-      } else {
-        localStorage.setItem(`prepCompleteModalSeen_${userId}`, 'true');
-      }
+    if (prepMilestone === 'onboarding') {
+      updateDevelopmentPlanData({ 'uiState.modalsSeen.onboardingComplete': true });
+    } else {
+      updateDevelopmentPlanData({ 'uiState.modalsSeen.prepComplete': true });
     }
   };
 
@@ -568,9 +563,9 @@ const Dashboard = () => {
     // PHASE-AWARE WIDGETS: These manage their own visibility internally
     // via currentPhase checks and should NOT be blocked by dashboard config.
     // They are only gated by the Feature Lab flag (isFeatureEnabled).
-    const SELF_MANAGED_WIDGETS = ['prep-welcome-banner'];
+    const SELF_MANAGED_WIDGETS = ['prep-welcome-banner', 'notifications'];
     if (SELF_MANAGED_WIDGETS.includes(widgetId)) {
-      return true; // Let the component decide based on currentPhase
+      return true; // Let the component decide based on currentPhase or always show
     }
 
     // Legacy Mapping for backward compatibility
@@ -600,7 +595,7 @@ const Dashboard = () => {
       'pm-bookend-header',
       'pm-bookend',
       'scorecard',
-      'notifications',
+      // 'notifications', // Announcements should show in all phases
       'conditioning-tutorial'
     ];
 
@@ -664,7 +659,7 @@ const Dashboard = () => {
     'conditioning': () => shouldShow('conditioning', true) ? <ConditioningWidget helpText={getWidgetHelpText('conditioning')} /> : null,  // Gated until Foundation starts
     'daily-leader-reps': () => null,  // DISABLED - replaced by conditioning widget
     'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <div data-repup-step="this-weeks-actions"><WidgetRenderer widgetId="this-weeks-actions" scope={scope} /></div> : null,
-    'notifications': () => shouldShow('notifications', true) ? <NotificationSetupWidget /> : null,
+    'notifications': () => shouldShow('notifications', true) ? <NotificationsWidget /> : null,
     'conditioning-tutorial': () => shouldShow('conditioning-tutorial', true) ? <ConditioningTutorialWidget /> : null,
     'pm-bookend-header': () => shouldShow('pm-bookend-header', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
     'progress-feedback': () => shouldShow('progress-feedback', true) ? <WidgetRenderer widgetId="progress-feedback" scope={scope} /> : null,
@@ -691,7 +686,7 @@ const Dashboard = () => {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
         <div className="flex flex-col items-center gap-4">
-          <Loader className="w-8 h-8 animate-spin text-indigo-600" />
+          <Loader className="w-8 h-8 animate-spin text-corporate-navy" />
           <p className="text-slate-500 text-sm font-medium">Loading your daily plan...</p>
         </div>
       </div>

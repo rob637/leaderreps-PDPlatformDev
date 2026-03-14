@@ -27,7 +27,8 @@ import {
   serverTimestamp,
   query,
   orderBy,
-  limit
+  limit,
+  onSnapshot
 } from 'firebase/firestore';
 
 // ============================================
@@ -177,6 +178,30 @@ export const getAllDrafts = async (db, userId) => {
   return drafts;
 };
 
+
+/**
+ * Subscribe to all active drafts for a user
+ * Returns array sorted by most recently updated
+ */
+export const subscribeToDrafts = (db, userId, callback) => {
+  if (!userId) {
+    if (callback) callback([]);
+    return () => {};
+  }
+  
+  const draftsRef = collection(db, 'users', userId, 'rep_drafts');
+  // Order by update time to show most recent first
+  const q = query(draftsRef, orderBy('updatedAt', 'desc'), limit(MAX_DRAFTS_PER_USER));
+  
+  return onSnapshot(q, (snapshot) => {
+    const drafts = [];
+    snapshot.forEach(docSnap => {
+      drafts.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    callback(drafts);
+  });
+};
+
 /**
  * Delete a draft (typically after successful submission)
  * @param {Firestore} db
@@ -289,6 +314,9 @@ export const saveEvidenceDraft = async (db, userId, repId, evidenceState) => {
     currentScreen: evidenceState.currentScreen ?? 1,
     formData: {
       whatHappened: evidenceState.whatHappened || '',
+      sceResponses: evidenceState.sceResponses || {},
+      drfResponses: evidenceState.drfResponses || {},
+      selfAssessmentResponses: evidenceState.selfAssessmentResponses || {},
       response: evidenceState.response || null,
       pushbackLogOption: evidenceState.pushbackLogOption || null,
       pushbackResponses: evidenceState.pushbackResponses || [],
@@ -301,7 +329,8 @@ export const saveEvidenceDraft = async (db, userId, repId, evidenceState) => {
       artifacts: evidenceState.artifacts || [],
       outcome: evidenceState.outcome || null,
       whatWentWell: evidenceState.whatWentWell || '',
-      whatDifferent: evidenceState.whatDifferent || ''
+      whatDifferent: evidenceState.whatDifferent || '',
+      completeLoopResponses: evidenceState.completeLoopResponses || {}
     },
     updatedAt: serverTimestamp(),
     ...(isNew && { createdAt: serverTimestamp() })
@@ -364,6 +393,11 @@ export const hasEvidenceProgress = (draft) => {
   if (formData.notes?.trim()) return true;
   if (formData.whatWentWell?.trim()) return true;
   if (formData.whatDifferent?.trim()) return true;
+  
+  // Structured responses filled = progress
+  if (Object.keys(formData.sceResponses || {}).length > 0) return true;
+  if (Object.keys(formData.drfResponses || {}).length > 0) return true;
+  if (Object.keys(formData.selfAssessmentResponses || {}).length > 0) return true;
   
   // Any selection made = progress
   if (formData.response) return true;
@@ -430,6 +464,7 @@ const draftRepService = {
   getDraft,
   getDraftByRepType,
   getAllDrafts,
+  subscribeToDrafts,
   deleteDraft,
   deleteDraftByRepType,
   deleteAllDrafts,

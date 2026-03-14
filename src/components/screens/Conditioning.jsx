@@ -12,7 +12,6 @@ import conditioningService, {
   REP_STATUS, 
   STATE_TRANSITIONS
 } from '../../services/conditioningService.js';
-import draftRepService, { hasMeaningfulProgress } from '../../services/draftRepService.js';
 import { REP_TYPES, getRepType, isPrepRequired } from '../../services/repTaxonomy.js';
 import { Card, Button, PageLayout } from '../ui';
 import { 
@@ -25,18 +24,17 @@ import {
   PrepRequirementBadge,
   HighRiskPrepModal,
   MissedRepDebriefModal,
-  LoopClosureModal,
+  // LoopClosureModal, // DISABLED - follow-up planning removed
   RepDetailModal,
   CommitFlowSelector,
   QuickPrepModalV2,
   CloseRRModal,
-  EvidenceCaptureWizard,
-  RepDraftResumeCard
+  EvidenceCaptureWizard
 } from '../conditioning';
 import { 
   Plus, Check, X, AlertTriangle, Clock, User, 
   ChevronRight, RefreshCw, MessageSquare, Users,
-  Target, Calendar, CheckCircle, XCircle, AlertCircle,
+  Zap, Calendar, CheckCircle, XCircle, AlertCircle,
   FileText, Lightbulb, Dumbbell, Sparkles, HelpCircle, ArrowRight
 } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
@@ -58,14 +56,14 @@ const StatusBadge = ({ status }) => {
       icon: Clock
     },
     [REP_STATUS.PREPARED]: { 
-      bg: 'bg-indigo-100 dark:bg-indigo-900/30', 
-      text: 'text-indigo-700', 
+      bg: 'bg-rep-navy-light dark:bg-slate-800/40', 
+      text: 'text-corporate-navy', 
       label: 'Prepared',
       icon: FileText
     },
     [REP_STATUS.SCHEDULED]: { 
-      bg: 'bg-purple-100 dark:bg-purple-900/30', 
-      text: 'text-purple-700', 
+      bg: 'bg-rep-navy-light dark:bg-slate-800/40', 
+      text: 'text-corporate-navy', 
       label: 'Scheduled',
       icon: Calendar
     },
@@ -90,7 +88,7 @@ const StatusBadge = ({ status }) => {
     [REP_STATUS.LOOP_CLOSED]: { 
       bg: 'bg-emerald-100 dark:bg-emerald-900/30', 
       text: 'text-emerald-700', 
-      label: 'Loop Closed',
+      label: 'Rep Complete',
       icon: CheckCircle
     },
     [REP_STATUS.MISSED]: { 
@@ -132,44 +130,6 @@ const StatusBadge = ({ status }) => {
 };
 
 // Note: RepTypeBadge is now imported from ../conditioning
-
-// ============================================
-// WEEK STATUS HEADER
-// ============================================
-const WeekStatusStrip = ({ weeklyStatus }) => {
-  const { weekStart, weekEnd, requiredRepCompleted } = weeklyStatus || {};
-  
-  const formatDate = (date) => {
-    if (!date) return '';
-    const d = date instanceof Date ? date : new Date(date);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-  
-  return (
-    <div className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-sm ${
-      requiredRepCompleted 
-        ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
-        : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
-    }`}>
-      <div className="flex items-center gap-2">
-        {requiredRepCompleted ? (
-          <>
-            <CheckCircle className="w-4 h-4 text-green-600" />
-            <span className="font-medium text-green-700 dark:text-green-300">Weekly requirement met</span>
-          </>
-        ) : (
-          <>
-            <Target className="w-4 h-4 text-amber-600" />
-            <span className="font-medium text-amber-700 dark:text-amber-300">1 rep required this week</span>
-          </>
-        )}
-      </div>
-      <span className="text-xs text-gray-500 dark:text-gray-400">
-        {formatDate(weekStart)} - {formatDate(weekEnd)}
-      </span>
-    </div>
-  );
-};
 
 // ============================================
 // TODAY'S FOCUS CARD (Helps users know what to do NOW)
@@ -223,7 +183,7 @@ const TodaysFocusCard = ({ activeReps, onOpenPrep, onViewDetail, onAskCoach }) =
           <div className="flex-1 min-w-0">
             <p className="font-bold text-corporate-navy truncate">{focusRep.person}</p>
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              {focusRep.repType?.replace(/_/g, ' ') || 'Leadership Rep'} • {formatDeadline()}
+              {(focusRep.repType?.replace(/_/g, ' ') || 'Leadership Rep').replace(/\b\w/g, c => c.toUpperCase())} • {formatDeadline()}
             </p>
           </div>
           <button
@@ -344,10 +304,23 @@ const RepCard = ({
             className="flex items-start justify-between mb-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => onViewDetail?.(rep)}
           >
-            <div className="flex items-center gap-2">
-              <User className="w-5 h-5 text-corporate-navy" />
-              <span className="font-semibold text-corporate-navy">{rep.person}</span>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-corporate-navy flex-shrink-0" />
+                <span className="font-semibold text-corporate-navy">{rep.person}</span>
+                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <span className="text-sm text-slate-500 truncate">
+                  {(() => { const rt = getRepType(rep.repType); const raw = rt?.shortLabel || rt?.label || rep.repType?.replace(/_/g, ' ') || 'Rep'; return raw.replace(/\b\w/g, c => c.toUpperCase()); })()}
+                </span>
+              </div>
+              {/* Rep description - show situation context */}
+              {(rep.situation || rep.context) && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-7 truncate">
+                  {typeof rep.situation === 'object' 
+                    ? (rep.situation.customContext || rep.situation.selected || '') 
+                    : (rep.situation || rep.context || '')}
+                </p>
+              )}
             </div>
             <StatusBadge status={rep.status} />
           </div>
@@ -413,8 +386,8 @@ const RepCard = ({
                   disabled={isLoading}
                   className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
                 >
-                  <Check className="w-4 h-4 mr-1" />
-                  {isV2Rep ? 'Mark Done' : 'Mark Executed'}
+                  <FileText className="w-4 h-4 mr-1" />
+                  {isV2Rep ? (rep.evidence ? 'Continue Evidence' : 'Capture Evidence') : 'Mark Executed'}
                 </Button>
               )}
               <Button
@@ -434,7 +407,7 @@ const RepCard = ({
               <Button
                 onClick={() => {
                   if (isV2Rep) {
-                    // V2: If no evidence yet, capture it; if evidence exists, close RR
+                    // V2: If no evidence yet, capture it; if evidence exists, review assessment
                     rep.evidence ? onCloseRR?.(rep) : onCaptureEvidence?.(rep);
                   } else {
                     onAddDebrief?.(rep);
@@ -444,7 +417,7 @@ const RepCard = ({
                 className="flex-1 bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
               >
                 <FileText className="w-4 h-4 mr-2" />
-                {isV2Rep ? (rep.evidence ? 'Complete Real Rep' : 'Capture Evidence') : 'Add Debrief to Complete'}
+                {isV2Rep ? (rep.evidence ? 'Review Assessment' : 'Capture Evidence') : 'Add Debrief to Complete'}
               </Button>
               <Button
                 onClick={() => setShowCancelModal(true)}
@@ -468,12 +441,13 @@ const RepCard = ({
                       qualityAssessment={evidence.qualityAssessment}
                       onPractice={onPractice ? (dimension, response, assessment) => onPractice(rep, dimension, response, assessment) : null}
                       compact={false}
+                      defaultExpanded={true}
                     />
                   )}
                   
-                  <div className="flex items-center gap-2 text-xs text-green-600 mb-2">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>{isV2Rep ? 'Real Rep completed' : 'Debrief submitted'}</span>
+                  <div className="flex items-center gap-2 text-xs text-amber-600 mb-2">
+                      <RefreshCw className="w-3 h-3" />
+                      <span>{isV2Rep ? 'Assessment reviewed - complete the rep' : 'Debrief submitted'}</span>
                     </div>
                     <Button
                       onClick={() => onCloseLoop?.(rep)}
@@ -481,7 +455,7 @@ const RepCard = ({
                       className="w-full bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
                     >
                       <ArrowRight className="w-4 h-4 mr-2" />
-                      Close the Loop
+                      Complete the Rep
                     </Button>
                 </>
               ) : (
@@ -507,6 +481,7 @@ const RepCard = ({
                   qualityAssessment={evidence.qualityAssessment}
                   onPractice={onPractice ? (dimension, response, assessment) => onPractice(rep, dimension, response, assessment) : null}
                   compact={false}
+                  defaultExpanded={true}
                 />
               )}
               <div className="flex items-center gap-2 text-xs text-orange-600 mb-2">
@@ -519,12 +494,12 @@ const RepCard = ({
                 className="w-full bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
-                Close the Loop
+                Complete the Rep
               </Button>
             </div>
           )}
           
-          {/* Loop Closed - Show completion */}
+          {/* Rep Complete - Show completion */}
           {rep.status === 'loop_closed' && (
             <div className="pt-2 border-t border-gray-100 space-y-2">
               {/* RepUp Review */}
@@ -533,11 +508,12 @@ const RepCard = ({
                   qualityAssessment={evidence.qualityAssessment}
                   onPractice={onPractice ? (dimension, response, assessment) => onPractice(rep, dimension, response, assessment) : null}
                   compact={false}
+                  defaultExpanded={false}
                 />
               )}
               <div className="flex items-center gap-2 text-xs text-emerald-600">
                 <CheckCircle className="w-3 h-3" />
-                <span>Loop closed - Rep complete</span>
+                <span>Rep complete</span>
               </div>
               {rep.loopClosure?.outcome && (
                 <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -600,7 +576,8 @@ const MissedRepsSection = ({ missedReps, onOpenDebrief, onRescueRep, isLoading }
   // Get rep type label using getRepType helper
   const getRepTypeLabel = (repTypeId) => {
     const repType = getRepType(repTypeId);
-    return repType?.shortLabel || repType?.label || repTypeId;
+    const raw = repType?.shortLabel || repType?.label || repTypeId;
+    return raw?.replace(/\b\w/g, c => c.toUpperCase()) || repTypeId;
   };
   
   return (
@@ -688,46 +665,6 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   const [evidenceModalRep, setEvidenceModalRep] = useState(null);
   const [error, setError] = useState(null);
   
-  // Draft state for resuming incomplete rep forms
-  const [activeDrafts, setActiveDrafts] = useState([]);
-  const [resumingDraft, setResumingDraft] = useState(null);
-  
-  // Load drafts
-  const loadDrafts = useCallback(async () => {
-    if (!userId || !db) return;
-    
-    try {
-      const drafts = await draftRepService.getAllDrafts(db, userId);
-      // Filter to only meaningful drafts (not empty)
-      const meaningfulDrafts = drafts.filter(d => hasMeaningfulProgress(d));
-      setActiveDrafts(meaningfulDrafts);
-    } catch (err) {
-      console.warn('Failed to load drafts:', err);
-      // Non-critical - don't show error to user
-    }
-  }, [userId, db]);
-  
-  // Handle draft resume
-  const handleResumeDraft = useCallback((draft) => {
-    setResumingDraft(draft);
-    setShowCommitForm(true);
-  }, []);
-  
-  // Handle draft discard
-  const handleDiscardDraft = useCallback(async (draft) => {
-    if (!userId || !db || !draft?.flowType) return;
-    
-    try {
-      // Include repType and sourceItemId for proper draft identification
-      const repType = draft.repType || draft.preselectedRepType || draft.formData?.repTypeId || null;
-      const sourceItemId = draft.sourceItemId || null;
-      await draftRepService.deleteDraft(db, userId, draft.flowType, repType, sourceItemId);
-      setActiveDrafts(prev => prev.filter(d => d.id !== draft.id));
-    } catch (err) {
-      console.error('Failed to discard draft:', err);
-    }
-  }, [userId, db]);
-  
   // Load data
   const loadData = useCallback(async () => {
     if (!userId || !cohortId || !db) return;
@@ -756,10 +693,42 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       const activeStates = ['committed', 'prepared', 'scheduled', 'executed', 'follow_up_pending', 'active'];
       const currentWeekActive = active.filter(r => activeStates.includes(r.status));
       
+      // Sort active reps: closest to completion first, then by deadline
+      const statusPriority = {
+        follow_up_pending: 0, // Almost done — just close the loop
+        executed: 1,          // Done — needs evidence/debrief
+        prepared: 2,          // Ready to execute
+        scheduled: 3,         // Has a time set
+        committed: 4,         // Just committed
+        active: 4,            // Legacy
+      };
+      currentWeekActive.sort((a, b) => {
+        // Overdue reps always first
+        const now = new Date();
+        const aDeadline = a.deadline?.toDate?.() || new Date(a.deadline || 0);
+        const bDeadline = b.deadline?.toDate?.() || new Date(b.deadline || 0);
+        const aOverdue = aDeadline < now;
+        const bOverdue = bDeadline < now;
+        if (aOverdue && !bOverdue) return -1;
+        if (!aOverdue && bOverdue) return 1;
+        // Then by status priority (closest to completion first)
+        const aPriority = statusPriority[a.status] ?? 5;
+        const bPriority = statusPriority[b.status] ?? 5;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+        // Then by deadline (soonest first)
+        return aDeadline - bDeadline;
+      });
+      
       // Get completed reps from weekly status
       // Filter for completed states = reps fully done (shown in "Completed This Week")
       const completedStates = ['debriefed', 'loop_closed', 'completed'];
       const completed = (status?.reps || []).filter(r => completedStates.includes(r.status));
+      // Sort completed: most recently completed first
+      completed.sort((a, b) => {
+        const aTime = a.updatedAt?.toDate?.() || a.completedAt?.toDate?.() || new Date(0);
+        const bTime = b.updatedAt?.toDate?.() || b.completedAt?.toDate?.() || new Date(0);
+        return bTime - aTime;
+      });
       
       // Load evidence for completed reps
       const evidencePromises = completed.map(async (rep) => {
@@ -792,8 +761,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   
   useEffect(() => {
     loadData();
-    loadDrafts();
-  }, [loadData, loadDrafts]);
+  }, [loadData]);
   
   // Auto-open commit form if navigated with openCommitForm param
   useEffect(() => {
@@ -834,9 +802,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       }
       
       setShowCommitForm(false);
-      setResumingDraft(null); // Clear any resuming draft
       await loadData();
-      await loadDrafts(); // Reload drafts (in case form clears draft failed)
     } catch (err) {
       console.error('[Conditioning] Error committing rep:', err);
       setError(`Failed to commit rep: ${err.message}`);
@@ -1019,8 +985,8 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
     }
   };
   
-  // Phase 5: Loop closure modal state
-  const [loopClosureRep, setLoopClosureRep] = useState(null);
+  // Phase 5: Loop closure modal state - DISABLED, direct completion now
+  // const [loopClosureRep, setLoopClosureRep] = useState(null);
 
   // V2: Close RR modal state (replaces "Debrief" for V2 reps)
   const [closeRRModalRep, setCloseRRModalRep] = useState(null);
@@ -1028,16 +994,30 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   // V2: Quick Prep modal state
   const [quickPrepModalRep, setQuickPrepModalRep] = useState(null);
   
-  const handleOpenLoopClosure = (rep) => {
-    setLoopClosureRep(rep);
+  // Direct completion - skip the follow-up modal and complete the rep immediately
+  const handleOpenLoopClosure = async (rep) => {
+    if (!userId || !db) return;
+    try {
+      setIsSubmitting(true);
+      // Complete directly without follow-up planning
+      await conditioningService.completeRepDirectly(db, userId, rep.id);
+      await loadData();
+    } catch (err) {
+      console.error('Error completing rep:', err);
+      setError('Failed to complete rep. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
-  const handleLoopClosureSubmit = async (closureData) => {
+  // Legacy: kept for reference if we re-enable follow-up modal later
+  // eslint-disable-next-line no-unused-vars
+  const _handleLoopClosureSubmit = async (closureData) => {
     if (!userId || !db) return;
     try {
       setIsSubmitting(true);
       await conditioningService.closeLoop(db, userId, closureData.repId, closureData);
-      setLoopClosureRep(null);
+      // setLoopClosureRep(null); // State removed since modal disabled
       await loadData();
     } catch (err) {
       console.error('Error closing loop:', err);
@@ -1084,9 +1064,10 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
     setEvidenceWizardRep(rep);
   };
 
-  // V2: Handle Evidence Wizard submission
+  // V2: Handle Evidence Wizard submission (used by both evidence capture and close loop modes)
   const handleEvidenceWizardSubmit = async () => {
     setEvidenceWizardRep(null);
+    // Loop closure modal is disabled - direct completion now happens in handleOpenLoopClosure
     await loadData();
   };
   
@@ -1096,7 +1077,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       <PageLayout 
         title="Conditioning" 
         subtitle="Real leadership reps between sessions"
-        icon={Target}
+        icon={Zap}
       >
         <Card className="p-6 text-center">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -1115,7 +1096,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       <PageLayout 
         title="Conditioning" 
         subtitle="Real leadership reps between sessions"
-        icon={Target}
+        icon={Zap}
       >
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
@@ -1131,8 +1112,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
     <PageLayout 
       title="Conditioning" 
       subtitle="Real leadership reps between sessions"
-      icon={Target}
-      maxWidth="max-w-2xl"
+      icon={Zap}
     >
       <div className="space-y-4">
         {/* Error Banner */}
@@ -1145,24 +1125,6 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
               </button>
             </div>
           </Card>
-        )}
-        
-        {/* Compact Week Status */}
-        <WeekStatusStrip weeklyStatus={weeklyStatus} />
-        
-        {/* Resume Draft Cards - show if there are meaningful drafts */}
-        {activeDrafts.length > 0 && (
-          <div className="space-y-2">
-            {activeDrafts.map(draft => (
-              <RepDraftResumeCard
-                key={draft.id}
-                draft={draft}
-                onResume={() => handleResumeDraft(draft)}
-                onDiscard={() => handleDiscardDraft(draft)}
-                compact={true}
-              />
-            ))}
-          </div>
         )}
         
         {/* Add Rep button - prominent placement when user has active reps */}
@@ -1200,16 +1162,21 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
           )}
           
           {activeReps.length === 0 ? (
-            completedReps.length > 0 || weeklyStatus?.totalCompleted > 0 ? (
-              // Compact prompt when user already has completed reps
-              <div className="flex items-center justify-center gap-3 py-4">
+            completedReps.length > 0 || weeklyStatus?.totalCompleted > 0 || allTimeCompletedRepTypes.length > 0 ? (
+              // Returning user - has completed reps (this week or previously)
+              <div className="py-4 text-center">
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">
+                  {completedReps.length > 0
+                    ? 'Ready for another rep?'
+                    : 'No active reps this week yet.'}
+                </p>
                 <Button
                   onClick={() => setShowCommitForm(true)}
                   variant="outline"
                   className="border-corporate-teal text-corporate-teal hover:bg-corporate-teal/5 px-6"
                 >
                   <Plus className="w-4 h-4 mr-1" />
-                  Commit to Another Rep
+                  Commit to a Rep
                 </Button>
               </div>
             ) : (
@@ -1313,15 +1280,12 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
             onSubmit={handleCommitRep}
             onClose={() => {
               setShowCommitForm(false);
-              setResumingDraft(null);
-              // Reload drafts in case form was closed mid-edit
-              loadDrafts();
             }}
             isLoading={isSubmitting}
+            sessionAttendance={user?.sessionAttendance || {}}
             milestoneProgress={user?.milestoneProgress || {}}
             completedRepTypes={allTimeCompletedRepTypes}
             preselectedRepType={navParams?.preselectedRepType}
-            initialDraft={resumingDraft}
           />
         ) : (
           <CommitRepForm
@@ -1367,16 +1331,18 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
         />
       )}
       
-      {/* Loop Closure Modal (Phase 5) */}
+      {/* Loop Closure / Complete Rep Modal (Phase 5) - DISABLED
+          Follow-up planning is currently disabled. Reps complete directly
+          when clicking "Complete the Rep" without showing this modal.
       {loopClosureRep && (
-        <LoopClosureModal
-          isOpen={true}
-          onClose={() => setLoopClosureRep(null)}
+        <EvidenceCaptureWizard
           rep={loopClosureRep}
-          onSubmit={handleLoopClosureSubmit}
-          isLoading={isSubmitting}
+          onClose={() => setLoopClosureRep(null)}
+          onSubmit={handleEvidenceWizardSubmit}
+          initialMode="plan"
         />
       )}
+      */}
       
       {/* Rep Detail Modal (Phase 6) */}
       {detailModalRep && (

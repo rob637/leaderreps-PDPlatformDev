@@ -10,10 +10,10 @@ import { getRepTypeV2 } from '../../services/repTaxonomy.js';
 import { formatDisplayDateTime } from '../../services/dateUtils.js';
 import { saveEvidenceDraft, getEvidenceDraft, deleteEvidenceDraft, hasEvidenceProgress } from '../../services/draftRepService.js';
 import { useDevPlan } from '../../hooks/useDevPlan.js';
-import { doc, updateDoc, getDoc } from 'firebase/firestore'; // Added imports for direct document operations
+import { doc, updateDoc, getDoc, collection, addDoc } from 'firebase/firestore';
 import { Button } from '../ui';
 import { 
-  ChevronLeft, ChevronRight, Check, User, Calendar, Target,
+  Check, User, Calendar, Target,
   MessageSquare, AlertCircle, Camera, FileText, Mic, Image,
   Link2, Plus, X, CheckCircle2, Award, RotateCw, // Added RotateCw icon
   Square, Trash2, Play, Pause, RotateCcw, Save // Added icons for media capture
@@ -42,7 +42,21 @@ import {
   SCE_SELF_ASSESS_DELEGATING,        // Add if needed directly, or rely on helper
   SCE_SELF_ASSESS_ASSIGNING_TASK,
   SCE_SELF_ASSESS_BEHAVIORAL_STANDARDS,
-  SCE_SELF_ASSESS_RESETTING
+  SCE_SELF_ASSESS_RESETTING,
+  // FUW (Follow-Up on the Work) imports
+  FUW_EVIDENCE_QUESTIONS,
+  FUW_RESPONSE_OPTIONS,
+  FUW_SELF_ASSESSMENT,
+  FUW_REFLECTION_PROMPT,
+  FUW_REFLECTION_EXAMPLES,
+  getFUWSituationBranch,
+  // LWV (Lead With Vulnerability) imports
+  LWV_EVIDENCE_QUESTIONS,
+  LWV_RESPONSE_OPTIONS,
+  LWV_SELF_ASSESSMENT,
+  LWV_REFLECTION_PROMPT,
+  LWV_REFLECTION_EXAMPLES,
+  getLWVSituationBranch
 } from './constants';
 import { uploadMediaAsset } from '../../services/mediaService.js';
 
@@ -116,7 +130,6 @@ const ScreenOverview = ({ rep, onNext }) => {
         className="w-full mt-4"
       >
         Next
-        <ChevronRight className="w-4 h-4 ml-2" />
       </Button>
     </div>
   );
@@ -162,8 +175,7 @@ const ScreenWhatHappened = ({ value, onChange, onNext, onBack, showValidation })
           variant="outline"
           className="flex-1"
         >
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          Back
+          Previous
         </Button>
         <Button
           onClick={onNext}
@@ -171,7 +183,6 @@ const ScreenWhatHappened = ({ value, onChange, onNext, onBack, showValidation })
           className="flex-1"
         >
           Next
-          <ChevronRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
     </div>
@@ -179,8 +190,8 @@ const ScreenWhatHappened = ({ value, onChange, onNext, onBack, showValidation })
 };
 
 // ============================================
-// SCREEN 2-STRUCTURED: STRUCTURED EVIDENCE (SCE & DRF)
-// Situation-specific evidence capture for SCE and DRF rep types
+// SCREEN 2-STRUCTURED: STRUCTURED EVIDENCE (SCE, DRF, FUW, LWV)
+// Situation-specific evidence capture for SCE, DRF, FUW, and LWV rep types
 // ============================================
 const ScreenStructuredEvidence = ({ 
   rep, 
@@ -193,6 +204,8 @@ const ScreenStructuredEvidence = ({
   showValidation
 }) => {
   const isDRF = rep?.repType === 'deliver_reinforcing_feedback';
+  const isFUW = rep?.repType === 'follow_up_work';
+  const isLWV = rep?.repType === 'lead_with_vulnerability';
   
   // Get situation from rep data
   const situationText = typeof rep?.situation === 'object' 
@@ -200,11 +213,35 @@ const ScreenStructuredEvidence = ({
     : (rep?.situation || '');
   
   // Get questions and context based on rep type
+  const personName = rep?.person || '';
   const { questions, header } = useMemo(() => {
     if (isDRF) {
+      const drfHeader = personName 
+        ? `${personName} • Deliver Reinforcing Feedback`
+        : 'Evidence: Reinforcing Feedback';
       return { 
         questions: DRF_EVIDENCE_QUESTIONS,
-        header: 'Evidence: Reinforcing Feedback'
+        header: drfHeader
+      };
+    }
+    
+    if (isFUW) {
+      const fuwHeader = personName 
+        ? `${personName} • Follow-Up on the Work`
+        : 'Evidence: Follow-Up on the Work';
+      return { 
+        questions: FUW_EVIDENCE_QUESTIONS,
+        header: fuwHeader
+      };
+    }
+    
+    if (isLWV) {
+      const lwvHeader = personName 
+        ? `${personName} • Lead with Vulnerability`
+        : 'Evidence: Lead with Vulnerability';
+      return { 
+        questions: LWV_EVIDENCE_QUESTIONS,
+        header: lwvHeader
       };
     }
     
@@ -221,7 +258,7 @@ const ScreenStructuredEvidence = ({
     }
     
     return { questions: qs, header: hdr };
-  }, [rep, isDRF, situationText]);
+  }, [rep, isDRF, isFUW, isLWV, situationText, personName]);
   
   // Validation - check all required fields are filled
   const isValid = useMemo(() => {
@@ -328,7 +365,7 @@ const ScreenStructuredEvidence = ({
             ))}
           </div>
           {hasError && (
-            <p className="text-xs text-red-500">Please select at least one option</p>
+            <p className="text-xs text-corporate-orange">Please select at least one option</p>
           )}
         </div>
       );
@@ -370,7 +407,7 @@ const ScreenStructuredEvidence = ({
             />
           )}
           {hasError && (
-            <p className="text-xs text-red-500">Please select an option</p>
+            <p className="text-xs text-corporate-orange">Please select an option</p>
           )}
         </div>
       );
@@ -402,7 +439,7 @@ const ScreenStructuredEvidence = ({
             ))}
           </div>
           {hasError && (
-            <p className="text-xs text-red-500">Please select an option</p>
+            <p className="text-xs text-corporate-orange">Please select an option</p>
           )}
         </div>
       );
@@ -434,7 +471,7 @@ const ScreenStructuredEvidence = ({
             ))}
           </div>
           {hasError && (
-            <p className="text-xs text-red-500">Please select an option</p>
+            <p className="text-xs text-corporate-orange">Please select an option</p>
           )}
         </div>
       );
@@ -512,8 +549,7 @@ const ScreenStructuredEvidence = ({
           variant="outline"
           className="flex-1"
         >
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          Back
+          Previous
         </Button>
         <Button
           onClick={onNext}
@@ -521,7 +557,6 @@ const ScreenStructuredEvidence = ({
           className="flex-1"
         >
           Next
-          <ChevronRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
     </div>
@@ -557,11 +592,17 @@ const ScreenResponseDynamics = ({
 }) => {
   const isFeedbackRep = FEEDBACK_REP_TYPES.includes(rep?.repType);
   const isReinforcingFeedback = rep?.repType === 'deliver_reinforcing_feedback';
+  const isFollowUp = rep?.repType === 'follow_up_work';
+  const isVulnerability = rep?.repType === 'lead_with_vulnerability';
   
-  // Use DRF-specific response options for reinforcing feedback
+  // Use rep-type-specific response options
   let responseOptions = RESPONSE_OPTIONS;
   if (isReinforcingFeedback) {
     responseOptions = DRF_RESPONSE_OPTIONS;
+  } else if (isFollowUp) {
+    responseOptions = FUW_RESPONSE_OPTIONS;
+  } else if (isVulnerability) {
+    responseOptions = LWV_RESPONSE_OPTIONS;
   } else if (rep?.repType === 'set_clear_expectations') {
     responseOptions = getSCEResponseOptions(typeof rep?.situation === 'object' ? (rep?.situation?.selected || '') : (rep?.situation || ''));
   }
@@ -569,8 +610,8 @@ const ScreenResponseDynamics = ({
     ? 'How did the other person react/respond?'
     : 'How did the other person respond?';
   
-  // Determine if pushback prompts should show (not applicable for reinforcing feedback)
-  const showPushbackPrompt = isFeedbackRep && !isReinforcingFeedback && ['disengaged', 'some_resistance', 'strong_pushback'].includes(response);
+  // Determine if pushback prompts should show (not applicable for reinforcing feedback, follow-up, or vulnerability)
+  const showPushbackPrompt = isFeedbackRep && !isReinforcingFeedback && !isFollowUp && !isVulnerability && ['disengaged', 'some_resistance', 'strong_pushback'].includes(response);
   const showPushbackEvidence = pushbackLogOption === 'link';
   
   // Determine if close loop prompts should show (after pushback logic is resolved)
@@ -581,7 +622,7 @@ const ScreenResponseDynamics = ({
   // Validation
   const isValid = useMemo(() => {
     if (!response) return false;
-    if (response === 'other' && (isReinforcingFeedback || rep?.repType === 'set_clear_expectations') && (!otherResponseText || otherResponseText.trim().length < 5)) return false;
+    if (response === 'other' && (isReinforcingFeedback || isFollowUp || isVulnerability || rep?.repType === 'set_clear_expectations') && (!otherResponseText || otherResponseText.trim().length < 5)) return false;
     if (showPushbackPrompt && !pushbackLogOption) return false;
     if (showPushbackEvidence && pushbackResponses.length === 0) return false;
     if (showCloseLoopPrompt && !closeLoopOption) return false;
@@ -597,8 +638,8 @@ const ScreenResponseDynamics = ({
     );
   };
 
-  // Simple flow for non-feedback reps (and reinforcing feedback)
-  if (!isFeedbackRep || isReinforcingFeedback) {
+  // Simple flow for non-feedback reps (and reinforcing feedback, follow-up, vulnerability)
+  if (!isFeedbackRep || isReinforcingFeedback || isFollowUp || isVulnerability) {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center mb-4">
@@ -630,8 +671,8 @@ const ScreenResponseDynamics = ({
             ))}
           </div>
 
-          {/* Other text field for DRF */}
-          {(isReinforcingFeedback || rep?.repType === 'set_clear_expectations') && response === 'other' && (
+          {/* Other text field for DRF, SCE, FUW */}
+          {(isReinforcingFeedback || isFollowUp || isVulnerability || rep?.repType === 'set_clear_expectations') && response === 'other' && (
             <div className="mt-3 animate-in slide-in-from-top-2">
               <VoiceTextarea
                 id="drf-other-response"
@@ -651,8 +692,7 @@ const ScreenResponseDynamics = ({
 
         <div className="flex gap-3 mt-4">
           <Button onClick={onBack} variant="outline" className="flex-1">
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            Back
+            Previous
           </Button>
           <Button
             onClick={onNext}
@@ -660,7 +700,6 @@ const ScreenResponseDynamics = ({
             className="flex-1"
           >
             Next
-            <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
       </div>
@@ -867,8 +906,7 @@ const ScreenResponseDynamics = ({
 
       <div className="flex gap-3 mt-4 sticky bottom-0 bg-white dark:bg-slate-900 pt-2">
         <Button onClick={onBack} variant="outline" className="flex-1">
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          Back
+          Previous
         </Button>
         <Button
           onClick={onNext}
@@ -876,7 +914,6 @@ const ScreenResponseDynamics = ({
           className="flex-1"
         >
           Next
-          <ChevronRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
     </div>
@@ -1308,8 +1345,7 @@ const ScreenArtifacts = ({
 
       <div className="flex gap-3 mt-4">
         <Button onClick={onBack} variant="outline" className="flex-1">
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          Back
+          Previous
         </Button>
         <Button
           onClick={onNext}
@@ -1317,7 +1353,6 @@ const ScreenArtifacts = ({
           className="flex-1"
         >
           Next
-          <ChevronRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
     </div>
@@ -1350,6 +1385,12 @@ const ScreenCloseRR = ({
   const selfAssessQuestions = useMemo(() => {
     if (rep?.repType === 'deliver_reinforcing_feedback') {
       return DRF_SELF_ASSESSMENT;
+    }
+    if (rep?.repType === 'follow_up_work') {
+      return FUW_SELF_ASSESSMENT;
+    }
+    if (rep?.repType === 'lead_with_vulnerability') {
+      return LWV_SELF_ASSESSMENT;
     }
     if (rep?.repType === 'set_clear_expectations') {
       const situationText = typeof rep?.situation === 'object' 
@@ -1390,46 +1431,37 @@ const ScreenCloseRR = ({
           
         {/* Self Assessment Section */}
         {selfAssessQuestions.length > 0 && (
-          <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg space-y-4 border border-gray-200 dark:border-slate-700">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium text-corporate-navy dark:text-white flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-corporate-teal" />
-                Self-Assessment
-              </h4>
-            </div>
+          <div className="space-y-4">
+            <h4 className="font-medium text-corporate-navy dark:text-white flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-corporate-teal" />
+              Self-Assessment
+            </h4>
             <div className="space-y-6">
               {selfAssessQuestions.map((q) => (
                 <div key={q.id} className="space-y-2">
-                  <label className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  <label className="block text-sm font-medium text-corporate-navy dark:text-white">
                     {q.prompt}
                   </label>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {q.options.map((opt) => (
                       <button
                         key={opt}
                         type="button"
                         onClick={() => handleAssessmentSelect(q.id, opt)}
-                        className={`w-full p-3 rounded-lg border text-left text-sm transition-all ${
+                        className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
                           selfAssessmentResponses[q.id] === opt
-                            ? 'border-corporate-teal bg-corporate-teal/10 text-corporate-teal font-semibold shadow-sm'
-                            : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-600 dark:text-gray-400 hover:border-corporate-teal/30 hover:bg-slate-50 dark:hover:bg-slate-800'
+                            ? 'border-corporate-teal bg-corporate-teal/10'
+                            : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 ${
-                            selfAssessmentResponses[q.id] === opt
-                              ? 'border-corporate-teal bg-corporate-teal'
-                              : 'border-gray-300 dark:border-gray-500'
-                          }`}>
-                            {selfAssessmentResponses[q.id] === opt && <Check className="w-3.5 h-3.5 text-white" />}
-                          </div>
-                          <span>{opt}</span>
-                        </div>
+                        <span className={selfAssessmentResponses[q.id] === opt ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                          {opt}
+                        </span>
                       </button>
                     ))}
                   </div>
                   {!selfAssessmentResponses[q.id] && (
-                    <p className="text-sm text-red-600">Please select an option</p>
+                    <p className="text-xs text-corporate-orange">Please select an option</p>
                   )}
                 </div>
               ))}
@@ -1439,24 +1471,23 @@ const ScreenCloseRR = ({
 
         {/* DRF: Reflection */}
         {rep?.repType === 'deliver_reinforcing_feedback' && (
-          <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg space-y-2 border border-gray-200 dark:border-slate-700">
-            <label className="text-sm font-medium text-gray-800 dark:text-gray-200">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-corporate-navy dark:text-white">
               To make my reinforcing feedback even clearer next time, I will ______ .
             </label>
-            <textarea
+            <VoiceTextarea
               value={nextTimeReflection}
-              onChange={(e) => setNextTimeReflection(e.target.value)}
+              onChange={setNextTimeReflection}
               placeholder=""
               rows={3}
-              className="w-full p-3 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal resize-none"
             />
           </div>
         )}
 
         {/* SCE: "Next time I will clarify expectations earlier when..." reflection */}
         {rep?.repType === 'set_clear_expectations' && (
-          <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg space-y-2 border border-gray-200 dark:border-slate-700">
-            <label className="text-sm font-medium text-gray-800 dark:text-gray-200">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-corporate-navy dark:text-white">
               {(() => {
                 const text = typeof rep?.situation === 'object' ? (rep.situation.selected || '') : (rep?.situation || '');
                 const lower = text.toLowerCase();
@@ -1466,12 +1497,41 @@ const ScreenCloseRR = ({
                 return "Next time I will clarify expectations earlier when ______ .";
               })()}
             </label>
-            <textarea
+            <VoiceTextarea
               value={nextTimeReflection}
-              onChange={(e) => setNextTimeReflection(e.target.value)}
+              onChange={setNextTimeReflection}
               placeholder=""
               rows={3}
-              className="w-full p-3 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal resize-none"
+            />
+          </div>
+        )}
+
+        {/* FUW: "Next time you follow up I will ask..." reflection */}
+        {rep?.repType === 'follow_up_work' && (
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+              Next time you follow up I will ask ______ to make progress more visible.
+            </label>
+            <VoiceTextarea
+              value={nextTimeReflection}
+              onChange={setNextTimeReflection}
+              placeholder={'Examples:\n• "What\'s left to finish?"\n• "Where are you in the process?"\n• "What\'s your next milestone?"'}
+              rows={3}
+            />
+          </div>
+        )}
+
+        {/* LWV: "Next time I lead with vulnerability I will say..." reflection */}
+        {rep?.repType === 'lead_with_vulnerability' && (
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+              Next time I lead with vulnerability I will say ______ to strengthen ownership or learning.
+            </label>
+            <VoiceTextarea
+              value={nextTimeReflection}
+              onChange={setNextTimeReflection}
+              placeholder={'Examples:\n• "I rushed that decision."\n• "I should have handled that differently."\n• "Here\'s how I\'m going to approach it next time."'}
+              rows={3}
             />
           </div>
         )}
@@ -1480,8 +1540,7 @@ const ScreenCloseRR = ({
 
       <div className="flex gap-3 mt-4 sticky bottom-0 bg-white dark:bg-slate-900 pt-2 border-t border-slate-100 dark:border-slate-800">
         <Button onClick={onBack} variant="outline" className="flex-1">
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          Back
+          Previous
         </Button>
         <Button
           onClick={onSubmit}
@@ -1697,6 +1756,7 @@ const ScreenRepUpReview = ({ qualityAssessment, onDone }) => {
 
       <Button
         onClick={onDone}
+        disabled={!qualityAssessment}
         className="w-full mt-4"
       >
         <Check className="w-4 h-4 mr-2" />
@@ -1746,9 +1806,11 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
     if (freshDataCheckedRef.current) return;
     const isSCERep = rep?.repType === 'set_clear_expectations';
     const isDRFRep = rep?.repType === 'deliver_reinforcing_feedback' || rep?.repType === 'reinforce_public';
+    const isFUWRep = rep?.repType === 'follow_up_work';
+    const isLWVRepLocal = rep?.repType === 'lead_with_vulnerability';
     
-    // Only check fresh data for debriefed SCE/DRF reps that don't have reviewViewedAt in prop
-    if (rep?.status === 'debriefed' && !rep?.reviewViewedAt && (isSCERep || isDRFRep) && db && user?.uid && rep?.id) {
+    // Only check fresh data for debriefed SCE/DRF/FUW/LWV reps that don't have reviewViewedAt in prop
+    if (rep?.status === 'debriefed' && !rep?.reviewViewedAt && (isSCERep || isDRFRep || isFUWRep || isLWVRepLocal) && db && user?.uid && rep?.id) {
       freshDataCheckedRef.current = true;
       const checkFreshData = async () => {
         try {
@@ -1773,10 +1835,12 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
   const effectiveMode = useMemo(() => {
     const isSCERep = rep?.repType === 'set_clear_expectations';
     const isDRFRep = rep?.repType === 'deliver_reinforcing_feedback' || rep?.repType === 'reinforce_public';
+    const isFUWRep = rep?.repType === 'follow_up_work';
+    const isLWVRepLocal = rep?.repType === 'lead_with_vulnerability';
     
     // Session 3: Debrief - rep has evidence but AI assessment not yet triggered
     // Status is 'executed' with evidence -> open in 'review' mode to trigger AI and show assessment
-    if (rep?.status === 'executed' && rep?.evidence && (isSCERep || isDRFRep)) {
+    if (rep?.status === 'executed' && rep?.evidence && (isSCERep || isDRFRep || isFUWRep || isLWVRepLocal)) {
       return 'review';
     }
     
@@ -1810,9 +1874,11 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
   const saveTimeoutRef = useRef(null);
   const latestDraftState = useRef({});
   
-  // Rep type check for SCE and DRF
+  // Rep type check for SCE, DRF, FUW, and LWV
   const isSCERep = rep?.repType === 'set_clear_expectations';
   const isDRFRep = rep?.repType === 'deliver_reinforcing_feedback' || rep?.repType === 'reinforce_public';
+  const isFUWRep = rep?.repType === 'follow_up_work';
+  const isLWVRep = rep?.repType === 'lead_with_vulnerability';
 
   // Screen state - determine initial screen based on mode
   const getInitialScreen = () => {
@@ -1872,14 +1938,16 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
     // We need to trigger closeRepV2 to get the AI assessment
     const isSCERep = rep?.repType === 'set_clear_expectations';
     const isDRFRepLocal = rep?.repType === 'deliver_reinforcing_feedback' || rep?.repType === 'reinforce_public';
+    const isFUWRepLocal = rep?.repType === 'follow_up_work';
+    const isLWVRepLocal = rep?.repType === 'lead_with_vulnerability';
     
     // Only trigger AI assessment if:
     // 1. effectiveMode is 'review'
     // 2. status is 'executed' (not yet debriefed)
     // 3. has evidence
-    // 4. is SCE or DRF rep
+    // 4. is SCE, DRF, FUW, or LWV rep
     // 5. no qualityAssessment already exists (checked above but double-check)
-    if (effectiveMode === 'review' && rep?.status === 'executed' && rep?.evidence && (isSCERep || isDRFRepLocal) && !rep?.qualityAssessment) {
+    if (effectiveMode === 'review' && rep?.status === 'executed' && rep?.evidence && (isSCERep || isDRFRepLocal || isFUWRepLocal || isLWVRepLocal) && !rep?.qualityAssessment) {
       // Only trigger once per wizard session
       if (assessmentTriggeredRef.current) return;
       assessmentTriggeredRef.current = true;
@@ -1913,7 +1981,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
     
     // FALLBACK: If status is 'debriefed' but we don't have qualityAssessment in the passed data
     // (stale data scenario), fetch fresh data from Firestore
-    if (effectiveMode === 'review' && rep?.status === 'debriefed' && !rep?.qualityAssessment && (isSCERep || isDRFRepLocal)) {
+    if (effectiveMode === 'review' && rep?.status === 'debriefed' && !rep?.qualityAssessment && (isSCERep || isDRFRepLocal || isFUWRepLocal)) {
       // Only trigger once per wizard session
       if (assessmentTriggeredRef.current) return;
       assessmentTriggeredRef.current = true;
@@ -2285,13 +2353,15 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
       // Build evidence data
       let responseLabel = "";
       if (isDRFRep) responseLabel = DRF_RESPONSE_OPTIONS.find(o => o.id === response)?.label || "";
+      else if (isFUWRep) responseLabel = FUW_RESPONSE_OPTIONS.find(o => o.id === response)?.label || "";
+      else if (isLWVRep) responseLabel = LWV_RESPONSE_OPTIONS.find(o => o.id === response)?.label || "";
       else if (isSCERep) responseLabel = getSCEResponseOptions(typeof rep?.situation === 'object' ? (rep?.situation?.selected || '') : (rep?.situation || '')).find(o => o.id === response)?.label || "";
       else responseLabel = RESPONSE_OPTIONS.find(o => o.id === response)?.label || "";
       const evidenceData = {
-        whatYouSaid: (isSCERep || isDRFRep) ? null : whatHappened,
-        howTheyResponded: response === 'other' && (isDRFRep || isSCERep) ? `Other: ${otherResponseText}` : responseLabel,
+        whatYouSaid: (isSCERep || isDRFRep || isFUWRep || isLWVRep) ? null : whatHappened,
+        howTheyResponded: response === 'other' && (isDRFRep || isSCERep || isFUWRep || isLWVRep) ? `Other: ${otherResponseText}` : responseLabel,
         responseType: response,
-        otherResponseText: (response === 'other' && (isDRFRep || isSCERep)) ? otherResponseText : null,
+        otherResponseText: (response === 'other' && (isDRFRep || isSCERep || isFUWRep || isLWVRep)) ? otherResponseText : null,
         outcome,
         inputMethod: 'written',
         
@@ -2315,9 +2385,31 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           // completeLoopResponses moved to separate step
           completeLoopResponses: null
         } : null,
+
+        // Follow-Up on the Work - specific evidence
+        fuwEvidence: isFUWRep ? {
+          situationBranch: getFUWSituationBranch(
+            typeof rep?.situation === 'object' 
+              ? (rep.situation.selected || '') 
+              : (rep?.situation || '')
+          ),
+          responses: sceResponses, // Using sceResponses state for structured evidence
+          nextTimeReflection: nextTimeReflection.trim() || null
+        } : null,
+        
+        // Lead With Vulnerability - specific evidence
+        lwvEvidence: isLWVRep ? {
+          situationBranch: getLWVSituationBranch(
+            typeof rep?.situation === 'object' 
+              ? (rep.situation.selected || '') 
+              : (rep?.situation || '')
+          ),
+          responses: sceResponses, // Using sceResponses state for structured evidence
+          nextTimeReflection: nextTimeReflection.trim() || null
+        } : null,
         
         // Self Assessment (checkboxes) from Step 5
-        selfAssessment: (isSCERep || isDRFRep) ? {
+        selfAssessment: (isSCERep || isDRFRep || isFUWRep || isLWVRep) ? {
           responses: selfAssessmentResponses
         } : null,
         
@@ -2346,19 +2438,11 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
       // Clear draft on successful submission
       await deleteEvidenceDraft(db, userId, rep.id).catch(() => {});
       
-      // For SCE/DRF reps: evidence capture is session 2 of 4
-      // Do NOT trigger AI assessment here - that happens in session 3 (debrief)
-      // Status stays 'executed', user returns to dashboard
-      if (isSCERep || isDRFRep) {
-        finishWizard();
-        return;
-      }
-      
-      // For non-SCE/DRF reps: close the rep now and trigger AI assessment
+      // Close the rep and trigger AI assessment for all rep types
       const closeData = {
         outcome,
-        whatWentWell: whatWentWell.trim() || '',
-        whatDifferent: whatDifferent.trim() || ''
+        whatWentWell: (isSCERep || isDRFRep || isFUWRep || isLWVRep) ? (nextTimeReflection.trim() || '') : (whatWentWell.trim() || ''),
+        whatDifferent: (isSCERep || isDRFRep || isFUWRep || isLWVRep) ? '' : (whatDifferent.trim() || '')
       };
       await conditioningService.closeRepV2(db, userId, rep.id, closeData);
       
@@ -2391,6 +2475,38 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           loopClosedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         });
+        
+        // Extract reminder date from any date_optional or date field in completeLoopResponses
+        // Field IDs vary by rep type: 'reminder', 'reinforce_reminder', 'alignment_reminder', 'review_date'
+        const reminderFieldIds = ['reminder', 'reinforce_reminder', 'alignment_reminder', 'review_date'];
+        let reminderDate = null;
+        for (const fieldId of reminderFieldIds) {
+          const val = completeLoopResponses[fieldId];
+          // date_optional fields: 'no' means declined, 'yes_pending' means not set, date string means set
+          if (val && val !== 'no' && val !== 'yes_pending' && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+            reminderDate = val;
+            break;
+          }
+        }
+        
+        // If user requested a reminder, write to top-level follow_up_reminders collection
+        if (reminderDate) {
+          const repTypeLabel = rep?.repType === 'deliver_reinforcing_feedback' ? 'Reinforcing Feedback'
+            : rep?.repType === 'set_clear_expectations' ? 'Set Clear Expectations'
+            : rep?.repType || 'Rep';
+          
+          await addDoc(collection(db, 'follow_up_reminders'), {
+            userId,
+            repId: rep.id,
+            repType: rep.repType || '',
+            repTypeLabel,
+            person: rep.person || '',
+            reminderDate,
+            createdAt: new Date().toISOString(),
+            sent: false,
+            sentAt: null
+          });
+        }
       }
       
       finishWizard();
@@ -2438,8 +2554,8 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
     }
 
     // Check if we should go to Complete the Loop step
-    // Only for SCE and DRF reps that weren't missed
-    const hasLoopQuestions = (isSCERep || isDRFRep) && outcome !== 'missed';
+    // Only for SCE, DRF, FUW, and LWV reps that weren't missed
+    const hasLoopQuestions = (isSCERep || isDRFRep || isFUWRep || isLWVRep) && outcome !== 'missed';
     
     if (hasLoopQuestions) {
       setCurrentScreen(7);
@@ -2458,7 +2574,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
         icon={currentScreen === 6 ? Award : (currentScreen === 7 ? RotateCw : Camera)}
         currentStep={currentScreen - 1}
         totalSteps={effectiveMode === 'review' ? 1 : effectiveMode === 'plan' ? 1 : 5}
-        stepLabels={(isSCERep || isDRFRep) 
+        stepLabels={(isSCERep || isDRFRep || isFUWRep || isLWVRep) 
           ? ['Overview', 'Evidence', 'Response', 'Artifacts', 'Complete']
           : ['Overview', 'What Happened', 'Response', 'Artifacts', 'Complete']
         }
@@ -2476,7 +2592,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           <ScreenOverview rep={rep} onNext={handleNext} />
         )}
         
-        {currentScreen === 2 && !isSCERep && !isDRFRep && (
+        {currentScreen === 2 && !isSCERep && !isDRFRep && !isFUWRep && !isLWVRep && (
           <ScreenWhatHappened
             value={whatHappened}
             onChange={setWhatHappened}
@@ -2486,11 +2602,11 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           />
         )}
         
-        {currentScreen === 2 && (isSCERep || isDRFRep) && (
+        {currentScreen === 2 && (isSCERep || isDRFRep || isFUWRep || isLWVRep) && (
           <ScreenStructuredEvidence
             rep={rep}
-            responses={isSCERep ? sceResponses : drfResponses}
-            setResponses={isSCERep ? setSceResponses : setDrfResponses}
+            responses={isSCERep ? sceResponses : ((isFUWRep || isLWVRep) ? sceResponses : drfResponses)}
+            setResponses={isSCERep ? setSceResponses : ((isFUWRep || isLWVRep) ? setSceResponses : setDrfResponses)}
             showOwnershipWarning={showOwnershipWarning}
             setShowOwnershipWarning={setShowOwnershipWarning}
             onNext={handleNext}

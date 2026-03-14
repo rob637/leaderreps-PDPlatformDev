@@ -982,7 +982,7 @@ const ContentManager = () => {
       id: 'dev', 
       name: 'Foundation', 
       emoji: '🎯',
-      description: '5 Gated Milestones (Self-Paced, Facilitator Approval Required)',
+      description: '5 Gated Milestones (Self-Paced, Trainer Approval Required)',
       weekRange: [1, 5], // Milestones 1-5 (reusing weekRange for milestone numbers)
       bgColor: 'bg-teal-50 dark:bg-teal-900/20',
       textColor: 'text-corporate-teal',
@@ -1020,13 +1020,57 @@ const ContentManager = () => {
     },
     session1: {
       id: 'session1',
-      name: 'Session 1',
+      name: 'Session 1 Prep',
       emoji: '🎯',
       description: 'Session 1 preparation - opens immediately on dashboard',
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
       textColor: 'text-blue-700',
       borderColor: 'border-blue-300',
       activeColor: 'bg-blue-500'
+    },
+    session2: {
+      id: 'session2',
+      name: 'Session 2 Prep',
+      emoji: '📚',
+      description: 'Session 2 preparation - shown at bottom of Milestone 1',
+      bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
+      textColor: 'text-emerald-700',
+      borderColor: 'border-emerald-300',
+      activeColor: 'bg-emerald-500',
+      milestone: 1
+    },
+    session3: {
+      id: 'session3',
+      name: 'Session 3 Prep',
+      emoji: '📚',
+      description: 'Session 3 preparation - shown at bottom of Milestone 2',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+      textColor: 'text-blue-700',
+      borderColor: 'border-blue-300',
+      activeColor: 'bg-blue-500',
+      milestone: 2
+    },
+    session4: {
+      id: 'session4',
+      name: 'Session 4 Prep',
+      emoji: '📚',
+      description: 'Session 4 preparation - shown at bottom of Milestone 3',
+      bgColor: 'bg-amber-50 dark:bg-amber-900/20',
+      textColor: 'text-amber-700',
+      borderColor: 'border-amber-300',
+      activeColor: 'bg-amber-500',
+      milestone: 3
+    },
+    session5: {
+      id: 'session5',
+      name: 'Session 5 Prep',
+      emoji: '📚',
+      description: 'Session 5 preparation - shown at bottom of Milestone 4',
+      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+      textColor: 'text-purple-700',
+      borderColor: 'border-purple-300',
+      activeColor: 'bg-purple-500',
+      milestone: 4
     },
     explore: {
       id: 'explore',
@@ -1041,6 +1085,7 @@ const ContentManager = () => {
   };
 
   // Foundation Milestone configuration (5 gated milestones)
+  // Each milestone (except 5) has a sessionPrep for the NEXT session
   const MILESTONES = {
     1: {
       id: 1,
@@ -1051,7 +1096,8 @@ const ContentManager = () => {
       bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
       textColor: 'text-emerald-700',
       borderColor: 'border-emerald-300',
-      activeColor: 'bg-emerald-500'
+      activeColor: 'bg-emerald-500',
+      sessionPrepId: 'session2' // Session 2 Prep appears at bottom of Milestone 1
     },
     2: {
       id: 2,
@@ -1062,7 +1108,8 @@ const ContentManager = () => {
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
       textColor: 'text-blue-700',
       borderColor: 'border-blue-300',
-      activeColor: 'bg-blue-500'
+      activeColor: 'bg-blue-500',
+      sessionPrepId: 'session3' // Session 3 Prep appears at bottom of Milestone 2
     },
     3: {
       id: 3,
@@ -1073,7 +1120,8 @@ const ContentManager = () => {
       bgColor: 'bg-amber-50 dark:bg-amber-900/20',
       textColor: 'text-amber-700',
       borderColor: 'border-amber-300',
-      activeColor: 'bg-amber-500'
+      activeColor: 'bg-amber-500',
+      sessionPrepId: 'session4' // Session 4 Prep appears at bottom of Milestone 3
     },
     4: {
       id: 4,
@@ -1084,7 +1132,8 @@ const ContentManager = () => {
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
       textColor: 'text-purple-700',
       borderColor: 'border-purple-300',
-      activeColor: 'bg-purple-500'
+      activeColor: 'bg-purple-500',
+      sessionPrepId: 'session5' // Session 5 Prep appears at bottom of Milestone 4
     },
     5: {
       id: 5,
@@ -1096,6 +1145,7 @@ const ContentManager = () => {
       textColor: 'text-rose-700',
       borderColor: 'border-rose-300',
       activeColor: 'bg-rose-500'
+      // No sessionPrep - Milestone 5 is graduation
     }
   };
 
@@ -1153,7 +1203,8 @@ const ContentManager = () => {
   // - onboarding-config: Onboarding items
   // - session1-config: Session 1 preparation items  
   // - explore-config: Optional Explore items
-  const { onboardingItem, session1Item, exploreItem } = useMemo(() => {
+  // - session2-config through session5-config: Session prep shown at bottom of milestones
+  const { onboardingItem, session1Item, exploreItem, session2Item, session3Item, session4Item, session5Item } = useMemo(() => {
     // Find or create Onboarding config
     const existingOnboarding = days.find(d => d.id === 'onboarding-config');
     const onboarding = existingOnboarding || {
@@ -1196,19 +1247,72 @@ const ContentManager = () => {
       dashboard: {}
     };
     
+    // Find or create Session 2-5 configs (shown at bottom of milestones 1-4)
+    const existingSession2 = days.find(d => d.id === 'session2-config');
+    const session2 = existingSession2 || {
+      id: 'session2-config',
+      title: 'Session 2 Prep',
+      focus: 'Initial setup and orientation items',
+      milestone: 1,
+      phase: 'foundation',
+      actions: [],
+      dashboard: {}
+    };
+    
+    const existingSession3 = days.find(d => d.id === 'session3-config');
+    const session3 = existingSession3 || {
+      id: 'session3-config',
+      title: 'Session 3 Prep',
+      focus: 'Initial setup and orientation items',
+      milestone: 2,
+      phase: 'foundation',
+      actions: [],
+      dashboard: {}
+    };
+    
+    const existingSession4 = days.find(d => d.id === 'session4-config');
+    const session4 = existingSession4 || {
+      id: 'session4-config',
+      title: 'Session 4 Prep',
+      focus: 'Initial setup and orientation items',
+      milestone: 3,
+      phase: 'foundation',
+      actions: [],
+      dashboard: {}
+    };
+    
+    const existingSession5 = days.find(d => d.id === 'session5-config');
+    const session5 = existingSession5 || {
+      id: 'session5-config',
+      title: 'Session 5 Prep',
+      focus: 'Initial setup and orientation items',
+      milestone: 4,
+      phase: 'foundation',
+      actions: [],
+      dashboard: {}
+    };
+    
     return { 
       onboardingItem: onboarding,
       session1Item: session1,
-      exploreItem: explore
+      exploreItem: explore,
+      session2Item: session2,
+      session3Item: session3,
+      session4Item: session4,
+      session5Item: session5
     };
   }, [days]);
   
   // Current days to display based on phase and section
   const currentWeekDays = useMemo(() => {
     if (selectedPhase === 'prep') {
-      // Prep phase has 3 separate sections with their own config documents
+      // Prep phase has separate sections with their own config documents
       if (selectedPrepSection === 'onboarding') return [onboardingItem];
       if (selectedPrepSection === 'session1') return [session1Item];
+      if (selectedPrepSection === 'session2') return [session2Item];
+      if (selectedPrepSection === 'session3') return [session3Item];
+      if (selectedPrepSection === 'session4') return [session4Item];
+      if (selectedPrepSection === 'session5') return [session5Item];
       if (selectedPrepSection === 'explore') return [exploreItem];
       return [onboardingItem]; // fallback
     }
@@ -1236,7 +1340,7 @@ const ContentManager = () => {
     // Ascent (post) uses week-based
     return weeks[selectedWeek] || [];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPhase, selectedPrepSection, onboardingItem, session1Item, exploreItem, weeks, selectedWeek, days, selectedMilestone]);
+  }, [selectedPhase, selectedPrepSection, onboardingItem, session1Item, session2Item, session3Item, session4Item, session5Item, exploreItem, weeks, selectedWeek, days, selectedMilestone]);
 
   // Handle phase change - jump to first week of that phase
   const handlePhaseChange = (phaseId) => {
@@ -1441,7 +1545,7 @@ const ContentManager = () => {
             </div>
             <span className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
               <Lock className="w-3 h-3" />
-              Gated (Facilitator Approval)
+              Gated (Trainer Approval)
             </span>
           </div>
         ) : (

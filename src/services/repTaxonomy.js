@@ -906,7 +906,7 @@ export const REP_TYPES_V2 = [
 ];
 
 /**
- * MILESTONE UNLOCKING CONFIGURATION
+ * MILESTONE UNLOCKING CONFIGURATION (Legacy)
  * ==================================
  * Maps Foundation milestones (1-5) to which rep types unlock.
  * Users see ALL rep types from Day 1, but can only commit to unlocked ones.
@@ -916,6 +916,9 @@ export const REP_TYPES_V2 = [
  * Milestone 3: Redirecting feedback and closing loops
  * Milestone 4: Handling resistance and holding accountability
  * Milestone 5: Curiosity and coaching mindset
+ * 
+ * NOTE: Kept for backward compatibility. Session-based unlocking (SESSION_REP_UNLOCKS)
+ * is now the primary method.
  */
 export const MILESTONE_REP_UNLOCKS = {
   1: ['set_clear_expectations', 'deliver_reinforcing_feedback'],
@@ -923,6 +926,37 @@ export const MILESTONE_REP_UNLOCKS = {
   3: ['deliver_redirecting_feedback', 'close_the_loop'],
   4: ['handle_pushback', 'hold_the_line'],
   5: ['be_curious']
+};
+
+/**
+ * SESSION-BASED REP UNLOCKING (Primary Method)
+ * =============================================
+ * Maps session attendance (marked by trainers) to which rep types unlock.
+ * Reps only unlock when trainer marks attendance for specific sessions.
+ * 
+ * Session 1: Deliberate Practice → SCE, DRF
+ * Session 2: 1:1 Coaching → FUW, LWV
+ * Session 3: Open Gym → RED, CTL
+ * Session 4: Open Gym → HPB, HTL, BEC
+ * Session 5: Graduation → Ascent access (not rep unlocking)
+ */
+export const SESSION_REP_UNLOCKS = {
+  'action-s1-deliberate-practice': ['set_clear_expectations', 'deliver_reinforcing_feedback'],
+  'action-s2-deliberate-practice': ['follow_up_work', 'lead_with_vulnerability'],
+  'action-s3-deliberate-practice': ['deliver_redirecting_feedback', 'close_the_loop'],
+  'action-s4-deliberate-practice': ['handle_pushback', 'hold_the_line', 'be_curious']
+  // Session 5 unlocks Ascent access, not specific reps
+};
+
+/**
+ * Session metadata for display purposes
+ */
+export const SESSION_METADATA = {
+  'action-s1-deliberate-practice': { number: 1, name: 'Session 1: Deliberate Practice' },
+  'action-s2-deliberate-practice': { number: 2, name: 'Session 2: 1:1 Coaching' },
+  'action-s3-deliberate-practice': { number: 3, name: 'Session 3: Open Gym' },
+  'action-s4-deliberate-practice': { number: 4, name: 'Session 4: Open Gym' },
+  'action-s5-deliberate-practice': { number: 5, name: 'Session 5: Graduation' }
 };
 
 /**
@@ -956,6 +990,39 @@ export const getUnlockedRepsByMilestone = (milestoneNumber) => {
 };
 
 /**
+ * Get the session ID that unlocks a specific rep type
+ * @param {string} repTypeId - The rep type ID
+ * @returns {string|null} Session ID (e.g., 'action-s1-deliberate-practice') or null
+ */
+export const getSessionForRep = (repTypeId) => {
+  for (const [sessionId, reps] of Object.entries(SESSION_REP_UNLOCKS)) {
+    if (reps.includes(repTypeId)) {
+      return sessionId;
+    }
+  }
+  // Check if it's a linked rep (not directly unlocked by session)
+  if (LINKED_REPS[repTypeId]) {
+    return null;
+  }
+  return null;
+};
+
+/**
+ * Get all rep types unlocked based on session attendance (cumulative)
+ * @param {Object} sessionAttendance - User's sessionAttendance object from Firestore
+ * @returns {string[]} Array of unlocked rep type IDs
+ */
+export const getUnlockedRepsBySessionAttendance = (sessionAttendance = {}) => {
+  const unlocked = [];
+  for (const [sessionId, reps] of Object.entries(SESSION_REP_UNLOCKS)) {
+    if (sessionAttendance[sessionId]?.attended === true) {
+      unlocked.push(...reps);
+    }
+  }
+  return unlocked;
+};
+
+/**
  * Get the milestone number that unlocks a specific rep type
  * @param {string} repTypeId - The rep type ID
  * @returns {number|null} Milestone number (1-5) or null if not milestone-gated
@@ -974,13 +1041,16 @@ export const getMilestoneForRep = (repTypeId) => {
 };
 
 /**
- * Check if a rep type is unlocked for a user based on their milestone progress
+ * Check if a rep type is unlocked for a user based on session attendance
+ * (Primary method) or milestone progress (legacy fallback).
+ * 
  * @param {string} repTypeId - The rep type ID
- * @param {Object} milestoneProgress - User's milestoneProgress object from Firestore
+ * @param {Object} milestoneProgress - User's milestoneProgress object from Firestore (legacy)
  * @param {string[]} completedRepTypes - Array of rep type IDs the user has completed
- * @returns {{ unlocked: boolean, reason: string, milestone?: number }}
+ * @param {Object} sessionAttendance - User's sessionAttendance object from Firestore (primary)
+ * @returns {{ unlocked: boolean, reason: string, session?: string, milestone?: number }}
  */
-export const isRepUnlocked = (repTypeId, milestoneProgress = {}, completedRepTypes = []) => {
+export const isRepUnlocked = (repTypeId, milestoneProgress = {}, completedRepTypes = [], sessionAttendance = null) => {
   // Check for prerequisites (linked reps) - first from Firestore cache, then hardcoded fallback
   let prerequisiteRepIds = null;
   
@@ -1019,8 +1089,42 @@ export const isRepUnlocked = (repTypeId, milestoneProgress = {}, completedRepTyp
       isLinkedRep: true
     };
   }
-  
-  // Check milestone-based unlocking
+
+  // ============================================
+  // SESSION-BASED UNLOCKING (Primary Method)
+  // ============================================
+  if (sessionAttendance !== null) {
+    const requiredSession = getSessionForRep(repTypeId);
+    
+    if (requiredSession === null) {
+      // Not gated by session - always available
+      return { unlocked: true, reason: 'Always available' };
+    }
+    
+    // Check if user attended the required session
+    const isAttended = sessionAttendance[requiredSession]?.attended === true;
+    
+    if (isAttended) {
+      const sessionMeta = SESSION_METADATA[requiredSession] || {};
+      return { 
+        unlocked: true, 
+        reason: sessionMeta.name || `Session attended`,
+        session: requiredSession 
+      };
+    }
+    
+    // Rep is locked - find which session is needed
+    const sessionMeta = SESSION_METADATA[requiredSession] || {};
+    return { 
+      unlocked: false, 
+      reason: `Attend ${sessionMeta.name || 'session'} to unlock`,
+      session: requiredSession
+    };
+  }
+
+  // ============================================
+  // MILESTONE-BASED UNLOCKING (Legacy Fallback)
+  // ============================================  
   const requiredMilestone = getMilestoneForRep(repTypeId);
   if (requiredMilestone === null) {
     // Not gated by milestone - always available
@@ -1066,49 +1170,93 @@ export const getAvailableRepTypes = (milestoneProgress = {}, completedRepTypes =
 };
 
 /**
- * Suggested Situations - 2 options per rep type + "Something else"
+ * Suggested Situations - 4 options per rep type + "Something else"
  * Used in the Situation step of both Planned and In-the-Moment flows
+ * Updated March 2026 to match Conditioning Layer specifications
+ * 
+ * Some rep types have branching logic where different situations lead to
+ * different evidence capture flows (e.g., Set Clear Expectations has 4 
+ * situations that branch into different evidence screens).
  */
 export const SUGGESTED_SITUATIONS = {
-  'deliver_reinforcing_feedback': [
-    'A behavior I want to see repeated',
-    'Someone did something right that I don\'t want to overlook'
-  ],
+  // SET CLEAR EXPECTATIONS - 4 situations with branching evidence capture
+  // #1 & #2 are linked RR (expectations + handoff)
+  // #3 & #4 need softer alignment/commitment at the end
   'set_clear_expectations': [
-    'Work or outcomes need to be defined before starting',
-    'I\'ve seen confusion or missed expectations like this before'
+    'I\'m assigning a task and defining what done looks like',
+    'I\'m delegating ongoing ownership of a responsibility',
+    'I\'m setting or clarifying behavioral standards',
+    'I\'m resetting expectations without changing ownership'
   ],
-  'make_clean_handoff': [
-    'Responsibility or work is being assigned or delegated',
-    'Ownership needs to be explicitly transferred'
+  
+  // DELIVER REINFORCING FEEDBACK - 4 situations
+  'deliver_reinforcing_feedback': [
+    'I\'m reinforcing a behavior I want repeated',
+    'I\'m acknowledging improvement after prior feedback',
+    'I\'m recognizing strong follow-through',
+    'I\'m reinforcing ownership taken without prompting'
   ],
-  'follow_up_work': [
-    'Checking progress on previously assigned work',
-    'A task or project is in motion and needs accountability'
-  ],
-  'lead_with_vulnerability': [
-    'I need to own a miss, mistake, or impact',
-    'I need to name uncertainty or a learning edge first'
-  ],
+  
+  // DELIVER REDIRECTING FEEDBACK - 4 situations (Result vs Behavior)
   'deliver_redirecting_feedback': [
-    'A behavior or result missed the standard',
-    'A pattern is starting to show up'
+    'I\'m addressing a missed deadline or broken commitment',
+    'I\'m correcting work that did not meet the standard',
+    'I\'m addressing behavior that undermines trust',
+    'I\'m confronting a repeated pattern'
   ],
+  
+  // FOLLOW UP ON THE WORK - 3 situations (all use same evidence flow)
+  'follow_up_work': [
+    'I\'m checking progress on a task or project',
+    'I\'m checking progress on an ongoing responsibility',
+    'I\'m checking progress after recently delegating ownership'
+  ],
+  
+  // CLOSE THE LOOP - 4 situations (Improvement vs No Improvement)
   'close_the_loop': [
-    'Checking whether prior feedback changed behavior',
-    'Reinforcing or re-addressing a previously named issue'
+    'I\'m checking whether prior feedback led to change',
+    'I\'m reinforcing improvement after prior feedback',
+    'I\'m addressing a previously discussed issue that resurfaced',
+    'I\'m escalating after feedback didn\'t lead to change'
   ],
+  
+  // HANDLE PUSHBACK - 4 situations (Emotion vs Disagreement)
   'handle_pushback': [
-    'I expect defensiveness or resistance to feedback',
-    'Feedback has already met disagreement or emotion'
+    'I\'m responding to defensiveness',
+    'I\'m stabilizing a reactive conversation',
+    'I\'m addressing disagreement about the standard',
+    'I\'m redirecting from intent to impact'
   ],
+  
+  // HOLD THE LINE - 4 situations (Ownership, Deadline, Standard)
   'hold_the_line': [
-    'Someone is struggling after an assignment or feedback',
-    'I\'m tempted to fix or take over to move things forward'
+    'I\'m keeping ownership with them',
+    'I\'m not stealing, rescuing, or fixing their work',
+    'I\'m holding or renegotiating a deadline',
+    'I\'m maintaining the standard under pressure'
   ],
+  
+  // LEAD WITH VULNERABILITY - 3 situations (all use same evidence flow)
+  'lead_with_vulnerability': [
+    'I owned a mistake or misjudgment',
+    'I acknowledged uncertainty or that I didn\'t have the answer',
+    'My thinking changed after new information'
+  ],
+  
+  // BE CURIOUS - 4 situations
   'be_curious': [
-    'Something feels off, but I don\'t know why yet',
-    'Early signals before jumping to conclusions'
+    'I\'m exploring a change in performance',
+    'I\'m asking questions instead of offering advice',
+    'I\'m trying to understand what\'s really going on',
+    'I\'m seeking first to understand'
+  ],
+  
+  // MAKE A CLEAN HANDOFF - 4 situations (linked rep)
+  'make_clean_handoff': [
+    'I\'m transferring ownership of a task or responsibility',
+    'I\'m delegating decision authority with clear boundaries',
+    'I\'m handing off work with explicit success criteria',
+    'I\'m transitioning ongoing responsibility to someone new'
   ]
 };
 
@@ -1366,11 +1514,17 @@ export default {
   getPrepPrompts,
   getPrepPromptsV2,
   
-  // Milestone unlocking exports
+  // Milestone unlocking exports (legacy)
   MILESTONE_REP_UNLOCKS,
   LINKED_REPS,
   getUnlockedRepsByMilestone,
   getMilestoneForRep,
   isRepUnlocked,
-  getAvailableRepTypes
+  getAvailableRepTypes,
+  
+  // Session-based unlocking exports (primary)
+  SESSION_REP_UNLOCKS,
+  SESSION_METADATA,
+  getSessionForRep,
+  getUnlockedRepsBySessionAttendance
 };

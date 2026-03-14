@@ -7,6 +7,7 @@ import {
   onSnapshot,
   doc,
   getDoc,
+  getDocs,
   setDoc,
   updateDoc,
   increment,
@@ -16,7 +17,8 @@ import {
 import {
   COACHING_REGISTRATIONS_COLLECTION,
   COACHING_SESSIONS_COLLECTION,
-  REGISTRATION_STATUS
+  REGISTRATION_STATUS,
+  getDefaultMaxAttendees
 } from '../data/Constants';
 
 /**
@@ -88,13 +90,33 @@ export const useCoachingRegistrations = () => {
 
   // Get registration for a specific coaching item (dev plan action)
   // Returns the active registration for this coaching item if one exists
+  // For 1:1 coaching items, also falls back to any active 1:1 registration
+  // (since users can only have one 1:1 at a time)
   const getRegistrationForCoachingItem = useCallback((coachingItemId) => {
     if (!coachingItemId) return null;
-    return registrations.find(
+    
+    // First try exact coachingItemId match
+    const exactMatch = registrations.find(
       r => r.coachingItemId === coachingItemId && 
            r.status !== REGISTRATION_STATUS.CANCELLED &&
            r.status !== REGISTRATION_STATUS.NO_SHOW
     );
+    if (exactMatch) return exactMatch;
+    
+    // Fallback for 1:1 coaching: users can only have ONE active 1:1 registration
+    // If looking for any coaching-one_on_one item, find any active 1:1 registration
+    if (coachingItemId.includes('coaching-one_on_one') || coachingItemId.includes('one-on-one')) {
+      const any1on1 = registrations.find(
+        r => r.sessionType === 'one_on_one' &&
+             r.status !== REGISTRATION_STATUS.CANCELLED &&
+             r.status !== REGISTRATION_STATUS.NO_SHOW &&
+             r.status !== REGISTRATION_STATUS.CERTIFIED &&
+             r.status !== REGISTRATION_STATUS.ATTENDED
+      );
+      if (any1on1) return any1on1;
+    }
+    
+    return null;
   }, [registrations]);
 
   // Check if user has registered for a coaching item (any session)
@@ -150,8 +172,9 @@ export const useCoachingRegistrations = () => {
               await updateDoc(oldSessionRef, { registrationCount: 0 });
             }
           } catch (err) {
-            console.error('[useCoachingRegistrations] Error cancelling previous 1:1:', err);
-            return { success: false, error: 'Failed to cancel previous session' };
+            // Log error but continue - the user confirmed they want to switch
+            // The old registration will remain but won't block the new one
+            console.warn('[useCoachingRegistrations] Could not cancel previous 1:1, continuing with new registration:', err.message);
           }
         } else {
           // No coachingItemId means they're not switching - block the registration
@@ -209,6 +232,51 @@ export const useCoachingRegistrations = () => {
       if (isRegistered(session.id)) {
         return { success: false, error: 'Already registered for this session' };
       }
+    }
+
+    // CAPACITY CHECK: Count actual registrations to verify session is not full
+    // NOTE: We query the registrations collection directly rather than relying on
+    // the denormalized registrationCount field, which can get out of sync.
+    try {
+      const sessionRef = doc(db, COACHING_SESSIONS_COLLECTION, session.id);
+      const sessionSnap = await getDoc(sessionRef);
+      
+      if (sessionSnap.exists()) {
+        const sessionData = sessionSnap.data();
+        const maxAttendees = sessionData.maxAttendees || getDefaultMaxAttendees(sessionData.sessionType || session.sessionType);
+        
+        // Query actual active registrations for this session
+        const regsRef = collection(db, COACHING_REGISTRATIONS_COLLECTION);
+        const regsQuery = query(
+          regsRef,
+          where('sessionId', '==', session.id),
+          where('status', '==', REGISTRATION_STATUS.REGISTERED)
+        );
+        const regsSnap = await getDocs(regsQuery);
+        const actualCount = regsSnap.size;
+        
+        // If denormalized count is wrong, fix it now
+        const storedCount = sessionData.registrationCount || 0;
+        if (storedCount !== actualCount) {
+          console.log(`[useCoachingRegistrations] Fixing registrationCount mismatch: stored=${storedCount}, actual=${actualCount}`);
+          try {
+            await updateDoc(sessionRef, { registrationCount: actualCount });
+          } catch (fixErr) {
+            console.warn('[useCoachingRegistrations] Could not fix registrationCount:', fixErr);
+          }
+        }
+        
+        if (actualCount >= maxAttendees) {
+          console.log('[useCoachingRegistrations] Session is full:', session.id, `(${actualCount}/${maxAttendees})`);
+          return { 
+            success: false, 
+            error: 'This session is full. Please select a different time slot.' 
+          };
+        }
+      }
+    } catch (capacityErr) {
+      console.warn('[useCoachingRegistrations] Could not verify capacity, proceeding:', capacityErr);
+      // Allow registration to proceed if we can't check capacity
     }
 
     try {

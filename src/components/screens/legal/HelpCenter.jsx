@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigation } from '../../../providers/NavigationProvider.jsx';
+import { BreadcrumbNav } from '../../ui/BreadcrumbNav.jsx';
 
 // ============================================================================
 // HELP CENTER DATA - Comprehensive knowledge base
@@ -41,10 +42,10 @@ Unlike traditional training programs that deliver information in a one-time even
 
 ### Key Features
 
-- **Conditioning System**: Build leadership habits through daily reps and tracking
-- **5-Milestone Foundation**: Self-paced journey through 5 gated milestones with your cohort
+- **Conditioning System**: Build leadership habits through Real Reps in your actual work
+- **5-Milestone Foundation**: Progress through 5 milestones that unlock new rep types
 - **AI Coaching**: 24/7 access to RepUp, your AI leadership coach
-- **Live Sessions**: Real-time coaching with expert facilitators
+- **Live Sessions**: Real-time coaching with expert trainers
 - **Progress Tracking**: Visualize your growth in the Arena
 
 ### The Arena Method
@@ -95,14 +96,14 @@ The assessment measures your current leadership capabilities across key dimensio
 ### What Happens After
 
 Once you complete both required items:
-- ✅ You'll unlock the Conditioning system for daily reps
-- ✅ You can begin building daily habits before your cohort starts
+- ✅ You'll unlock the Conditioning system for Real Reps
+- ✅ You can begin practicing leadership before your cohort starts
 - ✅ You'll see your personalized Daily Plan
 
 ### Pro Tips
 
 - Complete the prep phase at least 3 days before your cohort starts
-- Explore the Conditioning feature to understand how reps work
+- Explore the Conditioning feature to understand how Real Reps work
 - Review the onboarding content in your Daily Plan
         `,
         relatedArticles: ['what-is-leaderreps', 'conditioning-overview', 'baseline-assessment']
@@ -176,7 +177,7 @@ Your results are used to:
     ]
   },
 
-  // Conditioning Category (replaces Daily Practice)
+  // Conditioning Category
   'conditioning': {
     id: 'conditioning',
     category: 'Conditioning',
@@ -200,20 +201,33 @@ The heart of the Arena is the Conditioning system—where you practice leadershi
 
 Unlike traditional training that uses case studies or role plays, Real Reps are leadership behaviors you commit to and execute in your actual work:
 
-- A difficult conversation with a direct report
-- Publicly praising someone's contribution  
-- Setting a boundary with a stakeholder
-- Delegating a task you usually hold onto
+- Setting clear expectations with your team
+- Delivering reinforcing feedback when someone does great work
+- Having a redirect conversation to address an issue
+- Following up to close the loop on previous conversations
 
 ### The Rep Lifecycle
 
-Each rep moves through 5 stages:
+Each Real Rep moves through stages:
 
-1. **COMMITTED** — Pick a specific rep type and define what you'll do
-2. **PREPARED** — Review your plan (required for high-risk reps)
-3. **SCHEDULED** — Set when you'll execute the rep
-4. **EXECUTED** — Do the rep and capture evidence
-5. **DEBRIEFED** — Reflect on what happened and what you learned
+1. **COMMIT** — Choose a rep type and specify the situation
+2. **DO REP** — Execute the conversation/behavior in real life
+3. **CAPTURE EVIDENCE** — Record what you actually said and what happened
+4. **REVIEW ASSESSMENT** — Get AI feedback on your approach
+5. **CLOSE LOOP** — *(For feedback reps)* Follow up to verify the impact
+6. **COMPLETE REP** — Finish and reflect on what you learned
+
+### The Five Milestones
+
+Your conditioning journey progresses through 5 milestones that unlock new rep types:
+
+| Milestone | Rep Types Unlocked |
+|-----------|-------------------|
+| **Milestone 1** | Set Clear Expectations, Deliver Reinforcing Feedback |
+| **Milestone 2** | Follow-up on the Work, Lead with Vulnerability |
+| **Milestone 3** | Deliver Redirecting Feedback, Close the Loop |
+| **Milestone 4** | Handle Pushback, Hold the Line |
+| **Milestone 5** | Be Curious |
 
 ### Why Real Reps Work
 
@@ -223,108 +237,106 @@ Research shows leadership development sticks when it's:
 - **Tracked**: See your consistency and patterns
 - **Coached**: Get AI support before and after
         `,
-        relatedArticles: ['rep-types', 'daily-reps', 'high-risk-reps']
+        relatedArticles: ['rep-types', 'real-reps-flow', 'high-risk-reps']
       },
       {
         id: 'rep-types',
-        title: 'The 16 Rep Types',
+        title: 'Real Rep Types',
         summary: 'Understanding the different types of leadership reps.',
         readTime: 5,
         featured: true,
         content: `
-## The 16 Canonical Rep Types
+## Real Rep Types
 
-Real Reps are organized into 16 specific types across 4 categories. Each type targets a different leadership muscle.
+Real Reps are organized into 9 specific types across 3 categories. Each type targets a different leadership capability.
 
-### Category 1: Reinforcing & Redirecting (Feedback)
+### Lead the Work
 
-**Public Praise** — Recognize someone's good work in front of others
-**In-the-Moment Redirect** — Address something as it's happening
-**Prepared Redirect** — Give constructive feedback with time to prepare
-**Pattern Conversation** — Address recurring behavior patterns
-**Reinforce Privately** — Give specific recognition one-on-one
-**Third-Party Praise** — Praise someone to their manager or peers
+These reps focus on directing and managing work effectively:
 
-### Category 2: Ambiguous & Emotional (Hard Conversations)
+**Set Clear Expectations (SCE)** — Define what success looks like before work begins. Clarify who does what, by when, and to what standard.
 
-**"What's Going On?"** — Check in when something seems off
-**Acknowledgment Without Fixing** — Listen and validate without solving
-**Big Emotional News** — Deliver significant personal/professional news
-**Apology Rep** — Take genuine accountability for a mistake
+**Follow-up on the Work** — Check progress on delegated tasks. Ensure accountability without micromanaging.
 
-### Category 3: Standards & Authority (Boundaries)
+**Hold the Line** — Maintain a standard or boundary under pressure. Stand firm on what matters.
 
-**Hold the Line** — Maintain a boundary under pressure
-**Push Back** — Disagree professionally with a decision
-**Clean Delegation** — Hand off work with clear expectations
-**Meeting Assertion** — Speak up or redirect a meeting
+### Lead the Team
 
-### Category 4: High Stakes (Escalation & Decisions)
+These reps build and develop your people:
 
-**Escalation Conversation** — Raise an issue to your manager
-**Irreversible Decision** — Communicate a significant decision
+**Deliver Reinforcing Feedback (DRF)** — Give specific, timely recognition when someone does something well. What gets recognized gets repeated.
 
-### Choosing Your Rep
+**Deliver Redirecting Feedback** — Address behavior that needs to change. Give constructive feedback with care and clarity.
 
-When committing to a rep, you'll:
-1. Pick a category that matches your situation
-2. Select the specific rep type
-3. Set the difficulty level (1-3)
-4. Assess the risk level (low/medium/high)
+**Close the Loop** — Follow up on previous feedback conversations. Verify whether the change happened and reinforce accountability.
+
+**Handle Pushback** — Navigate defensiveness or resistance during difficult conversations. Stay centered and keep the dialogue productive.
+
+### Lead Yourself
+
+These reps develop your own leadership presence:
+
+**Lead with Vulnerability** — Share authentically about challenges, mistakes, or uncertainties. Build trust through openness.
+
+**Be Curious** — Ask questions to understand rather than to confirm. Approach situations with genuine inquiry.
+
+### Milestone Unlocking
+
+Rep types unlock progressively as you complete milestones:
+- **Milestone 1**: SCE and DRF (your foundation reps)
+- **Milestone 2**: Follow-up on the Work, Lead with Vulnerability
+- **Milestone 3**: Deliver Redirecting Feedback, Close the Loop
+- **Milestone 4**: Handle Pushback, Hold the Line
+- **Milestone 5**: Be Curious
         `,
-        relatedArticles: ['conditioning-overview', 'daily-reps', 'high-risk-reps']
+        relatedArticles: ['conditioning-overview', 'real-reps-flow', 'high-risk-reps']
       },
       {
-        id: 'daily-reps',
-        title: 'How do Daily Reps work?',
-        summary: 'Your minimum weekly requirement and how to commit.',
+        id: 'real-reps-flow',
+        title: 'How do Real Reps work?',
+        summary: 'The Real Rep lifecycle from commit to complete.',
         readTime: 3,
+        featured: true,
         content: `
-## Daily Reps: Your Leadership Practice
+## Real Reps: Your Leadership Practice
 
-Each week, you need to complete at least **1 Real Rep**—but you can do more to accelerate your growth.
+Real Reps are leadership behaviors you commit to, execute, and reflect on—in your actual work, not role plays.
 
 ### Committing to a Rep
 
-When you commit to a rep, you'll define:
+Click **"+ Commit to a Rep"** to start. You'll:
 
-**The Situation**
-- Who is involved?
-- What's the context?
-- What triggered this need?
+1. **Select a Rep Type** — Choose from your unlocked rep types
+2. **Specify the Situation** — Define who it's with and what you'll do
+3. **Plan Your Approach** — Think through what you'll say
 
-**Your Plan**
-- What specific behavior will you practice?
-- What words or approach will you use?
-- When will you execute?
+### The Rep Flow
 
-**The Stakes**
-- Risk level (low/medium/high)
-- Difficulty level (1-3)
+After committing, follow the stages shown on your rep card:
 
-### During the Week
+| Stage | Action |
+|-------|--------|
+| **Commit** | Plan your rep and specify the situation |
+| **Do Rep** | Execute the conversation in real life |
+| **Capture Evidence** | Record what you actually said and what happened |
+| **Review Assessment** | Get AI feedback on your approach |
+| **Close Loop** | *(Feedback reps)* Follow up to verify impact |
+| **Complete Rep** | Finish and reflect |
 
-- Browse available rep types
-- Commit to your rep for the week
-- Prepare if it's high-risk
-- Execute in the real situation
-- Capture what happened (evidence)
-- Debrief on your learning
+### Tracking Your Progress
 
-### Building Consistency
-
-The Conditioning system tracks:
-- Your completion streaks
-- Rep types you've practiced
-- Your growth over time
-- Areas to stretch into
+The Conditioning screen shows:
+- **Current Reps** — Reps you're working on
+- **Completed Reps** — Your rep history in the Locker
+- **Milestone Progress** — Which rep types you've unlocked
 
 ### Tips for Success
 
-- Start with lower-risk reps to build confidence
-- Graduate to higher difficulty and risk
-- Use RepUp to help you prepare
-- Be honest in your debriefs
+- **Start with SCE and DRF** — These foundation reps build your core skills
+- **Capture evidence right after** — Details are freshest immediately after the conversation
+- **Be honest in reflections** — Growth comes from honest self-assessment
+- **Don't skip Close Loop** — Following up is what makes feedback stick
+- **Review AI assessments** — Learn from the scoring to improve next time
         `,
         relatedArticles: ['conditioning-overview', 'rep-types', 'high-risk-reps']
       },
@@ -334,37 +346,36 @@ The Conditioning system tracks:
         summary: 'How to prepare before difficult conversations.',
         readTime: 3,
         content: `
-## High-Risk Reps
+## Preparing for Difficult Reps
 
-Some leadership moments carry more risk—a tough feedback conversation, a boundary with your boss, or delivering difficult news. For these, the Arena requires preparation.
+Some leadership moments carry more weight—a tough feedback conversation, a boundary with a stakeholder, or delivering difficult news. The Planning Wizard helps you prepare.
 
-### When Prep is Required
+### The Planning Wizard
 
-Prep is required when:
-- You mark the rep as "High Risk"
-- The rep type inherently requires prep (like escalations)
-- You're stretching into Level 3 difficulty
+When you commit to a rep, the planning wizard guides you through:
 
-### The Prep Process
+1. **Context & Recipient** — Who will you talk to?
+2. **What You'll Say** — Plan your key points
+3. **Anticipated Response** — How might they react?
+4. **Your Opening Line** — Practice how you'll start
+5. **Desired Outcome** — What does success look like?
 
-1. **Open the prep modal** after committing to a high-risk rep
-2. **Talk to RepUp** — your AI coach helps you think through the conversation
-3. **Answer key questions**:
-   - What outcome do you want?
-   - What might go wrong?
-   - How will you handle pushback?
-   - What's your opening line?
-4. **Get feedback** on your plan
-5. **Mark as prepared** when ready
+### Using RepUp for Prep
 
-### Why Prep Matters
+After planning, you can chat with RepUp to:
+- Role-play the conversation
+- Get feedback on your approach
+- Anticipate objections
+- Refine your messaging
 
-High-risk conversations fail when we:
-- Wing it without a plan
+### Why Planning Matters
+
+Difficult conversations fail when we:
+- Wing it without thinking it through
 - Get hijacked by emotion
 - Focus on being right instead of being effective
 
-Prep helps you:
+Planning helps you:
 - Clarify your actual goal
 - Anticipate reactions
 - Practice key phrases
@@ -372,12 +383,14 @@ Prep helps you:
 
 ### After the Rep
 
-High-risk reps get extra attention in debrief:
-- What happened vs. what you planned?
-- How did you handle surprises?
-- What would you do differently?
+After executing, capture evidence of what happened:
+- What did you actually say?
+- How did they respond?
+- What went well? What would you change?
+
+The AI assessment compares your plan vs. execution for insights.
         `,
-        relatedArticles: ['conditioning-overview', 'rep-types', 'meet-repup']
+        relatedArticles: ['conditioning-overview', 'rep-types', 'real-reps-flow']
       },
       {
         id: 'tracking-reps',
@@ -391,35 +404,34 @@ The Conditioning system provides visual feedback on your leadership development 
 
 ### What's Tracked
 
-**Weekly Status**
-- Required rep complete? (minimum 1 per week)
-- How many additional reps completed
-- Any missed or overdue reps
+**Current Reps**
+- Reps you've committed to
+- Current stage for each rep
+- Any overdue reps
 
 **Rep History**
-- Every rep you've committed to
-- Status of each (completed, missed, in progress)
-- Evidence and debrief notes
+- Every rep you've completed
+- Evidence and reflections captured
+- AI assessment scores
 
 **Patterns**
 - Which rep types do you practice most?
 - Where are you avoiding?
-- How is your difficulty progressing?
+- How are your assessment scores trending?
 
 ### Viewing Your Progress
 
 - **Conditioning Card**: Quick dashboard widget
 - **Conditioning Screen**: Full rep management
+- **Locker**: View completed rep history
 - **Arena**: Overall progress visualization
 - **My Journey**: Milestone completion
 
-### Streaks and Consistency
+### Milestone Progress
 
-- Weekly completion streaks
-- Total reps completed
-- Milestone progress tied to conditioning
+Track your progress through the 5 milestones and see which rep types you've unlocked.
         `,
-        relatedArticles: ['conditioning-overview', 'daily-reps']
+        relatedArticles: ['conditioning-overview', 'real-reps-flow']
       }
     ]
   },
@@ -453,7 +465,7 @@ A cohort is a group of leaders who journey through the 5 Foundation milestones t
 
 ### Your Cohort Experience
 
-- **Live Sessions**: Regular meetings with your facilitator
+- **Live Sessions**: Regular meetings with your trainer
 - **Discussion Threads**: Ongoing conversation in the app
 - **Peer Coaching**: Partner exercises and feedback exchanges
 - **Celebration**: Shared milestones and wins
@@ -476,7 +488,7 @@ Each cohort establishes shared agreements:
         content: `
 ## Program Structure
 
-The Arena program uses a **5 milestone Foundation phase**, followed by ongoing practice in the Ascent phase. This is self-paced and milestone-gated—you progress by completing milestones, not by time.
+The Arena program uses a **5-Milestone Foundation phase**, followed by ongoing practice in the Ascent phase. This is milestone-gated—you progress by completing milestones, not by time.
 
 ### The Three Phases
 
@@ -486,11 +498,11 @@ The Arena program uses a **5 milestone Foundation phase**, followed by ongoing p
 - Explore the platform and Conditioning system
 
 **Foundation Phase** (5 Milestones)
-- **Milestone 1: Foundation** — Core leadership principles and self-awareness
-- **Milestone 2: Feedback** — Delivering and receiving effective feedback
-- **Milestone 3: Boundaries** — Setting and maintaining professional boundaries
-- **Milestone 4: Delegation** — Empowering others through delegation
-- **Milestone 5: Mastery** — Integration and advanced leadership skills
+- **Milestone 1**: Set Clear Expectations + Deliver Reinforcing Feedback
+- **Milestone 2**: Follow-up on the Work + Lead with Vulnerability
+- **Milestone 3**: Deliver Redirecting Feedback + Close the Loop
+- **Milestone 4**: Handle Pushback + Hold the Line
+- **Milestone 5**: Be Curious + Integration
 
 **Ascent Phase** (After graduation)
 - Continue daily conditioning
@@ -501,10 +513,10 @@ The Arena program uses a **5 milestone Foundation phase**, followed by ongoing p
 ### How Milestones Work
 
 Each milestone:
-- Contains specific learning content and conditioning reps
-- Requires completion of all items before sign-off
-- Gets reviewed and signed off by your facilitator
-- Unlocks the next milestone upon completion
+- Contains specific rep types to practice and master
+- Requires completion of reps before trainer sign-off
+- Gets reviewed and signed off by your trainer
+- Unlocks new rep types upon completion
 
 ### After Foundation
 
@@ -532,7 +544,7 @@ Session One is your cohort's first live meeting—an energizing kickoff to your 
 
 **Agenda**:
 - Welcome and introductions
-- Facilitator overview
+- Trainer overview
 - Program walkthrough
 - Cohort norm setting
 - Q&A
@@ -545,9 +557,9 @@ Session One is your cohort's first live meeting—an energizing kickoff to your 
 ✅ Have water and something to write with
 ✅ Come with one question about the program
 
-### Your Facilitator
+### Your Trainer
 
-Your facilitator is an experienced leadership coach who will:
+Your trainer is an experienced leadership coach who will:
 - Guide your live sessions
 - Provide personalized feedback
 - Create a safe learning environment
@@ -576,7 +588,7 @@ Beyond your cohort sessions, you have access to a variety of community events.
 ### Event Types
 
 **Masterclasses**
-Deep dives into specific leadership topics with expert facilitators.
+Deep dives into specific leadership topics with expert trainers.
 
 **Office Hours**
 Drop-in sessions for questions and coaching on current challenges.
@@ -646,7 +658,7 @@ Content unlocks as you progress through the program. This prevents overwhelm and
 
 Each day's learning content appears in your Daily Plan—no need to search the library unless you want to explore ahead or revisit past material.
         `,
-        relatedArticles: ['accessing-content', 'daily-reps']
+        relatedArticles: ['accessing-content', 'conditioning-overview']
       },
       {
         id: 'accessing-content',
@@ -695,109 +707,6 @@ Your completion is automatically tracked:
     ]
   },
 
-  // AI Coaching Category
-  'ai-coaching': {
-    id: 'ai-coaching',
-    category: 'AI Coaching',
-    categoryId: 'ai-coaching',
-    icon: Sparkles,
-    color: 'pink',
-    description: 'Get the most from your AI coach.',
-    articles: [
-      {
-        id: 'meet-repup',
-        title: 'Meet RepUp: Your AI Leadership Coach',
-        summary: 'How to work with your always-available AI coach.',
-        readTime: 4,
-        featured: true,
-        content: `
-## RepUp: Your AI Leadership Coach
-
-RepUp is your AI-powered coaching companion—available 24/7 to help you reflect, prepare, and grow. Think of RepUp as a coach in your pocket.
-
-### What RepUp Can Do
-
-**Coaching Conversations**
-Talk through challenges, decisions, and situations. RepUp asks questions to help you think more clearly.
-
-**Preparation Help**
-Getting ready for a tough conversation? Meeting? Presentation? RepUp can help you prepare.
-
-**Conditioning Support**
-Stuck on how to approach a rep? RepUp can help you think through how to practice it effectively.
-
-**Knowledge Resource**
-Ask about leadership concepts, get summaries of content, and explore ideas.
-
-### How to Get the Most from RepUp
-
-**Be Specific**
-- ❌ "Help me with leadership"
-- ✅ "I need to give critical feedback to a team member who's underperforming"
-
-**Provide Context**
-The more RepUp knows about your situation, the better the coaching.
-
-**Stay Curious**
-RepUp's questions are designed to help you think—sit with them.
-
-**Apply What Emerges**
-The value is in what you do, not just what you discuss.
-
-### RepUp vs. Human Coaching
-
-RepUp complements (not replaces) your facilitator and cohort:
-- RepUp: Available anytime, good for preparation and working through challenges
-- Facilitator: Deep expertise, nuanced feedback, live interaction
-- Cohort: Peer perspectives, accountability, relationships
-        `,
-        relatedArticles: ['repup-tips', 'conditioning-overview']
-      },
-      {
-        id: 'repup-tips',
-        title: 'Tips for Better AI Coaching',
-        summary: 'Get more value from your conversations with RepUp.',
-        readTime: 3,
-        content: `
-## Getting More from RepUp
-
-RepUp is as helpful as your prompts are clear. Here's how to have better coaching conversations.
-
-### Starting a Conversation
-
-**Good openers**:
-- "I'm preparing for a difficult conversation with..."
-- "I'm trying to decide between..."
-- "I want to think through how to approach this rep..."
-- "Help me think through..."
-
-### During the Conversation
-
-- Answer RepUp's questions thoughtfully
-- Push back if something doesn't fit
-- Ask follow-up questions
-- Request specific frameworks or tools
-
-### Types of Conversations
-
-**Prepare**: Get ready for upcoming challenges
-**Process**: Make sense of past experiences
-**Plan**: Think through decisions and next steps
-**Practice**: Role-play conversations or scenarios
-**Learn**: Explore concepts and get explanations
-
-### What to Avoid
-
-- Vague requests ("Help me be better")
-- Expecting RepUp to make decisions for you
-- Ignoring the coaching questions
-- Not applying insights to action
-        `,
-        relatedArticles: ['meet-repup']
-      }
-    ]
-  },
-
   // Arena & Gamification Category
   'arena-progress': {
     id: 'arena-progress',
@@ -833,7 +742,7 @@ Tracking consistency in your daily conditioning.
 
 ### How to Earn XP
 
-- Complete daily reps (+10-20 XP)
+- Complete Real Reps (+10-20 XP)
 - Finish content items (+15-25 XP)
 - Progress through rep stages (+5-10 XP per stage)
 - Complete milestones (+100 XP)
@@ -862,8 +771,8 @@ The Arena tracks multiple dimensions of your growth to give you a complete pictu
 ### What's Tracked
 
 **Conditioning Consistency**
-- Daily rep completion streaks
-- Completion rates
+- Real Rep completion patterns
+- Assessment score trends
 - Stage progression patterns
 
 **Content Progress**
@@ -891,7 +800,7 @@ The Arena tracks multiple dimensions of your growth to give you a complete pictu
 
 ### Privacy Note
 
-Your detailed progress is visible only to you and your facilitator. Cohort members see only what you choose to share.
+Your detailed progress is visible only to you and your trainer. Cohort members see only what you choose to share.
         `,
         relatedArticles: ['arena-overview', 'baseline-assessment']
       },
@@ -1103,7 +1012,7 @@ The Arena is a Progressive Web App (PWA) that works beautifully on mobile device
 ### Mobile Features
 
 All features work on mobile:
-- Daily conditioning reps
+- Real Reps (commit, capture, complete)
 - Content viewing
 - Chat with RepUp
 - Live session joining
@@ -1238,7 +1147,7 @@ To help us help you faster, include:
 
 - This Help Center (you're here!)
 - Ask RepUp (for coaching questions)
-- Your facilitator (for program questions)
+- Your trainer (for program questions)
 - Cohort discussion (for peer support)
         `,
         relatedArticles: ['video-issues', 'slow-loading']
@@ -1262,7 +1171,7 @@ const ALL_ARTICLES = Object.values(HELP_ARTICLES).flatMap(category =>
 const FEATURED_ARTICLES = ALL_ARTICLES.filter(a => a.featured);
 
 // Popular articles (could be dynamic based on analytics)
-const POPULAR_ARTICLE_IDS = ['conditioning-overview', 'rep-types', 'daily-reps', 'meet-repup', 'high-risk-reps'];
+const POPULAR_ARTICLE_IDS = ['conditioning-overview', 'rep-types', 'real-reps-flow', 'high-risk-reps', 'what-is-leaderreps'];
 const POPULAR_ARTICLES = ALL_ARTICLES.filter(a => POPULAR_ARTICLE_IDS.includes(a.id));
 
 // ============================================================================
@@ -1819,6 +1728,7 @@ const CategoryView = ({ category, onBack, onArticleSelect }) => {
 // ============================================================================
 
 const HomeView = ({ onCategorySelect, onArticleSelect, searchQuery, setSearchQuery, onAskRepUp }) => {
+  const { navigate } = useNavigation();
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const searchRef = useRef(null);
@@ -1865,31 +1775,35 @@ const HomeView = ({ onCategorySelect, onArticleSelect, searchQuery, setSearchQue
   
   return (
     <div className="min-h-screen bg-[#FAFBFC] dark:bg-slate-900">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-corporate-navy via-slate-800 to-corporate-navy pt-12 pb-20 px-5">
-        <div className="max-w-3xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 mb-6">
-              <HelpCircle className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">
-              How can we help you?
+      {/* Breadcrumb Header */}
+      <div className="bg-[#FAFBFC] dark:bg-slate-900 px-5 sm:px-8 lg:px-10 pt-5 sm:pt-8 lg:pt-10">
+        <div className="max-w-5xl mx-auto">
+          <BreadcrumbNav 
+            items={[
+              { label: 'Dashboard', path: 'dashboard' },
+              { label: 'Help Center', path: null }
+            ]} 
+            navigate={navigate}
+          />
+        </div>
+      </div>
+      
+      {/* Page Header - consistent with other pages */}
+      <div className="px-5 sm:px-8 lg:px-10 pt-6 pb-4">
+        <div className="max-w-5xl mx-auto text-center">
+          <div className="flex items-center gap-3 justify-center mb-2">
+            <HelpCircle className="w-7 h-7 text-corporate-teal" />
+            <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy dark:text-white tracking-tight">
+              Help Center
             </h1>
-            <p className="text-slate-300 text-lg mb-8">
-              Search our knowledge base or browse categories below
-            </p>
-          </motion.div>
+          </div>
+          <p className="text-slate-500 dark:text-slate-400 text-base mb-6">
+            Search our knowledge base or browse categories below
+          </p>
           
           {/* Search */}
-          <motion.div
+          <div
             ref={searchRef}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
             className="relative max-w-2xl mx-auto"
           >
             <SearchBar
@@ -1920,12 +1834,12 @@ const HomeView = ({ onCategorySelect, onArticleSelect, searchQuery, setSearchQue
                 </motion.div>
               )}
             </AnimatePresence>
-          </motion.div>
+          </div>
         </div>
       </div>
       
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-5 -mt-8">
+      <div className="max-w-5xl mx-auto px-5 pt-4">
         {/* Quick Links */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -2052,7 +1966,7 @@ const HelpCenter = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleAskRepUp = useCallback(() => {
-    navigate('rep-coach');
+    navigate('rep-coach', { mode: 'help' });
   }, [navigate]);
 
   const handleCategorySelect = useCallback((category) => {

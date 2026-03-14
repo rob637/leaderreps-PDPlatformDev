@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useProspectsStore, PIPELINE_STAGES } from '../../stores/prospectsStore';
 import { useAuthStore } from '../../stores/authStore';
+import { usePersonaStore } from '../../stores/personaStore';
 import { TEAM_MEMBERS } from '../../config/team';
 import { LINKEDIN_STATUSES, DEFAULT_TAGS } from '../../config/prospectMeta';
 import toast from 'react-hot-toast';
@@ -19,6 +20,8 @@ import {
 
 const AddProspectModal = ({ onClose }) => {
   const { user } = useAuthStore();
+  const { getActiveEmail } = usePersonaStore();
+  const activeEmail = getActiveEmail(user?.email);
   const { addProspect } = useProspectsStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOwnerDropdown, setShowOwnerDropdown] = useState(false);
@@ -34,8 +37,8 @@ const AddProspectModal = ({ onClose }) => {
     linkedin: '',
     linkedinStatus: 'none',
     stage: 'new',
-    owner: user?.email || '',
-    ownerEmail: user?.email || '',
+    owner: activeEmail || '',
+    ownerEmail: activeEmail || '',
     value: '',
     notes: '',
     tags: [],

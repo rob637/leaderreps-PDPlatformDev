@@ -46,7 +46,7 @@ const BlockerSelector = ({ value, onChange }) => {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-corporate-navy">
-        What got in the way?
+        What got in the way? (Required)
       </label>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
         No judgment — understanding blockers helps you improve next time.
@@ -94,7 +94,7 @@ const StandardSelector = ({ value, onChange, blocker }) => {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-corporate-navy">
-        Which standard broke down?
+        Which standard broke down? (Required)
       </label>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
         This helps identify patterns over time — not for blame.
@@ -166,7 +166,7 @@ const NextWeekPlan = ({ value, onChange, blocker, standard }) => {
       </div>
       
       <VoiceTextarea
-        label="What will you do differently next week?"
+        label="What will you do differently next week? (Required • Min 20 chars)"
         value={value || ''}
         onChange={onChange}
         placeholder="Be specific — vague intentions rarely work..."
@@ -186,7 +186,7 @@ const RecommitOptions = ({ rep, selectedOption, onChange, cancelReason, onCancel
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-corporate-navy">
-        What do you want to do with this rep?
+        What do you want to do with this rep? (Required)
       </label>
       
       <div className="space-y-2">
@@ -244,7 +244,7 @@ const RecommitOptions = ({ rep, selectedOption, onChange, cancelReason, onCancel
       
       {selectedOption === 'cancel' && (
         <VoiceTextarea
-          label="Why is this no longer relevant?"
+          label="Why is this no longer relevant? (Required • Min 10 chars)"
           value={cancelReason || ''}
           onChange={onCancelReasonChange}
           placeholder="e.g., Person left the team, situation resolved itself..."

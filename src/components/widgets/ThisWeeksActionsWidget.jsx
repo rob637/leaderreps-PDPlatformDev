@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   CheckCircle, Circle, Play, BookOpen, Users, Video, FileText, Zap, 
-  ExternalLink, Loader, Layers, MessageSquare, Lock,
+  ExternalLink, Loader, Layers, MessageSquare, 
   SkipForward, Clock, AlertTriangle, PlayCircle,
   User, ClipboardCheck, Calendar, ChevronDown, ChevronUp, Trophy, Bell,
   RotateCcw, Award
@@ -12,7 +12,6 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { useCoachingRegistrations, REGISTRATION_STATUS } from '../../hooks/useCoachingRegistrations';
-import { useSafeNavigation } from '../../providers/NavigationProvider';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import CoachingActionItem from '../coaching/CoachingActionItem';
 import SessionPickerModal from '../coaching/SessionPickerModal';
@@ -26,10 +25,6 @@ import FoundationCommitmentWidget from './FoundationCommitmentWidget';
 import ConditioningTutorialWidget from './ConditioningTutorialWidget';
 import { VideoSeriesPlayer } from '../video';
 import LeaderCertificateViewer from '../coaching/LeaderCertificateViewer';
-import conditioningService from '../../services/conditioningService';
-import CommitFlowSelector from '../conditioning/CommitFlowSelector';
-import EvidenceCaptureWizard from '../conditioning/EvidenceCaptureWizard';
-import draftRepService, { hasMeaningfulProgress, DRAFT_FLOW_TYPES } from '../../services/draftRepService';
 
 // Session type labels for display in user-facing UI
 const COACHING_SESSION_LABELS = {
@@ -75,8 +70,6 @@ const generateCalendarUrl = (calendarEvent) => {
 
 const ThisWeeksActionsWidget = ({ helpText }) => {
   const { db, user, developmentPlanData, updateDevelopmentPlanData, isAdmin } = useAppServices();
-  const navigation = useSafeNavigation();
-  const navigate = navigation?.navigate;
   const [resettingPrep, setResettingPrep] = useState(false);
   const [viewingResource, setViewingResource] = useState(null);
   const [loadingResource, setLoadingResource] = useState(false);
@@ -90,16 +83,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   const [showFoundationCommitmentModal, setShowFoundationCommitmentModal] = useState(false);
   const [showConditioningTutorialModal, setShowConditioningTutorialModal] = useState(false);
   const [savingBaseline, setSavingBaseline] = useState(false);
-  
-  // Conditioning Rep Modal (launched from action items)
-  const [showConditioningRepModal, setShowConditioningRepModal] = useState(false);
-  const [conditioningRepItem, setConditioningRepItem] = useState(null);
-  const [conditioningRepDraft, setConditioningRepDraft] = useState(null);
-  const [isSubmittingRep, setIsSubmittingRep] = useState(false);
-  
-  // Evidence Capture Modal (for continuing committed reps from action items)
-  const [showEvidenceWizardModal, setShowEvidenceWizardModal] = useState(false);
-  const [evidenceWizardRep, setEvidenceWizardRep] = useState(null);
   
   // Session picker modals
   const [showSessionPicker, setShowSessionPicker] = useState(false);
@@ -306,26 +289,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     return user?.prepStatus?.videoSeries === true;
   }, [user?.prepStatus?.videoSeries]);
   
-  // Conditioning Rep completion tracking (track loop_closed rep types)
-  // Used for S1 Real Rep items that link to conditioning reps
-  const [loopClosedRepTypes, setLoopClosedRepTypes] = useState([]);
-  
-  // Function to refresh completed rep types (called after rep completion)
-  const refreshLoopClosedRepTypes = useCallback(async () => {
-    if (!db || !user?.uid) return;
-    try {
-      const completedTypes = await conditioningService.getCompletedRepTypes(db, user.uid);
-      setLoopClosedRepTypes(completedTypes);
-    } catch (error) {
-      console.warn('Could not fetch completed rep types:', error);
-    }
-  }, [db, user?.uid]);
-  
-  // Initial fetch on mount
-  useEffect(() => {
-    refreshLoopClosedRepTypes();
-  }, [refreshLoopClosedRepTypes]);
-  
   // Video series duration data (fetched on demand)
   const [videoSeriesDurations, setVideoSeriesDurations] = useState({});
   
@@ -471,32 +434,16 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         if (handlerType === 'leader-profile') handlerType = '';
       }
 
-      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'conditioning-rep'].includes(handlerType);
+      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
       
       // Auto-complete status for interactive items
       let autoComplete = undefined;
-      let isLocked = false;
-      let lockedReason = null;
-      
       if (handlerType === 'leader-profile') autoComplete = leaderProfileComplete;
       else if (handlerType === 'baseline-assessment') autoComplete = baselineAssessmentComplete;
       else if (handlerType === 'notification-setup') autoComplete = notificationSetupComplete;
       else if (handlerType === 'foundation-commitment') autoComplete = foundationCommitmentComplete;
       else if (handlerType === 'conditioning-tutorial') autoComplete = conditioningTutorialComplete;
       else if (handlerType === 'video-series') autoComplete = videoSeriesComplete;
-      else if (handlerType === 'conditioning-rep' && action.repTypeId) {
-        // Check if user has completed (loop_closed) this rep type
-        autoComplete = loopClosedRepTypes.includes(action.repTypeId);
-        
-        // Check if this is a linked rep that requires a parent rep to be completed first
-        if (action.linkedToRepType) {
-          const parentComplete = loopClosedRepTypes.includes(action.linkedToRepType);
-          if (!parentComplete) {
-            isLocked = true;
-            lockedReason = `Complete the ${action.linkedToRepType.replace(/_/g, ' ')} rep first`;
-          }
-        }
-      }
       
       return {
         ...action,
@@ -525,16 +472,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         isInteractive,
         autoComplete,
         handlerType,
-        // Conditioning rep linking support
-        repTypeId: action.repTypeId,
-        linkedToRepType: action.linkedToRepType,
-        isLocked,
-        lockedReason,
         // Prep section for splitting Onboarding vs Session 1 (default to 'onboarding' for backwards compatibility)
         prepSection: action.prepSection || 'onboarding'
       };
     });
-  }, [leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete, loopClosedRepTypes]);
+  }, [leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete]);
 
   // Combine all actionable items from Daily Plan
   const allActions = useMemo(() => {
@@ -627,11 +569,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       
       // Milestone names mapping
       const milestoneNames = {
-        1: 'Deliberate Practice',
-        2: '1:1 Coaching',
-        3: 'Open Gym: Feedback',
-        4: 'Open Gym: Pushback',
-        5: 'Graduation'
+        1: 'Foundation Basics',
+        2: 'Communication Mastery',
+        3: 'Team Leadership',
+        4: 'Strategic Thinking',
+        5: 'Executive Presence'
       };
       
       // CHECK FOR UNVIEWED CERTIFICATES
@@ -814,11 +756,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     }
     
     const milestoneNames = {
-      1: 'Deliberate Practice',
-      2: '1:1 Coaching',
-      3: 'Open Gym: Feedback',
-      4: 'Open Gym: Pushback',
-      5: 'Graduation'
+      1: 'Foundation Basics',
+      2: 'Communication Mastery',
+      3: 'Team Leadership',
+      4: 'Strategic Thinking',
+      5: 'Executive Presence'
     };
     
     return {
@@ -838,13 +780,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
     // Helper function to check if an action is completed
     const isActionCompleted = (actionId, actionLabel) => {
-      // Check facilitator-controlled session attendance (Deliberate Practice sessions)
-      // These sessions are marked as attended by facilitators via SessionAttendanceQueue
-      const sessionAttendance = userState?.sessionAttendance || {};
-      if (actionId && sessionAttendance[actionId]?.attended === true) {
-        return true;
-      }
-      
       // Check in dailyProgress
       const completedInDailyProgress = Object.values(dailyProgress).some(
         dp => dp?.itemsCompleted?.includes(actionId)
@@ -1104,8 +1039,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     }
     
     return carriedItems;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, progressData, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete, dailyPlan, userState?.dailyProgress, userState?.sessionAttendance, prepRequirementsComplete?.allComplete]);
+  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, progressData, leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete, dailyPlan, userState?.dailyProgress]);
 
   // Preserve carried over items - merge new items but keep completed ones
   useEffect(() => {
@@ -1271,16 +1205,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   }, [allActions]);
 
   const completedRequiredCount = useMemo(() => {
-    const sessionAttendanceData = userState?.sessionAttendance || {};
     return requiredActions.filter(item => {
-      // Check facilitator-controlled session attendance (Deliberate Practice sessions)
-      if (item.id && sessionAttendanceData[item.id]?.attended === true) {
-        return true;
-      }
       const progress = getItemProgress(item.id);
       return progress.status === 'completed' || completedItems.includes(item.id);
     }).length;
-  }, [requiredActions, getItemProgress, completedItems, userState?.sessionAttendance]);
+  }, [requiredActions, getItemProgress, completedItems]);
 
   // Progress percentage based only on required items (per Ryan's feedback)
   const totalRequiredCount = requiredActions.length;
@@ -1471,7 +1400,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         }
       }
       
-      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'conditioning-rep'].includes(handlerType);
+      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
       
       return {
         ...action,
@@ -1556,8 +1485,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   //   }
   // };
   
-  // Handler for INTERACTIVE content items (Leader Profile, Baseline Assessment, Notification Setup, Foundation Commitment, Conditioning Tutorial, Conditioning Rep)
-  const handleInteractiveClick = async (item) => {
+  // Handler for INTERACTIVE content items (Leader Profile, Baseline Assessment, Notification Setup, Foundation Commitment, Conditioning Tutorial)
+  const handleInteractiveClick = (item) => {
     if (item.handlerType === 'leader-profile') {
       setShowLeaderProfileModal(true);
     } else if (item.handlerType === 'baseline-assessment') {
@@ -1568,115 +1497,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       setShowFoundationCommitmentModal(true);
     } else if (item.handlerType === 'conditioning-tutorial') {
       setShowConditioningTutorialModal(true);
-    } else if (item.handlerType === 'conditioning-rep') {
-      // Open conditioning rep flow directly on dashboard (no navigation)
-      // Priority: 0) Already completed → do nothing, 1) Active rep → Evidence capture, 2) Draft → Resume commit, 3) Start fresh
-      try {
-        if (db && user?.uid) {
-          const cohortId = user?.cohort || user?.cohortId || 'foundation-cohort-1';
-          
-          // First: Check if this action item already has a completed rep
-          const completedRep = await conditioningService.getCompletedRepBySourceItemId(db, user.uid, item.id, cohortId);
-          
-          if (completedRep) {
-            // Rep is already completed - refresh the completion state and don't open anything
-            await refreshLoopClosedRepTypes();
-            return;
-          }
-          
-          // Second: Check for an active committed rep from this action item
-          const activeRep = await conditioningService.getActiveRepBySourceItemId(db, user.uid, item.id, cohortId);
-          
-          if (activeRep) {
-            // Found an active rep - open evidence capture wizard
-            setEvidenceWizardRep(activeRep);
-            setShowEvidenceWizardModal(true);
-            return;
-          }
-          
-          // Third: Check for draft to resume
-          if (item.repTypeId) {
-            const matchingDraft = await draftRepService.getDraftByRepType(db, user.uid, item.repTypeId, item.id);
-            
-            if (matchingDraft && hasMeaningfulProgress(matchingDraft)) {
-              setConditioningRepDraft(matchingDraft);
-            } else {
-              setConditioningRepDraft(null);
-            }
-          } else {
-            setConditioningRepDraft(null);
-          }
-        } else {
-          setConditioningRepDraft(null);
-        }
-      } catch (err) {
-        console.warn('Could not check for reps or drafts:', err);
-        setConditioningRepDraft(null);
-      }
-      
-      // No active or completed rep found - show commit flow (with or without draft)
-      setConditioningRepItem(item);
-      setShowConditioningRepModal(true);
     }
-  };
-  
-  // Handler for Conditioning Rep submission (from CommitFlowSelector)
-  const handleConditioningRepSubmit = async (repData) => {
-    if (!db || !user?.uid) return;
-    
-    setIsSubmittingRep(true);
-    try {
-      // Use cohortId from user data (matching Conditioning.jsx pattern)
-      const cohortId = user?.cohort || user?.cohortId || 'foundation-cohort-1';
-      const sourceItemId = conditioningRepItem?.id || null;
-      
-      // Create the rep via conditioning service (include sourceItemId for action item linkage)
-      await conditioningService.commitRepV2(db, user.uid, { 
-        ...repData, 
-        cohortId,
-        sourceItemId  // Links this rep to the action item
-      });
-      
-      // Clear the draft for this specific rep type AND source item
-      const flowType = repData.repEntryType === 'in_moment' 
-        ? DRAFT_FLOW_TYPES.IN_MOMENT 
-        : DRAFT_FLOW_TYPES.PLANNED;
-      const repType = repData.repType || conditioningRepItem?.repTypeId;
-      await draftRepService.deleteDraft(db, user.uid, flowType, repType, sourceItemId).catch(() => {});
-      
-      // Close modal (returns to dashboard)
-      setShowConditioningRepModal(false);
-      setConditioningRepItem(null);
-      setConditioningRepDraft(null);
-      
-      // Note: The action item completion is handled automatically by loopClosedRepTypes
-      // when the rep reaches loop_closed status (after full completion)
-      
-    } catch (error) {
-      console.error('Error creating conditioning rep:', error);
-      // Don't close modal on error so user can retry
-    } finally {
-      setIsSubmittingRep(false);
-    }
-  };
-  
-  // Handler for Evidence Capture completion (wizard handles submission internally)
-  const handleEvidenceWizardSubmit = async () => {
-    // Capture the rep type BEFORE clearing state (for optimistic update)
-    const completedRepType = evidenceWizardRep?.repType;
-    
-    // Close modal immediately
-    setShowEvidenceWizardModal(false);
-    setEvidenceWizardRep(null);
-    
-    // Optimistic update: immediately mark this rep type as complete in local state
-    // This gives instant feedback while the server refresh happens in background
-    if (completedRepType && !loopClosedRepTypes.includes(completedRepType)) {
-      setLoopClosedRepTypes(prev => [...prev, completedRepType]);
-    }
-    
-    // Also refresh from server to ensure consistency
-    refreshLoopClosedRepTypes();
   };
   
   // Handler for Baseline Assessment completion
@@ -2190,16 +2011,10 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // This ensures the checkbox state matches the DevelopmentJourneyWidget counter
     let isCompleted;
     
-    // FIRST: Check facilitator-controlled session attendance (Deliberate Practice sessions)
-    // These sessions are marked as attended by facilitators via SessionAttendanceQueue
-    const sessionAttendance = userState?.sessionAttendance || {};
-    if (item.id && sessionAttendance[item.id]?.attended === true) {
-      isCompleted = true;
-    } else {
-      // Check if this is a prep phase item (from onboarding-config or session1-config)
-      const isPrepPhaseItem = item.dayId === 'onboarding-config' || item.dayId === 'session1-config';
+    // Check if this is a prep phase item (from onboarding-config or session1-config)
+    const isPrepPhaseItem = item.dayId === 'onboarding-config' || item.dayId === 'session1-config';
     
-      if (isPrepPhaseItem && Array.isArray(prepRequirementsComplete?.items)) {
+    if (isPrepPhaseItem && Array.isArray(prepRequirementsComplete?.items)) {
       // For prep items, look up completion in prepRequirementsComplete
       // Match by ID first, then handlerType, then exact label (same logic as DevelopmentJourneyWidget)
       const itemLabel = (item.label || '').toLowerCase().trim();
@@ -2224,7 +2039,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                       item.handlerType === 'foundation-commitment' ? foundationCommitmentComplete :
                       item.handlerType === 'conditioning-tutorial' ? conditioningTutorialComplete :
                       item.handlerType === 'video-series' ? videoSeriesComplete :
-                      item.handlerType === 'conditioning-rep' ? (item.autoComplete || false) :
                       item.autoComplete || false;
       } else {
         // Fallback to action progress for content items not found in prepRequirementsComplete
@@ -2238,13 +2052,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     item.handlerType === 'foundation-commitment' ? foundationCommitmentComplete :
                     item.handlerType === 'conditioning-tutorial' ? conditioningTutorialComplete :
                     item.handlerType === 'video-series' ? videoSeriesComplete :
-                    item.handlerType === 'conditioning-rep' ? (item.autoComplete || false) :
                     item.autoComplete || false;
     } else {
       // Non-prep, non-interactive items use standard progress check
       isCompleted = (progress.status === 'completed' || completedItems.includes(item.id));
     }
-    } // end else for session attendance check
     const isSkipped = progress.status === 'skipped';
     const Icon = item.isInteractive 
       ? (item.icon === 'User' ? User : item.icon === 'Bell' ? Bell : ClipboardCheck)
@@ -2254,32 +2066,24 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
     const getCategoryStyles = () => {
       if (isCompleted) return 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-700';
-      if (item.isLocked) return 'bg-gray-100 border-gray-200 opacity-60 dark:bg-slate-800/50 dark:border-slate-700';
       return 'bg-teal-50 border-teal-100 hover:bg-teal-100 hover:border-teal-200 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:border-slate-600';
     };
 
     const getCheckboxStyles = () => {
       if (isCompleted) return 'bg-emerald-500 border-emerald-500';
-      if (item.isLocked) return 'border-gray-300 dark:border-gray-600';
       return 'border-teal-300 group-hover:border-corporate-teal dark:border-teal-500 dark:group-hover:border-teal-400';
     };
 
     const getIconColor = () => {
       if (isCompleted) return 'text-emerald-600 dark:text-emerald-400';
-      if (item.isLocked) return 'text-gray-400 dark:text-gray-500';
       return 'text-corporate-teal dark:text-teal-400';
     };
     
-    // Determine if this item is clickable (interactive, has resource, or is session picker) - but NOT if locked
-    const isClickable = !item.isLocked && (item.isInteractive || item.resourceId || item.url || item.isSessionPicker);
+    // Determine if this item is clickable (interactive, has resource, or is session picker)
+    const isClickable = item.isInteractive || item.resourceId || item.url || item.isSessionPicker;
     
     // Determine click handler for the main row
     const handleRowClick = (e) => {
-      // Prevent click on locked items
-      if (item.isLocked) {
-        return;
-      }
-      
       if (item.isSessionPicker) {
         // Open session picker modal for coaching/community sessions
         if (item.type === 'coaching' || item.handlerType === 'session-picker') {
@@ -2300,14 +2104,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
     return (
       <div 
-        className={`group flex items-start gap-3 p-3 rounded-xl border transition-all ${getCategoryStyles()} ${isClickable ? 'cursor-pointer' : ''} ${item.isLocked ? 'cursor-not-allowed' : ''}`}
+        className={`group flex items-start gap-3 p-3 rounded-xl border transition-all ${getCategoryStyles()} ${isClickable ? 'cursor-pointer' : ''}`}
         onClick={isClickable ? handleRowClick : undefined}
       >
         <div
           onClick={(e) => {
             e.stopPropagation();
-            // Prevent any interaction on locked items
-            if (item.isLocked) return;
             // Prevent manual completion for interactive items - they must be completed through their forms
             if (item.isInteractive) return;
             // Prevent manual completion for any item with a resource - must open/view the content first
@@ -2317,23 +2119,17 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             }
             handleToggle(item);
           }}
-          className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${(item.resourceId || item.url || item.isInteractive || item.isLocked) && !isCompleted ? 'cursor-not-allowed' : 'cursor-pointer touch-manipulation active:scale-90'} ${getCheckboxStyles()}`}
+          className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${(item.resourceId || item.url || item.isInteractive) && !isCompleted ? 'cursor-not-allowed' : 'cursor-pointer touch-manipulation active:scale-90'} ${getCheckboxStyles()}`}
         >
-          {item.isLocked && <Lock className="w-3 h-3 text-gray-400 dark:text-gray-500 pointer-events-none" />}
-          {isCompleted && !item.isLocked && <CheckCircle className="w-4 h-4 text-white pointer-events-none" />}
+          {isCompleted && <CheckCircle className="w-4 h-4 text-white pointer-events-none" />}
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <p className={`text-sm font-bold ${isCompleted ? 'text-emerald-700 dark:text-emerald-400 line-through' : item.isLocked ? 'text-gray-500 dark:text-gray-400' : 'text-slate-700 dark:text-white'}`}>
+            <p className={`text-sm font-bold ${isCompleted ? 'text-emerald-700 dark:text-emerald-400 line-through' : 'text-slate-700 dark:text-white'}`}>
               {item.label || item.title || 'Untitled Action'}
             </p>
-            {item.isLocked && (
-              <span className="text-[10px] font-bold text-gray-500 bg-gray-100 dark:text-gray-400 dark:bg-gray-800 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
-                <Lock className="w-2.5 h-2.5" /> Locked
-              </span>
-            )}
-            {!item.isLocked && item.required !== false && !item.optional && !isCarriedOver && !isCompleted && (
+            {item.required !== false && !item.optional && !isCarriedOver && !isCompleted && (
               <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
             )}
             {!item.isInteractive && item.optional && !isCarriedOver && (
@@ -2345,13 +2141,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               </span>
             )}
           </div>
-          
-          {/* Show locked reason if item is locked */}
-          {item.isLocked && item.lockedReason && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 italic">
-              {item.lockedReason}
-            </p>
-          )}
           
           <div className={`flex items-center gap-2 text-xs ${getIconColor()}`}>
             <Icon className="w-3 h-3" />
@@ -2756,12 +2545,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
             {/* Current Week Items */}
             {allActions.length > 0 && (() => {
-              const sessionAttendanceData = userState?.sessionAttendance || {};
               const completedThisWeek = allActions.filter(item => {
-                // Check facilitator-controlled session attendance (Deliberate Practice sessions)
-                if (item.id && sessionAttendanceData[item.id]?.attended === true) {
-                  return true;
-                }
                 // Special handling for coaching items that require certification
                 if (item.requiresCertification) {
                   const reg = getRegistrationForCoachingItem(item.id);
@@ -2948,37 +2732,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             />
           </div>
         </div>
-      )}
-
-      {/* Conditioning Rep Modal (launched from action items, returns to dashboard) */}
-      {showConditioningRepModal && (
-        <CommitFlowSelector
-          onSubmit={handleConditioningRepSubmit}
-          onClose={() => {
-            setShowConditioningRepModal(false);
-            setConditioningRepItem(null);
-            setConditioningRepDraft(null);
-          }}
-          isLoading={isSubmittingRep}
-          initialFlow={conditioningRepDraft ? conditioningRepDraft.flowType : DRAFT_FLOW_TYPES.PLANNED}
-          milestoneProgress={user?.milestoneProgress || {}}
-          completedRepTypes={loopClosedRepTypes}
-          preselectedRepType={conditioningRepItem?.repTypeId}
-          initialDraft={conditioningRepDraft}
-          sourceItemId={conditioningRepItem?.id}
-        />
-      )}
-
-      {/* Evidence Capture Modal (for continuing committed reps from action items) */}
-      {showEvidenceWizardModal && evidenceWizardRep && (
-        <EvidenceCaptureWizard
-          rep={evidenceWizardRep}
-          onClose={() => {
-            setShowEvidenceWizardModal(false);
-            setEvidenceWizardRep(null);
-          }}
-          onSubmit={handleEvidenceWizardSubmit}
-        />
       )}
 
       {/* Coaching Session Picker Modal */}

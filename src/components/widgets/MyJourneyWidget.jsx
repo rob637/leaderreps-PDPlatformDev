@@ -1,13 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Compass, Calendar, User, Users, Rocket, 
-  Clock, ChevronRight, Shield, Info, Zap
+  Clock, ChevronRight, Shield, Info, Zap, UserCog
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useDailyPlan, PHASES } from '../../hooks/useDailyPlan';
+import { useDevPlan } from '../../hooks/useDevPlan';
 import { timeService } from '../../services/timeService';
 import FacilitatorProfileModal from './FacilitatorProfileModal';
 import FacilitatorAvatar from './FacilitatorAvatar';
+
+// Level names matching DevelopmentJourneyWidget MILESTONE_THEMES
+const LEVEL_NAMES = {
+  1: 'Reinforcing',
+  2: 'One-on-One (1:1)',
+  3: 'Redirecting',
+  4: 'Readiness',
+  5: 'Graduation'
+};
 
 /**
  * MyJourneyWidget - Shows user's cohort and journey progress in Locker
@@ -26,13 +36,40 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
     cohortData, 
     currentPhase, 
     phaseDayNumber, 
+    currentDayData,
     // journeyDay - available if needed
     daysFromStart,
     prepRequirementsComplete
   } = useDailyPlan();
-  // useAppServices - available if needed
+  
+  // Get current week/level from dev plan
+  const { currentWeek } = useDevPlan();
+  
+  // Compute current level name to match Dev Plan journey display
+  const currentLevelName = useMemo(() => {
+    if (currentPhase?.id !== 'start') return null;
+    const level = parseInt(currentWeek?.level || '1', 10);
+    return LEVEL_NAMES[level] || LEVEL_NAMES[1];
+  }, [currentPhase, currentWeek]);
 
   const [showFacilitatorModal, setShowFacilitatorModal] = useState(false);
+  const [selectedTrainer, setSelectedTrainer] = useState(null);
+  
+  // Get trainers array - support both new format (facilitators array) and legacy (single facilitator)
+  const trainers = useMemo(() => {
+    if (cohortData?.facilitators && Array.isArray(cohortData.facilitators) && cohortData.facilitators.length > 0) {
+      return cohortData.facilitators;
+    }
+    if (cohortData?.facilitator) {
+      return [cohortData.facilitator];
+    }
+    return [];
+  }, [cohortData]);
+  
+  const handleTrainerClick = (trainer) => {
+    setSelectedTrainer(trainer);
+    setShowFacilitatorModal(true);
+  };
   
   // Secret time traveler state
   const [secretClicks, setSecretClicks] = useState(0);
@@ -100,8 +137,8 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
       };
     }
     return {
-      label: 'Days Into Program',
-      value: daysFromStart,
+      label: 'Program Day',
+      value: daysFromStart + 1,
       color: 'text-corporate-navy',
       bgColor: 'bg-corporate-navy/10',
       icon: Clock
@@ -179,19 +216,34 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
               <span>Starts: <strong>{formatStartDate(cohortData.startDate)}</strong></span>
             </div>
             
-            {/* Facilitator Info - inline in cohort card */}
-            {cohortData?.facilitator && (
-              <button
-                onClick={() => setShowFacilitatorModal(true)}
-                className="w-full flex items-center gap-3 mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-600/60 bg-transparent hover:bg-corporate-teal/5 dark:hover:bg-corporate-teal/10 rounded-lg p-2 -mx-2 transition-all group text-left"
-              >
-                <FacilitatorAvatar name={cohortData.facilitator.name} photoUrl={cohortData.facilitator.photoUrl} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-800 dark:text-white group-hover:text-corporate-teal transition-colors truncate text-sm">{cohortData.facilitator.name}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Your Facilitator</p>
+            {/* Facilitator/Trainers Info - inline in cohort card */}
+            {trainers.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-600/60">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <UserCog className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    {trainers.length === 1 ? 'Your Trainer' : 'Your Trainers'}
+                  </span>
                 </div>
-                <Info className="w-4 h-4 text-slate-300 dark:text-slate-500 group-hover:text-corporate-teal transition-colors flex-shrink-0" />
-              </button>
+                <div className="space-y-1">
+                  {trainers.map((trainer, idx) => (
+                    <button
+                      key={trainer.id || idx}
+                      onClick={() => handleTrainerClick(trainer)}
+                      className="w-full flex items-center gap-3 bg-transparent hover:bg-corporate-teal/5 dark:hover:bg-corporate-teal/10 rounded-lg p-2 -mx-2 transition-all group text-left"
+                    >
+                      <FacilitatorAvatar name={trainer.name} photoUrl={trainer.photoUrl} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-slate-800 dark:text-white group-hover:text-corporate-teal transition-colors truncate text-sm">{trainer.name}</p>
+                        {trainer.title && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{trainer.title}</p>
+                        )}
+                      </div>
+                      <Info className="w-4 h-4 text-slate-300 dark:text-slate-500 group-hover:text-corporate-teal transition-colors flex-shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         ) : (
@@ -284,28 +336,42 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
 
         {/* Facilitator Profile Modal */}
         <FacilitatorProfileModal
-          facilitator={cohortData?.facilitator}
+          facilitator={selectedTrainer}
           cohortName={cohortData?.name}
           isOpen={showFacilitatorModal}
-          onClose={() => setShowFacilitatorModal(false)}
+          onClose={() => {
+            setShowFacilitatorModal(false);
+            setSelectedTrainer(null);
+          }}
         />
 
         {/* Current Phase */}
-        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 rounded-xl px-4 py-3 border border-slate-200 dark:border-slate-700">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-            <span className="text-sm text-slate-600 dark:text-slate-300">Current Phase</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-corporate-navy dark:text-white">
-              {currentPhase?.displayName || 'Unknown'}
-            </span>
-            {phaseDayNumber && (
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                (Day {phaseDayNumber})
+        <div className="bg-slate-50 dark:bg-slate-800 rounded-xl px-4 py-3 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+              <span className="text-sm text-slate-600 dark:text-slate-300">Current Phase</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-corporate-navy dark:text-white">
+                {currentPhase?.displayName || 'Unknown'}
               </span>
-            )}
+              {phaseDayNumber && (
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  (Day {phaseDayNumber})
+                </span>
+              )}
+            </div>
           </div>
+          {/* Current Focus - show current level name to match Dev Plan journey */}
+          {currentLevelName && (
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+              <span className="text-xs text-slate-500 dark:text-slate-400">Current Focus</span>
+              <span className="text-xs font-medium text-corporate-teal">
+                {currentLevelName}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Secret Time Traveler Panel */}

@@ -175,9 +175,11 @@ export const useDayBasedAccessControl = () => {
       // Zone Access (derived from CSV structure)
       // Community zone opens once user completes prep and enters Foundation phase
       isCommunityZoneOpen: prepStatus.isComplete,
-      // Coaching zone opens once user completes prep and enters Foundation phase
-      isCoachingZoneOpen: prepStatus.isComplete,
+      // Coaching zone opens when user enters Foundation phase (not during Prep)
+      isCoachingZoneOpen: prepStatus.isComplete && effectiveDayNumber >= 1,
       isCoaching1on1Window: effectiveDayNumber >= 1, // Available throughout Foundation
+      // Conditioning zone opens when user enters Foundation phase (not during Prep)
+      isConditioningZoneOpen: prepStatus.isComplete && effectiveDayNumber >= 1,
       
       // Content Zone is always open but items are gated
       isContentZoneOpen: true,

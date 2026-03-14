@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import ConditioningModal from './ConditioningModal';
 import VoiceTextarea from './VoiceTextarea';
+import EvidenceCaptureWizard from "./EvidenceCaptureWizard";
 import { REP_OUTCOME_OPTIONS as OUTCOME_OPTIONS } from './constants';
 
 // ============================================
@@ -89,6 +90,22 @@ const CloseRRModal = ({
     return true;
   }, [outcome, reflection, needsEvidence, whatYouSaid]);
   
+
+  // Use the full Evidence Capture Wizard for Set Clear Expectations and Reinforcing Feedback reps
+  if (rep?.repType === 'set_clear_expectations' || rep?.repType === 'deliver_reinforcing_feedback') {
+    // If evidence already captured, go straight to Plan Follow-up (Complete the Loop)
+    // to avoid looping back through evidence capture screens
+    const mode = rep?.evidence ? 'plan' : 'evidence';
+    return (
+      <EvidenceCaptureWizard 
+        rep={rep}
+        initialMode={mode}
+        onClose={onClose}
+        onSubmit={onSubmit}
+      />
+    );
+  }
+
   // Get dynamic evidence prompt based on outcome
   const getEvidencePrompt = () => {
     switch (outcome) {

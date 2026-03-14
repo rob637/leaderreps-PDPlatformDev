@@ -640,18 +640,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       {view === 'dashboard' && (
         <div className="space-y-8">
 
-          {/* 1. Baseline Widget (Always show if enabled - handles its own completed state) */}
-          {isFeatureEnabled('baseline-assessment') && (
-             <WidgetRenderer widgetId="baseline-assessment" scope={widgetScope}>
-                <BaselineAssessmentSimple
-                  onComplete={handleCompleteBaseline}
-                  isLoading={isSaving}
-                  initialData={latestAssessment}
-                />
-             </WidgetRenderer>
-          )}
-
-          {/* 1.5. Development Journey Widget - Shows entire journey progress */}
+          {/* Development Journey Widget - Shows entire journey progress */}
           {isFeatureEnabled('dev-plan-journey') && (
             <WidgetRenderer widgetId="dev-plan-journey" scope={widgetScope}>
               <DevelopmentJourneyWidget />

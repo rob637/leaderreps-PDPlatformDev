@@ -241,21 +241,21 @@ const LeaderCertificateViewer = ({
             <div class="achievement-text">
               has successfully demonstrated mastery of the core competencies 
               and leadership skills required for <strong>${theme.name}</strong>, 
-              completing all required activities and receiving facilitator certification.
+              completing all required activities and receiving trainer certification.
             </div>
             <div class="milestone-badge">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
-              Milestone ${milestone} Complete
+              Level ${milestone} Complete
             </div>
           </div>
           
           <div class="footer">
             <div class="signature">
               <div class="signature-line"></div>
-              <div class="signature-name">${facilitatorName || 'Program Facilitator'}</div>
-              <div class="signature-label">Certifying Facilitator</div>
+              <div class="signature-name">${facilitatorName || 'Program Trainer'}</div>
+              <div class="signature-label">Certifying Trainer</div>
             </div>
             <div class="signature">
               <div class="signature-line"></div>
@@ -311,7 +311,7 @@ const LeaderCertificateViewer = ({
                 </div>
                 <div>
                   <h2 className="text-xl font-bold">Leader Certification</h2>
-                  <p className="text-white/80 text-sm">{theme.name} - Milestone {milestone}</p>
+                  <p className="text-white/80 text-sm">{theme.name} - Level {milestone}</p>
                 </div>
               </div>
               <button
@@ -355,22 +355,22 @@ const LeaderCertificateViewer = ({
                 
                 <p className="text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mb-6">
                   has successfully completed all required activities and received 
-                  facilitator certification for <strong>{theme.name}</strong>.
+                  trainer certification for <strong>{theme.name}</strong>.
                 </p>
                 
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-bold"
                   style={{ backgroundColor: theme.color }}>
                   <Star className="w-4 h-4" />
-                  Milestone {milestone} Complete
+                  Level {milestone} Complete
                 </div>
                 
                 <div className="flex justify-between mt-8 pt-4 border-t border-slate-200 dark:border-slate-600">
                   <div className="text-center">
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                      {facilitatorName || 'Program Facilitator'}
+                      {facilitatorName || 'Program Trainer'}
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Certifying Facilitator
+                      Certifying Trainer
                     </p>
                   </div>
                   <div className="text-center">
@@ -406,14 +406,14 @@ const LeaderCertificateViewer = ({
                     onClick={onClose}
                     className="px-4 py-2 bg-corporate-teal text-white rounded-lg hover:bg-teal-600 transition-colors font-medium"
                   >
-                    Continue to Next Milestone
+                    Continue to Next Level
                   </button>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  <strong>Congratulations!</strong> Review your certificate, then acknowledge to unlock the next milestone.
+                  <strong>Congratulations!</strong> Review your certificate, then acknowledge to unlock the next level.
                 </p>
                 <div className="flex gap-2">
                   <button

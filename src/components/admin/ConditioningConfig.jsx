@@ -38,7 +38,7 @@ const TABS = [
 const DEFAULT_CATEGORIES = [
   { id: 'lead_the_work', label: 'Lead the Work', shortLabel: 'Work', icon: 'Target', color: 'blue', sortOrder: 1 },
   { id: 'lead_the_team', label: 'Lead the Team', shortLabel: 'Team', icon: 'Users', color: 'teal', sortOrder: 2 },
-  { id: 'lead_yourself', label: 'Lead Yourself', shortLabel: 'Self', icon: 'User', color: 'purple', sortOrder: 3 }
+  { id: 'lead_yourself', label: 'Lead Yourself', shortLabel: 'Self', icon: 'User', color: 'corporate-teal', sortOrder: 3 }
 ];
 
 // ============================================

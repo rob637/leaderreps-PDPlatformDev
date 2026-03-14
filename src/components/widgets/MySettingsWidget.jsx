@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, User, Bell, CheckCircle, Edit2, Zap, Mail, Smartphone, VolumeX, Shield,
-  Download, LogOut, AlertTriangle, Sun, Moon, Monitor, ChevronRight, KeyRound
+  Download, LogOut, AlertTriangle, Sun, Moon, Monitor, ChevronRight, KeyRound,
+  ClipboardList, ArrowRight
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
@@ -9,6 +10,8 @@ import { useAppServices } from '../../services/useAppServices';
 import { useTheme } from '../../providers/ThemeProvider';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
+import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
+import { logActivity, ACTIVITY_TYPES } from '../../services/activityLogger';
 import PWAInstall from '../ui/PWAInstall';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -31,6 +34,7 @@ const STRATEGY_DISPLAY = {
  */
 const MySettingsWidget = () => {
   const [showProfileForm, setShowProfileForm] = useState(false);
+  const [showBaselineForm, setShowBaselineForm] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   
@@ -43,8 +47,20 @@ const MySettingsWidget = () => {
   // Use stored isComplete flag - profile is complete once user saves it
   const isProfileComplete = profileComplete;
   
-  // Notification settings
-  const { user, db, logout, navigate } = useAppServices();
+  // Notification settings and baseline data
+  const { user, db, logout, navigate, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
+  
+  // Leadership Skills Baseline status
+  const assessmentHistory = developmentPlanData?.assessmentHistory || [];
+  const hasCompletedBaseline = assessmentHistory.length > 0;
+  const latestAssessment = hasCompletedBaseline ? assessmentHistory[assessmentHistory.length - 1] : null;
+  const baselineDate = latestAssessment?.date 
+    ? new Date(latestAssessment.date).toLocaleDateString(undefined, { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      })
+    : null;
   const [notifLoading, setNotifLoading] = useState(true);
   const [notifSettings, setNotifSettings] = useState({
     enabled: true,
@@ -150,7 +166,35 @@ const MySettingsWidget = () => {
               </div>
             </div>
             <div className="flex items-center gap-1 text-corporate-teal">
-              <span className="text-xs font-medium">{isProfileComplete ? 'Edit' : 'Complete'}</span>
+              <span className="text-xs font-medium">{isProfileComplete ? 'Edit' : 'Start'}</span>
+              <Edit2 className="w-3.5 h-3.5" />
+            </div>
+          </button>
+
+          {/* Leadership Skills Baseline Row */}
+          <button
+            onClick={() => setShowBaselineForm(true)}
+            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-corporate-teal/30 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${hasCompletedBaseline ? 'bg-green-100 dark:bg-green-900/40' : 'bg-corporate-orange/10 dark:bg-corporate-orange/20'}`}>
+                {hasCompletedBaseline ? (
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                ) : (
+                  <ClipboardList className="w-4 h-4 text-corporate-orange" />
+                )}
+              </div>
+              <div className="text-left">
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Leadership Skills Baseline</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {hasCompletedBaseline 
+                    ? `Completed ${baselineDate}` 
+                    : 'Complete to unlock your plan'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-corporate-teal">
+              <span className="text-xs font-medium">{hasCompletedBaseline ? 'Edit' : 'Start'}</span>
               <Edit2 className="w-3.5 h-3.5" />
             </div>
           </button>
@@ -184,13 +228,13 @@ const MySettingsWidget = () => {
           {/* Appearance / Theme Row - Visible on all devices */}
           <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/40">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-rep-navy-light dark:bg-slate-800/40">
                 {theme === 'dark' ? (
-                  <Moon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <Moon className="w-4 h-4 text-corporate-navy dark:text-corporate-navy" />
                 ) : theme === 'light' ? (
                   <Sun className="w-4 h-4 text-amber-500" />
                 ) : (
-                  <Monitor className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <Monitor className="w-4 h-4 text-corporate-navy dark:text-corporate-navy" />
                 )}
               </div>
               <div className="text-left">
@@ -279,6 +323,38 @@ const MySettingsWidget = () => {
             <LeaderProfileFormSimple 
               onComplete={() => setShowProfileForm(false)}
               onClose={() => setShowProfileForm(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Baseline Assessment Modal */}
+      {showBaselineForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto">
+            <BaselineAssessmentSimple
+              onComplete={async (assessment) => {
+                try {
+                  const newHistory = [...assessmentHistory, assessment];
+                  await updateDevelopmentPlanData({
+                    assessmentHistory: newHistory,
+                    currentAssessment: assessment
+                  });
+                  if (db && user) {
+                    logActivity(db, ACTIVITY_TYPES.ASSESSMENT_COMPLETE, {
+                      userId: user.uid,
+                      userEmail: user.email,
+                      action: 'Completed Baseline Assessment',
+                      details: `Cycle ${assessment.cycle || 1}`
+                    }).catch(() => {});
+                  }
+                } catch (err) {
+                  console.error('[MySettingsWidget] Error saving baseline:', err);
+                }
+                setShowBaselineForm(false);
+              }}
+              onClose={() => setShowBaselineForm(false)}
+              initialData={latestAssessment}
             />
           </div>
         </div>

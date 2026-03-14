@@ -25,9 +25,9 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
   if (!isOpen || !facilitator) return null;
 
   const {
-    name = 'Your Facilitator',
+    name = 'Your Trainer',
     email,
-    title = 'Leadership Facilitator',
+    title = 'Leadership Trainer',
     bio,
     photoUrl,
     phone,
@@ -53,7 +53,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
           {/* Title */}
           <div className="text-center">
             <p className="text-white/60 text-sm uppercase tracking-wider font-medium">
-              {cohortName ? `${cohortName} Facilitator` : 'Your Facilitator'}
+              {cohortName ? `${cohortName} Trainer` : 'Your Trainer'}
             </p>
           </div>
         </div>

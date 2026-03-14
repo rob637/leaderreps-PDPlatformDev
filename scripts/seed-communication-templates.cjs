@@ -109,7 +109,7 @@ Session Details:
 • Session: {{sessionTitle}}
 • Date: {{sessionDate}}
 • Time: {{sessionTime}}
-{{#coach}}• Coach: {{coach}}{{/coach}}
+{{#coach}}• Trainer: {{coach}}{{/coach}}
 
 Next Steps:
 • Open the attached calendar invite to add this session
@@ -119,7 +119,7 @@ Next Steps:
     pushTitle: 'Session Confirmed',
     pushBody: 'Your coaching session is scheduled for {{sessionDate}}',
     buttonText: 'Open LeaderReps',
-    footerText: 'Questions? Reply to this email or contact your coach directly.',
+    footerText: 'Questions? Reply to this email or contact your trainer directly.',
     variables: ['userName', 'sessionTitle', 'sessionDate', 'sessionTime', 'coach', 'sessionType'],
     enabled: true
   },
@@ -165,7 +165,7 @@ Session Details:
 • Session: {{sessionTitle}}
 • Date: {{sessionDate}}
 • Time: {{sessionTime}}
-{{#coach}}• Coach: {{coach}}{{/coach}}`,
+{{#coach}}• Trainer: {{coach}}{{/coach}}`,
     smsBody: 'LeaderReps: Reminder - Your {{sessionTitle}} session is tomorrow at {{sessionTime}}.',
     pushTitle: 'Session Tomorrow',
     pushBody: 'Your {{sessionTitle}} is scheduled for tomorrow at {{sessionTime}}',
@@ -189,7 +189,7 @@ Session Details:
 • Session: {{sessionTitle}}
 • Date: {{sessionDate}}
 • Time: {{sessionTime}}
-{{#coach}}• Coach: {{coach}}{{/coach}}`,
+{{#coach}}• Trainer: {{coach}}{{/coach}}`,
     smsBody: 'LeaderReps: Your {{sessionTitle}} starts in 1 hour!',
     pushTitle: 'Session Starting Soon',
     pushBody: 'Your {{sessionTitle}} starts in about an hour',
@@ -261,7 +261,7 @@ Participant:
     headline: 'Congratulations!',
     body: `Hi {{userName}},
 
-Great news! Your facilitator has certified your completion of:
+Great news! Your trainer has certified your completion of:
 
 🏆 {{milestoneName}}
 

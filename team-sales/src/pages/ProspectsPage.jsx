@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useProspectsStore, PIPELINE_STAGES } from '../stores/prospectsStore';
 import { useAuthStore } from '../stores/authStore';
+import { usePersonaStore } from '../stores/personaStore';
 import { useUIStore } from '../stores/uiStore';
 import { useTasksStore } from '../stores/tasksStore';
 import { TEAM_MEMBERS } from '../config/team';
@@ -24,6 +25,8 @@ import {
 
 const ProspectsPage = () => {
   const { user } = useAuthStore();
+  const { getActiveEmail } = usePersonaStore();
+  const activeEmail = getActiveEmail(user?.email);
   const {
     loading,
     error,
@@ -43,18 +46,18 @@ const ProspectsPage = () => {
   const [showOwnerDropdown, setShowOwnerDropdown] = useState(false);
   const [showCSVImport, setShowCSVImport] = useState(false);
 
-  // Initialize store with current user and subscribe to data
+  // Initialize store with active persona and subscribe to data
   useEffect(() => {
-    if (user?.email) {
-      setCurrentUser(user.email);
+    if (activeEmail) {
+      setCurrentUser(activeEmail);
     }
     const unsubProspects = subscribeToProspects();
-    const unsubTasks = user?.email ? subscribeToTasks(user.email) : () => {};
+    const unsubTasks = activeEmail ? subscribeToTasks(activeEmail) : () => {};
     return () => {
       unsubProspects();
       unsubTasks();
     };
-  }, [user?.email, setCurrentUser, subscribeToProspects, subscribeToTasks]);
+  }, [activeEmail, setCurrentUser, subscribeToProspects, subscribeToTasks]);
 
   const filteredProspects = getFilteredProspects();
   const userIsAdmin = isCurrentUserAdmin();

@@ -4,7 +4,7 @@
 // Email aliases - map alternate emails to primary account
 // Key = alias email, Value = primary/canonical email
 export const EMAIL_ALIASES = {
-  'rob@leaderreps.com': 'rob@sagecg.com',
+  'rob@leaderreps.biz': 'rob@sagecg.com',
 };
 
 // Resolve an email to its canonical form (for data storage/lookup)
@@ -23,28 +23,28 @@ export const isSameUser = (email1, email2) => {
 export const TEAM_MEMBERS = [
   {
     email: 'rob@sagecg.com',
-    aliases: ['rob@leaderreps.com'],
+    aliases: ['rob@leaderreps.biz'],
     name: 'Rob',
     role: 'admin',
     color: '#3B82F6', // Blue
     initials: 'RB'
   },
   {
-    email: 'ryan@leaderreps.com',
+    email: 'ryan@leaderreps.biz',
     name: 'Ryan',
     role: 'member',
     color: '#8B5CF6', // Purple
     initials: 'RY'
   },
   {
-    email: 'jeff@leaderreps.com',
+    email: 'jeff@leaderreps.biz',
     name: 'Jeff',
     role: 'member',
     color: '#F59E0B', // Amber
     initials: 'JF'
   },
   {
-    email: 'cristina@leaderreps.com',
+    email: 'cristina@leaderreps.biz',
     name: 'Cristina',
     role: 'member',
     color: '#EC4899', // Pink

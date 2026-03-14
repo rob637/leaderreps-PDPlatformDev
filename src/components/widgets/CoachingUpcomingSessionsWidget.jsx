@@ -1,6 +1,6 @@
 // src/components/widgets/CoachingUpcomingSessionsWidget.jsx
 import React, { useState, useMemo } from 'react';
-import { Calendar, Clock, Users, MapPin, Video, ChevronRight, ChevronLeft, Play } from 'lucide-react';
+import { Calendar, Clock, Users, MapPin, Video, ChevronRight, ChevronLeft, Play, X, Loader } from 'lucide-react';
 import { Card } from '../ui';
 
 /**
@@ -48,7 +48,18 @@ const SESSION_TYPE_CONFIG = {
 // Format date for display
 const formatSessionDate = (dateString) => {
   if (!dateString) return 'TBD';
-  const date = new Date(dateString);
+  
+  // Parse date as local time (not UTC) to avoid timezone shift issues
+  // If dateString is "2026-03-12", JavaScript would interpret as midnight UTC
+  // which shifts to previous day in US timezones. Add T12:00:00 to force noon local time.
+  let date;
+  if (dateString.includes('T')) {
+    date = new Date(dateString);
+  } else {
+    // Add noon time to prevent timezone shift
+    date = new Date(dateString + 'T12:00:00');
+  }
+  
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
@@ -63,9 +74,32 @@ const formatSessionDate = (dateString) => {
   });
 };
 
+// Helper for default max attendees by session type
+const getDefaultMaxAttendeesForType = (sessionType) => {
+  switch (sessionType) {
+    case 'one_on_one': return 1;
+    case 'leader_circle': return 12;
+    case 'live_workout': return 30;
+    case 'workshop': return 25;
+    case 'open_gym': return 20;
+    default: return 20;
+  }
+};
+
 // Session Card Component
-const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
+const SessionCard = ({ session, isRegistered, onRegister, onCancel, showSwitch = false }) => {
   const typeConfig = SESSION_TYPE_CONFIG[session.sessionType] || SESSION_TYPE_CONFIG.workshop;
+  
+  // Check if session is full
+  const maxAttendees = session.maxAttendees || getDefaultMaxAttendeesForType(session.sessionType);
+  const isFull = (session.registrationCount || 0) >= maxAttendees;
+  
+  // Determine button text for 1:1 sessions
+  const is1on1 = session.sessionType === 'one_on_one' || session.sessionType === '1:1';
+  const buttonText = is1on1 && showSwitch ? 'Switch' : 'Register';
+  const buttonColor = is1on1 && showSwitch 
+    ? 'bg-amber-500 hover:bg-amber-600' 
+    : 'bg-corporate-teal hover:bg-teal-700';
   
   return (
     <div className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 border-l-4 ${typeConfig.accent} hover:shadow-md transition-shadow`}>
@@ -87,12 +121,16 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
           >
             Cancel
           </button>
+        ) : isFull ? (
+          <span className="px-3 py-1.5 text-sm font-medium text-slate-400 bg-slate-100 dark:bg-slate-700 rounded-lg cursor-not-allowed">
+            Full
+          </span>
         ) : (
           <button
             onClick={() => onRegister?.(session)}
-            className="px-3 py-1.5 text-sm font-medium text-white bg-corporate-teal rounded-lg hover:bg-teal-700 transition-colors"
+            className={`px-3 py-1.5 text-sm font-medium text-white ${buttonColor} rounded-lg transition-colors`}
           >
-            Register
+            {buttonText}
           </button>
         )}
       </div>
@@ -120,7 +158,7 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
         {session.maxAttendees && (
           <div className="flex items-center gap-1">
             <Users className="w-3.5 h-3.5" />
-            <span>{session.currentAttendees || 0}/{session.maxAttendees}</span>
+            <span>{session.registrationCount || session.currentAttendees || 0}/{session.maxAttendees}</span>
           </div>
         )}
         {session.location && (
@@ -146,6 +184,201 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
   );
 };
 
+// Day Sessions Modal Component
+const DaySessionsModal = ({ isOpen, onClose, date, sessions, registeredIds, onRegister, onCancel, existing1on1SessionId }) => {
+  const [registering, setRegistering] = useState(null);
+  
+  if (!isOpen) return null;
+  
+  const dateObj = date ? new Date(date + 'T12:00:00') : new Date();
+  const formattedDate = dateObj.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  
+  const checkRegistered = (sessionId) => {
+    if (!registeredIds) return false;
+    if (typeof registeredIds.has === 'function') return registeredIds.has(sessionId);
+    return !!registeredIds[sessionId];
+  };
+  
+  const handleRegisterClick = async (session) => {
+    setRegistering(session.id);
+    try {
+      await onRegister?.(session);
+    } finally {
+      setRegistering(null);
+    }
+  };
+  
+  const handleCancelClick = async (session) => {
+    setRegistering(session.id);
+    try {
+      await onCancel?.(session);
+    } finally {
+      setRegistering(null);
+    }
+  };
+
+  // Helper to get session type config
+  const getTypeConfig = (sessionType) => {
+    return SESSION_TYPE_CONFIG[sessionType] || SESSION_TYPE_CONFIG.workshop;
+  };
+  
+  // Helper for spots calculation  
+  const getDefaultMaxAttendees = (sessionType) => {
+    switch (sessionType) {
+      case 'one_on_one': return 1;
+      case 'leader_circle': return 12;
+      case 'live_workout': return 30;
+      case 'workshop': return 25;
+      case 'open_gym': return 20;
+      default: return 20;
+    }
+  };
+  
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto" onClick={onClose}>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" />
+      
+      {/* Modal */}
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div 
+          className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-xl animate-in fade-in zoom-in-95 duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Sessions on {formattedDate}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {sessions.length} session{sessions.length !== 1 ? 's' : ''} available
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          {/* Sessions List */}
+          <div className="p-4 max-h-96 overflow-y-auto space-y-3">
+            {sessions.length === 0 ? (
+              <div className="text-center py-8">
+                <Calendar className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-500 dark:text-slate-400">No sessions scheduled for this day</p>
+              </div>
+            ) : (
+              sessions.map(session => {
+                const typeConfig = getTypeConfig(session.sessionType);
+                const isReg = checkRegistered(session.id);
+                const maxSpots = session.maxAttendees || getDefaultMaxAttendees(session.sessionType);
+                const spotsLeft = Math.max(0, maxSpots - (session.registrationCount || 0));
+                const isFull = spotsLeft <= 0 && !isReg;
+                
+                // Show "Switch" for 1:1 sessions when user has a different 1:1 registered
+                const is1on1 = session.sessionType === 'one_on_one' || session.sessionType === '1:1';
+                const showSwitch = is1on1 && existing1on1SessionId && existing1on1SessionId !== session.id;
+                const buttonText = showSwitch ? 'Switch' : 'Register';
+                const buttonColor = showSwitch 
+                  ? 'bg-amber-500 hover:bg-amber-600' 
+                  : 'bg-corporate-teal hover:bg-teal-700';
+                
+                return (
+                  <div
+                    key={session.id}
+                    className={`p-4 rounded-xl border transition-all ${
+                      isFull 
+                        ? 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-corporate-teal/50'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 min-w-0">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${typeConfig.color} mb-2`}>
+                          {typeConfig.label}
+                        </span>
+                        <h3 className={`font-bold ${isFull ? 'text-slate-400' : 'text-slate-800 dark:text-white'}`}>{session.title}</h3>
+                        {session.coach && (
+                          <p className="text-sm text-slate-500 dark:text-slate-400">with {session.coach}</p>
+                        )}
+                        
+                        <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400">
+                          {session.time && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>{session.time}</span>
+                            </div>
+                          )}
+                          <div className={`flex items-center gap-1 ${isFull ? 'text-red-500' : spotsLeft <= 3 ? 'text-orange-600' : ''}`}>
+                            <Users className="w-3.5 h-3.5" />
+                            <span>{isFull ? 'Full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="ml-3 flex-shrink-0">
+                        {isReg ? (
+                          <button
+                            onClick={() => handleCancelClick(session)}
+                            disabled={registering === session.id}
+                            className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 flex items-center gap-1"
+                          >
+                            {registering === session.id ? <Loader className="w-3 h-3 animate-spin" /> : 'Cancel'}
+                          </button>
+                        ) : isFull ? (
+                          <span className="px-3 py-1.5 text-sm font-medium text-slate-400 bg-slate-100 dark:bg-slate-600 rounded-lg">
+                            Full
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleRegisterClick(session)}
+                            disabled={registering === session.id}
+                            className={`px-3 py-1.5 text-sm font-medium text-white ${buttonColor} rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1`}
+                          >
+                            {registering === session.id ? <Loader className="w-3 h-3 animate-spin" /> : buttonText}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {session.description && (
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 line-clamp-2">{session.description}</p>
+                    )}
+                    
+                    {isReg && (
+                      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                          ✓ You're registered
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+          
+          {/* Footer */}
+          <div className="p-4 border-t border-slate-200 dark:border-slate-700">
+            <button
+              onClick={onClose}
+              className="w-full py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
   const { 
     sessions = [], 
@@ -156,13 +389,20 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
     navigate,
     viewMode = 'list',
     setViewMode,
-    showAllSessions = false
+    showAllSessions = false,
+    initialTypeFilter = 'all',
+    setSessionTypeFilter: externalSetFilter,
+    existing1on1SessionId = null  // For Switch UX
   } = scope;
   
   // Internal state for calendar if not controlled externally
   const [internalViewMode] = useState('list');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState(initialTypeFilter);
+  
+  // State for day modal
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [isDayModalOpen, setIsDayModalOpen] = useState(false);
   
   const activeViewMode = setViewMode ? viewMode : internalViewMode;
   // const toggleViewMode = setViewMode || setInternalViewMode;
@@ -289,18 +529,26 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
               const daySessions = sessionsByDate[dateKey] || [];
               const hasSession = daySessions.length > 0;
               
+              const handleDayClick = () => {
+                if (hasSession) {
+                  setSelectedDay(dateKey);
+                  setIsDayModalOpen(true);
+                }
+              };
+              
               return (
                 <div 
                   key={day}
-                  className={`h-12 rounded border p-0.5 ${
+                  onClick={handleDayClick}
+                  className={`h-12 rounded border p-0.5 transition-all ${
                     isToday(day) 
-                      ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' 
+                      ? 'border-corporate-navy bg-slate-50 dark:bg-slate-800/40' 
                       : hasSession 
-                        ? 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800' 
+                        ? 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-corporate-teal hover:shadow-sm cursor-pointer' 
                         : 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50'
                   }`}
                 >
-                  <div className={`text-[10px] font-bold ${isToday(day) ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                  <div className={`text-[10px] font-bold ${isToday(day) ? 'text-corporate-navy dark:text-corporate-navy' : 'text-slate-400 dark:text-slate-500'}`}>
                     {day}
                   </div>
                   {daySessions.slice(0, 1).map(session => (
@@ -319,13 +567,25 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
             })}
           </div>
           
+          {/* Day Sessions Modal */}
+          <DaySessionsModal
+            isOpen={isDayModalOpen}
+            onClose={() => setIsDayModalOpen(false)}
+            date={selectedDay}
+            sessions={selectedDay ? (sessionsByDate[selectedDay] || []) : []}
+            registeredIds={registeredIds}
+            onRegister={handleRegister}
+            onCancel={handleCancel}
+            existing1on1SessionId={existing1on1SessionId}
+          />
+          
           {/* Legend */}
           <div className="flex flex-wrap gap-2 mt-3 text-[10px]">
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded bg-blue-100" /> Open Gym
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded bg-purple-100" /> Leader Circle
+              <div className="w-2 h-2 rounded bg-rep-teal-light" /> Leader Circle
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded bg-teal-100" /> Workshop
@@ -373,15 +633,22 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
               <button onClick={() => setTypeFilter('all')} className="mt-2 text-sm text-corporate-teal font-medium">Show all sessions</button>
             </div>
           ) : (
-            displaySessions.slice(0, showAllSessions ? undefined : 5).map(session => (
-              <SessionCard 
-                key={session.id}
-                session={session}
-                isRegistered={checkRegistered(session.id)}
-                onRegister={handleRegister}
-                onCancel={handleCancel}
-              />
-            ))
+            displaySessions.slice(0, showAllSessions ? undefined : 5).map(session => {
+              // Show "Switch" for 1:1 sessions when user already has a different 1:1 registered
+              const is1on1 = session.sessionType === 'one_on_one' || session.sessionType === '1:1';
+              const showSwitch = is1on1 && existing1on1SessionId && existing1on1SessionId !== session.id;
+              
+              return (
+                <SessionCard 
+                  key={session.id}
+                  session={session}
+                  isRegistered={checkRegistered(session.id)}
+                  onRegister={handleRegister}
+                  onCancel={handleCancel}
+                  showSwitch={showSwitch}
+                />
+              );
+            })
           )}
           {!showAllSessions && displaySessions.length > 5 && (
             <button 

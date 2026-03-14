@@ -4,10 +4,16 @@ import { Info, X } from 'lucide-react';
 
 // --- INFO TOOLTIP COMPONENT ---
 const InfoTooltip = ({ text, onClose }) => (
-  <div className="absolute top-full left-0 right-0 mt-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+  <div 
+    onClick={(e) => e.stopPropagation()} 
+    className="absolute top-full left-0 right-0 mt-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200"
+  >
     <div className="bg-blue-50 dark:!bg-slate-800 text-slate-700 dark:text-slate-200 text-sm rounded-xl p-4 shadow-lg border border-blue-200 dark:border-blue-700 mx-2 relative">
       <button 
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
         className="absolute top-2 right-2 p-1 hover:bg-blue-100 rounded-full transition-colors bg-transparent"
         aria-label="Close"
       >
@@ -100,7 +106,6 @@ const Card = React.forwardRef(({
     green: 'border-l-4 border-l-corporate-teal',
     blue: 'border-l-4 border-l-corporate-navy',
     yellow: 'border-l-4 border-l-corporate-orange',
-    purple: 'border-l-4 border-l-corporate-navy',
     indigo: 'border-l-4 border-l-corporate-navy',
     pink: 'border-l-4 border-l-corporate-orange',
     gray: 'border-l-4 border-l-slate-300',
@@ -117,7 +122,6 @@ const Card = React.forwardRef(({
     GREEN: 'border-l-4 border-l-corporate-teal',
     BLUE: 'border-l-4 border-l-corporate-navy',
     YELLOW: 'border-l-4 border-l-corporate-orange',
-    PURPLE: 'border-l-4 border-l-corporate-navy',
     INDIGO: 'border-l-4 border-l-corporate-navy',
     PINK: 'border-l-4 border-l-corporate-orange',
     GRAY: 'border-l-4 border-l-slate-300',
@@ -134,7 +138,6 @@ const Card = React.forwardRef(({
     green: 'text-corporate-teal',
     blue: 'text-corporate-navy',
     yellow: 'text-corporate-orange',
-    purple: 'text-corporate-navy',
     indigo: 'text-corporate-navy',
     pink: 'text-corporate-orange',
     gray: 'text-slate-400',
@@ -150,7 +153,6 @@ const Card = React.forwardRef(({
     GREEN: 'text-corporate-teal',
     BLUE: 'text-corporate-navy',
     YELLOW: 'text-corporate-orange',
-    PURPLE: 'text-corporate-navy',
     INDIGO: 'text-corporate-navy',
     PINK: 'text-corporate-orange',
     GRAY: 'text-slate-400',

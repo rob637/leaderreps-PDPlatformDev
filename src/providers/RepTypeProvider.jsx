@@ -171,11 +171,10 @@ export const RepTypeProvider = ({ children }) => {
     return fallbackIds.map(id => getRepType(id)).filter(Boolean);
   }, [getMilestone, getRepType]);
 
-  // Check if a rep is unlocked
-  const isRepUnlocked = useCallback((repTypeId, milestoneProgress = {}, completedRepTypes = []) => {
-    // For now, delegate to fallback which has the unlock logic
-    // TODO: Move unlock logic to Firestore-based check using milestone data
-    return isRepUnlockedFallback(repTypeId, milestoneProgress, completedRepTypes);
+  // Check if a rep is unlocked (supports session-based and milestone-based)
+  const isRepUnlocked = useCallback((repTypeId, milestoneProgress = {}, completedRepTypes = [], sessionAttendance = null) => {
+    // Delegate to repTaxonomy which handles session-based and milestone-based unlocking
+    return isRepUnlockedFallback(repTypeId, milestoneProgress, completedRepTypes, sessionAttendance);
   }, []);
 
   // Get milestone for a rep

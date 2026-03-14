@@ -104,7 +104,7 @@ const LeaderSelector = ({ leaders, selectedIds, onToggle, onSelectAll, onDeselec
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search leaders..."
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded text-sm mb-2"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded text-sm mb-2 bg-white text-slate-900 dark:bg-slate-700 dark:text-white"
         />
         <div className="flex items-center justify-between text-xs">
           <span className="text-gray-500 dark:text-gray-400">{selectedIds.length} selected</span>

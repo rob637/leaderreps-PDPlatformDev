@@ -1,6 +1,7 @@
 // src/components/conditioning/SituationStep.jsx
 // Situation picker for V2 commitment flows
-// Shows 2 suggested situations + "Something else" option per rep type
+// Shows 4 suggested situations + "Something else" option per rep type
+// Updated March 2026 to match Conditioning Layer specifications
 
 import React from 'react';
 import { Check, Edit3 } from 'lucide-react';
@@ -75,7 +76,9 @@ const SituationStep = ({
   // Prompt text customization
   promptText = 'Which best describes this situation?',
   // For In-the-Moment flow, change prompt
-  isInMoment = false
+  isInMoment = false,
+  // Validation error message
+  error = null
 }) => {
   // Get suggested situations for this rep type
   const suggestions = getSuggestedSituations(repTypeId);
@@ -112,10 +115,12 @@ const SituationStep = ({
         ))}
         
         {/* Something else option */}
-        <SomethingElseOption
-          isSelected={isSomethingElse}
-          onClick={() => onSituationChange('something_else')}
-        />
+        {repTypeId !== 'set_clear_expectations' && (
+          <SomethingElseOption
+            isSelected={isSomethingElse}
+            onClick={() => onSituationChange('something_else')}
+          />
+        )}
       </div>
       
       {/* Context input field */}
@@ -124,7 +129,7 @@ const SituationStep = ({
           <VoiceTextarea
             id="situation-context"
             label={isContextRequired 
-              ? 'One sentence of context (required)' 
+              ? 'One sentence of context' 
               : 'One sentence of context (optional but encouraged)'
             }
             value={customContext}
@@ -132,9 +137,15 @@ const SituationStep = ({
             placeholder="e.g., In our 1:1 on Thursday when we discuss the missed deadline..."
             rows={2}
             required={isContextRequired}
+            minLength={isContextRequired ? 10 : null}
             maxLength={200}
+            error={isContextRequired && customContext.trim().length > 0 && customContext.trim().length < 10 ? 'Please describe the situation (min 10 chars)' : null}
           />
         </div>
+      )}
+      
+      {error && (
+        <p className="text-sm text-corporate-orange">{error}</p>
       )}
     </div>
   );

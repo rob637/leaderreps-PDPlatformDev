@@ -18,6 +18,8 @@ const VoiceTextarea = ({
   onChange,
   placeholder = 'Type or tap the mic to speak...',
   minLength,
+  maxLength,
+  showCount,
   error,
   required = false,
   rows = 4,
@@ -50,7 +52,16 @@ const VoiceTextarea = ({
 
   const hasError = !!error;
   const charCount = (value || '').length;
-  const showMinWarning = minLength && charCount > 0 && charCount < minLength;
+  
+  // Determine if we should show the footer elements
+  const hasMinLength = typeof minLength === 'number' && minLength > 0;
+  const hasMaxLength = typeof maxLength === 'number' && maxLength > 0;
+  
+  // Only show counter if explicitly requested or if limits exist and user has started typing
+  const shouldShowCounter = showCount || ((hasMinLength || hasMaxLength) && charCount > 0);
+  
+  // Only render footer if we have something to show (error, min warning, or counter)
+  const showFooter = hasError || hasMinLength || shouldShowCounter;
 
   return (
     <div className={className}>
@@ -58,7 +69,6 @@ const VoiceTextarea = ({
       {label && (
         <label className="block text-sm font-medium text-corporate-navy dark:text-white mb-1">
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
 
@@ -77,14 +87,15 @@ const VoiceTextarea = ({
           rows={rows}
           disabled={disabled}
           autoFocus={autoFocus}
+          maxLength={maxLength}
           className={`w-full p-3 pr-14 border rounded-xl text-sm resize-none transition-all duration-200
             ${isRecording
-              ? 'bg-red-50/50 dark:bg-red-900/20 border-red-300 dark:border-red-700 ring-2 ring-red-200 dark:ring-red-800'
+              ? 'bg-red-50/50 dark:bg-red-900/20 border-red-300 dark:border-red-700 ring-2 ring-red-200 dark:ring-red-800 text-slate-900 dark:text-white'
               : hasError
-              ? 'border-red-400 bg-red-50/30 dark:bg-red-900/20 ring-2 ring-red-200 dark:ring-red-800'
+              ? 'border-corporate-orange bg-orange-50/30 dark:bg-orange-900/20 ring-2 ring-orange-200 dark:ring-orange-800 text-slate-900 dark:text-white'
               : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal'
             }
-            ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-700' : 'bg-white dark:bg-slate-800 dark:text-white'}
+            ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400' : 'bg-white text-slate-900 dark:bg-slate-800 dark:text-white'}
           `}
         />
 
@@ -111,29 +122,29 @@ const VoiceTextarea = ({
       </div>
 
       {/* Footer row: char count + min warning + error */}
-      <div className="flex items-center justify-between mt-1">
-        <div>
-          {hasError && (
-            <div className="flex items-center gap-1 text-xs text-red-600">
-              <AlertCircle className="w-3 h-3 flex-shrink-0" />
-              <span>{error}</span>
+      {showFooter && (
+        <div className="flex items-center justify-between mt-1 min-h-[1.25rem]">
+          <div className="flex-1">
+            {hasError ? (
+              <div className="flex items-center gap-1 text-xs text-corporate-orange font-medium">
+                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            ) : hasMinLength ? (
+              <div className={`text-xs font-medium transition-colors ${
+                charCount >= minLength ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
+              }`}>
+                Min {minLength} characters {charCount >= minLength && '✓'}
+              </div>
+            ) : null}
+          </div>
+          {shouldShowCounter && (
+            <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">
+              {charCount} / {maxLength || minLength || '-'}
             </div>
           )}
         </div>
-        <div className="text-xs text-gray-400 dark:text-slate-500">
-          {showMinWarning ? (
-            <span className="text-amber-500">
-              {charCount}/{minLength} min
-            </span>
-          ) : minLength && charCount >= minLength ? (
-            <span className="text-green-600">
-              {charCount} chars ✓
-            </span>
-          ) : charCount > 0 ? (
-            <span>{charCount} chars</span>
-          ) : null}
-        </div>
-      </div>
+      )}
     </div>
   );
 };

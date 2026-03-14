@@ -361,8 +361,10 @@ export const conditioningService = {
       // Status
       status: repData.commitmentType === 'in_moment' ? REP_STATUS.EXECUTED : REP_STATUS.COMMITTED,
       
-      // Timing
-      deadline: repData.deadline || Timestamp.fromDate(weekEnd),
+      // Timing — ITM reps use creation time as deadline (already happened)
+      deadline: repData.deadline || Timestamp.fromDate(
+        repData.commitmentType === 'in_moment' ? now : weekEnd
+      ),
       weekId,
       cohortId: repData.cohortId,
       
@@ -443,26 +445,24 @@ export const conditioningService = {
       'active'
     ];
     
-    let q;
-    if (cohortId) {
-      q = query(
-        repsRef,
-        where('sourceItemId', '==', sourceItemId),
-        where('status', 'in', activeStatuses),
-        where('cohortId', '==', cohortId),
-        firestoreLimit(1)
-      );
-    } else {
-      q = query(
-        repsRef,
-        where('sourceItemId', '==', sourceItemId),
-        where('status', 'in', activeStatuses),
-        firestoreLimit(1)
-      );
-    }
+    // Query by sourceItemId only to avoid needing composite indexes,
+    // then filter in memory since a user will only have a few reps per item.
+    const q = query(
+      repsRef,
+      where('sourceItemId', '==', sourceItemId)
+    );
     
     const snapshot = await getDocs(q);
-    return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+    if (snapshot.empty) return null;
+    
+    const reps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    const activeRep = reps.find(rep => 
+      activeStatuses.includes(rep.status) && 
+      (!cohortId || rep.cohortId === cohortId)
+    );
+    
+    return activeRep || null;
   },
   
   /**
@@ -477,26 +477,24 @@ export const conditioningService = {
     // Completed statuses
     const completedStatuses = ['debriefed', 'loop_closed', 'completed'];
     
-    let q;
-    if (cohortId) {
-      q = query(
-        repsRef,
-        where('sourceItemId', '==', sourceItemId),
-        where('status', 'in', completedStatuses),
-        where('cohortId', '==', cohortId),
-        firestoreLimit(1)
-      );
-    } else {
-      q = query(
-        repsRef,
-        where('sourceItemId', '==', sourceItemId),
-        where('status', 'in', completedStatuses),
-        firestoreLimit(1)
-      );
-    }
+    // Query by sourceItemId only to avoid needing composite indexes,
+    // then filter in memory since a user will only have a few reps per item.
+    const q = query(
+      repsRef,
+      where('sourceItemId', '==', sourceItemId)
+    );
     
     const snapshot = await getDocs(q);
-    return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+    if (snapshot.empty) return null;
+    
+    const reps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    const completedRep = reps.find(rep => 
+      completedStatuses.includes(rep.status) && 
+      (!cohortId || rep.cohortId === cohortId)
+    );
+    
+    return completedRep || null;
   },
   
   /**
@@ -903,6 +901,7 @@ export const conditioningService = {
       'prepared',          // Prep completed, ready to execute
       'scheduled',         // Has a scheduled time
       'executed',          // Done but not yet debriefed
+      'debriefed',         // Debriefed but needs to complete the loop (SCE/DRF)
       'follow_up_pending', // Debriefed but needs to close the loop
       'active',            // Legacy status (backward compatibility)
       'missed'             // Past deadline, needs attention
@@ -989,6 +988,200 @@ export const conditioningService = {
   },
   
   /**
+   * Get total count of completed reps by rep type
+   * @param {Object} db Firestore instance
+   * @param {string} userId User ID
+   * @returns {Object} Map of repType -> count
+   */
+  getCompletedRepCounts: async (db, userId) => {
+    // If db or userId missing, return empty
+    if (!db || !userId) return {};
+    
+    try {
+      const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+      
+      // Completed states (fully finished reps)
+      const completedStates = ['debriefed', 'follow_up_pending', 'loop_closed', 'completed'];
+      
+      const q = query(
+        repsRef,
+        where('status', 'in', completedStates)
+      );
+      
+      const snapshot = await getDocs(q);
+      const counts = {};
+      
+      // SCE and DRF rep types require "Complete the Loop" step
+      const repTypesRequiringLoop = ['set_clear_expectations', 'deliver_reinforcing_feedback', 'reinforce_public'];
+      
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const repType = data.repType;
+        const status = data.status;
+        
+        if (!repType) return;
+        
+        // Only count reps that passed the quality assessment
+        if (data.qualityAssessment && data.qualityAssessment.meetsStandard === false) return;
+        
+        // For SCE/DRF reps, only count as complete if loop is closed and we have completeLoopResponses
+        if (repTypesRequiringLoop.includes(repType)) {
+          const hasLoopResponses = repType === 'deliver_reinforcing_feedback' || repType === 'reinforce_public'
+            ? !!data.evidence?.drfEvidence?.completeLoopResponses
+            : !!data.evidence?.sceEvidence?.completeLoopResponses;
+            
+          // Only count if status is loop_closed OR has loop responses
+          if (status === 'loop_closed' || hasLoopResponses) {
+            counts[repType] = (counts[repType] || 0) + 1;
+          }
+          // Don't count debriefed SCE/DRF - they still need to complete the loop
+        } else {
+          // For other rep types, debriefed is complete
+          counts[repType] = (counts[repType] || 0) + 1;
+        }
+      });
+      
+      return counts;
+    } catch (err) {
+      console.warn('Error fetching completed rep counts:', err);
+      return {};
+    }
+  },
+
+  /**
+   * Get completed reps for a specific rep type
+   * Used for displaying individual completed reps in the UI (e.g., showing all 3 DRF reps)
+   * @param {Object} db Firestore instance
+   * @param {string} userId User ID
+   * @param {string} repTypeId Rep type ID to filter by
+   * @returns {Object[]} Array of completed rep objects
+   */
+  getCompletedRepsByType: async (db, userId, repTypeId) => {
+    if (!db || !userId || !repTypeId) return [];
+    
+    try {
+      const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+      
+      // Completed states that count as "done"
+      const completedStates = ['debriefed', 'follow_up_pending', 'loop_closed', 'completed'];
+      
+      // SCE and DRF rep types require "Complete the Loop" step
+      const repTypesRequiringLoop = ['set_clear_expectations', 'deliver_reinforcing_feedback', 'reinforce_public'];
+      
+      // Query without orderBy on completedAt since some docs may not have it
+      const q = query(
+        repsRef,
+        where('repType', '==', repTypeId),
+        where('status', 'in', completedStates)
+      );
+      
+      const snapshot = await getDocs(q);
+      const completedReps = [];
+      
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const status = data.status;
+        
+        // Only include reps that passed the quality assessment
+        if (data.qualityAssessment && data.qualityAssessment.meetsStandard === false) return;
+        
+        // For SCE/DRF reps, only include if loop is closed
+        if (repTypesRequiringLoop.includes(repTypeId)) {
+          const hasLoopResponses = repTypeId === 'deliver_reinforcing_feedback' || repTypeId === 'reinforce_public'
+            ? !!data.evidence?.drfEvidence?.completeLoopResponses
+            : !!data.evidence?.sceEvidence?.completeLoopResponses;
+            
+          if (status === 'loop_closed' || hasLoopResponses) {
+            completedReps.push({ id: doc.id, ...data, isCompleted: true });
+          }
+        } else {
+          completedReps.push({ id: doc.id, ...data, isCompleted: true });
+        }
+      });
+      
+      // Sort by completedAt descending (in memory since field may not exist on all docs)
+      completedReps.sort((a, b) => {
+        const aTime = a.completedAt?.toMillis?.() || a.completedAt?.seconds * 1000 || 0;
+        const bTime = b.completedAt?.toMillis?.() || b.completedAt?.seconds * 1000 || 0;
+        return bTime - aTime;
+      });
+      
+      return completedReps;
+    } catch (err) {
+      console.warn('Error fetching completed reps by type:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Subscribe to completed reps for a specific rep type (real-time)
+   * Used for displaying individual completed reps in the UI (e.g., showing all 3 DRF reps)
+   * @param {Object} db Firestore instance
+   * @param {string} userId User ID
+   * @param {string} repTypeId Rep type ID to filter by
+   * @param {Function} callback Function to call with updated reps
+   * @returns {Function} Unsubscribe function
+   */
+  subscribeToCompletedRepsByType: (db, userId, repTypeId, callback) => {
+    if (!db || !userId || !repTypeId) {
+      if (callback) callback([]);
+      return () => {};
+    }
+    
+    const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+    
+    // Completed states that count as "done"
+    const completedStates = ['debriefed', 'follow_up_pending', 'loop_closed', 'completed'];
+    
+    // SCE and DRF rep types require "Complete the Loop" step
+    const repTypesRequiringLoop = ['set_clear_expectations', 'deliver_reinforcing_feedback', 'reinforce_public'];
+    
+    // Query without orderBy on completedAt since some docs may not have it
+    const q = query(
+      repsRef,
+      where('repType', '==', repTypeId),
+      where('status', 'in', completedStates)
+    );
+    
+    return onSnapshot(q, (snapshot) => {
+      const completedReps = [];
+      
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const status = data.status;
+        
+        // Only include reps that passed the quality assessment
+        if (data.qualityAssessment && data.qualityAssessment.meetsStandard === false) return;
+        
+        // For SCE/DRF reps, only include if loop is closed
+        if (repTypesRequiringLoop.includes(repTypeId)) {
+          const hasLoopResponses = repTypeId === 'deliver_reinforcing_feedback' || repTypeId === 'reinforce_public'
+            ? !!data.evidence?.drfEvidence?.completeLoopResponses
+            : !!data.evidence?.sceEvidence?.completeLoopResponses;
+            
+          if (status === 'loop_closed' || hasLoopResponses) {
+            completedReps.push({ id: doc.id, ...data, isCompleted: true });
+          }
+        } else {
+          completedReps.push({ id: doc.id, ...data, isCompleted: true });
+        }
+      });
+      
+      // Sort by completedAt descending (in memory since field may not exist on all docs)
+      completedReps.sort((a, b) => {
+        const aTime = a.completedAt?.toMillis?.() || a.completedAt?.seconds * 1000 || 0;
+        const bTime = b.completedAt?.toMillis?.() || b.completedAt?.seconds * 1000 || 0;
+        return bTime - aTime;
+      });
+      
+      callback(completedReps);
+    }, (error) => {
+      console.warn('Error in subscribeToCompletedRepsByType:', error);
+      callback([]);
+    });
+  },
+
+  /**
    * Get unique rep types the user has ever completed successfully
    * Used for linked rep unlocking (e.g., "Make a Clean Handoff" unlocks after completing "Set Expectations")
    * @returns {string[]} Array of unique rep type IDs
@@ -996,20 +1189,43 @@ export const conditioningService = {
   getCompletedRepTypes: async (db, userId) => {
     const repsRef = collection(db, 'users', userId, 'conditioning_reps');
     
-    // Completed states (fully finished reps)
-    const completedStates = ['debriefed', 'follow_up_pending', 'loop_closed', 'completed'];
+    // All states where some work has been done
+    const relevantStates = ['debriefed', 'follow_up_pending', 'loop_closed', 'completed'];
     
     const q = query(
       repsRef,
-      where('status', 'in', completedStates)
+      where('status', 'in', relevantStates)
     );
     
     const snapshot = await getDocs(q);
     const repTypes = new Set();
     
+    // SCE and DRF rep types require "Complete the Loop" step
+    const repTypesRequiringLoop = ['set_clear_expectations', 'deliver_reinforcing_feedback', 'reinforce_public'];
+    
     snapshot.docs.forEach(doc => {
-      const repType = doc.data().repType;
-      if (repType) {
+      const data = doc.data();
+      const repType = data.repType;
+      const status = data.status;
+      
+      if (!repType) return;
+      
+      // Only count reps that passed the quality assessment
+      if (data.qualityAssessment && data.qualityAssessment.meetsStandard === false) return;
+      
+      // For SCE/DRF reps, only count as complete if loop is closed and we also have completeLoopResponses
+      if (repTypesRequiringLoop.includes(repType)) {
+        // Must be loop_closed AND have completeLoopResponses
+        const hasLoopResponses = repType === 'deliver_reinforcing_feedback' || repType === 'reinforce_public'
+          ? !!data.evidence?.drfEvidence?.completeLoopResponses
+          : !!data.evidence?.sceEvidence?.completeLoopResponses;
+          
+        if (status === 'loop_closed' || hasLoopResponses) {
+          repTypes.add(repType);
+        }
+        // Don't add debriefed SCE/DRF - they still need to complete the loop
+      } else {
+        // For other rep types, debriefed is complete
         repTypes.add(repType);
       }
     });
@@ -1043,16 +1259,42 @@ export const conditioningService = {
    * Subscribe to all active reps (real-time)
    */
   subscribeToActiveReps: (db, userId, cohortId, callback) => {
-    if (!userId) return () => {};
+    if (!userId) {
+      if (callback) callback([]);
+      return () => {};
+    }
     
     const repsRef = collection(db, 'users', userId, 'conditioning_reps');
     
-    const q = query(
-      repsRef,
-      where('status', 'in', [REP_STATUS.ACTIVE, REP_STATUS.MISSED]),
-      where('cohortId', '==', cohortId),
-      orderBy('deadline', 'asc')
-    );
+    // Use the same comprehensive list of active statuses as getActiveReps
+    const inProgressStatuses = [
+      'committed',
+      'prepared',
+      'scheduled',
+      'executed',
+      'debriefed',         // Debriefed but needs to complete the loop (SCE/DRF)
+      'follow_up_pending',
+      'active',
+      'missed'
+    ];
+    
+    let q;
+    
+    // Only filter by cohortId if it is provided (avoid undefined error)
+    if (cohortId) {
+      q = query(
+        repsRef,
+        where('status', 'in', inProgressStatuses),
+        where('cohortId', '==', cohortId),
+        orderBy('deadline', 'asc')
+      );
+    } else {
+      q = query(
+        repsRef,
+        where('status', 'in', inProgressStatuses),
+        orderBy('deadline', 'asc')
+      );
+    }
     
     return onSnapshot(q, (snapshot) => {
       const reps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1085,11 +1327,17 @@ export const conditioningService = {
     const missed = reps.filter(r => r.status === 'missed');
     const canceled = reps.filter(r => r.status === 'canceled');
     
-    // For weekly requirement: debriefed, loop_closed, OR follow_up_pending all count
-    // (they've done the rep, even if follow-up is pending)
-    const doneForRequirement = reps.filter(r => 
-      ['debriefed', 'loop_closed', 'follow_up_pending', 'completed'].includes(r.status)
-    );
+    // For weekly requirement: only reps that PASSED quality assessment count
+    // A rep must be in a done state AND have passed the quality review
+    const doneStates = ['debriefed', 'loop_closed', 'follow_up_pending', 'completed'];
+    const doneForRequirement = reps.filter(r => {
+      if (!doneStates.includes(r.status)) return false;
+      // Check quality assessment: meetsStandard is the unified pass field
+      // If no quality assessment yet (edge case), don't count it
+      const qa = r.qualityAssessment;
+      if (!qa) return false;
+      return qa.meetsStandard === true;
+    });
     
     const { weekStart, weekEnd } = getWeekBoundaries(targetWeekId);
     
@@ -1188,8 +1436,10 @@ export const conditioningService = {
   
   /**
    * Get consecutive missed weeks count (for escalation logic)
+   * NOTE: Only counts PAST weeks as missed - the current week is still in progress
    */
   getConsecutiveMissedWeeks: async (db, userId, cohortId) => {
+    const currentWeekId = getCurrentWeekId();
     const weeksRef = collection(db, 'users', userId, 'conditioning_weeks');
     const q = query(
       weeksRef,
@@ -1202,6 +1452,10 @@ export const conditioningService = {
     
     let consecutiveMissed = 0;
     for (const week of weeks) {
+      // Skip the current week - it hasn't ended yet, so can't be "missed"
+      if (week.weekId === currentWeekId) {
+        continue;
+      }
       if (week.requiredRepCompleted) {
         break; // Found a successful week, stop counting
       }
@@ -1368,6 +1622,9 @@ export const conditioningService = {
       updatedAt: serverTimestamp()
     });
     
+    // Update weekly stats (pass/fail affects requiredRepCompleted)
+    await conditioningService.updateWeeklyStats(db, userId, currentRep.weekId, currentRep.cohortId);
+    
     return { evidence, quality };
   },
   
@@ -1421,8 +1678,40 @@ export const conditioningService = {
   },
   
   /**
+   * Complete a rep directly without follow-up planning
+   * Transitions to loop_closed (terminal state)
+   * For reps that don't require follow-up tracking (e.g., Lead with Vulnerability, Follow-up on Work)
+   */
+  completeRepDirectly: async (db, userId, repId) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    
+    if (!repSnap.exists()) throw new Error('Rep not found');
+    
+    const currentRep = repSnap.data();
+    
+    // Can complete from debriefed or follow_up_pending
+    const validStatuses = [REP_STATUS.DEBRIEFED, REP_STATUS.FOLLOW_UP_PENDING];
+    if (!validStatuses.includes(currentRep.status)) {
+      throw new Error('Can only complete a debriefed or follow-up pending rep');
+    }
+    
+    await updateDoc(repRef, {
+      status: REP_STATUS.LOOP_CLOSED,
+      loopClosedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    
+    // Update weekly stats
+    await conditioningService.updateWeeklyStats(db, userId, currentRep.weekId, currentRep.cohortId);
+    
+    return true;
+  },
+  
+  /**
    * Close the loop on a rep - record follow-up outcome
    * Transitions to loop_closed (terminal state)
+   * NOTE: Currently disabled - use completeRepDirectly instead
    */
   closeLoop: async (db, userId, repId, closureData) => {
     const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
@@ -1482,11 +1771,18 @@ export const conditioningService = {
       throw new Error(`Cannot submit evidence for rep in '${currentRep.status}' status`);
     }
     
+    // Determine evidence level based on timing (Level 1 = within 24h of scheduled/deadline)
+    const evidenceLevel = conditioningService.getEvidenceLevel(
+      currentRep.scheduledAt || currentRep.deadline
+    );
+    
     // Structure the V2 evidence data
     const evidence = {
       whatYouSaid: evidenceData.whatYouSaid || '',
       howTheyResponded: evidenceData.howTheyResponded || '',
       outcome: evidenceData.outcome || null,
+      ...evidenceData, // Allow all other fields (structured evidence, artifacts, notes, etc.)
+      level: evidenceLevel, // Track if evidence was submitted timely
       submittedAt: serverTimestamp(),
       inputMethod: evidenceData.inputMethod || 'written'
     };
@@ -1553,6 +1849,9 @@ export const conditioningService = {
       qualityAssessment: quality,
       updatedAt: serverTimestamp()
     });
+    
+    // Update weekly stats (pass/fail affects requiredRepCompleted)
+    await conditioningService.updateWeeklyStats(db, userId, currentRep.weekId, currentRep.cohortId);
     
     return { closeRR, quality };
   },
@@ -1747,6 +2046,34 @@ export const conditioningService = {
     
     return reps.sort((a, b) => (b.isOverdue ? 1 : 0) - (a.isOverdue ? 1 : 0));
   },
+
+  /**
+   * Get follow-up reminders that are due or overdue for a user.
+   * Queries the top-level follow_up_reminders collection.
+   * Returns reminders where reminderDate <= today and sent === false.
+   */
+  getDueFollowUpReminders: async (db, userId) => {
+    const remindersRef = collection(db, 'follow_up_reminders');
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    const remindersQuery = query(
+      remindersRef,
+      where('userId', '==', userId),
+      where('sent', '==', false)
+    );
+    
+    const snap = await getDocs(remindersQuery);
+    const due = [];
+    
+    snap.forEach(doc => {
+      const data = doc.data();
+      if (data.reminderDate <= todayStr) {
+        due.push({ id: doc.id, ...data });
+      }
+    });
+    
+    return due;
+  },
   
   // ============================================
   // PHASE 2: QUALITY ASSESSMENT
@@ -1756,20 +2083,35 @@ export const conditioningService = {
    * Basic rule-based quality assessment (fallback when AI is unavailable)
    * V2: Returns 3 dimension scores (specific_language, observed_response, reflection)
    */
-  assessQualityBasic: (evidence, _rep) => {
-    // Support both V1 and V2 evidence formats
+  assessQualityBasic: (evidence, rep) => {
+    // SCE reps use 4-condition scored fallback
+    if (rep?.repType === 'set_clear_expectations' && evidence.sceEvidence) {
+      return conditioningService._assessSCEBasic(evidence);
+    }
+    // DRF reps use 3-condition scored fallback
+    if (rep?.repType === 'deliver_reinforcing_feedback' && evidence.drfEvidence) {
+      return conditioningService._assessDRFBasic(evidence);
+    }
+    // FUW reps use 3-condition scored fallback
+    if (rep?.repType === 'follow_up_work' && evidence.fuwEvidence) {
+      return conditioningService._assessFUWBasic(evidence);
+    }
+    // LWV reps use 3-condition scored fallback
+    if (rep?.repType === 'lead_with_vulnerability' && evidence.lwvEvidence) {
+      return conditioningService._assessLWVBasic(evidence);
+    }
+    
+    // Generic 3-dimension pass/fail for other rep types
     const responses = evidence.responses || {};
     const dimensions = {};
     let passedCount = 0;
     const totalDimensions = 3;
     
-    // V2 fields (primary) with V1 fallbacks
     const whatSaid = evidence.whatYouSaid || responses.what_said || responses.what_happened || '';
     const theirResponse = evidence.howTheyResponded || responses.their_response || '';
     const whatWentWell = evidence.reflection?.whatWentWell || '';
     const whatDifferent = evidence.reflection?.whatDifferent || responses.next_time || responses.learning || '';
     
-    // Dimension 1: SPECIFIC_LANGUAGE - Did they describe what they said/did?
     const hasSpecificLanguage = whatSaid.length >= 20;
     dimensions[QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE] = {
       passed: hasSpecificLanguage,
@@ -1780,7 +2122,6 @@ export const conditioningService = {
     };
     if (dimensions[QUALITY_DIMENSIONS.SPECIFIC_LANGUAGE].passed) passedCount++;
     
-    // Dimension 2: OBSERVED_RESPONSE - Did they describe how the person responded?
     const hasResponse = theirResponse.length >= 5;
     dimensions[QUALITY_DIMENSIONS.OBSERVED_RESPONSE] = {
       passed: hasResponse,
@@ -1791,7 +2132,6 @@ export const conditioningService = {
     };
     if (dimensions[QUALITY_DIMENSIONS.OBSERVED_RESPONSE].passed) passedCount++;
     
-    // Dimension 3: REFLECTION - Did they reflect on what went well & what to do differently?
     const combinedReflection = [whatWentWell, whatDifferent].filter(Boolean).join(' ');
     const reflectionPassed = combinedReflection.length >= 15;
     dimensions[QUALITY_DIMENSIONS.REFLECTION] = {
@@ -1803,7 +2143,6 @@ export const conditioningService = {
     };
     if (dimensions[QUALITY_DIMENSIONS.REFLECTION].passed) passedCount++;
     
-    // Overall assessment - pass 2 of 3 dimensions
     const meetsStandard = passedCount >= 2;
     
     return {
@@ -1811,7 +2150,7 @@ export const conditioningService = {
       passedCount,
       totalDimensions,
       meetsStandard,
-      isConstructive: true, // Can't determine this with basic rules
+      isConstructive: true,
       assessedAt: new Date().toISOString(),
       assessedBy: 'rules',
       summary: meetsStandard 
@@ -1819,24 +2158,408 @@ export const conditioningService = {
         : `This rep needs improvement in ${totalDimensions - passedCount} area(s)`
     };
   },
+
+  /**
+   * SCE-specific fallback scoring (rule-based, no AI)
+   * Scores 4 conditions 0-3 based on evidence field lengths
+   */
+  _assessSCEBasic: (evidence) => {
+    const sce = evidence.sceEvidence || {};
+    const responses = sce.responses || {};
+    
+    // Score helper: map text length to 0-3
+    const scoreText = (text) => {
+      if (!text || typeof text !== 'string') return 0;
+      const len = text.trim().length;
+      if (len >= 50) return 3;
+      if (len >= 20) return 2;
+      if (len >= 5) return 1;
+      return 0;
+    };
+    
+    // Score yes/no fields
+    const scoreYesNo = (val) => {
+      if (!val) return 0;
+      if (typeof val === 'object') {
+        const hasAnswer = val.answer && val.answer !== 'no';
+        const hasComment = val.comment && val.comment.trim().length >= 10;
+        if (hasAnswer && hasComment) return 3;
+        if (hasAnswer) return 2;
+        return 1;
+      }
+      return val.length >= 5 ? 2 : 0;
+    };
+
+    // Condition 1: Expectation Stated
+    const defineSuccess = responses.define_success || responses.behavior_standard || responses.previous_unclear || '';
+    const expectationScore = scoreText(typeof defineSuccess === 'object' ? JSON.stringify(defineSuccess) : defineSuccess);
+
+    // Condition 2: Success Defined
+    const otherExpectations = responses.other_expectations || responses.boundaries || responses.restated_success || responses.good_looks_like || '';
+    const successScore = scoreText(typeof otherExpectations === 'object' ? JSON.stringify(otherExpectations) : otherExpectations);
+
+    // Condition 3: Understanding Confirmed
+    const articulatedBack = responses.articulated_back || responses.test_understanding || responses.confirmed_alignment || '';
+    const understandingScore = scoreYesNo(articulatedBack);
+
+    // Condition 4: Ownership Established
+    const ownership = responses.confirmed_ownership || '';
+    const ownershipScore = scoreText(typeof ownership === 'object' ? JSON.stringify(ownership) : ownership);
+
+    const scores = [expectationScore, successScore, understandingScore, ownershipScore];
+    const totalScore = scores.reduce((a, b) => a + b, 0);
+    const hasZero = scores.some(s => s === 0);
+    const onesCount = scores.filter(s => s === 1).length;
+    const expectationIsOne = expectationScore === 1;
+    const successIsOne = successScore === 1;
+    const autoFailTriggered = hasZero || onesCount >= 2 || expectationIsOne || successIsOne;
+    const repPassed = !autoFailTriggered && totalScore >= 6;
+
+    const scoreLabel = (s) => s === 3 ? 'Strong' : s === 2 ? 'Adequate' : s === 1 ? 'Weak' : 'None';
+
+    return {
+      evaluationType: 'sce_scored',
+      repValidity: 'valid',
+      conditions: {
+        expectation_stated: { score: expectationScore, label: scoreLabel(expectationScore), feedback: 'Assessed by system rules.' },
+        success_defined: { score: successScore, label: scoreLabel(successScore), feedback: 'Assessed by system rules.' },
+        understanding_confirmed: { score: understandingScore, label: scoreLabel(understandingScore), feedback: 'Assessed by system rules.' },
+        ownership_established: { score: ownershipScore, label: scoreLabel(ownershipScore), feedback: 'Assessed by system rules.' }
+      },
+      autoFailTriggered,
+      autoFailReason: autoFailTriggered ? 'Automatic fail condition met' : null,
+      totalScore,
+      maxScore: 12,
+      repPassed,
+      coachingQuestions: [],
+      meetsStandard: repPassed,
+      isConstructive: true,
+      assessedAt: new Date().toISOString(),
+      assessedBy: 'rules',
+      summary: repPassed ? 'Rep Passed' : 'Rep Not Passed'
+    };
+  },
   
   /**
-   * AI-powered quality assessment using Cloud Function
-   * Evaluates semantic quality and constructiveness of leadership rep evidence
-   * Falls back to basic rule-based assessment on error
+   * DRF-specific fallback scoring (rule-based, no AI)
+   * Scores 3 conditions 0-3 based on evidence field lengths
    */
+  _assessDRFBasic: (evidence) => {
+    const drf = evidence.drfEvidence || {};
+    const responses = drf.responses || {};
+    
+    const scoreText = (text) => {
+      if (!text || typeof text !== 'string') return 0;
+      const len = text.trim().length;
+      if (len >= 50) return 3;
+      if (len >= 20) return 2;
+      if (len >= 5) return 1;
+      return 0;
+    };
+
+    // Condition 1: Observable Behavior Clearly Named
+    const behaviorScore = scoreText(responses.describe_behavior || '');
+
+    // Condition 2: Impact or Meaning Explained
+    const impactScore = scoreText(responses.why_matters || '');
+
+    // Condition 3: Reinforcement of Repeat Behavior
+    // Check message_components for explicit reinforcement, plus notes
+    const hasRequestedContinue = Array.isArray(responses.message_components) && responses.message_components.includes('requested_continue');
+    let reinforcementScore = hasRequestedContinue ? 2 : 1;
+    // Boost if notes add context
+    if (evidence.notes && evidence.notes.trim().length >= 20) {
+      reinforcementScore = Math.min(reinforcementScore + 1, 3);
+    }
+    // If no behavior or impact, can't have reinforcement
+    if (behaviorScore === 0 && impactScore === 0) reinforcementScore = 0;
+
+    const scores = [behaviorScore, impactScore, reinforcementScore];
+    const totalScore = scores.reduce((a, b) => a + b, 0);
+    const hasZero = scores.some(s => s === 0);
+    const onesCount = scores.filter(s => s === 1).length;
+    const behaviorIsOne = behaviorScore === 1;
+    const autoFailTriggered = hasZero || onesCount >= 2 || behaviorIsOne;
+    const repPassed = !autoFailTriggered && totalScore >= 5;
+
+    const scoreLabel = (s) => s === 3 ? 'Strong' : s === 2 ? 'Adequate' : s === 1 ? 'Weak' : 'None';
+
+    return {
+      evaluationType: 'drf_scored',
+      repValidity: 'valid',
+      conditions: {
+        behavior_named: { score: behaviorScore, label: scoreLabel(behaviorScore), feedback: 'Assessed by system rules.' },
+        impact_explained: { score: impactScore, label: scoreLabel(impactScore), feedback: 'Assessed by system rules.' },
+        reinforcement_given: { score: reinforcementScore, label: scoreLabel(reinforcementScore), feedback: 'Assessed by system rules.' }
+      },
+      autoFailTriggered,
+      autoFailReason: autoFailTriggered ? 'Automatic fail condition met' : null,
+      totalScore,
+      maxScore: 9,
+      repPassed,
+      coachingQuestions: [],
+      meetsStandard: repPassed,
+      isConstructive: true,
+      assessedAt: new Date().toISOString(),
+      assessedBy: 'rules',
+      summary: repPassed ? 'Rep Passed' : 'Rep Not Passed'
+    };
+  },
+
+  /**
+   * FUW-specific fallback scoring (rule-based, no AI)
+   * Scores 3 conditions 0-3 based on evidence field lengths
+   */
+  _assessFUWBasic: (evidence) => {
+    const fuw = evidence.fuwEvidence || {};
+    const responses = fuw.responses || {};
+    
+    const scoreText = (text) => {
+      if (!text || typeof text !== 'string') return 0;
+      const len = text.trim().length;
+      if (len >= 50) return 3;
+      if (len >= 20) return 2;
+      if (len >= 5) return 1;
+      return 0;
+    };
+
+    // Condition 1: Work Anchored & Status Requested (Critical)
+    const workAnchoredScore = scoreText(responses.what_said || '');
+
+    // Condition 2: Progress Visibility
+    const progressScore = scoreText(responses.what_they_said || responses.their_response || '');
+
+    // Condition 3: Ownership Preserved
+    // Check for reinforcement language in reflection
+    let ownershipScore = 1; // Default to weak
+    const reflection = fuw.nextTimeReflection || '';
+    if (reflection.length >= 30) ownershipScore = 3;
+    else if (reflection.length >= 15) ownershipScore = 2;
+    // Boost if notes add context
+    if (evidence.notes && evidence.notes.trim().length >= 20) {
+      ownershipScore = Math.min(ownershipScore + 1, 3);
+    }
+
+    const scores = [workAnchoredScore, progressScore, ownershipScore];
+    const totalScore = scores.reduce((a, b) => a + b, 0);
+    const hasZero = scores.some(s => s === 0);
+    const onesCount = scores.filter(s => s === 1).length;
+    const workAnchoredIsOne = workAnchoredScore === 1;
+    const autoFailTriggered = hasZero || onesCount >= 2 || workAnchoredIsOne;
+    const repPassed = !autoFailTriggered && totalScore >= 5;
+
+    const scoreLabel = (s) => s === 3 ? 'Strong' : s === 2 ? 'Adequate' : s === 1 ? 'Weak' : 'None';
+
+    return {
+      evaluationType: 'fuw_scored',
+      repValidity: 'valid',
+      conditions: {
+        work_anchored: { score: workAnchoredScore, label: scoreLabel(workAnchoredScore), feedback: 'Assessed by system rules.' },
+        progress_visible: { score: progressScore, label: scoreLabel(progressScore), feedback: 'Assessed by system rules.' },
+        ownership_preserved: { score: ownershipScore, label: scoreLabel(ownershipScore), feedback: 'Assessed by system rules.' }
+      },
+      autoFailTriggered,
+      autoFailReason: autoFailTriggered ? 'Automatic fail condition met' : null,
+      totalScore,
+      maxScore: 9,
+      repPassed,
+      coachingQuestions: [],
+      meetsStandard: repPassed,
+      isConstructive: true,
+      assessedAt: new Date().toISOString(),
+      assessedBy: 'rules',
+      summary: repPassed ? 'Rep Passed' : 'Rep Not Passed'
+    };
+  },
+
+  /**
+   * LWV-specific fallback scoring (rule-based, no AI)
+   * Scores 3 conditions 0-3 based on evidence field lengths
+   */
+  _assessLWVBasic: (evidence) => {
+    const lwv = evidence.lwvEvidence || {};
+    const responses = lwv.responses || {};
+    
+    const scoreText = (text) => {
+      if (!text || typeof text !== 'string') return 0;
+      const len = text.trim().length;
+      if (len >= 50) return 3;
+      if (len >= 20) return 2;
+      if (len >= 5) return 1;
+      return 0;
+    };
+
+    // Condition 1: Ownership Present (Critical - must be >= 2)
+    const ownershipScore = scoreText(responses.what_said || '');
+
+    // Condition 2: Statement Clarity
+    const clarityScore = scoreText(responses.what_they_said || responses.their_response || '');
+
+    // Condition 3: Forward Strength
+    let forwardScore = 1; // Default to weak
+    const reflection = lwv.nextTimeReflection || '';
+    if (reflection.length >= 30) forwardScore = 3;
+    else if (reflection.length >= 15) forwardScore = 2;
+    // Boost if notes add context
+    if (evidence.notes && evidence.notes.trim().length >= 20) {
+      forwardScore = Math.min(forwardScore + 1, 3);
+    }
+
+    const scores = [ownershipScore, clarityScore, forwardScore];
+    const totalScore = scores.reduce((a, b) => a + b, 0);
+    const hasZero = scores.some(s => s === 0);
+    const onesCount = scores.filter(s => s === 1).length;
+    const ownershipBelowTwo = ownershipScore < 2;
+    const autoFailTriggered = hasZero || onesCount >= 2 || ownershipBelowTwo;
+    const repPassed = !autoFailTriggered && totalScore >= 4;
+
+    const scoreLabel = (s) => s === 3 ? 'Strong' : s === 2 ? 'Adequate' : s === 1 ? 'Weak' : 'None';
+
+    return {
+      evaluationType: 'lwv_scored',
+      repValidity: 'valid',
+      conditions: {
+        ownership_present: { score: ownershipScore, label: scoreLabel(ownershipScore), feedback: 'Assessed by system rules.' },
+        statement_clarity: { score: clarityScore, label: scoreLabel(clarityScore), feedback: 'Assessed by system rules.' },
+        forward_strength: { score: forwardScore, label: scoreLabel(forwardScore), feedback: 'Assessed by system rules.' }
+      },
+      autoFailTriggered,
+      autoFailReason: autoFailTriggered ? 'Automatic fail condition met' : null,
+      totalScore,
+      maxScore: 9,
+      repPassed,
+      coachingQuestions: [],
+      meetsStandard: repPassed,
+      isConstructive: true,
+      assessedAt: new Date().toISOString(),
+      assessedBy: 'rules',
+      summary: repPassed ? 'Rep Passed' : 'Rep Not Passed'
+    };
+  },
+
   assessQualityWithAI: async (evidence, rep) => {
     try {
       const assessRepQuality = httpsCallable(functions, 'assessRepQuality');
       
-      // Map V2 evidence format to cloud function expected format
-      // V2 evidence has: whatYouSaid, howTheyResponded, outcome, reflection.whatWentWell/whatDifferent
+      // SCE reps use structured situation-specific evidence
+      if (rep.repType === 'set_clear_expectations' && evidence.sceEvidence) {
+        const sce = evidence.sceEvidence;
+        
+        // Extract context from rep.situation if available
+        let commitContext = '';
+        if (typeof rep.situation === 'object' && rep.situation?.customContext) {
+          commitContext = rep.situation.customContext;
+        }
+
+        const structured = {
+          situation_branch: sce.situationBranch || '',
+          commit_context: commitContext,
+          sce_responses: sce.responses || {},
+          self_assessment: evidence.selfAssessment?.responses || {},
+          response_type: evidence.responseType || evidence.outcome || '',
+          outcome: evidence.outcome || '',
+          notes: evidence.notes || ''
+        };
+        
+        const result = await assessRepQuality({
+          repType: rep.repType,
+          person: rep.person,
+          structured
+        });
+        
+        return result.data;
+      }
+      
+      // DRF reps use structured feedback-specific evidence
+      if (rep.repType === 'deliver_reinforcing_feedback' && evidence.drfEvidence) {
+        const drf = evidence.drfEvidence;
+
+        // Extract context from rep.situation if available
+        let commitContext = '';
+        if (typeof rep.situation === 'object' && rep.situation?.customContext) {
+          commitContext = rep.situation.customContext;
+        }
+
+        const structured = {
+          situation_branch: rep.situationType || '',
+          commit_context: commitContext,
+          drf_responses: drf.responses || {},
+          self_assessment: evidence.selfAssessment?.responses || {},
+          response_type: evidence.responseType || '',
+          notes: evidence.notes || ''
+        };
+        
+        const result = await assessRepQuality({
+          repType: rep.repType,
+          person: rep.person,
+          structured
+        });
+        
+        return result.data;
+      }
+      
+      // FUW reps use structured follow-up evidence
+      if (rep.repType === 'follow_up_work' && evidence.fuwEvidence) {
+        const fuw = evidence.fuwEvidence;
+
+        // Extract context from rep.situation if available
+        let commitContext = '';
+        if (typeof rep.situation === 'object' && rep.situation?.customContext) {
+          commitContext = rep.situation.customContext;
+        }
+
+        const structured = {
+          situation_branch: fuw.situationBranch || '',
+          commit_context: commitContext,
+          fuw_responses: fuw.responses || {},
+          self_assessment: evidence.selfAssessment?.responses || {},
+          response_type: evidence.responseType || '',
+          notes: evidence.notes || ''
+        };
+        
+        const result = await assessRepQuality({
+          repType: rep.repType,
+          person: rep.person,
+          structured
+        });
+        
+        return result.data;
+      }
+      
+      // LWV reps use structured vulnerability evidence
+      if (rep.repType === 'lead_with_vulnerability' && evidence.lwvEvidence) {
+        const lwv = evidence.lwvEvidence;
+
+        // Extract context from rep.situation if available
+        let commitContext = '';
+        if (typeof rep.situation === 'object' && rep.situation?.customContext) {
+          commitContext = rep.situation.customContext;
+        }
+
+        const structured = {
+          situation_branch: lwv.situationBranch || '',
+          commit_context: commitContext,
+          lwv_responses: lwv.responses || {},
+          self_assessment: evidence.selfAssessment?.responses || {},
+          response_type: evidence.responseType || '',
+          notes: evidence.notes || ''
+        };
+        
+        const result = await assessRepQuality({
+          repType: rep.repType,
+          person: rep.person,
+          structured
+        });
+        
+        return result.data;
+      }
+      
+      // Generic V2 evidence mapping for all other rep types
       const structured = {
         what_said: evidence.whatYouSaid || evidence.responses?.what_said || '',
         their_response: evidence.howTheyResponded || evidence.responses?.their_response || '',
         response_type: evidence.responseType || evidence.outcome || '',
         outcome: evidence.outcome || '',
-        // Reflection is now in the separate reflection object
         what_went_well: evidence.reflection?.whatWentWell || '',
         what_different: evidence.reflection?.whatDifferent || '',
         reflection: [
@@ -1849,13 +2572,12 @@ export const conditioningService = {
         repType: rep.repType,
         person: rep.person,
         responses: evidence.responses || {},
-        structured  // Include properly mapped V2 evidence
+        structured
       });
       
       return result.data;
     } catch (err) {
       console.error('AI quality assessment failed, falling back to basic:', err);
-      // Fall back to basic rule-based assessment
       return conditioningService.assessQualityBasic(evidence, rep);
     }
   },
@@ -2973,7 +3695,56 @@ export const conditioningService = {
         mediumPatternCount
       }
     };
-  }
+  },
+
+  // =============================================
+  // FACILITATOR FEEDBACK
+  // Advisory feedback on individual reps — does not gate sign-off
+  // Stored as facilitatorFeedback field on rep document
+  // =============================================
+
+  saveFacilitatorFeedback: async (db, userId, repId, feedbackData) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const feedback = {
+      facilitatorId: feedbackData.facilitatorId,
+      facilitatorEmail: feedbackData.facilitatorEmail,
+      strength: feedbackData.strength || '',
+      improvement: feedbackData.improvement || '',
+      nextRepSuggestion: feedbackData.nextRepSuggestion || '',
+      status: 'sent',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      viewedAt: null,
+      acknowledgedAt: null,
+      leaderResponse: null,
+    };
+    await updateDoc(repRef, { facilitatorFeedback: feedback });
+    return feedback;
+  },
+
+  getFacilitatorFeedback: async (db, userId, repId) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    const repSnap = await getDoc(repRef);
+    if (!repSnap.exists()) return null;
+    return repSnap.data().facilitatorFeedback || null;
+  },
+
+  markFeedbackViewed: async (db, userId, repId) => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    await updateDoc(repRef, {
+      'facilitatorFeedback.status': 'viewed',
+      'facilitatorFeedback.viewedAt': serverTimestamp(),
+    });
+  },
+
+  markFeedbackAcknowledged: async (db, userId, repId, response = '') => {
+    const repRef = doc(db, 'users', userId, 'conditioning_reps', repId);
+    await updateDoc(repRef, {
+      'facilitatorFeedback.status': 'acknowledged',
+      'facilitatorFeedback.acknowledgedAt': serverTimestamp(),
+      'facilitatorFeedback.leaderResponse': response,
+    });
+  },
 };
 
 export default conditioningService;

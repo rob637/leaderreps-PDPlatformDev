@@ -82,7 +82,7 @@ const UserManagement = () => {
     startDate: '',
     timezone: DEFAULT_TIMEZONE,
     description: '',
-    facilitatorId: '',
+    facilitatorIds: [], // Array of trainer IDs - supports multiple trainers
     maxCapacity: 25,
     allowLateJoins: true,
     lateJoinCutoff: 0
@@ -106,12 +106,18 @@ const UserManagement = () => {
   const [isFacilitatorModalOpen, setIsFacilitatorModalOpen] = useState(false);
   const [savingFacilitator, setSavingFacilitator] = useState(false);
 
-  // Handler to select a facilitator for a cohort
-  const handleFacilitatorSelect = (facilitatorId) => {
-    setCohortForm(prev => ({
-      ...prev,
-      facilitatorId: facilitatorId
-    }));
+  // Handler to toggle a facilitator for a cohort (multi-select)
+  const handleFacilitatorToggle = (facilitatorId) => {
+    setCohortForm(prev => {
+      const currentIds = prev.facilitatorIds || [];
+      const isSelected = currentIds.includes(facilitatorId);
+      return {
+        ...prev,
+        facilitatorIds: isSelected
+          ? currentIds.filter(id => id !== facilitatorId)
+          : [...currentIds, facilitatorId]
+      };
+    });
   };
 
   // Email Template State
@@ -598,13 +604,23 @@ const UserManagement = () => {
       }
     }
 
+    // Support both legacy single facilitator and new multiple facilitators
+    let facilitatorIds = [];
+    if (cohort.facilitators && Array.isArray(cohort.facilitators)) {
+      // New format: array of facilitators
+      facilitatorIds = cohort.facilitators.map(f => f.id).filter(Boolean);
+    } else if (cohort.facilitator?.id) {
+      // Legacy format: single facilitator
+      facilitatorIds = [cohort.facilitator.id];
+    }
+
     setCohortForm({
       id: cohort.id,
       name: cohort.name,
       startDate: dateStr,
       timezone: cohort.timezone || DEFAULT_TIMEZONE,
       description: cohort.description || '',
-      facilitatorId: cohort.facilitator?.id || '',
+      facilitatorIds: facilitatorIds,
       maxCapacity: cohort.settings?.maxCapacity || 25,
       allowLateJoins: cohort.settings?.allowLateJoins ?? true,
       lateJoinCutoff: cohort.settings?.lateJoinCutoff ?? 0
@@ -620,25 +636,31 @@ const UserManagement = () => {
       const startDate = new Date(cohortForm.startDate);
       // Note: We preserve the time selected by the user for session scheduling
       
-      // Build facilitator object from fetched facilitators
-      const selectedFacilitator = facilitators.find(f => f.id === cohortForm.facilitatorId);
-      const facilitatorData = selectedFacilitator ? {
-        id: selectedFacilitator.id,
-        name: selectedFacilitator.displayName,
-        email: selectedFacilitator.email,
-        title: selectedFacilitator.title || 'Leadership Facilitator',
-        bio: selectedFacilitator.bio || '',
-        photoUrl: selectedFacilitator.photoUrl || '',
-        phone: selectedFacilitator.phone || '',
-        linkedIn: selectedFacilitator.linkedIn || ''
-      } : null;
+      // Build facilitators array from selected IDs
+      const selectedFacilitators = (cohortForm.facilitatorIds || [])
+        .map(fId => facilitators.find(f => f.id === fId))
+        .filter(Boolean)
+        .map(f => ({
+          id: f.id,
+          name: f.displayName,
+          email: f.email,
+          title: f.title || 'Leadership Trainer',
+          bio: f.bio || '',
+          photoUrl: f.photoUrl || '',
+          phone: f.phone || '',
+          linkedIn: f.linkedIn || ''
+        }));
+
+      // For backward compatibility, also set single facilitator field (first trainer)
+      const primaryFacilitator = selectedFacilitators.length > 0 ? selectedFacilitators[0] : null;
 
       const cohortData = {
         name: cohortForm.name,
         description: cohortForm.description || '',
         startDate: Timestamp.fromDate(startDate),
         timezone: cohortForm.timezone || DEFAULT_TIMEZONE,
-        facilitator: facilitatorData,
+        facilitator: primaryFacilitator, // Legacy single facilitator (first in list)
+        facilitators: selectedFacilitators, // New: array of all trainers
         settings: {
           maxCapacity: parseInt(cohortForm.maxCapacity) || 25,
           allowLateJoins: cohortForm.allowLateJoins,
@@ -666,7 +688,7 @@ const UserManagement = () => {
         name: '',
         startDate: '',
         description: '',
-        facilitatorId: '',
+        facilitatorIds: [],
         maxCapacity: 25,
         allowLateJoins: true,
         lateJoinCutoff: 0,
@@ -751,21 +773,21 @@ const UserManagement = () => {
       fetchData(); // Refresh the facilitators list
     } catch (error) {
       console.error("Error saving facilitator:", error);
-      alert("Failed to save facilitator");
+      alert("Failed to save trainer");
     } finally {
       setSavingFacilitator(false);
     }
   };
 
   const handleDeleteFacilitator = async (facilitatorId) => {
-    if (!window.confirm("Are you sure you want to delete this facilitator? This cannot be undone.")) return;
+    if (!window.confirm("Are you sure you want to delete this trainer? This cannot be undone.")) return;
     
     try {
       await deleteDoc(doc(db, 'facilitators', facilitatorId));
       setFacilitators(facilitators.filter(f => f.id !== facilitatorId));
     } catch (error) {
       console.error("Error deleting facilitator:", error);
-      alert("Failed to delete facilitator");
+      alert("Failed to delete trainer");
     }
   };
 
@@ -855,7 +877,7 @@ const UserManagement = () => {
             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
           >
             <UserCog className="w-4 h-4" />
-            Add Facilitator
+            Add Trainer
           </button>
           <button
             onClick={() => setIsCohortModalOpen(true)}
@@ -906,7 +928,7 @@ const UserManagement = () => {
         >
           <span className="flex items-center gap-1.5">
             <UserCog className="w-4 h-4" />
-            Facilitators
+            Trainers
           </span>
         </button>
         <button
@@ -1008,7 +1030,7 @@ const UserManagement = () => {
                   </>
                 ) : activeTab === 'facilitators' ? (
                   <>
-                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Facilitator</th>
+                    <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Trainer</th>
                     <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Email</th>
                     <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200">Title</th>
                     <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 text-right">Actions</th>
@@ -1235,14 +1257,14 @@ const UserManagement = () => {
                           <button
                             onClick={() => handleOpenFacilitatorModal(facilitator)}
                             className="p-1 text-slate-400 hover:text-corporate-teal transition-colors"
-                            title="Edit Facilitator"
+                            title="Edit Trainer"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteFacilitator(facilitator.id)}
                             className="p-1 text-slate-400 hover:text-red-600 transition-colors"
-                            title="Delete Facilitator"
+                            title="Delete Trainer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1255,13 +1277,13 @@ const UserManagement = () => {
                     <td colSpan="4" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
                       <div className="flex flex-col items-center gap-3">
                         <UserCog className="w-12 h-12 text-slate-300" />
-                        <p>No facilitators defined yet.</p>
+                        <p>No trainers defined yet.</p>
                         <button
                           onClick={() => handleOpenFacilitatorModal()}
                           className="flex items-center gap-2 px-4 py-2 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 transition-colors"
                         >
                           <Plus className="w-4 h-4" />
-                          Add Facilitator
+                          Add Trainer
                         </button>
                       </div>
                     </td>
@@ -1713,23 +1735,54 @@ const UserManagement = () => {
                 </p>
               </div>
 
-              {/* Facilitator */}
+              {/* Facilitator / Trainers */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Facilitator</label>
-                <select
-                  value={cohortForm.facilitatorId}
-                  onChange={e => handleFacilitatorSelect(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 bg-white dark:bg-slate-800"
-                >
-                  <option value="">Select a facilitator...</option>
-                  {facilitators.map(f => (
-                    <option key={f.id} value={f.id}>
-                      {f.name} ({f.email || 'No email'})
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+                  Trainers {cohortForm.facilitatorIds?.length > 0 && (
+                    <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">
+                      ({cohortForm.facilitatorIds.length} selected)
+                    </span>
+                  )}
+                </label>
+                {facilitators.length > 0 ? (
+                  <div className="max-h-40 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-lg divide-y divide-slate-200 dark:divide-slate-700">
+                    {facilitators.map(f => {
+                      const isSelected = (cohortForm.facilitatorIds || []).includes(f.id);
+                      return (
+                        <label
+                          key={f.id}
+                          className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${
+                            isSelected ? 'bg-corporate-teal/10 dark:bg-corporate-teal/20' : ''
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleFacilitatorToggle(f.id)}
+                            className="w-4 h-4 text-corporate-teal border-slate-300 dark:border-slate-600 rounded focus:ring-corporate-teal"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
+                              {f.name || f.displayName}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                              {f.email || 'No email'}
+                            </p>
+                          </div>
+                          {isSelected && (
+                            <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-500 dark:text-slate-400 py-2 text-center border border-dashed border-slate-300 dark:border-slate-600 rounded-lg">
+                    No trainers available. Add trainers in the Trainers tab first.
+                  </div>
+                )}
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  The facilitator will be shown to cohort members as their point of contact.
+                  Select one or more trainers to assign to this cohort.
                 </p>
               </div>
 
@@ -1820,7 +1873,7 @@ const UserManagement = () => {
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg">
             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
-                {facilitatorForm.id ? 'Edit Facilitator' : 'Add Facilitator'}
+                {facilitatorForm.id ? 'Edit Trainer' : 'Add Trainer'}
               </h3>
               <button 
                 onClick={() => setIsFacilitatorModalOpen(false)}
@@ -1863,7 +1916,7 @@ const UserManagement = () => {
                     value={facilitatorForm.title}
                     onChange={e => setFacilitatorForm({...facilitatorForm, title: e.target.value})}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/50"
-                    placeholder="Founder & Lead Facilitator"
+                    placeholder="Founder & Lead Trainer"
                   />
                 </div>
                 
@@ -1943,7 +1996,7 @@ const UserManagement = () => {
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      {facilitatorForm.id ? 'Update Facilitator' : 'Add Facilitator'}
+                      {facilitatorForm.id ? 'Update Trainer' : 'Add Trainer'}
                     </>
                   )}
                 </button>

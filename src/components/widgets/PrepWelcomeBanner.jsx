@@ -28,6 +28,7 @@ const PrepWelcomeBanner = () => {
   const { getItemProgress } = useActionProgress();
   const { isComplete: leaderProfileComplete, profile: leaderProfile } = useLeaderProfile();
   const [showFacilitatorModal, setShowFacilitatorModal] = useState(false);
+  const [selectedTrainer, setSelectedTrainer] = useState(null);
 
   // Baseline Assessment completion tracking - use developmentPlanData directly for real-time updates
   const baselineAssessmentComplete = useMemo(() => {
@@ -108,8 +109,11 @@ const PrepWelcomeBanner = () => {
     // Count completed milestones (1-5)
     for (let m = 1; m <= 5; m++) {
       const mData = milestoneProgress[`milestone_${m}`] || {};
-      if (mData.completed || mData.certifiedAt) {
+      // Match ThisWeeksActionsWidget logic: check signedOff, and require sequential completion
+      if (mData.signedOff || mData.completed || mData.certifiedAt) {
         completed++;
+      } else {
+        break;
       }
     }
     
@@ -131,8 +135,25 @@ const PrepWelcomeBanner = () => {
     daysUntilStart = 0, 
     cohortName = null,
     cohortStartDate = null,
-    facilitator = null
+    facilitator = null,
+    facilitators = null
   } = info;
+
+  // Get trainers array - support both new format (facilitators array) and legacy (single facilitator)
+  const trainers = useMemo(() => {
+    if (facilitators && Array.isArray(facilitators) && facilitators.length > 0) {
+      return facilitators;
+    }
+    if (facilitator) {
+      return [facilitator];
+    }
+    return [];
+  }, [facilitators, facilitator]);
+
+  const handleTrainerClick = (trainer) => {
+    setSelectedTrainer(trainer);
+    setShowFacilitatorModal(true);
+  };
 
   // Get user's first name for personalization - prefer profile data over displayName
   const firstName = leaderProfile?.firstName || user?.displayName?.split(' ')[0] || 'Leader';
@@ -206,15 +227,15 @@ const PrepWelcomeBanner = () => {
 
   // Get the subtext - progress-based messaging
   const getSubtext = () => {
-    // Foundation phase - show milestone-based guidance
+    // Foundation phase - show level-based guidance
     if (isFoundationPhase) {
       if (completedMilestones === 0) {
-        return "Your Foundation journey has begun! Complete milestones by practicing Real Reps and earning certifications.";
+        return "Your Foundation journey has begun! Complete levels by practicing Real Reps and earning your certification at graduation.";
       }
       if (completedMilestones >= 5) {
-        return "Congratulations! You've completed all 5 Foundation milestones. Prepare for your leadership Ascent!";
+        return "Congratulations! You've completed all 5 Foundation levels. Prepare for your leadership Ascent!";
       }
-      return `Milestone ${currentMilestone} of 5. Progress at your own pace — the Foundation is milestone-driven, not time-driven.`;
+      return `Level ${currentMilestone} of 5. Progress at your own pace — the Foundation is level-driven, not time-driven.`;
     }
     
     // After prep requirements complete, show success message
@@ -265,7 +286,7 @@ const PrepWelcomeBanner = () => {
                 {isFoundationPhase ? (
                   <>
                     <Flame className="w-4 h-4" />
-                    <span>Foundation Milestone {currentMilestone}</span>
+                    <span>Foundation Level {currentMilestone}</span>
                   </>
                 ) : (
                   <>
@@ -296,27 +317,42 @@ const PrepWelcomeBanner = () => {
               {getSubtext()}
             </p>
 
-            {/* Facilitator Introduction - Show if available */}
-            {facilitator && (
-              <button
-                onClick={() => setShowFacilitatorModal(true)}
-                className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg px-4 py-3 border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 transition-all group text-left"
-              >
-                <FacilitatorAvatar name={facilitator.name} photoUrl={facilitator.photoUrl} size="sm" />
-                <div className="flex-1">
-                  <p className="text-corporate-navy dark:text-white font-medium text-sm group-hover:text-corporate-teal transition-colors">{facilitator.name}</p>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs">Your Facilitator • Tap for details</p>
+            {/* Trainers Introduction - Show all trainers assigned to cohort */}
+            {trainers.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider">
+                  {trainers.length === 1 ? 'Your Trainer' : 'Your Trainers'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {trainers.map((trainer, idx) => (
+                    <button
+                      key={trainer.id || idx}
+                      onClick={() => handleTrainerClick(trainer)}
+                      className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg px-4 py-3 border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 transition-all group text-left"
+                    >
+                      <FacilitatorAvatar name={trainer.name} photoUrl={trainer.photoUrl} size="sm" />
+                      <div className="flex-1">
+                        <p className="text-corporate-navy dark:text-white font-medium text-sm group-hover:text-corporate-teal transition-colors">{trainer.name}</p>
+                        {trainer.title && (
+                          <p className="text-slate-500 dark:text-slate-400 text-xs">{trainer.title}</p>
+                        )}
+                      </div>
+                      <Info className="w-4 h-4 text-slate-400 group-hover:text-corporate-teal transition-colors" />
+                    </button>
+                  ))}
                 </div>
-                <Info className="w-4 h-4 text-slate-400 group-hover:text-corporate-teal transition-colors" />
-              </button>
+              </div>
             )}
 
             {/* Facilitator Profile Modal */}
             <FacilitatorProfileModal
-              facilitator={facilitator}
+              facilitator={selectedTrainer}
               cohortName={cohortName}
               isOpen={showFacilitatorModal}
-              onClose={() => setShowFacilitatorModal(false)}
+              onClose={() => {
+                setShowFacilitatorModal(false);
+                setSelectedTrainer(null);
+              }}
             />
           </div>
 
@@ -341,7 +377,7 @@ const PrepWelcomeBanner = () => {
               )}
             </div>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              {isFoundationPhase ? 'Foundation Milestone' : 'until Session One'}
+              {isFoundationPhase ? 'Foundation Level' : 'until Session One'}
             </span>
             
             {/* Session One Date - Show actual date from cohort (only in prep phase) */}

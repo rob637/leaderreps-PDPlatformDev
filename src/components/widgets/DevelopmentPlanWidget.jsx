@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { BookOpen, CheckCircle, Circle, MessageSquare, Users, Video, Zap, Repeat, Play, FileText, ExternalLink, Loader, Layers } from 'lucide-react';
+import { BookOpen, CheckCircle, Circle, MessageSquare, Users, Video, Zap, Repeat, Play, FileText, Loader, Layers, ChevronRight, PlayCircle, ClipboardCheck } from 'lucide-react';
 import { Card } from '../ui';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import { doc, getDoc } from 'firebase/firestore';
@@ -102,7 +102,7 @@ const DevelopmentPlanWidget = ({ helpText }) => {
   if (!weekData) return null;
 
   const getItemIcon = (type) => {
-    const normalizedType = (type || '').toUpperCase();
+    const normalizedType = (type || '').toUpperCase().replace(/[\s-]/g, '_');
     switch (normalizedType) {
       case 'WORKOUT': return Video;
       case 'PROGRAM': return Play;
@@ -111,12 +111,17 @@ const DevelopmentPlanWidget = ({ helpText }) => {
       case 'READ_AND_REP': return BookOpen;
       case 'LEADER_CIRCLE': return Users;
       case 'OPEN_GYM': return Users;
-      case 'VIDEO': return Video;
+      case 'VIDEO': return Play;
+      case 'VIDEO_SERIES': return PlayCircle;
       case 'READING': return BookOpen;
       case 'DOCUMENT': return FileText;
+      case 'GUIDE': return FileText;
       case 'COURSE': return Layers;
       case 'COMMUNITY': return Users;
       case 'COACHING': return MessageSquare;
+      case 'FORM': return ClipboardCheck;
+      case 'ONBOARDING': return ClipboardCheck;
+      case 'CONTENT': return FileText;
       default: return Circle;
     }
   };
@@ -236,7 +241,7 @@ const DevelopmentPlanWidget = ({ helpText }) => {
             {weekData.actions.map((item, idx) => {
               const progress = getItemProgress(item.id);
               const isCompleted = progress.status === 'completed' || completedItems.includes(item.id);
-              const Icon = getItemIcon(item.type);
+              const Icon = getItemIcon(item.resourceType || item.type);
 
               const hasResource = item.resourceId || item.url;
               const handleRowClick = (e) => {
@@ -274,7 +279,11 @@ const DevelopmentPlanWidget = ({ helpText }) => {
 
                   {hasResource && (
                     <div className="p-2 text-slate-400 dark:text-slate-500">
-                      {loadingResource === item.id ? <Loader className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                      {loadingResource === item.id ? <Loader className="w-4 h-4 animate-spin" /> : (
+                        (item.resourceType || item.type || '').toLowerCase().includes('video')
+                          ? <PlayCircle className="w-4 h-4" />
+                          : <ChevronRight className="w-4 h-4" />
+                      )}
                     </div>
                   )}
                 </div>

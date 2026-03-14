@@ -2,12 +2,15 @@
 /**
  * Copy Storage Files Between Environments
  * 
- * Copies video and document files from one Firebase Storage bucket to another.
- * Uses Firebase Admin SDK (no gcloud CLI required).
+ * ⚠️  DEPRECATED — DO NOT USE for content syncs.
  * 
- * Usage: node scripts/copy-storage-files.cjs <source> <target>
- *        node scripts/copy-storage-files.cjs dev test
- *        node scripts/copy-storage-files.cjs dev prod
+ * All environments should read media from prod storage directly.
+ * Content URLs in Firestore point to prod storage and include signed URLs
+ * or download tokens that are only valid for the prod bucket.
+ * 
+ * This script is kept for one-off operations only.
+ * 
+ * Usage: node scripts/copy-storage-files.cjs <source> <target> [--force]
  */
 
 const admin = require('firebase-admin');
@@ -38,7 +41,7 @@ const FIREBASE_PROJECTS = {
 const FOLDERS_TO_COPY = ['vault', 'public'];
 
 class StorageCopier {
-  constructor(sourceEnv, targetEnv) {
+  constructor(sourceEnv, targetEnv, { force = false } = {}) {
     this.sourceConfig = FIREBASE_PROJECTS[sourceEnv];
     this.targetConfig = FIREBASE_PROJECTS[targetEnv];
     
@@ -47,6 +50,7 @@ class StorageCopier {
     
     this.sourceEnv = sourceEnv;
     this.targetEnv = targetEnv;
+    this.force = force;
     this.stats = { copied: 0, skipped: 0, failed: 0 };
   }
 
@@ -78,15 +82,30 @@ class StorageCopier {
     const tempPath = path.join(os.tmpdir(), path.basename(filePath));
     
     try {
-      // Download from source
-      await this.sourceBucket.file(filePath).download({ destination: tempPath });
+      const sourceFile = this.sourceBucket.file(filePath);
       
-      // Upload to target
+      // Get source metadata (content type + download token)
+      const [sourceMetadata] = await sourceFile.getMetadata();
+      
+      // Download from source
+      await sourceFile.download({ destination: tempPath });
+      
+      // Upload to target, preserving content type and download token
+      const uploadMetadata = {
+        contentType: sourceMetadata.contentType,
+        cacheControl: 'public, max-age=31536000',
+      };
+      
+      // Preserve the Firebase download token so existing URLs work
+      if (sourceMetadata.metadata && sourceMetadata.metadata.firebaseStorageDownloadTokens) {
+        uploadMetadata.metadata = {
+          firebaseStorageDownloadTokens: sourceMetadata.metadata.firebaseStorageDownloadTokens,
+        };
+      }
+      
       await this.targetBucket.upload(tempPath, {
         destination: filePath,
-        metadata: {
-          cacheControl: 'public, max-age=31536000'
-        }
+        metadata: uploadMetadata,
       });
       
       // Cleanup temp file
@@ -118,13 +137,15 @@ class StorageCopier {
         const fileName = path.basename(filePath);
         
         try {
-          // Check if file already exists in target
-          const [exists] = await this.targetBucket.file(filePath).exists();
-          
-          if (exists) {
-            console.log(`   ⏭️  ${fileName} (exists)`);
-            this.stats.skipped++;
-            continue;
+          // Check if file already exists in target (skip unless --force)
+          if (!this.force) {
+            const [exists] = await this.targetBucket.file(filePath).exists();
+            
+            if (exists) {
+              console.log(`   ⏭️  ${fileName} (exists, use --force to overwrite)`);
+              this.stats.skipped++;
+              continue;
+            }
           }
           
           await this.copyFile(filePath);
@@ -189,7 +210,7 @@ This copies:
     process.exit(1);
   }
 
-  const copier = new StorageCopier(sourceEnv, targetEnv);
+  const copier = new StorageCopier(sourceEnv, targetEnv, { force: process.argv.includes('--force') });
   await copier.initialize();
   await copier.run();
   process.exit(0);

@@ -31,36 +31,43 @@ import {
 import { Card } from '../ui';
 
 // Session definitions - which sessions require facilitator verification
+// Sessions unlock specific rep types when attendance is marked:
+// Session 1 → SCE, DRF | Session 2 → FUW, LWV | Session 3 → RED, CTL | Session 4 → HPB, HTL, BEC | Session 5 → Ascent
 const FACILITATOR_SESSIONS = {
   1: {
     id: 'action-s1-deliberate-practice',
     name: 'Session 1: Deliberate Practice',
     milestone: 1,
-    description: 'First live deliberate practice session'
+    description: 'First live deliberate practice session',
+    unlocksReps: ['Set Clear Expectations', 'Deliver Reinforcing Feedback']
   },
   2: {
     id: 'action-s2-deliberate-practice',
-    name: 'Session 2: Deliberate Practice',
+    name: 'Session 2: 1:1 Coaching',
     milestone: 2,
-    description: 'Second live deliberate practice session'
+    description: '1:1 Coaching Session attendance',
+    unlocksReps: ['Follow-up on Work', 'Lead with Vulnerability']
   },
   3: {
     id: 'action-s3-deliberate-practice',
-    name: 'Session 3: Deliberate Practice',
+    name: 'Session 3: Open Gym',
     milestone: 3,
-    description: 'Third live deliberate practice session'
+    description: 'Open gym practice session',
+    unlocksReps: ['Deliver Redirecting Feedback', 'Close the Loop']
   },
   4: {
     id: 'action-s4-deliberate-practice',
-    name: 'Session 4: Deliberate Practice',
+    name: 'Session 4: Open Gym',
     milestone: 4,
-    description: 'Fourth live deliberate practice session'
+    description: 'Open gym practice session',
+    unlocksReps: ['Handle Pushback', 'Hold the Line', 'Be Curious']
   },
   5: {
     id: 'action-s5-deliberate-practice',
-    name: 'Session 5: Deliberate Practice',
+    name: 'Session 5: Graduation',
     milestone: 5,
-    description: 'Fifth live deliberate practice session'
+    description: 'Graduation session - unlocks Ascent phase',
+    unlocksReps: null // Unlocks Ascent, not specific reps
   }
 };
 
@@ -411,7 +418,7 @@ const SessionAttendanceQueue = () => {
             Session Attendance
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Mark attendance for Deliberate Practice sessions
+            Mark attendance for Deliberate Practice and Coaching sessions
           </p>
         </div>
       </div>

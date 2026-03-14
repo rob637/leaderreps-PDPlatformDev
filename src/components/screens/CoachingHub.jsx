@@ -215,8 +215,8 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
   const style = getTypeStyle(session.sessionType);
   const Icon = style.icon;
   
-  // Parse date
-  const sessionDate = session.date ? new Date(session.date) : new Date();
+  // Parse date - add T12:00:00 to ensure local timezone interpretation
+  const sessionDate = session.date ? new Date(session.date + 'T12:00:00') : new Date();
   const month = sessionDate.toLocaleString('default', { month: 'short' }).toUpperCase();
   const day = sessionDate.getDate();
   const time = session.time || '10:00 AM';
@@ -277,14 +277,22 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
               >
                 Cancel
               </button>
-            ) : (
-              <button 
-                onClick={() => onRegister(session)}
-                className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 rounded hover:bg-indigo-700 transition-colors"
-              >
-                Register
-              </button>
-            )}
+            ) : (() => {
+              const maxAttendees = session.maxAttendees || getDefaultMaxAttendees(session.sessionType);
+              const isFull = (session.registrationCount || 0) >= maxAttendees;
+              return isFull ? (
+                <span className="px-3 py-1.5 text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 rounded cursor-not-allowed">
+                  Full
+                </span>
+              ) : (
+                <button 
+                  onClick={() => onRegister(session)}
+                  className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 rounded hover:bg-indigo-700 transition-colors"
+                >
+                  Register
+                </button>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -399,8 +407,9 @@ const MyCoachingSection = ({ registrations = [], sessions = [], pastSessions = [
   // Registration card component
   const RegistrationCard = ({ registration }) => {
     const session = getSessionForRegistration(registration);
+    // Add T12:00:00 to ensure local timezone interpretation
     const sessionDate = registration.sessionDate 
-      ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+      ? new Date(registration.sessionDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
       : 'Date TBD';
     const sessionTime = registration.sessionTime || 'Time TBD';
     
@@ -625,11 +634,21 @@ const MyCoachingSection = ({ registrations = [], sessions = [], pastSessions = [
 // ============================================
 // MAIN COACHING HUB COMPONENT
 // ============================================
-const CoachingHub = () => {
+const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, targetCoachingItemId }) => {
   const { db, navigate, user } = useAppServices();
   const { isFeatureEnabled } = useFeatures();
   const { currentDayNumber, unlockedContentIds } = useDailyPlan();
   const { zoneVisibility } = useAccessControlContext();
+  
+  // Calculate current milestone to correctly assign coaching items
+  const currentMilestone = useMemo(() => {
+    const progress = user?.milestoneProgress || {};
+    let m = 1;
+    while (m <= 5 && progress[`milestone_${m}`]?.signedOff) {
+      m++;
+    }
+    return Math.min(m, 5);
+  }, [user?.milestoneProgress]);
   
   // Use the new coaching hooks
   const { 
@@ -654,8 +673,11 @@ const CoachingHub = () => {
   const [legacySessions, setLegacySessions] = useState([]);
   const [legacyRegistrations, setLegacyRegistrations] = useState([]);
   const [legacyLoading, setLegacyLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('my'); // Default to My Sessions
+  
+  // Read navigation params for initial state (supports deep linking from dashboard)
+  const [activeTab, setActiveTab] = useState(initialTab || 'my');
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+  const [sessionTypeFilter, setSessionTypeFilter] = useState(initialSessionTypeFilter || 'all');
 
   // Day-based content unlocking
   const unlockedSet = useMemo(() => {
@@ -776,27 +798,71 @@ const CoachingHub = () => {
       .slice(0, 6);
   }, [sessions, registeredIds]);
 
+  // Find existing 1:1 registration (for Switch UX)
+  const existing1on1Registration = useMemo(() => {
+    if (!registrations) return null;
+    return registrations.find(r => 
+      (r.sessionType === 'one_on_one' || r.sessionType === '1:1') &&
+      r.status !== 'cancelled' &&
+      r.status !== 'no_show' &&
+      r.status !== 'certified'
+    );
+  }, [registrations]);
+
+  // Get the session details for the existing 1:1
+  const existing1on1Session = useMemo(() => {
+    if (!existing1on1Registration) return null;
+    return sessions.find(s => s.id === existing1on1Registration.sessionId);
+  }, [existing1on1Registration, sessions]);
+
   const handleRegister = async (session) => {
     if (!user?.uid) {
       alert('Please log in to register for sessions.');
       return;
     }
     
-    // Try new hook first
-    const result = await registerForSession(session);
+    // For 1:1 coaching, check if user already has a registration
+    const is1on1 = session.sessionType === 'one_on_one' || session.sessionType === '1:1';
+    const additionalData = {};
+    
+    if (is1on1 && existing1on1Registration && existing1on1Registration.sessionId !== session.id) {
+      // User already has a 1:1 - show confirmation to switch
+      // Add T12:00:00 to ensure local timezone interpretation
+      const existingTime = existing1on1Session?.time || 'scheduled';
+      const existingDate = existing1on1Session?.date 
+        ? new Date(existing1on1Session.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+        : '';
+      const newTime = session.time || 'scheduled';
+      const newDate = session.date 
+        ? new Date(session.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+        : '';
+      
+      const confirmed = window.confirm(
+        `Switch your 1:1 coaching session?\n\n` +
+        `Current: ${existingDate} at ${existingTime}\n` +
+        `New: ${newDate} at ${newTime}\n\n` +
+        `Click OK to switch, or Cancel to keep your current session.`
+      );
+      
+      if (!confirmed) return;
+      
+      // User confirmed - proceed with switch
+      additionalData.coachingItemId = targetCoachingItemId || `milestone-${currentMilestone}-coaching-one_on_one`;
+    } else if (is1on1) {
+      // First 1:1 registration
+      additionalData.coachingItemId = targetCoachingItemId || `milestone-${currentMilestone}-coaching-one_on_one`;
+    }
+    
+    const result = await registerForSession(session, additionalData);
     if (!result.success) {
-      // Fallback to legacy registration
-      try {
-        const regRef = doc(db, 'coaching_registrations', `${user.uid}_${session.id}`);
-        await setDoc(regRef, {
-          userId: user.uid,
-          sessionId: session.id,
-          sessionTitle: session.title,
-          registeredAt: serverTimestamp()
-        });
-      } catch (error) {
-        console.error('Error registering:', error);
-      }
+      alert(result.error || 'Failed to register. Please try again.');
+      console.error('[CoachingHub] Registration failed:', result.error);
+      return;
+    }
+    
+    // Success feedback
+    if (is1on1 && existing1on1Registration) {
+      alert('Session switched! You will receive a confirmation email.');
     }
   };
 
@@ -833,7 +899,12 @@ const CoachingHub = () => {
     OnDemandSection,
     MyCoachingSection,
     registeredIds,
-    showAllSessions: true
+    showAllSessions: true,
+    // Pass initial filter from navigation params
+    initialTypeFilter: sessionTypeFilter,
+    setSessionTypeFilter,
+    // For Switch UX - existing 1:1 info
+    existing1on1SessionId: existing1on1Registration?.sessionId || null
   };
 
   // Zone Gate: Coaching unlocks when user enters Foundation phase

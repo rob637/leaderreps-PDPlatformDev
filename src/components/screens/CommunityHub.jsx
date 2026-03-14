@@ -41,7 +41,7 @@ const StatusBadge = ({ status }) => {
 const getSessionTypeStyle = (type) => {
   const t = (type || '').toLowerCase();
   switch (t) {
-    case 'leader_circle': return { bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-600', icon: Users };
+    case 'leader_circle': return { bg: 'bg-teal-50 dark:bg-teal-900/20', text: 'text-corporate-teal', icon: Users };
     case 'community_event': return { bg: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-600', icon: Star };
     case 'accountability_pod': return { bg: 'bg-teal-50 dark:bg-teal-900/20', text: 'text-teal-600', icon: UserCheck };
     case 'mastermind': return { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600', icon: MessageSquare };
@@ -101,8 +101,8 @@ const CalendarView = ({ sessions = [], onViewDetails }) => {
             const dateKey = getDayKey(day);
             const daySessions = sessionsByDate[dateKey] || [];
             return (
-              <div key={day} className={`h-20 rounded-lg border p-1 transition-colors ${isToday(day) ? 'border-purple-400 bg-purple-50 dark:bg-purple-900/20' : daySessions.length > 0 ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-purple-300 cursor-pointer' : 'border-slate-100 bg-slate-50 dark:bg-slate-800'}`}>
-                <div className={`text-xs font-bold mb-1 ${isToday(day) ? 'text-purple-600' : 'text-slate-500 dark:text-slate-400'}`}>{day}</div>
+              <div key={day} className={`h-20 rounded-lg border p-1 transition-colors ${isToday(day) ? 'border-corporate-teal bg-teal-50 dark:bg-teal-900/20' : daySessions.length > 0 ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-300 cursor-pointer' : 'border-slate-100 bg-slate-50 dark:bg-slate-800'}`}>
+                <div className={`text-xs font-bold mb-1 ${isToday(day) ? 'text-corporate-teal' : 'text-slate-500 dark:text-slate-400'}`}>{day}</div>
                 {daySessions.slice(0, 2).map(s => (
                   <div key={s.id} onClick={() => onViewDetails?.(s)} className={`text-[10px] px-1 py-0.5 rounded truncate mb-0.5 cursor-pointer ${getSessionTypeStyle(s.sessionType).bg} ${getSessionTypeStyle(s.sessionType).text}`}>{s.title?.substring(0, 12)}...</div>
                 ))}
@@ -113,7 +113,7 @@ const CalendarView = ({ sessions = [], onViewDetails }) => {
         </div>
       </div>
       <div className="px-4 pb-4 flex flex-wrap gap-4 text-xs">
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-purple-100 dark:bg-purple-900/30" /> Leader Circle</div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-teal-100 dark:bg-teal-900/30" /> Leader Circle</div>
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/30" /> Community Event</div>
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-teal-100 dark:bg-teal-900/30" /> Accountability Pod</div>
       </div>
@@ -127,7 +127,8 @@ const CalendarView = ({ sessions = [], onViewDetails }) => {
 const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
   const style = getSessionTypeStyle(session.sessionType);
   const Icon = style.icon;
-  const sessionDate = session.date ? new Date(session.date) : new Date();
+  // Add T12:00:00 to ensure local timezone interpretation
+  const sessionDate = session.date ? new Date(session.date + 'T12:00:00') : new Date();
   const month = sessionDate.toLocaleString('default', { month: 'short' }).toUpperCase();
   const day = sessionDate.getDate();
   const time = session.time || '10:00 AM';
@@ -159,7 +160,7 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
             {isRegistered ? (
               <button onClick={() => onCancel(session)} className="px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 transition-colors">Cancel</button>
             ) : (
-              <button onClick={() => onRegister(session)} className="px-3 py-1.5 text-xs font-bold text-white bg-purple-600 rounded hover:bg-purple-700 transition-colors">Register</button>
+              <button onClick={() => onRegister(session)} className="px-3 py-1.5 text-xs font-bold text-white bg-corporate-teal rounded hover:bg-teal-700 transition-colors">Register</button>
             )}
           </div>
         </div>
@@ -208,7 +209,7 @@ const MyEventsSection = ({ registrations = [], sessions = [], onCancel, navigate
         </div>
         {registration.status === 'REGISTERED' && session?.meetingLink && isToday && (
           <div className="mt-3 flex gap-2">
-            <a href={session.meetingLink} target="_blank" rel="noopener noreferrer" className="flex-1 py-2 bg-purple-600 text-white text-center text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors">Join Event</a>
+            <a href={session.meetingLink} target="_blank" rel="noopener noreferrer" className="flex-1 py-2 bg-corporate-teal text-white text-center text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors">Join Event</a>
             {onCancel && <button onClick={() => onCancel(registration.sessionId)} className="px-3 py-2 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 transition-colors">Cancel</button>}
           </div>
         )}
@@ -227,7 +228,7 @@ const MyEventsSection = ({ registrations = [], sessions = [], onCancel, navigate
         <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
         <h3 className="text-xl font-bold text-slate-600 dark:text-slate-300 mb-2">No Events Scheduled</h3>
         <p className="text-slate-400 mb-6">Browse upcoming community events and register to connect with fellow leaders.</p>
-        <button onClick={() => navigate?.('community', { tab: 'browse' })} className="px-6 py-2.5 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition-colors">Browse Events</button>
+        <button onClick={() => navigate?.('community', { tab: 'browse' })} className="px-6 py-2.5 bg-corporate-teal text-white font-bold rounded-lg hover:bg-teal-700 transition-colors">Browse Events</button>
       </div>
     );
   }
@@ -235,7 +236,7 @@ const MyEventsSection = ({ registrations = [], sessions = [], onCancel, navigate
   return (
     <div className="space-y-6">
       {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-3 p-4 bg-gradient-to-r from-purple-50 to-slate-50 dark:from-purple-900/20 dark:to-slate-800 rounded-xl">
+      <div className="grid grid-cols-3 gap-3 p-4 bg-gradient-to-r from-teal-50 to-slate-50 dark:from-teal-900/20 dark:to-slate-800 rounded-xl">
         <div className="text-center">
           <p className="text-2xl font-bold text-blue-600">{scheduledRegistrations.length}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">Upcoming</p>
@@ -368,7 +369,7 @@ const CommunityHub = () => {
 
         {/* Tab Content */}
         {loading ? (
-          <div className="flex justify-center p-12"><Loader className="w-8 h-8 animate-spin text-purple-600" /></div>
+          <div className="flex justify-center p-12"><Loader className="w-8 h-8 animate-spin text-corporate-teal" /></div>
         ) : (
           <>
             {activeTab === 'my' && isFeatureEnabled('community-my-registrations') && (
@@ -398,13 +399,13 @@ const CommunityHub = () => {
             {/* Resources tab content hidden for now
             {activeTab === 'resources' && (
               <div className="space-y-6">
-                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 text-white">
+                <div className="bg-gradient-to-r from-corporate-navy to-corporate-teal rounded-2xl p-6 text-white">
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><MessageSquare className="w-7 h-7" /></div>
                     <div className="flex-grow">
                       <h3 className="text-xl font-bold mb-2">Community Feed</h3>
-                      <p className="text-purple-100 text-sm mb-4">Share wins, ask questions, and engage with fellow leaders in the community feed.</p>
-                      <button onClick={() => navigate('community-feed')} className="px-4 py-2 bg-white text-purple-600 font-bold rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2"><Play className="w-4 h-4" /> View Feed</button>
+                      <p className="text-teal-100 text-sm mb-4">Share wins, ask questions, and engage with fellow leaders in the community feed.</p>
+                      <button onClick={() => navigate('community-feed')} className="px-4 py-2 bg-white text-corporate-teal font-bold rounded-lg hover:bg-teal-50 transition-colors flex items-center gap-2"><Play className="w-4 h-4" /> View Feed</button>
                     </div>
                   </div>
                 </div>

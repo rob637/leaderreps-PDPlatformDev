@@ -3,9 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BookOpen, ShieldCheck, Film, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText, Layers, Dumbbell, Wrench } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { PageLayout, PageGrid, NoWidgetsEnabled } from '../ui';
+import { PageLayout, NoWidgetsEnabled } from '../ui';
 import { DashboardCard } from '../ui/DashboardCard';
-import { ContentListItem } from '../ui/ContentListItem';
 import { collection, query, where, getCountFromServer } from '../../services/firebaseUtils';
 import { UNIFIED_COLLECTION } from '../../services/unifiedContentService';
 import { useFeatures } from '../../providers/FeatureProvider';
@@ -105,8 +104,8 @@ const Library = () => {
         description: 'Curated books and articles with actionable exercises.',
         icon: BookOpen,
         screen: 'read-reps-index',
-        color: 'text-corporate-navy',
-        bgColor: 'bg-corporate-navy/10'
+        color: 'text-corporate-teal',
+        bgColor: 'bg-corporate-teal/10'
       },
       {
         id: 'videos',
@@ -114,8 +113,8 @@ const Library = () => {
         description: 'Leadership videos, talks, and curated playlists.',
         icon: Film,
         screen: 'videos-index',
-        color: 'text-corporate-orange',
-        bgColor: 'bg-corporate-orange/10'
+        color: 'text-corporate-teal',
+        bgColor: 'bg-corporate-teal/10'
       },
       {
         id: 'documents',
@@ -123,8 +122,8 @@ const Library = () => {
         description: 'Reference materials, guides, and whitepapers.',
         icon: FileText,
         screen: 'documents-index',
-        color: 'text-slate-600 dark:text-slate-300',
-        bgColor: 'bg-slate-100 dark:bg-slate-700'
+        color: 'text-corporate-teal',
+        bgColor: 'bg-corporate-teal/10'
       },
       {
         id: 'tools',
@@ -177,14 +176,31 @@ const Library = () => {
     >
       <WidgetRenderer widgetId="content-library-main" scope={scope}>
         {libraryItems.length > 0 ? (
-          <div className="flex flex-col gap-3 max-w-3xl mx-auto">
-            {libraryItems.map(item => (
-              <ContentListItem 
-                key={item.id}
-                {...item}
-                onClick={() => handleCardClick(item)}
-              />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {libraryItems.map(item => {
+              const ItemIcon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleCardClick(item)}
+                  className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 text-left hover:shadow-card-hover hover:border-corporate-teal/50 transition-all duration-200 group"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${item.bgColor || 'bg-corporate-teal/10'}`}>
+                      {ItemIcon && <ItemIcon className={`w-6 h-6 ${item.color || 'text-corporate-teal'}`} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-bold text-corporate-navy dark:text-white mb-1 group-hover:text-corporate-teal transition-colors">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         ) : (
           <NoWidgetsEnabled moduleName="Content" />

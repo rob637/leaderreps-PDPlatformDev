@@ -89,5 +89,9 @@ console.log(`
    Export: ${exportFile}
 
    All environments now have the same content!
+
+   NOTE: Storage URLs are left pointing to prod — this is correct.
+   All envs read media directly from prod storage.
+   Do NOT run storage:rewrite-urls or storage:copy.
 ════════════════════════════════════════════════════════════
 `);

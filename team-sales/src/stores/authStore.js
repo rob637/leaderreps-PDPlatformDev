@@ -8,11 +8,11 @@ import { auth } from '../lib/firebase';
 
 // Team members who have access to Team Sales Hub
 const AUTHORIZED_EMAILS = [
-  'rob@leaderreps.com',
+  'rob@leaderreps.biz',
   'rob@sagecg.com',
-  'ryan@leaderreps.com',
-  'jeff@leaderreps.com',
-  'cristina@leaderreps.com',
+  'ryan@leaderreps.biz',
+  'jeff@leaderreps.biz',
+  'cristina@leaderreps.biz',
   // Add more team members as needed
 ];
 

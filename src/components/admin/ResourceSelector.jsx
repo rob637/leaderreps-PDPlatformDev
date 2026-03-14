@@ -14,7 +14,8 @@ import {
   Layers,
   ClipboardEdit,
   ListVideo,
-  Dumbbell
+  Dumbbell,
+  Wrench
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { getAllContentAdmin, CONTENT_COLLECTIONS } from '../../services/contentService';
@@ -61,15 +62,16 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
         switch (activeCategory) {
           case 'content':
-            // Fetch from Wrappers (Videos, Docs, Courses) and Unified (Read & Reps, Interactive)
+            // Fetch from Wrappers (Videos, Docs, Courses) and Unified (Read & Reps, Interactive, Tools)
             collections = [
               CONTENT_COLLECTIONS.COURSES
             ];
-            // Fetch Read & Reps, Videos, Documents, and Interactive from Unified Collection
+            // Fetch Read & Reps, Videos, Documents, Tools, and Interactive from Unified Collection
             unifiedTypes = [
               UNIFIED_TYPES?.READ_REP || 'READ_REP',
               UNIFIED_TYPES?.VIDEO || 'VIDEO',
               UNIFIED_TYPES?.DOCUMENT || 'DOCUMENT',
+              UNIFIED_TYPES?.TOOL || 'TOOL',
               UNIFIED_TYPES?.INTERACTIVE || 'INTERACTIVE'
             ];
             console.log('[ResourceSelector] Fetching Unified Types:', unifiedTypes);
@@ -143,9 +145,10 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               if (itemType === (UNIFIED_TYPES?.READ_REP || 'READ_REP')) type = 'read_rep';
               else if (itemType === (UNIFIED_TYPES?.VIDEO || 'VIDEO') || itemType === (UNIFIED_TYPES?.REP || 'REP')) type = 'video';
               else if (itemType === (UNIFIED_TYPES?.DOCUMENT || 'DOCUMENT')) type = 'document';
+              else if (itemType === (UNIFIED_TYPES?.TOOL || 'TOOL')) type = 'tool';
               else if (itemType === (UNIFIED_TYPES?.INTERACTIVE || 'INTERACTIVE')) type = 'interactive';
               
-              return { 
+              return {
                 ...item, 
                 resourceType: type,
                 url: item.url || item.videoUrl || item.link || item.details?.externalUrl || item.metadata?.externalUrl || ''
@@ -279,6 +282,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
       case 'video': return Film;
       case 'reading': return BookOpen;
       case 'document': return FileText;
+      case 'tool': return Wrench;
       case 'course': return Layers;
       case 'community': return Users;
       case 'coaching': return MessageSquare;
@@ -305,6 +309,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
               selectedResource.resourceType === 'video' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
               selectedResource.resourceType === 'reading' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
               selectedResource.resourceType === 'document' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' :
+              selectedResource.resourceType === 'tool' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' :
               selectedResource.resourceType === 'course' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' :
               selectedResource.resourceType === 'community' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
               selectedResource.resourceType === 'coaching' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' :
@@ -416,6 +421,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
                           resource.resourceType === 'video' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
                           resource.resourceType === 'reading' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
                           resource.resourceType === 'document' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' :
+                          resource.resourceType === 'tool' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' :
                           resource.resourceType === 'course' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' :
                           resource.resourceType === 'community' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
                           resource.resourceType === 'coaching' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' :

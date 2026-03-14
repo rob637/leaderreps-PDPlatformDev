@@ -4,8 +4,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Dumbbell, CheckCircle, Clock,
-  ChevronRight, FileText
+  Zap, CheckCircle, Clock,
+  ChevronRight, FileText, RotateCw
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useAppServices } from '../../services/useAppServices';
@@ -25,6 +25,7 @@ const ConditioningWidget = ({ helpText }) => {
   const [weeklyStatus, setWeeklyStatus] = useState(null);
   const [activeCount, setActiveCount] = useState(0);
   const [pendingDebriefs, setPendingDebriefs] = useState(0);
+  const [dueFollowUps, setDueFollowUps] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load quick status data
@@ -35,13 +36,15 @@ const ConditioningWidget = ({ helpText }) => {
     }
 
     try {
-      const [status, active] = await Promise.all([
+      const [status, active, dueReminders] = await Promise.all([
         conditioningService.getWeeklyStatus(db, userId, null, cohortId),
-        conditioningService.getActiveReps(db, userId, cohortId)
+        conditioningService.getActiveReps(db, userId, cohortId),
+        conditioningService.getDueFollowUpReminders(db, userId).catch(() => [])
       ]);
       
       setWeeklyStatus(status);
       setActiveCount(active?.length || 0);
+      setDueFollowUps(dueReminders?.length || 0);
       
       // Count completed reps without evidence (pending debriefs)
       const completedReps = (status?.reps || []).filter(r => r.status === REP_STATUS.COMPLETED);
@@ -67,13 +70,13 @@ const ConditioningWidget = ({ helpText }) => {
     return (
       <Card 
         title="Conditioning" 
-        icon={Dumbbell} 
+        icon={Zap} 
         accent="TEAL"
         helpText={helpText}
         data-repup-step="conditioning"
       >
         <div className="text-center py-2">
-          <Target className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+          <Zap className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
           <p className="text-slate-600 dark:text-slate-400 text-sm">
             Conditioning is available when you're enrolled in a cohort program.
           </p>
@@ -97,7 +100,7 @@ const ConditioningWidget = ({ helpText }) => {
   return (
     <Card 
       title="Conditioning Real Rep" 
-      icon={Dumbbell} 
+      icon={Zap} 
       accent="TEAL"
       helpText={helpText}
       data-repup-step="conditioning"
@@ -126,7 +129,7 @@ const ConditioningWidget = ({ helpText }) => {
                 </>
               ) : (
                 <>
-                  <Dumbbell className="w-5 h-5 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+                  <Zap className="w-5 h-5 text-slate-500 dark:text-slate-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-slate-700 dark:text-slate-200 text-sm">Extra Practice</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Add more reps beyond your action items</p>
@@ -142,6 +145,16 @@ const ConditioningWidget = ({ helpText }) => {
                 <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                 <span className="text-xs text-amber-700 dark:text-amber-300">
                   <strong>{pendingDebriefs}</strong> rep{pendingDebriefs !== 1 ? 's' : ''} need{pendingDebriefs === 1 ? 's' : ''} debrief
+                </span>
+              </div>
+            )}
+
+            {/* Follow-Up Reminders Due */}
+            {dueFollowUps > 0 && (
+              <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <RotateCw className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                <span className="text-xs text-blue-700 dark:text-blue-300">
+                  <strong>{dueFollowUps}</strong> follow-up{dueFollowUps !== 1 ? 's' : ''} due
                 </span>
               </div>
             )}

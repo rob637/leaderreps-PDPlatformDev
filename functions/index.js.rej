@@ -1,0 +1,44 @@
+--- index.js
++++ index.js
+@@ -1842,9 +1842,39 @@
+     // V2 structured format has: what_said, their_response, response_type, outcome, what_went_well, what_different, reflection
+     const data = structured || responses || {};
+     
++    // Fetch previous rep coaching questions to avoid duplication (in-memory sort to avoid index requirements)
++    let previousQuestions = [];
++    const uid = request.auth?.uid;
++    if (uid) {
++      try {
++        const pastRepsSnap = await db.collection('users').doc(uid).collection('conditioning_reps')
++          .where('repType', '==', repType)
++          .get();
++        
++        if (!pastRepsSnap.empty) {
++          const reps = [];
++          pastRepsSnap.forEach(doc => {
++            const d = doc.data();
++            if (d.status === 'debriefed' || d.status === 'loop_closed') {
++              reps.push({
++                t: d.debriefedAt?.toMillis() ? d.debriefedAt.toMillis() : (d.createdAt?.toMillis() || 0),
++                q: d.qualityAssessment?.coachingQuestions || []
++              });
++            }
++          });
++          reps.sort((a, b) => b.t - a.t);
++          if (reps.length > 0 && reps[0].q.length > 0) {
++            previousQuestions = reps[0].q;
++          }
++        }
++      } catch (err) {
++        logger.warn("Could not fetch previous rep questions", { error: err.message });
++      }
++    }
++
+     // Route rep-specific evaluations to dedicated assessment functions
+     if (repType === 'set_clear_expectations') {
+-      return await assessSCERep(data, person, repType);
++      return await assessSCERep(data, person, repType, previousQuestions);
+     }
+     if (repType === 'deliver_reinforcing_feedback') {
+-      return await assessDRFRep(data, person, repType);
++      return await assessDRFRep(data, person, repType, previousQuestions);

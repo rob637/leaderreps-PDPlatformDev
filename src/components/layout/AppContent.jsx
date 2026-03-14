@@ -15,6 +15,7 @@ import { SyncIndicator } from '../offline';
 import SkipLinks from '../accessibility/SkipLinks';
 import MobilePWABanner from '../ui/MobilePWABanner.jsx';
 import RepFloatingButton from '../rep/RepFloatingButton.jsx';
+import BugReportModal from '../modals/BugReportModal.jsx';
 
 const AppContent = ({
   currentScreen,
@@ -36,6 +37,7 @@ const AppContent = ({
   });
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isBugReportModalOpen, setIsBugReportModalOpen] = useState(false);
   
   // Ref for main scrollable content area - used for scroll-to-top on navigation
   const mainContentRef = useRef(null);
@@ -94,7 +96,7 @@ const AppContent = ({
   const currentYear = new Date().getFullYear();
 
   const isFullWidthScreen = currentScreen.startsWith('admin-') || 
-                           ['data-maintenance', 'debug-data'].includes(currentScreen);
+                           ['data-maintenance', 'debug-data', 'config-center', 'facilitator-center', 'system-center'].includes(currentScreen);
 
   return (
     <NavigationProvider
@@ -178,7 +180,7 @@ const AppContent = ({
             </div>
 
             {/* Footer - Hidden on mobile to save space, visible on desktop */}
-            <footer className="hidden md:block w-full text-center mt-auto border-t bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border-slate-100 dark:border-slate-700 p-5">
+            <footer className="hidden md:block w-full text-center mt-auto border-t bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border-slate-100 dark:border-slate-700 p-4">
               {/* Sync Status Indicator */}
               <div className="flex justify-center mb-3">
                 <SyncIndicator variant="badge" showWhenSynced={false} />
@@ -218,6 +220,14 @@ const AppContent = ({
                 >
                   Help Center
                 </button>
+                <span className="text-slate-300 dark:text-slate-600 self-center" aria-hidden="true">·</span>
+                <button
+                  onClick={() => setIsBugReportModalOpen(true)}
+                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 dark:text-slate-400 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  aria-label="Report a bug"
+                >
+                  Report Bug
+                </button>
               </nav>
             </footer>
             
@@ -233,6 +243,13 @@ const AppContent = ({
             
             {/* Rep Coach Floating Button - Admin only, both mobile and desktop */}
             <RepFloatingButton />
+
+            {/* Global Bug Report Modal */}
+            <BugReportModal 
+              isOpen={isBugReportModalOpen} 
+              onClose={() => setIsBugReportModalOpen(false)}
+              currentScreen={currentScreen}
+            />
           </main>
         </div>
       </div>

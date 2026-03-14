@@ -282,6 +282,25 @@ export const BREADCRUMB_MAP = {
     { label: 'Home', path: 'dashboard' },
     { label: 'Admin', path: null }
   ],
+  'admin-hub': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: null }
+  ],
+  'config-center': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'App Configuration', path: null }
+  ],
+  'facilitator-center': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'Trainer Ops', path: null }
+  ],
+  'system-center': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'System Admin', path: null }
+  ],
   'admin-content-home': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Admin', path: 'admin-portal' },

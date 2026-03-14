@@ -2,7 +2,9 @@ import React, { useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useUIStore } from '../stores/uiStore';
+import { usePersonaStore } from '../stores/personaStore';
 import CommandPalette from './CommandPalette';
+import PersonaSwitcher from './PersonaSwitcher';
 import {
   Users,
   LogOut,
@@ -31,8 +33,12 @@ const navItems = [
 const Layout = () => {
   const { user, signOut } = useAuthStore();
   const { sidebarCollapsed, toggleSidebar, openCommandPalette } = useUIStore();
+  const { getActivePersona, isActingAs, clearPersona } = usePersonaStore();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  const persona = getActivePersona(user?.email);
+  const actingAsOther = isActingAs(user?.email);
 
   // Global keyboard shortcut for command palette
   useEffect(() => {
@@ -135,6 +141,9 @@ const Layout = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Persona Switcher — always visible */}
+            <PersonaSwitcher />
+
             {/* Command Palette Trigger */}
             <button
               onClick={openCommandPalette}
@@ -148,6 +157,27 @@ const Layout = () => {
             </button>
           </div>
         </header>
+
+        {/* Acting-as warning banner — full width, impossible to miss */}
+        {actingAsOther && persona && (
+          <div 
+            className="flex items-center justify-between px-6 py-2 text-white text-sm font-semibold shadow-md"
+            style={{ backgroundColor: persona.color }}
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-xs font-bold">
+                {persona.initials}
+              </div>
+              <span>You are acting as <strong>{persona.name}</strong> — all actions will be attributed to {persona.name}</span>
+            </div>
+            <button
+              onClick={clearPersona}
+              className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-medium transition"
+            >
+              Switch back to me
+            </button>
+          </div>
+        )}
 
         {/* Page Content */}
         <main className="p-6">

@@ -8,6 +8,7 @@ import { useAppServices } from '../../services/useAppServices';
 import conditioningService, { REP_STATUS, getCurrentWeekId, COACH_PROMPTS } from '../../services/conditioningService';
 import { Card } from '../ui';
 import { TrainerNudgePanel, CoachPromptsPanel, RepDetailModal } from '../conditioning';
+import FacilitatorFeedbackPanel from './FacilitatorFeedbackPanel';
 import { getRepType } from '../../services/repTaxonomy';
 import { 
   Users, CheckCircle, AlertTriangle, Clock, RefreshCw,
@@ -120,7 +121,13 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
           isOpen={!!selectedRep}
           onClose={() => setSelectedRep(null)}
           rep={selectedRep}
-        />,
+          ownerUserId={summary.userId}
+        >
+          <FacilitatorFeedbackPanel
+            repId={selectedRep.id}
+            repOwnerId={summary.userId}
+          />
+        </RepDetailModal>,
         document.body
       )}
     </div>
@@ -228,7 +235,7 @@ const DIMENSION_CONFIG = {
   // Legacy V1 dimensions
   'clear_request': { icon: Target, label: 'Clear Request', color: 'green' },
   'named_commitment': { icon: Handshake, label: 'Named Commitment', color: 'amber' },
-  'reflection': { icon: Lightbulb, label: 'Reflection', color: 'purple' }
+  'reflection': { icon: Lightbulb, label: 'Reflection', color: 'corporate-teal' }
 };
 
 const QualityMetrics = ({ cohortQualityStats }) => {
@@ -236,9 +243,11 @@ const QualityMetrics = ({ cohortQualityStats }) => {
   
   const { 
     totalWithEvidence, 
-    level1Rate, 
+    level1Rate,
+    level1Count,
     qualityRate, 
-    dimensionStats 
+    dimensionStats,
+    meetsStandardCount
   } = cohortQualityStats;
   
   if (totalWithEvidence === 0) {
@@ -252,6 +261,9 @@ const QualityMetrics = ({ cohortQualityStats }) => {
       </Card>
     );
   }
+  
+  // Calculate how many passed quality out of total debriefs
+  const passedCount = meetsStandardCount || Math.round((qualityRate / 100) * totalWithEvidence);
   
   return (
     <Card className="p-4 mb-6">
@@ -267,8 +279,8 @@ const QualityMetrics = ({ cohortQualityStats }) => {
           <div className="text-xs text-gray-500 dark:text-gray-400">Debriefs</div>
         </div>
         <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <div className="text-2xl font-bold text-blue-600">{level1Rate}%</div>
-          <div className="text-xs text-blue-600">Level 1 Rate</div>
+          <div className="text-2xl font-bold text-blue-600">{passedCount}</div>
+          <div className="text-xs text-blue-600">Passed Review</div>
         </div>
         <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
           <div className="text-2xl font-bold text-green-600">{qualityRate}%</div>
@@ -287,7 +299,7 @@ const QualityMetrics = ({ cohortQualityStats }) => {
             blue: 'bg-blue-500',
             green: 'bg-green-500',
             amber: 'bg-amber-500',
-            purple: 'bg-purple-500'
+            teal: 'bg-corporate-teal'
           }[config.color] || 'bg-gray-500';
           
           return (
@@ -571,7 +583,9 @@ const ConditioningDashboard = () => {
       setCohortQualityStats({
         totalWithEvidence,
         level1Rate: totalWithEvidence > 0 ? Math.round((totalLevel1 / totalWithEvidence) * 100) : 0,
+        level1Count: totalLevel1,
         qualityRate: totalWithEvidence > 0 ? Math.round((totalMeetsStandard / totalWithEvidence) * 100) : 0,
+        meetsStandardCount: totalMeetsStandard,
         dimensionStats: aggregatedDimensions
       });
       

@@ -62,7 +62,7 @@ const RegistrationCard = ({ registration, sessions = [], onCancel, onReschedule 
   
   const getIconBg = (type) => {
     switch (type) {
-      case 'leader_circle': return 'bg-purple-50 dark:bg-purple-900/20';
+      case 'leader_circle': return 'bg-slate-50 dark:bg-slate-800/40';
       case 'community_event': return 'bg-orange-50 dark:bg-orange-900/20';
       case 'accountability_pod': return 'bg-teal-50 dark:bg-teal-900/20';
       case 'mastermind': return 'bg-blue-50 dark:bg-blue-900/20';
@@ -72,7 +72,7 @@ const RegistrationCard = ({ registration, sessions = [], onCancel, onReschedule 
   
   const getIconColor = (type) => {
     switch (type) {
-      case 'leader_circle': return 'text-purple-600';
+      case 'leader_circle': return 'text-corporate-teal';
       case 'community_event': return 'text-orange-600';
       case 'accountability_pod': return 'text-teal-600';
       case 'mastermind': return 'text-blue-600';
@@ -103,7 +103,7 @@ const RegistrationCard = ({ registration, sessions = [], onCancel, onReschedule 
       
       {registration.status === 'REGISTERED' && (
         <div className="mt-3 flex gap-2">
-          {session?.meetingLink && isToday && <a href={session.meetingLink} target="_blank" rel="noopener noreferrer" className="flex-1 py-2 bg-purple-600 text-white text-center text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors">Join Event</a>}
+          {session?.meetingLink && isToday && <a href={session.meetingLink} target="_blank" rel="noopener noreferrer" className="flex-1 py-2 bg-corporate-teal text-white text-center text-sm font-medium rounded-lg hover:bg-corporate-teal/90 transition-colors">Join Event</a>}
           {onReschedule && (
             <button 
               onClick={() => onReschedule(registration)} 
@@ -122,12 +122,12 @@ const RegistrationCard = ({ registration, sessions = [], onCancel, onReschedule 
 
 const PastEventCard = ({ session }) => (
   <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-    <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center"><Play className="w-4 h-4 text-purple-600" /></div>
+    <div className="w-8 h-8 bg-rep-teal-light dark:bg-slate-800/40 rounded-full flex items-center justify-center"><Play className="w-4 h-4 text-corporate-teal" /></div>
     <div className="flex-1 min-w-0">
       <p className="font-medium text-slate-700 dark:text-slate-200 truncate">{session.title}</p>
       <p className="text-xs text-slate-400">{formatSessionDate(session.date)}</p>
     </div>
-    {session.replayUrl && <a href={session.replayUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-purple-600 hover:text-purple-800">Replay →</a>}
+    {session.replayUrl && <a href={session.replayUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-corporate-teal hover:text-corporate-teal-dark">Replay →</a>}
   </div>
 );
 
@@ -181,7 +181,7 @@ const CommunityMyRegistrationsWidget = ({ scope = {}, helpText }) => {
   
   if (loading) {
     return (
-      <Card title="My Events" icon={Users} accent="PURPLE" helpText={helpText}>
+      <Card title="My Events" icon={Users} accent="NAVY" helpText={helpText}>
         <div className="animate-pulse space-y-4">
           <div className="h-24 bg-slate-100 dark:bg-slate-700 rounded-xl"></div>
           <div className="h-24 bg-slate-100 dark:bg-slate-700 rounded-xl"></div>
@@ -192,19 +192,19 @@ const CommunityMyRegistrationsWidget = ({ scope = {}, helpText }) => {
   
   if (!hasAny) {
     return (
-      <Card title="My Events" icon={Users} accent="PURPLE" helpText={helpText}>
+      <Card title="My Events" icon={Users} accent="NAVY" helpText={helpText}>
         <div className="text-center py-8">
           <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <h3 className="font-bold text-slate-600 dark:text-slate-300 mb-1">No Events Yet</h3>
           <p className="text-sm text-slate-400 mb-4">Browse upcoming community events and register to connect with fellow leaders.</p>
-          <button onClick={() => navigate?.('community')} className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors">Browse Events</button>
+          <button onClick={() => navigate?.('community')} className="px-4 py-2 bg-corporate-teal text-white text-sm font-medium rounded-lg hover:bg-corporate-teal/90 transition-colors">Browse Events</button>
         </div>
       </Card>
     );
   }
   
   return (
-    <Card title="My Events" icon={Users} accent="PURPLE" helpText={helpText}>
+    <Card title="My Events" icon={Users} accent="NAVY" helpText={helpText}>
       <div className="grid grid-cols-3 gap-2 mb-6">
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
           <p className="text-xl font-bold text-blue-700 dark:text-blue-300">{scheduledRegistrations.length}</p>
@@ -224,7 +224,7 @@ const CommunityMyRegistrationsWidget = ({ scope = {}, helpText }) => {
         <div className="mb-4">
           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2 flex items-center gap-1"><Calendar className="w-3 h-3" />Upcoming ({scheduledRegistrations.length})</p>
           <div className="space-y-2">{scheduledRegistrations.slice(0, 3).map(reg => <RegistrationCard key={reg.id} registration={reg} sessions={sessions} onCancel={handleCancel} onReschedule={handleReschedule} />)}</div>
-          {scheduledRegistrations.length > 3 && <button onClick={() => navigate?.('community')} className="w-full mt-2 py-2 text-sm text-purple-600 font-medium hover:bg-purple-50 rounded-lg transition-colors flex items-center justify-center gap-1">View all {scheduledRegistrations.length}<ChevronRight className="w-4 h-4" /></button>}
+          {scheduledRegistrations.length > 3 && <button onClick={() => navigate?.('community')} className="w-full mt-2 py-2 text-sm text-corporate-teal font-medium hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-center gap-1">View all {scheduledRegistrations.length}<ChevronRight className="w-4 h-4" /></button>}
         </div>
       )}
       

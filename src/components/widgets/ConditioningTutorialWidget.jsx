@@ -137,9 +137,9 @@ const MockupActiveRep = () => (
 
 // Debrief Form showing what to capture after executing
 const MockupDebrief = () => (
-  <div className="mt-4 bg-white dark:bg-slate-800 rounded-xl border-2 border-purple-200 dark:border-purple-700 p-4 shadow-sm">
+  <div className="mt-4 bg-white dark:bg-slate-800 rounded-xl border-2 border-slate-200 dark:border-slate-700 p-4 shadow-sm">
     <div className="flex items-center gap-2 mb-3">
-      <MessageSquare className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+      <MessageSquare className="w-5 h-5 text-corporate-navy dark:text-slate-300" />
       <span className="font-semibold text-gray-900 dark:text-white text-sm">Debrief Your Rep</span>
     </div>
     <div className="space-y-3">
@@ -274,7 +274,7 @@ const TUTORIAL_STEPS = [
     id: 'debrief',
     title: 'Step 4: Debrief',
     icon: MessageSquare,
-    iconColor: 'text-purple-600',
+    iconColor: 'text-corporate-navy',
     content: 'After executing your rep, you\'ll capture evidence: What happened? How did they respond? What was the outcome?',
     highlight: 'Quality matters more than quantity. One thoughtfully debriefed rep beats three rushed ones.',
     tip: 'Your trainer reviews your debriefs and may offer coaching nudges.',
@@ -555,7 +555,7 @@ const ConditioningTutorialWidget = ({ onComplete, onClose }) => {
             step.iconColor === 'text-amber-600' ? 'bg-amber-100 dark:bg-amber-900/30' :
             step.iconColor === 'text-orange-500' ? 'bg-orange-100 dark:bg-orange-900/30' :
             step.iconColor === 'text-green-600' ? 'bg-green-100 dark:bg-green-900/30' :
-            step.iconColor === 'text-purple-600' ? 'bg-purple-100 dark:bg-purple-900/30' :
+            step.iconColor === 'text-corporate-navy' ? 'bg-rep-navy-light dark:bg-slate-800/40' :
             step.iconColor === 'text-corporate-orange' ? 'bg-orange-100 dark:bg-orange-900/30' :
             'bg-gray-100 dark:bg-gray-700'
           }`}>

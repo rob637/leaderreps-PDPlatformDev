@@ -485,6 +485,7 @@ export const useDailyPlan = () => {
             startDate: data.startDate,
             timezone: data.timezone, // Load cohort timezone
             facilitator: data.facilitator,
+            facilitators: data.facilitators, // Array of all trainers assigned to cohort
             settings: data.settings
           });
           console.log('[useDailyPlan] Loaded cohort:', data.name, 'timezone:', data.timezone);
@@ -1022,6 +1023,7 @@ export const useDailyPlan = () => {
                          (cohortData?.startDate?.seconds ? new Date(cohortData.startDate.seconds * 1000) :
                          cohortData?.startDate ? new Date(cohortData.startDate) : null),
         facilitator: cohortData?.facilitator,
+        facilitators: cohortData?.facilitators, // Array of all trainers assigned to cohort
         // NOTE: Progress tracking is purely completion-based via prepRequirementsComplete
         // There are no "days" or "login counts" in the prep phase
         totalActions: cumulativeActions.length

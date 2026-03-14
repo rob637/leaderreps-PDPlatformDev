@@ -4,7 +4,7 @@ import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useContentAccess } from '../../../hooks/useContentAccess';
 import { collection, query, where, onSnapshot, getDocs } from '../../../services/firebaseUtils';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
-import { Loader, Search, SlidersHorizontal, Lock, Zap } from 'lucide-react';
+import { Loader, Search, SlidersHorizontal, Lock } from 'lucide-react';
 import SkillFilter from '../../ui/SkillFilter.jsx';
 import { ContentListItem } from '../../ui/ContentListItem.jsx';
 
@@ -146,27 +146,6 @@ const ContentListView = ({
       navigate={navigate}
     >
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        
-        {/* Hero Section */}
-        <div className={`rounded-2xl p-8 text-white mb-8 shadow-lg bg-gradient-to-r ${
-          type === 'PROGRAM' ? 'from-corporate-navy to-slate-700' :
-          type === 'WORKOUT' ? 'from-corporate-orange to-amber-500' :
-          type === 'READ_REP' ? 'from-corporate-navy to-slate-700' :
-          type === 'VIDEO' ? 'from-corporate-orange to-amber-500' :
-          type === 'TOOL' ? 'from-corporate-teal to-emerald-600' :
-          type === 'DOCUMENT' ? 'from-corporate-navy to-slate-700' :
-          'from-corporate-navy to-slate-700'
-        }`}>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 bg-white/20 dark:bg-slate-800/20 rounded-xl flex items-center justify-center">
-              {Icon ? <Icon className="w-7 h-7" /> : <Zap className="w-7 h-7" />}
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold">{title}</h1>
-              <p className="opacity-90">{subtitle}</p>
-            </div>
-          </div>
-        </div>
 
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">

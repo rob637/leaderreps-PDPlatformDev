@@ -21,7 +21,7 @@ import { Timestamp } from 'firebase/firestore';
 // STEP CONFIGURATION
 // ============================================
 const TOTAL_STEPS = 5;
-const STEP_LABELS = ['Rep Type', 'With', 'Context', 'Intent + Time', 'Lock In'];
+const STEP_LABELS = ['Rep Type', 'With', 'Situation', 'When', 'Commit'];
 
 // ============================================
 // MAIN FORM COMPONENT
@@ -30,7 +30,9 @@ const PlannedRepForm = ({
   onSubmit, 
   onClose, 
   isLoading,
-  // Milestone-based unlocking props
+  // Session-based unlocking (primary)
+  sessionAttendance = null,
+  // Milestone-based unlocking props (legacy fallback)
   milestoneProgress = {},
   completedRepTypes = [],
   // Optional: preselected rep type (from action item click)
@@ -119,7 +121,7 @@ const PlannedRepForm = ({
   const isStepValid = useMemo(() => {
     switch (currentStep) {
       case 0: return !!repTypeId;
-      case 1: return person.trim().length > 0 || selectedRepType?.allowSoloRep;
+      case 1: return person.trim().length > 0;
       case 2: {
         // Must select a situation
         if (!selectedSituation) return false;
@@ -131,7 +133,7 @@ const PlannedRepForm = ({
       case 4: return true; // Commit step is always valid if we got here
       default: return true;
     }
-  }, [currentStep, repTypeId, person, selectedRepType, selectedSituation, customContext]);
+  }, [currentStep, repTypeId, person, selectedSituation, customContext]);
 
   // Navigation handlers
   const handleNext = () => {
@@ -205,7 +207,7 @@ const PlannedRepForm = ({
     
     const repData = {
       repType: repTypeId,
-      person: person.trim() || (selectedRepType?.allowSoloRep ? 'Solo Rep' : ''),
+      person: person.trim(),
       commitmentType: 'planned',
       situation: {
         selected: selectedSituation,
@@ -234,6 +236,7 @@ const PlannedRepForm = ({
             selectedCategory={selectedCategory}
             onCategoryChange={setSelectedCategory}
             headerText="Select the type of Real Rep"
+            sessionAttendance={sessionAttendance}
             milestoneProgress={milestoneProgress}
             completedRepTypes={completedRepTypes}
           />
@@ -243,7 +246,7 @@ const PlannedRepForm = ({
         return (
           <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">
-              Who will you have this rep with?
+              Who will you complete this rep with?
             </label>
             <input
               ref={personInputRef}
@@ -251,15 +254,10 @@ const PlannedRepForm = ({
               value={person}
               onChange={(e) => setPerson(e.target.value)}
               placeholder="Enter their name..."
-              className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 dark:bg-slate-800 dark:text-white"
+              className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 bg-white text-slate-900 dark:bg-slate-800 dark:text-white"
             />
-            {selectedRepType?.allowSoloRep && (
-              <p className="text-xs text-gray-500 dark:text-slate-400">
-                This rep type can be done solo. Leave blank if not involving another person.
-              </p>
-            )}
-            {nextAttempted && !isStepValid && !selectedRepType?.allowSoloRep && (
-              <p className="text-sm text-red-600">Please enter a name</p>
+            {nextAttempted && !isStepValid && (
+              <p className="text-sm text-corporate-orange">Please enter a name</p>
             )}
           </div>
         );
@@ -274,6 +272,7 @@ const PlannedRepForm = ({
             onCustomContextChange={setCustomContext}
             promptText="Which best describes this situation?"
             isInMoment={false}
+            error={nextAttempted && !isStepValid ? 'Please select a situation' : null}
           />
         );
         
@@ -322,7 +321,7 @@ const PlannedRepForm = ({
                 onChange={(e) => setCustomDeadline(e.target.value)}
                 min={today}
                 max={maxDeadlineStr}
-                className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 dark:bg-slate-800 dark:text-white dark:[color-scheme:dark]"
+                className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 bg-white text-slate-900 dark:bg-slate-800 dark:text-white dark:[color-scheme:dark]"
               />
             )}
           </div>
@@ -385,7 +384,7 @@ const PlannedRepForm = ({
     <ConditioningModal
       isOpen={true}
       onClose={onClose}
-      title="Lock In Your Real Rep"
+      title="Commit to your Real Rep"
       subtitle={selectedRepType ? selectedRepType.label : 'What Real Rep will you own?'}
       currentStep={currentStep}
       totalSteps={TOTAL_STEPS}
@@ -403,7 +402,7 @@ const PlannedRepForm = ({
           {currentStep < TOTAL_STEPS - 1 ? (
             <Button
               onClick={handleNext}
-              disabled={!isStepValid && nextAttempted}
+              disabled={!isStepValid}
               className="bg-corporate-teal hover:bg-corporate-teal/90 text-white"
             >
               Next
@@ -414,7 +413,7 @@ const PlannedRepForm = ({
               disabled={isLoading}
               className="bg-corporate-teal hover:bg-corporate-teal/90 text-white"
             >
-              {isLoading ? 'Committing...' : 'Commit'}
+              {isLoading ? 'Committing...' : 'Commit to the Rep'}
             </Button>
           )}
         </div>

@@ -53,7 +53,8 @@ import SkipLinks from './components/accessibility/SkipLinks.jsx';
 
 // Admin-only screens that shouldn't be restored for regular users
 const ADMIN_ONLY_SCREENS = [
-  'admin-portal', 'admin-functions', 'admin-data-maintenance', 
+  'admin-portal', 'admin-hub', 'config-center', 'facilitator-center', 'system-center',
+  'admin-functions', 'admin-data-maintenance', 
   'admin-content-home', 'admin-content-manager', 'admin-wrapper-document',
   'admin-wrapper-video', 'admin-wrapper-course', 'admin-wrapper-readrep',
   'admin-wrapper-book', 'admin-wrapper-interactive', 'test-center'

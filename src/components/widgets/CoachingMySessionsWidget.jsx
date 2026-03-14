@@ -19,7 +19,16 @@ import SessionPickerModal from '../coaching/SessionPickerModal';
 
 const formatSessionDate = (dateString) => {
   if (!dateString) return 'TBD';
-  const date = new Date(dateString);
+  
+  // Parse YYYY-MM-DD as local time to avoid timezone shift
+  let date;
+  if (typeof dateString === 'string' && dateString.includes('-') && dateString.length === 10) {
+    const [y, m, d] = dateString.split('-');
+    date = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+  } else {
+    date = new Date(dateString);
+  }
+  
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
@@ -56,7 +65,18 @@ const getSessionIcon = (sessionType) => {
 
 const RegistrationCard = ({ registration, sessions = [], onCancel, onReschedule }) => {
   const session = sessions.find(s => s.id === registration.sessionId);
-  const isToday = registration.sessionDate && new Date(registration.sessionDate).toDateString() === new Date().toDateString();
+  // Parse session date properly to avoid timezone issues
+  let sessionDateObj = null;
+  if (registration.sessionDate) {
+    const ds = registration.sessionDate;
+    if (typeof ds === 'string' && ds.includes('-') && ds.length === 10) {
+      const [y, m, d] = ds.split('-');
+      sessionDateObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+    } else {
+      sessionDateObj = new Date(ds);
+    }
+  }
+  const isToday = sessionDateObj && sessionDateObj.toDateString() === new Date().toDateString();
   const Icon = getSessionIcon(registration.sessionType);
   const normalizedStatus = (registration.status || '').toLowerCase();
   
@@ -122,12 +142,12 @@ const RegistrationCard = ({ registration, sessions = [], onCancel, onReschedule 
 
 const PastSessionCard = ({ session }) => (
   <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-    <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center"><Play className="w-4 h-4 text-purple-600" /></div>
+    <div className="w-8 h-8 bg-rep-teal-light dark:bg-slate-800/40 rounded-full flex items-center justify-center"><Play className="w-4 h-4 text-corporate-teal" /></div>
     <div className="flex-1 min-w-0">
       <p className="font-medium text-slate-700 dark:text-slate-200 truncate">{session.title}</p>
       <p className="text-xs text-slate-400">{formatSessionDate(session.date)}</p>
     </div>
-    {session.replayUrl && <a href={session.replayUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-purple-600 hover:text-purple-800">Replay →</a>}
+    {session.replayUrl && <a href={session.replayUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-corporate-teal hover:text-corporate-teal-dark">Replay →</a>}
   </div>
 );
 

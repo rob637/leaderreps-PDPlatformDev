@@ -300,7 +300,6 @@ Keep responses concise (3-5 sentences), actionable, and directly answer the ques
                 {(book.details?.pdfUrl || book.metadata?.pdfUrl) ? (
                    (() => {
                      const pdfUrl = book.details?.pdfUrl || book.metadata?.pdfUrl;
-                     // Check if this is a Firebase Storage URL (which requires auth and can't use gview)
                      const isFirebaseStorage = pdfUrl.includes('firebasestorage.googleapis.com') || 
                                                pdfUrl.includes('firebasestorage.app') ||
                                                pdfUrl.includes('token=');

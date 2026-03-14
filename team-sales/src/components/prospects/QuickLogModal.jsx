@@ -6,6 +6,7 @@ import {
 import { useActivitiesStore } from '../../stores/prospectActivitiesStore';
 import { useTasksStore } from '../../stores/tasksStore';
 import { useAuthStore } from '../../stores/authStore';
+import { usePersonaStore } from '../../stores/personaStore';
 import useGmailStore from '../../stores/gmailStore';
 import * as gmail from '../../lib/gmail';
 import { 
@@ -38,6 +39,9 @@ const getIconForType = (type) => {
 
 const QuickLogModal = ({ prospect, initialType = null, onClose }) => {
   const { user } = useAuthStore();
+  const { getActiveEmail, getActivePersona } = usePersonaStore();
+  const activeEmail = getActiveEmail(user?.email);
+  const activePersona = getActivePersona(user?.email);
   const { addActivity } = useActivitiesStore();
   const { addTask } = useTasksStore();
   const { connectedAccounts, loadConnectedAccounts } = useGmailStore();
@@ -73,12 +77,20 @@ const QuickLogModal = ({ prospect, initialType = null, onClose }) => {
     loadConnectedAccounts();
   }, [loadConnectedAccounts]);
 
-  // Set default sender when accounts load
+  // Set default sender based on active persona when accounts load
   useEffect(() => {
-    if (connectedAccounts.length > 0 && !selectedSender) {
-      setSelectedSender(connectedAccounts[0].email);
+    if (connectedAccounts.length > 0) {
+      const personaName = activePersona?.name?.toLowerCase();
+      const personaMatch = personaName
+        ? connectedAccounts.find(a => a.email?.toLowerCase().includes(personaName))
+        : null;
+      if (personaMatch) {
+        setSelectedSender(personaMatch.email);
+      } else if (!selectedSender) {
+        setSelectedSender(connectedAccounts[0].email);
+      }
     }
-  }, [connectedAccounts, selectedSender]);
+  }, [connectedAccounts, activePersona]);
   
   // Follow-up task state
   const [followUpTask, setFollowUpTask] = useState({
@@ -160,7 +172,7 @@ const QuickLogModal = ({ prospect, initialType = null, onClose }) => {
         activityData.content = formData.content || 'Sent LinkedIn connection request';
       }
       
-      await addActivity(activityData, user.email, user.displayName || user.email.split('@')[0]);
+      await addActivity(activityData, activeEmail, activePersona?.name || user.displayName || user.email.split('@')[0]);
       
       // Add follow-up task if enabled
       if (followUpTask.enabled && followUpTask.title.trim()) {
@@ -171,7 +183,7 @@ const QuickLogModal = ({ prospect, initialType = null, onClose }) => {
           dueDate: followUpTask.dueDate || '',
           prospectId: prospect.id,
           prospectName,
-        }, user.email);
+        }, activeEmail);
         toast.success('Activity logged with follow-up task');
       } else {
         toast.success('Activity logged');

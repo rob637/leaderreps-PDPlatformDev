@@ -13,6 +13,7 @@ import { RepDetailModal } from '../conditioning';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import conditioningService, { REP_STATUS, REP_TYPES, getCurrentWeekId, getWeekBoundaries } from '../../services/conditioningService';
+import { getRepTypeV2 } from '../../services/repTaxonomy';
 
 const ConditioningHistoryWidget = ({ helpText }) => {
   const { user, db, developmentPlanData } = useAppServices();
@@ -116,8 +117,27 @@ const ConditioningHistoryWidget = ({ helpText }) => {
   };
 
   const getRepTypeLabel = (repType) => {
+    // Use the comprehensive repTaxonomy lookup
+    const typeInfo = getRepTypeV2(repType);
+    if (typeInfo?.shortLabel || typeInfo?.label) {
+      return typeInfo.shortLabel || typeInfo.label;
+    }
+    // Fallback to REP_TYPES from conditioningService
     const type = REP_TYPES.find(t => t.id === repType);
-    return type?.label || repType || 'Rep';
+    if (type?.label) return type.label;
+    // Last resort: prettify the ID
+    return repType?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Rep';
+  };
+
+  const getSituationSnippet = (rep) => {
+    // Extract the situation context from the rep
+    const situationRaw = rep.situation || rep.formData?.situation || '';
+    const situationText = typeof situationRaw === 'object' 
+      ? (situationRaw.selected || situationRaw.label || '') 
+      : situationRaw;
+    if (!situationText) return null;
+    // Truncate if too long
+    return situationText.length > 35 ? situationText.substring(0, 35) + '...' : situationText;
   };
 
   const currentWeekId = getCurrentWeekId();
@@ -253,13 +273,16 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                                 <span className="font-medium text-slate-800 dark:text-white">
                                   {rep.person || 'Unknown person'}
                                 </span>
-                                <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs rounded-full">
-                                  {getRepTypeLabel(rep.repType)}
-                                </span>
                                 {rep.status === REP_STATUS.CANCELED && (
                                   <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">
                                     Canceled
                                   </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {getRepTypeLabel(rep.repType)}
+                                {getSituationSnippet(rep) && (
+                                  <span className="italic"> — {getSituationSnippet(rep)}</span>
                                 )}
                               </div>
                               {rep.completedAt && (

@@ -1,7 +1,7 @@
 // src/components/layout/MobileBottomNav.jsx
 import React from 'react';
-import { LayoutDashboard, BookOpen, Megaphone } from 'lucide-react';
-import { CommunityIcon, LockerIcon } from '../icons';
+import { LayoutDashboard, BookOpen, Megaphone, Zap } from 'lucide-react';
+import { LockerIcon } from '../icons';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 
@@ -9,11 +9,10 @@ const MobileBottomNav = ({ currentScreen }) => {
   const { navigate } = useAppServices();
   const { currentPhase } = useDailyPlan();
   
-  // Community is only available during Ascent phase (post-start)
-  const isAscent = currentPhase?.id === 'post-start';
+  // Conditioning and Coaching are only available during Foundation phase (not Prep)
+  const isFoundationPhase = currentPhase?.id === 'start' || currentPhase?.id === 'post-start';
   
-  // 5 buttons: Dashboard, Community (Ascent only), Content, Coaching, Locker
-  // Note: AI Coach is desktop-only (not released to mobile)
+  // 5 core mobile buttons - some are phase-gated
   const navItems = [
     {
       id: 'dashboard',
@@ -21,13 +20,13 @@ const MobileBottomNav = ({ currentScreen }) => {
       icon: LayoutDashboard,
       screen: 'dashboard'
     },
-    // Community only shows during Ascent phase
-    ...(isAscent ? [{
-      id: 'community',
-      label: 'Community',
-      icon: CommunityIcon,
-      screen: 'community'
-    }] : []),
+    {
+      id: 'conditioning',
+      label: 'Conditioning',
+      icon: Zap,
+      screen: 'conditioning',
+      requiresFoundation: true  // Only show in Foundation phase
+    },
     {
       id: 'library',
       label: 'Content',
@@ -38,9 +37,9 @@ const MobileBottomNav = ({ currentScreen }) => {
       id: 'coaching',
       label: 'Coaching',
       icon: Megaphone,
-      screen: 'coaching-hub'
+      screen: 'coaching-hub',
+      requiresFoundation: true  // Only show in Foundation phase
     },
-    // Locker for all users - AI Coach not available on mobile
     {
       id: 'locker',
       label: 'Locker',
@@ -56,6 +55,21 @@ const MobileBottomNav = ({ currentScreen }) => {
     window.scrollTo(0, 0);
   };
 
+  // Filter items based on phase access and current screen
+  let visibleItems = navItems.filter((item) => {
+    // Filter out Foundation-only items during Prep phase
+    if (item.requiresFoundation && !isFoundationPhase) {
+      return false;
+    }
+    // Filter out the currently active screen
+    return item.screen !== currentScreen;
+  });
+  
+  // Ensure we only show 4 items max
+  if (visibleItems.length > 4) {
+    visibleItems = visibleItems.slice(0, 4);
+  }
+
   // Only show on mobile devices
   return (
     <nav 
@@ -65,7 +79,7 @@ const MobileBottomNav = ({ currentScreen }) => {
       aria-label="Mobile navigation"
     >
       <div className="flex justify-around items-center px-2 py-2">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentScreen === item.screen;
           

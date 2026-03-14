@@ -2,12 +2,18 @@
 /**
  * Rewrite Storage URLs in Firestore
  * 
- * After copying files between storage buckets, this script updates
- * all Firestore documents to use the correct bucket URL for the target environment.
+ * ⚠️  DEPRECATED — DO NOT USE for content syncs.
+ * 
+ * All environments (dev, test, prod) should use prod storage URLs directly.
+ * Content is authored in prod, and signed URLs / download tokens are tied
+ * to the prod bucket. Rewriting bucket names breaks signed URLs.
+ * 
+ * The content sync script (sync-content-from-prod.cjs) preserves prod URLs
+ * as-is, which is the correct behavior.
+ * 
+ * This script is kept for reference only.
  * 
  * Usage: node scripts/rewrite-storage-urls.cjs <environment>
- *        npm run data:rewrite-urls test
- *        npm run data:rewrite-urls prod
  */
 
 const admin = require('firebase-admin');

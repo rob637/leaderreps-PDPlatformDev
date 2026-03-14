@@ -62,6 +62,9 @@ const PrepPromptInput = ({
         onChange={(val) => onChange(val.slice(0, prompt.maxChars || 100))}
         placeholder="Quick answer..."
         rows={2}
+        required
+        minLength={10}
+        error={value.length > 0 && value.trim().length < 10 ? 'Minimum 10 characters' : null}
         autoFocus={isActive && promptIndex === 0}
         className="w-full"
       />
@@ -316,7 +319,7 @@ const QuickPrepModalV2 = ({
               className="flex items-center gap-1 bg-corporate-teal text-white"
             >
               <CheckCircle className="w-4 h-4" />
-              Done
+              I'm Ready
             </Button>
           )}
         </div>

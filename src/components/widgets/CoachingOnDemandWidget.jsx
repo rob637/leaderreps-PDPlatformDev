@@ -155,7 +155,7 @@ const CoachingOnDemandWidget = ({ scope = {}, helpText }) => {
   };
   
   return (
-    <Card title="On-Demand Practice" icon={BrainCircuit} accent="PURPLE" helpText={helpText}>
+    <Card title="On-Demand Practice" icon={BrainCircuit} accent="NAVY" helpText={helpText}>
       {/* Quick Start Grid */}
       <div className="mb-4">
         <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Quick Start</p>

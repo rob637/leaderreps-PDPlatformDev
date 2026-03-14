@@ -68,7 +68,7 @@ const CoachingCertificationQueue = () => {
       
       for (const sessionDoc of sessionsSnap.docs) {
         const session = { id: sessionDoc.id, ...sessionDoc.data() };
-        const sessionDate = new Date(session.date);
+        const sessionDate = session.date?.toDate?.() || new Date(session.date);
         
         // Get registrations for this session
         const regsRef = collection(db, COACHING_REGISTRATIONS_COLLECTION);
@@ -98,7 +98,11 @@ const CoachingCertificationQueue = () => {
       }
       
       // Sort by date descending (most recent first)
-      sessionList.sort((a, b) => new Date(b.date) - new Date(a.date));
+      sessionList.sort((a, b) => {
+        const da = a.date?.toDate?.() || new Date(a.date);
+        const db2 = b.date?.toDate?.() || new Date(b.date);
+        return (db2?.getTime?.() || 0) - (da?.getTime?.() || 0);
+      });
       
       setSessions(sessionList);
     } catch (error) {
@@ -204,7 +208,8 @@ const CoachingCertificationQueue = () => {
   // Format date
   const formatDate = (dateStr) => {
     if (!dateStr) return 'Unknown';
-    const date = new Date(dateStr);
+    const date = dateStr?.toDate?.() || new Date(dateStr);
+    if (isNaN(date.getTime())) return 'Unknown';
     return date.toLocaleDateString('en-US', { 
       weekday: 'short',
       month: 'short', 
@@ -349,7 +354,12 @@ const CoachingCertificationQueue = () => {
                     <div className="space-y-2">
                       {session.registrations.map(reg => {
                         // Generate calendar links for this registration
-                        const calendarLinks = generateSessionCalendarLinks(session, reg);
+                        let calendarLinks;
+                        try {
+                          calendarLinks = generateSessionCalendarLinks(session, reg);
+                        } catch (e) {
+                          calendarLinks = { google: '#', outlook: '#', downloadICS: () => {} };
+                        }
                         
                         return (
                         <div 

@@ -1,7 +1,7 @@
 {
   "name": "leader-reps-pdp",
   "private": true,
-  "version": "2.0.0",
+  "version": "3.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -46,6 +46,7 @@
     "e2e:suite:post": "E2E_ENV=test playwright test --project=suite-post",
     "e2e:suite:zones": "E2E_ENV=test playwright test --project=suite-zones",
     "e2e:suites:all": "E2E_ENV=test playwright test e2e-tests/suites/",
+    "data:refresh": "node scripts/data-refresh.cjs",
     "data:export": "node scripts/migrate-app-data.cjs export",
     "data:import": "node scripts/migrate-app-data.cjs import",
     "data:list": "node scripts/migrate-app-data.cjs list",

@@ -21,15 +21,22 @@ import { CommunityIcon, LockerIcon } from '../icons';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) => {
   const { identityStatement, habitAnchor, whyStatement, isAdmin, user, developmentPlanData } = useAppServices();
   const { prepRequirementsComplete, cohortData, currentPhase } = useDailyPlan();
+  const { zoneVisibility } = useDayBasedAccessControl();
   const [showAnchors, setShowAnchors] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   
   // Content is unlocked after prep is complete
   const isPrepComplete = prepRequirementsComplete?.allComplete === true;
+  
+  // Conditioning and Coaching are only available during Foundation phase (after prep)
+  const isFoundationPhase = currentPhase?.id === 'start' || currentPhase?.id === 'post-start';
+  const isConditioningAvailable = isFoundationPhase;
+  const isCoachingAvailable = isFoundationPhase;
   
   // Community is only available during Ascent phase (post-start)
   const isAscent = currentPhase?.id === 'post-start';
@@ -65,9 +72,10 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     enableCourses: isPrepComplete,
     enableVideos: isPrepComplete,
     
-    // FOUNDATION FEATURES - Unlocks after prep completion
+    // FOUNDATION FEATURES - Only available during Foundation phase (not during Prep)
+    enableConditioning: isConditioningAvailable, // Conditioning only in Foundation
     enableCommunity: isAscent, // Community only available during Ascent phase
-    enableCoaching: isPrepComplete,
+    enableCoaching: isCoachingAvailable, // Coaching only in Foundation
     
     // FUTURE SCOPE FEATURES (DISABLED)
     enableLabs: false,
@@ -78,7 +86,8 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
   const menuItems = [
     // Rep Coach removed from sidebar - access via floating AI Coach button (password protected)
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    // Conditioning removed - now accessed via Dashboard widget with slide-in panel
+    { id: 'conditioning', label: 'Conditioning', icon: Zap, flag: 'enableConditioning' },
+    // Conditioning accessed via both Dashboard and sidebar - only during Foundation
     { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
     
     { type: 'section', label: 'Resources' },
@@ -253,21 +262,21 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
           {isAdmin && (
             <li className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700">
               <button
-                onClick={() => navigate('admin-portal')}
+                onClick={() => navigate('admin-hub')}
                 className={`
                   w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-200 relative border-none rounded-xl group
-                  ${currentScreen === 'admin-portal' 
+                  ${['admin-hub', 'admin-portal', 'config-center', 'facilitator-center', 'system-center'].includes(currentScreen)
                     ? 'bg-red-500/90 text-white shadow-lg shadow-red-500/20 font-medium' 
                     : 'bg-transparent text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-300'
                   }
                 `}
-                title={!isOpen ? 'Admin Portal' : ''}
+                title={!isOpen ? 'Admin Hub' : ''}
               >
-                <div className={`p-1.5 rounded-lg transition-colors ${currentScreen === 'admin-portal' ? 'bg-white/10 dark:bg-slate-800/10' : 'group-hover:bg-red-100 dark:group-hover:bg-red-900/30'}`}>
+                <div className={`p-1.5 rounded-lg transition-colors ${['admin-hub', 'admin-portal', 'config-center', 'facilitator-center', 'system-center'].includes(currentScreen) ? 'bg-white/10 dark:bg-slate-800/10' : 'group-hover:bg-red-100 dark:group-hover:bg-red-900/30'}`}>
                   <ShieldCheck className="w-[18px] h-[18px]" />
                 </div>
                 <span className={`whitespace-nowrap text-sm transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-                  Admin Portal
+                  Admin Hub
                 </span>
               </button>
             </li>

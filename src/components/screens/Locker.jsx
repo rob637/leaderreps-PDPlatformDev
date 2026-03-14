@@ -189,7 +189,7 @@ const Locker = () => {
   return (
     <PageLayout
       title="The Locker"
-      subtitle="Your repository of completed reps, wins, and reflections."
+      subtitle="Your settings, journey progress, and completed reps."
       icon={LockerIcon}
       navigate={navigate}
       breadcrumbs={[

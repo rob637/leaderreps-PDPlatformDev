@@ -431,7 +431,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
               value={person}
               onChange={(e) => handlePersonChange(e.target.value)}
               placeholder="e.g., Maya, Jordan, Chris"
-              className="w-full p-3 border rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all dark:bg-slate-800 dark:text-white border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500"
+              className="w-full p-3 border rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all bg-white text-slate-900 dark:bg-slate-800 dark:text-white border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500"
               required
             />
             {showStepValidation && !person.trim() && (
@@ -506,7 +506,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                     onChange={(e) => setCustomDeadline(e.target.value)}
                     min={today}
                     max={maxDeadline}
-                    className="mt-2 w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 dark:bg-slate-800 dark:text-white dark:[color-scheme:dark]"
+                    className="mt-2 w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base focus:ring-2 focus:ring-corporate-teal/50 bg-white text-slate-900 dark:bg-slate-800 dark:text-white dark:[color-scheme:dark]"
                   />
                 )}
               </div>

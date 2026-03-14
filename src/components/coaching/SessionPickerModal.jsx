@@ -118,7 +118,8 @@ const SessionPickerModal = ({
     const now = new Date();
     
     matchingSessions.forEach(session => {
-      const sessionDate = new Date(session.date);
+      // Add T12:00:00 to ensure local timezone interpretation
+      const sessionDate = new Date(session.date + 'T12:00:00');
       const diffTime = sessionDate - now;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       const weekOffset = Math.floor((diffDays + now.getDay()) / 7);
@@ -149,13 +150,26 @@ const SessionPickerModal = ({
   
   // Format date for display
   const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
+    // Parse date as local date to avoid timezone issues
+    // Date strings like "2026-03-11" are parsed as UTC midnight, which can shift the day
+    let date;
+    if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      // Parse YYYY-MM-DD as local date
+      const [year, month, day] = dateStr.split('-').map(Number);
+      date = new Date(year, month - 1, day);
+    } else {
+      date = new Date(dateStr);
+    }
+    
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateOnly = new Date(date);
+    dateOnly.setHours(0, 0, 0, 0);
     
-    if (date.toDateString() === today.toDateString()) return 'Today';
-    if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+    if (dateOnly.getTime() === today.getTime()) return 'Today';
+    if (dateOnly.getTime() === tomorrow.getTime()) return 'Tomorrow';
     
     return date.toLocaleDateString('en-US', { 
       weekday: 'long', 

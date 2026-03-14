@@ -95,6 +95,22 @@ const STATUS_CONFIG = {
   cancelled: { label: 'Cancelled', color: 'bg-red-100 dark:bg-red-900/30 text-red-700', icon: XCircle }
 };
 
+// Coach email mapping for notifications
+const COACH_EMAILS = {
+  'ryan': 'ryan@leaderreps.com',
+  'cristina': 'cristina@leaderreps.com'
+};
+
+// Helper to get coach email from name
+const getCoachEmail = (coachName) => {
+  if (!coachName) return null;
+  const nameLower = coachName.toLowerCase().trim();
+  for (const [name, email] of Object.entries(COACH_EMAILS)) {
+    if (nameLower.includes(name)) return email;
+  }
+  return null;
+};
+
 // Format date for display - handles YYYY-MM-DD as local date (not UTC)
 const formatDate = (dateStr) => {
   if (!dateStr) return 'TBD';
@@ -384,12 +400,16 @@ const SessionManager = () => {
           ? `${editingSession.sessionType}-${dateStr}-${Date.now()}-${createdCount}`
           : editingSession.id;
         
+        // Auto-populate coachEmail based on coach name
+        const coachEmail = getCoachEmail(editingSession.coach);
+        
         const sessionData = {
           ...editingSession,
           id: sessionId,
           date: dateStr,
           time: formatTimeForDisplay(editingSession.time),
           updatedAt: serverTimestamp(),
+          ...(coachEmail && { coachEmail }), // For coach notifications
           ...(seriesId && { seriesId }), // Link recurring sessions
           ...(isCreatingNew && { createdAt: serverTimestamp() })
         };
@@ -948,7 +968,7 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
         {/* Coach */}
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-            Coach / Facilitator
+            Coach / Trainer
           </label>
           <input
             type="text"

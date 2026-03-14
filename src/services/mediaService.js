@@ -43,9 +43,16 @@ const getMediaType = (mimeType) => {
  * @param {object} services - { storage, db }
  * @param {File} file - The file object
  * @param {string} folder - Storage folder path (default: 'vault')
+ * @param {object} additionalMetadata - Optional metadata to store in Firestore (e.g. { uploadedBy: userId })
  * @param {function} onProgress - Callback for upload progress (0-100)
  */
-export const uploadMediaAsset = async ({ storage, db }, file, folder = 'vault', onProgress) => {
+export const uploadMediaAsset = async ({ storage, db }, file, folder = 'vault', additionalMetadata = {}, onProgress = null) => {
+  // Handle case where additionalMetadata is omitted but onProgress is passed as 4th arg
+  if (typeof additionalMetadata === 'function') {
+    onProgress = additionalMetadata;
+    additionalMetadata = {};
+  }
+
   try {
     // 1. Upload to Firebase Storage
     const timestamp = Date.now();
@@ -80,7 +87,8 @@ export const uploadMediaAsset = async ({ storage, db }, file, folder = 'vault', 
               size: file.size,
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
-              tags: []
+              tags: [],
+              ...additionalMetadata  // Add uploadedBy, repId, etc.
             };
 
             const docRef = await addDoc(collection(db, MEDIA_COLLECTION), assetData);
