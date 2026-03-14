@@ -26,6 +26,7 @@ import { Loader } from 'lucide-react';
 
 // --- Custom Hooks ---
 import useNavigationHistory from './hooks/useNavigationHistory.js';
+import useMaintenanceMode from './hooks/useMaintenanceMode.js';
 
 // --- New Structure ---
 import AuthPanel from './components/auth/AuthPanel.jsx';
@@ -34,6 +35,7 @@ import DataProvider from './providers/DataProvider.jsx';
 import { FeatureProvider } from './providers/FeatureProvider.jsx';
 import { LayoutProvider } from './providers/LayoutProvider.jsx';
 import ConfigError from './components/system/ConfigError.jsx';
+import MaintenancePage from './components/system/MaintenancePage.jsx';
 import UpdateNotification from './components/ui/UpdateNotification.jsx';
 import { NotificationProvider } from './providers/NotificationProvider.jsx';
 import { TimeProvider } from './providers/TimeProvider.jsx';
@@ -92,6 +94,12 @@ function App() {
     goBack,
     canGoBack
   } = useNavigationHistory();
+
+  // Maintenance mode check - blocks all users except bypass list
+  const { isMaintenanceMode, maintenanceMessage } = useMaintenanceMode(
+    firebaseServices?.db,
+    user?.email
+  );
 
   useEffect(() => {
     const config = typeof window.__FIREBASE_CONFIG__ !== 'undefined' ? window.__FIREBASE_CONFIG__ : undefined;
@@ -194,6 +202,11 @@ function App() {
         <Loader className="animate-spin h-10 w-10 text-corporate-teal" />
       </div>
     );
+  }
+
+  // Show maintenance page if maintenance mode is enabled (bypass emails are excluded)
+  if (isMaintenanceMode) {
+    return <MaintenancePage message={maintenanceMessage} />;
   }
 
   return (

@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Settings, ArrowLeft, Users, Calendar, FileText, Database,
   PlaySquare, Dumbbell, BrainCircuit, List, Bell, Mail, Megaphone,
-  ShieldAlert,
+  ShieldAlert, Wrench,
 } from 'lucide-react';
 import UserManagement from './UserManagement';
 import ContentManager from './DailyPlanManager';
@@ -20,6 +20,7 @@ import LOVManager from './LOVManager';
 import NotificationManager from './NotificationManager';
 import AnnouncementsManager from './AnnouncementsManager';
 import CommunicationsManager from './CommunicationsManager';
+import MaintenanceToggle from './MaintenanceToggle';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 
@@ -58,6 +59,7 @@ const TAB_GROUPS = [
   {
     label: 'System',
     tabs: [
+      { id: 'maintenance', label: 'Maintenance Mode', icon: Wrench },
       { id: 'lov', label: 'System Values', icon: List },
     ],
   },
@@ -102,6 +104,7 @@ const AppConfigCenter = () => {
       case 'notifications': return <NotificationManager />;
       case 'announcements': return <AnnouncementsManager />;
       case 'communications': return <CommunicationsManager />;
+      case 'maintenance': return <MaintenanceToggle />;
       default: return <UserManagement />;
     }
   };
