@@ -18,6 +18,7 @@ import { useActionProgress } from '../../hooks/useActionProgress';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { useAppServices } from '../../services/useAppServices';
 import { useCoachingRegistrations, REGISTRATION_STATUS } from '../../hooks/useCoachingRegistrations';
+import { conditioningService } from '../../services/conditioningService';
 import { SESSION_TYPES } from '../../data/Constants';
 
 // Session type labels for generating milestone coaching actions
@@ -95,7 +96,7 @@ const MILESTONE_THEMES = {
   1: { 
     id: 1,
     name: 'Milestone 1', 
-    title: 'Foundation Basics', 
+    title: 'Reinforcing', 
     description: 'Core leadership fundamentals and self-awareness',
     icon: Target, 
     color: 'from-corporate-teal to-emerald-600', 
@@ -107,7 +108,7 @@ const MILESTONE_THEMES = {
   2: { 
     id: 2,
     name: 'Milestone 2', 
-    title: 'Communication Mastery', 
+    title: 'One-on-One (1:1)', 
     description: 'Effective communication and influence skills',
     icon: MessageSquare, 
     color: 'from-corporate-navy to-slate-700', 
@@ -119,7 +120,7 @@ const MILESTONE_THEMES = {
   3: { 
     id: 3,
     name: 'Milestone 3', 
-    title: 'Team Leadership', 
+    title: 'Redirecting', 
     description: 'Building and leading high-performing teams',
     icon: Users, 
     color: 'from-corporate-orange to-orange-600', 
@@ -131,7 +132,7 @@ const MILESTONE_THEMES = {
   4: { 
     id: 4,
     name: 'Milestone 4', 
-    title: 'Strategic Thinking', 
+    title: 'Readiness', 
     description: 'Strategic planning and decision-making',
     icon: Lightbulb, 
     color: 'from-corporate-teal to-teal-600', 
@@ -143,7 +144,7 @@ const MILESTONE_THEMES = {
   5: { 
     id: 5,
     name: 'Milestone 5', 
-    title: 'Executive Presence', 
+    title: 'Graduation', 
     description: 'Executive presence and organizational impact',
     icon: Trophy, 
     color: 'from-corporate-navy to-corporate-teal', 
@@ -349,13 +350,20 @@ const WeekDetailPanel = ({
   segmentLabel, 
   segmentType,
   leaderProfileComplete = false,
-  baselineAssessmentComplete = false
+  baselineAssessmentComplete = false,
+  sessionAttendance = {}
 }) => {
   const Icon = theme?.icon || Calendar;
   const actions = weekData?.actions || [];
   
   // Helper to check if an action is completed (handles interactive items)
   const isActionCompleted = (action) => {
+    // Check facilitator-controlled session attendance (Deliberate Practice sessions)
+    // These sessions are marked as attended by facilitators via SessionAttendanceQueue
+    if (action.id && sessionAttendance[action.id]?.attended === true) {
+      return true;
+    }
+    
     // If the action has explicit isCompleted flag (from required prep items), use it
     if (action.isCompleted !== undefined) {
       return action.isCompleted;
@@ -609,7 +617,8 @@ const DevelopmentJourneyWidget = () => {
   const { developmentPlanData, user } = useAppServices();
   
   // Get user milestone progress (signedOff status set by facilitator)
-  const milestoneProgress = user?.milestoneProgress || {};
+  // Wrap in useMemo to ensure stable reference
+  const milestoneProgress = useMemo(() => user?.milestoneProgress || {}, [user?.milestoneProgress]);
   const { 
     dailyPlan, 
     currentPhase, 
@@ -627,6 +636,24 @@ const DevelopmentJourneyWidget = () => {
     if (!developmentPlanData?.assessmentHistory || developmentPlanData.assessmentHistory.length === 0) return false;
     return developmentPlanData.assessmentHistory.length > 0;
   }, [developmentPlanData?.assessmentHistory]);
+  
+  // Get db for conditioning service
+  const { db } = useAppServices();
+  const [loopClosedRepTypes, setLoopClosedRepTypes] = useState([]);
+  
+  // Fetch completed rep types on mount and when user changes
+  useEffect(() => {
+    if (!db || !user?.uid) return;
+    const fetchCompletedRepTypes = async () => {
+      try {
+        const completed = await conditioningService.getCompletedRepTypes(db, user.uid);
+        setLoopClosedRepTypes(completed);
+      } catch (error) {
+        console.error('[DevelopmentJourneyWidget] Error fetching completed rep types:', error);
+      }
+    };
+    fetchCompletedRepTypes();
+  }, [db, user?.uid]);
   
   // Determine current segment - find the first incomplete segment
   const currentSegmentId = useMemo(() => {
@@ -680,6 +707,13 @@ const DevelopmentJourneyWidget = () => {
     
     // Helper to check completion for each action type
     const checkActionComplete = (action) => {
+      // Check facilitator-controlled session attendance (Deliberate Practice sessions)
+      // These sessions are marked as attended by facilitators via SessionAttendanceQueue
+      const sessionAttendance = userState?.sessionAttendance || {};
+      if (action.id && sessionAttendance[action.id]?.attended === true) {
+        return true;
+      }
+      
       const handlerType = action.handlerType || '';
       const labelLower = (action.label || '').toLowerCase();
       
@@ -838,27 +872,25 @@ const DevelopmentJourneyWidget = () => {
         });
       }
       
-      // Add Leader Certification action as the LAST item in the milestone
-      const certificationId = `milestone-${milestone}-certification`;
-      const certProgress = getItemProgress(certificationId);
-      const certificationAction = {
-        id: certificationId,
-        type: 'certification',
-        label: 'Leader Certification',
-        icon: '🏆',
-        dayId: `milestone-${milestone}`,
-        isCompleted: certProgress?.status === 'completed'
-      };
-      
       // Check completion status for regular actions
+      const sessionAttendance = userState?.sessionAttendance || {};
       const actionsWithStatus = actionsWithId.map(a => {
+        // Check facilitator-controlled session attendance (Deliberate Practice sessions)
+        if (a.id && sessionAttendance[a.id]?.attended === true) {
+          return { ...a, isCompleted: true };
+        }
         const progress = getItemProgress(a.id);
+        // Check for conditioning-rep items - use loopClosedRepTypes
+        if (a.handlerType === 'conditioning-rep' && a.repTypeId) {
+          const isCompleted = loopClosedRepTypes.includes(a.repTypeId);
+          return { ...a, isCompleted };
+        }
         const isCompleted = progress.status === 'completed' || completedItems.has(a.id);
         return { ...a, isCompleted };
       });
       
-      // Combine all actions: regular, coaching, then certification last
-      const allActions = [...actionsWithStatus, ...coachingActions, certificationAction];
+      // Combine all actions: regular and coaching
+      const allActions = [...actionsWithStatus, ...coachingActions];
       const completedCount = allActions.filter(a => a.isCompleted).length;
       
       // If milestone is signed off by facilitator, it's 100% complete regardless of action status
@@ -884,7 +916,7 @@ const DevelopmentJourneyWidget = () => {
         isSignedOff: milestoneSignedOff, // Track signed-off status
         icon: 'target',
         description: milestoneTheme.description,
-        requiresApproval: true // Milestones require Leader Certification
+        requiresApproval: true // Milestones require facilitator approval
       });
     }
     
@@ -944,7 +976,7 @@ const DevelopmentJourneyWidget = () => {
     const totalWeeks = segments.filter(s => s.type === 'milestone').length;
     
     return { segments, totalWeeks };
-  }, [dailyPlan, getItemProgress, completedItems, leaderProfileComplete, baselineAssessmentComplete, prepRequirementsComplete, milestoneProgress, coachingRegistrations]);
+  }, [dailyPlan, getItemProgress, completedItems, leaderProfileComplete, baselineAssessmentComplete, prepRequirementsComplete, milestoneProgress, coachingRegistrations, loopClosedRepTypes]);
   
   // Overall progress across entire journey
   const overallProgress = useMemo(() => {
@@ -1256,6 +1288,7 @@ const DevelopmentJourneyWidget = () => {
               segmentType={selectedSegmentData.type}
               leaderProfileComplete={leaderProfileComplete}
               baselineAssessmentComplete={baselineAssessmentComplete}
+              sessionAttendance={userState?.sessionAttendance || {}}
             />
           </motion.div>
         )}
