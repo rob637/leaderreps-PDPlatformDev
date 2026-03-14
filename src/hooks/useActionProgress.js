@@ -321,6 +321,10 @@ export const useActionProgress = () => {
       label: itemData.label || itemData.title || '',
       carriedOver: itemData.carriedOver || false,
       carryCount: itemData.carryCount || 0,
+      // Session prep tracking
+      prepSection: itemData.prepSection || null,
+      originMilestone: itemData.originMilestone || null,
+      isSessionPrep: itemData.isSessionPrep || false,
       updatedAt: serverTimestamp()
     };
     

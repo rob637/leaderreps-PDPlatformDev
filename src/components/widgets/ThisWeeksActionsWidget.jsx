@@ -181,6 +181,10 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   const [thisWeekExpanded, setThisWeekExpanded] = useState(false);
   const [priorWeekExpanded, setPriorWeekExpanded] = useState(false);
   
+  // Session prep section expanded states (for Foundation phase)
+  // Keys are session IDs: 'session2', 'session3', 'session4', 'session5'
+  const [sessionPrepExpanded, setSessionPrepExpanded] = useState({});
+  
   // Preserve carried over items even after completion (ref to avoid re-render loops)
   // This ref remembers which items were incomplete when user first entered Level 1
   const preservedCarriedOverRef = useRef([]);
@@ -472,6 +476,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         if (handlerType === 'leader-profile') handlerType = '';
       }
 
+      // SAFEGUARD: If resourceType is content-based (video, document, read_rep, etc.),
+      // clear handlerType to prevent routing to interactive handlers instead of content viewer.
+      // This fixes issues where videos/docs were misconfigured with handlerType='conditioning-rep'
+      const contentResourceTypes = ['video', 'video_series', 'document', 'read_rep', 'reading', 'tool', 'pdf', 'rep'];
+      const normalizedResourceType = (action.resourceType || '').toLowerCase().replace(/_/g, '-');
+      if (contentResourceTypes.some(t => normalizedResourceType.includes(t)) && action.resourceId) {
+        // This is a content item - clear any interactive handlerType
+        if (handlerType && handlerType !== 'video-series') {
+          handlerType = '';
+        }
+      }
+
       const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'conditioning-rep'].includes(handlerType);
       
       // Auto-complete status for interactive items
@@ -749,9 +765,42 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // Users don't see a "waiting for certification" item - they only see the certificate
       // to view/print AFTER the facilitator signs off (shown at start of next milestone)
       
-      // Return combined actions: CERTIFICATE first (from previous milestone), regular actions, coaching, community
+      // =================== SESSION PREP ITEMS ===================
+      // Each milestone has associated session prep for the NEXT session:
+      // Milestone 1 → Session 2 Prep (session2-config)
+      // Milestone 2 → Session 3 Prep (session3-config)
+      // Milestone 3 → Session 4 Prep (session4-config)
+      // Milestone 4 → Session 5 Prep (session5-config)
+      // Milestone 5 (Graduation) → No prep
+      let sessionPrepActions = [];
+      
+      // Map milestone to session prep
+      const MILESTONE_TO_SESSION_PREP = {
+        1: 'session2',
+        2: 'session3',
+        3: 'session4',
+        4: 'session5'
+      };
+      
+      const currentSessionPrepId = MILESTONE_TO_SESSION_PREP[displayMilestone];
+      if (currentSessionPrepId && !isGraduated) {
+        const sessionPrepConfig = dailyPlan.find(d => d.id === `${currentSessionPrepId}-config`);
+        if (sessionPrepConfig?.actions && sessionPrepConfig.actions.length > 0) {
+          const visibleActions = sessionPrepConfig.actions.filter(a => a.hidden !== true);
+          sessionPrepActions = normalizeDailyActions(visibleActions, `${currentSessionPrepId}-config`, displayMilestone)
+            .map(action => ({
+              ...action,
+              prepSection: currentSessionPrepId,
+              originMilestone: displayMilestone,
+              isSessionPrep: true,
+              category: `Session ${currentSessionPrepId.replace('session', '')} Prep`
+            }));
+        }
+      }
+      
+      // Return combined actions: CERTIFICATE first, regular actions, coaching, community, session prep at bottom
       // NO certification gate shown to user - it's handled by facilitator
-      return [...certificateActions, ...milestoneActions, ...coachingActions, ...communityActions];
+      return [...certificateActions, ...milestoneActions, ...coachingActions, ...communityActions, ...sessionPrepActions];
     }
     
     // =================== ASCENT PHASE (WEEK-BASED) ===================
@@ -1064,6 +1113,94 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       }
     }
     
+    // =================== FOUNDATION PHASE SESSION PREP CARRY-OVER ===================
+    // Carry over incomplete session prep items from prior milestones
+    // Items from prior milestones stay visible until user advances to next level
+    if (currentPhase?.id === 'start') {
+      const milestoneProgress = user?.milestoneProgress || {};
+      let currentMilestone = 1;
+      for (let m = 1; m <= 5; m++) {
+        const mData = milestoneProgress[`milestone_${m}`] || {};
+        if (mData.signedOff) {
+          currentMilestone = m + 1;
+        } else {
+          break;
+        }
+      }
+      
+      // Map session prep to milestone where it first appears
+      const SESSION_PREP_MILESTONES = {
+        'session2': 1,
+        'session3': 2,
+        'session4': 3,
+        'session5': 4
+      };
+      
+      // Get all session prep configs that should be visible at current milestone
+      // Show preps from: all prior milestones where user hasn't completed all items
+      const sessionPrepIds = ['session2', 'session3', 'session4', 'session5'];
+      
+      sessionPrepIds.forEach(sessionPrepId => {
+        const prepOriginMilestone = SESSION_PREP_MILESTONES[sessionPrepId];
+        
+        // Only show if this prep is from a prior milestone (not current milestone's native prep)
+        // Native prep is shown in allActions, not carriedOverItems
+        if (prepOriginMilestone >= currentMilestone) return;
+        
+        const sessionPrepConfig = dailyPlan.find(d => d.id === `${sessionPrepId}-config`);
+        if (!sessionPrepConfig?.actions || sessionPrepConfig.actions.length === 0) return;
+        
+        const visibleActions = sessionPrepConfig.actions.filter(a => a.hidden !== true);
+        
+        visibleActions.forEach((action, idx) => {
+          const label = action.label || 'Session Prep';
+          const actionId = action.id || `${sessionPrepId}-action-${idx}`;
+          
+          // Skip if already in carriedItems (avoid duplicates)
+          if (carriedItems.some(item => item.id === actionId)) return;
+          
+          // Check if completed
+          const completed = isActionCompleted(actionId, label);
+          
+          // Infer handler type and interactive status
+          let handlerType = action.handlerType || '';
+          const labelLower = label.toLowerCase();
+          if (!handlerType) {
+            if (labelLower.includes('download') || labelLower.includes('print')) handlerType = 'download';
+            else if (labelLower.includes('watch') || labelLower.includes('video')) handlerType = 'video';
+            else if (labelLower.includes('read')) handlerType = 'read';
+          }
+          const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
+          
+          carriedItems.push({
+            ...action,
+            id: actionId,
+            label: label,
+            required: action.required !== false && !action.optional,
+            category: `Session ${sessionPrepId.replace('session', '')} Prep`,
+            fromDailyPlan: true,
+            dayId: `${sessionPrepId}-config`,
+            dayNumber: prepOriginMilestone,
+            carriedOver: true,
+            fromMilestone: prepOriginMilestone,
+            prepSection: sessionPrepId,
+            originMilestone: prepOriginMilestone,
+            isSessionPrep: true,
+            resourceId: action.resourceId,
+            resourceType: (action.resourceType || action.type || 'content').toLowerCase(),
+            resourceTitle: action.resourceTitle,
+            url: action.url || action.videoUrl || action.link,
+            isInteractive,
+            handlerType,
+            estimatedMinutes: action.estimatedMinutes,
+            duration: action.duration,
+            // Store completion status
+            prepComplete: completed
+          });
+        });
+      });
+    }
+    
     return carriedItems;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, progressData, dailyPlan, userState?.dailyProgress, userState?.sessionAttendance, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.items]);
@@ -1111,6 +1248,56 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // The ActionItem component will show them as completed (with checkmark)
     return baseItems;
   }, [preservedCarriedOver, carriedOverItems, prepRequirementsComplete?.allComplete]);
+
+  // Group session prep items by prepSection for Foundation phase display
+  // Returns: { session2: { items: [], allComplete: bool, completedCount: num }, session3: {...}, etc. }
+  const groupedSessionPrepItems = useMemo(() => {
+    if (currentPhase?.id !== 'start') return {};
+    
+    const groups = {};
+    const sessionPrepOrder = ['session2', 'session3', 'session4', 'session5'];
+    
+    // Initialize groups
+    sessionPrepOrder.forEach(sessionId => {
+      groups[sessionId] = { items: [], completedCount: 0, totalCount: 0, allComplete: false };
+    });
+    
+    // Helper to check completion
+    const isItemComplete = (item) => {
+      if (item.prepComplete !== undefined) return item.prepComplete;
+      const progress = getItemProgress(item.id);
+      return progress?.status === 'completed' || completedItems.includes(item.id);
+    };
+    
+    // Gather session prep items from both carriedOverItems and allActions
+    const allPrepItems = [
+      ...displayedCarriedOverItems.filter(item => item.isSessionPrep || item.prepSection?.startsWith('session')),
+      ...allActions.filter(item => item.isSessionPrep || item.prepSection?.startsWith('session'))
+    ];
+    
+    // Remove duplicates by ID
+    const seenIds = new Set();
+    allPrepItems.forEach(item => {
+      if (!item.prepSection || seenIds.has(item.id)) return;
+      seenIds.add(item.id);
+      
+      const sessionId = item.prepSection;
+      if (groups[sessionId]) {
+        const isComplete = isItemComplete(item);
+        groups[sessionId].items.push({ ...item, isComplete });
+        groups[sessionId].totalCount++;
+        if (isComplete) groups[sessionId].completedCount++;
+      }
+    });
+    
+    // Calculate allComplete for each group
+    sessionPrepOrder.forEach(sessionId => {
+      const group = groups[sessionId];
+      group.allComplete = group.totalCount > 0 && group.completedCount === group.totalCount;
+    });
+    
+    return groups;
+  }, [currentPhase?.id, displayedCarriedOverItems, allActions, getItemProgress, completedItems]);
 
   // Calculate progress
   const completedItems = useMemo(() => {
@@ -1421,6 +1608,15 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           handlerType = 'conditioning-tutorial';
         } else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation expectation') || labelLower.includes('foundation commitment')) {
           handlerType = 'foundation-commitment';
+        }
+      }
+      
+      // SAFEGUARD: If resourceType is content-based, clear handlerType to prevent routing to interactive handlers
+      const contentResourceTypes = ['video', 'video_series', 'document', 'read_rep', 'reading', 'tool', 'pdf', 'rep'];
+      const normalizedResourceType = (action.resourceType || '').toLowerCase().replace(/_/g, '-');
+      if (contentResourceTypes.some(t => normalizedResourceType.includes(t)) && action.resourceId) {
+        if (handlerType && handlerType !== 'video-series') {
+          handlerType = '';
         }
       }
       
@@ -2715,8 +2911,15 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
             {/* Current Week Items */}
             {allActions.length > 0 && (() => {
+              // For Foundation phase, filter out session prep items (they're shown separately below)
+              const milestoneActions = currentPhase?.id === 'start' 
+                ? allActions.filter(item => !item.isSessionPrep)
+                : allActions;
+              
+              if (milestoneActions.length === 0) return null;
+              
               const sessionAttendanceData = userState?.sessionAttendance || {};
-              const completedThisWeek = allActions.filter(item => {
+              const completedThisWeek = milestoneActions.filter(item => {
                 // Check facilitator-controlled session attendance (Deliberate Practice sessions)
                 if (item.id && sessionAttendanceData[item.id]?.attended === true) {
                   return true;
@@ -2730,7 +2933,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 const progress = getItemProgress(item.id);
                 return progress.status === 'completed' || completedItems.includes(item.id);
               });
-              const allThisWeekComplete = completedThisWeek.length === allActions.length;
+              const allThisWeekComplete = completedThisWeek.length === milestoneActions.length;
               
               return allThisWeekComplete ? (
                 // All This Week items complete - Show collapsed celebration
@@ -2747,7 +2950,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                         🎉 {currentPhase?.id === 'start' ? 'Milestone Complete!' : 'This Week Complete!'}
                       </p>
                       <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                        All {allActions.length} {allActions.length === 1 ? 'task' : 'tasks'} finished — Great work!
+                        All {milestoneActions.length} {milestoneActions.length === 1 ? 'task' : 'tasks'} finished — Great work!
                       </p>
                     </div>
                     <div className="flex-shrink-0 p-2 text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 transition-colors">
@@ -2757,7 +2960,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   
                   {thisWeekExpanded && (
                     <div className="mt-2 space-y-1">
-                      {allActions.map((item, idx) => (
+                      {milestoneActions.map((item, idx) => (
                         <ActionItem key={item.id || idx} item={item} idx={idx} />
                       ))}
                     </div>
@@ -2777,11 +2980,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     </div>
                     <div className="flex-1 h-px bg-teal-200 dark:bg-teal-700"></div>
                     <span className="text-xs font-medium text-teal-600 bg-teal-100 dark:text-teal-300 dark:bg-teal-900/40 px-2 py-0.5 rounded-full">
-                      {completedThisWeek.length}/{allActions.length} complete
+                      {completedThisWeek.length}/{milestoneActions.length} complete
                     </span>
                   </div>
                   <div className="space-y-1">
-                    {allActions.map((item, idx) => (
+                    {milestoneActions.map((item, idx) => (
                       <ActionItem key={item.id || idx} item={item} idx={idx} />
                     ))}
                   </div>
@@ -2789,8 +2992,107 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               );
             })()}
 
+            {/* =================== SESSION PREP GROUPS (Foundation Phase Only) =================== */}
+            {/* Show grouped session prep items at the bottom of the milestone */}
+            {/* Items from prior milestones shown first (carried over), then current milestone's native prep */}
+            {currentPhase?.id === 'start' && (() => {
+              const sessionPrepOrder = ['session2', 'session3', 'session4', 'session5'];
+              const sessionPrepNames = {
+                'session2': 'Session 2 Prep',
+                'session3': 'Session 3 Prep',
+                'session4': 'Session 4 Prep',
+                'session5': 'Session 5 Prep'
+              };
+              
+              // Filter to only show groups that have items
+              const activeGroups = sessionPrepOrder.filter(sessionId => 
+                groupedSessionPrepItems[sessionId]?.totalCount > 0
+              );
+              
+              if (activeGroups.length === 0) return null;
+              
+              return (
+                <div className="mt-6 space-y-4">
+                  <div className="flex items-center gap-2 px-1">
+                    <PlayCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-sm font-bold text-blue-800 dark:text-blue-400 uppercase tracking-wider">Session Preparation</span>
+                    <div className="flex-1 h-px bg-blue-200 dark:bg-blue-700"></div>
+                  </div>
+                  
+                  {activeGroups.map(sessionId => {
+                    const group = groupedSessionPrepItems[sessionId];
+                    const isExpanded = sessionPrepExpanded[sessionId] ?? !group.allComplete;
+                    
+                    return (
+                      <div key={sessionId} className="mb-3">
+                        <button
+                          onClick={() => setSessionPrepExpanded(prev => ({
+                            ...prev,
+                            [sessionId]: !isExpanded
+                          }))}
+                          className={`w-full group flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                            group.allComplete
+                              ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-800/50'
+                              : 'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800/50'
+                          }`}
+                        >
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                            group.allComplete
+                              ? 'bg-emerald-500'
+                              : 'bg-blue-500'
+                          }`}>
+                            {group.allComplete ? (
+                              <CheckCircle className="w-4 h-4 text-white" />
+                            ) : (
+                              <PlayCircle className="w-4 h-4 text-white" />
+                            )}
+                          </div>
+                          <div className="flex-1 text-left">
+                            <p className={`text-sm font-bold ${
+                              group.allComplete
+                                ? 'text-emerald-800 dark:text-emerald-300'
+                                : 'text-blue-800 dark:text-blue-300'
+                            }`}>
+                              {group.allComplete ? '✓ ' : ''}{sessionPrepNames[sessionId]}
+                            </p>
+                            <p className={`text-xs ${
+                              group.allComplete
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-blue-600 dark:text-blue-400'
+                            }`}>
+                              {group.completedCount}/{group.totalCount} complete
+                            </p>
+                          </div>
+                          <div className={`flex-shrink-0 p-1 ${
+                            group.allComplete
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-blue-600 dark:text-blue-400'
+                          }`}>
+                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </div>
+                        </button>
+                        
+                        {isExpanded && (
+                          <div className={`mt-2 space-y-1 p-3 rounded-xl border ${
+                            group.allComplete
+                              ? 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200/60 dark:border-emerald-700/40'
+                              : 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-200/60 dark:border-blue-700/40'
+                          }`}>
+                            {group.items.map((item, idx) => (
+                              <ActionItem key={item.id || `${sessionId}-${idx}`} item={item} idx={idx} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
             {/* Empty state */}
-            {allActions.length === 0 && displayedCarriedOverItems.length === 0 && (
+            {allActions.length === 0 && displayedCarriedOverItems.length === 0 && 
+             (currentPhase?.id !== 'start' || Object.values(groupedSessionPrepItems).every(g => g.totalCount === 0)) && (
               <div className="p-4 text-center text-slate-500 dark:text-slate-400 text-sm italic">
                 {currentPhase?.id === 'start' 
                   ? 'No content configured for this milestone yet. Check Content Manager.'
