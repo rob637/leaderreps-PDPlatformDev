@@ -2663,9 +2663,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <span>Click to schedule your coaching session • 5 min</span>
               </div>
             ) : (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                ⏳ Awaiting trainer confirmation
-              </p>
+              <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+                <span>⏳ Awaiting trainer confirmation</span>
+                {(item.estimatedMinutes || item.duration) && (
+                  <span>• {item.estimatedMinutes || item.duration} min</span>
+                )}
+              </div>
             )}
           </div>
 
