@@ -2499,10 +2499,11 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   {registration.coach && (
                     <p className="text-slate-500 dark:text-slate-400 mt-0.5">with {registration.coach}</p>
                   )}
+                  <p className="text-slate-400 dark:text-slate-500 mt-0.5">• {item.sessionType === SESSION_TYPES.OPEN_GYM ? '60' : '30'} min</p>
                 </div>
               ) : (
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Click to schedule your coaching session
+                  Click to schedule your coaching session • 5 min
                 </p>
               )}
             </div>
@@ -2619,12 +2620,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 {registration.coach && (
                   <span>• with {registration.coach}</span>
                 )}
+                <span>• {sessionTypeForMilestone === 'open_gym' ? '60' : '30'} min</span>
                 <span className="text-amber-500 dark:text-amber-300 underline ml-1">Reschedule</span>
               </div>
             ) : isSchedulableCoaching ? (
               <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <Calendar className="w-3 h-3" />
-                <span>Click to schedule your coaching session</span>
+                <span>Click to schedule your coaching session • 5 min</span>
               </div>
             ) : (
               <p className="text-xs text-amber-600 dark:text-amber-400">
@@ -2702,11 +2704,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 {registration.coach && (
                   <span className="text-emerald-500 dark:text-emerald-400">• with {registration.coach}</span>
                 )}
+                <span className="text-emerald-400 dark:text-emerald-500">• 30 min</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <Calendar className="w-3 h-3" />
-                <span>Coaching • Personal coaching session</span>
+                <span>Coaching • Personal coaching session • 5 min</span>
               </div>
             )}
           </div>
@@ -2771,11 +2774,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 {registration.coach && (
                   <span className="text-emerald-500 dark:text-emerald-400">• with {registration.coach}</span>
                 )}
+                <span className="text-emerald-400 dark:text-emerald-500">• 60 min</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <Calendar className="w-3 h-3" />
-                <span>Coaching • Drop-in feedback session</span>
+                <span>Coaching • Drop-in feedback session • 5 min</span>
               </div>
             )}
           </div>
