@@ -1418,19 +1418,47 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     }
   }, [carriedOverItems, carriedOverLoaded, db, user?.uid, user?.milestoneProgress, currentPhase?.id]);
   
+  // Calculate progress (must be before displayedCarriedOverItems & groupedSessionPrepItems)
+  const completedItems = useMemo(() => {
+    // Get completed items from userState.dailyProgress
+    const completedSet = new Set();
+    const dailyProgress = userState?.dailyProgress || {};
+    Object.values(dailyProgress).forEach(dayProgress => {
+      if (dayProgress && dayProgress.itemsCompleted) {
+        dayProgress.itemsCompleted.forEach(id => completedSet.add(id));
+      }
+    });
+    return Array.from(completedSet);
+  }, [userState]);
+
   // Use preserved items if available, otherwise use current carriedOverItems
   // Keep ALL items visible (even completed ones) - they only disappear when:
   // 1. User advances to next level/milestone
   // When all prep is complete, items collapse into celebration banner (NOT removed)
   const displayedCarriedOverItems = useMemo(() => {
+    // Use Firestore-persisted items if available, otherwise use freshly computed items
     const baseItems = preservedCarriedOver.length > 0 ? preservedCarriedOver : carriedOverItems;
     
-    // Ensure all items have fromDailyPlan set (needed for auto-complete on view)
-    // Items loaded from Firestore may be missing this property
-    const normalizedItems = baseItems.map(item => ({
-      ...item,
-      fromDailyPlan: item.fromDailyPlan !== false // Default to true for carried-over items
-    }));
+    // Build lookup of freshly computed items for metadata enrichment
+    // OLD Firestore data may be missing fields like estimatedMinutes, description, resourceTitle
+    const freshItemsById = new Map(carriedOverItems.map(item => [item.id, item]));
+    
+    // Ensure all items have fromDailyPlan set AND enrich with fresh computed metadata
+    // This fixes the "flash" where old Firestore data briefly shows missing fields
+    const normalizedItems = baseItems.map(item => {
+      const freshItem = freshItemsById.get(item.id);
+      return {
+        ...item,
+        // Enrich with fresh computed data for fields that may be missing from old Firestore saves
+        estimatedMinutes: item.estimatedMinutes || freshItem?.estimatedMinutes,
+        duration: item.duration || freshItem?.duration,
+        description: item.description || freshItem?.description,
+        resourceTitle: item.resourceTitle || freshItem?.resourceTitle,
+        displayType: item.displayType || freshItem?.displayType,
+        resourceType: item.resourceType || freshItem?.resourceType,
+        fromDailyPlan: item.fromDailyPlan !== false // Default to true for carried-over items
+      };
+    });
     
     // Calculate current milestone for filtering
     let currentMilestoneNum = 1;
@@ -1450,6 +1478,33 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // BUT KEEP session prep items from PRIOR milestones (carried over from earlier levels)
     let filteredItems = currentPhase?.id === 'start'
       ? normalizedItems.filter(item => {
+          // GHOST ITEM REMOVAL: Clean up items improperly cached due to load race conditions
+          // If an item is already completed, check if it was completed BEFORE carrying over
+          let isComplete = false;
+          if (Array.isArray(prepRequirementsComplete?.items)) {
+            const itemLabelNorm = (item.label || '').toLowerCase().trim();
+            const liveItem = prepRequirementsComplete.items.find(p => 
+              (p.id && item.id && p.id === item.id) || 
+              (p.label && itemLabelNorm && p.label.toLowerCase().trim() === itemLabelNorm)
+            );
+            if (liveItem) {
+              isComplete = liveItem.complete || false;
+            } else {
+              const progress = getItemProgress(item.id);
+              isComplete = progress?.status === 'completed' || completedItems.includes(item.id);
+            }
+          }
+          
+          if (isComplete) {
+            // How do we know it was completed in the prep phase?
+            // Items completed via Catch Up always get carriedOver: true and currentWeek >= 1
+            const p = progressData?.[item.id];
+            if (p?.status === 'completed') {
+              const completedInPrepPhase = (p.completedInWeek == null || p.completedInWeek === 0) && p.carriedOver !== true;
+              if (completedInPrepPhase) return false; // Hide it (it's a prep-phase ghost)
+            }
+          }
+
           // Always keep non-session-prep items
           if (!item.isSessionPrep && !['session2', 'session3', 'session4', 'session5'].includes(item.prepSection)) {
             return true;
@@ -1465,27 +1520,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // When all are complete, section collapses into celebration banner
     return filteredItems;
   }, [preservedCarriedOver, carriedOverItems, currentPhase?.id, user?.milestoneProgress]);
-
-  // Calculate progress (must be before groupedSessionPrepItems since it's a dependency)
-  const completedItems = useMemo(() => {
-    // Get completed items from userState.dailyProgress for the relevant days
-    // But simpler to just check item status via getItemProgress or userState
-    // userState.dailyProgress is keyed by dayId
-    
-    // Let's use a Set of completed item IDs for fast lookup
-    const completedSet = new Set();
-    
-    const dailyProgress = userState?.dailyProgress || {};
-    
-    Object.values(dailyProgress).forEach(dayProgress => {
-      if (dayProgress && dayProgress.itemsCompleted) {
-        dayProgress.itemsCompleted.forEach(id => completedSet.add(id));
-      }
-    });
-    
-    const result = Array.from(completedSet);
-    return result;
-  }, [userState]);
 
   // Group session prep items by prepSection for Foundation phase display
   // ONLY show session prep for the CURRENT milestone - prior milestone prep is in carry-over section
