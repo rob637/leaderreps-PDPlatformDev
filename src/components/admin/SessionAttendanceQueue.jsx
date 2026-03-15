@@ -50,14 +50,14 @@ const FACILITATOR_SESSIONS = {
   },
   3: {
     id: 'action-s3-deliberate-practice',
-    name: 'Session 3: Open Gym',
+    name: 'Session 3: Open Gym Redirecting Feedback',
     milestone: 3,
     description: 'Open gym practice session',
     unlocksReps: ['Deliver Redirecting Feedback', 'Close the Loop']
   },
   4: {
     id: 'action-s4-deliberate-practice',
-    name: 'Session 4: Open Gym',
+    name: 'Session 4: Open Gym Handling Pushback',
     milestone: 4,
     description: 'Open gym practice session',
     unlocksReps: ['Handle Pushback', 'Hold the Line', 'Be Curious']

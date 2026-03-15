@@ -709,8 +709,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       const milestoneNames = {
         1: 'Deliberate Practice',
         2: '1:1 Coaching',
-        3: 'Open Gym: Feedback',
-        4: 'Open Gym: Pushback',
+        3: 'Open Gym: Redirecting Feedback',
+        4: 'Open Gym: Handling Pushback',
         5: 'Graduation'
       };
       
@@ -759,8 +759,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // The trainer marks attendance via Session Attendance admin, which unlocks the reps
       const MILESTONE_SESSION_LABELS = {
         2: 'Attend 1:1 Coaching',
-        3: 'Session 3: Open Gym Feedback',
-        4: 'Session 4: Open Gym Pushback',
+        3: 'Session 3: Attend Open Gym Redirecting Feedback',
+        4: 'Session 4: Attend Open Gym Handling Pushback',
         5: 'Session 5: Graduation'
       };
       
@@ -792,12 +792,19 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       if (milestoneDoc?.coachingSessionTypes && milestoneDoc.coachingSessionTypes.length > 0) {
         coachingActions = milestoneDoc.coachingSessionTypes.map((sessionType) => {
           const typeInfo = COACHING_SESSION_LABELS[sessionType] || { label: 'Coaching Session', description: '', icon: '🎯' };
+          
+          let actionLabel = typeInfo.label;
+          if (sessionType === 'open_gym' || sessionType === 'OPEN_GYM') {
+            if (displayMilestone === 2) actionLabel = 'Schedule Open Gym: Redirecting Feedback';
+            if (displayMilestone === 3) actionLabel = 'Schedule Open Gym: Handling Pushback';
+          }
+          
           return {
             id: `milestone-${displayMilestone}-coaching-${sessionType}`,
             type: 'coaching',
             displayType: 'coaching',
             sessionType: sessionType, // Pass to SessionPickerModal for filtering
-            label: typeInfo.label,
+            label: actionLabel,
             description: typeInfo.description,
             icon: typeInfo.icon,
             required: true,
@@ -941,8 +948,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     const milestoneNames = {
       1: 'Deliberate Practice',
       2: '1:1 Coaching',
-      3: 'Open Gym: Feedback',
-      4: 'Open Gym: Pushback',
+      3: 'Open Gym: Redirecting Feedback',
+      4: 'Open Gym: Handling Pushback',
       5: 'Graduation'
     };
     
