@@ -30,11 +30,13 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
   const [showAnchors, setShowAnchors] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   
-  // Content is unlocked after prep is complete
+  // Content is unlocked after prep is complete OR once in Foundation phase
   const isPrepComplete = prepRequirementsComplete?.allComplete === true;
   
-  // Conditioning and Coaching are only available during Foundation phase (after prep)
+  // Conditioning and Coaching are only available during Foundation phase (not during Prep)
+  // Available once user enters Level 1, regardless of prep completion status
   const isFoundationPhase = currentPhase?.id === 'start' || currentPhase?.id === 'post-start';
+  const isContentAvailable = isPrepComplete || isFoundationPhase;
   const isConditioningAvailable = isFoundationPhase;
   const isCoachingAvailable = isFoundationPhase;
   
@@ -67,10 +69,10 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     enableDailyPractice: true,
     enableMembershipModule: true,
     
-    // CONTENT - Unlocks after prep completion
-    enableReadings: isPrepComplete,
-    enableCourses: isPrepComplete,
-    enableVideos: isPrepComplete,
+    // CONTENT - Unlocks after prep completion or once in Foundation
+    enableReadings: isContentAvailable,
+    enableCourses: isContentAvailable,
+    enableVideos: isContentAvailable,
     
     // FOUNDATION FEATURES - Only available during Foundation phase (not during Prep)
     enableConditioning: isConditioningAvailable, // Conditioning only in Foundation

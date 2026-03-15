@@ -27,7 +27,7 @@ const COACHING_SESSION_LABELS = {
   [SESSION_TYPES.LEADER_CIRCLE]: { label: 'Leader Circle', icon: '👥' },
   [SESSION_TYPES.WORKSHOP]: { label: 'Workshop', icon: '📚' },
   [SESSION_TYPES.LIVE_WORKOUT]: { label: 'Live Workout', icon: '⚡' },
-  [SESSION_TYPES.ONE_ON_ONE]: { label: '1:1 Coaching', icon: '🎯' }
+  [SESSION_TYPES.ONE_ON_ONE]: { label: 'Schedule a 1:1 Coaching Session', icon: '🎯' }
 };
 
 // Phase themes - different visual treatment for each phase
@@ -1041,9 +1041,12 @@ const DevelopmentJourneyWidget = () => {
       return 'post';
     }
     
-    // In start phase - find first segment with progress < 100
-    const firstIncomplete = journeyData.segments.find(s => s.progress < 100);
-    return firstIncomplete?.id || journeyData.segments[0]?.id;
+    // In start phase - find first milestone not signed off by trainer
+    // Preparation is always "past" once cohort starts (carried-over items don't hold back NOW)
+    const firstUnsignedMilestone = journeyData.segments.find(s => 
+      s.type === 'milestone' && !s.isSignedOff
+    );
+    return firstUnsignedMilestone?.id || journeyData.segments[journeyData.segments.length - 1]?.id;
   }, [journeyData.segments, currentPhase]);
   
   // Set initial selected segment to first incomplete segment
@@ -1095,14 +1098,18 @@ const DevelopmentJourneyWidget = () => {
       return 'future';
     }
     
-    // If segment is 100% complete, it's past
-    if (segment.progress === 100) return 'past';
+    // In start phase: Preparation is always "past" (carried-over items don't hold back progress)
+    if (currentPhase?.id === 'start' && segment.id === 'preparation') {
+      return 'past';
+    }
+    
+    // For milestones in start phase: signed-off milestones are "past"
+    if (currentPhase?.id === 'start' && segment.type === 'milestone' && segment.isSignedOff) {
+      return 'past';
+    }
     
     // The first incomplete segment is current
     if (segment.id === firstIncompleteSegmentId) return 'current';
-    
-    // If segment has some progress but isn't the first incomplete, still show as current
-    if (segment.progress > 0 && segment.progress < 100) return 'current';
     
     // Check segment order - segments before first incomplete are past
     const currentIndex = journeyData.segments.findIndex(s => s.id === firstIncompleteSegmentId);

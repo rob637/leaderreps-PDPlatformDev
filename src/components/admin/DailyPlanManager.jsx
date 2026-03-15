@@ -53,7 +53,7 @@ const COACHING_SESSION_LABELS = {
   [SESSION_TYPES.LEADER_CIRCLE]: { label: 'Leader Circle', description: 'Peer discussion groups', icon: '👥' },
   [SESSION_TYPES.WORKSHOP]: { label: 'Workshop', description: 'Structured learning sessions', icon: '📚' },
   [SESSION_TYPES.LIVE_WORKOUT]: { label: 'Live Workout', description: 'Quick skill practice', icon: '⚡' },
-  [SESSION_TYPES.ONE_ON_ONE]: { label: '1:1 Coaching', description: 'Personal coaching', icon: '🎯' }
+  [SESSION_TYPES.ONE_ON_ONE]: { label: 'Schedule a 1:1 Coaching Session', description: 'Personal coaching', icon: '🎯' }
 };
 
 const COMMUNITY_SESSION_LABELS = {

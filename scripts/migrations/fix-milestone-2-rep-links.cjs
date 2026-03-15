@@ -64,33 +64,9 @@ admin.initializeApp({
 const db = admin.firestore();
 
 // Define the corrected milestone-2 actions structure
-// This follows the same pattern as milestone-1: ONE header card per rep type
+// IMPORTANT: Only Real Reps go here. Session prep content (guides, videos) belongs in session2-config
 // The system tracks progress (1 of 2, 2 of 2) internally based on completed reps
 const CORRECTED_MILESTONE_2_ACTIONS = [
-  {
-    id: 'action-s2-session-guide',
-    type: 'content',
-    label: 'Download/Print Session 2 Guide',
-    enabled: true,
-    isCompleted: false,
-    required: false  // Not required for milestone completion
-  },
-  {
-    id: 'action-s2-prep-video',
-    type: 'content',
-    label: 'Session 2 Prep Video',
-    enabled: true,
-    isCompleted: false,
-    required: false
-  },
-  {
-    id: 'action-s2-tool-one-on-ones',
-    type: 'content',
-    label: 'S2 Tool: One-on-Ones (1:1)',
-    enabled: true,
-    isCompleted: false,
-    required: false
-  },
   // Real Rep 1: Lead with Vulnerability (one header, tracks "X of Y" internally)
   {
     id: 'action-s2-lead-with-vulnerability',

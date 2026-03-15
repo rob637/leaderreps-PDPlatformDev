@@ -696,8 +696,12 @@ export const useDailyPlan = () => {
         complete,
         handlerType: handlerType, // Use inferred handlerType, not just action.handlerType
         type: action.type,
-        // Prep section for splitting Onboarding vs Session 1 (default to 'onboarding')
-        prepSection: action.prepSection || 'onboarding'
+        // Prep section for splitting Onboarding vs Session 1
+        // Infer from dayId if not explicitly set
+        prepSection: action.prepSection || (action.dayId === 'session1-config' ? 'session1' : 'onboarding'),
+        dayId: action.dayId,
+        estimatedMinutes: action.estimatedMinutes,
+        duration: action.duration
       };
     });
     

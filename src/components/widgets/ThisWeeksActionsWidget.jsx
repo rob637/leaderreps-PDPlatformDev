@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   CheckCircle, Circle, Play, BookOpen, Users, Video, FileText, Zap, 
-  ExternalLink, Loader, Layers, MessageSquare, Lock,
+  Loader, Layers, MessageSquare, Lock,
   SkipForward, Clock, AlertTriangle, PlayCircle,
   User, ClipboardCheck, Calendar, ChevronDown, ChevronUp, Trophy, Bell,
-  RotateCcw, Award
+  RotateCcw, Award, ChevronRight, ClipboardList
 } from 'lucide-react';
 import { SESSION_TYPES, COMMUNITY_SESSION_TYPES } from '../../data/Constants';
 import { Card } from '../ui';
@@ -16,7 +16,7 @@ import { useSafeNavigation } from '../../providers/NavigationProvider';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import CoachingActionItem from '../coaching/CoachingActionItem';
 import SessionPickerModal from '../coaching/SessionPickerModal';
-import { doc, getDoc, updateDoc, deleteField, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, deleteField, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
@@ -33,11 +33,11 @@ import draftRepService, { hasMeaningfulProgress, DRAFT_FLOW_TYPES } from '../../
 
 // Session type labels for display in user-facing UI
 const COACHING_SESSION_LABELS = {
-  [SESSION_TYPES.OPEN_GYM]: { label: 'Open Gym Session', description: 'Drop-in feedback session', icon: '🏋️' },
+  [SESSION_TYPES.OPEN_GYM]: { label: 'Schedule an Open Gym Session', description: 'Drop-in feedback session', icon: '🏋️' },
   [SESSION_TYPES.LEADER_CIRCLE]: { label: 'Leader Circle', description: 'Peer discussion group', icon: '👥' },
   [SESSION_TYPES.WORKSHOP]: { label: 'Workshop', description: 'Structured learning session', icon: '📚' },
   [SESSION_TYPES.LIVE_WORKOUT]: { label: 'Live Workout', description: 'Quick skill practice', icon: '⚡' },
-  [SESSION_TYPES.ONE_ON_ONE]: { label: '1:1 Coaching', description: 'Personal coaching session', icon: '🎯' }
+  [SESSION_TYPES.ONE_ON_ONE]: { label: 'Schedule a 1:1 Coaching Session', description: 'Personal coaching session', icon: '🎯' }
 };
 
 const COMMUNITY_SESSION_LABELS = {
@@ -185,10 +185,14 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Keys are session IDs: 'session2', 'session3', 'session4', 'session5'
   const [sessionPrepExpanded, setSessionPrepExpanded] = useState({});
   
-  // Preserve carried over items even after completion (ref to avoid re-render loops)
-  // This ref remembers which items were incomplete when user first entered Level 1
+  // Preserve carried over items even after completion
+  // Items are persisted to Firestore so they survive refresh and completion
   const preservedCarriedOverRef = useRef([]);
   const [preservedCarriedOver, setPreservedCarriedOver] = useState([]);
+  const carriedOverSavedRef = useRef(false); // Track if we've saved to Firestore this session
+  const [carriedOverLoaded, setCarriedOverLoaded] = useState(false); // Track if Firestore load completed
+  const carriedOverLoadedRef = useRef(false); // REF to prevent re-loading within session
+  const lastLoadedMilestoneRef = useRef(null); // Track which milestone we loaded for
 
   // Use Daily Plan Hook (New Architecture)
   const { 
@@ -311,25 +315,36 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     return user?.prepStatus?.videoSeries === true;
   }, [user?.prepStatus?.videoSeries]);
   
-  // Conditioning Rep completion tracking (track loop_closed rep types)
+  // Conditioning Rep completion tracking (track counts per rep type)
   // Used for S1 Real Rep items that link to conditioning reps
-  const [loopClosedRepTypes, setLoopClosedRepTypes] = useState([]);
+  // Maps repTypeId -> count of completed reps
+  const [loopClosedRepCounts, setLoopClosedRepCounts] = useState({});
   
-  // Function to refresh completed rep types (called after rep completion)
-  const refreshLoopClosedRepTypes = useCallback(async () => {
+  // Required rep counts for each type (defaults to 1 if not specified)
+  const REQUIRED_REP_COUNTS = {
+    // S1 reps
+    'set_clear_expectations': 1,
+    'deliver_reinforcing_feedback': 3,
+    // S2 reps
+    'lead_with_vulnerability': 1,
+    'follow_up_work': 2,
+  };
+  
+  // Function to refresh completed rep counts (called after rep completion)
+  const refreshLoopClosedRepCounts = useCallback(async () => {
     if (!db || !user?.uid) return;
     try {
-      const completedTypes = await conditioningService.getCompletedRepTypes(db, user.uid);
-      setLoopClosedRepTypes(completedTypes);
+      const counts = await conditioningService.getCompletedRepCounts(db, user.uid);
+      setLoopClosedRepCounts(counts);
     } catch (error) {
-      console.warn('Could not fetch completed rep types:', error);
+      console.warn('Could not fetch completed rep counts:', error);
     }
   }, [db, user?.uid]);
   
   // Initial fetch on mount
   useEffect(() => {
-    refreshLoopClosedRepTypes();
-  }, [refreshLoopClosedRepTypes]);
+    refreshLoopClosedRepCounts();
+  }, [refreshLoopClosedRepCounts]);
   
   // Video series duration data (fetched on demand)
   const [videoSeriesDurations, setVideoSeriesDurations] = useState({});
@@ -495,22 +510,63 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       let isLocked = false;
       let lockedReason = null;
       
+      // Check if this is a trainer-controlled Deliberate Practice session
+      // These items can only be marked complete by a trainer via Session Attendance admin
+      const actionId = action.id || fallbackId;
+      const isTrainerControlled = /^action-s\d+-deliberate-practice$/.test(actionId);
+      
+      // Session attendance data for gating
+      const sessionAttendanceData = userState?.sessionAttendance || {};
+      
       if (handlerType === 'leader-profile') autoComplete = leaderProfileComplete;
       else if (handlerType === 'baseline-assessment') autoComplete = baselineAssessmentComplete;
       else if (handlerType === 'notification-setup') autoComplete = notificationSetupComplete;
       else if (handlerType === 'foundation-commitment') autoComplete = foundationCommitmentComplete;
       else if (handlerType === 'conditioning-tutorial') autoComplete = conditioningTutorialComplete;
       else if (handlerType === 'video-series') autoComplete = videoSeriesComplete;
-      else if (handlerType === 'conditioning-rep' && action.repTypeId) {
-        // Check if user has completed (loop_closed) this rep type
-        autoComplete = loopClosedRepTypes.includes(action.repTypeId);
+      // Conditioning rep progress variables (to pass to UI)
+      let requiredRepCount = null;
+      let completedRepCount = null;
+      
+      if (handlerType === 'conditioning-rep' && action.repTypeId) {
+        // Get required and completed counts for this rep type
+        requiredRepCount = REQUIRED_REP_COUNTS[action.repTypeId] || 1;
+        completedRepCount = loopClosedRepCounts[action.repTypeId] || 0;
+        
+        // Check if user has completed enough reps of this type
+        autoComplete = completedRepCount >= requiredRepCount;
         
         // Check if this is a linked rep that requires a parent rep to be completed first
         if (action.linkedToRepType) {
-          const parentComplete = loopClosedRepTypes.includes(action.linkedToRepType);
+          const parentRequiredCount = REQUIRED_REP_COUNTS[action.linkedToRepType] || 1;
+          const parentCompletedCount = loopClosedRepCounts[action.linkedToRepType] || 0;
+          const parentComplete = parentCompletedCount >= parentRequiredCount;
           if (!parentComplete) {
             isLocked = true;
             lockedReason = `Complete the ${action.linkedToRepType.replace(/_/g, ' ')} rep first`;
+          }
+        }
+        
+        // Gate conditioning reps behind session attendance
+        // Map rep types to the session that must be attended first
+        const REP_TYPE_TO_SESSION = {
+          'set_clear_expectations': 'action-s1-deliberate-practice',
+          'deliver_reinforcing_feedback': 'action-s1-deliberate-practice',
+          'follow_up_work': 'action-s2-deliberate-practice',
+          'lead_with_vulnerability': 'action-s2-deliberate-practice',
+          'deliver_redirecting_feedback': 'action-s3-deliberate-practice',
+          'close_the_loop': 'action-s3-deliberate-practice',
+          'handle_pushback': 'action-s4-deliberate-practice',
+          'hold_the_line': 'action-s4-deliberate-practice',
+          'be_curious': 'action-s5-deliberate-practice'
+        };
+        const requiredSessionId = REP_TYPE_TO_SESSION[action.repTypeId];
+        if (requiredSessionId && !isLocked) {
+          const sessionAttended = sessionAttendanceData[requiredSessionId]?.attended === true;
+          if (!sessionAttended) {
+            isLocked = true;
+            const sessionNum = requiredSessionId.match(/s(\d+)/)?.[1] || '?';
+            lockedReason = `Unlocks after trainer confirms Session ${sessionNum} attendance`;
           }
         }
       }
@@ -535,8 +591,10 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         fromDailyPlan: true,
         dayId: dayId,
         dayNumber: dayNumber,
-        // Pass through estimated time
-        estimatedMinutes: action.estimatedMinutes,
+        // Pass through estimated time (conditioning reps: 20 min per required rep)
+        estimatedMinutes: (handlerType === 'conditioning-rep' && requiredRepCount)
+          ? requiredRepCount * 20
+          : action.estimatedMinutes,
         duration: action.duration,
         // Interactive item support
         isInteractive,
@@ -545,13 +603,17 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         // Conditioning rep linking support
         repTypeId: action.repTypeId,
         linkedToRepType: action.linkedToRepType,
+        // Conditioning rep count tracking
+        requiredRepCount,
+        completedRepCount,
         isLocked,
         lockedReason,
+        isTrainerControlled,
         // Prep section for splitting Onboarding vs Session 1 (default to 'onboarding' for backwards compatibility)
         prepSection: action.prepSection || 'onboarding'
       };
     });
-  }, [leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete, loopClosedRepTypes]);
+  }, [leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete, loopClosedRepCounts, userState?.sessionAttendance, REQUIRED_REP_COUNTS]);
 
   // Combine all actionable items from Daily Plan
   const allActions = useMemo(() => {
@@ -674,29 +736,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             isGraduation: true
           });
         }
-      } else if (currentMilestone > 1) {
-        // Not graduated - check for previous milestone certificate
-        const prevMilestoneData = milestoneProgress[`milestone_${currentMilestone - 1}`] || {};
-        if (prevMilestoneData.signedOff && !prevMilestoneData.certificateViewed) {
-          const prevMilestoneName = milestoneNames[currentMilestone - 1] || `Milestone ${currentMilestone - 1}`;
-          
-          certificateActions.push({
-            id: `view-certificate-milestone-${currentMilestone - 1}`,
-            type: 'certificate',
-            displayType: 'certificate',
-            label: `🎉 View Your ${prevMilestoneName} Certificate`,
-            description: `Congratulations! Print or save your certificate for ${prevMilestoneName}`,
-            icon: '🏆',
-            required: false, // Viewing is optional but encouraged
-            category: 'Certificate',
-            fromDailyPlan: true,
-            dayId: `milestone-${displayMilestone}`,
-            handlerType: 'view-certificate',
-            isViewCertificate: true,
-            certificateMilestone: currentMilestone - 1,
-            certificateMilestoneName: prevMilestoneName
-          });
-        }
       }
       
       // If graduated, don't show milestone content - just the graduation certificate
@@ -711,6 +750,40 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           `milestone-${displayMilestone}`, 
           displayMilestone
         ).filter(action => action.type !== 'daily_rep');
+      }
+      
+      // =================== TRAINER-CONTROLLED SESSION ATTENDANCE ===================
+      // For milestones 2-5, inject a trainer-controlled "Session N: [Type]" item at the TOP
+      // This gates the Real Reps in that milestone (using existing REP_TYPE_TO_SESSION mapping)
+      // The trainer marks attendance via Session Attendance admin, which unlocks the reps
+      const MILESTONE_SESSION_LABELS = {
+        2: 'Attend 1:1 Coaching',
+        3: 'Session 3: Open Gym Feedback',
+        4: 'Session 4: Open Gym Pushback',
+        5: 'Session 5: Graduation'
+      };
+      
+      if (displayMilestone >= 2 && displayMilestone <= 5) {
+        const sessionLabel = MILESTONE_SESSION_LABELS[displayMilestone];
+        const sessionActionId = `action-s${displayMilestone}-deliberate-practice`; // Matches gating IDs
+        
+        // Create the trainer-controlled session attendance item
+        const sessionAttendanceItem = {
+          id: sessionActionId,
+          type: 'session',
+          displayType: 'session',
+          label: sessionLabel,
+          description: 'Trainer will mark attendance after the session',
+          required: true,
+          category: 'Coaching',
+          fromDailyPlan: true,
+          dayId: `milestone-${displayMilestone}`,
+          isTrainerControlled: true, // Special flag for trainer-only marking
+          prepSection: `session${displayMilestone}`
+        };
+        
+        // Insert at the beginning of milestoneActions (before Real Reps)
+        milestoneActions = [sessionAttendanceItem, ...milestoneActions];
       }
       
       // Generate coaching session actions from milestone's coachingSessionTypes
@@ -732,7 +805,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             dayId: `milestone-${displayMilestone}`,
             handlerType: 'session-picker',
             isSessionPicker: true,
-            requiresCertification: true, // Must be certified by facilitator to complete
+            // 1:1 Coaching and Open Gym use special action item format (no certification needed)
+            requiresCertification: sessionType !== SESSION_TYPES.ONE_ON_ONE && sessionType !== SESSION_TYPES.OPEN_GYM,
             milestoneId: displayMilestone
           };
         });
@@ -927,15 +1001,21 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     const explicitCarryOver = getCarriedOverItems(currentWeekNumber);
     carriedItems.push(...explicitCarryOver);
     
-    // Carry over ALL prep phase items (completed and incomplete) to Start phase
-    // Use prepRequirementsComplete.items which already has completion status
-    // Items stay visible after completion - they only disappear when ALL prep is complete
-    if (currentPhase?.id === 'start' && !prepRequirementsComplete?.allComplete) {
+    // Carry over ONLY INCOMPLETE prep phase items (onboarding + session1) to Start phase
+    // Completed items DO NOT carry forward - they stay in prep phase
+    if (currentPhase?.id === 'start') {
       // Use prepRequirementsComplete.items - it already has all required items with completion status
       if (Array.isArray(prepRequirementsComplete?.items)) {
         prepRequirementsComplete.items.forEach(item => {
           // Skip daily reps (handled separately)
           if (item.type === 'daily_rep') return;
+          
+          // Skip session2-5 prep items - they're handled via grouped session prep section, not carry-over
+          if (['session2', 'session3', 'session4', 'session5'].includes(item.prepSection)) return;
+          
+          // ONLY carry over INCOMPLETE items - completed items stay in prep phase
+          const isComplete = item.complete || isActionCompleted(item.id, item.label);
+          if (isComplete) return; // Skip completed items - they don't carry forward
           
           // Find the full action from daily plan for additional fields
           const prepDays = dailyPlan.filter(d => d.phase === 'pre-start' && d.id !== 'explore-config');
@@ -960,21 +1040,24 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             id: item.id,
             label: item.label || 'Preparation Action',
             required: true,
-            category: item.prepSection === 'session1' ? 'Session 1 Prep' : 'Onboarding',
+            // Use actual prepSection to set category - infer from dayId if needed
+            category: item.prepSection === 'session1' ? 'Session 1' : (item.dayId === 'session1-config' ? 'Session 1' : 'Onboarding'),
+            prepSection: item.prepSection || (item.dayId === 'session1-config' ? 'session1' : 'onboarding'),
             fromDailyPlan: true,
             dayId: fullAction?.dayId || 'onboarding-config',
             dayNumber: fullAction?.dayNumber || 0,
             carriedOver: true,
             fromWeek: 0,
+            fromPrepPhase: true, // Mark as from prep phase for filtering
             resourceId: fullAction?.resourceId,
             resourceType: (fullAction?.resourceType || item.type || 'content').toLowerCase(),
             url: fullAction?.url || fullAction?.videoUrl || fullAction?.link,
             isInteractive,
             handlerType,
-            estimatedMinutes: fullAction?.estimatedMinutes,
-            duration: fullAction?.duration,
-            // Store completion status from prepRequirementsComplete for tracking
-            prepComplete: item.complete
+            estimatedMinutes: fullAction?.estimatedMinutes || item.estimatedMinutes,
+            duration: fullAction?.duration || item.duration,
+            // Store completion status for UI display
+            prepComplete: isComplete
           });
         });
       }
@@ -1159,8 +1242,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           // Skip if already in carriedItems (avoid duplicates)
           if (carriedItems.some(item => item.id === actionId)) return;
           
-          // Check if completed
-          const completed = isActionCompleted(actionId, label);
+          // ONLY carry over INCOMPLETE items - completed items stay in their origin level
+          // Check multiple sources for completion:
+          // 1. isActionCompleted (dailyProgress, actionProgress, label matching)
+          // 2. prepRequirementsComplete.items (has reliable completion status)
+          const completedViaAction = isActionCompleted(actionId, label);
+          const prepItem = prepRequirementsComplete?.items?.find(p => 
+            p.id === actionId || 
+            (p.label || '').toLowerCase().trim() === label.toLowerCase().trim()
+          );
+          const completedViaPrep = prepItem?.complete === true;
+          const completed = completedViaAction || completedViaPrep;
+          if (completed) return;
           
           // Infer handler type and interactive status
           let handlerType = action.handlerType || '';
@@ -1193,9 +1286,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             isInteractive,
             handlerType,
             estimatedMinutes: action.estimatedMinutes,
-            duration: action.duration,
-            // Store completion status
-            prepComplete: completed
+            duration: action.duration
           });
         });
       });
@@ -1205,57 +1296,226 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, progressData, dailyPlan, userState?.dailyProgress, userState?.sessionAttendance, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.items]);
 
-  // Preserve carried over items - merge new items and update completion status
+  // =================== FIRESTORE-PERSISTED CARRY-OVER ===================
+  // Load persisted carried-over items from Firestore on mount
+  // This ensures items survive page refresh and don't disappear when completed
+  // BUT: when the milestone changes, discard old data and let carriedOverItems recompute fresh
+  // CRITICAL: Only load ONCE per session to prevent race conditions from user state updates
   useEffect(() => {
-    if (carriedOverItems.length > 0) {
-      const existingIds = new Set(preservedCarriedOverRef.current.map(i => i.id));
-      const newItems = carriedOverItems.filter(item => !existingIds.has(item.id));
-      
-      // Update completion status for existing items (from prepRequirementsComplete)
-      const updatedItems = preservedCarriedOverRef.current.map(existing => {
-        const updated = carriedOverItems.find(item => item.id === existing.id);
-        if (updated && updated.prepComplete !== undefined) {
-          return { ...existing, prepComplete: updated.prepComplete };
-        }
-        return existing;
-      });
-      
-      if (newItems.length > 0 || JSON.stringify(updatedItems) !== JSON.stringify(preservedCarriedOverRef.current)) {
-        preservedCarriedOverRef.current = [...updatedItems, ...newItems];
-        setPreservedCarriedOver([...preservedCarriedOverRef.current]);
-      }
+    if (!db || !user?.uid || currentPhase?.id !== 'start') return;
+    
+    // Calculate current milestone
+    let currentMilestoneNum = 1;
+    const mp = user?.milestoneProgress || {};
+    for (let m = 1; m <= 5; m++) {
+      if (mp[`milestone_${m}`]?.signedOff) currentMilestoneNum = m + 1;
+      else break;
     }
-  }, [carriedOverItems]);
+    
+    // CRITICAL: Don't re-load if already loaded for this milestone
+    // This prevents race conditions when user state updates (marking attendance, etc.)
+    if (carriedOverLoadedRef.current && lastLoadedMilestoneRef.current === currentMilestoneNum) {
+      return;
+    }
+    
+    const loadPersistedCarryOver = async () => {
+      try {
+        const carryOverRef = doc(db, 'users', user.uid, 'action_progress', '_carried_over_prep');
+        const snap = await getDoc(carryOverRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          const storedMilestone = data.milestone || 1;
+          const items = data.items || [];
+          
+          // If milestone changed, discard old data — carriedOverItems will recompute fresh
+          if (storedMilestone !== currentMilestoneNum) {
+            // Clear the stale Firestore doc so fresh data can be saved
+            await setDoc(carryOverRef, { items: [], milestone: currentMilestoneNum, updatedAt: new Date() });
+            preservedCarriedOverRef.current = [];
+            setPreservedCarriedOver([]);
+            carriedOverSavedRef.current = false; // Allow save effect to persist fresh data
+          } else if (items.length > 0) {
+            preservedCarriedOverRef.current = items;
+            setPreservedCarriedOver(items);
+          }
+        }
+        // Mark this milestone as loaded
+        lastLoadedMilestoneRef.current = currentMilestoneNum;
+      } catch (err) {
+        console.warn('[ThisWeeksActions] Could not load persisted carry-over:', err);
+      } finally {
+        // Always mark as loaded, even on error, so the save effect can proceed
+        carriedOverLoadedRef.current = true;
+        setCarriedOverLoaded(true);
+      }
+    };
+    loadPersistedCarryOver();
+  }, [db, user?.uid, currentPhase?.id, user?.milestoneProgress]);
+  
+  // Save carried-over items to Firestore when first computed (and not already saved)
+  // IMPORTANT: Wait for Firestore load to complete first to avoid overwriting persisted data
+  useEffect(() => {
+    if (!db || !user?.uid || currentPhase?.id !== 'start') return;
+    if (carriedOverItems.length === 0) return;
+    // Don't save until the Firestore load has completed (prevents race condition)
+    if (!carriedOverLoaded) return;
+    // Only save once per session to avoid overwriting with fewer items after completion
+    if (carriedOverSavedRef.current) return;
+    
+    // Merge with any existing persisted items (don't lose items from Firestore)
+    const existingIds = new Set(preservedCarriedOverRef.current.map(i => i.id));
+    const newItems = carriedOverItems.filter(item => !existingIds.has(item.id));
+    
+    if (newItems.length > 0 || preservedCarriedOverRef.current.length === 0) {
+      const merged = [...preservedCarriedOverRef.current, ...newItems];
+      preservedCarriedOverRef.current = merged;
+      setPreservedCarriedOver(merged);
+      carriedOverSavedRef.current = true;
+      
+      // Persist to Firestore
+      const carryOverRef = doc(db, 'users', user.uid, 'action_progress', '_carried_over_prep');
+      const itemsToSave = merged.map(item => {
+        const obj = {
+          id: item.id || '',
+          label: item.label || '',
+          category: item.category || 'prep',
+          prepSection: item.prepSection || null,
+          fromWeek: item.fromWeek ?? null,
+          fromPrepPhase: item.fromPrepPhase || null,
+          carriedOver: true,
+          dayId: item.dayId || null,
+          dayNumber: item.dayNumber || null,
+          resourceId: item.resourceId || null,
+          resourceType: item.resourceType || null,
+          url: item.url || null,
+          isInteractive: item.isInteractive || false,
+          handlerType: item.handlerType || '',
+          estimatedMinutes: item.estimatedMinutes || null,
+          duration: item.duration || null,
+          required: item.required !== false,
+          fromMilestone: item.fromMilestone || 0,
+          fromDailyPlan: item.fromDailyPlan !== false // Required for auto-complete on view
+        };
+        // Remove undefined values to prevent Firestore errors
+        Object.keys(obj).forEach(key => obj[key] === undefined && delete obj[key]);
+        return obj;
+      });
+      // Calculate current milestone for the persistence record
+      let currentMilestoneForSave = 1;
+      const mp = user?.milestoneProgress || {};
+      for (let m = 1; m <= 5; m++) {
+        if (mp[`milestone_${m}`]?.signedOff) currentMilestoneForSave = m + 1;
+        else break;
+      }
+      setDoc(carryOverRef, { items: itemsToSave, milestone: currentMilestoneForSave, updatedAt: new Date() }, { merge: true })
+        .catch(err => console.warn('[ThisWeeksActions] Could not persist carry-over:', err));
+    } else {
+      // No new items and we already have persisted data - just mark as saved
+      carriedOverSavedRef.current = true;
+    }
+  }, [carriedOverItems, carriedOverLoaded, db, user?.uid, user?.milestoneProgress, currentPhase?.id]);
   
   // Use preserved items if available, otherwise use current carriedOverItems
   // Keep ALL items visible (even completed ones) - they only disappear when:
-  // 1. All prep is complete (collapsed into celebration banner)
-  // 2. User advances to next level/milestone
+  // 1. User advances to next level/milestone
+  // When all prep is complete, items collapse into celebration banner (NOT removed)
   const displayedCarriedOverItems = useMemo(() => {
     const baseItems = preservedCarriedOver.length > 0 ? preservedCarriedOver : carriedOverItems;
     
-    // If all prep is complete, filter out ALL prep items (they collapse into celebration)
-    if (prepRequirementsComplete?.allComplete) {
-      return baseItems.filter(item => 
-        item.fromWeek !== 0 && 
-        item.category !== 'Preparation' && 
-        item.category !== 'Onboarding' &&
-        item.category !== 'Session 1 Prep'
-      );
+    // Ensure all items have fromDailyPlan set (needed for auto-complete on view)
+    // Items loaded from Firestore may be missing this property
+    const normalizedItems = baseItems.map(item => ({
+      ...item,
+      fromDailyPlan: item.fromDailyPlan !== false // Default to true for carried-over items
+    }));
+    
+    // Calculate current milestone for filtering
+    let currentMilestoneNum = 1;
+    if (currentPhase?.id === 'start') {
+      const milestoneProgress = user?.milestoneProgress || {};
+      for (let m = 1; m <= 5; m++) {
+        const mData = milestoneProgress[`milestone_${m}`] || {};
+        if (mData.signedOff) {
+          currentMilestoneNum = m + 1;
+        } else {
+          break;
+        }
+      }
     }
     
-    // Keep ALL items visible - don't filter out completed ones
-    // The ActionItem component will show them as completed (with checkmark)
-    return baseItems;
-  }, [preservedCarriedOver, carriedOverItems, prepRequirementsComplete?.allComplete]);
+    // Filter out session prep items from CURRENT milestone (they're shown in bottom section)
+    // BUT KEEP session prep items from PRIOR milestones (carried over from earlier levels)
+    let filteredItems = currentPhase?.id === 'start'
+      ? normalizedItems.filter(item => {
+          // Always keep non-session-prep items
+          if (!item.isSessionPrep && !['session2', 'session3', 'session4', 'session5'].includes(item.prepSection)) {
+            return true;
+          }
+          // For session prep items, only include if from a PRIOR milestone (carried over)
+          const itemOriginMilestone = item.originMilestone || item.fromMilestone;
+          return itemOriginMilestone != null && itemOriginMilestone < currentMilestoneNum;
+        })
+      : normalizedItems;
+    
+    // Keep ALL carried-over items visible (even completed ones)
+    // Completed items stay visible but marked off - they only disappear on level advance
+    // When all are complete, section collapses into celebration banner
+    return filteredItems;
+  }, [preservedCarriedOver, carriedOverItems, currentPhase?.id, user?.milestoneProgress]);
+
+  // Calculate progress (must be before groupedSessionPrepItems since it's a dependency)
+  const completedItems = useMemo(() => {
+    // Get completed items from userState.dailyProgress for the relevant days
+    // But simpler to just check item status via getItemProgress or userState
+    // userState.dailyProgress is keyed by dayId
+    
+    // Let's use a Set of completed item IDs for fast lookup
+    const completedSet = new Set();
+    
+    const dailyProgress = userState?.dailyProgress || {};
+    
+    Object.values(dailyProgress).forEach(dayProgress => {
+      if (dayProgress && dayProgress.itemsCompleted) {
+        dayProgress.itemsCompleted.forEach(id => completedSet.add(id));
+      }
+    });
+    
+    const result = Array.from(completedSet);
+    return result;
+  }, [userState]);
 
   // Group session prep items by prepSection for Foundation phase display
+  // ONLY show session prep for the CURRENT milestone - prior milestone prep is in carry-over section
   // Returns: { session2: { items: [], allComplete: bool, completedCount: num }, session3: {...}, etc. }
   const groupedSessionPrepItems = useMemo(() => {
     if (currentPhase?.id !== 'start') return {};
     
+    // Calculate current milestone to determine which session prep is "native"
+    let currentMilestoneNum = 1;
+    const milestoneProgress = user?.milestoneProgress || {};
+    for (let m = 1; m <= 5; m++) {
+      const mData = milestoneProgress[`milestone_${m}`] || {};
+      if (mData.signedOff) {
+        currentMilestoneNum = m + 1;
+      } else {
+        break;
+      }
+    }
+    
+    // Map milestone number to its native session prep
+    // Milestone 1 → session2, Milestone 2 → session3, etc.
+    const MILESTONE_TO_SESSION_PREP = {
+      1: 'session2',
+      2: 'session3',
+      3: 'session4',
+      4: 'session5'
+    };
+    
+    const currentSessionPrepId = MILESTONE_TO_SESSION_PREP[currentMilestoneNum];
+    if (!currentSessionPrepId) return {}; // No session prep for milestone 5
+    
     const groups = {};
-    const sessionPrepOrder = ['session2', 'session3', 'session4', 'session5'];
+    const sessionPrepOrder = [currentSessionPrepId]; // Only show current milestone's prep
     
     // Initialize groups
     sessionPrepOrder.forEach(sessionId => {
@@ -1269,13 +1529,14 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       return progress?.status === 'completed' || completedItems.includes(item.id);
     };
     
-    // Gather session prep items from both carriedOverItems and allActions
-    const allPrepItems = [
-      ...displayedCarriedOverItems.filter(item => item.isSessionPrep || item.prepSection?.startsWith('session')),
-      ...allActions.filter(item => item.isSessionPrep || item.prepSection?.startsWith('session'))
-    ];
+    // Only gather session prep items from allActions (current milestone's native prep)
+    // Carried-over session prep is already in displayedCarriedOverItems
+    const allPrepItems = allActions.filter(item => 
+      (item.isSessionPrep || item.prepSection?.startsWith('session')) &&
+      item.prepSection === currentSessionPrepId
+    );
     
-    // Remove duplicates by ID
+    // Process items
     const seenIds = new Set();
     allPrepItems.forEach(item => {
       if (!item.prepSection || seenIds.has(item.id)) return;
@@ -1297,28 +1558,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     });
     
     return groups;
-  }, [currentPhase?.id, displayedCarriedOverItems, allActions, getItemProgress, completedItems]);
-
-  // Calculate progress
-  const completedItems = useMemo(() => {
-    // Get completed items from userState.dailyProgress for the relevant days
-    // But simpler to just check item status via getItemProgress or userState
-    // userState.dailyProgress is keyed by dayId
-    
-    // Let's use a Set of completed item IDs for fast lookup
-    const completedSet = new Set();
-    
-    const dailyProgress = userState?.dailyProgress || {};
-    
-    Object.values(dailyProgress).forEach(dayProgress => {
-      if (dayProgress && dayProgress.itemsCompleted) {
-        dayProgress.itemsCompleted.forEach(id => completedSet.add(id));
-      }
-    });
-    
-    const result = Array.from(completedSet);
-    return result;
-  }, [userState]);
+  }, [currentPhase?.id, user?.milestoneProgress, allActions, getItemProgress, completedItems]);
 
   // Fetch video series durations for video_series actions
   // Use a ref to track fetched series IDs to avoid infinite loops
@@ -1440,7 +1680,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       if (hasNoMilestoneContent && hasCarriedOverItems) {
         return "Preparation Phase";
       }
-      return "Current Milestone";
+      return `Current Level`;
     }
     return "This Week's Actions";
   }, [currentPhase?.id, allActions.length, displayedCarriedOverItems.length]);
@@ -1718,54 +1958,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     } else if (item.handlerType === 'conditioning-tutorial') {
       setShowConditioningTutorialModal(true);
     } else if (item.handlerType === 'conditioning-rep') {
-      // Open conditioning rep flow directly on dashboard (no navigation)
-      // Priority: 0) Already completed → do nothing, 1) Active rep → Evidence capture, 2) Draft → Resume commit, 3) Start fresh
-      try {
-        if (db && user?.uid) {
-          const cohortId = user?.cohort || user?.cohortId || 'foundation-cohort-1';
-          
-          // First: Check if this action item already has a completed rep
-          const completedRep = await conditioningService.getCompletedRepBySourceItemId(db, user.uid, item.id, cohortId);
-          
-          if (completedRep) {
-            // Rep is already completed - refresh the completion state and don't open anything
-            await refreshLoopClosedRepTypes();
-            return;
-          }
-          
-          // Second: Check for an active committed rep from this action item
-          const activeRep = await conditioningService.getActiveRepBySourceItemId(db, user.uid, item.id, cohortId);
-          
-          if (activeRep) {
-            // Found an active rep - open evidence capture wizard
-            setEvidenceWizardRep(activeRep);
-            setShowEvidenceWizardModal(true);
-            return;
-          }
-          
-          // Third: Check for draft to resume
-          if (item.repTypeId) {
-            const matchingDraft = await draftRepService.getDraftByRepType(db, user.uid, item.repTypeId, item.id);
-            
-            if (matchingDraft && hasMeaningfulProgress(matchingDraft)) {
-              setConditioningRepDraft(matchingDraft);
-            } else {
-              setConditioningRepDraft(null);
-            }
-          } else {
-            setConditioningRepDraft(null);
-          }
-        } else {
-          setConditioningRepDraft(null);
-        }
-      } catch (err) {
-        console.warn('Could not check for reps or drafts:', err);
-        setConditioningRepDraft(null);
-      }
-      
-      // No active or completed rep found - show commit flow (with or without draft)
-      setConditioningRepItem(item);
-      setShowConditioningRepModal(true);
+      // Navigate to Conditioning screen (user can click "Commit to a Rep" when ready)
+      navigate?.('conditioning');
     }
   };
   
@@ -1798,7 +1992,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       setConditioningRepItem(null);
       setConditioningRepDraft(null);
       
-      // Note: The action item completion is handled automatically by loopClosedRepTypes
+      // Note: The action item completion is handled automatically by loopClosedRepCounts
       // when the rep reaches loop_closed status (after full completion)
       
     } catch (error) {
@@ -1818,14 +2012,17 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     setShowEvidenceWizardModal(false);
     setEvidenceWizardRep(null);
     
-    // Optimistic update: immediately mark this rep type as complete in local state
+    // Optimistic update: immediately increment count for this rep type in local state
     // This gives instant feedback while the server refresh happens in background
-    if (completedRepType && !loopClosedRepTypes.includes(completedRepType)) {
-      setLoopClosedRepTypes(prev => [...prev, completedRepType]);
+    if (completedRepType) {
+      setLoopClosedRepCounts(prev => ({
+        ...prev,
+        [completedRepType]: (prev[completedRepType] || 0) + 1
+      }));
     }
     
     // Also refresh from server to ensure consistency
-    refreshLoopClosedRepTypes();
+    refreshLoopClosedRepCounts();
   };
   
   // Handler for Baseline Assessment completion
@@ -2334,15 +2531,279 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       );
     }
     
+    // ========== SPECIAL HANDLING: Trainer-Controlled Sessions ==========
+    // Deliberate Practice sessions can only be marked complete by a trainer
+    // User sees a status indicator but cannot toggle the checkbox
+    // Show scheduling info from the coaching registration (1:1 for S2, Open Gym for S3/S4)
+    if (item.isTrainerControlled) {
+      const sessionAttendance = userState?.sessionAttendance || {};
+      const isAttended = item.id && sessionAttendance[item.id]?.attended === true;
+      
+      // Look up coaching registration based on session type
+      // Session 2 = 1:1 Coaching, Session 3 & 4 = Open Gym
+      const milestoneNum = item.id ? parseInt(item.id.replace('action-s', '').replace('-deliberate-practice', ''), 10) : null;
+      const sessionTypeForMilestone = milestoneNum === 2 ? 'one_on_one' : (milestoneNum === 3 || milestoneNum === 4) ? 'open_gym' : null;
+      const coachingItemId = milestoneNum && sessionTypeForMilestone ? `milestone-${milestoneNum}-coaching-${sessionTypeForMilestone}` : null;
+      const registration = coachingItemId ? getRegistrationForCoachingItem(coachingItemId) : null;
+      const hasScheduledSession = registration?.status && registration.status !== REGISTRATION_STATUS.CANCELLED;
+      
+      const handleSessionClick = () => {
+        if (!isAttended && sessionTypeForMilestone) {
+          // Navigate to coaching hub to schedule/reschedule
+          navigate?.('coaching-hub', { initialTab: 'live', sessionTypeFilter: sessionTypeForMilestone });
+        }
+      };
+
+      // Show "Schedule" prefix only for coaching sessions (milestones 2-4) that haven't been scheduled yet
+      // Session 1 and 5 are pre-scheduled sessions, not user-schedulable coaching
+      const isSchedulableCoaching = sessionTypeForMilestone !== null;
+      const displayLabel = (isSchedulableCoaching && !isAttended && !hasScheduledSession)
+        ? `Schedule ${item.label || 'Deliberate Practice Session'}`
+        : (item.label || 'Deliberate Practice Session');
+      
+      return (
+        <div 
+          className={`group flex items-start gap-3 p-3 rounded-xl border transition-all ${
+            !isAttended ? 'cursor-pointer' : ''
+          } ${
+            isAttended 
+              ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-700'
+              : (isSchedulableCoaching && !hasScheduledSession)
+                ? 'bg-teal-50 border-teal-100 hover:bg-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700'
+                : 'bg-amber-50/50 border-amber-200/60 dark:bg-amber-900/20 dark:border-amber-700/40 hover:bg-amber-50 dark:hover:bg-amber-900/30'
+          }`}
+          onClick={handleSessionClick}
+        >
+          {/* Non-interactive status indicator */}
+          <div className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center ${
+            isAttended 
+              ? 'bg-emerald-500 border-emerald-500' 
+              : (isSchedulableCoaching && !hasScheduledSession)
+                ? 'border-teal-300 dark:border-teal-500'
+                : 'border-amber-300 dark:border-amber-600'
+          }`}>
+            {isAttended 
+              ? <CheckCircle className="w-4 h-4 text-white pointer-events-none" />
+              : (isSchedulableCoaching && !hasScheduledSession)
+                ? <Calendar className="w-3 h-3 text-teal-400 dark:text-teal-500 pointer-events-none" />
+                : <Clock className="w-3 h-3 text-amber-500 dark:text-amber-400 pointer-events-none" />
+            }
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+              <p className={`text-sm font-bold ${isAttended ? 'text-emerald-700 dark:text-emerald-400 line-through' : 'text-slate-700 dark:text-white'}`}>
+                {displayLabel}
+              </p>
+              {!isAttended && (
+                <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+              )}
+            </div>
+            {isAttended ? (
+              <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                ✓ Attendance confirmed by trainer
+              </p>
+            ) : hasScheduledSession && registration ? (
+              <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+                <Calendar className="w-3 h-3" />
+                <span>
+                  {registration.sessionDate 
+                    ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                    : 'Date TBD'
+                  }
+                  {registration.sessionTime && ` at ${registration.sessionTime}`}
+                </span>
+                {registration.coach && (
+                  <span>• with {registration.coach}</span>
+                )}
+                <span className="text-amber-500 dark:text-amber-300 underline ml-1">Reschedule</span>
+              </div>
+            ) : isSchedulableCoaching ? (
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <Calendar className="w-3 h-3" />
+                <span>Click to schedule your coaching session</span>
+              </div>
+            ) : (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                ⏳ Awaiting trainer confirmation
+              </p>
+            )}
+          </div>
+
+          {!isAttended && !(isSchedulableCoaching && !hasScheduledSession) && (
+            <div className="flex-shrink-0 mt-1">
+              <span className="text-[10px] font-medium text-amber-600 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40 px-2 py-1 rounded-lg flex items-center gap-1">
+                <Lock className="w-3 h-3" /> Trainer Sign-Off
+              </span>
+            </div>
+          )}
+          {!isAttended && isSchedulableCoaching && !hasScheduledSession && (
+            <ChevronRight className="flex-shrink-0 w-5 h-5 text-slate-400 dark:text-slate-500 group-hover:text-corporate-teal dark:group-hover:text-teal-400 transition-colors mt-0.5" />
+          )}
+        </div>
+      );
+    }
+    
+    // ========== SPECIAL HANDLING: 1:1 Coaching Session (No Certification) ==========
+    // Shows scheduled date/time and navigates to Coaching Sessions screen
+    // Once scheduled, shows as completed with strikethrough (but does NOT carry to next level)
+    if (item.isSessionPicker && item.sessionType === SESSION_TYPES.ONE_ON_ONE && !item.requiresCertification) {
+      const registration = getRegistrationForCoachingItem(item.id);
+      const isScheduled = registration?.status && registration.status !== REGISTRATION_STATUS.CANCELLED;
+      
+      const handleCoachingNavigation = () => {
+        // Navigate to Coaching Hub with Browse Sessions tab and 1:1 filter
+        navigate?.('coaching-hub', { 
+          initialTab: 'live', 
+          sessionTypeFilter: 'one_on_one' 
+        });
+      };
+      
+      return (
+        <div 
+          className={`group flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+            isScheduled 
+              ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-700'
+              : 'bg-teal-50 border-teal-100 hover:bg-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700'
+          }`}
+          onClick={handleCoachingNavigation}
+        >
+          {/* Checkbox - matches standard action items */}
+          <div className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+            isScheduled 
+              ? 'bg-emerald-500 border-emerald-500' 
+              : 'border-teal-300 dark:border-teal-500'
+          }`}>
+            {isScheduled && <CheckCircle className="w-4 h-4 text-white pointer-events-none" />}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+              <p className={`text-sm font-bold ${isScheduled ? 'text-emerald-700 dark:text-emerald-400 line-through' : 'text-slate-700 dark:text-white'}`}>
+                {item.label}
+              </p>
+              {!isScheduled && (
+                <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+              )}
+            </div>
+            {isScheduled && registration ? (
+              <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                <Calendar className="w-3 h-3" />
+                <span>
+                  {registration.sessionDate 
+                    ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                    : 'Date TBD'
+                  }
+                  {registration.sessionTime && ` at ${registration.sessionTime}`}
+                </span>
+                {registration.coach && (
+                  <span className="text-emerald-500 dark:text-emerald-400">• with {registration.coach}</span>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <Calendar className="w-3 h-3" />
+                <span>Coaching • Personal coaching session</span>
+              </div>
+            )}
+          </div>
+          
+          <ChevronRight className="flex-shrink-0 w-5 h-5 text-slate-400 dark:text-slate-500 group-hover:text-corporate-teal dark:group-hover:text-teal-400 transition-colors mt-0.5" />
+        </div>
+      );
+    }
+    
+    // ========== SPECIAL HANDLING: Open Gym Session (No Certification) ==========
+    // Shows scheduled date/time and navigates to Coaching Sessions screen
+    // Once scheduled, shows as completed with strikethrough (but does NOT carry to next level)
+    if (item.isSessionPicker && item.sessionType === SESSION_TYPES.OPEN_GYM && !item.requiresCertification) {
+      const registration = getRegistrationForCoachingItem(item.id);
+      const isScheduled = registration?.status && registration.status !== REGISTRATION_STATUS.CANCELLED;
+      
+      const handleCoachingNavigation = () => {
+        // Navigate to Coaching Hub with Browse Sessions tab and Open Gym filter
+        navigate?.('coaching-hub', { 
+          initialTab: 'live', 
+          sessionTypeFilter: 'open_gym' 
+        });
+      };
+      
+      return (
+        <div 
+          className={`group flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+            isScheduled 
+              ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-700'
+              : 'bg-teal-50 border-teal-100 hover:bg-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700'
+          }`}
+          onClick={handleCoachingNavigation}
+        >
+          {/* Checkbox - matches standard action items */}
+          <div className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+            isScheduled 
+              ? 'bg-emerald-500 border-emerald-500' 
+              : 'border-teal-300 dark:border-teal-500'
+          }`}>
+            {isScheduled && <CheckCircle className="w-4 h-4 text-white pointer-events-none" />}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+              <p className={`text-sm font-bold ${isScheduled ? 'text-emerald-700 dark:text-emerald-400 line-through' : 'text-slate-700 dark:text-white'}`}>
+                {item.label}
+              </p>
+              {!isScheduled && (
+                <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+              )}
+            </div>
+            {isScheduled && registration ? (
+              <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                <Calendar className="w-3 h-3" />
+                <span>
+                  {registration.sessionDate 
+                    ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                    : 'Date TBD'
+                  }
+                  {registration.sessionTime && ` at ${registration.sessionTime}`}
+                </span>
+                {registration.coach && (
+                  <span className="text-emerald-500 dark:text-emerald-400">• with {registration.coach}</span>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <Calendar className="w-3 h-3" />
+                <span>Coaching • Drop-in feedback session</span>
+              </div>
+            )}
+          </div>
+          
+          <ChevronRight className="flex-shrink-0 w-5 h-5 text-slate-400 dark:text-slate-500 group-hover:text-corporate-teal dark:group-hover:text-teal-400 transition-colors mt-0.5" />
+        </div>
+      );
+    }
+    
     // ========== STANDARD ACTION ITEMS ==========
     // For ALL prep phase items, use prepRequirementsComplete for unified completion tracking
     // This ensures the checkbox state matches the DevelopmentJourneyWidget counter
     let isCompleted;
     
-    // FIRST: Check if this is a carried-over prep item with prepComplete already set
-    // This avoids re-looking up completion status (already calculated from prepRequirementsComplete)
-    if (item.carriedOver && item.prepComplete !== undefined) {
-      isCompleted = item.prepComplete;
+    // FIRST: Check if this is a carried-over prep item — look up LIVE status from prepRequirementsComplete
+    // so completion updates reactively (e.g., after viewing a Download/Print item)
+    if (item.carriedOver && item.fromPrepPhase && Array.isArray(prepRequirementsComplete?.items)) {
+      const itemLabel = (item.label || '').toLowerCase().trim();
+      const livePrepItem = prepRequirementsComplete.items.find(p => {
+        if (item.id && p.id && item.id === p.id) return true;
+        if (item.handlerType && p.handlerType && item.handlerType === p.handlerType) return true;
+        const pLabel = (p.label || '').toLowerCase().trim();
+        if (pLabel && itemLabel && pLabel === itemLabel) return true;
+        return false;
+      });
+      if (livePrepItem) {
+        isCompleted = livePrepItem.complete;
+      } else {
+        // Fallback to action progress
+        isCompleted = (progress.status === 'completed' || completedItems.includes(item.id));
+      }
     // SECOND: Check facilitator-controlled session attendance (Deliberate Practice sessions)
     // These sessions are marked as attended by facilitators via SessionAttendanceQueue
     } else {
@@ -2491,12 +2952,24 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             {!item.isLocked && item.required !== false && !item.optional && !isCarriedOver && !isCompleted && (
               <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
             )}
-            {!item.isInteractive && item.optional && !isCarriedOver && (
+            {!item.isInteractive && item.optional && !isCarriedOver && !isCompleted && (
               <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:text-slate-400 dark:bg-slate-700 px-1.5 py-0.5 rounded uppercase tracking-wider">Optional</span>
             )}
             {isCarriedOver && (
               <span className="text-[10px] font-bold text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
-                <Clock className="w-2.5 h-2.5" /> {item.fromWeek === 0 ? 'Prep' : `Week ${item.fromWeek}`}
+                <Clock className="w-2.5 h-2.5" /> {(() => {
+                  // Determine the carry-over badge text
+                  if (item.fromWeek) return `Week ${item.fromWeek}`;
+                  // Session prep items (session2, session3, etc.)
+                  if (item.isSessionPrep || (item.prepSection && item.prepSection.match(/^session[2-5]$/))) {
+                    const sessionNum = item.prepSection?.replace('session', '') || '';
+                    return `Session ${sessionNum}`;
+                  }
+                  // Session 1 prep
+                  if (item.prepSection === 'session1') return 'Session 1';
+                  // Onboarding
+                  return 'Onboarding';
+                })()}
               </span>
             )}
           </div>
@@ -2510,7 +2983,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           
           <div className={`flex items-center gap-2 text-xs ${getIconColor()}`}>
             <Icon className="w-3 h-3" />
-            {item.isInteractive ? (
+            {item.handlerType === 'conditioning-rep' ? (
+              <>
+                <span className="capitalize">Conditioning Rep</span>
+                <span>•</span>
+                <span className={`font-medium ${item.autoComplete ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                  {item.completedRepCount || 0}/{item.requiredRepCount || 1} complete
+                </span>
+                {item.estimatedMinutes && (
+                  <><span>•</span><span className="text-slate-500 dark:text-slate-400">{item.estimatedMinutes} min</span></>
+                )}
+              </>
+            ) : item.isInteractive ? (
               <>
                 <span className="capitalize">Form</span>
                 <span>•</span>
@@ -2564,17 +3048,36 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
               title={isCompleted ? 'Edit' : 'Complete'}
             >
-              <ExternalLink className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           )}
 
-          {/* Regular content items with resources */}
-          {!item.isInteractive && (item.resourceId || item.url) && (
+          {/* Regular content items with resources or session pickers */}
+          {!item.isInteractive && (item.resourceId || item.url || item.isSessionPicker) && (
             <button
-              onClick={(e) => handleViewResource(e, item)}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (item.isSessionPicker) {
+                  if (item.type === 'coaching' || item.handlerType === 'session-picker') {
+                    setSessionPickerItem(item);
+                    setShowSessionPicker(true);
+                  } else if (item.type === 'community' || item.handlerType === 'community-session-picker') {
+                    setCommunitySessionPickerItem(item);
+                    setShowCommunitySessionPicker(true);
+                  }
+                } else {
+                  handleViewResource(e, item);
+                }
+              }}
               className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
             >
-              {loadingResource === item.id ? <Loader className="w-5 h-5 animate-spin" /> : <ExternalLink className="w-5 h-5" />}
+              {loadingResource === item.id ? (
+                <Loader className="w-5 h-5 animate-spin" />
+              ) : (item.resourceType === 'video' || item.resourceType === 'video_series' || item.type === 'video') ? (
+                <Play className="w-5 h-5" />
+              ) : (
+                <ChevronRight className="w-5 h-5" />
+              )}
             </button>
           )}
         </div>
@@ -2835,17 +3338,14 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         {/* ========== START/POST PHASE: Week-Based Actions ========== */}
         {currentPhase?.id !== 'pre-start' && (
           <>
-            {/* Carried Over Items - Show even when all complete */}
+            {/* Carried Over Items - persist and stay visible even when completed */}
             {displayedCarriedOverItems.length > 0 && (() => {
               const completedCarriedOver = displayedCarriedOverItems.filter(item => {
-                // Match ActionItem's completion logic exactly
                 if (item.isInteractive) {
-                  // Use prepRequirementsComplete.items first (same as ActionItem)
                   if (Array.isArray(prepRequirementsComplete?.items)) {
                     const prepItem = prepRequirementsComplete.items.find(p => p.handlerType === item.handlerType);
                     if (prepItem) return prepItem.complete;
                   }
-                  // Fallback to individual hook values
                   if (item.handlerType === 'leader-profile') return leaderProfileComplete;
                   if (item.handlerType === 'baseline-assessment') return baselineAssessmentComplete;
                   if (item.handlerType === 'notification-setup') return notificationSetupComplete;
@@ -2859,7 +3359,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               const allCarriedOverComplete = completedCarriedOver.length === displayedCarriedOverItems.length;
               
               return allCarriedOverComplete ? (
-                // All Prior Week items complete - Show collapsed celebration
                 <div className="mb-4">
                   <button
                     onClick={() => setPriorWeekExpanded(!priorWeekExpanded)}
@@ -2869,7 +3368,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                       <Trophy className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">✅ Onboarding Complete!</p>
+                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Carry Forward Complete!</p>
                       <p className="text-xs text-emerald-600 dark:text-emerald-400">
                         All {displayedCarriedOverItems.length} carried-over {displayedCarriedOverItems.length === 1 ? 'task' : 'tasks'} finished
                       </p>
@@ -2888,7 +3387,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   )}
                 </div>
               ) : (
-                // Prior Week items still incomplete - Show active section
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2 px-1">
                     <div className="flex items-center gap-2">
@@ -2947,7 +3445,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     </div>
                     <div className="flex-1 text-left">
                       <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
-                        🎉 {currentPhase?.id === 'start' ? 'Milestone Complete!' : 'This Week Complete!'}
+                        🎉 {currentPhase?.id === 'start' ? 'Level Complete!' : 'This Week Complete!'}
                       </p>
                       <p className="text-xs text-emerald-600 dark:text-emerald-400">
                         All {milestoneActions.length} {milestoneActions.length === 1 ? 'task' : 'tasks'} finished — Great work!
@@ -3011,84 +3509,57 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               
               if (activeGroups.length === 0) return null;
               
+              // Combine all active groups into one flat list for display
+              const allSessionPrepItems = [];
+              let totalPrepCompleted = 0;
+              let totalPrepCount = 0;
+              activeGroups.forEach(sessionId => {
+                const group = groupedSessionPrepItems[sessionId];
+                allSessionPrepItems.push(...group.items);
+                totalPrepCompleted += group.completedCount;
+                totalPrepCount += group.totalCount;
+              });
+              
               return (
-                <div className="mt-6 space-y-4">
-                  <div className="flex items-center gap-2 px-1">
-                    <PlayCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm font-bold text-blue-800 dark:text-blue-400 uppercase tracking-wider">Session Preparation</span>
-                    <div className="flex-1 h-px bg-blue-200 dark:bg-blue-700"></div>
+                <>
+                  <div className="flex items-center gap-2 mt-6 mb-2 px-1">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      <span className="text-sm font-bold text-teal-800 dark:text-teal-400 uppercase tracking-wider">Session Preparation</span>
+                    </div>
+                    <div className="flex-1 h-px bg-teal-200 dark:bg-teal-700"></div>
+                    <span className="text-xs font-medium text-teal-600 bg-teal-100 dark:text-teal-300 dark:bg-teal-900/40 px-2 py-0.5 rounded-full">
+                      {totalPrepCompleted}/{totalPrepCount} complete
+                    </span>
                   </div>
-                  
-                  {activeGroups.map(sessionId => {
-                    const group = groupedSessionPrepItems[sessionId];
-                    const isExpanded = sessionPrepExpanded[sessionId] ?? !group.allComplete;
-                    
-                    return (
-                      <div key={sessionId} className="mb-3">
-                        <button
-                          onClick={() => setSessionPrepExpanded(prev => ({
-                            ...prev,
-                            [sessionId]: !isExpanded
-                          }))}
-                          className={`w-full group flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                            group.allComplete
-                              ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-800/50'
-                              : 'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800/50'
-                          }`}
-                        >
-                          <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-                            group.allComplete
-                              ? 'bg-emerald-500'
-                              : 'bg-blue-500'
-                          }`}>
-                            {group.allComplete ? (
-                              <CheckCircle className="w-4 h-4 text-white" />
-                            ) : (
-                              <PlayCircle className="w-4 h-4 text-white" />
-                            )}
-                          </div>
-                          <div className="flex-1 text-left">
-                            <p className={`text-sm font-bold ${
-                              group.allComplete
-                                ? 'text-emerald-800 dark:text-emerald-300'
-                                : 'text-blue-800 dark:text-blue-300'
-                            }`}>
-                              {group.allComplete ? '✓ ' : ''}{sessionPrepNames[sessionId]}
-                            </p>
-                            <p className={`text-xs ${
-                              group.allComplete
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-blue-600 dark:text-blue-400'
-                            }`}>
-                              {group.completedCount}/{group.totalCount} complete
-                            </p>
-                          </div>
-                          <div className={`flex-shrink-0 p-1 ${
-                            group.allComplete
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-blue-600 dark:text-blue-400'
-                          }`}>
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </div>
-                        </button>
-                        
-                        {isExpanded && (
-                          <div className={`mt-2 space-y-1 p-3 rounded-xl border ${
-                            group.allComplete
-                              ? 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200/60 dark:border-emerald-700/40'
-                              : 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-200/60 dark:border-blue-700/40'
-                          }`}>
-                            {group.items.map((item, idx) => (
-                              <ActionItem key={item.id || `${sessionId}-${idx}`} item={item} idx={idx} />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                  <div className="space-y-1">
+                    {allSessionPrepItems.map((item, idx) => (
+                      <ActionItem key={item.id || `session-prep-${idx}`} item={item} idx={idx} />
+                    ))}
+                  </div>
+                </>
               );
             })()}
+
+            {/* =================== MILESTONE SIGN-OFF INDICATOR (Foundation Phase Only) =================== */}
+            {/* Shows trainer sign-off requirement at the bottom of each level */}
+            {currentPhase?.id === 'start' && currentMilestoneInfo && !currentMilestoneInfo.isGraduated && (
+              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-800/40 flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                      Trainer Sign-Off Required
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Complete all required items above. Your trainer will review and sign off before you advance to Level {Math.min(currentMilestoneInfo.number + 1, 5)}.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Empty state */}
             {allActions.length === 0 && displayedCarriedOverItems.length === 0 && 
@@ -3223,7 +3694,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           isLoading={isSubmittingRep}
           initialFlow={conditioningRepDraft ? conditioningRepDraft.flowType : DRAFT_FLOW_TYPES.PLANNED}
           milestoneProgress={user?.milestoneProgress || {}}
-          completedRepTypes={loopClosedRepTypes}
+          completedRepTypes={Object.keys(loopClosedRepCounts).filter(k => loopClosedRepCounts[k] > 0)}
           preselectedRepType={conditioningRepItem?.repTypeId}
           initialDraft={conditioningRepDraft}
           sourceItemId={conditioningRepItem?.id}

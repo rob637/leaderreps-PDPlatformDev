@@ -1232,6 +1232,41 @@ export const conditioningService = {
     
     return Array.from(repTypes);
   },
+
+  /**
+   * Get count of completed reps per rep type (for milestone action item progress tracking)
+   * Returns Map of repType → count of fully completed reps
+   */
+  getCompletedRepCounts: async (db, userId) => {
+    const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+    const relevantStates = ['debriefed', 'follow_up_pending', 'loop_closed', 'completed'];
+    const q = query(repsRef, where('status', 'in', relevantStates));
+    const snapshot = await getDocs(q);
+    
+    const counts = {};
+    const repTypesRequiringLoop = ['set_clear_expectations', 'deliver_reinforcing_feedback', 'reinforce_public'];
+    
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const repType = data.repType;
+      const status = data.status;
+      if (!repType) return;
+      if (data.qualityAssessment && data.qualityAssessment.meetsStandard === false) return;
+      
+      if (repTypesRequiringLoop.includes(repType)) {
+        const hasLoopResponses = repType === 'deliver_reinforcing_feedback' || repType === 'reinforce_public'
+          ? !!data.evidence?.drfEvidence?.completeLoopResponses
+          : !!data.evidence?.sceEvidence?.completeLoopResponses;
+        if (status === 'loop_closed' || hasLoopResponses) {
+          counts[repType] = (counts[repType] || 0) + 1;
+        }
+      } else {
+        counts[repType] = (counts[repType] || 0) + 1;
+      }
+    });
+    
+    return counts;
+  },
   
   /**
    * Subscribe to current week reps (real-time updates)

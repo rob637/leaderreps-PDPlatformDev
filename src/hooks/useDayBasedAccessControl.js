@@ -69,28 +69,23 @@ export const useDayBasedAccessControl = () => {
   }, [prepRequirementsComplete, leaderProfileIsComplete, developmentPlanData]);
 
   // --- EFFECTIVE DAY ---
-  // If prep is not complete, user is locked to prep phase (Day -14 to Day -1)
+  // Use the actual current day number. Incomplete prep items carry forward
+  // to Foundation as Catch Up items — they don't block zone access.
   const effectiveDayNumber = useMemo(() => {
-    if (!prepStatus.isComplete && currentDayNumber > 0) {
-      // Force user back to prep phase until complete
-      return -1; // Last day of prep
-    }
     return currentDayNumber;
-  }, [prepStatus.isComplete, currentDayNumber]);
+  }, [currentDayNumber]);
 
   // --- UNLOCKED DAYS ---
   const unlockedDays = useMemo(() => {
     if (!dailyPlan || dailyPlan.length === 0) return [];
     
     return dailyPlan.filter(day => {
-      // Prep days are always accessible during prep phase
-      if (day.dayNumber < 0 && !prepStatus.isComplete) return true;
-      // Once prep is complete, all days up to current are unlocked
-      if (prepStatus.isComplete) return day.dayNumber <= currentDayNumber;
-      // If not complete, only prep days are accessible
-      return day.dayNumber < 0;
+      // Prep days are always accessible
+      if (day.dayNumber < 0) return true;
+      // All days up to current are unlocked
+      return day.dayNumber <= currentDayNumber;
     });
-  }, [dailyPlan, currentDayNumber, prepStatus.isComplete]);
+  }, [dailyPlan, currentDayNumber]);
 
   // --- AGGREGATE UNLOCKED ITEMS BY ZONE ---
   const accessData = useMemo(() => {
@@ -173,13 +168,13 @@ export const useDayBasedAccessControl = () => {
       showScorecard: checkVisibility('scorecard', 'showScorecard', false),
       
       // Zone Access (derived from CSV structure)
-      // Community zone opens once user completes prep and enters Foundation phase
-      isCommunityZoneOpen: prepStatus.isComplete,
+      // Community zone opens once user is in Foundation phase
+      isCommunityZoneOpen: prepStatus.isComplete || effectiveDayNumber >= 1,
       // Coaching zone opens when user enters Foundation phase (not during Prep)
-      isCoachingZoneOpen: prepStatus.isComplete && effectiveDayNumber >= 1,
+      isCoachingZoneOpen: effectiveDayNumber >= 1,
       isCoaching1on1Window: effectiveDayNumber >= 1, // Available throughout Foundation
       // Conditioning zone opens when user enters Foundation phase (not during Prep)
-      isConditioningZoneOpen: prepStatus.isComplete && effectiveDayNumber >= 1,
+      isConditioningZoneOpen: effectiveDayNumber >= 1,
       
       // Content Zone is always open but items are gated
       isContentZoneOpen: true,

@@ -9,7 +9,8 @@ const MobileBottomNav = ({ currentScreen }) => {
   const { navigate } = useAppServices();
   const { currentPhase } = useDailyPlan();
   
-  // Conditioning and Coaching are only available during Foundation phase (not Prep)
+  // Conditioning and Coaching are only available during Foundation phase (not during Prep)
+  // Available once user enters Level 1, regardless of prep completion status
   const isFoundationPhase = currentPhase?.id === 'start' || currentPhase?.id === 'post-start';
   
   // 5 core mobile buttons - some are phase-gated

@@ -116,7 +116,20 @@ export const useCoachingRegistrations = () => {
       if (any1on1) return any1on1;
     }
     
-    return null;
+    // Fallback for Open Gym: users can only have ONE active Open Gym registration
+    // If looking for any coaching-open_gym item, find any active Open Gym registration
+    if (coachingItemId.includes('coaching-open_gym') || coachingItemId.includes('open-gym')) {
+      const anyOpenGym = registrations.find(
+        r => r.sessionType === 'open_gym' &&
+             r.status !== REGISTRATION_STATUS.CANCELLED &&
+             r.status !== REGISTRATION_STATUS.NO_SHOW &&
+             r.status !== REGISTRATION_STATUS.CERTIFIED &&
+             r.status !== REGISTRATION_STATUS.ATTENDED
+      );
+      if (anyOpenGym) return anyOpenGym;
+    }
+    
+    return null;;
   }, [registrations]);
 
   // Check if user has registered for a coaching item (any session)
