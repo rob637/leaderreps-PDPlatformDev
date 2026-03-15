@@ -196,6 +196,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
   // Use Daily Plan Hook (New Architecture)
   const { 
+    loading: planLoading,
     dailyPlan, 
     currentPhase, 
     phaseDayNumber, 
@@ -954,6 +955,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
 
   // Get carried over items (including incomplete prep phase items AND all prior weeks)
   const carriedOverItems = useMemo(() => {
+    // No carryover if data is still loading (prevents capturing ghosts due to race condition!)
+    if (planLoading) return [];
     // No carryover in Prep Phase
     if (currentPhase?.id === 'pre-start') return [];
     
@@ -1294,7 +1297,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
     return carriedItems;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, progressData, dailyPlan, userState?.dailyProgress, userState?.sessionAttendance, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.items]);
+  }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, progressData, dailyPlan, userState?.dailyProgress, userState?.sessionAttendance, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.items, planLoading]);
 
   // =================== FIRESTORE-PERSISTED CARRY-OVER ===================
   // Load persisted carried-over items from Firestore on mount
