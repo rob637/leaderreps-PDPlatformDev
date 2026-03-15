@@ -9,6 +9,7 @@
  * - onCoachingRegistration: Sends confirmation + ICS calendar to leader and notification to facilitator
  * - onCoachingCancellation: Sends cancellation emails when a registration is cancelled
  * - scheduledCoachingReminders: Sends 24-hour and 1-hour reminders for upcoming coaching sessions
+ * - scheduledFirestoreBackup: Runs daily at 2:00 AM ET to export all Firestore data to Cloud Storage
  */
 
 // const { setGlobalOptions } = require("firebase-functions");
@@ -7849,5 +7850,61 @@ exports.onBugReport = require("firebase-functions/v2/firestore").onDocumentCreat
     logger.info("Bug report email sent to rob@leaderreps.com", { reportId });
   } catch (err) {
     logger.error("Failed to send bug report email:", err);
+  }
+});
+
+// ============================================================
+// SCHEDULED FIRESTORE BACKUP
+// ============================================================
+// Runs daily at 2:00 AM ET to export all Firestore data to a Cloud Storage bucket.
+// Uses the native Firestore managed export (admin.firestore().exportDocuments).
+// Exports go to: gs://{projectId}-firestore-backups/YYYY-MM-DD/
+//
+// SETUP REQUIRED (one-time per project):
+//   1. Create the backup bucket:
+//      gsutil mb -l us-central1 gs://{projectId}-firestore-backups
+//   2. Grant the default service account permission:
+//      gsutil iam ch serviceAccount:{projectId}@appspot.gserviceaccount.com:roles/storage.admin gs://{projectId}-firestore-backups
+//   3. Enable the Firestore API for exports:
+//      gcloud services enable firestore.googleapis.com --project={projectId}
+//   4. Grant the service account the datastore.importExport role:
+//      gcloud projects add-iam-policy-binding {projectId} \
+//        --member="serviceAccount:{projectId}@appspot.gserviceaccount.com" \
+//        --role="roles/datastore.importExportAdmin"
+//
+// To restore from a backup:
+//   gcloud firestore import gs://{projectId}-firestore-backups/YYYY-MM-DD/
+// ============================================================
+exports.scheduledFirestoreBackup = onSchedule({
+  schedule: "every day 02:00",
+  timeZone: "America/New_York",
+  timeoutSeconds: 300,
+  memory: "256MiB",
+}, async (event) => {
+  const projectId = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
+  const bucketName = `${projectId}-firestore-backups`;
+  const timestamp = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  const outputUri = `gs://${bucketName}/${timestamp}`;
+
+  logger.info(`Starting Firestore backup to ${outputUri}`);
+
+  try {
+    const client = new admin.firestore.v1.FirestoreAdminClient();
+    const databaseName = client.databasePath(projectId, "(default)");
+
+    const [response] = await client.exportDocuments({
+      name: databaseName,
+      outputUriPrefix: outputUri,
+      // Empty collectionIds = export ALL collections
+      collectionIds: [],
+    });
+
+    logger.info("Firestore backup initiated successfully", {
+      operationName: response.name,
+      outputUri,
+    });
+  } catch (err) {
+    logger.error("Firestore backup failed", { error: err.message, outputUri });
+    throw err;
   }
 });
