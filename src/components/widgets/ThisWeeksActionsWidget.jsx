@@ -1387,6 +1387,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           dayNumber: item.dayNumber || null,
           resourceId: item.resourceId || null,
           resourceType: item.resourceType || null,
+          resourceTitle: item.resourceTitle || null,
+          displayType: item.displayType || null,
+          description: item.description || null,
           url: item.url || null,
           isInteractive: item.isInteractive || false,
           handlerType: item.handlerType || '',
@@ -2487,7 +2490,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     <Calendar className="w-3 h-3" />
                     <span>
                       {registration.sessionDate 
-                        ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                        ? new Date(registration.sessionDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
                         : 'Date TBD'
                       }
                       {registration.sessionTime && ` at ${registration.sessionTime}`}
@@ -2608,7 +2611,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <Calendar className="w-3 h-3" />
                 <span>
                   {registration.sessionDate 
-                    ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                    ? new Date(registration.sessionDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
                     : 'Date TBD'
                   }
                   {registration.sessionTime && ` at ${registration.sessionTime}`}
@@ -2691,7 +2694,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <Calendar className="w-3 h-3" />
                 <span>
                   {registration.sessionDate 
-                    ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                    ? new Date(registration.sessionDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
                     : 'Date TBD'
                   }
                   {registration.sessionTime && ` at ${registration.sessionTime}`}
@@ -2760,7 +2763,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <Calendar className="w-3 h-3" />
                 <span>
                   {registration.sessionDate 
-                    ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                    ? new Date(registration.sessionDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
                     : 'Date TBD'
                   }
                   {registration.sessionTime && ` at ${registration.sessionTime}`}
