@@ -924,8 +924,8 @@ export const MILESTONE_REP_UNLOCKS = {
   1: ['set_clear_expectations', 'deliver_reinforcing_feedback'],
   2: ['follow_up_work', 'lead_with_vulnerability'],
   3: ['deliver_redirecting_feedback', 'close_the_loop'],
-  4: ['handle_pushback', 'hold_the_line'],
-  5: ['be_curious']
+  4: ['handle_pushback', 'hold_the_line', 'be_curious'],
+  5: []
 };
 
 /**

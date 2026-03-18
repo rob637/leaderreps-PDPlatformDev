@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { doc, setDoc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { useAppServices } from '../services/useAppServices';
+import { syncCompletionToCarryover } from '../services/carryoverService';
 
 /**
  * Hook to manage Leader Profile data
@@ -115,6 +116,15 @@ export const useLeaderProfile = () => {
       if (markComplete) {
         const userRef = doc(db, 'users', user.uid);
         await updateDoc(userRef, { 'prepStatus.leaderProfile': true }).catch(e => console.warn('Could not set prepStatus:', e));
+        
+        // Sync to carryover storage immediately - eliminates race conditions
+        // NOTE: Label must match content definition exactly for deduplication to work
+        await syncCompletionToCarryover(db, user.uid, 'leader-profile', {
+          label: 'Complete Leader Profile',
+          category: 'Preparation',
+          prepSection: 'onboarding',
+          handlerType: 'leader-profile'
+        });
       }
 
       // Sync notification settings to main user doc (used by NotificationSettingsWidget in Locker)

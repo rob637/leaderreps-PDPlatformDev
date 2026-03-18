@@ -65,17 +65,58 @@
           // IndexedDB errors from service worker — attempt self-heal instead of blocking
           if (msg.includes('indexedDB') || msg.includes('IndexedDB') || msg.includes('backing store')) {
             e.preventDefault(); // Suppress the console error
-            console.warn('[BOOT] IndexedDB error detected — attempting service worker recovery...');
-            if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.getRegistrations().then(function(regs) {
-                var hadSW = regs.length > 0;
-                Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
-                  if (hadSW) {
-                    console.warn('[BOOT] Unregistered broken service worker, reloading...');
-                    window.location.reload();
-                  }
+            console.warn('[BOOT] IndexedDB error detected — attempting auto-recovery...');
+            
+            // Try to clear corrupted IndexedDB databases
+            if (indexedDB.databases) {
+              indexedDB.databases().then(function(dbs) {
+                var firebaseDbs = dbs.filter(function(db) { 
+                  return db.name && (db.name.includes('firebase') || db.name.includes('firebaseLocalStorage'));
                 });
+                if (firebaseDbs.length > 0) {
+                  console.warn('[BOOT] Clearing', firebaseDbs.length, 'corrupted IndexedDB database(s)...');
+                  firebaseDbs.forEach(function(db) {
+                    indexedDB.deleteDatabase(db.name);
+                  });
+                }
+                // Also unregister service workers
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
+                      console.warn('[BOOT] Cleared IndexedDB and service workers, reloading...');
+                      window.location.reload();
+                    });
+                  });
+                } else {
+                  window.location.reload();
+                }
+              }).catch(function() {
+                // Fallback: just unregister service workers
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    var hadSW = regs.length > 0;
+                    Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
+                      if (hadSW) {
+                        console.warn('[BOOT] Unregistered broken service worker, reloading...');
+                        window.location.reload();
+                      }
+                    });
+                  });
+                }
               });
+            } else {
+              // Browser doesn't support indexedDB.databases(), try service worker fallback
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                  var hadSW = regs.length > 0;
+                  Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
+                    if (hadSW) {
+                      console.warn('[BOOT] Unregistered broken service worker, reloading...');
+                      window.location.reload();
+                    }
+                  });
+                });
+              }
             }
             return;
           }

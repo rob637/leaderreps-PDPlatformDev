@@ -312,7 +312,7 @@ const notifyDailyPlanListeners = (days) => {
 };
 
 export const useDailyPlan = () => {
-  const { db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
+  const { db, user, developmentPlanData, updateDevelopmentPlanData, isLoading } = useAppServices();
   const { getItemProgress, progressData: actionProgressData } = useActionProgress();
   const { isComplete: leaderProfileComplete } = useLeaderProfile();
   
@@ -549,6 +549,17 @@ export const useDailyPlan = () => {
   // Dynamically reads required prep items from the daily plan data.
   // Items are considered "required" if: required === true OR (required !== false AND optional !== true)
   // This is COMPLETION-BASED, not day-based.
+  
+  // Helper to infer prepSection from dayId (e.g., 'session2-config' -> 'session2')
+  const inferPrepSectionFromDayId = (dayId) => {
+    if (!dayId) return 'onboarding';
+    const match = dayId.match(/^session(\d+)-config$/);
+    if (match) {
+      return `session${match[1]}`;
+    }
+    return 'onboarding';
+  };
+  
   const prepRequirementsComplete = useMemo(() => {
     // Get all action progress data for label-matching fallback
     // Use actionProgressData from useActionProgress hook (users/{uid}/action_progress subcollection)
@@ -590,15 +601,24 @@ export const useDailyPlan = () => {
     // Use onboarding-config and session1-config if they exist (preferred),
     // otherwise fall back to day-* documents. This avoids double-counting
     // when both formats exist in Firestore.
+    // ALSO include session2-config through session5-config for session prep tracking
     const hasOnboardingConfig = dailyPlan.some(d => d.id === 'onboarding-config' && d.phase === 'pre-start');
     const hasSession1Config = dailyPlan.some(d => d.id === 'session1-config' && d.phase === 'pre-start');
     
     const prepDays = dailyPlan.filter(d => {
-      if (d.phase !== 'pre-start') return false;
-      if (d.id === 'explore-config') return false; // Always excluded (optional items)
-      // If config documents exist, skip legacy day-* documents to avoid duplicates
-      if (hasOnboardingConfig && hasSession1Config && /^day-\d+$/.test(d.id)) return false;
-      return true;
+      // Include pre-start phase items (onboarding, session1 prep)
+      if (d.phase === 'pre-start') {
+        if (d.id === 'explore-config') return false; // Always excluded (optional items)
+        // If config documents exist, skip legacy day-* documents to avoid duplicates
+        if (hasOnboardingConfig && hasSession1Config && /^day-\d+$/.test(d.id)) return false;
+        return true;
+      }
+      // ALSO include session2-config through session5-config for session prep carryover
+      // These have phase=foundation but contain prep items that should be tracked
+      if (/^session[2-5]-config$/.test(d.id)) {
+        return true;
+      }
+      return false;
     });
     
     // Collect all prep actions from the daily plan
@@ -696,12 +716,17 @@ export const useDailyPlan = () => {
         complete,
         handlerType: handlerType, // Use inferred handlerType, not just action.handlerType
         type: action.type,
-        // Prep section for splitting Onboarding vs Session 1
-        // Infer from dayId if not explicitly set
-        prepSection: action.prepSection || (action.dayId === 'session1-config' ? 'session1' : 'onboarding'),
+        // Prep section for splitting Onboarding vs Session prep
+        // Infer from dayId if not explicitly set (handles session1-config through session5-config)
+        prepSection: action.prepSection || inferPrepSectionFromDayId(action.dayId),
         dayId: action.dayId,
         estimatedMinutes: action.estimatedMinutes,
-        duration: action.duration
+        duration: action.duration,
+        // CRITICAL: Include resource fields for navigation/links to work
+        resourceId: action.resourceId || null,
+        resourceType: action.resourceType || null,
+        url: action.url || null,
+        description: action.description || null
       };
     });
     
@@ -1372,7 +1397,7 @@ export const useDailyPlan = () => {
   }, [updateDevelopmentPlanData]);
 
   // Debug loading state before return
-  const loadingValue = loadingPlan || developmentPlanData == null;
+  const loadingValue = loadingPlan || developmentPlanData == null || isLoading;
   console.log('[useDailyPlan] Loading state:', { 
     loadingPlan, 
     devPlanIsNull: developmentPlanData == null,

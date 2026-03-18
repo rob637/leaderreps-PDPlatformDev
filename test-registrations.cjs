@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-const serviceAccount = require('./leaderreps-pd-platform-firebase-adminsdk.json');
+const serviceAccount = require('./leaderreps-pd-platform-firebase-adminsdk.json'); // dev env
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -7,10 +7,11 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-async function check() {
-  const snapshot = await db.collectionGroup('coaching_registrations').get();
-  snapshot.docs.forEach(doc => {
-    console.log(doc.id, doc.data());
+async function run() {
+  const ss = await db.collection('coaching_registrations').limit(5).get();
+  console.log("Found registrations:", ss.size);
+  ss.forEach(d => {
+      console.log(d.id, d.data());
   });
 }
-check().catch(console.error);
+run().then(() => process.exit());

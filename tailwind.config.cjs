@@ -49,6 +49,15 @@ module.exports = {
         'elevated': '0 10px 40px rgb(0 0 0 / 0.12), 0 0 0 1px rgb(0 0 0 / 0.05)',
         'pop': '0 4px 16px rgb(0 0 0 / 0.16), 0 0 0 1px rgb(0 0 0 / 0.08)',
       },
+      animation: {
+        'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite',
+      },
+      keyframes: {
+        'pulse-subtle': {
+          '0%, 100%': { boxShadow: '0 4px 16px rgba(71, 168, 141, 0.3)' },
+          '50%': { boxShadow: '0 4px 24px rgba(71, 168, 141, 0.5)' },
+        },
+      },
     },
   },
   plugins: [require('@tailwindcss/typography')],

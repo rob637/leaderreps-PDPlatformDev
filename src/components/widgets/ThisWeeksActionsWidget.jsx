@@ -12,6 +12,7 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useActionProgress } from '../../hooks/useActionProgress';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { useCoachingRegistrations, REGISTRATION_STATUS } from '../../hooks/useCoachingRegistrations';
+import { useCarryover } from '../../hooks/useCarryover';
 import { useSafeNavigation } from '../../providers/NavigationProvider';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import CoachingActionItem from '../coaching/CoachingActionItem';
@@ -27,6 +28,7 @@ import ConditioningTutorialWidget from './ConditioningTutorialWidget';
 import { VideoSeriesPlayer } from '../video';
 import LeaderCertificateViewer from '../coaching/LeaderCertificateViewer';
 import conditioningService from '../../services/conditioningService';
+import { syncCompletionToCarryover } from '../../services/carryoverService';
 import CommitFlowSelector from '../conditioning/CommitFlowSelector';
 import EvidenceCaptureWizard from '../conditioning/EvidenceCaptureWizard';
 import draftRepService, { hasMeaningfulProgress, DRAFT_FLOW_TYPES } from '../../services/draftRepService';
@@ -185,14 +187,15 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Keys are session IDs: 'session2', 'session3', 'session4', 'session5'
   const [sessionPrepExpanded, setSessionPrepExpanded] = useState({});
   
-  // Preserve carried over items even after completion
-  // Items are persisted to Firestore so they survive refresh and completion
-  const preservedCarriedOverRef = useRef([]);
-  const [preservedCarriedOver, setPreservedCarriedOver] = useState([]);
-  const carriedOverSavedRef = useRef(false); // Track if we've saved to Firestore this session
-  const [carriedOverLoaded, setCarriedOverLoaded] = useState(false); // Track if Firestore load completed
-  const carriedOverLoadedRef = useRef(false); // REF to prevent re-loading within session
-  const lastLoadedMilestoneRef = useRef(null); // Track which milestone we loaded for
+  // Use the new Carryover hook for persistent carryover items
+  const {
+    carryoverItems: persistedCarryoverItems,
+    incompleteCount: carryoverIncompleteCount,
+    allComplete: carryoverAllComplete,
+    markComplete: markCarryoverComplete,
+    loading: carryoverLoading,
+    isCarryoverComplete
+  } = useCarryover();
 
   // Use Daily Plan Hook (New Architecture)
   const { 
@@ -321,6 +324,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Maps repTypeId -> count of completed reps
   const [loopClosedRepCounts, setLoopClosedRepCounts] = useState({});
   
+  // In-progress rep counts (reps that have been started but not yet completed)
+  const [inProgressRepCounts, setInProgressRepCounts] = useState({});
+  
   // Required rep counts for each type (defaults to 1 if not specified)
   const REQUIRED_REP_COUNTS = {
     // S1 reps
@@ -335,8 +341,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   const refreshLoopClosedRepCounts = useCallback(async () => {
     if (!db || !user?.uid) return;
     try {
-      const counts = await conditioningService.getCompletedRepCounts(db, user.uid);
+      const [counts, inProgressCounts] = await Promise.all([
+        conditioningService.getCompletedRepCounts(db, user.uid),
+        conditioningService.getInProgressRepCounts(db, user.uid)
+      ]);
       setLoopClosedRepCounts(counts);
+      setInProgressRepCounts(inProgressCounts);
     } catch (error) {
       console.warn('Could not fetch completed rep counts:', error);
     }
@@ -349,6 +359,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   
   // Video series duration data (fetched on demand)
   const [videoSeriesDurations, setVideoSeriesDurations] = useState({});
+  
+  // Video duration data (fetched from content_library)
+  const [videoDurations, setVideoDurations] = useState({});
   
   // Interactive content duration data (fetched from content_library)
   const [interactiveDurations, setInteractiveDurations] = useState({});
@@ -528,11 +541,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // Conditioning rep progress variables (to pass to UI)
       let requiredRepCount = null;
       let completedRepCount = null;
+      let inProgressCount = null;
       
       if (handlerType === 'conditioning-rep' && action.repTypeId) {
-        // Get required and completed counts for this rep type
+        // Get required, completed, and in-progress counts for this rep type
         requiredRepCount = REQUIRED_REP_COUNTS[action.repTypeId] || 1;
         completedRepCount = loopClosedRepCounts[action.repTypeId] || 0;
+        inProgressCount = inProgressRepCounts[action.repTypeId] || 0;
         
         // Check if user has completed enough reps of this type
         autoComplete = completedRepCount >= requiredRepCount;
@@ -559,7 +574,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           'close_the_loop': 'action-s3-deliberate-practice',
           'handle_pushback': 'action-s4-deliberate-practice',
           'hold_the_line': 'action-s4-deliberate-practice',
-          'be_curious': 'action-s5-deliberate-practice'
+          'be_curious': 'action-s4-deliberate-practice'
         };
         const requiredSessionId = REP_TYPE_TO_SESSION[action.repTypeId];
         if (requiredSessionId && !isLocked) {
@@ -607,6 +622,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         // Conditioning rep count tracking
         requiredRepCount,
         completedRepCount,
+        inProgressRepCount: inProgressCount,
         isLocked,
         lockedReason,
         isTrainerControlled,
@@ -614,7 +630,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         prepSection: action.prepSection || 'onboarding'
       };
     });
-  }, [leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete, loopClosedRepCounts, userState?.sessionAttendance, REQUIRED_REP_COUNTS]);
+  }, [leaderProfileComplete, baselineAssessmentComplete, notificationSetupComplete, foundationCommitmentComplete, conditioningTutorialComplete, videoSeriesComplete, loopClosedRepCounts, inProgressRepCounts, userState?.sessionAttendance, REQUIRED_REP_COUNTS]);
 
   // Combine all actionable items from Daily Plan
   const allActions = useMemo(() => {
@@ -708,9 +724,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // Milestone names mapping
       const milestoneNames = {
         1: 'Deliberate Practice',
-        2: '1:1 Coaching',
-        3: 'Open Gym: Redirecting Feedback',
-        4: 'Open Gym: Handling Pushback',
+        2: 'Attend 1:1 Coaching',
+        3: 'Attend Open Gym: Redirecting Feedback',
+        4: 'Attend Open Gym: Handling Pushback',
         5: 'Graduation'
       };
       
@@ -759,9 +775,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // The trainer marks attendance via Session Attendance admin, which unlocks the reps
       const MILESTONE_SESSION_LABELS = {
         2: 'Attend 1:1 Coaching',
-        3: 'Session 3: Attend Open Gym Redirecting Feedback',
-        4: 'Session 4: Attend Open Gym Handling Pushback',
-        5: 'Session 5: Graduation'
+        3: 'Attend Open Gym: Redirecting Feedback',
+        4: 'Attend Open Gym: Handling Pushback',
+        5: 'Graduation'
       };
       
       if (displayMilestone >= 2 && displayMilestone <= 5) {
@@ -796,7 +812,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           let actionLabel = typeInfo.label;
           if (sessionType === 'open_gym' || sessionType === 'OPEN_GYM') {
             if (displayMilestone === 2) actionLabel = 'Schedule Open Gym: Redirecting Feedback';
-            if (displayMilestone === 3) actionLabel = 'Schedule Open Gym: Handling Pushback';
+            if (displayMilestone === 3 || displayMilestone === 4) actionLabel = 'Schedule Open Gym: Handling Pushback';
           }
           
           return {
@@ -947,9 +963,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
     const milestoneNames = {
       1: 'Deliberate Practice',
-      2: '1:1 Coaching',
-      3: 'Open Gym: Redirecting Feedback',
-      4: 'Open Gym: Handling Pushback',
+      2: 'Attend 1:1 Coaching',
+      3: 'Attend Open Gym: Redirecting Feedback',
+      4: 'Attend Open Gym: Handling Pushback',
       5: 'Graduation'
     };
     
@@ -1306,128 +1322,6 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPhase?.id, currentWeekNumber, getCarriedOverItems, getItemProgress, progressData, dailyPlan, userState?.dailyProgress, userState?.sessionAttendance, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.items, planLoading]);
 
-  // =================== FIRESTORE-PERSISTED CARRY-OVER ===================
-  // Load persisted carried-over items from Firestore on mount
-  // This ensures items survive page refresh and don't disappear when completed
-  // BUT: when the milestone changes, discard old data and let carriedOverItems recompute fresh
-  // CRITICAL: Only load ONCE per session to prevent race conditions from user state updates
-  useEffect(() => {
-    if (!db || !user?.uid || currentPhase?.id !== 'start') return;
-    
-    // Calculate current milestone
-    let currentMilestoneNum = 1;
-    const mp = user?.milestoneProgress || {};
-    for (let m = 1; m <= 5; m++) {
-      if (mp[`milestone_${m}`]?.signedOff) currentMilestoneNum = m + 1;
-      else break;
-    }
-    
-    // CRITICAL: Don't re-load if already loaded for this milestone
-    // This prevents race conditions when user state updates (marking attendance, etc.)
-    if (carriedOverLoadedRef.current && lastLoadedMilestoneRef.current === currentMilestoneNum) {
-      return;
-    }
-    
-    const loadPersistedCarryOver = async () => {
-      try {
-        const carryOverRef = doc(db, 'users', user.uid, 'action_progress', '_carried_over_prep');
-        const snap = await getDoc(carryOverRef);
-        if (snap.exists()) {
-          const data = snap.data();
-          const storedMilestone = data.milestone || 1;
-          const items = data.items || [];
-          
-          // If milestone changed, discard old data — carriedOverItems will recompute fresh
-          if (storedMilestone !== currentMilestoneNum) {
-            // Clear the stale Firestore doc so fresh data can be saved
-            await setDoc(carryOverRef, { items: [], milestone: currentMilestoneNum, updatedAt: new Date() });
-            preservedCarriedOverRef.current = [];
-            setPreservedCarriedOver([]);
-            carriedOverSavedRef.current = false; // Allow save effect to persist fresh data
-          } else if (items.length > 0) {
-            preservedCarriedOverRef.current = items;
-            setPreservedCarriedOver(items);
-          }
-        }
-        // Mark this milestone as loaded
-        lastLoadedMilestoneRef.current = currentMilestoneNum;
-      } catch (err) {
-        console.warn('[ThisWeeksActions] Could not load persisted carry-over:', err);
-      } finally {
-        // Always mark as loaded, even on error, so the save effect can proceed
-        carriedOverLoadedRef.current = true;
-        setCarriedOverLoaded(true);
-      }
-    };
-    loadPersistedCarryOver();
-  }, [db, user?.uid, currentPhase?.id, user?.milestoneProgress]);
-  
-  // Save carried-over items to Firestore when first computed (and not already saved)
-  // IMPORTANT: Wait for Firestore load to complete first to avoid overwriting persisted data
-  useEffect(() => {
-    if (!db || !user?.uid || currentPhase?.id !== 'start') return;
-    if (carriedOverItems.length === 0) return;
-    // Don't save until the Firestore load has completed (prevents race condition)
-    if (!carriedOverLoaded) return;
-    // Only save once per session to avoid overwriting with fewer items after completion
-    if (carriedOverSavedRef.current) return;
-    
-    // Merge with any existing persisted items (don't lose items from Firestore)
-    const existingIds = new Set(preservedCarriedOverRef.current.map(i => i.id));
-    const newItems = carriedOverItems.filter(item => !existingIds.has(item.id));
-    
-    if (newItems.length > 0 || preservedCarriedOverRef.current.length === 0) {
-      const merged = [...preservedCarriedOverRef.current, ...newItems];
-      preservedCarriedOverRef.current = merged;
-      setPreservedCarriedOver(merged);
-      carriedOverSavedRef.current = true;
-      
-      // Persist to Firestore
-      const carryOverRef = doc(db, 'users', user.uid, 'action_progress', '_carried_over_prep');
-      const itemsToSave = merged.map(item => {
-        const obj = {
-          id: item.id || '',
-          label: item.label || '',
-          category: item.category || 'prep',
-          prepSection: item.prepSection || null,
-          fromWeek: item.fromWeek ?? null,
-          fromPrepPhase: item.fromPrepPhase || null,
-          carriedOver: true,
-          dayId: item.dayId || null,
-          dayNumber: item.dayNumber || null,
-          resourceId: item.resourceId || null,
-          resourceType: item.resourceType || null,
-          resourceTitle: item.resourceTitle || null,
-          displayType: item.displayType || null,
-          description: item.description || null,
-          url: item.url || null,
-          isInteractive: item.isInteractive || false,
-          handlerType: item.handlerType || '',
-          estimatedMinutes: item.estimatedMinutes || null,
-          duration: item.duration || null,
-          required: item.required !== false,
-          fromMilestone: item.fromMilestone || 0,
-          fromDailyPlan: item.fromDailyPlan !== false // Required for auto-complete on view
-        };
-        // Remove undefined values to prevent Firestore errors
-        Object.keys(obj).forEach(key => obj[key] === undefined && delete obj[key]);
-        return obj;
-      });
-      // Calculate current milestone for the persistence record
-      let currentMilestoneForSave = 1;
-      const mp = user?.milestoneProgress || {};
-      for (let m = 1; m <= 5; m++) {
-        if (mp[`milestone_${m}`]?.signedOff) currentMilestoneForSave = m + 1;
-        else break;
-      }
-      setDoc(carryOverRef, { items: itemsToSave, milestone: currentMilestoneForSave, updatedAt: new Date() }, { merge: true })
-        .catch(err => console.warn('[ThisWeeksActions] Could not persist carry-over:', err));
-    } else {
-      // No new items and we already have persisted data - just mark as saved
-      carriedOverSavedRef.current = true;
-    }
-  }, [carriedOverItems, carriedOverLoaded, db, user?.uid, user?.milestoneProgress, currentPhase?.id]);
-  
   // Calculate progress (must be before displayedCarriedOverItems & groupedSessionPrepItems)
   const completedItems = useMemo(() => {
     // Get completed items from userState.dailyProgress
@@ -1441,95 +1335,67 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     return Array.from(completedSet);
   }, [userState]);
 
-  // Use preserved items if available, otherwise use current carriedOverItems
-  // Keep ALL items visible (even completed ones) - they only disappear when:
-  // 1. User advances to next level/milestone
-  // When all prep is complete, items collapse into celebration banner (NOT removed)
+  // =================== DISPLAYED CARRYOVER ITEMS ===================
+  // Trust the carryover table as source of truth
+  // Items only enter if they're incomplete (checked at initialization)
+  // Once in the table, they PERSIST until next level transition
   const displayedCarriedOverItems = useMemo(() => {
-    // Use Firestore-persisted items if available, otherwise use freshly computed items
-    const baseItems = preservedCarriedOver.length > 0 ? preservedCarriedOver : carriedOverItems;
+    if (currentPhase?.id !== 'start') return [];
+    if (carryoverLoading) return [];
     
-    // Build lookup of freshly computed items for metadata enrichment
-    // OLD Firestore data may be missing fields like estimatedMinutes, description, resourceTitle
-    const freshItemsById = new Map(carriedOverItems.map(item => [item.id, item]));
+    // Simply display what's in the carryover table - no filtering
+    // completedAt set = completed during this level, show with strikethrough
+    return persistedCarryoverItems.map(item => ({
+      ...item,
+      fromDailyPlan: true,
+      isComplete: !!item.completedAt,
+      completedAt: item.completedAt
+    }));
+  }, [currentPhase?.id, persistedCarryoverItems, carryoverLoading]);
+
+  // Sync completion state to carryover table when items are completed via any mechanism
+  // This watches prepRequirementsComplete and marks matching carryover items as complete
+  useEffect(() => {
+    if (currentPhase?.id !== 'start') return;
+    if (carryoverLoading) return;
+    if (!persistedCarryoverItems.length) return;
     
-    // Ensure all items have fromDailyPlan set AND enrich with fresh computed metadata
-    // This fixes the "flash" where old Firestore data briefly shows missing fields
-    const normalizedItems = baseItems.map(item => {
-      const freshItem = freshItemsById.get(item.id);
-      return {
-        ...item,
-        // Enrich with fresh computed data for fields that may be missing from old Firestore saves
-        estimatedMinutes: item.estimatedMinutes || freshItem?.estimatedMinutes,
-        duration: item.duration || freshItem?.duration,
-        description: item.description || freshItem?.description,
-        resourceTitle: item.resourceTitle || freshItem?.resourceTitle,
-        displayType: item.displayType || freshItem?.displayType,
-        resourceType: item.resourceType || freshItem?.resourceType,
-        fromDailyPlan: item.fromDailyPlan !== false // Default to true for carried-over items
-      };
-    });
-    
-    // Calculate current milestone for filtering
-    let currentMilestoneNum = 1;
-    if (currentPhase?.id === 'start') {
-      const milestoneProgress = user?.milestoneProgress || {};
-      for (let m = 1; m <= 5; m++) {
-        const mData = milestoneProgress[`milestone_${m}`] || {};
-        if (mData.signedOff) {
-          currentMilestoneNum = m + 1;
-        } else {
-          break;
+    // Check each carryover item to see if it's been completed
+    persistedCarryoverItems.forEach(item => {
+      // Skip already marked complete
+      if (item.completedAt) return;
+      
+      // Check if completed via prepRequirementsComplete
+      let isNowComplete = false;
+      if (Array.isArray(prepRequirementsComplete?.items)) {
+        const matchingItem = prepRequirementsComplete.items.find(p => 
+          p.id === item.id || 
+          (p.label && item.label && p.label.toLowerCase().trim() === item.label.toLowerCase().trim())
+        );
+        if (matchingItem?.complete) {
+          isNowComplete = true;
         }
       }
-    }
-    
-    // Filter out session prep items from CURRENT milestone (they're shown in bottom section)
-    // BUT KEEP session prep items from PRIOR milestones (carried over from earlier levels)
-    let filteredItems = currentPhase?.id === 'start'
-      ? normalizedItems.filter(item => {
-          // GHOST ITEM REMOVAL: Clean up items improperly cached due to load race conditions
-          // If an item is already completed, check if it was completed BEFORE carrying over
-          let isComplete = false;
-          if (Array.isArray(prepRequirementsComplete?.items)) {
-            const itemLabelNorm = (item.label || '').toLowerCase().trim();
-            const liveItem = prepRequirementsComplete.items.find(p => 
-              (p.id && item.id && p.id === item.id) || 
-              (p.label && itemLabelNorm && p.label.toLowerCase().trim() === itemLabelNorm)
-            );
-            if (liveItem) {
-              isComplete = liveItem.complete || false;
-            } else {
-              const progress = getItemProgress(item.id);
-              isComplete = progress?.status === 'completed' || completedItems.includes(item.id);
-            }
-          }
-          
-          if (isComplete) {
-            // How do we know it was completed in the prep phase?
-            // Items completed via Catch Up always get carriedOver: true and currentWeek >= 1
-            const p = progressData?.[item.id];
-            if (p?.status === 'completed') {
-              const completedInPrepPhase = (p.completedInWeek == null || p.completedInWeek === 0) && p.carriedOver !== true;
-              if (completedInPrepPhase) return false; // Hide it (it's a prep-phase ghost)
-            }
-          }
-
-          // Always keep non-session-prep items
-          if (!item.isSessionPrep && !['session2', 'session3', 'session4', 'session5'].includes(item.prepSection)) {
-            return true;
-          }
-          // For session prep items, only include if from a PRIOR milestone (carried over)
-          const itemOriginMilestone = item.originMilestone || item.fromMilestone;
-          return itemOriginMilestone != null && itemOriginMilestone < currentMilestoneNum;
-        })
-      : normalizedItems;
-    
-    // Keep ALL carried-over items visible (even completed ones)
-    // Completed items stay visible but marked off - they only disappear on level advance
-    // When all are complete, section collapses into celebration banner
-    return filteredItems;
-  }, [preservedCarriedOver, carriedOverItems, currentPhase?.id, user?.milestoneProgress]);
+      
+      // Check if completed via action progress
+      if (!isNowComplete) {
+        const progress = progressData?.[item.id];
+        if (progress?.status === 'completed') {
+          isNowComplete = true;
+        }
+      }
+      
+      // Check if completed via daily progress
+      if (!isNowComplete && completedItems.includes(item.id)) {
+        isNowComplete = true;
+      }
+      
+      // Mark as complete in carryover if it wasn't already
+      if (isNowComplete) {
+        markCarryoverComplete(item.id);
+      }
+    });
+  }, [currentPhase?.id, persistedCarryoverItems, prepRequirementsComplete, progressData, completedItems, carryoverLoading, markCarryoverComplete]);
 
   // Group session prep items by prepSection for Foundation phase display
   // ONLY show session prep for the CURRENT milestone - prior milestone prep is in carry-over section
@@ -1690,6 +1556,51 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     };
     
     fetchInteractiveDurations();
+  }, [db, allActions]);
+
+  // Fetch durations for video items from content_library
+  const fetchedVideoRef = useRef(new Set());
+  
+  useEffect(() => {
+    const fetchVideoDurations = async () => {
+      if (!db || !allActions.length) return;
+      
+      // Find video items that haven't been fetched yet
+      const videoIds = allActions
+        .filter(a => (a.resourceType === 'video' || a.type === 'video') && a.resourceId && !fetchedVideoRef.current.has(a.resourceId))
+        .map(a => a.resourceId);
+      
+      if (videoIds.length === 0) return;
+      
+      // Mark as fetched immediately to prevent re-fetching
+      videoIds.forEach(id => fetchedVideoRef.current.add(id));
+      
+      const newDurations = {};
+      
+      for (const resourceId of videoIds) {
+        try {
+          const contentRef = doc(db, 'content_library', resourceId);
+          const contentSnap = await getDoc(contentRef);
+          if (contentSnap.exists()) {
+            const data = contentSnap.data();
+            // durationMin is stored in minutes for videos
+            if (data.durationMin) {
+              newDurations[resourceId] = parseInt(data.durationMin, 10) || data.durationMin;
+            } else if (data.estimatedTime) {
+              newDurations[resourceId] = parseInt(data.estimatedTime, 10) || data.estimatedTime;
+            }
+          }
+        } catch (error) {
+          console.warn('Could not fetch video content duration:', resourceId, error);
+        }
+      }
+      
+      if (Object.keys(newDurations).length > 0) {
+        setVideoDurations(prev => ({ ...prev, ...newDurations }));
+      }
+    };
+    
+    fetchVideoDurations();
   }, [db, allActions]);
 
   // Filter to only required items for progress calculation
@@ -2084,6 +1995,16 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // Set prepStatus flag for unified tracking
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, { 'prepStatus.baselineAssessment': true }).catch(e => console.warn('Could not set prepStatus:', e));
+      
+      // Sync to carryover storage immediately - eliminates race conditions
+      // NOTE: Label must match content definition exactly for deduplication to work
+      await syncCompletionToCarryover(db, user.uid, 'baseline-assessment', {
+        label: 'Complete Leadership Skills Baseline',
+        category: 'Preparation',
+        prepSection: 'onboarding',
+        handlerType: 'baseline-assessment'
+      });
+      
       setShowBaselineModal(false);
     } catch (error) {
       console.error('Error saving baseline assessment:', error);
@@ -2151,7 +2072,17 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
            // This applies to items like Onboarding Guide and similar resources
            if ((data.type === 'DOCUMENT' || data.type === 'TOOL') && item.fromDailyPlan) {
              const itemId = item.id;
-             if (itemId && item.dayId) {
+             // For carryover items (no dayId) - mark via carryover service
+             if (itemId && !item.dayId && markCarryoverComplete) {
+               markCarryoverComplete(itemId);
+               completeItem(itemId, {
+                 currentWeek: currentWeekNumber,
+                 weekNumber: currentWeekNumber,
+                 category: item.category?.toLowerCase() || 'content',
+                 label: item.label || data.title,
+                 carriedOver: true
+               });
+             } else if (itemId && item.dayId) {
                toggleDailyItem(item.dayId, itemId, true);
                completeItem(itemId, {
                  currentWeek: currentWeekNumber,
@@ -2172,15 +2103,27 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               });
               // Auto-complete documents when opened (fallback path)
               const resourceType = (item.resourceType || item.type || '').toLowerCase();
-              if ((resourceType === 'document' || resourceType === 'tool') && item.fromDailyPlan && item.id && item.dayId) {
-                toggleDailyItem(item.dayId, item.id, true);
-                completeItem(item.id, {
-                  currentWeek: currentWeekNumber,
-                  weekNumber: currentWeekNumber,
-                  category: item.category?.toLowerCase() || 'content',
-                  label: item.label,
-                  carriedOver: item.carriedOver || false
-                });
+              if ((resourceType === 'document' || resourceType === 'tool') && item.fromDailyPlan) {
+                // For carryover items (no dayId) - mark via carryover service
+                if (item.id && !item.dayId && markCarryoverComplete) {
+                  markCarryoverComplete(item.id);
+                  completeItem(item.id, {
+                    currentWeek: currentWeekNumber,
+                    weekNumber: currentWeekNumber,
+                    category: item.category?.toLowerCase() || 'content',
+                    label: item.label,
+                    carriedOver: true
+                  });
+                } else if (item.id && item.dayId) {
+                  toggleDailyItem(item.dayId, item.id, true);
+                  completeItem(item.id, {
+                    currentWeek: currentWeekNumber,
+                    weekNumber: currentWeekNumber,
+                    category: item.category?.toLowerCase() || 'content',
+                    label: item.label,
+                    carriedOver: item.carriedOver || false
+                  });
+                }
               }
             } else {
               alert("Resource not found.");
@@ -2271,6 +2214,31 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Action Item Renderer
   const ActionItem = ({ item, isCarriedOver = false }) => {
     const progress = getItemProgress(item.id);
+    
+    // Helper function to get estimated time for an item from admin-configured values
+    const getEstimatedTime = (item) => {
+      // First check explicit values set on the action item itself
+      if (item.estimatedMinutes) return item.estimatedMinutes;
+      if (item.duration) return item.duration;
+      
+      // For video_series, check fetched durations from video_series collection
+      if (item.resourceType === 'video_series' && videoSeriesDurations[item.resourceId]) {
+        return videoSeriesDurations[item.resourceId];
+      }
+      
+      // For regular videos, check fetched durations from content_library.durationMin
+      if ((item.resourceType === 'video' || item.type === 'video') && videoDurations[item.resourceId]) {
+        return videoDurations[item.resourceId];
+      }
+      
+      // For interactive items, check fetched durations from content_library.estimatedTime
+      if (item.isInteractive && interactiveDurations[item.resourceId]) {
+        return interactiveDurations[item.resourceId];
+      }
+      
+      // Return null if no duration found - admin should set duration in content library
+      return null;
+    };
     
     // ========== SPECIAL HANDLING: Leader Certification (Final Milestone Gate) ==========
     // This is the LAST action in each milestone - requires facilitator certification + user acknowledgment
@@ -2590,15 +2558,28 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       // Look up coaching registration based on session type
       // Session 2 = 1:1 Coaching, Session 3 & 4 = Open Gym
       const milestoneNum = item.id ? parseInt(item.id.replace('action-s', '').replace('-deliberate-practice', ''), 10) : null;
-      const sessionTypeForMilestone = milestoneNum === 2 ? 'one_on_one' : (milestoneNum === 3 || milestoneNum === 4) ? 'open_gym' : null;
-      const coachingItemId = milestoneNum && sessionTypeForMilestone ? `milestone-${milestoneNum}-coaching-${sessionTypeForMilestone}` : null;
+      let sessionTypeForMilestone = milestoneNum === 2 ? 'one_on_one' : null;
+      if (milestoneNum === 3) sessionTypeForMilestone = 'open_gym';
+      if (milestoneNum === 4) sessionTypeForMilestone = 'open_gym';
+      
+      // Open Gym registrations are originally scheduled in the previous milestone
+      let scheduledInMilestone = milestoneNum;
+      if (sessionTypeForMilestone === 'open_gym' && milestoneNum > 2) {
+        scheduledInMilestone = milestoneNum - 1;
+      }
+      
+      const coachingItemId = milestoneNum && sessionTypeForMilestone ? `milestone-${scheduledInMilestone}-coaching-${sessionTypeForMilestone}` : null;
       const registration = coachingItemId ? getRegistrationForCoachingItem(coachingItemId) : null;
       const hasScheduledSession = registration?.status && registration.status !== REGISTRATION_STATUS.CANCELLED;
       
       const handleSessionClick = () => {
         if (!isAttended && sessionTypeForMilestone) {
           // Navigate to coaching hub to schedule/reschedule
-          navigate?.('coaching-hub', { initialTab: 'live', sessionTypeFilter: sessionTypeForMilestone });
+          navigate?.('coaching-hub', { 
+            initialTab: 'live', 
+            sessionTypeFilter: sessionTypeForMilestone,
+            targetCoachingItemId: coachingItemId
+          });
         }
       };
 
@@ -2707,7 +2688,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         // Navigate to Coaching Hub with Browse Sessions tab and 1:1 filter
         navigate?.('coaching-hub', { 
           initialTab: 'live', 
-          sessionTypeFilter: 'one_on_one' 
+          sessionTypeFilter: 'one_on_one',
+          targetCoachingItemId: item.id
         });
       };
       
@@ -2774,10 +2756,17 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       const isScheduled = registration?.status && registration.status !== REGISTRATION_STATUS.CANCELLED;
       
       const handleCoachingNavigation = () => {
-        // Navigate to Coaching Hub with Browse Sessions tab and Open Gym filter
+        // Navigate to Coaching Hub with Browse Sessions tab and specific Open Gym variant filter
+        // Milestone 2 schedules Redirecting Feedback, Milestone 3 & 4 both relate to Handling Pushback
+        const milestoneNum = item.milestoneId || (item.id?.match(/milestone-(\d+)/)?.[1]);
+        let openGymVariant = 'open_gym';
+        if (milestoneNum == 2) openGymVariant = 'open_gym_redirecting_feedback';
+        if (milestoneNum == 3 || milestoneNum == 4) openGymVariant = 'open_gym_handling_pushback';
+        
         navigate?.('coaching-hub', { 
           initialTab: 'live', 
-          sessionTypeFilter: 'open_gym' 
+          sessionTypeFilter: openGymVariant,
+          targetCoachingItemId: item.id
         });
       };
       
@@ -3044,6 +3033,14 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <span className={`font-medium ${item.autoComplete ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>
                   {item.completedRepCount || 0}/{item.requiredRepCount || 1} complete
                 </span>
+                {item.inProgressRepCount > 0 && !item.autoComplete && (
+                  <>
+                    <span>•</span>
+                    <span className="font-medium text-amber-600 dark:text-amber-400">
+                      {item.inProgressRepCount} in progress
+                    </span>
+                  </>
+                )}
                 {item.estimatedMinutes && (
                   <><span>•</span><span className="text-slate-500 dark:text-slate-400">{item.estimatedMinutes} min</span></>
                 )}
@@ -3070,9 +3067,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 {item.description && !item.resourceTitle && (
                   <><span>•</span><span className="text-slate-600 dark:text-slate-400">{item.description}</span></>
                 )}
-                {/* Show estimated time to complete - for video_series, use fetched totalDuration */}
-                {(item.estimatedMinutes || item.duration || (item.resourceType === 'video_series' && videoSeriesDurations[item.resourceId])) && (
-                   <><span>•</span><span className="text-slate-500 dark:text-slate-400">{item.estimatedMinutes || item.duration || videoSeriesDurations[item.resourceId]} min</span></>
+                {/* Show estimated time to complete - uses explicit values or defaults by resource type */}
+                {getEstimatedTime(item) && (
+                   <><span>•</span><span className="text-slate-500 dark:text-slate-400">{getEstimatedTime(item)} min</span></>
                 )}
               </>
             )}
@@ -3392,67 +3389,30 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         {/* ========== START/POST PHASE: Week-Based Actions ========== */}
         {currentPhase?.id !== 'pre-start' && (
           <>
-            {/* Carried Over Items - persist and stay visible even when completed */}
+            {/* Carried Over Items - incomplete items + items completed during this level (strikethrough) */}
             {displayedCarriedOverItems.length > 0 && (() => {
-              const completedCarriedOver = displayedCarriedOverItems.filter(item => {
-                if (item.isInteractive) {
-                  if (Array.isArray(prepRequirementsComplete?.items)) {
-                    const prepItem = prepRequirementsComplete.items.find(p => p.handlerType === item.handlerType);
-                    if (prepItem) return prepItem.complete;
-                  }
-                  if (item.handlerType === 'leader-profile') return leaderProfileComplete;
-                  if (item.handlerType === 'baseline-assessment') return baselineAssessmentComplete;
-                  if (item.handlerType === 'notification-setup') return notificationSetupComplete;
-                  if (item.handlerType === 'foundation-commitment') return foundationCommitmentComplete;
-                  if (item.handlerType === 'conditioning-tutorial') return conditioningTutorialComplete;
-                  if (item.handlerType === 'video-series') return videoSeriesComplete;
-                }
-                const progress = getItemProgress(item.id);
-                return progress.status === 'completed' || completedItems.includes(item.id);
-              });
+              const completedCarriedOver = displayedCarriedOverItems.filter(item => item.isComplete || item.completedAt);
               const allCarriedOverComplete = completedCarriedOver.length === displayedCarriedOverItems.length;
               
-              return allCarriedOverComplete ? (
-                <div className="mb-4">
-                  <button
-                    onClick={() => setPriorWeekExpanded(!priorWeekExpanded)}
-                    className="w-full group flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 transition-all"
-                  >
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
-                      <Trophy className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Carry Forward Complete!</p>
-                      <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                        All {displayedCarriedOverItems.length} carried-over {displayedCarriedOverItems.length === 1 ? 'task' : 'tasks'} finished
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 p-2 text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 transition-colors">
-                      {priorWeekExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                    </div>
-                  </button>
-                  
-                  {priorWeekExpanded && (
-                    <div className="mt-2 space-y-1">
-                      {displayedCarriedOverItems.map((item, idx) => (
-                        <ActionItem key={item.id || `carried-${idx}`} item={item} idx={idx} isCarriedOver={true} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
+              return (
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2 px-1">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                      <span className="text-sm font-bold text-teal-800 dark:text-teal-400 uppercase tracking-wider">Catch Up</span>
+                      {allCarriedOverComplete ? (
+                        <Trophy className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      ) : (
+                        <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      )}
+                      <span className={`text-sm font-bold uppercase tracking-wider ${allCarriedOverComplete ? 'text-emerald-800 dark:text-emerald-400' : 'text-teal-800 dark:text-teal-400'}`}>
+                        {allCarriedOverComplete ? 'Catch Up Complete!' : 'Catch Up'}
+                      </span>
                     </div>
-                    <div className="flex-1 h-px bg-teal-200 dark:bg-teal-700"></div>
-                    <span className="text-xs font-medium text-teal-700 bg-teal-100 dark:text-teal-300 dark:bg-teal-900/40 px-2 py-0.5 rounded-full">
+                    <div className={`flex-1 h-px ${allCarriedOverComplete ? 'bg-emerald-200 dark:bg-emerald-700' : 'bg-teal-200 dark:bg-teal-700'}`}></div>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${allCarriedOverComplete ? 'text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/40' : 'text-teal-700 bg-teal-100 dark:text-teal-300 dark:bg-teal-900/40'}`}>
                       {completedCarriedOver.length}/{displayedCarriedOverItems.length} complete
                     </span>
                   </div>
-                  <div className="space-y-1 p-3 bg-teal-50/50 dark:bg-teal-900/20 rounded-xl border border-teal-200/60 dark:border-teal-700/40">
+                  <div className={`space-y-1 p-3 rounded-xl border ${allCarriedOverComplete ? 'bg-emerald-50/50 dark:bg-emerald-900/20 border-emerald-200/60 dark:border-emerald-700/40' : 'bg-teal-50/50 dark:bg-teal-900/20 border-teal-200/60 dark:border-teal-700/40'}`}>
                     {displayedCarriedOverItems.map((item, idx) => (
                       <ActionItem key={item.id || `carried-${idx}`} item={item} idx={idx} isCarriedOver={true} />
                     ))}
@@ -3480,6 +3440,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 if (item.requiresCertification) {
                   const reg = getRegistrationForCoachingItem(item.id);
                   return reg?.status === REGISTRATION_STATUS.CERTIFIED;
+                }
+                // 1:1 Coaching and Open Gym sessions are "complete" when scheduled (no certification needed)
+                if (item.isSessionPicker && !item.requiresCertification && 
+                    (item.sessionType === SESSION_TYPES.ONE_ON_ONE || item.sessionType === SESSION_TYPES.OPEN_GYM)) {
+                  const reg = getRegistrationForCoachingItem(item.id);
+                  return reg?.status && reg.status !== REGISTRATION_STATUS.CANCELLED;
                 }
                 // Standard completion check
                 const progress = getItemProgress(item.id);

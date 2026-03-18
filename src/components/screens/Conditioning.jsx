@@ -1132,11 +1132,10 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
           <div className="flex justify-center mb-4">
             <Button
               onClick={() => setShowCommitForm(true)}
-              variant="outline"
-              className="border-corporate-teal text-corporate-teal hover:bg-corporate-teal/5 px-6"
+              className="bg-corporate-teal hover:bg-teal-600 text-white px-8 py-3 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
             >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Another Rep
+              <Plus className="w-5 h-5 mr-2" />
+              Commit to a Real Rep
             </Button>
           </div>
         )}
@@ -1164,33 +1163,32 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
           {activeReps.length === 0 ? (
             completedReps.length > 0 || weeklyStatus?.totalCompleted > 0 || allTimeCompletedRepTypes.length > 0 ? (
               // Returning user - has completed reps (this week or previously)
-              <div className="py-4 text-center">
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">
+              <div className="py-6 text-center">
+                <p className="text-gray-600 dark:text-gray-300 text-base mb-4">
                   {completedReps.length > 0
                     ? 'Ready for another rep?'
                     : 'No active reps this week yet.'}
                 </p>
                 <Button
                   onClick={() => setShowCommitForm(true)}
-                  variant="outline"
-                  className="border-corporate-teal text-corporate-teal hover:bg-corporate-teal/5 px-6"
+                  className="bg-corporate-teal hover:bg-teal-600 text-white px-8 py-3 text-base font-semibold shadow-lg hover:shadow-xl transition-all animate-pulse-subtle"
                 >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Commit to a Rep
+                  <Plus className="w-5 h-5 mr-2" />
+                  Commit to a Real Rep
                 </Button>
               </div>
             ) : (
               // First-time user - simple, inviting prompt
-              <div className="py-6 text-center">
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
+              <div className="py-8 text-center">
+                <p className="text-gray-600 dark:text-gray-300 text-base mb-5">
                   Start with one leadership conversation this week.
                 </p>
                 <Button
                   onClick={() => setShowCommitForm(true)}
-                  className="bg-corporate-navy hover:bg-corporate-navy/90 text-white px-6"
+                  className="bg-corporate-teal hover:bg-teal-600 text-white px-8 py-3 text-base font-semibold shadow-lg hover:shadow-xl transition-all animate-pulse-subtle"
                 >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Commit to a Rep
+                  <Plus className="w-5 h-5 mr-2" />
+                  Commit to a Real Rep
                 </Button>
                 {onAskCoach && (
                   <button

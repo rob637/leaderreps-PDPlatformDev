@@ -10,6 +10,7 @@ import { Button, Input, Select } from '../ui';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { requestNotificationPermission } from '../../services/pushNotificationService';
+import { syncCompletionToCarryover } from '../../services/carryoverService';
 
 const COMMON_TIMEZONES = [
   "America/New_York",
@@ -421,6 +422,15 @@ const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
       }
       
       await updateDoc(userRef, userUpdate);
+      
+      // Sync to carryover storage immediately - eliminates race conditions
+      // NOTE: Label must match content definition exactly for deduplication to work
+      await syncCompletionToCarryover(db, user.uid, 'notifications-setup', {
+        label: 'Set Notifications',
+        category: 'Preparation',
+        prepSection: 'onboarding',
+        handlerType: 'notification-setup'
+      });
       
       // Also update leader profile for consistency
       try {

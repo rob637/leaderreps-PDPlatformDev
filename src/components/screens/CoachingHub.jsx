@@ -15,6 +15,18 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { NoWidgetsEnabled, TabButton } from '../ui';
 
+// Helper to get derived session type for Open Gym variants
+const getDerivedSessionType = (sessionTitle, sessionType) => {
+  if (sessionType === 'open_gym') {
+    const title = (sessionTitle || '').toLowerCase();
+    if (title.includes('redirecting feedback')) return 'open_gym_redirecting_feedback';
+    if (title.includes('handling pushback')) return 'open_gym_handling_pushback';
+    return 'open_gym';
+  }
+  return sessionType || '';
+};
+
+
 // ============================================
 // TAB NAVIGATION
 // ============================================
@@ -638,7 +650,7 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
   const { db, navigate, user } = useAppServices();
   const { isFeatureEnabled } = useFeatures();
   const { currentDayNumber, unlockedContentIds } = useDailyPlan();
-  const { zoneVisibility } = useAccessControlContext();
+  const { zoneVisibility, loading: accessLoading } = useAccessControlContext();
   
   // Calculate current milestone to correctly assign coaching items
   const currentMilestone = useMemo(() => {
@@ -663,6 +675,7 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
     registrations: newRegistrations,
     registerForSession,
     cancelRegistration,
+    markAttended,
     // isRegistered: checkIsRegistered,
     // getUpcomingRegistrations,
     // getPastRegistrations,
@@ -798,22 +811,28 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
       .slice(0, 6);
   }, [sessions, registeredIds]);
 
-  // Find existing 1:1 registration (for Switch UX)
-  const existing1on1Registration = useMemo(() => {
-    if (!registrations) return null;
-    return registrations.find(r => 
-      (r.sessionType === 'one_on_one' || r.sessionType === '1:1') &&
+  // Find existing exclusive registrations (for Switch UX)
+  const existingExclusiveRegistrations = useMemo(() => {
+    if (!registrations) return {};
+    
+    const active = registrations.filter(r => 
       r.status !== 'cancelled' &&
       r.status !== 'no_show' &&
       r.status !== 'certified'
     );
+    
+    const map = {};
+    active.forEach(r => {
+      const derivedType = getDerivedSessionType(r.sessionTitle, r.sessionType);
+      if (['one_on_one', '1:1', 'open_gym_redirecting_feedback', 'open_gym_handling_pushback', 'open_gym'].includes(derivedType)) {
+        map[derivedType] = r;
+      }
+    });
+    
+    // Normalize '1:1'
+    if (map['1:1']) map['one_on_one'] = map['1:1'];
+    return map;
   }, [registrations]);
-
-  // Get the session details for the existing 1:1
-  const existing1on1Session = useMemo(() => {
-    if (!existing1on1Registration) return null;
-    return sessions.find(s => s.id === existing1on1Registration.sessionId);
-  }, [existing1on1Registration, sessions]);
 
   const handleRegister = async (session) => {
     if (!user?.uid) {
@@ -821,24 +840,31 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
       return;
     }
     
-    // For 1:1 coaching, check if user already has a registration
-    const is1on1 = session.sessionType === 'one_on_one' || session.sessionType === '1:1';
+    // Check if user already has a registration for an exclusive session
+    const targetDerivedType = getDerivedSessionType(session.title || session.name, session.sessionType);
+    const isExclusiveSession = ['one_on_one', '1:1', 'open_gym_redirecting_feedback', 'open_gym_handling_pushback', 'open_gym'].includes(targetDerivedType);
+    const normalizedTargetType = targetDerivedType === '1:1' ? 'one_on_one' : targetDerivedType;
+    
+    const existingRegistration = existingExclusiveRegistrations[normalizedTargetType];
     const additionalData = {};
     
-    if (is1on1 && existing1on1Registration && existing1on1Registration.sessionId !== session.id) {
-      // User already has a 1:1 - show confirmation to switch
-      // Add T12:00:00 to ensure local timezone interpretation
-      const existingTime = existing1on1Session?.time || 'scheduled';
-      const existingDate = existing1on1Session?.date 
-        ? new Date(existing1on1Session.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    if (isExclusiveSession && existingRegistration && existingRegistration.sessionId !== session.id) {
+      // User already has a session of this type - show confirmation to switch
+      const existingSessionDetails = sessions.find(s => s.id === existingRegistration.sessionId);
+      
+      const existingTime = existingSessionDetails?.time || 'scheduled';
+      const existingDate = existingSessionDetails?.date 
+        ? new Date(existingSessionDetails.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
         : '';
       const newTime = session.time || 'scheduled';
       const newDate = session.date 
         ? new Date(session.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
         : '';
+        
+      const sessionLabel = targetDerivedType === 'one_on_one' ? '1:1 coaching' : 'Open Gym';
       
       const confirmed = window.confirm(
-        `Switch your 1:1 coaching session?\n\n` +
+        `Switch your ${sessionLabel} session?\n\n` +
         `Current: ${existingDate} at ${existingTime}\n` +
         `New: ${newDate} at ${newTime}\n\n` +
         `Click OK to switch, or Cancel to keep your current session.`
@@ -847,10 +873,10 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
       if (!confirmed) return;
       
       // User confirmed - proceed with switch
-      additionalData.coachingItemId = targetCoachingItemId || `milestone-${currentMilestone}-coaching-one_on_one`;
-    } else if (is1on1) {
-      // First 1:1 registration
-      additionalData.coachingItemId = targetCoachingItemId || `milestone-${currentMilestone}-coaching-one_on_one`;
+      additionalData.coachingItemId = targetCoachingItemId || existingRegistration.coachingItemId || `milestone-${currentMilestone}-coaching-${session.sessionType}`;
+    } else if (isExclusiveSession) {
+      // First registration
+      additionalData.coachingItemId = targetCoachingItemId || `milestone-${currentMilestone}-coaching-${session.sessionType}`;
     }
     
     const result = await registerForSession(session, additionalData);
@@ -861,7 +887,7 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
     }
     
     // Success feedback
-    if (is1on1 && existing1on1Registration) {
+    if (isExclusiveSession && existingRegistration) {
       alert('Session switched! You will receive a confirmation email.');
     }
   };
@@ -882,6 +908,14 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
     }
   };
 
+  const handleMarkAttended = async (session) => {
+    if (!user?.uid || !session?.id) return;
+    const result = await markAttended(session.id);
+    if (!result.success) {
+      console.error('Error marking attendance:', result.error);
+    }
+  };
+
   // Scope for widgets
   const scope = {
     sessions,
@@ -891,6 +925,7 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
     pastSessions,
     handleRegister,
     handleCancel,
+    handleMarkAttended,
     navigate,
     viewMode,
     setViewMode,
@@ -903,9 +938,28 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
     // Pass initial filter from navigation params
     initialTypeFilter: sessionTypeFilter,
     setSessionTypeFilter,
-    // For Switch UX - existing 1:1 info
-    existing1on1SessionId: existing1on1Registration?.sessionId || null
+    // For Switch UX - existing exclusive session info
+    existingExclusiveRegistrations
   };
+
+  // Show loading while access control data loads (prevents premature locked state)
+  if (accessLoading) {
+    return (
+      <PageLayout 
+        title="Coaching Sessions" 
+        subtitle="Live sessions, on-demand practice, and personalized coaching"
+        icon={Megaphone}
+        breadcrumbs={[
+          { label: 'Home', path: 'dashboard' },
+          { label: 'Coaching Sessions', path: null }
+        ]}
+      >
+        <div className="flex items-center justify-center py-20">
+          <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
+        </div>
+      </PageLayout>
+    );
+  }
 
   // Zone Gate: Coaching unlocks when user enters Foundation phase
   if (!zoneVisibility.isCoachingZoneOpen) {

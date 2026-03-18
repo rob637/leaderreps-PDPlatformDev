@@ -8,6 +8,7 @@ import {
   serverTimestamp,
   onSnapshot,
 } from 'firebase/firestore';
+import { syncCompletionToCarryover } from '../services/carryoverService';
 
 /**
  * Action Progress Tracking Hook
@@ -330,6 +331,16 @@ export const useActionProgress = () => {
     
     await setDoc(progressRef, updateData, { merge: true });
     console.log('[useActionProgress] Item completed:', itemId, updateData);
+    
+    // IMMEDIATELY sync to carryover storage - eliminates race conditions
+    // The completion is recorded in carryover the moment it happens
+    await syncCompletionToCarryover(db, user.uid, itemId, {
+      label: itemData.label || itemData.title || '',
+      category: itemData.category || 'content',
+      prepSection: itemData.prepSection || null,
+      type: itemData.type || 'content',
+      handlerType: itemData.handlerType || null
+    });
   }, [db, user?.uid]);
 
   // Mark an item as incomplete (undo completion)

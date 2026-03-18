@@ -1049,6 +1049,72 @@ export const conditioningService = {
   },
 
   /**
+   * Get count of in-progress reps by rep type
+   * In-progress = committed, prepared, scheduled, executed, debriefed, follow_up_pending
+   * (basically any rep that has been started but not yet fully completed/loop_closed)
+   * @param {Object} db Firestore instance
+   * @param {string} userId User ID
+   * @returns {Object} Map of repType -> count of in-progress reps
+   */
+  getInProgressRepCounts: async (db, userId) => {
+    if (!db || !userId) return {};
+    
+    try {
+      const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+      
+      // In-progress states (started but not yet fully complete)
+      const inProgressStates = [
+        'committed',         // Just committed, not yet prepped
+        'prepared',          // Prep completed, ready to execute
+        'scheduled',         // Has a scheduled time
+        'executed',          // Done but not yet debriefed
+        'debriefed',         // Debriefed but may need to complete the loop
+        'follow_up_pending', // Needs to close the loop
+        'active'             // Legacy status
+      ];
+      
+      const q = query(
+        repsRef,
+        where('status', 'in', inProgressStates)
+      );
+      
+      const snapshot = await getDocs(q);
+      const counts = {};
+      
+      // SCE and DRF rep types require "Complete the Loop" step
+      const repTypesRequiringLoop = ['set_clear_expectations', 'deliver_reinforcing_feedback', 'reinforce_public'];
+      
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const repType = data.repType;
+        const status = data.status;
+        
+        if (!repType) return;
+        
+        // For SCE/DRF reps that are debriefed with loop responses, they're actually complete - skip
+        if (repTypesRequiringLoop.includes(repType) && (status === 'debriefed' || status === 'follow_up_pending')) {
+          const hasLoopResponses = repType === 'deliver_reinforcing_feedback' || repType === 'reinforce_public'
+            ? !!data.evidence?.drfEvidence?.completeLoopResponses
+            : !!data.evidence?.sceEvidence?.completeLoopResponses;
+          if (hasLoopResponses) return; // This one is actually complete
+        }
+        
+        // For non-loop-required rep types that are debriefed, they're considered complete - skip
+        if (!repTypesRequiringLoop.includes(repType) && (status === 'debriefed' || status === 'follow_up_pending')) {
+          return;
+        }
+        
+        counts[repType] = (counts[repType] || 0) + 1;
+      });
+      
+      return counts;
+    } catch (err) {
+      console.warn('Error fetching in-progress rep counts:', err);
+      return {};
+    }
+  },
+
+  /**
    * Get completed reps for a specific rep type
    * Used for displaying individual completed reps in the UI (e.g., showing all 3 DRF reps)
    * @param {Object} db Firestore instance

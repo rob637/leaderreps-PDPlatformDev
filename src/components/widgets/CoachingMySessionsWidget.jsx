@@ -63,7 +63,7 @@ const getSessionIcon = (sessionType) => {
   }
 };
 
-const RegistrationCard = ({ registration, sessions = [], onCancel, onReschedule }) => {
+const RegistrationCard = ({ registration, sessions = [], onCancel, onReschedule, onMarkAttended }) => {
   const session = sessions.find(s => s.id === registration.sessionId);
   // Parse session date properly to avoid timezone issues
   let sessionDateObj = null;
@@ -76,7 +76,10 @@ const RegistrationCard = ({ registration, sessions = [], onCancel, onReschedule 
       sessionDateObj = new Date(ds);
     }
   }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const isToday = sessionDateObj && sessionDateObj.toDateString() === new Date().toDateString();
+  const isPastOrToday = sessionDateObj && sessionDateObj <= today;
   const Icon = getSessionIcon(registration.sessionType);
   const normalizedStatus = (registration.status || '').toLowerCase();
   
@@ -124,6 +127,15 @@ const RegistrationCard = ({ registration, sessions = [], onCancel, onReschedule 
       {normalizedStatus === 'registered' && (
         <div className="mt-3 flex gap-2">
           {session?.meetingLink && isToday && <a href={session.meetingLink} target="_blank" rel="noopener noreferrer" className="flex-1 py-2 bg-corporate-teal text-white text-center text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors">Join Session</a>}
+          {onMarkAttended && isPastOrToday && (
+            <button 
+              onClick={() => onMarkAttended({ id: registration.sessionId })} 
+              className="px-3 py-2 text-sm font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors flex items-center gap-1"
+            >
+              <CheckCircle className="w-3 h-3" />
+              I Attended
+            </button>
+          )}
           {onReschedule && (
             <button 
               onClick={() => onReschedule(registration)} 
@@ -152,7 +164,7 @@ const PastSessionCard = ({ session }) => (
 );
 
 const CoachingMySessionsWidget = ({ scope = {}, helpText }) => {
-  const { registrations = [], sessions = [], pastSessions = [], handleCancel, navigate } = scope;
+  const { registrations = [], sessions = [], pastSessions = [], handleCancel, handleMarkAttended, navigate } = scope;
   
   // State for reschedule modal
   const [rescheduleItem, setRescheduleItem] = useState(null);
@@ -220,7 +232,7 @@ const CoachingMySessionsWidget = ({ scope = {}, helpText }) => {
       {scheduledRegistrations.length > 0 && (
         <div className="mb-4">
           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2 flex items-center gap-1"><Calendar className="w-3 h-3" />Upcoming ({scheduledRegistrations.length})</p>
-          <div className="space-y-2">{scheduledRegistrations.slice(0, 3).map(reg => <RegistrationCard key={reg.id || reg.sessionId} registration={reg} sessions={sessions} onCancel={handleCancel} onReschedule={handleReschedule} />)}</div>
+          <div className="space-y-2">{scheduledRegistrations.slice(0, 3).map(reg => <RegistrationCard key={reg.id || reg.sessionId} registration={reg} sessions={sessions} onCancel={handleCancel} onReschedule={handleReschedule} onMarkAttended={handleMarkAttended} />)}</div>
           {scheduledRegistrations.length > 3 && <button onClick={() => navigate?.('coaching-hub')} className="w-full mt-2 py-2 text-sm text-corporate-teal font-medium hover:bg-teal-50 rounded-lg transition-colors flex items-center justify-center gap-1">View all {scheduledRegistrations.length}<ChevronRight className="w-4 h-4" /></button>}
         </div>
       )}

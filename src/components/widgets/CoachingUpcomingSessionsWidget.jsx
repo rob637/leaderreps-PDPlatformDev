@@ -19,6 +19,30 @@ const SESSION_TYPE_CONFIG = {
     accent: 'border-l-orange-500',
     calendarColor: 'bg-blue-100 text-blue-700'
   },
+  open_gym_redirecting_feedback: {
+    label: 'Open Gym - Redirecting Feedback',
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
+    accent: 'border-l-orange-500',
+    calendarColor: 'bg-blue-100 text-blue-700'
+  },
+  open_gym_handling_pushback: {
+    label: 'Open Gym - Handling Pushback',
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
+    accent: 'border-l-orange-500',
+    calendarColor: 'bg-blue-100 text-blue-700'
+  },
+  open_gym_redirecting_feedback: {
+    label: 'Open Gym - Redirecting Feedback',
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
+    accent: 'border-l-orange-500',
+    calendarColor: 'bg-blue-100 text-blue-700'
+  },
+  open_gym_handling_pushback: {
+    label: 'Open Gym - Handling Pushback',
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
+    accent: 'border-l-orange-500',
+    calendarColor: 'bg-blue-100 text-blue-700'
+  },
   leader_circle: {
     label: 'Leader Circle',
     color: 'bg-teal-100 text-teal-800 border-teal-200',
@@ -86,6 +110,17 @@ const getDefaultMaxAttendeesForType = (sessionType) => {
   }
 };
 
+// Helper to get derived session type for Open Gym variants
+const getDerivedSessionType = (session) => {
+  if (session?.sessionType === 'open_gym') {
+    const title = (session.title || '').toLowerCase();
+    if (title.includes('redirecting feedback')) return 'open_gym_redirecting_feedback';
+    if (title.includes('handling pushback')) return 'open_gym_handling_pushback';
+    return 'open_gym';
+  }
+  return session?.sessionType || 'workshop';
+};
+
 // Session Card Component
 const SessionCard = ({ session, isRegistered, onRegister, onCancel, showSwitch = false }) => {
   const typeConfig = SESSION_TYPE_CONFIG[session.sessionType] || SESSION_TYPE_CONFIG.workshop;
@@ -94,10 +129,9 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel, showSwitch =
   const maxAttendees = session.maxAttendees || getDefaultMaxAttendeesForType(session.sessionType);
   const isFull = (session.registrationCount || 0) >= maxAttendees;
   
-  // Determine button text for 1:1 sessions
-  const is1on1 = session.sessionType === 'one_on_one' || session.sessionType === '1:1';
-  const buttonText = is1on1 && showSwitch ? 'Switch' : 'Register';
-  const buttonColor = is1on1 && showSwitch 
+  // Determine button text for exclusive sessions switching
+  const buttonText = showSwitch ? 'Switch' : 'Register';
+  const buttonColor = showSwitch 
     ? 'bg-amber-500 hover:bg-amber-600' 
     : 'bg-corporate-teal hover:bg-teal-700';
   
@@ -185,7 +219,7 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel, showSwitch =
 };
 
 // Day Sessions Modal Component
-const DaySessionsModal = ({ isOpen, onClose, date, sessions, registeredIds, onRegister, onCancel, existing1on1SessionId }) => {
+const DaySessionsModal = ({ isOpen, onClose, date, sessions, registeredIds, onRegister, onCancel, existingExclusiveRegistrations }) => {
   const [registering, setRegistering] = useState(null);
   
   if (!isOpen) return null;
@@ -392,7 +426,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
     showAllSessions = false,
     initialTypeFilter = 'all',
     setSessionTypeFilter: externalSetFilter,
-    existing1on1SessionId = null  // For Switch UX
+    existingExclusiveRegistrations = {}  // For Switch UX
   } = scope;
   
   // Internal state for calendar if not controlled externally
@@ -422,13 +456,19 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
   // Apply type filter
   const displaySessions = useMemo(() => {
     if (typeFilter === 'all') return allUpcomingSessions;
-    return allUpcomingSessions.filter(s => s.sessionType === typeFilter);
+    return allUpcomingSessions.filter(s => {
+      // Allow fallback: if typeFilter is 'open_gym', match all open gyms.
+      // But if we have specific filters selected, only match those.
+      const derivedType = getDerivedSessionType(s);
+      if (typeFilter === 'open_gym') return s.sessionType === 'open_gym';
+      return derivedType === typeFilter || s.sessionType === typeFilter;
+    });
   }, [allUpcomingSessions, typeFilter]);
   
   // Get unique session types for filter buttons
   const availableTypes = useMemo(() => {
-    const types = new Set(allUpcomingSessions.map(s => s.sessionType).filter(Boolean));
-    return Array.from(types);
+    const types = new Set(allUpcomingSessions.map(s => getDerivedSessionType(s)).filter(Boolean));
+    return Array.from(types).sort(); // simple string sort puts 1:1 first, then open gym
   }, [allUpcomingSessions]);
   
   // Calendar helpers
@@ -576,7 +616,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
             registeredIds={registeredIds}
             onRegister={handleRegister}
             onCancel={handleCancel}
-            existing1on1SessionId={existing1on1SessionId}
+            existingExclusiveRegistrations={existingExclusiveRegistrations}
           />
           
           {/* Legend */}
@@ -609,7 +649,10 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
               </button>
               {availableTypes.map(type => {
                 const config = SESSION_TYPE_CONFIG[type] || {};
-                const count = allUpcomingSessions.filter(s => s.sessionType === type).length;
+                const count = allUpcomingSessions.filter(s => {
+                  if (type === 'open_gym') return s.sessionType === 'open_gym';
+                  return getDerivedSessionType(s) === type || s.sessionType === type;
+                }).length;
                 return (
                   <button
                     key={type}
@@ -634,9 +677,13 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
             </div>
           ) : (
             displaySessions.slice(0, showAllSessions ? undefined : 5).map(session => {
-              // Show "Switch" for 1:1 sessions when user already has a different 1:1 registered
-              const is1on1 = session.sessionType === 'one_on_one' || session.sessionType === '1:1';
-              const showSwitch = is1on1 && existing1on1SessionId && existing1on1SessionId !== session.id;
+              // Show "Switch" for exclusive sessions when user already has a different session of the same type registered
+              const derivedTargetType = getDerivedSessionType(session);
+              const normalizedTargetType = derivedTargetType === '1:1' ? 'one_on_one' : derivedTargetType;
+              const isExclusiveSession = ['one_on_one', 'open_gym_redirecting_feedback', 'open_gym_handling_pushback', 'open_gym'].includes(normalizedTargetType);
+              
+              const existingReg = isExclusiveSession ? existingExclusiveRegistrations[normalizedTargetType] : null;
+              const showSwitch = isExclusiveSession && existingReg && existingReg.sessionId !== session.id;
               
               return (
                 <SessionCard 

@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  Dumbbell, CheckCircle, Clock, Target, Calendar,
+  Zap, CheckCircle, Clock, Target, Calendar,
   ChevronDown, ChevronUp, AlertTriangle, XCircle, ChevronRight
 } from 'lucide-react';
 import { Card } from '../ui';
@@ -149,7 +149,7 @@ const ConditioningHistoryWidget = ({ helpText }) => {
     return (
       <Card 
         title="Conditioning History" 
-        icon={Dumbbell} 
+        icon={Zap} 
         accent="NAVY"
         helpText={helpText}
       >
@@ -166,7 +166,7 @@ const ConditioningHistoryWidget = ({ helpText }) => {
   return (
     <Card 
       title="Conditioning History" 
-      icon={Dumbbell} 
+      icon={Zap} 
       accent="NAVY"
       helpText={helpText}
     >
@@ -176,7 +176,7 @@ const ConditioningHistoryWidget = ({ helpText }) => {
         </div>
       ) : weeklyHistory.length === 0 ? (
         <div className="text-center py-8">
-          <Dumbbell className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+          <Zap className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <p className="text-slate-600 dark:text-slate-400 font-medium">No conditioning reps yet</p>
           <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">
             Complete your first leadership rep to start building your history!

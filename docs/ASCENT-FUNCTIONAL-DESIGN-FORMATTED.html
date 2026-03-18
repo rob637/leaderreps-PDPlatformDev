@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ascent: Functional Design Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .meta {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 20px;
+        }
+
+        .meta span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        main {
+            padding: 60px 40px;
+        }
+
+        section {
+            margin-bottom: 60px;
+        }
+
+        h2 {
+            font-size: 32px;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        h3 {
+            font-size: 24px;
+            color: #34495e;
+            margin-top: 35px;
+            margin-bottom: 20px;
+        }
+
+        h4 {
+            font-size: 18px;
+            color: #34495e;
+            margin-top: 20px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .executive-intro {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 6px;
+        }
+
+        .executive-intro strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 25px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .hook-card {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border: 1px solid #e0e7ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .moment {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 6px;
+        }
+
+        .mockup {
+            background: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            border-radius: 6px;
+            padding: 20px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 20px 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .metric-card {
+            background: white;
+            border: 1px solid #e0e7ff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        }
+
+        .metric-card h4 {
+            color: #667eea;
+            margin-top: 0;
+        }
+
+        .comparison-table {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .comparison-item {
+            background: white;
+            border: 1px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .comparison-item:nth-child(odd) {
+            background: #f8f9fa;
+        }
+
+        .comparison-item h4 {
+            margin-top: 0;
+            color: #764ba2;
+        }
+
+        .promise-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .promise-section blockquote {
+            font-size: 24px;
+            font-weight: 300;
+            margin-bottom: 25px;
+            line-height: 1.8;
+            font-style: italic;
+        }
+
+        .promise-section h3 {
+            border-bottom: none;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .promise-item {
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+
+        p {
+            margin: 15px 0;
+            font-size: 15px;
+        }
+
+        .cadence-table {
+            width: 100%;
+            margin: 25px 0;
+        }
+
+        .cadence-table tr td {
+            padding: 15px;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 40px 20px;
+            }
+
+            header h1 {
+                font-size: 32px;
+            }
+
+            main {
+                padding: 40px 20px;
+            }
+
+            h2 {
+                font-size: 24px;
+            }
+
+            .meta {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .comparison-table {
+                grid-template-columns: 1fr;
+            }
+
+            .promise-section blockquote {
+                font-size: 18px;
+            }
+        }
+
+        footer {
+            background: #2c3e50;
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .emoji {
+            font-size: 1.1em;
+            margin-right: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Ascent</h1>
+            <p style="font-size: 18px; margin-top: 10px;">Functional Design Document</p>
+            <div class="meta">
+                <span><strong>Purpose:</strong> User experience specification for LeaderReps Ascent</span>
+                <span><strong>Audience:</strong> Product stakeholders, leadership team</span>
+                <span><strong>Created:</strong> March 16, 2026</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Executive Summary -->
+            <section>
+                <h2>Executive Summary</h2>
+
+                <div class="executive-intro">
+                    <strong>The Problem</strong>
+                    <p>Foundation is a transformative 8-week experience — but what happens on Week 9? Without a clear next step, leaders lose momentum, habits fade, and organizations lose their training investment.</p>
+                </div>
+
+                <div class="executive-intro">
+                    <strong>The Solution</strong>
+                    <p><span class="highlight">Ascent</span> turns a one-time training into an ongoing leadership operating system. It gives graduates:</p>
+                    <ul>
+                        <li><strong>Direction</strong> — Focused 6-8 week "sprints" targeting specific skills</li>
+                        <li><strong>Accountability</strong> — Monthly feedback from their actual team members</li>
+                        <li><strong>Proof</strong> — Visible evidence that their leadership is improving over time</li>
+                        <li><strong>Challenge</strong> — Progressively harder scenarios that keep growth interesting</li>
+                    </ul>
+                </div>
+
+                <h3>Why Leaders Stay Engaged</h3>
+                <p>Ascent leverages four psychological hooks that keep leaders coming back month after month:</p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Hook</th>
+                                <th>What It Does</th>
+                                <th>Why It Works</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>External Validation</strong></td>
+                                <td>Team members rate the leader monthly</td>
+                                <td>"My team noticed!" is more powerful than any badge</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Identity Investment</strong></td>
+                                <td>Leaders publicly commit to focus areas</td>
+                                <td>Once you say "I'm working on feedback," you work on it</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Unlockable Challenges</strong></td>
+                                <td>New skills unlock only after proving mastery</td>
+                                <td>Gamification done right — earned, not given</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Visible Progress</strong></td>
+                                <td>Trend lines show improvement over time</td>
+                                <td>Seeing the line go up is addictive</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- User Journey -->
+            <section>
+                <h2>User Journey: From Graduation to Ongoing Growth</h2>
+
+                <h3>Moment 1: The Graduation Celebration</h3>
+                <div class="moment">
+                    <strong>When:</strong> Leader completes Foundation Session 5 (final milestone)<br><br>
+                    <strong>What They Experience:</strong>
+                    <ul>
+                        <li>Celebrates the accomplishment (dopamine hit)</li>
+                        <li>Provides personalized insights they can't get elsewhere</li>
+                        <li>Creates momentum to continue immediately</li>
+                    </ul>
+                </div>
+
+                <h3>Moment 2: Choosing Your Focus (Ascent Onboarding)</h3>
+                <div class="moment">
+                    <strong>When:</strong> Immediately after graduation modal<br><br>
+                    <strong>What They Experience:</strong>
+                    <ul>
+                        <li>Personalized recommendations feel tailored, not generic</li>
+                        <li>Observer commitment creates accountability before Day 1</li>
+                        <li>Low friction — they're already in the app, momentum is high</li>
+                    </ul>
+                    <p><strong>The Three Steps:</strong></p>
+                    <ol>
+                        <li>Welcome presentation explaining Sprints, Pulses, and Unlocks</li>
+                        <li>Focus selection based on Foundation data</li>
+                        <li>Invite 2-5 observers to provide monthly feedback</li>
+                    </ol>
+                </div>
+
+                <h3>Moment 3: The Sprint Dashboard (Daily Experience)</h3>
+                <div class="moment">
+                    <strong>When:</strong> Every time the leader opens the app during an active sprint<br><br>
+                    <strong>What They Experience:</strong>
+                    <ul>
+                        <li>Clear progress visualization (visual feedback loop)</li>
+                        <li>Countdown to observer pulse creates anticipation</li>
+                        <li>Specific weekly focus keeps it actionable, not overwhelming</li>
+                    </ul>
+                    <p><strong>Key Components:</strong></p>
+                    <ul>
+                        <li>Sprint progress (e.g., 7 of 12 reps completed)</li>
+                        <li>Next pulse date and observer count</li>
+                        <li>This week's specific focus</li>
+                        <li>Trend visualization showing confidence improvement</li>
+                    </ul>
+                </div>
+
+                <h3>Moment 4: The Observer Pulse (Monthly Feedback)</h3>
+                <div class="moment">
+                    <strong>When:</strong> End of each month during active sprints<br><br>
+                    <strong>Why This Is the Killer Engagement Feature:</strong>
+                    <ul>
+                        <li><span class="highlight">External validation</span> is more powerful than self-assessment</li>
+                        <li>Monthly rhythm creates recurring app opens</li>
+                        <li>Trend visualization shows real, measurable growth</li>
+                        <li>Comments provide specific, actionable feedback</li>
+                        <li>The notification <strong>"Your team noticed!"</strong> triggers immediate curiosity</li>
+                    </ul>
+                    <p><strong>Observer Experience:</strong> No login required, 30-second survey with one question about the leader's focus area</p>
+                    <p><strong>Leader Experience:</strong> Sees aggregated results by relationship type, trend compared to self-rating, and anonymous comments</p>
+                </div>
+
+                <h3>Moment 5: Sprint Completion & Unlocks</h3>
+                <div class="moment">
+                    <strong>When:</strong> Leader completes their 6-8 week sprint<br><br>
+                    <strong>Why This Matters:</strong>
+                    <ul>
+                        <li>Clear celebration moment (completion feels good)</li>
+                        <li>Unlocks create anticipation and investment</li>
+                        <li>AI narrative provides personal meaning</li>
+                        <li>Immediate prompt to start next sprint maintains momentum</li>
+                    </ul>
+                    <p><strong>The Unlock System:</strong> Leaders unlock new advanced scenarios, modules, and badges based on their performance and progress</p>
+                </div>
+
+                <h3>Moment 6: The Situation Room (On-Demand Crisis Prep)</h3>
+                <div class="moment">
+                    <strong>When:</strong> Leader has a high-stakes moment coming up<br><br>
+                    <strong>Why This Matters:</strong>
+                    <ul>
+                        <li>Immediate utility — helps with real problems right now</li>
+                        <li>Personalized coaching based on their actual patterns</li>
+                        <li>Creates habit of returning to app before hard moments</li>
+                        <li>Debrief loop turns real situations into learning</li>
+                    </ul>
+                    <p><strong>What Leaders Get:</strong> Customized prep including opening words, likely reactions and responses, and personalized coaching based on their history</p>
+                </div>
+            </section>
+
+            <!-- Engagement System -->
+            <section>
+                <h2>Engagement System Summary</h2>
+
+                <h3>What Keeps Leaders Coming Back</h3>
+                <div class="table-wrapper">
+                    <table class="cadence-table">
+                        <thead>
+                            <tr>
+                                <th>Cadence</th>
+                                <th>Trigger</th>
+                                <th>Experience</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Daily</strong></td>
+                                <td>Sprint widget on dashboard</td>
+                                <td>"I should log that conversation I had"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Weekly</strong></td>
+                                <td>Sprint nudge notification</td>
+                                <td>"You're 1 rep behind this week"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Monthly</strong></td>
+                                <td>Observer pulse results</td>
+                                <td>"Your team noticed!" notification</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Quarterly</strong></td>
+                                <td>Sprint completion</td>
+                                <td>Unlock celebration + "Choose your next sprint"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>On-Demand</strong></td>
+                                <td>Real leadership moment</td>
+                                <td>Situation Room prep</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>The Engagement Flywheel</h3>
+                <p>The system is designed around a powerful feedback loop:</p>
+                <ul>
+                    <li><strong>Practice:</strong> Leaders log real conversations (Real Reps)</li>
+                    <li><strong>Measurement:</strong> Visible improvement shown through trend lines</li>
+                    <li><strong>Validation:</strong> Observer pulse creates external proof of change</li>
+                    <li><strong>Motivation:</strong> This drives continued practice and engagement</li>
+                </ul>
+                <blockquote style="border-left: 3px solid #667eea; padding-left: 20px; margin: 20px 0; color: #555; font-style: italic;">
+                    <strong>The key insight:</strong> Self-reported progress is okay. External validation is addictive.
+                </blockquote>
+            </section>
+
+            <!-- Success Metrics -->
+            <section>
+                <h2>Success Metrics</h2>
+
+                <h3>Leading Indicators (Track Weekly)</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Target</th>
+                                <th>Why It Matters</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Foundation → Ascent conversion</td>
+                                <td>&gt;75%</td>
+                                <td>Graduates don't fall off</td>
+                            </tr>
+                            <tr>
+                                <td>Observers invited per leader</td>
+                                <td>&gt;2.5</td>
+                                <td>External validation enabled</td>
+                            </tr>
+                            <tr>
+                                <td>Weekly rep completion rate</td>
+                                <td>&gt;60%</td>
+                                <td>Leaders are actually practicing</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Outcome Indicators (Track Monthly)</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Target</th>
+                                <th>Why It Matters</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Observer response rate</td>
+                                <td>&gt;65%</td>
+                                <td>Feedback loop is working</td>
+                            </tr>
+                            <tr>
+                                <td>Observer rating improvement</td>
+                                <td>+0.5 over 6 months</td>
+                                <td>Leaders are actually getting better</td>
+                            </tr>
+                            <tr>
+                                <td>Sprint completion rate</td>
+                                <td>&gt;60%</td>
+                                <td>Leaders finish what they start</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Business Indicators (Track Quarterly)</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Target</th>
+                                <th>Why It Matters</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Monthly active rate</td>
+                                <td>&gt;70%</td>
+                                <td>Leaders stay engaged long-term</td>
+                            </tr>
+                            <tr>
+                                <td>Sprint-to-sprint retention</td>
+                                <td>&gt;70%</td>
+                                <td>Leaders start second sprint</td>
+                            </tr>
+                            <tr>
+                                <td>NPS</td>
+                                <td>&gt;55</td>
+                                <td>Leaders would recommend</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Competitive Differentiation -->
+            <section>
+                <h2>Competitive Differentiation</h2>
+                <div class="comparison-table">
+                    <div class="comparison-item">
+                        <h4>The Norm</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li>✗ Training ends after the workshop</li>
+                            <li>✗ Progress is self-reported</li>
+                            <li>✗ Content is generic</li>
+                            <li>✗ Learning is passive consumption</li>
+                            <li>✗ Certificates prove attendance</li>
+                            <li>✗ Development is annual</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-item">
+                        <h4>Ascent</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li>✓ Training becomes an operating system</li>
+                            <li>✓ Progress is externally validated</li>
+                            <li>✓ Challenges are personalized to gaps</li>
+                            <li>✓ Learning is active practice + feedback</li>
+                            <li>✓ Trend lines prove behavior change</li>
+                            <li>✓ Development is continuous</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- The Ascent Promise -->
+            <section>
+                <div class="promise-section">
+                    <blockquote>
+                        "Foundation taught you what to practice.<br>
+                        Ascent proves you've changed — to your team, your boss, and yourself."
+                    </blockquote>
+
+                    <h3>What Ascent Delivers</h3>
+                    <div class="promise-item"><strong>For Leaders:</strong> A system that keeps them growing without requiring willpower.</div>
+                    <div class="promise-item"><strong>For Organizations:</strong> Evidence that their training investment is producing lasting behavior change.</div>
+                    <div class="promise-item"><strong>For HR/L&D:</strong> Metrics they can show the C-suite about leadership development ROI.</div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            Document created March 16, 2026 | Ascent Functional Design Document
+        </footer>
+    </div>
+</body>
+</html>

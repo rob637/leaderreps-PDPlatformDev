@@ -120,8 +120,29 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
       // This keeps users logged in across browser sessions and app restarts
       try {
         await setPersistence(auth, indexedDBLocalPersistence);
-      } catch {
-        // Fallback for browsers that don't support IndexedDB
+      } catch (persistErr) {
+        // IndexedDB corruption - try to clear it and use localStorage fallback
+        console.warn('[Auth] IndexedDB persistence failed, falling back to localStorage:', persistErr.message);
+        
+        // Check if this is an IndexedDB corruption error
+        if (persistErr.message?.includes('indexedDB') || persistErr.message?.includes('backing store')) {
+          // Try to clear corrupted IndexedDB databases
+          try {
+            const dbs = await indexedDB.databases?.();
+            if (dbs) {
+              for (const dbInfo of dbs) {
+                if (dbInfo.name?.includes('firebase')) {
+                  indexedDB.deleteDatabase(dbInfo.name);
+                  console.log('[Auth] Cleared corrupted IndexedDB:', dbInfo.name);
+                }
+              }
+            }
+          } catch (clearErr) {
+            console.warn('[Auth] Could not clear IndexedDB:', clearErr);
+          }
+        }
+        
+        // Fallback to localStorage persistence
         await setPersistence(auth, browserLocalPersistence);
       }
 
@@ -323,6 +344,23 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
         message = "This account has been disabled. Please contact support for assistance.";
       } else if (e.code === 'auth/operation-not-allowed') {
         message = "This sign-in method is not enabled. Please contact support.";
+      } else if (e.message?.includes('indexedDB') || e.message?.includes('backing store') || e.message?.includes('IndexedDB')) {
+        // IndexedDB corruption - provide clear instructions
+        message = "Browser storage is corrupted. Please clear your browser data for this site and reload. (Settings → Privacy → Site Data → Clear)";
+        // Auto-clear attempt
+        try {
+          const dbs = await indexedDB.databases?.();
+          if (dbs) {
+            for (const dbInfo of dbs) {
+              if (dbInfo.name?.includes('firebase')) {
+                indexedDB.deleteDatabase(dbInfo.name);
+              }
+            }
+            message = "Browser storage was corrupted but has been auto-repaired. Please try again.";
+          }
+        } catch {
+          // Couldn't auto-clear, user will need to manually clear
+        }
       } else if (e.message?.includes('Firebase:')) {
         // Catch any other Firebase errors and clean up the message
         message = e.message.replace(/Firebase:\s*/, '').replace(/\s*\(auth\/[^)]+\)\.?/, '').trim() || "Something went wrong. Please try again.";

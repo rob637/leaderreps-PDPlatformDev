@@ -116,8 +116,10 @@ export const useCoachingRegistrations = () => {
       if (any1on1) return any1on1;
     }
     
-    // Fallback for Open Gym: users can only have ONE active Open Gym registration
-    // If looking for any coaching-open_gym item, find any active Open Gym registration
+    // Disabling broad fallback for Open Gym. Fallback causes Milestone 2 (Redirecting Feedback) 
+    // and Milestone 3 (Handling Pushback) registrations to merge their display states.
+    // If exactMatch fails, we shouldn't loosely pair any open gym session.
+    /*
     if (coachingItemId.includes('coaching-open_gym') || coachingItemId.includes('open-gym')) {
       const anyOpenGym = registrations.find(
         r => r.sessionType === 'open_gym' &&
@@ -128,6 +130,7 @@ export const useCoachingRegistrations = () => {
       );
       if (anyOpenGym) return anyOpenGym;
     }
+    */
     
     return null;;
   }, [registrations]);

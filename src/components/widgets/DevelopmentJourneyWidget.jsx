@@ -55,17 +55,6 @@ const PHASE_THEMES = {
     iconBg: 'bg-corporate-navy/10 dark:bg-corporate-navy/30',
     accentColor: 'navy'
   },
-  'session1': {
-    title: 'Session 1 Prep',
-    subtitle: 'Prepare for Session 1',
-    icon: Target,
-    color: 'from-corporate-teal to-emerald-600',
-    bgColor: 'bg-corporate-teal/5 dark:bg-corporate-teal/20',
-    borderColor: 'border-corporate-teal/20 dark:border-corporate-teal/40',
-    textColor: 'text-corporate-teal',
-    iconBg: 'bg-corporate-teal/10 dark:bg-corporate-teal/30',
-    accentColor: 'teal'
-  },
   'start': {
     title: 'Foundation',
     subtitle: 'Your Journey',
@@ -390,7 +379,9 @@ const WeekDetailPanel = ({
   const progress = actions.length > 0 ? Math.round((completedCount / actions.length) * 100) : 0;
   
   // Use segmentLabel if provided, otherwise generate from weekNumber
-  const displayLabel = segmentLabel || (weekNumber ? `Week ${weekNumber}` : 'Journey Stage');
+  // For milestones, use "Level" instead of "Week"
+  const isMilestone = segmentType === 'milestone';
+  const displayLabel = segmentLabel || (weekNumber ? (isMilestone ? `Level ${weekNumber}` : `Week ${weekNumber}`) : 'Journey Stage');
   const isPhaseSegment = segmentType === 'phase';
   
   // Group actions by type - available if needed
@@ -434,7 +425,7 @@ const WeekDetailPanel = ({
             </div>
             <div>
               <div className="text-white/70 text-xs font-medium uppercase">
-                {isPhaseSegment ? 'Phase' : `Week ${weekNumber}`}
+                {isPhaseSegment ? 'Phase' : (isMilestone ? `Level ${weekNumber}` : `Week ${weekNumber}`)}
               </div>
               <h3 className="text-xl font-bold">{displayLabel}</h3>
               <p className="text-white/80 text-sm">
@@ -515,9 +506,27 @@ const WeekDetailPanel = ({
                           <p className={`text-sm font-medium truncate ${isCompleted ? 'text-emerald-700 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
                             {action.label || action.title || 'Action Item'}
                           </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-                            {(action.type || action.resourceType || 'content').replace(/_/g, ' ')}
-                          </p>
+                          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <span className="capitalize">
+                              {(action.type || action.resourceType || 'content').replace(/_/g, ' ')}
+                            </span>
+                            {action.handlerType === 'conditioning-rep' && (
+                              <>
+                                <span>•</span>
+                                <span className={`font-medium ${isCompleted ? 'text-emerald-600 dark:text-emerald-400' : ''}`}>
+                                  {action.completedRepCount || 0}/{action.requiredRepCount || 1} complete
+                                </span>
+                                {action.inProgressRepCount > 0 && !isCompleted && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="font-medium text-amber-600 dark:text-amber-400">
+                                      {action.inProgressRepCount} in progress
+                                    </span>
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </div>
                         {isCompleted && (
                           <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
@@ -571,9 +580,27 @@ const WeekDetailPanel = ({
                     <p className={`text-sm font-medium truncate ${isCompleted ? 'text-emerald-700 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
                       {action.label || action.title || 'Action Item'}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-                      {(action.type || action.resourceType || 'content').replace(/_/g, ' ')}
-                    </p>
+                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                      <span className="capitalize">
+                        {(action.type || action.resourceType || 'content').replace(/_/g, ' ')}
+                      </span>
+                      {action.handlerType === 'conditioning-rep' && (
+                        <>
+                          <span>•</span>
+                          <span className={`font-medium ${isCompleted ? 'text-emerald-600 dark:text-emerald-400' : ''}`}>
+                            {action.completedRepCount || 0}/{action.requiredRepCount || 1} complete
+                          </span>
+                          {action.inProgressRepCount > 0 && !isCompleted && (
+                            <>
+                              <span>•</span>
+                              <span className="font-medium text-amber-600 dark:text-amber-400">
+                                {action.inProgressRepCount} in progress
+                              </span>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                   {isCompleted && (
                     <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
@@ -639,20 +666,35 @@ const DevelopmentJourneyWidget = () => {
   
   // Get db for conditioning service
   const { db } = useAppServices();
-  const [loopClosedRepTypes, setLoopClosedRepTypes] = useState([]);
+  const [loopClosedRepCounts, setLoopClosedRepCounts] = useState({});
+  const [inProgressRepCounts, setInProgressRepCounts] = useState({});
   
-  // Fetch completed rep types on mount and when user changes
+  // Required rep counts for each type (defaults to 1 if not specified)
+  const REQUIRED_REP_COUNTS = {
+    // S1 reps
+    'set_clear_expectations': 1,
+    'deliver_reinforcing_feedback': 3,
+    // S2 reps
+    'lead_with_vulnerability': 1,
+    'follow_up_work': 2,
+  };
+  
+  // Fetch completed and in-progress rep counts on mount and when user changes
   useEffect(() => {
     if (!db || !user?.uid) return;
-    const fetchCompletedRepTypes = async () => {
+    const fetchRepCounts = async () => {
       try {
-        const completed = await conditioningService.getCompletedRepTypes(db, user.uid);
-        setLoopClosedRepTypes(completed);
+        const [counts, inProgressCounts] = await Promise.all([
+          conditioningService.getCompletedRepCounts(db, user.uid),
+          conditioningService.getInProgressRepCounts(db, user.uid)
+        ]);
+        setLoopClosedRepCounts(counts);
+        setInProgressRepCounts(inProgressCounts);
       } catch (error) {
-        console.error('[DevelopmentJourneyWidget] Error fetching completed rep types:', error);
+        console.error('[DevelopmentJourneyWidget] Error fetching rep counts:', error);
       }
     };
-    fetchCompletedRepTypes();
+    fetchRepCounts();
   }, [db, user?.uid]);
   
   // Determine current segment - find the first incomplete segment
@@ -700,10 +742,9 @@ const DevelopmentJourneyWidget = () => {
     const _minDay = Math.min(...dayNumbers);
     const _maxDay = Math.max(...dayNumbers);
     
-    // =================== PREP PHASE ===================\n    // Preparation phase with two sub-groups: Onboarding and Session 1 Prep
+    // =================== PREP PHASE ===================\n    // Preparation phase handles Onboarding items
     // Get config documents for each prep section
     const onboardingConfig = dailyPlan.find(d => d.id === 'onboarding-config');
-    const session1Config = dailyPlan.find(d => d.id === 'session1-config');
     
     // Helper to check completion for each action type
     const checkActionComplete = (action) => {
@@ -771,47 +812,26 @@ const DevelopmentJourneyWidget = () => {
         isRequired: true
       }));
     
-    const session1Actions = session1Config?.actions || [];
-    const session1ActionsWithStatus = session1Actions
-      .filter(action => {
-        if (action.hidden === true) return false; // Skip hidden actions
-        if (action.type === 'daily_rep') return false;
-        const isRequired = action.required === true || (action.required !== false && action.optional !== true);
-        return isRequired;
-      })
-      .map((action, idx) => ({
-        ...action,
-        dayId: 'session1-config',
-        id: action.id || `session1-${idx}`,
-        isCompleted: checkActionComplete(action),
-        isRequired: true
-      }));
-    
-    // Combine both groups into one Preparation segment
-    const allPrepActions = [...onboardingActionsWithStatus, ...session1ActionsWithStatus];
-    const prepCompletedCount = allPrepActions.filter(a => a.isCompleted).length;
-    const prepTotalCount = allPrepActions.length;
-    
-    if (prepTotalCount > 0) {
-      segments.push({
-        id: 'preparation',
-        type: 'phase',
-        phaseId: 'pre-start',
-        label: 'Preparation',
-        shortLabel: 'Prep',
-        theme: PHASE_THEMES['pre-start'],
-        actions: allPrepActions,
-        // Store sub-groups for display
-        groups: [
-          { 
-            name: 'Onboarding', 
-            description: 'Complete your profile and setup',
-            actions: onboardingActionsWithStatus 
-          },
-          { 
-            name: 'Session 1 Prep', 
-            description: 'Review materials before your first session',
-            actions: session1ActionsWithStatus 
+// Use only Onboarding items for the Preparation segment
+      const allPrepActions = [...onboardingActionsWithStatus];
+      const prepCompletedCount = allPrepActions.filter(a => a.isCompleted).length;
+      const prepTotalCount = allPrepActions.length;
+      
+      if (prepTotalCount > 0) {
+        segments.push({
+          id: 'preparation',
+          type: 'phase',
+          phaseId: 'pre-start',
+          label: 'Preparation',
+          shortLabel: 'Prep',
+          theme: PHASE_THEMES['pre-start'],
+          actions: allPrepActions,
+          // Store sub-groups for display
+          groups: [
+            { 
+              name: 'Onboarding', 
+              description: 'Complete your profile and setup',
+              actions: onboardingActionsWithStatus 
           }
         ],
         totalActions: prepTotalCount,
@@ -859,38 +879,93 @@ const DevelopmentJourneyWidget = () => {
             r.coachingItemId === actionId ||
             (r.sessionType === sessionType && r.coachingItemId?.includes(`milestone-${milestone}`))
           );
-          const isCertified = registration?.status === REGISTRATION_STATUS.CERTIFIED;
+          
+          // Determine completion status based on session type
+          // One-on-One and Open Gym sessions only require SCHEDULING to be marked as complete action items
+          // Other sessions (Leader Circle, Workshops) require ATTENDANCE/CERTIFICATION
+          let isCompleted = false;
+          if (sessionType === SESSION_TYPES.ONE_ON_ONE || sessionType === SESSION_TYPES.OPEN_GYM) {
+            // For 1:1 and Open Gym, just being scheduled is enough to "complete" the action item
+            // (The session itself happens later, but the "Schedule a Session" task is done)
+            isCompleted = registration?.status && registration.status !== REGISTRATION_STATUS.CANCELLED;
+          } else {
+            // For others, require certification
+            isCompleted = registration?.status === REGISTRATION_STATUS.CERTIFIED;
+          }
+          
+          // Generate milestone-specific labels for Open Gym sessions
+          let actionLabel = typeInfo.label;
+          if (sessionType === SESSION_TYPES.OPEN_GYM) {
+            if (milestone === 2) actionLabel = 'Schedule Open Gym: Redirecting Feedback';
+            if (milestone === 3) actionLabel = 'Schedule Open Gym: Handling Pushback';
+          }
           
           return {
             id: actionId,
             type: 'coaching',
-            label: typeInfo.label,
+            label: actionLabel,
             icon: typeInfo.icon,
             dayId: `milestone-${milestone}`,
-            isCompleted: isCertified
+            isCompleted
           };
         });
       }
       
-      // Check completion status for regular actions
+      // =================== TRAINER-CONTROLLED SESSION ATTENDANCE ===================
+      // For milestones 2-5, inject a trainer-controlled attendance item
+      // This correlates with the session scheduled in the previous milestone
+      let sessionAttendanceActions = [];
       const sessionAttendance = userState?.sessionAttendance || {};
+      
+      const MILESTONE_SESSION_LABELS = {
+        2: 'Attend 1:1 Coaching',
+        3: 'Attend Open Gym: Redirecting Feedback',
+        4: 'Attend Open Gym: Handling Pushback',
+        5: 'Graduation'
+      };
+      
+      if (milestone >= 2 && milestone <= 5) {
+        const sessionLabel = MILESTONE_SESSION_LABELS[milestone];
+        const sessionActionId = `action-s${milestone}-deliberate-practice`;
+        const isAttended = sessionAttendance[sessionActionId]?.attended === true;
+        
+        sessionAttendanceActions.push({
+          id: sessionActionId,
+          type: 'session',
+          label: sessionLabel,
+          dayId: `milestone-${milestone}`,
+          isCompleted: isAttended,
+          isTrainerControlled: true
+        });
+      }
+      
+      // Check completion status for regular actions
       const actionsWithStatus = actionsWithId.map(a => {
         // Check facilitator-controlled session attendance (Deliberate Practice sessions)
         if (a.id && sessionAttendance[a.id]?.attended === true) {
           return { ...a, isCompleted: true };
         }
         const progress = getItemProgress(a.id);
-        // Check for conditioning-rep items - use loopClosedRepTypes
+        // Check for conditioning-rep items - require completion of required count
         if (a.handlerType === 'conditioning-rep' && a.repTypeId) {
-          const isCompleted = loopClosedRepTypes.includes(a.repTypeId);
-          return { ...a, isCompleted };
+          const requiredCount = REQUIRED_REP_COUNTS[a.repTypeId] || 1;
+          const completedCount = loopClosedRepCounts[a.repTypeId] || 0;
+          const inProgressCount = inProgressRepCounts[a.repTypeId] || 0;
+          const isCompleted = completedCount >= requiredCount;
+          return { 
+            ...a, 
+            isCompleted,
+            requiredRepCount: requiredCount,
+            completedRepCount: completedCount,
+            inProgressRepCount: inProgressCount
+          };
         }
         const isCompleted = progress.status === 'completed' || completedItems.has(a.id);
         return { ...a, isCompleted };
       });
       
-      // Combine all actions: regular and coaching
-      const allActions = [...actionsWithStatus, ...coachingActions];
+      // Combine all actions: session attendance first, then regular actions, then coaching
+      const allActions = [...sessionAttendanceActions, ...actionsWithStatus, ...coachingActions];
       const completedCount = allActions.filter(a => a.isCompleted).length;
       
       // If milestone is signed off by facilitator, it's 100% complete regardless of action status
@@ -976,7 +1051,7 @@ const DevelopmentJourneyWidget = () => {
     const totalWeeks = segments.filter(s => s.type === 'milestone').length;
     
     return { segments, totalWeeks };
-  }, [dailyPlan, getItemProgress, completedItems, leaderProfileComplete, baselineAssessmentComplete, prepRequirementsComplete, milestoneProgress, coachingRegistrations, loopClosedRepTypes]);
+  }, [dailyPlan, getItemProgress, completedItems, leaderProfileComplete, baselineAssessmentComplete, prepRequirementsComplete, milestoneProgress, coachingRegistrations, loopClosedRepCounts, inProgressRepCounts, REQUIRED_REP_COUNTS]);
   
   // Overall progress across entire journey
   const overallProgress = useMemo(() => {
@@ -1066,6 +1141,7 @@ const DevelopmentJourneyWidget = () => {
   useEffect(() => {
     const targetSegmentId = firstIncompleteSegmentId || selectedSegment;
     if (scrollContainerRef.current && journeyData.segments.length > 0 && targetSegmentId) {
+      // Use a longer timeout to ensure DOM is fully rendered
       setTimeout(() => {
         // Find the target segment element by data attribute
         const currentElement = scrollContainerRef.current?.querySelector(`[data-segment-id="${targetSegmentId}"]`);
@@ -1077,10 +1153,10 @@ const DevelopmentJourneyWidget = () => {
           const elementWidth = currentElement.offsetWidth;
           const scrollPosition = elementLeft - (containerWidth / 2) + (elementWidth / 2);
           
-          container.scrollTo({ left: Math.max(0, scrollPosition), behavior: 'auto' });
+          container.scrollTo({ left: Math.max(0, scrollPosition), behavior: 'smooth' });
         }
         handleScroll();
-      }, 100);
+      }, 300);
     }
   }, [journeyData.segments.length, firstIncompleteSegmentId, selectedSegment]);
     

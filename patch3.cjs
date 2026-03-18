@@ -1,50 +1,25 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/components/widgets/ThisWeeksActionsWidget.jsx', 'utf8');
+const file = 'src/components/widgets/ThisWeeksActionsWidget.jsx';
+let content = fs.readFileSync(file, 'utf8');
 
-const old1 = `      if (actionId && sessionAttendance[actionId]?.attended === true) {
-        return true;
-      }`;
-const new1 = `      if (actionId) {
-        let possibleIds = [actionId];
-        if (actionId.includes('one_on_one')) possibleIds.push('action-s2-deliberate-practice');
-        if (actionId.includes('practice-session-1')) possibleIds.push('action-s1-deliberate-practice');
-        for (const pid of possibleIds) {
-          if (sessionAttendance[pid]?.attended === true) return true;
-        }
-      }`;
+const targetStr = `      const MILESTONE_SESSION_LABELS = {
+        2: 'Attend 1:1 Coaching',
+        3: 'Session 3: Attend Open Gym Redirecting Feedback',
+        4: 'Session 4: Attend Open Gym Handling Pushback',
+        5: 'Session 5: Graduation'
+      };`;
 
-const old2 = `      if (item.id && sessionAttendanceData[item.id]?.attended === true) {
-        return true;
-      }`;
-const new2 = `      if (item.id) {
-        let possibleIds = [item.id];
-        if (item.type === 'coaching' && item.id.includes('one_on_one')) possibleIds.push('action-s2-deliberate-practice');
-        if (item.title?.includes('Session 1')) possibleIds.push('action-s1-deliberate-practice');
-        if (item.title?.includes('Session 3')) possibleIds.push('action-s3-deliberate-practice');
-        for (const pid of possibleIds) {
-          if (sessionAttendanceData[pid]?.attended === true) return true;
-        }
-      }`;
+const replacement = `      const MILESTONE_SESSION_LABELS = {
+        2: '1:1 Coaching',
+        3: 'Open Gym: Redirecting Feedback',
+        4: 'Open Gym: Handling Pushback',
+        5: 'Graduation'
+      };`;
 
-const old3 = `                if (item.id && sessionAttendanceData[item.id]?.attended === true) {
-                  isCompleted = true;
-                }`;
-const new3 = `                if (item.id) {
-                  let possibleIds = [item.id];
-                  if (item.type === 'coaching' && item.id.includes('one_on_one')) possibleIds.push('action-s2-deliberate-practice');
-                  if (item.title?.includes('Session 1')) possibleIds.push('action-s1-deliberate-practice');
-                  if (item.title?.includes('Session 3')) possibleIds.push('action-s3-deliberate-practice');
-                  for (const pid of possibleIds) {
-                    if (sessionAttendanceData[pid]?.attended === true) {
-                      isCompleted = true;
-                      break;
-                    }
-                  }
-                }`;
-
-code = code.replace(old1, new1);
-code = code.replace(old2, new2);
-code = code.replace(old3, new3);
-
-fs.writeFileSync('src/components/widgets/ThisWeeksActionsWidget.jsx', code);
-console.log('Patched ThisWeeksActionsWidget.jsx');
+if (content.includes(targetStr)) {
+    content = content.replace(targetStr, replacement);
+    fs.writeFileSync(file, content);
+    console.log("Patched ThisWeeksActionsWidget.jsx");
+} else {
+    console.log("Could not find the target string!");
+}
