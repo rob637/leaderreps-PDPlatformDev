@@ -15,7 +15,7 @@ LeaderReps PD Platform is your personal leadership development companion. This g
 ## Table of Contents
 
 1. [Getting Started](#1-getting-started)
-2. [Your Daily Practice](#2-your-daily-practice)
+2. [Your Conditioning Reps](#2-your-conditioning-reps)
 3. [Development Plan](#3-development-plan)
 4. [Content Library](#4-content-library)
 5. [Community Features](#5-community-features)
@@ -43,12 +43,12 @@ The main navigation is in the **left sidebar** (or bottom menu on mobile):
 |------|--------|---------|
 | 🏠 | Dashboard | Your daily home base |
 | 📋 | Planning | Morning planning activities |
-| 🌙 | Reflection | Evening reflection activities |
-| 📈 | Dev Plan | Your 12-week development journey |
+| 📈 | Dev Plan | Your 8-week development journey |
 | 📚 | Content | Videos, readings, tools, workouts |
 | 👥 | Community | Connect with other leaders |
 | 🎯 | Coaching | Live sessions and on-demand help |
 | 🔒 | Locker | Your history and achievements |
+| 🤖 | AI Coach | Your AI leadership coach |
 
 ### Your Profile
 
@@ -59,52 +59,36 @@ Access your profile by clicking the **avatar icon** in the top right:
 
 ---
 
-## 2. Your Daily Practice
+## 2. Your Conditioning Reps
 
 ### The Power of Reps
 
-Leadership is like fitness - it requires consistent practice. We call these small daily actions **"Reps"**. Each rep builds your leadership muscle over time.
+Leadership is like fitness - it requires consistent practice. We call these small daily actions **"Reps"**. Each rep builds your leadership muscle over time. Each leader must complete ≥1 real rep per week.
 
-### Morning Routine (AM Bookend)
-
+### Grounding Rep
 Start your day with intention:
 
 #### 1. Catch Up Alert (If Applicable)
 
-If you have missed days of practice, a prominent alert will appear at the top of your AM Bookend, encouraging you to catch up to keep up with the cohort.
+If you have missed weeks, a prominent alert will appear, encouraging you to catch up to keep up with the cohort.
 
-#### 2. Grounding Rep
+#### 2. Leadership Identity Statement
 - Read your **Leadership Identity Statement**
 - Reflect on who you want to be as a leader
-- Tap "I'm Grounded" when complete
+- Confirm your grounding for the day
 
-#### 3. Win the Day
-- Set **3 high-impact priorities** for today
-- Focus on what will move the needle most
-- These become your daily wins to track
+### Daily Reps
 
-#### 4. Daily Reps
+#### 1. Review Assigned Habits
 - Review your assigned leadership habits
 - Commit to practicing them today
 - Check them off as you complete them
 
-### Evening Routine (PM Bookend)
-
-End your day with reflection:
-
-#### 1. Review Your Wins
-- Mark each win as ✅ Complete or ⏭️ Carry Over
-- Incomplete wins automatically carry to tomorrow
-
-#### 2. Daily Reflection
-Answer three questions:
+#### 2. Evening Reflection
+End your day with reflection by answering three questions:
 - **What went well?** - Celebrate your successes
 - **What could be better?** - Learn from challenges
 - **What will you focus on?** - Set tomorrow's intention
-
-#### 3. Check Your Scorecard
-- See your daily completion percentage
-- Grounding + Wins + Reps = Your daily score
 
 ### Understanding Your Streak 🔥
 
@@ -112,7 +96,7 @@ Your streak counts consecutive days of activity:
 
 | What You Did | Streak Result |
 |--------------|---------------|
-| Completed grounding, win, or rep | +1 day |
+| Completed grounding rep | +1 day |
 | Weekend with no activity | Maintained (grace period) |
 | Weekday with no activity | Reset to 0 |
 
@@ -130,11 +114,11 @@ Craft your personal Leadership Identity Statement:
 
 ## 3. Development Plan
 
-### Your 12-Week Journey
+### Your 8-Week Journey
 
 The Development Plan is a structured program to accelerate your leadership growth:
 
-- **12 weeks** of focused development
+- **8 weeks** of focused development
 - **New content unlocks** each week
 - **Daily reps** specific to each week's theme
 - **Community activities** to connect with peers
@@ -143,7 +127,7 @@ The Development Plan is a structured program to accelerate your leadership growt
 
 View your progress in the **Dev Plan** screen:
 
-1. **Timeline View** - See all 12 weeks at a glance
+1. **Timeline View** - See all 8 weeks at a glance
 2. **Current Week** - Highlighted with your activities
 3. **Completed Weeks** - Check mark shows completion
 4. **Upcoming Weeks** - Locked until you reach them
@@ -244,7 +228,7 @@ Attend virtual leadership events:
 
 ### Booking Sessions
 
-1. Go to **Coaching** screen
+1. Go to **Coaching Hub** screen
 2. View **Upcoming Sessions**
 3. Click **Register** to sign up
 4. Add to your calendar
@@ -266,10 +250,8 @@ Your personal history vault:
 
 | Section | Contains |
 |---------|----------|
-| 📋 Wins History | All your daily wins over time |
 | 🔄 Reps History | Your completed leadership reps |
 | 📝 Reflections | Your evening reflection journals |
-| 📊 Scorecard History | Daily completion scores |
 
 ### Why It Matters
 
@@ -281,7 +263,7 @@ Your personal history vault:
 ### Viewing History
 
 1. Go to **Locker** screen
-2. Select the history type (Wins, Reps, etc.)
+2. Select the history type (Reps, Reflections)
 3. Browse by date or search keywords
 4. Click any entry to view details
 
@@ -305,12 +287,12 @@ Access via the **gear icon** or profile menu:
 Set up helpful reminders:
 
 #### Morning Reminder
-- Prompts you to complete AM Bookend
+- Prompts you to complete Grounding Rep
 - Default: 7:00 AM
 - Customizable time
 
 #### Evening Reminder
-- Prompts you to complete PM Bookend
+- Prompts you to complete PM Reflection
 - Default: 6:00 PM
 - Customizable time
 
@@ -363,7 +345,7 @@ If you're struggling:
 ### Common Questions
 
 **Q: What if I miss a day?**
-> Your streak will reset on weekdays, but incomplete wins carry over automatically. Just jump back in tomorrow!
+> Your streak will reset on weekdays. Just jump back in tomorrow!
 
 **Q: Can I edit past entries?**
 > Current day entries can be edited. Past entries are archived and read-only to preserve your authentic history.
@@ -419,15 +401,9 @@ If you're struggling:
 
 ### Daily Checklist
 
-**Morning (5-10 min)**
 - [ ] Complete Grounding Rep
-- [ ] Set 3 Wins for the Day
 - [ ] Review Daily Reps
-
-**Evening (5-10 min)**
-- [ ] Mark wins complete/incomplete
 - [ ] Write reflection
-- [ ] Check scorecard
 
 ### Weekly Checklist
 - [ ] Complete week's video content
@@ -449,3 +425,4 @@ If you're struggling:
 *Remember: Leadership is built one rep at a time. Show up, do the work, and trust the process!*
 
 🏋️ **Keep doing your reps!**
+---
