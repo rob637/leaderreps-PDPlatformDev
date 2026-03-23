@@ -2,7 +2,7 @@ md
 # 📱 LeaderReps PD Platform - User Guide
 
 > **Complete guide for platform users**  
-> *Last Updated: January 9, 2026*
+> *Last Updated: March 23, 2026*
 
 ---
 
@@ -449,4 +449,3 @@ If you're struggling:
 *Remember: Leadership is built one rep at a time. Show up, do the work, and trust the process!*
 
 🏋️ **Keep doing your reps!**
----
