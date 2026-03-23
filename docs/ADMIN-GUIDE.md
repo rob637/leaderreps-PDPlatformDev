@@ -2,7 +2,7 @@ md
 # 📚 LeaderReps PD Platform - Administrator Guide
 
 > **Comprehensive documentation for system administrators**  
-> *Last Updated: January 9, 2026*
+> *Last Updated: March 23, 2026*
 
 ---
 
@@ -202,7 +202,7 @@ User Action → React Component → Service Layer → Firestore
 | **Dev Plan** | Manage Development Plan weeks | `BookOpen` |
 | **Diagnostics** | System health, error logs | `Activity` |
 | **Content Mgmt** | Upload/manage content (The Vault) | `FileText` |
-| **Media Library** | Manage uploaded images and videos |  |
+| **Media Library** | Manage uploaded images and videos | `PlaySquare` |
 | **Widget Lab** | Enable/disable/configure widgets | `LayoutDashboard`|
 | **System** | System widgets, time traveler | `Settings` |
 | **Daily Reps** | Manage list of Daily Reps | `Dumbbell` |
@@ -215,6 +215,15 @@ User Action → React Component → Service Layer → Firestore
 | **Community Manager** | Manage community features | `Users` |
 | **Coaching Manager** | Manage coaching sessions | `FlaskConical` |
 | **Documentation** | Access to this Admin Guide | `FileText` |
+| **Level Sign Off Queue** | Review and approve level sign-offs | `CheckCircle` |
+| **Session Attendance Queue** | Manage session attendance records | `Calendar` |
+| **Coaching Certification Queue** | Manage coaching certification requests | `Award` |
+| **Communications Manager** | Manage user communications | `Mail` |
+| **Announcements Manager** | Create and manage platform announcements | `Megaphone` |
+| **Conditioning Dashboard** | View conditioning metrics | `Activity` |
+| **Conditioning Config** | Configure conditioning parameters | `Settings` |
+| **Ux Audit Panel** | Conduct UX audits | `Eye` |
+| **Video Series Manager** | Manage video series content | `Video` |
 
 ### 4.3 Admin Functions (Separate Screen)
 
@@ -432,6 +441,56 @@ export const createRoadmapWidget = (title, ideas) => `
 `;
 ```
 
+**AM Bookend Header Widget Template Example**
+```javascript
+    'am-bookend-header': `
+<>
+{/* Catch Up Alert */}
+{(() => {
+   if (typeof missedWeeks !== 'undefined' && missedWeeks && missedWeeks.length > 0) {
+       return (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between mb-4">
+             <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 rounded-full text-amber-600">
+                   <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                   <h4 className="font-bold text-amber-900">You have {missedWeeks.length} missed {missedWeeks.length === 1 ? 'week' : 'weeks'}</h4>
+                   <p className="text-xs text-amber-700">Complete key activities from prior weeks to keep up with your cohort.</p>
+                </div>
+             </div>
+             <button 
+                onClick={() => setIsCatchUpModalOpen(true)}
+                className="px-3 py-1.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-lg hover:bg-amber-200 transition-colors"
+             >
+                View Missed
+             </button>
+          </div>
+       );
+   }
+   return null;
+})()}
+
+<div className="flex items-center gap-3 mb-4 mt-4">
+  <Sun className="w-6 h-6 text-orange-500" />
+  <h2 className="text-xl font-bold text-[#002E47]">AM Bookend: Start Strong</h2>
+  <div className="h-px bg-slate-200 flex-1 ml-4"></div>
+</div>
+
+</>
+    `,
+```
+
+**Weekly Focus Widget Template Example**
+
+```javascript
+    'weekly-focus': `
+(() => {
+  // Check for Daily Plan data (New Architecture)
+  if (typeof currentDayData !== 'undefined' && currentDayData) {
+     const dayNum = currentDayData.dayNum
+```
+
 ---
 
 ## 8. Feature Flags & Configuration
@@ -593,17 +652,19 @@ If the function fails, you can trigger a manual rollover using the Firebase Cons
 |-------------|-----------|-----|---------|
 | DEV | `leaderreps-pd-platform` | https://leaderreps-pd-platform.web.app | Displays in footer |
 | TEST | `leaderreps-test` | https://leaderreps-test.web.app | Displays in footer |
-| PROD | (future) | (future) | Displays in footer |
+| PROD | `leaderreps-prod` | (production URL) | Displays in footer |
 
 ### 11.2 Deployment Scripts
 
 ```bash
 # Deploy to DEV
-npm run deploy
+npm run deploy:dev
 
-# Deploy to TEST (configure firebase use target first)
-firebase use test
-npm run deploy:quick
+# Deploy to TEST
+npm run deploy:test
+
+# Deploy to PROD
+npm run deploy:prod
 ```
 
 ### 11.3 What Gets Deployed
@@ -622,6 +683,16 @@ npm run deploy:quick
 5. Vite builds the app
 6. Firebase deploys hosting + rules + indexes
 7. Functions deployed separately (if changed)
+
+### 11.5 Deploying RepUp (Staging) Environment
+RepUp deployments utilize separate scripts to deploy a staging version of the platform.
+```bash
+# Deploy to RepUp DEV
+npm run deploy:repup:dev
+
+# Deploy to RepUp TEST
+npm run deploy:repup:test
+```
 
 ---
 
@@ -774,17 +845,26 @@ await updateDevelopmentPlanData({ field: value });
 ```bash
 # Development
 npm run dev              # Start dev server
-npm run build            # Production build
+npm run build:debug      # Production build with debug flag
 npm run lint             # Check code quality
 npm run visualize        # Build with bundle analyzer
 npm run test             # Run tests
 npm run test:coverage    # Run tests with coverage report
+npm run e2e              # Run end-to-end tests
+npm run e2e:headed       # Run end-to-end tests in headed mode
+npm run e2e:ui           # Run end-to-end tests in UI mode
+npm run e2e:smoke        # Run smoke tests
+npm run e2e:auth         # Run authentication tests
 
 # Firebase
 firebase use dev         # Switch to DEV project
 firebase use test        # Switch to TEST project
-npm run deploy           # Deploy all
-npm run deploy:quick     # Deploy hosting only
+firebase use prod        # Switch to PROD project
+npm run deploy:dev           # Deploy to dev
+npm run deploy:test           # Deploy to test
+npm run deploy:prod           # Deploy to prod
+npm run deploy:repup:dev     # Deploy to repup dev
+npm run deploy:repup:test    # Deploy to repup test
 
 # Git
 git status
