@@ -35,6 +35,13 @@ import packageJsonRaw from '../../../package.json?raw';
 import widgetTemplatesRaw from '../../config/widgetTemplates.js?raw';
 import adminPortalRaw from './AdminPortal.jsx?raw';
 
+// Import CURRENT architecture source files for accurate AI context
+import copilotInstructionsRaw from '../../../.github/copilot-instructions.md?raw';
+import createAppServicesRaw from '../../services/createAppServices.js?raw';
+import conditioningServiceRaw from '../../services/conditioningService.js?raw';
+import dataProviderRaw from '../../providers/DataProvider.jsx?raw';
+import screenRouterRaw from '../../routing/ScreenRouter.jsx?raw';
+
 /**
  * Helper function to extract "Last Updated" date from markdown content
  * Looks for patterns like "Last Updated: January 9, 2026" or "*Last Updated: January 9, 2026*"
@@ -118,7 +125,7 @@ const DocumentationCenter = () => {
         'Troubleshooting Guide',
         'Technical Reference'
       ],
-      githubPath: 'ADMIN-GUIDE.md',
+      githubPath: 'docs/ADMIN-GUIDE.md',
       localPath: '/ADMIN-GUIDE.md'
     },
     {
@@ -141,7 +148,7 @@ const DocumentationCenter = () => {
         'Tips for Success',
         'FAQ & Troubleshooting'
       ],
-      githubPath: 'USER-GUIDE.md',
+      githubPath: 'docs/USER-GUIDE.md',
       localPath: '/USER-GUIDE.md'
     },
     {
@@ -165,7 +172,7 @@ const DocumentationCenter = () => {
         'Performance Tests',
         'Regression Test Checklist'
       ],
-      githubPath: 'TEST-PLANS.md',
+      githubPath: 'docs/TEST-PLANS.md',
       localPath: '/TEST-PLANS.md'
     },
     {
@@ -184,7 +191,7 @@ const DocumentationCenter = () => {
         'Backend & Cloud Functions',
         'Scripts & Automation'
       ],
-      githubPath: 'APP-ARCHITECTURE.md',
+      githubPath: 'docs/APP-ARCHITECTURE.md',
       localPath: '/APP-ARCHITECTURE.md'
     }
   ];
@@ -263,15 +270,18 @@ The platform is a leadership development application built with:
 - PWA with Workbox
 
 Key features include:
-- Daily Practice Routines (AM/PM Bookends)
-- 12-week Development Plans with content unlocking
-- Content Library (videos, readings, tools, workouts)
-- Streak tracking and scorecards
-- Community and Coaching features
+- 8-week cohort-based Development Programs with phases (Prep → Active → Post-Program)
+- Conditioning Reps System (leaders commit to and complete real leadership reps weekly)
+- Daily Practice workflows with timeService-based AM/PM sessions
+- Foundation coaching sessions (live cohort sessions)
+- Rep AI Coach (AI-powered coaching via Gemini/Claude)
+- Content Library (videos, readings, tools, workouts, skills)
+- Arena gamification system
+- Community Hub and events
 - Admin Portal with Widget Lab, Dev Plan Manager, Content Manager
 
 Please review and improve the following documentation, making it 1% better by:
-1. Fixing any outdated information
+1. Fixing any outdated information (e.g., replace "AM/PM Bookends" → "Conditioning Reps")
 2. Adding clarity where needed
 3. Improving formatting and readability
 4. Adding any missing sections or details
@@ -281,26 +291,30 @@ Please review and improve the following documentation, making it 1% better by:
 
     const docSpecific = {
       'admin-guide': `Focus on the ADMIN-GUIDE.md which covers:
-- Platform architecture (Vault & Key content system)
+- Platform architecture (Provider tree, Services layer, Unified Content)
 - Admin Portal operations
-- Development Plan management
-- Content management
-- Widget system
-- Scheduled functions (11:59 PM rollover)
-- Deployment procedures
+- Development Plan management (8-week programs, day-based unlocking)
+- Content management (Unified Content Library)
+- Widget system and Widget Lab
+- Conditioning system administration
+- Scheduled functions (daily rollover, notification checks)
+- Deployment procedures (dev/test/prod environments)
 - Troubleshooting`,
       'user-guide': `Focus on the USER-GUIDE.md which covers:
-- Getting started for new users
-- Daily practice workflows
+- Getting started for new users (Prep phase)
+- Daily practice workflows (AM session → practice → PM reflection)
+- Conditioning Reps (committing, preparing, executing, debriefing reps)
 - Development Plan navigation
 - Content library usage
+- Foundation coaching sessions
+- Rep AI Coach
 - Community features
-- Coaching resources
-- Settings and notifications
-- Tips for success`,
+- Your Locker (saved content)
+- Settings and notifications`,
       'test-plans': `Focus on the TEST-PLANS.md which covers:
-- Testing environments (DEV, TEST)
+- Testing environments (DEV, TEST, PROD)
 - Daily practice test cases
+- Conditioning system tests
 - Development plan tests
 - Content system tests
 - Authentication tests
@@ -308,13 +322,14 @@ Please review and improve the following documentation, making it 1% better by:
 - Cross-browser testing
 - Regression checklists`,
       'app-architecture': `Focus on the APP-ARCHITECTURE.md which covers:
-- Core application entry points
+- Core application entry points (App.jsx, main.jsx)
+- Provider architecture (DataProvider, TimeProvider, AccessControlProvider, etc.)
+- Services layer (createAppServices, conditioningService, etc.)
 - Configuration & environment files
-- State management & services
-- Component structure (Admin, Widgets, Screens)
+- Component structure (Admin, Widgets, Screens, Conditioning)
 - Backend & Cloud Functions
 - Scripts & automation`,
-      'all': `Review all three documentation files:
+      'all': `Review all four documentation files:
 1. ADMIN-GUIDE.md - Administrator operations
 2. USER-GUIDE.md - End user procedures
 3. TEST-PLANS.md - QA and testing procedures
@@ -390,10 +405,10 @@ Please review and improve the following documentation, making it 1% better by:
   // Commit updated document directly to GitHub
   const commitToGitHub = async () => {
     const docPaths = {
-      'admin-guide': 'ADMIN-GUIDE.md',
-      'user-guide': 'USER-GUIDE.md',
-      'test-plans': 'TEST-PLANS.md',
-      'app-architecture': 'APP-ARCHITECTURE.md'
+      'admin-guide': 'docs/ADMIN-GUIDE.md',
+      'user-guide': 'docs/USER-GUIDE.md',
+      'test-plans': 'docs/TEST-PLANS.md',
+      'app-architecture': 'docs/APP-ARCHITECTURE.md'
     };
     const filePath = docPaths[selectedDocId];
     if (!filePath || !updatedDocContent) return;
@@ -477,9 +492,6 @@ Please review and improve the following documentation, making it 1% better by:
         'app-architecture': appArchitectureRaw
       };
       const currentDoc = docMap[selectedDocId] || adminGuideRaw;
-      const packageJson = packageJsonRaw;
-      const widgetTemplates = widgetTemplatesRaw;
-      const adminPortal = adminPortalRaw;
       const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
       const prompt = `
@@ -488,15 +500,30 @@ You are the Lead Documentation Engineer for LeaderReps. Your task is to UPDATE t
 **TODAY'S DATE: ${currentDate}** - Use this for any "Last Updated" fields.
 
 ---
-### ACTUAL CODE CONTEXT (Source of Truth)
-1. **Project Dependencies (package.json)**:
-${packageJson.substring(0, 1500)}
+### PRIMARY SOURCE OF TRUTH: COPILOT-INSTRUCTIONS.MD
+This is the authoritative architecture documentation maintained by developers:
+${copilotInstructionsRaw.substring(0, 8000)}
 
-2. **Active Features (widgetTemplates.js)**:
-${widgetTemplates.substring(0, 3000)}
+---
+### KEY CODE CONTEXT
 
-3. **Admin Capabilities (AdminPortal.jsx)**:
-${adminPortal.substring(0, 3000)}
+1. **All Available Services (createAppServices.js)**:
+${createAppServicesRaw.substring(0, 3000)}
+
+2. **Conditioning System (conditioningService.js)** - Core leadership rep tracking:
+${conditioningServiceRaw.substring(0, 2500)}
+
+3. **Data Provider Architecture (DataProvider.jsx)**:
+${dataProviderRaw.substring(0, 2000)}
+
+4. **Available Screens (ScreenRouter.jsx)**:
+${screenRouterRaw.substring(0, 2000)}
+
+5. **Widget Templates (widgetTemplates.js)**:
+${widgetTemplatesRaw.substring(0, 2000)}
+
+6. **Project Dependencies (package.json)**:
+${packageJsonRaw.substring(0, 1200)}
 ---
 
 ### CURRENT DOCUMENTATION TO UPDATE
@@ -504,13 +531,19 @@ ${currentDoc}
 ---
 
 ### YOUR TASK
-1. Review the current documentation against the code context
-2. Make ALL necessary updates to ensure accuracy
-3. Add any missing features or capabilities you see in the code
-4. Remove or update any outdated information
-5. Improve clarity where possible
-6. Keep the same general structure and formatting style
-7. Update "Last Updated" date to current month/year: ${currentDate.split(' ').slice(0, 2).join(' ')} ${new Date().getFullYear()}
+1. Use copilot-instructions.md as the primary source of truth for architecture
+2. Review the current documentation against ALL the code context provided
+3. Make ALL necessary updates to ensure accuracy with the ACTUAL code
+4. Key updates needed:
+   - Replace any "AM/PM Bookends" references with "Conditioning Reps" system
+   - Update program length from "12-week" to "8-week" if mentioned incorrectly
+   - Ensure Provider architecture matches DataProvider.jsx
+   - Update services list to match createAppServices.js
+   - Ensure screen/feature lists match ScreenRouter.jsx
+5. Add any missing features or capabilities you see in the code
+6. Remove or update any outdated information
+7. Keep the same general structure and formatting style
+8. Update "Last Updated" date to: ${currentDate}
 
 **CRITICAL**: Output the COMPLETE UPDATED DOCUMENTATION file. Do not summarize or truncate.
 Start your response with the markdown content directly (no preamble like "Here is the updated...").
@@ -563,14 +596,9 @@ The output should be ready to save directly as the .md file.
         'app-architecture': appArchitectureRaw
       };
       const currentDoc = docMap[selectedDocId] || adminGuideRaw;
-
-      // 2. Get Key Code Context (from bundled raw imports)
-      const packageJson = packageJsonRaw;
-      const widgetTemplates = widgetTemplatesRaw;
-      const adminPortal = adminPortalRaw;
       const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-      // 3. Construct Context-Aware Prompt
+      // 2. Construct Context-Aware Prompt using copilot-instructions as source of truth
       const prompt = `
 You are the Lead Documentation Engineer for LeaderReps. Your goal is to make the documentation "1% better" with every pass.
 Review the CURRENT DOCUMENTATION against the ACTUAL CODE CONTEXT provided below.
@@ -578,27 +606,40 @@ Review the CURRENT DOCUMENTATION against the ACTUAL CODE CONTEXT provided below.
 **TODAY'S DATE: ${currentDate}** - Reference this for any date-related suggestions.
 
 ---
-### ACTUAL CODE CONTEXT (Truth)
-1. **Project Dependencies (package.json)**:
-${packageJson.substring(0, 1000)}...
+### PRIMARY SOURCE OF TRUTH: COPILOT-INSTRUCTIONS.MD
+This is the authoritative architecture documentation maintained by developers:
+${copilotInstructionsRaw.substring(0, 6000)}
 
-2. **Active Features (widgetTemplates.js)**:
-${widgetTemplates.substring(0, 2000)}...
+---
+### KEY CODE CONTEXT
 
-3. **Admin Capabilities (AdminPortal.jsx)**:
-${adminPortal.substring(0, 2000)}...
+1. **All Available Services (createAppServices.js)**:
+${createAppServicesRaw.substring(0, 2000)}
+
+2. **Conditioning System (conditioningService.js)** - Core leadership rep tracking:
+${conditioningServiceRaw.substring(0, 2000)}
+
+3. **Available Screens (ScreenRouter.jsx)**:
+${screenRouterRaw.substring(0, 1500)}
+
+4. **Widget Templates (widgetTemplates.js)**:
+${widgetTemplatesRaw.substring(0, 1500)}
 ---
 
 ### CURRENT DOCUMENTATION (To Improve)
-${currentDoc.substring(0, 15000)}
+${currentDoc.substring(0, 12000)}
 ---
 
 ### INSTRUCTIONS
 Identify discrepancies between the Code (Truth) and the Documentation.
 Provide 3-5 specific, actionable improvements to make the docs more accurate and helpful.
 Focus on:
-1. **Accuracy**: Does the doc mention features that don't exist, or miss new ones (like Unified Content Library)?
-2. **Completeness**: Are the tech stack details correct based on package.json?
+1. **Accuracy**: Does the doc mention outdated features? Key changes to look for:
+   - "AM/PM Bookends" should now be "Conditioning Reps" system
+   - "12-week" programs are now "8-week" programs
+   - Check if Provider architecture matches copilot-instructions
+   - Check if services list is accurate
+2. **Completeness**: Are all current features documented?
 3. **Clarity**: Can sections be simplified?
 
 Format your response as:
@@ -615,7 +656,7 @@ Format your response as:
       const result = await callSecureGeminiAPI({
         prompt,
         model: 'gemini-2.0-flash',
-        systemInstruction: 'You are a technical documentation expert focused on accuracy and continuous improvement (Kaizen). Always ground your suggestions in the provided code context.'
+        systemInstruction: 'You are a technical documentation expert focused on accuracy and continuous improvement (Kaizen). Always ground your suggestions in the provided code context, especially copilot-instructions.md.'
       });
 
       if (result?.text) {
