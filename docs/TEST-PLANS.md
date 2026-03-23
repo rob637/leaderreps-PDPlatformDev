@@ -1,7 +1,7 @@
 # 🧪 LeaderReps PD Platform - Test Plans
 
 > **Comprehensive testing documentation for quality assurance**  
-> *Last Updated: January 9, 2026*
+> *Last Updated: March 23, 2026*
 
 ---
 
@@ -26,6 +26,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 11. [Performance Tests](#11-performance-tests)
 12. [Regression Test Checklist](#12-regression-test-checklist)
 13. [Cleanup Scripts Tests](#13-cleanup-scripts-tests)
+14. [Deployment Tests](#14-deployment-tests)
 
 ---
 
@@ -132,6 +133,13 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | DP-071 | View Missed Days | Click "View Missed" on alert | Catch up modal opens | |
 | DP-072 | Catch Up Completion | Complete missed activities through modal | Scorecard reflects completion | |
 
+### 2.9 Daily Plan Integration
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| DP-080 | Daily Plan Exists | Daily Plan is configured for current day | Daily Plan renders on the page, showing current plan activities | |
+| DP-081 | Daily Plan Does Not Exist | Daily Plan is NOT configured for current day | No Daily Plan activities render on page | |
+
 ---
 
 ## 3. Development Plan Tests
@@ -216,7 +224,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 ### 5.2 Registration
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
+|---------| Krankenwagen.de/-----------|-------|-----------------|-----------|
 | AUTH-010 | New Account | Complete registration form | Account created | |
 | AUTH-011 | Duplicate Email | Register existing email | Error message | |
 | AUTH-012 | Weak Password | Enter password < 8 chars | Validation error | |
@@ -242,169 +250,228 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | ADM-002 | Non-Admin Blocked | Login as regular user, try /admin | Access denied | |
 | ADM-003 | Admin Email Check | Add email to admin list | New admin can access | |
 
-### 6.2 Dev Plan Manager
+### 6.2 Content Manager
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-010 | View Weeks | Go to Dev Plan tab | All 12 weeks listed | |
-| ADM-011 | Edit Week | Click edit on week | Editor opens | |
-| ADM-012 | Save Changes | Modify and save week | Changes persist | |
-| ADM-013 | Add Content | Add resource to week | Resource linked | |
-| ADM-014 | Remove Content | Remove resource from week | Resource unlinked | |
-| ADM-015 | Draft Mode | Toggle draft mode | Week hidden from users | |
+| ADM-010 | Add Video | Upload new video | Video saved to vault | |
+| ADM-011 | Add Reading | Add new reading | Reading saved | |
+| ADM-012 | Edit Content | Modify existing content | Changes saved | |
+| ADM-013 | Deactivate Content | Toggle inactive | Content hidden | |
+| ADM-014 | File Upload | Upload PDF | File stored, URL saved | |
 
-### 6.3 Content Manager
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| ADM-020 | Add Video | Upload new video | Video saved to vault | |
-| ADM-021 | Add Reading | Add new reading | Reading saved | |
-| ADM-022 | Edit Content | Modify existing content | Changes saved | |
-| ADM-023 | Deactivate Content | Toggle inactive | Content hidden | |
-| ADM-024 | File Upload | Upload PDF | File stored, URL saved | |
-
-### 6.4 System Widgets
+### 6.3 System Widgets
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-030 | View Widgets | Go to System Widgets | All widgets listed | |
-| ADM-031 | Disable Widget | Toggle widget off | Widget hidden from app | |
-| ADM-032 | Enable Widget | Toggle widget on | Widget visible in app | |
-| ADM-033 | Reorder Widgets | Drag to reorder | Order persists | |
+| ADM-020 | View Widgets | Go to System Widgets | All widgets listed | |
+| ADM-021 | Disable Widget | Toggle widget off | Widget hidden from app | |
+| ADM-022 | Enable Widget | Toggle widget on | Widget visible in app | |
+| ADM-023 | Reorder Widgets | Drag to reorder | Order persists | |
 
-### 6.5 System Tools
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| ADM-040 | Time Traveler | Set time offset | App shows future/past date | |
-| ADM-041 | Reset Time | Clear time offset | App shows current date | |
-| ADM-042 | View Diagnostics | Go to Diagnostics tab | System stats display | |
-
-### 6.6 ContentAdminHome (Unified Content Manager)
+### 6.4 System Tools
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-050 | Access UCM | Go to ContentAdminHome tab | UCM Interface loads | |
-| ADM-051 | Create New Content | Click "Create" | New content form opens | |
-| ADM-052 | Edit Existing Content | Select content and click "Edit" | Content editor opens | |
-| ADM-053 | Delete Content | Select content and click "Delete" | Content is removed after confirmation | |
+| ADM-030 | Time Traveler | Set time offset | App shows future/past date | |
+| ADM-031 | Reset Time | Clear time offset | App shows current date | |
+| ADM-032 | View Diagnostics | Go to Diagnostics tab | System stats display | |
 
-### 6.7 Media Library
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| ADM-054 | Access Media Library | Go to Media Library tab | Media Library loads | |
-| ADM-055 | Upload Media | Upload an image or video | Media is uploaded successfully | |
-| ADM-056 | Delete Media | Select media and click "Delete" | Media is deleted after confirmation | |
-
-### 6.8 System Diagnostics
+### 6.5 ContentAdminHome (Unified Content Manager)
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-070 | Access Diagnostics | Go to System Diagnostics tab | Diagnostics information is displayed | |
-| ADM-071 | Check Firebase Status | Review Firebase status | Firebase connection status is shown | |
+| ADM-040 | Access UCM | Go to ContentAdminHome tab | UCM Interface loads | |
+| ADM-041 | Create New Content | Click "Create" | New content form opens | |
+| ADM-042 | Edit Existing Content | Select content and click "Edit" | Content editor opens | |
+| ADM-043 | Delete Content | Select content and click "Delete" | Content is removed after confirmation | |
 
-### 6.9 Feature Manager
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| ADM-080 | Access Feature Manager | Go to Feature Manager tab | Available features are listed | |
-| ADM-081 | Enable Feature | Toggle feature on | Feature is enabled | |
-| ADM-082 | Disable Feature | Toggle feature off | Feature is disabled | |
-
-### 6.10 Documentation Center
+### 6.6 Media Library
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-090 | Access Documentation | Go to Documentation Center tab | Documentation loads | |
-| ADM-091 | Verify Content | Review documentation | Information accurate | |
+| ADM-050 | Access Media Library | Go to Media Library tab | Media Library loads | |
+| ADM-051 | Upload Media | Upload an image or video | Media is uploaded successfully | |
+| ADM-052 | Delete Media | Select media and click "Delete" | Media is deleted after confirmation | |
 
-### 6.11 Test Center
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| ADM-100 | Access Test Center | Go to Test Center tab | Testing tools load | |
-| ADM-101 | Run Unit Tests | Execute unit tests | Tests run and results displayed | |
-
-### 6.12 LOV Manager (List of Values)
+### 6.7 System Diagnostics
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-110 | Access LOV Manager | Go to LOV Manager tab | LOV Management interface loads | |
-| ADM-111 | Create New LOV | Create a new list of values | New LOV is created | |
-| ADM-112 | Edit Existing LOV | Modify an existing list of values | LOV is updated successfully | |
-| ADM-113 | Delete LOV | Delete a list of values | LOV is deleted after confirmation | |
+| ADM-060 | Access Diagnostics | Go to System Diagnostics tab | Diagnostics information is displayed | |
+| ADM-061 | Check Firebase Status | Review Firebase status | Firebase connection status is shown | |
 
-### 6.13 DailyRepsLibrary
+### 6.8 Feature Manager
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-120 | Access Daily Reps Library | Go to Daily Reps Library tab | The library loads | |
-| ADM-121 | Add New Rep | Create a new daily rep | New rep is added successfully | |
-| ADM-122 | Edit Existing Rep | Modify an existing rep | Rep is updated | |
-| ADM-123 | Delete Rep | Delete a daily rep | The rep is deleted | |
+| ADM-070 | Access Feature Manager | Go to Feature Manager tab | Available features are listed | |
+| ADM-071 | Enable Feature | Toggle feature on | Feature is enabled | |
+| ADM-072 | Disable Feature | Toggle feature off | Feature is disabled | |
 
-### 6.14 DailyPlanManager
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| ADM-130 | Access Daily Plan Manager | Go to Daily Plan Manager tab | Manager loads | |
-| ADM-131 | Create New Plan | Create a new daily plan | New plan is created | |
-| ADM-132 | Edit Existing Plan | Modify an existing plan | The plan is updated | |
-| ADM-133 | Delete Plan | Delete a daily plan | Plan is deleted | |
-
-### 6.15 CohortManager
+### 6.9 Documentation Center
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-140 | Access Cohort Manager | Go to Cohort Manager tab | The manager loads | |
-| ADM-141 | Create New Cohort | Create a new cohort | New cohort is created | |
-| ADM-142 | Edit Existing Cohort | Modify an existing cohort | Cohort is updated | |
-| ADM-143 | Delete Cohort | Delete a cohort | Cohort is deleted | |
+| ADM-080 | Access Documentation | Go to Documentation Center tab | Documentation loads | |
+| ADM-081 | Verify Content | Review documentation | Information accurate | |
 
-### 6.16 UserManagement
+### 6.10 Test Center
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-150 | Access User Management | Go to User Management tab | Management interface loads | |
-| ADM-151 | Search for User | Search for a user by email or ID | Relevant users are displayed | |
-| ADM-152 | Edit User Details | Modify user details | Details are updated | |
-| ADM-153 | Delete User | Delete a user | User is deleted | |
+| ADM-090 | Access Test Center | Go to Test Center tab | Testing tools load | |
+| ADM-091 | Run Unit Tests | Execute unit tests | Tests run and results displayed | |
 
-### 6.17 LeaderProfileReports
+### 6.11 LOV Manager (List of Values)
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-160 | Access Leader Profile Reports | Go to Leader Profile Reports tab | Reports interface loads | |
-| ADM-161 | Generate Report | Generate a report for a specific user | Report is generated | |
-| ADM-162 | View Report | View a generated report | Report data is displayed | |
+| ADM-100 | Access LOV Manager | Go to LOV Manager tab | LOV Management interface loads | |
+| ADM-101 | Create New LOV | Create a new list of values | New LOV is created | |
+| ADM-102 | Edit Existing LOV | Modify an existing list of values | LOV is updated successfully | |
+| ADM-103 | Delete LOV | Delete a list of values | LOV is deleted after confirmation | |
 
-### 6.18 NotificationManager
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| ADM-170 | Access Notification Manager | Go to Notification Manager tab | Notification Management interface loads | |
-| ADM-171 | Create New Notification | Create a new notification | Notification is created | |
-| ADM-172 | Send Notification | Send a created notification | Notification is sent | |
-| ADM-173 | Edit Existing Notification | Modify existing notification | Notification is updated | |
-| ADM-174 | Delete Notification | Delete a notification | Notification is deleted | |
-
-### 6.19 CommunityManager
+### 6.12 DailyRepsLibrary
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-180 | Access Community Manager | Go to Community Manager tab | Community Management interface loads | |
-| ADM-181 | Manage Users | Add or remove users from community groups | User assignments are updated | |
-| ADM-182 | View Community Activity | View posts, comments, and other activity | Activity stream is displayed | |
+| ADM-110 | Access Daily Reps Library | Go to Daily Reps Library tab | The library loads | |
+| ADM-111 | Add New Rep | Create a new daily rep | New rep is added successfully | |
+| ADM-112 | Edit Existing Rep | Modify an existing rep | Rep is updated | |
+| ADM-113 | Delete Rep | Delete a daily rep | The rep is deleted | |
 
-### 6.20 CoachingManager
+### 6.13 DailyPlanManager
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| ADM-190 | Access Coaching Manager | Go to Coaching Manager tab | Coaching Management interface loads | |
-| ADM-191 | Assign Coaches | Assign coaches to users or groups | Coach assignments are updated | |
-| ADM-192 | View Coaching Sessions | View scheduled or completed coaching sessions | Session details are displayed | |
+| ADM-120 | Access Daily Plan Manager | Go to Daily Plan Manager tab | Manager loads | |
+| ADM-121 | Create New Plan | Create a new daily plan | New plan is created | |
+| ADM-122 | Edit Existing Plan | Modify an existing plan | The plan is updated | |
+| ADM-123 | Delete Plan | Delete a daily plan | Plan is deleted | |
 
+### 6.14 CohortManager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-130 | Access Cohort Manager | Go to Cohort Manager tab | The manager loads | |
+| ADM-131 | Create New Cohort | Create a new cohort | New cohort is created | |
+| ADM-132 | Edit Existing Cohort | Modify an existing cohort | Cohort is updated | |
+| ADM-133 | Delete Cohort | Delete a cohort | Cohort is deleted | |
+
+### 6.15 UserManagement
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-140 | Access User Management | Go to User Management tab | Management interface loads | |
+| ADM-141 | Search for User | Search for a user by email or ID | Relevant users are displayed | |
+| ADM-142 | Edit User Details | Modify user details | Details are updated | |
+| ADM-143 | Delete User | Delete a user | User is deleted | |
+
+### 6.16 LeaderProfileReports
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-150 | Access Leader Profile Reports | Go to Leader Profile Reports tab | Reports interface loads | |
+| ADM-151 | Generate Report | Generate a report for a specific user | Report is generated | |
+| ADM-152 | View Report | View a generated report | Report data is displayed | |
+
+### 6.17 NotificationManager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-160 | Access Notification Manager | Go to Notification Manager tab | Notification Management interface loads | |
+| ADM-161 | Create New Notification | Create a new notification | Notification is created | |
+| ADM-162 | Send Notification | Send a created notification | Notification is sent | |
+| ADM-163 | Edit Existing Notification | Modify existing notification | Notification is updated | |
+| ADM-164 | Delete Notification | Delete a notification | Notification is deleted | |
+
+### 6.18 CommunityManager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-170 | Access Community Manager | Go to Community Manager tab | Community Management interface loads | |
+| ADM-171 | Manage Users | Add or remove users from community groups | User assignments are updated | |
+| ADM-172 | View Community Activity | View posts, comments, and other activity | Activity stream is displayed | |
+
+### 6.19 CoachingManager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-180 | Access Coaching Manager | Go to Coaching Manager tab | Coaching Management interface loads | |
+| ADM-181 | Assign Coaches | Assign coaches to users or groups | Coach assignments are updated | |
+| ADM-182 | View Coaching Sessions | View scheduled or completed coaching sessions | Session details are displayed | |
+
+### 6.20 LevelSignOffQueue
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-190 | Access Level Sign Off Queue | Go to Level Sign Off Queue tab | Level Sign Off Queue Management interface loads | |
+| ADM-191 | View Pending Sign-Offs | Review items pending level approval | Pending sign-offs are displayed | |
+| ADM-192 | Approve Level | Approve a specific level sign-off request | Level sign-off is approved | |
+| ADM-193 | Reject Level | Reject a specific level sign-off request | Level sign-off is rejected | |
+
+### 6.21 SessionAttendanceQueue
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-200 | Access Session Attendance Queue | Go to Session Attendance Queue tab | Session Attendance Queue Management interface loads | |
+| ADM-201 | View Pending Attendance | Review items pending attendance review | Pending attendances are displayed | |
+| ADM-202 | Approve Attendance | Approve a specific attendance request | Attendance is approved | |
+| ADM-203 | Reject Attendance | Reject a specific attendance request | Attendance is rejected | |
+
+### 6.22 CoachingCertificationQueue
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-210 | Access Coaching Certification Queue | Go to Coaching Certification Queue tab | Coaching Certification Queue Management interface loads | |
+| ADM-211 | View Pending Certifications | Review items pending certification approval | Pending certifications are displayed | |
+| ADM-212 | Approve Certification | Approve a specific certification request | Certification is approved | |
+| ADM-213 | Reject Certification | Reject a specific certification request | Certification is rejected | |
+
+### 6.23 CommunicationsManager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-220 | Access Communications Manager | Go to Communications Manager tab | Communications Management interface loads | |
+| ADM-221 | Send Email | Create and send a test email | Email is sent | |
+| ADM-222 | Send SMS | Create and send a test SMS | SMS is sent | |
+
+### 6.24 AnnouncementsManager
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-230 | Access Announcements Manager | Go to Announcements Manager tab | Announcements Management interface loads | |
+| ADM-231 | Create New Announcement | Create a new announcement | Announcement is created | |
+| ADM-232 | Publish Announcement | Publish a created announcement | Announcement is published | |
+| ADM-233 | Edit Existing Announcement | Modify existing announcement | Announcement is updated | |
+| ADM-234 | Delete Announcement | Delete an announcement | Announcement is deleted | |
+
+### 6.25 ConditioningDashboard
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-240 | Access Conditioning Dashboard | Go to Conditioning Dashboard tab | Conditioning Dashboard interface loads | |
+| ADM-241 | View Conditioning Metrics | Review conditioning data and charts | Metrics are displayed | |
+
+### 6.26 ConditioningConfig
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-250 | Access Conditioning Config | Go to Conditioning Config tab | Conditioning Configuration interface loads | |
+| ADM-251 | Configure Conditioning Settings | Modify conditioning parameters | Settings are saved | |
+
+### 6.27 UxAuditPanel
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-260 | Access UX Audit Panel | Go to UX Audit Panel tab | UX Audit Panel interface loads | |
+| ADM-261 | Review UX Issues | Examine identified user experience issues | UX issues are displayed | |
+
+### 6.28 VideoSeriesManager
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| ADM-270 | Access Video Series Manager | Go to Video Series Manager tab | Video Series Manager interface loads | |
+| ADM-271 | Create Video Series | Create a new video series | Video series created | |
+| ADM-272 | Add Video To Series | Add videos to an existing series | Video added to series | |
 ---
 
 ## 7. Widget Tests
@@ -428,6 +495,8 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
 | WID-020 | Correct Header Display | Navigate to Planning Hub | Correct header displays. Sun icon, "AM Bookend: Start Strong" Text. | |
+| WID-021 | Catchup Alert Display | Missed Daily Reps | Catchup alert is displayed at the top | |
+| WID-022 | Catchup Alert Functionality | Click View Missed Button | Catchup modal opens | |
 
 ### 7.4 Roadmap Widget
 
@@ -444,7 +513,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 ### 8.1 Daily Rollover (11:59 PM)
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
+|---------| Krankenwagen.de/-----------|-------|-----------------|-----------|
 | TIME-001 | Rollover Triggers | Wait for 11:59 PM (or Time Travel) | Function executes | |
 | TIME-002 | Data Archived | Check daily_logs collection | Today's data archived | |
 | TIME-003 | Wins Carryover | Check next day's AM | Incomplete wins appear | |
@@ -557,127 +626,4 @@ Run this checklist before every production deployment:
 - [ ] Login with email/password
 - [ ] Login with Google
 - [ ] Logout
-- [ ] Password reset flow
-
-#### Daily Practice
-- [ ] Complete Grounding Rep
-- [ ] Add 3 wins
-- [ ] Commit to daily reps
-- [ ] Complete reflection
-- [ ] Scorecard updates correctly
-
-#### Development Plan
-- [ ] Timeline displays correctly
-- [ ] Current week content accessible
-- [ ] Future content locked
-- [ ] Weekly reps match plan
-
-#### Content
-- [ ] Videos play
-- [ ] PDFs open
-- [ ] Search works
-- [ ] Filters work
-
-#### Admin (if admin changes)
-- [ ] Admin portal accessible
-- [ ] Week editing saves
-- [ ] Content management works
-- [ ] Widget toggles work
-- [ ] System Diagnostics accessible and displaying data
-- [ ] Feature Manager works
-- [ ] Unified Content Manager Works
-- [ ] Media Library Works
-- [ ] LOV Manager works
-- [ ] Daily Reps Library works
-- [ ] Daily Plan Manager works
-- [ ] Cohort Manager works
-- [ ] User Management works
-- [ ] Leader Profile Reports works
-- [ ] Notification Manager works
-- [ ] Community Manager works
-- [ ] Coaching Manager works
-
-#### Cross-Cutting
-- [ ] Mobile responsive
-- [ ] No console errors
-- [ ] Notifications work
-- [ ] Performance acceptable
-
----
-
-## 13. Cleanup Scripts Tests
-
-### 13.1 Dev Environment Cleanup
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| CLEAN-001 | Dry Run Preview | Execute `npm run cleanup:dev-preview` | Lists users to be deleted without actual deletion | |
-| CLEAN-002 | Execute Deletion | Execute `npm run cleanup:dev-execute` | Deletes test users from the DEV environment | |
-
-### 13.2 Test Environment Cleanup
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| CLEAN-010 | Dry Run Preview | Execute `npm run cleanup:test-preview` | Lists users to be deleted without actual deletion | |
-| CLEAN-011 | Execute Deletion | Execute `npm run cleanup:test-execute` | Deletes test users from the TEST environment | |
-
----
-
-## Test Execution Log
-
-### Template
-
-| Date | Tester | Environment | Tests Run | Pass | Fail | Notes |
-|------|--------|-------------|-----------|------|------|-------|
-| | | | | | | |
-| | | | | | | |
-
-### Recent Test Runs
-
-| Date | Tester | Environment | Tests Run | Pass | Fail | Notes |
-|------|--------|-------------|-----------|------|------|-------|
-| 2026-01-09 | Automated | DEV | Baseline | - | - | Updated test plan |
-
----
-
-## Bug Report Template
-
-When documenting issues found during testing:
-
-```markdown
-## Bug Report
-
-**Test ID:** [e.g., DP-005]
-**Environment:** [DEV/TEST/PROD]
-**Date:** [YYYY-MM-DD]
-**Tester:** [Name]
-
-**Summary:** [One line description]
-
-**Steps to Reproduce:**
-1. 
-2. 
-3. 
-
-**Expected Result:**
-[What should happen]
-
-**Actual Result:**
-[What actually happened]
-
-**Screenshots/Videos:**
-[Attach if applicable]
-
-**Browser/Device:**
-[Browser name, version, OS]
-
-**Severity:** [Critical/High/Medium/Low]
-
-**Additional Notes:**
-[Any other relevant information]
-```
-
----
-
-*Keep this document updated as new features are added and tests are executed.*
----
+- [ ]
