@@ -16,7 +16,7 @@ md
 6. [Content Management (The Vault)](#6-content-management-the-vault)
 7. [Widget System](#7-widget-system)
 8. [Feature Flags & Configuration](#8-feature-flags--configuration)
-9. [User Data & Daily Practice](#9-user-data--daily-practice)
+9. [User Data & Conditioning Reps](#9-user-data--conditioning-reps)
 10. [Scheduled Functions & Automation](#10-scheduled-functions--automation)
 11. [Deployment & Environments](#11-deployment--environments)
 12. [Troubleshooting Guide](#12-troubleshooting-guide)
@@ -31,15 +31,16 @@ md
 
 LeaderReps PD Platform is a **leadership development application** designed to help users build consistent leadership habits through:
 
-- **Daily Practice Routines** - AM/PM Bookends for planning and reflection
-- **Structured Development Plans** - 12-week guided programs
+- **Daily Conditioning Reps** - Accountability system for real-world leadership actions.
+- **Structured Development Plans** - 8-week guided programs
 - **Content Library** - Videos, readings, tools, and workouts
 - **Progress Tracking** - Streaks, scorecards, and history logs
 - **Community Features** - Forums, mastermind groups, live events
+- **AI Coaching** - Personalized guidance from AI Reps
 
 ### Core Philosophy
 
-The platform is built around the concept of **"Reps"** - small, consistent actions that build leadership muscle over time. Users complete daily reps, track their wins, and reflect on their growth.
+The platform is built around the concept of **"Reps"** - small, consistent actions that build leadership muscle over time. Users commit to and debrief on real leadership "reps," track their progress, and reflect on their growth. The core rule is that each leader must complete ≥1 real rep per week.
 
 ### Technology Stack
 
@@ -50,7 +51,7 @@ The platform is built around the concept of **"Reps"** - small, consistent actio
 | Backend | Firebase (Firestore, Auth, Storage, Functions) |
 | Hosting | Firebase Hosting |
 | PWA | Workbox for offline support |
-| AI | Google Gemini via `@google/genai` |
+| AI | Google Gemini + Anthropic Claude (via Cloud Functions proxy)|
 
 ---
 
@@ -115,8 +116,10 @@ User Action → React Component → Service Layer → Firestore
 | Collection | Purpose |
 |------------|---------|
 | `users/{uid}` | User profile, membership data |
-| `users/{uid}/daily_practice/current` | Today's practice data (wins, reps, reflections) |
-| `users/{uid}/daily_logs/{date}` | Archived daily data |
+| `users/{uid}/conditioning_reps/{repId}` | Individual leadership reps |
+| `users/{uid}/conditioning_weeks/{weekId}` | Weekly conditioning summaries |
+| `users/{uid}/daily_practice/current` | Today's practice data (wins, reps, reflections) - LEGACY |
+| `users/{uid}/daily_logs/{date}` | Archived daily data - LEGACY |
 | `users/{uid}/development_plan` | User's plan progress |
 | `development_plan_v1/week-XX` | Master plan templates |
 | `content_*` | Content vault collections |
@@ -131,12 +134,13 @@ User Action → React Component → Service Layer → Firestore
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    MORNING (AM Bookend)                      │
+│                    DAILY CONDITIONING REPS                  │
 ├─────────────────────────────────────────────────────────────┤
-│ 1. Grounding Rep - Review Leadership Identity Statement      │
-│ 2. Win the Day - Set 3 high-impact priorities               │
-│ 3. Daily Reps - Check off assigned leadership habits         │
-│ 4. View Notifications - See unlocked content for the week   │
+│ 1. Commit to a rep - Choose rep type, person, risk level   │
+│ 2. Prepare for the rep (optional)                          │
+│ 3. Schedule the rep (set deadline)                         │
+│ 4. Execute the rep (take action)                            │
+│ 5. Debrief the rep (reflect on results)                     │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -146,6 +150,7 @@ User Action → React Component → Service Layer → Firestore
 │ • Complete content (videos, readings, workouts)              │
 │ • Engage with community                                      │
 │ • Practice leadership skills                                 │
+│ • View AI Coach for guidance                                 │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -162,20 +167,20 @@ User Action → React Component → Service Layer → Firestore
 │                    11:59 PM (Automatic)                      │
 ├─────────────────────────────────────────────────────────────┤
 │ Cloud Function runs:                                         │
-│ • Archives today's data to daily_logs                        │
-│ • Carries over incomplete wins                               │
-│ • Updates streak (increment/maintain/reset)                  │
-│ • Resets scorecard for new day                              │
+│ • Archives today's data to daily_logs (LEGACY)                        │
+│ • Carries over incomplete wins  (LEGACY)                             │
+│ • Updates streak (increment/maintain/reset) (LEGACY)                  │
+│ • Resets scorecard for new day (LEGACY)                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### 3.2 Weekly Flow
 
 - **Week Start**: New content unlocks based on Development Plan
-- **Throughout Week**: User completes content, community activities, coaching
+- **Throughout Week**: User completes content, community activities, coaching, and at least one required leadership rep
 - **Week End**: Progress tracked, ready for next week's content
 
-### 3.3 Streak Logic
+### 3.3 Streak Logic (LEGACY)
 
 | Scenario | Streak Result |
 |----------|---------------|
@@ -205,9 +210,9 @@ User Action → React Component → Service Layer → Firestore
 | **Media Library** | Manage uploaded images and videos | `PlaySquare` |
 | **Widget Lab** | Enable/disable/configure widgets | `LayoutDashboard`|
 | **System** | System widgets, time traveler | `Settings` |
-| **Daily Reps** | Manage list of Daily Reps | `Dumbbell` |
+| **Daily Reps** | Manage list of Daily Reps - LEGACY | `Dumbbell` |
 | **LOV Manager** | Manage Lists of Values (LOVs) | `List` |
-| **Daily Plan Manager** | Manage and configure the daily plan | `Calendar` |
+| **Daily Plan Manager** | Manage and configure the daily plan - LEGACY | `Calendar` |
 | **Cohort Manager** | Manage user cohorts | `ArrowLeftRight` |
 | **Leader Profile Reports** | Generate and view leader profile reports | `BarChart2` |
 | **Notification Manager** | Manage and send notifications to users | `Bell` |
@@ -283,7 +288,7 @@ Each week document (`development_plan_v1/week-XX`) contains:
     }
   ],
   
-  // Daily Reps
+  // Daily Reps (LEGACY)
   dailyReps: [
     { repId: "rep-1", repLabel: "Give one piece of feedback" },
     { repId: "rep-2", repLabel: "Ask for feedback from a peer" }
@@ -298,7 +303,7 @@ Each week document (`development_plan_v1/week-XX`) contains:
 3. Use the tabbed editor:
    - **Identity**: Title, focus area, draft status
    - **Resources**: Add content, community, coaching items
-   - **Daily Reps**: Define daily habits for the week
+   - **Daily Reps**: Define daily habits for the week (LEGACY)
 4. Click **Save Changes**
 
 ### 5.3 Linking Content to Weeks
@@ -376,11 +381,11 @@ Widgets are **dynamic UI components** that can be:
 
 | Category | Examples |
 |----------|----------|
-| Planning | AM Bookend Header, Weekly Focus, Grounding Rep, Win the Day |
-| Reflection | PM Bookend Header, Reflection, Daily Quote |
-| Tracking | Scorecard, Progress Feedback, Streak Display |
+| Planning |  Weekly Focus, Grounding Rep, Win the Day (LEGACY) |
+| Reflection | Reflection, Daily Quote (LEGACY) |
+| Tracking | Scorecard, Progress Feedback, Streak Display (LEGACY) |
 | Development Plan | Leadership Skills Baseline, Plan Tracker, Timeline |
-| Locker | Wins History, Reps History, Reflection History |
+| Locker | Wins History, Reps History, Reflection History (LEGACY) |
 | Community | Community Feed, My Discussions, Live Events |
 | Coaching | Upcoming Sessions, On-Demand, My Sessions |
 | System | System Messages, Announcements |
@@ -505,7 +510,7 @@ Located in **Admin Functions → Feature Flags**:
 | `enableCommunity` | Community module |
 | `enablePlanningHub` | Planning Hub access |
 | `enableDevPlan` | Development Plan module |
-| `enableDailyPractice` | Daily Practice features |
+| `enableDailyPractice` | Daily Practice features (LEGACY) |
 | `enableQuickStart` | Quick Start Accelerator |
 | `enableMembershipModule` | Premium membership features |
 
@@ -522,9 +527,9 @@ Located in `metadata/config.adminemails`:
 
 ---
 
-## 9. User Data & Daily Practice
+## 9. User Data & Conditioning Reps
 
-### 9.1 Daily Practice Document Structure
+### 9.1 Daily Practice Document Structure (LEGACY)
 
 `users/{uid}/daily_practice/current`:
 
@@ -601,7 +606,51 @@ Located in `metadata/config.adminemails`:
 }
 ```
 
-### 9.3 Data Archival
+### 9.3 Conditioning Rep Document Structure
+`users/{uid}/conditioning_reps/{repId}`
+
+```javascript
+{
+    person: string (who the rep is with)
+    repType: string (one of 16 canonical rep types from repTaxonomy)
+    riskLevel: 'low' | 'medium' | 'high'
+    difficulty: 'level_1' | 'level_2' | 'level_3'
+    context: { trigger, intended_outcome, standard, hard_move, close_next }
+    status: 'committed' | 'prepared' | 'scheduled' | 'executed' | 'debriefed' | 'missed' | 'canceled'
+    prepRequired: boolean
+    deadline: Timestamp (defaults to end of week - Saturday 11:59 PM)
+    weekId: string (YYYY-Www format, e.g., "2026-W06")
+    cohortId: string (ties rep to specific cohort)
+    createdAt: Timestamp
+    updatedAt: Timestamp
+    preparedAt?: Timestamp
+    scheduledAt?: Timestamp
+    executedAt?: Timestamp
+    debriefedAt?: Timestamp
+    completedAt?: Timestamp (legacy alias for debriefedAt)
+    canceledAt?: Timestamp
+    cancelReason?: string (required if canceled)
+    rolledForwardFrom?: string (repId if this was rolled from missed week)
+    prep?: { rubricResponses, riskResponses, inputMethod, savedAt }
+    evidence?: { structured, reflection, level, submittedAt }
+    missedDebrief?: { what_blocked, standard_breakdown, next_week_different }
+}
+```
+
+### 9.4 Conditioning Week Document Structure
+`users/{uid}/conditioning_weeks/{weekId}`
+```javascript
+{
+    weekStart: Timestamp (Sunday 00:00)
+    weekEnd: Timestamp (Saturday 23:59)
+    requiredRepCompleted: boolean
+    totalRepsCommitted: number
+    totalRepsCompleted: number
+    totalRepsMissed: number
+}
+```
+
+### 9.5 Data Archival (LEGACY)
 
 At 11:59 PM, current data is copied to:
 `users/{uid}/daily_logs/{YYYY-MM-DD}`
@@ -612,7 +661,7 @@ This preserves a complete history of each day's activity.
 
 ## 10. Scheduled Functions & Automation
 
-### 10.1 Daily Rollover Function
+### 10.1 Daily Rollover Function (LEGACY)
 
 **Function**: `scheduledDailyRollover`  
 **Schedule**: 11:59 PM Central Time (America/Chicago)  
@@ -714,7 +763,7 @@ npm run deploy:repup:test
 3. Check browser console for errors
 4. Verify the widget template exists in `widgetTemplates.js`
 
-### 12.3 Daily Rollover Not Running
+### 12.3 Daily Rollover Not Running (LEGACY)
 
 **Check:**
 1. Verify function is deployed: `firebase functions:list`
@@ -788,13 +837,31 @@ src/
 │   ├── useDevPlan.js        # Development plan data
 │   └── useDayTransition.js  # Day change detection
 ├── providers/
+│   ├── DataProvider.jsx     # Core data layer
 │   ├── FeatureProvider.jsx  # Widget feature flags
+│   ├── AccessControlProvider.jsx # Access control based on day and role
+│   ├── LayoutProvider.jsx   # Layout state (sidebar, mobile nav)
 │   ├── NavigationProvider.jsx # Navigation context
-│   └── NotificationProvider.jsx # Browser notifications
+│   ├── NotificationProvider.jsx # Browser notifications
+│   ├── ThemeProvider.jsx      # Dark/light theme
+│   └── TimeProvider.jsx         # Time-of-day context (AM/PM sessions)
 ├── services/
+│   ├── createAppServices.js # Service factory
+│   ├── AppServiceContext.js # React context for services
 │   ├── contentService.js    # Content CRUD operations
 │   ├── timeService.js       # Time travel support
-│   └── useAppServices.jsx   # Central data provider
+│   ├── notificationService.js # Browser push notifications
+│   ├── membershipService.js # Premium membership logic
+│   ├── coachingService.js   # Coaching sessions
+│   ├── conditioningService.js # Conditioning Reps
+│   ├── dailyLogService.js # Daily practice logging - LEGACY
+│   ├── communityService.js # Community events
+│   ├── mediaService.js      # Video/media handling
+│   ├── unifiedContentService.js  # Cross-feature content resolution
+│   ├── dateUtils.js          # Date helpers
+│   ├── dataUtils.js          # Data transformation helpers
+│   ├── firebaseUtils.js      # Firebase operation helpers
+│   └── firestoreUtils.js     # Firestore query helpers
 └── routing/
     └── ScreenRouter.jsx     # Screen routing
 
@@ -811,15 +878,16 @@ package.json                # Project dependencies
 
 | Service | Purpose |
 |---------|---------|
-| `useAppServices` | Central hook providing all app data |
+| `AppServiceContext` | React context providing all app data |
 | `contentService` | CRUD for content collections |
 | `timeService` | Time travel/offset functionality |
 | `notificationService` | Browser push notifications |
 | `membershipService` | Premium membership logic |
+| `conditioningService` | Manages leadership reps and accountability |
 
 ### 13.3 Data Update Patterns
 
-**Updating Daily Practice:**
+**Updating Daily Practice:** (LEGACY)
 ```javascript
 const { updateDailyPracticeData } = useAppServices();
 await updateDailyPracticeData({ field: value });
@@ -836,113 +904,8 @@ await updateDevelopmentPlanData({ field: value });
 | Color | CSS Variable | Hex |
 |-------|--------------|-----|
 | Navy | `--corporate-navy` | #002E47 |
-| Teal | `--corporate-teal` | #00A896 |
-| Orange | `--corporate-orange` | #F77F00 |
+| Teal | `--corporate-teal` | #47A88D |
+| Orange | `--corporate-orange` | #E04E1B |
 | Light Gray | `--corporate-light-gray` | #F5F7FA |
 
 ### 13.5 Common Commands
-
-```bash
-# Development
-npm run dev              # Start dev server
-npm run build:debug      # Production build with debug flag
-npm run lint             # Check code quality
-npm run visualize        # Build with bundle analyzer
-npm run test             # Run tests
-npm run test:coverage    # Run tests with coverage report
-npm run e2e              # Run end-to-end tests
-npm run e2e:headed       # Run end-to-end tests in headed mode
-npm run e2e:ui           # Run end-to-end tests in UI mode
-npm run e2e:smoke        # Run smoke tests
-npm run e2e:auth         # Run authentication tests
-
-# Firebase
-firebase use dev         # Switch to DEV project
-firebase use test        # Switch to TEST project
-firebase use prod        # Switch to PROD project
-npm run deploy:dev           # Deploy to dev
-npm run deploy:test           # Deploy to test
-npm run deploy:prod           # Deploy to prod
-npm run deploy:repup:dev     # Deploy to repup dev
-npm run deploy:repup:test    # Deploy to repup test
-
-# Git
-git status
-git add .
-git commit -m "message"
-git push origin main
-```
-
-### 13.6 Data Migration Commands
-
-```bash
-npm run data:export   # Export Firestore data to JSON
-npm run data:import   # Import Firestore data from JSON
-npm run data:list     # List available data exports
-```
-
----
-
-## 14. Command Line Scripts
-
-These scripts are located in the project root directory.
-
-### 14.1 Data Migration Script (`scripts/migrate-app-data.cjs`)
-
-This script is used to export and import Firestore data between environments.
-
-**Commands:**
-
-- `npm run data:export`: Exports Firestore data to a JSON file.
-- `npm run data:import`: Imports Firestore data from a JSON file.
-- `npm run data:list`: Lists available data exports.
-
-### 14.2 User Cleanup Script (`scripts/cleanup-test-users.cjs`)
-
-This script is used to delete test users from the Firestore database and Firebase Authentication. This is crucial for maintaining data privacy and security, especially in development and testing environments.
-
-**Commands:**
-
-- `npm run cleanup:dev-preview`:  Lists the users that would be deleted from the DEV environment without actually deleting them (dry run).
-- `npm run cleanup:dev-execute`:  Deletes test users from the DEV environment.
-- `npm run cleanup:test-preview`: Lists the users that would be deleted from the TEST environment without actually deleting them (dry run).
-- `npm run cleanup:test-execute`: Deletes test users from the TEST environment.
-
-**Options:**
-
-- `--dry-run`:  Preview the changes without executing them.
-- `--execute`:  Execute the deletion of test users.
-
-### 14.3 Sync Dev to Test Script (`sync-dev-to-test.sh`)
-
-This bash script synchronizes data from the development environment to the test environment.  It's a convenience script, check its content for the exact steps.
-
-**Command:**
-
-- `npm run sync:test`
-
----
-
-## Quick Reference Card
-
-### Daily Admin Tasks
-- [ ] Check function logs for overnight rollover
-- [ ] Review any user-reported issues
-- [ ] Verify content is appearing correctly
-
-### Weekly Admin Tasks
-- [ ] Review upcoming week's content
-- [ ] Ensure next week's Development Plan is not in draft
-- [ ] Check feature flag settings
-
-### Before Major Changes
-- [ ] Test in DEV environment first
-- [ ] Use Time Traveler to verify time-based features
-- [ ] Check architecture compliance
-- [ ] Review Firestore rules if data model changes
-
----
-
-*For additional support, contact the development team or refer to the code repository documentation.*
-
----
