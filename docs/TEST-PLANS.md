@@ -1,3 +1,4 @@
+md
 # 🧪 LeaderReps PD Platform - Test Plans
 
 > **Comprehensive testing documentation for quality assurance**  
@@ -14,7 +15,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 ## Table of Contents
 
 1. [Testing Environments](#1-testing-environments)
-2. [Daily Practice Tests](#2-daily-practice-tests)
+2. [Conditioning Reps Tests](#2-conditioning-reps-tests)
 3. [Development Plan Tests](#3-development-plan-tests)
 4. [Content System Tests](#4-content-system-tests)
 5. [Authentication Tests](#5-authentication-tests)
@@ -60,85 +61,89 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 
 ---
 
-## 2. Daily Practice Tests
+## 2. Conditioning Reps Tests
 
-### 2.1 AM Bookend - Grounding Rep
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| DP-001 | View Grounding Rep | Navigate to Planning Hub | Identity statement displays | |
-| DP-002 | Complete Grounding | Click "I'm Grounded" button | Status shows complete, scorecard updates | |
-| DP-003 | Grounding Persistence | Refresh page after completing | Grounding still shows complete | |
-| DP-004 | Grounding Reset | Wait for daily rollover | Grounding resets to incomplete | |
-
-### 2.2 AM Bookend - Win the Day
+### 2.1 Committing to a Rep
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| DP-010 | Add Win | Type in win input, press Enter | Win appears in list | |
-| DP-011 | Add 3 Wins | Add three separate wins | All 3 display, status shows "3/3" | |
-| DP-012 | Edit Win | Click edit icon on win | Can modify text | |
-| DP-013 | Delete Win | Click delete icon on win | Win removed from list | |
-| DP-014 | Win Persistence | Refresh after adding wins | Wins persist | |
+| CR-001 | View Reps | Navigate to Conditioning screen | Reps display | |
+| CR-002 | Commit to Rep | Click commit button on rep | Status changes to "Committed" | |
+| CR-003 | Prep Required | Select Rep that requires prep | Prep form opens | |
+| CR-004 | Prep Not Required | Select Rep that does not require prep | Status changes to "Committed" | |
 
-### 2.3 AM Bookend - Daily Reps
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| DP-020 | View Reps | Navigate to Planning Hub | Current week's reps display | |
-| DP-021 | Commit to Rep | Click commit button on rep | Status changes to "Committed" | |
-| DP-022 | Complete Rep | Mark rep as done | Scorecard updates | |
-| DP-023 | Rep Source | Check rep labels | Match current Dev Plan week | |
-
-### 2.4 PM Bookend - Win Review
+### 2.2 Preparing a Rep
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| DP-030 | View Wins PM | Navigate to Reflection screen | Morning wins display for review | |
-| DP-031 | Mark Complete | Check win as complete | Win marked ✓, scorecard updates | |
-| DP-032 | Mark Incomplete | Leave win unchecked | Win marked for carryover | |
-| DP-033 | Carryover Next Day | After rollover, check AM | Incomplete wins appear | |
+| CR-010 | Fill Prep Form | Fill out all fields in the prep form | Data is saved, status updates to "Prepared" | |
+| CR-011 | Save Prep Progress | Fill out part of the prep form, save | Progress is saved; can resume later | |
+| CR-012 | Cancel Prep | Start prep, then cancel | Returns to rep list, status remains "Committed" | |
 
-### 2.5 PM Bookend - Reflection
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| DP-040 | Enter Reflection | Type in Good/Better/Best fields | Text saves | |
-| DP-041 | Complete Reflection | Fill all 3 fields, submit | Reflection marked complete | |
-| DP-042 | Reflection Required | Try to submit with empty field | Validation message | |
-| DP-043 | View Past Reflections | Go to Locker → Reflections | History displays | |
-
-### 2.6 Scorecard
+### 2.3 Scheduling a Rep
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| DP-050 | Scorecard Display | View Dashboard or Reflection | Scorecard shows percentages | |
-| DP-051 | Scorecard Calculation | Complete various items | Percentages calculate correctly | |
-| DP-052 | Scorecard Reset | After daily rollover | Scorecard resets to 0% | |
+| CR-020 | Schedule Rep | Choose a date and time | Rep is scheduled, status updates | |
+| CR-021 | Reschedule Rep | Modify the scheduled time | Time is updated | |
+| CR-022 | Cancel Scheduled Rep | Cancel the scheduled rep | Rep is canceled, status updates | |
 
-### 2.7 Streak
-
-| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
-| DP-060 | Streak Display | View Dashboard | Current streak count shows | |
-| DP-061 | Streak Increment | Complete activity, wait for rollover | Streak +1 | |
-| DP-062 | Weekend Grace | No activity Sat/Sun, check Monday | Streak maintained | |
-| DP-063 | Weekday Reset | No activity weekday, check next day | Streak = 0 | |
-
-### 2.8 Catch Up Alert & Modal
+### 2.4 Executing a Rep
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| DP-070 | Missed Days Alert | Skip logging in for a few days | Amber alert appears on dashboard | |
-| DP-071 | View Missed Days | Click "View Missed" on alert | Catch up modal opens | |
-| DP-072 | Catch Up Completion | Complete missed activities through modal | Scorecard reflects completion | |
+| CR-030 | Mark as Executed | Mark rep as executed | Status changes to "Executed" | |
 
-### 2.9 Daily Plan Integration
+### 2.5 Debriefing a Rep
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| DP-080 | Daily Plan Exists | Daily Plan is configured for current day | Daily Plan renders on the page, showing current plan activities | |
-| DP-081 | Daily Plan Does Not Exist | Daily Plan is NOT configured for current day | No Daily Plan activities render on page | |
+| CR-040 | Enter Debrief | Fill in debriefing questions | Data is saved | |
+| CR-041 | Complete Debrief | Submit a completed debrief | Status updates to "Debriefed" | |
+
+### 2.6 Evidence Submission
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| CR-050 | Upload Evidence | Upload video or reflection | Evidence is saved and associated with rep | |
+| CR-051 | Review Evidence | View uploaded evidence | Evidence displays correctly | |
+
+### 2.7 Week Roll Over
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| CR-060 | Uncompleted Reps Carry Over | Don't complete rep before week end | Reps appear in the next week | |
+| CR-061 | Completed Reps Are Archived | Completed reps do not carry over | Only uncompleted reps show | |
+| CR-062 | Week Counter | Progress to a new week | Week counter updates | |
+
+### 2.8 Missed Debriefing
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| CR-070 | Missed Debrief Submission | Complete rep without debriefing | Form for "missed debrief" displays | |
+| CR-071 | Missed Debrief Required | Try to submit with empty field | Validation message | |
+
+### 2.9 Filters and Sorting
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| CR-080 | Filter by Type | Select rep type | Only reps of that type are displayed | |
+| CR-081 | Sort by Deadline | Sort reps by deadline | Reps are sorted correctly | |
+
+### 2.10 Required Rep Completed
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| CR-090 | Complete Required Rep | Complete at least 1 rep within the week | requiredRepCompleted is `true` for the current week | |
+| CR-091 | No Rep Completed | Don't complete any rep within the week | requiredRepCompleted is `false` for the current week | |
+
+### 2.11 Cancel Rep
+
+| Test ID | Test Case | Steps | Expected Result | Pass/Fail |
+|---------|-----------|-------|-----------------|-----------|
+| CR-100 | Cancel Rep Before Executed | Cancel a committed or prepared rep | Rep is cancelled, and the status is updated to cancelled | |
+| CR-101 | Cancel Rep After Executed | Try to cancel a rep after it has been executed | Cancellation is prevented, or an error message is displayed | |
+| CR-102 | Provide Cancel Reason | When canceling a rep, ensure a reason is provided | Rep cannot be cancelled without providing a valid cancel reason | |
 
 ---
 
@@ -156,7 +161,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
 |---------|-----------|-------|-----------------|-----------|
-| DEV-010 | View Timeline | Navigate to Dev Plan screen | All 12 weeks visible | |
+| DEV-010 | View Timeline | Navigate to Dev Plan screen | All 8 weeks visible | |
 | DEV-011 | Current Week Highlight | View timeline | Current week highlighted | |
 | DEV-012 | Future Weeks Locked | Click future week | Shows locked state | |
 | DEV-013 | Past Weeks Accessible | Click completed week | Content accessible | |
@@ -224,7 +229,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 ### 5.2 Registration
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------| Krankenwagen.de/-----------|-------|-----------------|-----------|
+|---------|-----------|-------|-----------------|-----------|
 | AUTH-010 | New Account | Complete registration form | Account created | |
 | AUTH-011 | Duplicate Email | Register existing email | Error message | |
 | AUTH-012 | Weak Password | Enter password < 8 chars | Validation error | |
@@ -335,7 +340,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 ### 6.12 DailyRepsLibrary
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
+|---------|-----------| Krankenwagen.de/-----------|-----------------|-----------|
 | ADM-110 | Access Daily Reps Library | Go to Daily Reps Library tab | The library loads | |
 | ADM-111 | Add New Rep | Create a new daily rep | New rep is added successfully | |
 | ADM-112 | Edit Existing Rep | Modify an existing rep | Rep is updated | |
@@ -472,6 +477,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 | ADM-270 | Access Video Series Manager | Go to Video Series Manager tab | Video Series Manager interface loads | |
 | ADM-271 | Create Video Series | Create a new video series | Video series created | |
 | ADM-272 | Add Video To Series | Add videos to an existing series | Video added to series | |
+
 ---
 
 ## 7. Widget Tests
@@ -513,7 +519,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 ### 8.1 Daily Rollover (11:59 PM)
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------| Krankenwagen.de/-----------|-------|-----------------|-----------|
+|---------|-----------|-------|-----------------|-----------|
 | TIME-001 | Rollover Triggers | Wait for 11:59 PM (or Time Travel) | Function executes | |
 | TIME-002 | Data Archived | Check daily_logs collection | Today's data archived | |
 | TIME-003 | Wins Carryover | Check next day's AM | Incomplete wins appear | |
@@ -609,7 +615,7 @@ This document outlines test plans for ensuring the LeaderReps PD Platform functi
 ### 11.3 Offline/PWA
 
 | Test ID | Test Case | Steps | Expected Result | Pass/Fail |
-|---------|-----------|-------|-----------------|-----------|
+|---------|-----------|-------|-----------------| Krankenwagen.de/-----------|
 | PWA-001 | Service Worker | Check DevTools | SW registered | |
 | PWA-002 | Cache Assets | Disconnect network | App shell loads | |
 | PWA-003 | Install Prompt | Visit site | Add to home shows | |
@@ -625,5 +631,3 @@ Run this checklist before every production deployment:
 #### Authentication
 - [ ] Login with email/password
 - [ ] Login with Google
-- [ ] Logout
-- [ ]
