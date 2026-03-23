@@ -3,6 +3,8 @@ md
 
 This document provides a comprehensive map of the LeaderReps application codebase, detailing the purpose and location of key files and directories. It is designed to help developers and the Kaizen AI understand the system structure.
 
+**Last Updated: March 23, 2026**
+
 ## 1. Core Application Entry Points
 
 | File | Location | Purpose |
@@ -17,7 +19,7 @@ This document provides a comprehensive map of the LeaderReps application codebas
 | File | Location | Purpose |
 |------|----------|---------|
 | `firebaseConfig.js` | `src/config/firebaseConfig.js` | Initializes the Firebase app and exports auth, firestore, storage, and functions instances. Handles environment-specific config (Dev vs Test vs Prod). |
-| `widgetTemplates.js` | `src/config/widgetTemplates.js` | **CRITICAL**. Defines the templates for the dynamic widget system. Contains the code strings for widgets, including AM Bookend Header and Weekly Focus, with logic for dynamic content and user interaction. |
+| `widgetTemplates.js` | `src/config/widgetTemplates.js` | Defines the templates for the dynamic widget system. Contains the code strings for widgets, including AM Bookend Header and Weekly Focus, with logic for dynamic content and user interaction. It utilizes Lucide React icons for visual elements within the widgets. |
 | `zoneConfig.js` | `src/config/zoneConfig.js` | Defines the layout zones (e.g., Dashboard, Locker, Community) and which widgets are allowed in each. |
 | `tailwind.config.cjs` | `/tailwind.config.cjs` | Configuration for Tailwind CSS, including custom colors, fonts, and theme extensions. |
 
@@ -39,7 +41,7 @@ The application uses a Service-Oriented Architecture (SOA) pattern injected via 
 ### 4.1 Admin Portal (`src/components/admin/`)
 | File | Purpose |
 |------|---------|
-| `AdminPortal.jsx` | The main layout and router for the Admin interface. Manages admin authentication and displays different admin sections based on user role. |
+| `AdminPortal.jsx` | The main layout and router for the Admin interface. Manages admin authentication, utilizes `useAppServices` and `useNavigation` hooks, and displays different admin sections based on user role. It dynamically renders different sections based on the `activeTab` state, which is synchronized with navigation parameters. |
 | `AdminDashboard.jsx` | Displays key metrics and system overview for administrators. |
 | `FeatureManager.jsx` | The "Widget Manager". Allows admins to enable/disable widgets, reorder them, and edit their settings/documentation. |
 | `DocumentationCenter.jsx` | The hub for viewing and updating system documentation (Admin Guide, User Guide, Architecture). Includes the Kaizen AI updater. |
@@ -53,10 +55,19 @@ The application uses a Service-Oriented Architecture (SOA) pattern injected via 
 | `CoachingManager.jsx` | Manages coaching programs and user assignments. |
 | `LOVManager.jsx` | Manages List of Values (LOV) used throughout the application. |
 | `DailyRepsLibrary.jsx` | Manages the library of Daily Reps content. |
-| `DailyPlanManager.jsx` | Manages the structure and content of Daily Plans. |
+| `ContentManager.jsx` | Manages the structure and content of Daily Plans. This was formerly `DailyPlanManager.jsx`. |
+| `LevelSignOffQueue.jsx` | Manages the queue for level sign-off requests. |
+| `SessionAttendanceQueue.jsx` | Manages the queue for session attendance records. |
+| `CoachingCertificationQueue.jsx` | Manages the queue for coaching certification requests. |
 | `CohortManager.jsx` | Manages user cohorts and group assignments. |
 | `LeaderProfileReports.jsx` | Generates reports on leader profiles and progress. |
 | `NotificationManager.jsx` | Manages application notifications and alerts. |
+| `CommunicationsManager.jsx` | Manages in-app communications and messaging. |
+| `AnnouncementsManager.jsx` | Manages global announcements displayed to users. |
+| `ConditioningDashboard.jsx` | Displays the Conditioning Dashboard for admins. |
+| `ConditioningConfig.jsx` | Allows configuration of conditioning settings. |
+| `UxAuditPanel.jsx` | Panel for conducting UX audits. |
+| `VideoSeriesManager.jsx` | Manages video series content and metadata. |
 
 ### 4.2 Widgets (`src/components/widgets/`)
 Contains the React components for complex widgets. Simple widgets are defined as strings in `widgetTemplates.js`.
@@ -86,9 +97,9 @@ Contains the React components for complex widgets. Simple widgets are defined as
 
 | File | Location | Purpose |
 |------|----------|---------|
-| `deploy-dev.sh` | `/deploy-dev.sh` | Script to build and deploy the application to the Development environment. |
-| `deploy-test.sh` | `/deploy-test.sh` | Script to build and deploy to the Test environment. |
-| `sync-dev-to-test.sh` | `/sync-dev-to-test.sh` | Script to sync data from the development environment to the test environment. |
+| `deploy.sh` | `/scripts/deploy.sh` | Generic script to build and deploy the application. Accepts environment as an argument (dev, test, prod). |
+| `deploy-repup.sh` | `/scripts/deploy-repup.sh` | Script to deploy the RepUp application to specified environments (dev, test). |
+| `sync-dev-to-test.sh` | `/scripts/deploy/sync-dev-to-test.sh` | Script to sync data from the development environment to the test environment. |
 | `scripts/ui-architecture-check.sh` | `/scripts/ui-architecture-check.sh` | Script to lint and validate the UI architecture. |
 | `scripts/migrate-app-data.cjs` | `/scripts/migrate-app-data.cjs` | Node script for exporting and importing app data. |
 | `scripts/cleanup-test-users.cjs` | `/scripts/cleanup-test-users.cjs` | Node script for cleaning up test users in development and test environments. |
@@ -105,6 +116,7 @@ The following key dependencies are used in the project:
 | `csv-parse` | `^6.1.0` | CSV parsing library. |
 | `dompurify` | `^3.3.0` | DOMPurify is a DOM-only, super-fast, uber-tolerant XSS sanitizer for HTML, MathML and SVG. |
 | `dotenv` | `^17.2.3` | Loads environment variables from a .env file. |
+| `lucide-react` | *latest* | Provides a library of icons for use in React components, enhancing the UI with scalable vector graphics. |
 
 ## 8. Testing
 
@@ -113,6 +125,22 @@ The following key dependencies are used in the project:
 | `npm run test` | Runs all tests. |
 | `npm run test:run` | Executes the test suite. |
 | `npm run test:coverage` | Generates test coverage reports. |
+| `npm run e2e` | Runs end-to-end tests using Playwright. |
+| `npm run e2e:headed` | Runs end-to-end tests in headed mode (with browser UI). |
+| `npm run e2e:ui` | Runs end-to-end tests in UI mode using Playwright. |
+| `npm run e2e:smoke` | Runs smoke tests using Playwright, defined in `smoke.spec.js`. |
+| `npm run e2e:auth` | Runs authentication-specific tests using Playwright, defined in `auth.spec.js`. |
+
+## 9. Deployment Scripts
+
+| Script | Command | Environment |
+|---|---|---|
+| `deploy:dev` | `bash ./scripts/deploy.sh dev` | Deploys to the Development environment. |
+| `deploy:test` | `bash ./scripts/deploy.sh test` | Deploys to the Test environment. |
+| `deploy:prod` | `bash ./scripts/deploy.sh prod` | Deploys to the Production environment. |
+| `deploy:repup:dev` | `bash ./scripts/deploy-repup.sh dev` | Deploys the RepUp application to the Development environment. |
+| `deploy:repup:test` | `bash ./scripts/deploy-repup.sh test` | Deploys the RepUp application to the Test environment. |
 
 ---
-*This document is maintained by the Kaizen AI system. Last updated: January 9, 2026.*
+*This document is maintained by the Kaizen AI system. Last updated: March 23, 2026.*
+---
