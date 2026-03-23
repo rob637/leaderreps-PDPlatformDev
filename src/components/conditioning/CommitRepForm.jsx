@@ -9,8 +9,7 @@ import { Button } from '../ui';
 import RepTypePicker from './RepTypePicker';
 import ConditioningModal from './ConditioningModal';
 import VoiceTextarea from './VoiceTextarea';
-import { 
-  getRepType, 
+import { getRepType, 
   UNIVERSAL_REP_FIELDS, 
   RISK_LEVELS,
   DIFFICULTY_LEVELS,
@@ -18,6 +17,7 @@ import {
   getProgression
 } from '../../services/repTaxonomy';
 import { getWeekBoundaries } from '../../services/conditioningService';
+import { timeService } from '../../services/timeService';
 import { Timestamp } from 'firebase/firestore';
 
 // ============================================
@@ -498,6 +498,13 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                     Set custom deadline (default: end of week)
                   </span>
                 </label>
+                
+                {/* Time travel warning */}
+                {timeService.isActive() && (
+                  <div className="mt-2 p-2 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-amber-800 dark:text-amber-200">
+                    ⚠️ Time travel active: dates based on {timeService.getNow().toLocaleDateString()}
+                  </div>
+                )}
                 
                 {useCustomDeadline && (
                   <input

@@ -14,6 +14,7 @@ import { getRepTypeV2 } from '../../services/repTaxonomy';
 import { getWeekBoundaries } from '../../services/conditioningService';
 import { DRAFT_FLOW_TYPES } from '../../services/draftRepService';
 import { formatDisplayDate } from '../../services/dateUtils';
+import { timeService } from '../../services/timeService';
 import useDraftAutoSave from '../../hooks/useDraftAutoSave';
 import { Timestamp } from 'firebase/firestore';
 
@@ -282,6 +283,13 @@ const PlannedRepForm = ({
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">
               When do you need to complete this rep?
             </label>
+            
+            {/* Time travel warning */}
+            {timeService.isActive() && (
+              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-amber-800 dark:text-amber-200">
+                ⚠️ Time travel active: showing dates based on {timeService.getNow().toLocaleDateString()}
+              </div>
+            )}
             
             {/* Default: End of week */}
             <label className="flex items-center gap-3 p-3 border border-gray-200 dark:border-slate-600 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700">

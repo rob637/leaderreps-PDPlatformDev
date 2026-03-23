@@ -1479,10 +1479,14 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   
   useEffect(() => {
     const fetchVideoSeriesDurations = async () => {
-      if (!db || !allActions.length) return;
+      if (!db) return;
+      
+      // Combine allActions and carriedOverItems for series ID extraction
+      const combinedActions = [...allActions, ...carriedOverItems];
+      if (combinedActions.length === 0) return;
       
       // Find video_series actions that haven't been fetched yet
-      const seriesIds = allActions
+      const seriesIds = combinedActions
         .filter(a => a.resourceType === 'video_series' && a.resourceId && !fetchedSeriesRef.current.has(a.resourceId))
         .map(a => a.resourceId);
       
@@ -1513,17 +1517,21 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     };
     
     fetchVideoSeriesDurations();
-  }, [db, allActions]); // Removed videoSeriesDurations to prevent infinite loop
+  }, [db, allActions, carriedOverItems]); // Include carriedOverItems for carryover video series
 
   // Fetch durations for interactive items from content_library
   const fetchedInteractiveRef = useRef(new Set());
   
   useEffect(() => {
     const fetchInteractiveDurations = async () => {
-      if (!db || !allActions.length) return;
+      if (!db) return;
+      
+      // Combine allActions and carriedOverItems for interactive ID extraction
+      const combinedActions = [...allActions, ...carriedOverItems];
+      if (combinedActions.length === 0) return;
       
       // Find interactive items that haven't been fetched yet
-      const interactiveIds = allActions
+      const interactiveIds = combinedActions
         .filter(a => a.isInteractive && a.resourceId && !fetchedInteractiveRef.current.has(a.resourceId))
         .map(a => a.resourceId);
       
@@ -1556,17 +1564,22 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     };
     
     fetchInteractiveDurations();
-  }, [db, allActions]);
+  }, [db, allActions, carriedOverItems]);
 
   // Fetch durations for video items from content_library
+  // Include both allActions AND carriedOverItems to ensure carryover videos get correct durations
   const fetchedVideoRef = useRef(new Set());
   
   useEffect(() => {
     const fetchVideoDurations = async () => {
-      if (!db || !allActions.length) return;
+      if (!db) return;
+      
+      // Combine allActions and carriedOverItems for video ID extraction
+      const combinedActions = [...allActions, ...carriedOverItems];
+      if (combinedActions.length === 0) return;
       
       // Find video items that haven't been fetched yet
-      const videoIds = allActions
+      const videoIds = combinedActions
         .filter(a => (a.resourceType === 'video' || a.type === 'video') && a.resourceId && !fetchedVideoRef.current.has(a.resourceId))
         .map(a => a.resourceId);
       
@@ -1583,11 +1596,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           const contentSnap = await getDoc(contentRef);
           if (contentSnap.exists()) {
             const data = contentSnap.data();
-            // durationMin is stored in minutes for videos
-            if (data.durationMin) {
-              newDurations[resourceId] = parseInt(data.durationMin, 10) || data.durationMin;
-            } else if (data.estimatedTime) {
+            // Priority: estimatedTime (canonical) > details.durationMin (video-specific) > durationMin (legacy)
+            if (data.estimatedTime) {
               newDurations[resourceId] = parseInt(data.estimatedTime, 10) || data.estimatedTime;
+            } else if (data.details?.durationMin) {
+              newDurations[resourceId] = parseInt(data.details.durationMin, 10) || data.details.durationMin;
+            } else if (data.durationMin) {
+              newDurations[resourceId] = parseInt(data.durationMin, 10) || data.durationMin;
             }
           }
         } catch (error) {
@@ -1601,7 +1616,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     };
     
     fetchVideoDurations();
-  }, [db, allActions]);
+  }, [db, allActions, carriedOverItems]);
 
   // Filter to only required items for progress calculation
   const requiredActions = useMemo(() => {
@@ -2217,24 +2232,25 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     
     // Helper function to get estimated time for an item from admin-configured values
     const getEstimatedTime = (item) => {
-      // First check explicit values set on the action item itself
-      if (item.estimatedMinutes) return item.estimatedMinutes;
-      if (item.duration) return item.duration;
+      // For videos, prefer content library data over action item config
+      // This allows admins to manage video durations in one place (content editor)
+      if ((item.resourceType === 'video' || item.type === 'video') && videoDurations[item.resourceId]) {
+        return videoDurations[item.resourceId];
+      }
       
       // For video_series, check fetched durations from video_series collection
       if (item.resourceType === 'video_series' && videoSeriesDurations[item.resourceId]) {
         return videoSeriesDurations[item.resourceId];
       }
       
-      // For regular videos, check fetched durations from content_library.durationMin
-      if ((item.resourceType === 'video' || item.type === 'video') && videoDurations[item.resourceId]) {
-        return videoDurations[item.resourceId];
-      }
-      
       // For interactive items, check fetched durations from content_library.estimatedTime
       if (item.isInteractive && interactiveDurations[item.resourceId]) {
         return interactiveDurations[item.resourceId];
       }
+      
+      // Fallback to explicit values set on the action item itself
+      if (item.estimatedMinutes) return item.estimatedMinutes;
+      if (item.duration) return item.duration;
       
       // Return null if no duration found - admin should set duration in content library
       return null;

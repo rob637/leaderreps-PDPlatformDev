@@ -2,6 +2,43 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { X, ExternalLink, Download, FileText, Film, Link as LinkIcon, Layers, AlertCircle, CheckCircle } from 'lucide-react';
 
 /**
+ * Detect iOS devices - Safari on iOS cannot scroll PDFs inside iframes
+ * so we need to handle them differently (open in native viewer)
+ */
+const isIOSDevice = () => {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPad with iPadOS
+};
+
+/**
+ * iOS-specific PDF viewer that opens the PDF directly in Safari's native viewer
+ * since iframes cannot scroll PDFs on iOS
+ */
+const IOSPdfViewer = ({ url, title }) => {
+  return (
+    <div className="h-[70vh] w-full bg-slate-50 dark:bg-slate-800 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-4 p-8">
+      <FileText className="w-16 h-16 text-corporate-teal" />
+      <div className="text-center">
+        <p className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-1">{title || 'PDF Document'}</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+          Tap below to open the full PDF with all pages
+        </p>
+      </div>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-3 px-6 py-3 bg-corporate-teal text-white text-base font-bold rounded-xl hover:bg-corporate-teal/90 transition-colors shadow-lg"
+      >
+        <ExternalLink className="w-5 h-5" />
+        View Full PDF
+      </a>
+    </div>
+  );
+};
+
+/**
  * Iframe wrapper that detects load failures (blank/gray iframes from gview)
  * and shows a prominent fallback UI after a timeout.
  */
@@ -301,24 +338,28 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
 
             {/* PDF Viewer (if URL exists) */}
             {url && (
-              <div className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative min-h-[300px]">
-                 <iframe 
-                   src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
-                   className="w-full h-full" 
-                   title={title}
-                 />
-                 <div className="absolute bottom-4 right-4">
-                    <a 
-                      href={url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="bg-white/90 dark:bg-slate-800/90 hover:bg-white text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-2"
-                    >
-                      <Download className="w-3 h-3" />
-                      Open Full PDF
-                    </a>
-                 </div>
-              </div>
+              isIOSDevice() ? (
+                <IOSPdfViewer url={url} title={title} />
+              ) : (
+                <div className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative min-h-[300px]">
+                   <iframe 
+                     src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
+                     className="w-full h-full" 
+                     title={title}
+                   />
+                   <div className="absolute bottom-4 right-4">
+                      <a 
+                        href={url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="bg-white/90 dark:bg-slate-800/90 hover:bg-white text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-2"
+                      >
+                        <Download className="w-3 h-3" />
+                        Open Full PDF
+                      </a>
+                   </div>
+                </div>
+              )
             )}
           </div>
         );
@@ -378,6 +419,12 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
         // Google Viewer (gview) often fails with "No preview available" for signed URLs or large files
         const isPdf = url && url.toLowerCase().includes('.pdf');
         if (isPdf) {
+           // iOS Safari cannot scroll PDFs inside iframes - only shows first page
+           // Use the iOS-specific viewer that opens PDF in Safari's native viewer
+           if (isIOSDevice()) {
+             return <IOSPdfViewer url={url} title={title} />;
+           }
+           
            // For signed URLs (GoogleAccessId or Signature in URL) or Firebase token URLs, use browser's native PDF viewer
            // Google Docs Viewer cannot access authenticated/signed URLs
            const isSignedUrl = url.includes('GoogleAccessId') || url.includes('Signature=');

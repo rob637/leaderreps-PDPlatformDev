@@ -20,14 +20,18 @@ const bugReportService = {
    * @param {string} userId - ID of the user submitting the report
    * @param {Object} reportData - The report details (description, steps, etc.)
    * @param {Object} systemInfo - Automatically captured system info
+   * @param {Object} userInfo - User's email and displayName for follow-up
    * @returns {Promise<string>} The ID of the created report
    */
-  submitReport: async (db, userId, reportData, systemInfo) => {
+  submitReport: async (db, userId, reportData, systemInfo, userInfo = {}) => {
     if (!db) throw new Error('Firestore instance is required');
     
     try {
       const report = {
         userId,
+        // Store user info for follow-up capability
+        userEmail: userInfo.email || null,
+        userDisplayName: userInfo.displayName || null,
         description: reportData.description,
         steps: reportData.steps || '',
         severity: reportData.severity || 'low',

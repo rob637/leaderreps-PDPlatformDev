@@ -2372,7 +2372,7 @@ Respond ONLY with valid JSON in this exact format:
 // ================================================================
 // LWV (Lead With Vulnerability) EVALUATION FUNCTION
 // ================================================================
-async function assessLWVRep(data, person, repType, previousQuestions = []) {
+async function assessLWVRep(data, person, repType, previousQuestions = [], previousForwardScores = []) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     logger.error("GEMINI_API_KEY is not configured");
@@ -2426,14 +2426,23 @@ async function assessLWVRep(data, person, repType, previousQuestions = []) {
 
   const situationLabel = situationDescriptions[situationBranch] || situationBranch || 'Not specified';
 
+  // Pattern detection for forward strength
+  const recentForwardZeros = previousForwardScores.slice(-2).filter(s => s === 0).length;
+  const patternFeedbackNeeded = recentForwardZeros >= 2;
+
   const prompt = `You are evaluating a leadership practice exercise ("Real Rep") for Lead With Vulnerability.
 
-DEFINITION:
-Lead With Vulnerability occurs when a leader:
-- takes personal responsibility for a mistake, miss, or learning gap
-- communicates ownership clearly and specifically
-- connects the ownership to forward action or learning
-The purpose is to model accountability and create psychological safety for others to own mistakes.
+DEFINITION (LWV Design Intent):
+Lead With Vulnerability is:
+- Visible leadership ownership in moments where credibility, clarity, or direction was at risk
+- Self-focused: the leader takes personal responsibility for THEIR OWN behavior, thinking, or decision
+- Specific: must reference a clear action, interaction, or decision
+
+Lead With Vulnerability is NOT:
+- General accountability language ("I owned it", "I took responsibility")
+- Low-stakes communication cleanup
+- Indirect feedback delivery disguised as ownership
+- Apology-only patterns without forward action
 
 CONTEXT:
 - Situation type: ${situationLabel}
@@ -2445,85 +2454,129 @@ ${evidenceLines.join('\n') || '(No structured evidence provided)'}
 ${selfAssessmentLines ? `\nSelf-Assessment:\n${selfAssessmentLines}` : ''}
 ${notes ? `\nAdditional notes: ${notes}` : ''}
 
-INPUT VALIDITY CHECK (CRITICAL - EVALUATE FIRST):
+====== VALIDITY CHECKS (EVALUATE IN ORDER) ======
+
+CHECK 1: INPUT VALIDITY (Gibberish Detection)
 Before scoring ANY condition, check if the evidence contains GIBBERISH or NONSENSE:
 - Random characters or keyboard mashing (e.g., "asdf", "qwerty", "jjjj")
 - Meaningless text that does not form coherent sentences
 - Placeholder text (e.g., "test", "xxx", "lorem ipsum")
 - Single repeated characters or words
 - Content unrelated to workplace leadership
+If detected: Set repValidity = "invalid", invalidReason = "Evidence contains unusable or nonsense text"
 
-If ANY evidence field contains gibberish or nonsense:
-1. Set repValidity to "invalid"
-2. Set invalidReason to describe the specific gibberish detected
-3. ALL conditions MUST score 0 with label "None"
-4. Do NOT attempt to interpret or find meaning in nonsense text
+CHECK 2: MINIMUM EVIDENCE QUALITY (Required Components)
+The vulnerability statement MUST include ALL of:
+1. Subject (I / my / me) — first-person ownership
+2. Action or thinking shift — what they did/decided/missed
+3. Identifiable context — a conversation, decision, or action that can be anchored
 
-EVALUATION INSTRUCTIONS:
-First determine if this rep is Valid or Invalid.
-A rep is Valid if the leader clearly led with vulnerability.
-Leading with vulnerability requires:
-- taking personal ownership of a mistake or gap
-- communicating that ownership to others
-- NOT deflecting blame to external factors or other people
+Reject if ANY component is missing. Examples that FAIL this check:
+- "Owned the mistake" (no action, no context)
+- "Admitted I was wrong" (no action, no context)
+- "Took accountability" (no action, no context)
+If failed: Set repValidity = "invalid", invalidReason = "Statement lacks minimum evidence quality (missing subject, action, or context)"
 
-A rep is Invalid if:
-- the evidence contains gibberish, random characters, or nonsense text
-- the response does not describe owning a mistake or gap
-- the leader deflected blame entirely
-- the response contains no usable evidence
+CHECK 3: REAL EXPOSURE THRESHOLD
+A rep is Valid only if the vulnerability statement reflects:
+- A specific, identifiable leadership miss, uncertainty, or thinking change
+- Observable impact on work, expectations, or team interaction
 
-If Invalid, set repValidity to "invalid" and stop — all conditions score 0.
+Mark Invalid if:
+- Statement is generic ownership with no identifiable situation
+  - "I should have been clearer" (no situation)
+  - "I could have handled that better" (no anchor)
+- Statement lacks contextual anchor (no clear conversation, decision, or action)
+If failed: Set repValidity = "invalid", invalidReason = "Generic ownership without identifiable situation or context"
 
-SCORING RULES:
-Score each condition 0-3:
-3 = Strong evidence
-2 = Adequate evidence
-1 = Weak evidence
-0 = No usable evidence
+CHECK 4: AUTHORITY COLLAPSE DETECTION
+Authority collapse = exaggerated failure language + undermining confidence in future leadership
+Auto-fail if statement includes BOTH:
+- Absolute language: "completely", "totally", "everything"
+- Self-competence erosion
+
+Examples that FAIL:
+- "I completely screwed everything up"
+- "That was a total failure on my part"
+Examples that PASS:
+- "That was a miss on my part"
+- "I handled that poorly"
+If detected: Set repValidity = "invalid", invalidReason = "Authority collapse detected — exaggerated failure language undermines leadership credibility"
+
+CHECK 5: LWV PURITY (Self-Focused Boundary)
+LWV must primarily focus on the leader's own behavior, thinking, or decision.
+DISQUALIFY if:
+- The vulnerability statement includes direction to others as the PRIMARY outcome
+- The primary intent is correcting others' behavior rather than owning the miss
+
+Examples that FAIL LWV (should be SCE or RED):
+- "I should have been clearer, so going forward I need you to follow the process"
+- "That's on me, but I need you to improve communication"
+
+ALLOWED (brief expectation reset directly tied to leader's miss):
+- "I wasn't clear on expectations earlier. Let me reset what success looks like."
+
+If primary intent = directing others: 
+Set hybridDrift = true
+Set hybridDriftReason = "This interaction may be SCE or RED, not LWV — primary focus is correcting others' behavior"
+
+====== SCORING (Only if rep passes all validity checks) ======
 
 CONDITION 1 — OWNERSHIP PRESENT (Critical Condition)
 Did the leader take personal responsibility for a mistake or learning gap?
-3: Clear personal ownership with no deflection (e.g., "I rushed that decision and missed something important.")
-2: Ownership present but slightly hedged (e.g., "I should have handled that differently.")
-1: Ownership implied but not direct (e.g., "Things could have gone better.")
-0: No ownership or deflection to others (e.g., "The team didn't execute well.")
+3 = Strong: Clear personal ownership with no deflection (e.g., "I rushed that decision and missed something important.")
+2 = Adequate: Ownership present but slightly hedged (e.g., "I should have handled that differently.")
+1 = Weak: Ownership implied but not direct (e.g., "Things could have gone better.")
+0 = None: No ownership or deflection to others (e.g., "The team didn't execute well.")
 
-CONDITION 2 — STATEMENT CLARITY
+CONDITION 2 — STATEMENT CLARITY (HARDENED)
 Was the ownership statement clear and specific?
-3: Clear, specific ownership that names the miss (e.g., "I didn't give you enough context on the deadline.")
-2: Ownership stated but slightly general (e.g., "I should have communicated better.")
-1: Ownership vague or abstract (e.g., "I made a mistake.")
-0: No clear statement of ownership
+3 = Strong: Specific action + identifiable situation (e.g., "I rushed the timeline on the proposal yesterday.")
+2 = Adequate: Action identifiable, context implied (e.g., "I rushed that conversation earlier.")
+1 = Weak: Generic ownership without clear situation (e.g., "I should have handled that better.")
+0 = None: Unusable / vague (e.g., "Things got messy.")
+
+CRITICAL RULE: If Clarity ≤ 1, the rep CANNOT pass, even if ownership is strong.
+OVERRIDE RULE: If Ownership ≥ 2 but Clarity ≤ 1 → Set repValidity = "invalid" with reason "Ownership present but lacks required specificity"
 
 CONDITION 3 — FORWARD STRENGTH
-Did the leader connect the ownership to forward action?
-3: Clear forward commitment with specific action (e.g., "Next time I'll brief you before the meeting.")
-2: Forward action implied but not specific (e.g., "I'll do better next time.")
-1: Forward action vague or absent (acknowledged miss but no forward look)
-0: No forward action or stuck in the past
+Did the leader connect the ownership to forward action or learning?
+3 = Strong: Clear forward commitment with specific action (e.g., "Next time I'll brief you before the meeting.")
+2 = Adequate: Forward action implied but not specific (e.g., "I'll do better next time.")
+1 = Weak: Forward action vague or absent (acknowledged miss but no forward look)
+0 = None: No forward action or stuck in the past
 
-AUTOMATIC FAIL CONDITIONS:
-The rep automatically fails if:
-- Ownership Present < 2 (Critical condition must be at least Adequate)
-- any condition scores 0
-- two conditions score 1
-Ownership is the defining behavior — without clear ownership, this is not vulnerability.
+${patternFeedbackNeeded ? `
+PATTERN ALERT: This leader has scored Forward Strength = 0 on 2 of their last 3 LWV reps.
+If Forward Strength = 0 again, include this EXACT pattern feedback in your response:
+"You're consistently acknowledging ownership, but not reinforcing what changes moving forward. How will you ensure your vulnerability also strengthens direction, not just accountability?"
+` : ''}
+
+====== AUTO-FAIL CONDITIONS ======
+
+The rep automatically fails if ANY of:
+- repValidity = "invalid"
+- Ownership Present < 2 (Critical condition — without clear ownership, this is not vulnerability)
+- Statement Clarity ≤ 1 (Hardened rule — specificity is required)
+- Any condition scores 0
+- Two conditions score 1
 
 PASS RULE:
-A rep passes if: repValidity = Valid AND no automatic fail conditions triggered AND total score >= 6.
+A rep passes if: repValidity = "valid" AND no automatic fail conditions AND total score >= 6.
 Total score = sum of all three condition scores (range 3-9).
 
-COACHING QUESTIONS (1-2):
+====== COACHING QUESTIONS (1-2) ======
+
 Generate 1-2 coaching questions addressing the lowest scoring condition.
 Reference the leader's evidence when possible.
 Be encouraging — vulnerability is hard.
-Question frames:
-- Reflection: "What made you decide to share that with your team?"
-- Counterfactual: "How might your team have responded if you had been more specific about what you'd do differently?"
-- Forward-Looking: "What's one way you could model vulnerability again this week?"
+
+If hybridDrift detected, add this coaching prompt:
+"This moment includes both ownership and direction. What was your primary objective—owning the miss, or correcting behavior?"
 
 ${previousQuestions && previousQuestions.length > 0 ? `For context, here are the coaching questions from their PREVIOUS rep. DO NOT repeat these topics:\n${previousQuestions.map(q => `- ${q}`).join('\n')}` : ''}
+
+====== RESPONSE FORMAT ======
 
 Respond ONLY with valid JSON in this exact format:
 {
@@ -2549,11 +2602,15 @@ Respond ONLY with valid JSON in this exact format:
       "quote": "exact evidence excerpt if relevant, or null"
     }
   },
+  "hybridDrift": boolean,
+  "hybridDriftReason": "Reason if hybrid drift detected, null otherwise",
+  "authorityCollapse": boolean,
   "autoFailTriggered": boolean,
   "autoFailReason": "Reason if auto-fail, null otherwise",
   "totalScore": number,
   "repPassed": boolean,
   "coachingQuestions": ["question1", "question2"],
+  "patternFeedback": "Pattern feedback if applicable, null otherwise",
   "reflectionPrompt": "Optional short reflection prompt or null",
   "summary": "2-sentence evaluation summary"
 }`;
@@ -2584,35 +2641,468 @@ Respond ONLY with valid JSON in this exact format:
                        (conditions.statement_clarity?.score || 0) + 
                        (conditions.forward_strength?.score || 0);
 
-    // Validate auto-fail conditions server-side
-    const scores = [
-      conditions.ownership_present?.score || 0,
-      conditions.statement_clarity?.score || 0,
-      conditions.forward_strength?.score || 0
-    ];
+    // Server-side validation of auto-fail conditions (hardened per v2 spec)
+    const ownershipScore = conditions.ownership_present?.score || 0;
+    const clarityScore = conditions.statement_clarity?.score || 0;
+    const forwardScore = conditions.forward_strength?.score || 0;
+    const scores = [ownershipScore, clarityScore, forwardScore];
+    
     const hasZero = scores.some(s => s === 0);
     const onesCount = scores.filter(s => s === 1).length;
-    const ownershipBelowTwo = (conditions.ownership_present?.score || 0) < 2;
-    const autoFailTriggered = hasZero || onesCount >= 2 || ownershipBelowTwo;
+    const ownershipBelowTwo = ownershipScore < 2;
+    const clarityBelowTwo = clarityScore <= 1; // Hardened rule: Clarity ≤ 1 = fail
+    
+    // Override validity check: Ownership present but Clarity ≤ 1 → Invalid
+    let effectiveValidity = assessment.repValidity;
+    let effectiveInvalidReason = assessment.invalidReason;
+    if (ownershipScore >= 2 && clarityScore <= 1 && effectiveValidity !== 'invalid') {
+      effectiveValidity = 'invalid';
+      effectiveInvalidReason = 'Ownership present but lacks required specificity';
+    }
+    
+    const autoFailTriggered = hasZero || onesCount >= 2 || ownershipBelowTwo || clarityBelowTwo;
+    
+    // Determine auto-fail reason
+    let autoFailReason = null;
+    if (autoFailTriggered) {
+      if (ownershipBelowTwo) {
+        autoFailReason = 'Ownership Present must be at least Adequate (score 2)';
+      } else if (clarityBelowTwo) {
+        autoFailReason = 'Statement Clarity must be at least Adequate (score 2) — specificity required';
+      } else if (hasZero) {
+        autoFailReason = 'One or more conditions scored None (0)';
+      } else if (onesCount >= 2) {
+        autoFailReason = 'Two or more conditions scored Weak (1)';
+      }
+    }
 
-    const isValid = assessment.repValidity !== 'invalid';
+    const isValid = effectiveValidity !== 'invalid';
     const repPassed = isValid && !autoFailTriggered && totalScore >= 6;
 
-    logger.info("LWV rep assessment completed", { 
-      repType, totalScore, repPassed, autoFailTriggered, isValid
+    // Check for forward strength pattern (for tracking/analytics)
+    const currentForwardScore = forwardScore;
+    const forwardPatternTriggered = patternFeedbackNeeded && currentForwardScore === 0;
+
+    logger.info("LWV rep assessment completed (v2)", { 
+      repType, totalScore, repPassed, autoFailTriggered, isValid,
+      clarityScore, ownershipScore, forwardScore,
+      hybridDrift: assessment.hybridDrift,
+      authorityCollapse: assessment.authorityCollapse,
+      forwardPatternTriggered
     });
 
     return {
-      evaluationType: 'lwv_scored',
-      repValidity: assessment.repValidity || 'valid',
-      invalidReason: assessment.invalidReason || null,
+      evaluationType: 'lwv_scored_v2',
+      repValidity: effectiveValidity,
+      invalidReason: effectiveInvalidReason || null,
       conditions,
+      hybridDrift: assessment.hybridDrift || false,
+      hybridDriftReason: assessment.hybridDriftReason || null,
+      authorityCollapse: assessment.authorityCollapse || false,
       autoFailTriggered,
-      autoFailReason: autoFailTriggered ? (assessment.autoFailReason || 'Automatic fail condition met') : null,
+      autoFailReason: autoFailTriggered ? autoFailReason : null,
       totalScore,
       maxScore: 9,
       repPassed,
       coachingQuestions: assessment.coachingQuestions || [],
+      patternFeedback: forwardPatternTriggered ? 
+        "You're consistently acknowledging ownership, but not reinforcing what changes moving forward. How will you ensure your vulnerability also strengthens direction, not just accountability?" : 
+        (assessment.patternFeedback || null),
+      reflectionPrompt: assessment.reflectionPrompt || null,
+      summary: assessment.summary || (repPassed ? 'Rep Passed' : 'Rep Not Passed'),
+      meetsStandard: repPassed,
+      isConstructive: isValid,
+      constructiveFeedback: !isValid ? (effectiveInvalidReason || 'This rep does not contain valid evidence') : null,
+      assessedAt: new Date().toISOString(),
+      assessedBy: 'ai',
+      // Analytics fields
+      forwardStrengthScore: currentForwardScore,
+      forwardPatternTriggered
+    };
+
+  } catch (error) {
+    logger.error("Error in assessLWVRep", error);
+    if (error.code) throw error;
+    throw new HttpsError('internal', 'Failed to assess LWV rep quality');
+  }
+}
+
+// ================================================================
+// RED (Deliver Redirecting Feedback) EVALUATION FUNCTION
+// Implements the LeaderReps AI Evaluation Specification FINAL v4
+// ================================================================
+async function assessREDRep(data, person, repType, previousQuestions = []) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    logger.error("GEMINI_API_KEY is not configured");
+    throw new HttpsError('internal', 'AI service not configured');
+  }
+
+  // Extract RED-specific evidence
+  const redResponses = data.red_responses || data.sce_responses || {};
+  const selfAssessment = data.self_assessment || {};
+  const responseType = data.response_type || '';
+  const notes = data.notes || '';
+  const situationBranch = data.situation_branch || '';
+  const difficulty = data.difficulty || '';
+
+  // Build evidence summary from structured RED fields
+  const evidenceLines = [];
+  if (redResponses.behavior_statement) {
+    evidenceLines.push(`- Behavior described: "${redResponses.behavior_statement}"`);
+  }
+  if (redResponses.impact_statement) {
+    evidenceLines.push(`- Impact/Why it matters: "${redResponses.impact_statement}"`);
+  }
+  if (redResponses.request_statement) {
+    evidenceLines.push(`- Request for change: "${redResponses.request_statement}"`);
+  }
+  if (redResponses.their_response_detail) {
+    evidenceLines.push(`- Their response (free text): "${redResponses.their_response_detail}"`);
+  }
+
+  // Self-assessment context
+  const selfAssessmentLines = Object.entries(selfAssessment)
+    .filter(([, v]) => v && String(v).trim())
+    .map(([key, val]) => {
+      const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      return `- ${label}: ${val}`;
+    })
+    .join('\n');
+
+  // Situation type descriptions
+  const situationDescriptions = {
+    'repeated_behavior': 'Repeated behavior or pattern',
+    'first_occurrence': 'First-time occurrence',
+    'real_time': 'Real-time / in-the-moment feedback',
+    'after_the_fact': 'After-the-fact feedback'
+  };
+
+  const situationLabel = situationDescriptions[situationBranch] || situationBranch || 'Not specified';
+
+  const prompt = `You are evaluating a leadership practice exercise ("Real Rep") for Deliver Redirecting Feedback.
+
+DEFINITION:
+Deliver Redirecting Feedback occurs when a leader:
+- names a specific behavior gap
+- explains why it matters (impact or standard)
+- requests a change in future behavior
+- delivers the message directly and with composure
+
+PURPOSE:
+- correct behavior early
+- maintain accountability
+- preserve trust
+
+CONTEXT:
+- Situation type: ${situationLabel}
+- Person involved: ${person || 'Not specified'}
+- Their response (selected): ${responseType || 'Not specified'}
+- Difficulty level: ${difficulty || 'Not specified'}
+
+EVIDENCE PROVIDED:
+${evidenceLines.join('\n') || '(No structured evidence provided)'}
+${selfAssessmentLines ? `\nSelf-Assessment:\n${selfAssessmentLines}` : ''}
+${notes ? `\nAdditional notes: ${notes}` : ''}
+
+INPUT VALIDITY CHECK (CRITICAL - EVALUATE FIRST):
+Before scoring ANY condition, check if the evidence contains GIBBERISH or NONSENSE:
+- Random characters or keyboard mashing (e.g., "asdf", "qwerty", "jjjj")
+- Meaningless text that does not form coherent sentences
+- Placeholder text (e.g., "test", "xxx", "lorem ipsum")
+- Single repeated characters or words
+- Content unrelated to workplace leadership
+
+If ANY evidence field contains gibberish or nonsense:
+1. Set repValidity to "invalid"
+2. Set invalidReason to describe the specific gibberish detected
+3. ALL conditions MUST score 0 with label "None"
+4. Do NOT attempt to interpret or find meaning in nonsense text
+
+EVALUATION INSTRUCTIONS:
+First determine if this rep is Valid or Invalid.
+
+A rep is VALID if ALL:
+- behavior gap exists
+- feedback delivered (direct or indirect)
+- request exists
+
+A rep is INVALID if ANY:
+- no feedback delivered
+- no behavior identified
+- no request
+- only coaching/advice without clear feedback
+
+CLARIFICATION: Indirect delivery = Valid but scored under Direct Delivery condition. Validity does NOT require correct delivery.
+
+EVALUATOR HIERARCHY (MANDATORY - evaluate in this order):
+1. Behavior / Impact / Request
+2. Response
+3. Difficulty / Internal Gap
+4. Do NOT infer missing clarity
+
+SCORING RULES:
+Score each condition 0-3:
+3 = Strong evidence
+2 = Adequate evidence
+1 = Weak evidence
+0 = No usable evidence
+
+CONDITION 1 — BEHAVIOR CLEARLY NAMED (Critical)
+Would a camera capture this behavior? Use the Camera Test.
+3: specific, observable (e.g., "You interrupted the client twice before they finished speaking.")
+2: general but identifiable (e.g., "You cut the client off.")
+1: interpretive (e.g., "You weren't very professional.") — AUTO-FAIL if 1
+0: missing
+
+RULES:
+- Interpretive behavior → max score 1
+- Mixed observable + interpretive → max score 2
+- Must describe what happened, not conclusions
+
+CONDITION 2 — IMPACT / STANDARD (Critical)
+Did the leader explain why this matters?
+3: clear consequence OR standard stated (e.g., "That made it harder for them to explain their concern.")
+2: implied but understandable (e.g., "That really affected the conversation.")
+1: vague (e.g., "That's not good.")
+0: missing
+
+CONDITION 3 — REQUEST (Critical)
+Did the leader make a specific request for change?
+3: specific, observable future behavior (e.g., "Let them finish before responding.")
+2: conversational + anchored to change (e.g., "What will you do differently next time?") — applies to Challenge/Collaborate requests
+1: vague (e.g., "Be more mindful.") — AUTO-FAIL if <= 1
+0: missing
+
+REQUEST CLASSIFICATION (Internal - classify but don't show):
+- Command: explicit directive (e.g., "Submit by 3pm going forward.")
+- Challenge: question prompting ownership (e.g., "What will you do differently?")
+- Collaborate: joint discussion framing (e.g., "Let's talk about how to prevent this.")
+
+CONDITION 4 — DIRECT DELIVERY
+Was the feedback delivered directly to the right person?
+3: direct, correct audience
+2: direct but broad (e.g., told the team instead of individual)
+1: indirect (e.g., told someone else to deliver it) — AUTO-FAIL if 0
+0: not delivered — AUTO-FAIL
+
+GROUP RULE: Score = 3 only if:
+- behavior explicitly stated as shared
+- feedback delivered to that group
+- no avoidance of individual accountability
+
+CONDITION 5 — DELIVERY DISCIPLINE
+Did the leader deliver with composure?
+3: neutral, composed throughout
+2: softened or mild tension (e.g., "I was frustrated but kept it contained")
+1: hedging or edge showing
+0: harsh / emotional — AUTO-FAIL
+
+EMOTIONAL LEAKAGE (Hard Cap):
+If ANY present → max Delivery Discipline = 1:
+- "always / never" language
+- labeling (e.g., "you're irresponsible")
+- moral judgment
+- escalation language
+- stacked issues (multiple unrelated complaints)
+
+SPECIAL EVIDENCE RULES:
+
+SECONDHAND FEEDBACK:
+- Behavior max = 2 (must attribute source)
+- Does NOT automatically impact other conditions
+
+AUTOMATIC FAIL LOGIC:
+Fail if ANY:
+- Any critical condition = 0
+- Behavior = 1
+- Request ≤ 1
+- Delivery Discipline = 0
+- Direct Delivery = 0
+- Two conditions = 1
+
+PASS RULE:
+A rep passes if:
+- repValidity = Valid
+- no automatic fail triggered
+- total score ≥ 9 (out of 15)
+
+FEEDBACK INTENSITY SCALING (Internal Classification):
+Level 1: minor issue
+Level 2: clear miss
+Level 3: repeated / risk
+
+Intensity ≥ 2 if ANY:
+- Impact references team/client
+- Behavior is repeated/pattern
+- Self-reported Internal Gap = strong emotion
+- Response Type = Defensive / Denied
+
+UNDER-SCALING CHECK (Light Nudge Detection):
+If Intensity ≥ 2 AND Behavior ≥ 2 AND Impact ≥ 2 AND Request = 2:
+Output coaching: "This reads more like a light nudge than a full redirect. Given the impact of the situation, a more explicit standard may have been needed."
+
+If Intensity = 1 AND Behavior ≥ 2 AND Impact ≥ 2 AND Request = 2:
+Output coaching: "This reads more like a light nudge than a full redirect. The behavior is clear, but the expected change is not fully defined yet."
+
+CONVERSATION CLOSURE CHECK:
+Trigger if Request = 2 (coaching only, does NOT change score):
+"Did this conversation end with a clear, observable next step?"
+If weak: "The conversation opened well but may not have landed on a clear behavioral change. What specifically will be different next time?"
+
+ANTI-GAMING CHECKS:
+
+A. Internal Gap Cross-Check:
+If Internal Gap Intensity = strong emotion AND ≥ 2 of (Behavior, Impact, Request) = 3:
+Cap Delivery Discipline at 2
+
+B. Difficulty Mismatch:
+If Difficulty = Low AND Intensity ≥ 2:
+Flag but don't penalize: "The self-reported difficulty seems low for the intensity of this situation."
+
+COACHING OUTPUT RULES:
+- Max 2-3 insights total
+- Priority Order: Fail reason > Lowest condition > Intensity/Light Nudge > Closure check > Anti-gaming > Pattern feedback
+- If fail triggered → prioritize fail + 1 improvement
+- Do NOT stack redundant insights
+
+COACHING QUESTIONS (1-2):
+Generate 1-2 coaching questions addressing the lowest scoring condition.
+Reference the leader's evidence when possible.
+Question rotation rule:
+Question 1 -> Reflection or Counterfactual frame
+Question 2 -> Forward-Looking frame
+${previousQuestions && previousQuestions.length > 0 ? `For context, here are the coaching questions from their PREVIOUS rep. DO NOT repeat these topics:\n${previousQuestions.map(q => `- ${q}`).join('\n')}` : ''}
+
+Question examples:
+- Reflection: "What signal told you they understood the change you were asking for?"
+- Counterfactual: "What might have happened if you had stated the expected behavior more explicitly?"
+- Forward-Looking: "What's one way you might make the request more observable next time?"
+
+DESIGN INTENT:
+This system builds:
+- clarity under pressure
+- directness without avoidance
+- composure under tension
+
+Prevents:
+- vague feedback
+- indirect leadership
+- emotional reactivity
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "repValidity": "valid" or "invalid",
+  "invalidReason": "Reason if invalid, null if valid",
+  "conditions": {
+    "behavior_named": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    },
+    "impact_explained": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null"
+    },
+    "request_made": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition",
+      "quote": "exact evidence excerpt if relevant, or null",
+      "requestType": "Command" | "Challenge" | "Collaborate" | null
+    },
+    "direct_delivery": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition"
+    },
+    "delivery_discipline": {
+      "score": 0-3,
+      "label": "Strong" | "Adequate" | "Weak" | "None",
+      "feedback": "Brief observation about this condition"
+    }
+  },
+  "intensityLevel": 1 | 2 | 3,
+  "autoFailTriggered": boolean,
+  "autoFailReason": "Reason if auto-fail, null otherwise",
+  "totalScore": number,
+  "repPassed": boolean,
+  "coachingQuestions": ["question1", "question2"],
+  "coachingInsights": ["insight1", "insight2"],
+  "reflectionPrompt": "Optional short reflection prompt or null",
+  "summary": "2-sentence evaluation summary"
+}`;
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        responseMimeType: 'application/json'
+      }
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    let assessment;
+    try {
+      assessment = JSON.parse(text);
+    } catch (parseErr) {
+      logger.error("Failed to parse RED AI response as JSON", { text, error: parseErr });
+      throw new HttpsError('internal', 'AI response was not valid JSON');
+    }
+
+    const conditions = assessment.conditions || {};
+    const totalScore = (conditions.behavior_named?.score || 0) + 
+                       (conditions.impact_explained?.score || 0) + 
+                       (conditions.request_made?.score || 0) +
+                       (conditions.direct_delivery?.score || 0) +
+                       (conditions.delivery_discipline?.score || 0);
+
+    // Validate auto-fail conditions server-side per spec
+    const scores = [
+      conditions.behavior_named?.score || 0,
+      conditions.impact_explained?.score || 0,
+      conditions.request_made?.score || 0,
+      conditions.direct_delivery?.score || 0,
+      conditions.delivery_discipline?.score || 0
+    ];
+    
+    const hasZero = scores.some(s => s === 0);
+    const onesCount = scores.filter(s => s === 1).length;
+    const behaviorIsOne = (conditions.behavior_named?.score || 0) === 1;
+    const requestLteOne = (conditions.request_made?.score || 0) <= 1;
+    const deliveryDisciplineZero = (conditions.delivery_discipline?.score || 0) === 0;
+    const directDeliveryZero = (conditions.direct_delivery?.score || 0) === 0;
+    
+    // Auto-fail logic per spec
+    const autoFailTriggered = hasZero || onesCount >= 2 || behaviorIsOne || requestLteOne || deliveryDisciplineZero || directDeliveryZero;
+
+    const isValid = assessment.repValidity !== 'invalid';
+    const repPassed = isValid && !autoFailTriggered && totalScore >= 9;
+
+    logger.info("RED rep assessment completed", { 
+      repType, totalScore, repPassed, autoFailTriggered, isValid
+    });
+
+    return {
+      evaluationType: 'red_scored',
+      repValidity: assessment.repValidity || 'valid',
+      invalidReason: assessment.invalidReason || null,
+      conditions,
+      intensityLevel: assessment.intensityLevel || 1,
+      autoFailTriggered,
+      autoFailReason: autoFailTriggered ? (assessment.autoFailReason || 'Automatic fail condition met') : null,
+      totalScore,
+      maxScore: 15,
+      repPassed,
+      coachingQuestions: assessment.coachingQuestions || [],
+      coachingInsights: assessment.coachingInsights || [],
       reflectionPrompt: assessment.reflectionPrompt || null,
       summary: assessment.summary || (repPassed ? 'Rep Passed' : 'Rep Not Passed'),
       meetsStandard: repPassed,
@@ -2623,9 +3113,168 @@ Respond ONLY with valid JSON in this exact format:
     };
 
   } catch (error) {
-    logger.error("Error in assessLWVRep", error);
+    logger.error("Error in assessREDRep", error);
     if (error.code) throw error;
-    throw new HttpsError('internal', 'Failed to assess LWV rep quality');
+    throw new HttpsError('internal', 'Failed to assess RED rep quality');
+  }
+}
+
+/**
+ * ASSESS CTL (Close the Loop) REP
+ * Evaluates whether a Close the Loop action meets quality standards.
+ * CTL has 3 binary pass/fail criteria - all 3 must pass for CTL to pass.
+ * 
+ * Criteria:
+ * 1. Real Check - Was this a deliberate, intentional follow-up?
+ * 2. Usable Evidence - Is the observation specific and observable?
+ * 3. Appropriate Response - Did the leader respond appropriately?
+ */
+async function assessCTLRep(data, linkedRepId) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    logger.error("GEMINI_API_KEY is not configured for CTL assessment");
+    throw new HttpsError('internal', 'AI service not configured');
+  }
+
+  const {
+    decision,        // 'changed' | 'not_changed' | 'not_observed'
+    observation,     // { what_observed, observation_context }
+    gaveReinforcingFeedback,   // boolean (for 'changed')
+    gaveFollowupFeedback,      // boolean (for 'not_changed')
+    nextAction,      // string (for 'not_changed' without feedback)
+    nextCheckDate,   // string (for rescheduling)
+    notObservedReason // string (for 'not_observed')
+  } = data;
+
+  // Not observed is a valid deferral, not scored
+  if (decision === 'not_observed') {
+    return {
+      evaluationType: 'ctl_deferred',
+      decision,
+      notObservedReason,
+      nextCheckDate,
+      criteria: null,
+      allPassed: null,
+      summary: 'Close the Loop deferred - no opportunity to observe yet.',
+      assessedAt: new Date().toISOString()
+    };
+  }
+
+  const observationText = observation?.what_observed || '';
+  const contextText = observation?.observation_context || '';
+
+  const prompt = `You are evaluating a "Close the Loop" (CTL) action for a leadership development program.
+
+After giving redirecting feedback, the leader is checking whether the behavior changed.
+
+DECISION: ${decision === 'changed' ? 'The leader reports the behavior CHANGED' : 'The leader reports the behavior DID NOT CHANGE'}
+
+OBSERVATION:
+What they observed: "${observationText}"
+Context (when/where): "${contextText}"
+
+${decision === 'changed' ? `
+RESPONSE: ${gaveReinforcingFeedback ? 'Leader gave reinforcing feedback to acknowledge the change' : 'Leader did not give explicit reinforcing feedback'}
+` : `
+RESPONSE: ${gaveFollowupFeedback ? 'Leader gave additional redirecting feedback' : `Leader did not give feedback. Next action: "${nextAction || 'Not specified'}"`}
+`}
+
+Evaluate this CTL action against THREE criteria. Each is pass/fail.
+
+CRITERION 1: REAL CHECK
+Did the leader perform a DELIBERATE, intentional follow-up?
+- PASS: They specifically looked for behavior change (scheduled check, intentional observation)
+- FAIL: Incidental observation, no real effort to check, or superficial check
+
+CRITERION 2: USABLE EVIDENCE
+Is the observation SPECIFIC and OBSERVABLE?
+- PASS: Describes concrete actions seen/heard, specific enough to verify behavior change
+- FAIL: Vague impressions, assumptions, hearsay without source, or interpretive statements
+Note: Secondhand observations are OK if they name the source and describe specific behaviors.
+
+CRITERION 3: APPROPRIATE RESPONSE
+Did the leader respond appropriately to what they observed?
+For "behavior changed":
+- PASS: Either reinforced the change OR appropriately did nothing (change was acknowledged)
+- FAIL: Missing any acknowledgment when one was warranted
+
+For "behavior not changed":
+- PASS: Either gave follow-up feedback OR has a clear next action plan
+- FAIL: No response and no plan, or gave up
+
+Respond with JSON only:
+{
+  "criteria": {
+    "real_check": {
+      "passed": boolean,
+      "feedback": "One sentence explaining the assessment"
+    },
+    "usable_evidence": {
+      "passed": boolean,
+      "feedback": "One sentence explaining the assessment",
+      "isSecondhand": boolean
+    },
+    "appropriate_response": {
+      "passed": boolean,
+      "feedback": "One sentence explaining the assessment"
+    }
+  },
+  "summary": "One sentence overall summary",
+  "coachingTip": "One actionable coaching tip if any criterion failed, or encouragement if all passed"
+}`;
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        responseMimeType: 'application/json'
+      }
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    let assessment;
+    try {
+      assessment = JSON.parse(text);
+    } catch (parseErr) {
+      logger.error("Failed to parse CTL AI response as JSON", { text, error: parseErr });
+      throw new HttpsError('internal', 'AI response was not valid JSON');
+    }
+
+    const criteria = assessment.criteria || {};
+    const realCheckPassed = criteria.real_check?.passed === true;
+    const evidencePassed = criteria.usable_evidence?.passed === true;
+    const responsePassed = criteria.appropriate_response?.passed === true;
+    
+    const allPassed = realCheckPassed && evidencePassed && responsePassed;
+    const passedCount = [realCheckPassed, evidencePassed, responsePassed].filter(Boolean).length;
+
+    logger.info("CTL assessment completed", { 
+      decision, allPassed, passedCount, linkedRepId
+    });
+
+    return {
+      evaluationType: 'ctl_scored',
+      decision,
+      criteria,
+      passedCount,
+      totalCriteria: 3,
+      allPassed,
+      meetsStandard: allPassed,
+      summary: assessment.summary || (allPassed ? 'Loop closed successfully' : 'Close the Loop needs improvement'),
+      coachingTip: assessment.coachingTip || null,
+      assessedAt: new Date().toISOString(),
+      assessedBy: 'ai'
+    };
+
+  } catch (error) {
+    logger.error("Error in assessCTLRep", error);
+    if (error.code) throw error;
+    throw new HttpsError('internal', 'Failed to assess CTL quality');
   }
 }
 
@@ -2677,7 +3326,9 @@ exports.assessRepQuality = onCall(
     const data = structured || responses || {};
     
     // Fetch previous rep coaching questions to avoid duplication (in-memory sort to avoid index requirements)
+    // Also fetch forward_strength scores for LWV pattern detection
     let previousQuestions = [];
+    let previousForwardScores = [];
     const uid = request.auth?.uid;
     if (uid) {
       try {
@@ -2689,15 +3340,24 @@ exports.assessRepQuality = onCall(
           pastRepsSnap.forEach(doc => {
             const d = doc.data();
             if (d.status === 'debriefed' || d.status === 'loop_closed') {
+              const qa = d.qualityAssessment || {};
               reps.push({
                 t: d.debriefedAt?.toMillis ? d.debriefedAt.toMillis() : (d.createdAt?.toMillis ? d.createdAt.toMillis() : 0),
-                q: d.qualityAssessment?.coachingQuestions || []
+                q: qa.coachingQuestions || [],
+                fs: qa.forwardStrengthScore ?? qa.conditions?.forward_strength?.score ?? null
               });
             }
           });
           reps.sort((a, b) => b.t - a.t);
           if (reps.length > 0 && reps[0].q.length > 0) {
             previousQuestions = reps[0].q;
+          }
+          // Collect forward_strength scores from up to 3 most recent LWV reps
+          if (repType === 'lead_with_vulnerability') {
+            previousForwardScores = reps
+              .filter(r => r.fs !== null && r.fs !== undefined)
+              .slice(0, 3)
+              .map(r => r.fs);
           }
         }
       } catch (err) {
@@ -2716,7 +3376,15 @@ exports.assessRepQuality = onCall(
       return await assessFUWRep(data, person, repType, previousQuestions);
     }
     if (repType === 'lead_with_vulnerability') {
-      return await assessLWVRep(data, person, repType, previousQuestions);
+      return await assessLWVRep(data, person, repType, previousQuestions, previousForwardScores);
+    }
+    if (repType === 'deliver_redirecting_feedback') {
+      return await assessREDRep(data, person, repType, previousQuestions);
+    }
+    if (repType === 'close_the_loop') {
+      // CTL requires linkedRepId instead of person
+      const linkedRepId = request.data.linkedRepId;
+      return await assessCTLRep(data, linkedRepId);
     }
     
     // V2 fields
@@ -7775,17 +8443,19 @@ exports.onBugReport = require("firebase-functions/v2/firestore").onDocumentCreat
     },
   });
 
-  // Look up the user's display name or email
-  let userName = "Unknown User";
-  let userEmail = "";
-  try {
-    if (report.userId) {
+  // Get user info - prefer stored fields (added Mar 2026), fall back to Auth lookup
+  let userName = report.userDisplayName || report.userEmail || "Unknown User";
+  let userEmail = report.userEmail || "";
+  
+  // If no stored user info, try Auth lookup as fallback
+  if (!report.userEmail && !report.userDisplayName && report.userId) {
+    try {
       const userRecord = await admin.auth().getUser(report.userId);
       userName = userRecord.displayName || userRecord.email || report.userId;
       userEmail = userRecord.email || "";
+    } catch (err) {
+      logger.warn("Could not look up user for bug report:", err.message);
     }
-  } catch (err) {
-    logger.warn("Could not look up user for bug report:", err.message);
   }
 
   const systemInfo = report.systemInfo || {};

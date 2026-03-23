@@ -484,18 +484,45 @@ const RepCard = ({
                   defaultExpanded={true}
                 />
               )}
-              <div className="flex items-center gap-2 text-xs text-orange-600 mb-2">
-                <RefreshCw className="w-3 h-3" />
-                <span>Tracking follow-up</span>
-              </div>
-              <Button
-                onClick={() => onCloseLoop?.(rep)}
-                disabled={isLoading}
-                className="w-full bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
-              >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Complete the Rep
-              </Button>
+              {/* CTL-specific display for RED reps awaiting Close the Loop */}
+              {rep.awaitingCTL ? (
+                <>
+                  <div className="flex items-center justify-between text-xs text-orange-600 mb-2">
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Waiting to Close the Loop</span>
+                    </div>
+                    {rep.ctlDueDate && (
+                      <span className="text-gray-500">
+                        Check by: {new Date(rep.ctlDueDate).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    onClick={() => onCloseLoop?.(rep)}
+                    disabled={isLoading}
+                    className="w-full bg-corporate-orange hover:bg-corporate-orange/90 text-white py-2"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Close the Loop
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 text-xs text-orange-600 mb-2">
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Tracking follow-up</span>
+                  </div>
+                  <Button
+                    onClick={() => onCloseLoop?.(rep)}
+                    disabled={isLoading}
+                    className="w-full bg-corporate-teal hover:bg-corporate-teal/90 text-white py-2"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Complete the Rep
+                  </Button>
+                </>
+              )}
             </div>
           )}
           
@@ -689,13 +716,24 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       // Separate active reps from missed ones in the active list
       // Filter for active states = reps needing user attention
       // 'executed' = done but needs debrief
+      // 'debriefed' = for SCE/DRF reps, still needs to complete the loop
       // 'follow_up_pending' = debriefed but needs loop closure
-      const activeStates = ['committed', 'prepared', 'scheduled', 'executed', 'follow_up_pending', 'active'];
-      const currentWeekActive = active.filter(r => activeStates.includes(r.status));
+      const baseActiveStates = ['committed', 'prepared', 'scheduled', 'executed', 'follow_up_pending', 'active'];
+      const repTypesRequiringLoopForActive = ['set_clear_expectations', 'deliver_reinforcing_feedback', 'reinforce_public'];
+      const currentWeekActive = active.filter(r => {
+        // Base active states always count
+        if (baseActiveStates.includes(r.status)) return true;
+        // 'debriefed' is active ONLY for rep types that need loop closure
+        if (r.status === 'debriefed') {
+          return repTypesRequiringLoopForActive.includes(r.repType);
+        }
+        return false;
+      });
       
       // Sort active reps: closest to completion first, then by deadline
       const statusPriority = {
         follow_up_pending: 0, // Almost done — just close the loop
+        debriefed: 0,         // For SCE/DRF: also needs to close the loop
         executed: 1,          // Done — needs evidence/debrief
         prepared: 2,          // Ready to execute
         scheduled: 3,         // Has a time set
@@ -721,8 +759,17 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       
       // Get completed reps from weekly status
       // Filter for completed states = reps fully done (shown in "Completed This Week")
-      const completedStates = ['debriefed', 'loop_closed', 'completed'];
-      const completed = (status?.reps || []).filter(r => completedStates.includes(r.status));
+      // Note: For SCE/DRF reps, 'debriefed' is NOT complete - they need to close the loop first
+      const repTypesRequiringLoop = ['set_clear_expectations', 'deliver_reinforcing_feedback', 'reinforce_public'];
+      const completed = (status?.reps || []).filter(r => {
+        // loop_closed and completed (legacy) are always complete
+        if (['loop_closed', 'completed'].includes(r.status)) return true;
+        // debriefed is complete ONLY for rep types that don't need loop closure
+        if (r.status === 'debriefed') {
+          return !repTypesRequiringLoop.includes(r.repType);
+        }
+        return false;
+      });
       // Sort completed: most recently completed first
       completed.sort((a, b) => {
         const aTime = a.updatedAt?.toDate?.() || a.completedAt?.toDate?.() || new Date(0);
@@ -958,6 +1005,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
     } catch (err) {
       console.error('Error recommitting rep:', err);
       setError('Failed to recommit rep. Please try again.');
+      throw err; // Re-throw so caller knows it failed
     } finally {
       setIsSubmitting(false);
     }
@@ -980,6 +1028,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
     } catch (err) {
       console.error('Error canceling rep:', err);
       setError('Failed to cancel rep. Please try again.');
+      throw err; // Re-throw so caller knows it failed
     } finally {
       setIsSubmitting(false);
     }
@@ -995,8 +1044,20 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
   const [quickPrepModalRep, setQuickPrepModalRep] = useState(null);
   
   // Direct completion - skip the follow-up modal and complete the rep immediately
+  // For RED reps awaiting CTL, open the Evidence Wizard in CTL mode instead
   const handleOpenLoopClosure = async (rep) => {
     if (!userId || !db) return;
+    
+    // Check if this is a RED rep awaiting Close the Loop
+    const isRedAwaitingCTL = rep.repType === 'deliver_redirecting_feedback' && rep.awaitingCTL;
+    
+    if (isRedAwaitingCTL) {
+      // Open Evidence Wizard in CTL mode
+      handleOpenEvidenceWizard(rep, 'ctl');
+      return;
+    }
+    
+    // For other reps, complete directly
     try {
       setIsSubmitting(true);
       // Complete directly without follow-up planning
@@ -1058,15 +1119,18 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
 
   // V2: Evidence Capture Wizard state
   const [evidenceWizardRep, setEvidenceWizardRep] = useState(null);
+  const [evidenceWizardMode, setEvidenceWizardMode] = useState('evidence'); // 'evidence' | 'review' | 'plan' | 'ctl'
 
   // V2: Open Evidence Capture Wizard (for capturing evidence on V2 reps)
-  const handleOpenEvidenceWizard = (rep) => {
+  const handleOpenEvidenceWizard = (rep, mode = 'evidence') => {
+    setEvidenceWizardMode(mode);
     setEvidenceWizardRep(rep);
   };
 
   // V2: Handle Evidence Wizard submission (used by both evidence capture and close loop modes)
   const handleEvidenceWizardSubmit = async () => {
     setEvidenceWizardRep(null);
+    setEvidenceWizardMode('evidence');
     // Loop closure modal is disabled - direct completion now happens in handleOpenLoopClosure
     await loadData();
   };
@@ -1176,6 +1240,16 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
                   <Plus className="w-5 h-5 mr-2" />
                   Commit to a Real Rep
                 </Button>
+                {/* Note about finding completed reps in Locker */}
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                  Looking for your completed reps?{' '}
+                  <button
+                    onClick={() => navigation?.navigate?.('locker')}
+                    className="text-corporate-teal hover:underline font-medium"
+                  >
+                    Check your Locker
+                  </button>
+                </p>
               </div>
             ) : (
               // First-time user - simple, inviting prompt
@@ -1373,8 +1447,12 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
       {evidenceWizardRep && (
         <EvidenceCaptureWizard
           rep={evidenceWizardRep}
-          onClose={() => setEvidenceWizardRep(null)}
+          onClose={() => {
+            setEvidenceWizardRep(null);
+            setEvidenceWizardMode('evidence');
+          }}
           onSubmit={handleEvidenceWizardSubmit}
+          initialMode={evidenceWizardMode}
         />
       )}
     </PageLayout>

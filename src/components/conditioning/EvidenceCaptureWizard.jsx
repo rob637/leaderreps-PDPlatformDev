@@ -56,7 +56,28 @@ import {
   LWV_SELF_ASSESSMENT,
   LWV_REFLECTION_PROMPT,
   LWV_REFLECTION_EXAMPLES,
-  getLWVSituationBranch
+  getLWVSituationBranch,
+  // RED (Deliver Redirecting Feedback) imports
+  RED_EVIDENCE_QUESTIONS,
+  RED_OPTIONAL_FIELDS,
+  RED_RESPONSE_OPTIONS,
+  RED_SELF_ASSESSMENT,
+  RED_COMPLETE_LOOP,
+  RED_REFLECTION_PROMPT,
+  RED_REFLECTION_EXAMPLES,
+  RED_DIFFICULTY_OPTIONS,
+  getREDSituationBranch,
+  // CTL (Close the Loop) imports
+  CTL_DECISION_OPTIONS,
+  CTL_OBSERVATION_QUESTIONS,
+  CTL_NOT_OBSERVED_REASONS,
+  CTL_REINFORCEMENT_QUESTION,
+  CTL_CONTINUATION_OPTIONS,
+  CTL_NEXT_ACTION_QUESTIONS,
+  CTL_SCORING_CRITERIA,
+  CTL_DEFAULT_SCHEDULE_DAYS,
+  CTL_DEFER_DEFAULT_DAYS,
+  CTL_SECONDHAND_RULES
 } from './constants';
 import { uploadMediaAsset } from '../../services/mediaService.js';
 
@@ -190,8 +211,8 @@ const ScreenWhatHappened = ({ value, onChange, onNext, onBack, showValidation })
 };
 
 // ============================================
-// SCREEN 2-STRUCTURED: STRUCTURED EVIDENCE (SCE, DRF, FUW, LWV)
-// Situation-specific evidence capture for SCE, DRF, FUW, and LWV rep types
+// SCREEN 2-STRUCTURED: STRUCTURED EVIDENCE (SCE, DRF, FUW, LWV, RED)
+// Situation-specific evidence capture for SCE, DRF, FUW, LWV, and RED rep types
 // ============================================
 const ScreenStructuredEvidence = ({ 
   rep, 
@@ -206,6 +227,7 @@ const ScreenStructuredEvidence = ({
   const isDRF = rep?.repType === 'deliver_reinforcing_feedback';
   const isFUW = rep?.repType === 'follow_up_work';
   const isLWV = rep?.repType === 'lead_with_vulnerability';
+  const isRED = rep?.repType === 'deliver_redirecting_feedback';
   
   // Get situation from rep data
   const situationText = typeof rep?.situation === 'object' 
@@ -214,14 +236,15 @@ const ScreenStructuredEvidence = ({
   
   // Get questions and context based on rep type
   const personName = rep?.person || '';
-  const { questions, header } = useMemo(() => {
+  const { questions, header, optionalFields } = useMemo(() => {
     if (isDRF) {
       const drfHeader = personName 
         ? `${personName} • Deliver Reinforcing Feedback`
         : 'Evidence: Reinforcing Feedback';
       return { 
         questions: DRF_EVIDENCE_QUESTIONS,
-        header: drfHeader
+        header: drfHeader,
+        optionalFields: null
       };
     }
     
@@ -231,7 +254,8 @@ const ScreenStructuredEvidence = ({
         : 'Evidence: Follow-Up on the Work';
       return { 
         questions: FUW_EVIDENCE_QUESTIONS,
-        header: fuwHeader
+        header: fuwHeader,
+        optionalFields: null
       };
     }
     
@@ -241,7 +265,19 @@ const ScreenStructuredEvidence = ({
         : 'Evidence: Lead with Vulnerability';
       return { 
         questions: LWV_EVIDENCE_QUESTIONS,
-        header: lwvHeader
+        header: lwvHeader,
+        optionalFields: null
+      };
+    }
+    
+    if (isRED) {
+      const redHeader = personName 
+        ? `${personName} • Deliver Redirecting Feedback`
+        : 'Evidence: Redirecting Feedback';
+      return { 
+        questions: RED_EVIDENCE_QUESTIONS,
+        header: redHeader,
+        optionalFields: RED_OPTIONAL_FIELDS
       };
     }
     
@@ -257,8 +293,8 @@ const ScreenStructuredEvidence = ({
       case 'resetting': hdr = 'Evidence: Resetting Expectations'; break;
     }
     
-    return { questions: qs, header: hdr };
-  }, [rep, isDRF, isFUW, isLWV, situationText, personName]);
+    return { questions: qs, header: hdr, optionalFields: null };
+  }, [rep, isDRF, isFUW, isLWV, isRED, situationText, personName]);
   
   // Validation - check all required fields are filled
   const isValid = useMemo(() => {
@@ -592,6 +628,7 @@ const ScreenResponseDynamics = ({
 }) => {
   const isFeedbackRep = FEEDBACK_REP_TYPES.includes(rep?.repType);
   const isReinforcingFeedback = rep?.repType === 'deliver_reinforcing_feedback';
+  const isRedirectingFeedback = rep?.repType === 'deliver_redirecting_feedback';
   const isFollowUp = rep?.repType === 'follow_up_work';
   const isVulnerability = rep?.repType === 'lead_with_vulnerability';
   
@@ -599,6 +636,8 @@ const ScreenResponseDynamics = ({
   let responseOptions = RESPONSE_OPTIONS;
   if (isReinforcingFeedback) {
     responseOptions = DRF_RESPONSE_OPTIONS;
+  } else if (isRedirectingFeedback) {
+    responseOptions = RED_RESPONSE_OPTIONS;
   } else if (isFollowUp) {
     responseOptions = FUW_RESPONSE_OPTIONS;
   } else if (isVulnerability) {
@@ -610,8 +649,9 @@ const ScreenResponseDynamics = ({
     ? 'How did the other person react/respond?'
     : 'How did the other person respond?';
   
-  // Determine if pushback prompts should show (not applicable for reinforcing feedback, follow-up, or vulnerability)
-  const showPushbackPrompt = isFeedbackRep && !isReinforcingFeedback && !isFollowUp && !isVulnerability && ['disengaged', 'some_resistance', 'strong_pushback'].includes(response);
+  // Determine if pushback prompts should show (not applicable for reinforcing feedback, follow-up, vulnerability, or SCE)
+  // For redirecting feedback, pushback detection is handled differently via response options
+  const showPushbackPrompt = isFeedbackRep && !isReinforcingFeedback && !isRedirectingFeedback && !isFollowUp && !isVulnerability && ['disengaged', 'some_resistance', 'strong_pushback'].includes(response);
   const showPushbackEvidence = pushbackLogOption === 'link';
   
   // Determine if close loop prompts should show (after pushback logic is resolved)
@@ -622,14 +662,14 @@ const ScreenResponseDynamics = ({
   // Validation
   const isValid = useMemo(() => {
     if (!response) return false;
-    if (response === 'other' && (isReinforcingFeedback || isFollowUp || isVulnerability || rep?.repType === 'set_clear_expectations') && (!otherResponseText || otherResponseText.trim().length < 5)) return false;
+    if (response === 'other' && (isReinforcingFeedback || isRedirectingFeedback || isFollowUp || isVulnerability || rep?.repType === 'set_clear_expectations') && (!otherResponseText || otherResponseText.trim().length < 5)) return false;
     if (showPushbackPrompt && !pushbackLogOption) return false;
     if (showPushbackEvidence && pushbackResponses.length === 0) return false;
     if (showCloseLoopPrompt && !closeLoopOption) return false;
     if (closeLoopOption === 'yes' && !closeLoopLogOption) return false;
     if (showCloseLoopEvidence && !behaviorChange) return false;
     return true;
-  }, [response, isReinforcingFeedback, otherResponseText, showPushbackPrompt, pushbackLogOption, showPushbackEvidence, pushbackResponses, showCloseLoopPrompt, closeLoopOption, closeLoopLogOption, showCloseLoopEvidence, behaviorChange]);
+  }, [response, isReinforcingFeedback, isRedirectingFeedback, otherResponseText, showPushbackPrompt, pushbackLogOption, showPushbackEvidence, pushbackResponses, showCloseLoopPrompt, closeLoopOption, closeLoopLogOption, showCloseLoopEvidence, behaviorChange]);
 
   // Toggle pushback response checkbox
   const togglePushbackResponse = (id) => {
@@ -638,8 +678,9 @@ const ScreenResponseDynamics = ({
     );
   };
 
-  // Simple flow for non-feedback reps (and reinforcing feedback, follow-up, vulnerability)
-  if (!isFeedbackRep || isReinforcingFeedback || isFollowUp || isVulnerability) {
+  // Simple flow for non-feedback reps (and reinforcing feedback, redirecting feedback, follow-up, vulnerability)
+  // Redirecting feedback uses its own response options and doesn't need the complex pushback flow
+  if (!isFeedbackRep || isReinforcingFeedback || isRedirectingFeedback || isFollowUp || isVulnerability) {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center mb-4">
@@ -671,8 +712,8 @@ const ScreenResponseDynamics = ({
             ))}
           </div>
 
-          {/* Other text field for DRF, SCE, FUW */}
-          {(isReinforcingFeedback || isFollowUp || isVulnerability || rep?.repType === 'set_clear_expectations') && response === 'other' && (
+          {/* Other text field for DRF, RED, SCE, FUW, LWV */}
+          {(isReinforcingFeedback || isRedirectingFeedback || isFollowUp || isVulnerability || rep?.repType === 'set_clear_expectations') && response === 'other' && (
             <div className="mt-3 animate-in slide-in-from-top-2">
               <VoiceTextarea
                 id="drf-other-response"
@@ -1767,6 +1808,488 @@ const ScreenRepUpReview = ({ qualityAssessment, onDone }) => {
 };
 
 // ============================================
+// CTL SCREEN 1: DECISION
+// "Did the behavior change?"
+// ============================================
+const ScreenCTLDecision = ({
+  linkedRep,
+  ctlDecision,
+  setCtlDecision,
+  onNext,
+  onBack
+}) => {
+  // Extract RED context to display
+  const redContext = useMemo(() => {
+    const evidence = linkedRep?.evidence?.redEvidence?.responses || {};
+    return {
+      person: linkedRep?.person || 'Someone',
+      behavior: evidence.behavior_statement || 'the behavior discussed',
+      request: evidence.request_statement || 'the requested change',
+      watchFor: linkedRep?.evidence?.redEvidence?.completeLoopResponses?.watch_for || null
+    };
+  }, [linkedRep]);
+
+  return (
+    <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+      <div className="text-center mb-4">
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-corporate-teal/10 rounded-full mb-3">
+          <RotateCw className="w-6 h-6 text-corporate-teal" />
+        </div>
+        <h3 className="text-lg font-semibold text-corporate-navy dark:text-white">
+          Close the Loop
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Verify if your redirecting feedback led to behavior change
+        </p>
+      </div>
+
+      {/* RED Context Summary */}
+      <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4 space-y-3">
+        <h4 className="text-sm font-medium text-corporate-navy dark:text-white flex items-center gap-2">
+          <User className="w-4 h-4 text-corporate-teal" />
+          Original Feedback to: {redContext.person}
+        </h4>
+        <div className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+          <div>
+            <span className="text-xs text-gray-500 dark:text-gray-400 block">Behavior addressed:</span>
+            <span className="italic">"{redContext.behavior}"</span>
+          </div>
+          <div>
+            <span className="text-xs text-gray-500 dark:text-gray-400 block">What you requested:</span>
+            <span className="italic">"{redContext.request}"</span>
+          </div>
+          {redContext.watchFor && (
+            <div>
+              <span className="text-xs text-gray-500 dark:text-gray-400 block">Watching for:</span>
+              <span className="italic">"{redContext.watchFor}"</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Decision Question */}
+      <div className="space-y-3">
+        <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+          Did the behavior change?
+        </label>
+        <div className="space-y-2">
+          {CTL_DECISION_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setCtlDecision(option.id)}
+              className={`w-full p-4 border rounded-lg text-left transition-all ${
+                ctlDecision === option.id 
+                  ? 'border-corporate-teal bg-corporate-teal/10' 
+                  : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-corporate-teal/50'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-xl">{option.icon}</span>
+                <div>
+                  <div className={`font-medium ${
+                    ctlDecision === option.id 
+                      ? 'text-corporate-teal' 
+                      : 'text-corporate-navy dark:text-white'
+                  }`}>
+                    {option.label}
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {option.description}
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-3 mt-4 sticky bottom-0 bg-white dark:bg-slate-900 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <Button
+          variant="outline"
+          onClick={onBack}
+          className="flex-1"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={onNext}
+          disabled={!ctlDecision}
+          className="flex-1"
+        >
+          Continue
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// CTL SCREEN 2: OBSERVATION
+// Capture evidence based on decision
+// ============================================
+const ScreenCTLObservation = ({
+  linkedRep,
+  ctlDecision,
+  ctlObservation,
+  setCtlObservation,
+  ctlNotObservedReason,
+  setCtlNotObservedReason,
+  ctlGaveReinforcing,
+  setCtlGaveReinforcing,
+  ctlGaveFollowupFeedback,
+  setCtlGaveFollowupFeedback,
+  ctlNextAction,
+  setCtlNextAction,
+  ctlNextCheckDate,
+  setCtlNextCheckDate,
+  onNext,
+  onBack,
+  showValidation
+}) => {
+  const questions = CTL_OBSERVATION_QUESTIONS[ctlDecision] || [];
+
+  // Validation based on decision path
+  const isValid = useMemo(() => {
+    if (ctlDecision === 'changed') {
+      return ctlObservation.what_observed?.trim() && ctlObservation.observation_context?.trim();
+    }
+    if (ctlDecision === 'not_changed') {
+      const hasObservation = ctlObservation.what_observed?.trim() && ctlObservation.observation_context?.trim();
+      if (!hasObservation) return false;
+      // If they didn't give feedback, need next action
+      if (ctlGaveFollowupFeedback === false) {
+        return ctlNextAction?.trim() && ctlNextCheckDate;
+      }
+      return ctlGaveFollowupFeedback !== null;
+    }
+    if (ctlDecision === 'not_observed') {
+      return ctlNotObservedReason && ctlNextCheckDate;
+    }
+    return false;
+  }, [ctlDecision, ctlObservation, ctlNotObservedReason, ctlGaveFollowupFeedback, ctlNextAction, ctlNextCheckDate]);
+
+  return (
+    <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+      {/* Header based on decision */}
+      <div className="text-center mb-4">
+        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-3 ${
+          ctlDecision === 'changed' ? 'bg-green-100 dark:bg-green-900/30' :
+          ctlDecision === 'not_changed' ? 'bg-amber-100 dark:bg-amber-900/30' :
+          'bg-gray-100 dark:bg-slate-700'
+        }`}>
+          {ctlDecision === 'changed' && <Check className="w-6 h-6 text-green-600 dark:text-green-400" />}
+          {ctlDecision === 'not_changed' && <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />}
+          {ctlDecision === 'not_observed' && <Calendar className="w-6 h-6 text-gray-600 dark:text-gray-400" />}
+        </div>
+        <h3 className="text-lg font-semibold text-corporate-navy dark:text-white">
+          {ctlDecision === 'changed' && 'Behavior Changed'}
+          {ctlDecision === 'not_changed' && 'Behavior Did Not Change'}
+          {ctlDecision === 'not_observed' && 'Not Observed Yet'}
+        </h3>
+      </div>
+
+      {/* PATH A: Behavior Changed */}
+      {ctlDecision === 'changed' && (
+        <div className="space-y-4">
+          {questions.map((q) => (
+            <VoiceTextarea
+              key={q.id}
+              id={`ctl-${q.id}`}
+              label={q.prompt}
+              value={ctlObservation[q.id] || ''}
+              onChange={(val) => setCtlObservation(prev => ({ ...prev, [q.id]: val }))}
+              placeholder={q.placeholder}
+              rows={2}
+              required={q.required}
+              showValidation={showValidation && !ctlObservation[q.id]?.trim()}
+            />
+          ))}
+
+          {/* Secondhand observation note */}
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+            <strong>Note:</strong> {CTL_SECONDHAND_RULES.prompt}
+          </div>
+
+          {/* Reinforcing feedback checkbox */}
+          <div className="p-4 border border-gray-200 dark:border-slate-600 rounded-lg">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={ctlGaveReinforcing}
+                onChange={(e) => setCtlGaveReinforcing(e.target.checked)}
+                className="mt-1 w-4 h-4 text-corporate-teal border-gray-300 rounded focus:ring-corporate-teal"
+              />
+              <div>
+                <div className="font-medium text-corporate-navy dark:text-white">
+                  {CTL_REINFORCEMENT_QUESTION.prompt}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {CTL_REINFORCEMENT_QUESTION.description}
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* PATH B: Behavior Did Not Change */}
+      {ctlDecision === 'not_changed' && (
+        <div className="space-y-4">
+          {questions.map((q) => (
+            <VoiceTextarea
+              key={q.id}
+              id={`ctl-${q.id}`}
+              label={q.prompt}
+              value={ctlObservation[q.id] || ''}
+              onChange={(val) => setCtlObservation(prev => ({ ...prev, [q.id]: val }))}
+              placeholder={q.placeholder}
+              rows={2}
+              required={q.required}
+              showValidation={showValidation && !ctlObservation[q.id]?.trim()}
+            />
+          ))}
+
+          {/* Did they give follow-up feedback? */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+              Did you give follow-up redirecting feedback?
+            </label>
+            <div className="space-y-2">
+              {CTL_CONTINUATION_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setCtlGaveFollowupFeedback(option.id === 'gave_feedback')}
+                  className={`w-full p-3 border rounded-lg text-left transition-all ${
+                    (ctlGaveFollowupFeedback === true && option.id === 'gave_feedback') ||
+                    (ctlGaveFollowupFeedback === false && option.id === 'no_feedback')
+                      ? 'border-corporate-teal bg-corporate-teal/10' 
+                      : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-corporate-teal/50'
+                  }`}
+                >
+                  <div className="font-medium text-sm text-corporate-navy dark:text-white">
+                    {option.label}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {option.description}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* If they didn't give feedback, ask for next action */}
+          {ctlGaveFollowupFeedback === false && (
+            <div className="space-y-4 pt-2 border-t border-gray-200 dark:border-slate-600">
+              <VoiceTextarea
+                id="ctl-next-action"
+                label={CTL_NEXT_ACTION_QUESTIONS[0].prompt}
+                value={ctlNextAction || ''}
+                onChange={setCtlNextAction}
+                placeholder={CTL_NEXT_ACTION_QUESTIONS[0].placeholder}
+                rows={2}
+                required={true}
+                showValidation={showValidation && !ctlNextAction?.trim()}
+              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+                  {CTL_NEXT_ACTION_QUESTIONS[1].prompt}
+                </label>
+                <input
+                  type="date"
+                  value={ctlNextCheckDate || ''}
+                  onChange={(e) => setCtlNextCheckDate(e.target.value)}
+                  className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-corporate-navy dark:text-white"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* PATH C: Not Observed Yet */}
+      {ctlDecision === 'not_observed' && (
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+              Why haven't you been able to observe yet?
+            </label>
+            <div className="space-y-2">
+              {CTL_NOT_OBSERVED_REASONS.map((reason) => (
+                <button
+                  key={reason.id}
+                  type="button"
+                  onClick={() => setCtlNotObservedReason(reason.id)}
+                  className={`w-full p-3 border rounded-lg text-left transition-all ${
+                    ctlNotObservedReason === reason.id 
+                      ? 'border-corporate-teal bg-corporate-teal/10' 
+                      : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-corporate-teal/50'
+                  }`}
+                >
+                  <span className="text-sm text-corporate-navy dark:text-white">
+                    {reason.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Reschedule date */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+              When will you check again?
+            </label>
+            <input
+              type="date"
+              value={ctlNextCheckDate || ''}
+              onChange={(e) => setCtlNextCheckDate(e.target.value)}
+              className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-corporate-navy dark:text-white"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Default: {CTL_DEFER_DEFAULT_DAYS} days from today
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-3 mt-4 sticky bottom-0 bg-white dark:bg-slate-900 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <Button
+          variant="outline"
+          onClick={onBack}
+          className="flex-1"
+        >
+          Back
+        </Button>
+        <Button
+          onClick={onNext}
+          disabled={!isValid}
+          className="flex-1"
+        >
+          {ctlDecision === 'not_changed' && ctlGaveFollowupFeedback === true 
+            ? 'Continue to New RED' 
+            : 'Submit'}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// CTL SCREEN 3: CREATE CONTINUATION RED
+// Pre-filled RED for follow-up feedback
+// ============================================
+const ScreenCTLContinueRED = ({
+  linkedRep,
+  continuationResponses,
+  setContinuationResponses,
+  onSubmit,
+  onBack,
+  isSubmitting,
+  showValidation
+}) => {
+  // Pre-fill from original RED
+  const originalEvidence = linkedRep?.evidence?.redEvidence?.responses || {};
+
+  return (
+    <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+      <div className="text-center mb-4">
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-corporate-orange/10 rounded-full mb-3">
+          <MessageSquare className="w-6 h-6 text-corporate-orange" />
+        </div>
+        <h3 className="text-lg font-semibold text-corporate-navy dark:text-white">
+          Continue Redirecting Feedback
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          This will create a linked follow-up to your original feedback
+        </p>
+      </div>
+
+      {/* Original context (read-only) */}
+      <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4 space-y-2">
+        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          Original Feedback Context
+        </h4>
+        <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+          <div><strong>Person:</strong> {linkedRep?.person}</div>
+          <div><strong>Original Behavior:</strong> {originalEvidence.behavior_statement}</div>
+          <div><strong>Original Request:</strong> {originalEvidence.request_statement}</div>
+        </div>
+      </div>
+
+      {/* New RED fields */}
+      <div className="space-y-4">
+        <VoiceTextarea
+          id="continuation-behavior"
+          label="What did you say to describe the behavior gap this time?"
+          value={continuationResponses.behavior_statement || ''}
+          onChange={(val) => setContinuationResponses(prev => ({ ...prev, behavior_statement: val }))}
+          placeholder="Describe the specific, observable behavior you addressed"
+          rows={2}
+          required={true}
+          showValidation={showValidation && !continuationResponses.behavior_statement?.trim()}
+        />
+
+        <VoiceTextarea
+          id="continuation-impact"
+          label="What did you say about why this matters?"
+          value={continuationResponses.impact_statement || ''}
+          onChange={(val) => setContinuationResponses(prev => ({ ...prev, impact_statement: val }))}
+          placeholder="Explain the impact or standard that isn't being met"
+          rows={2}
+          required={true}
+          showValidation={showValidation && !continuationResponses.impact_statement?.trim()}
+        />
+
+        <VoiceTextarea
+          id="continuation-request"
+          label="What did you ask them to do differently?"
+          value={continuationResponses.request_statement || ''}
+          onChange={(val) => setContinuationResponses(prev => ({ ...prev, request_statement: val }))}
+          placeholder="State the specific request for change"
+          rows={2}
+          required={true}
+          showValidation={showValidation && !continuationResponses.request_statement?.trim()}
+        />
+
+        <VoiceTextarea
+          id="continuation-response"
+          label="How did they respond this time?"
+          value={continuationResponses.their_response_detail || ''}
+          onChange={(val) => setContinuationResponses(prev => ({ ...prev, their_response_detail: val }))}
+          placeholder="Describe their reaction"
+          rows={2}
+          required={true}
+          showValidation={showValidation && !continuationResponses.their_response_detail?.trim()}
+        />
+      </div>
+
+      <div className="flex gap-3 mt-4 sticky bottom-0 bg-white dark:bg-slate-900 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <Button
+          variant="outline"
+          onClick={onBack}
+          className="flex-1"
+        >
+          Back
+        </Button>
+        <Button
+          onClick={onSubmit}
+          disabled={isSubmitting || !continuationResponses.behavior_statement?.trim() || 
+                   !continuationResponses.impact_statement?.trim() || 
+                   !continuationResponses.request_statement?.trim() ||
+                   !continuationResponses.their_response_detail?.trim()}
+          loading={isSubmitting}
+          className="flex-1"
+        >
+          <Check className="w-4 h-4 mr-2" />
+          Submit Feedback
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
 // CONFIRMATION POPUP
 // ============================================
 const ConfirmationPopup = ({ message, onClose }) => (
@@ -1808,9 +2331,10 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
     const isDRFRep = rep?.repType === 'deliver_reinforcing_feedback' || rep?.repType === 'reinforce_public';
     const isFUWRep = rep?.repType === 'follow_up_work';
     const isLWVRepLocal = rep?.repType === 'lead_with_vulnerability';
+    const isREDRep = rep?.repType === 'deliver_redirecting_feedback';
     
-    // Only check fresh data for debriefed SCE/DRF/FUW/LWV reps that don't have reviewViewedAt in prop
-    if (rep?.status === 'debriefed' && !rep?.reviewViewedAt && (isSCERep || isDRFRep || isFUWRep || isLWVRepLocal) && db && user?.uid && rep?.id) {
+    // Only check fresh data for debriefed SCE/DRF/FUW/LWV/RED reps that don't have reviewViewedAt in prop
+    if (rep?.status === 'debriefed' && !rep?.reviewViewedAt && (isSCERep || isDRFRep || isFUWRep || isLWVRepLocal || isREDRep) && db && user?.uid && rep?.id) {
       freshDataCheckedRef.current = true;
       const checkFreshData = async () => {
         try {
@@ -1832,15 +2356,27 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
 
   // Guard: route reps to the correct mode based on status
   // Flow: 1) Commit (committed) -> 2) Evidence (executed) -> 3) Debrief (debriefed) -> 4) Follow-up (loop_closed)
+  // For RED: debriefed with reminder -> follow_up_pending (awaiting CTL) -> loop_closed
   const effectiveMode = useMemo(() => {
     const isSCERep = rep?.repType === 'set_clear_expectations';
     const isDRFRep = rep?.repType === 'deliver_reinforcing_feedback' || rep?.repType === 'reinforce_public';
     const isFUWRep = rep?.repType === 'follow_up_work';
     const isLWVRepLocal = rep?.repType === 'lead_with_vulnerability';
+    const isREDRep = rep?.repType === 'deliver_redirecting_feedback';
+    
+    // CTL Mode: RED rep in follow_up_pending status awaiting close the loop
+    if (isREDRep && rep?.status === 'follow_up_pending' && rep?.awaitingCTL) {
+      return 'ctl';
+    }
+    
+    // Explicitly opened in CTL mode (from UI "Close the Loop" button)
+    if (initialMode === 'ctl' && isREDRep) {
+      return 'ctl';
+    }
     
     // Session 3: Debrief - rep has evidence but AI assessment not yet triggered
     // Status is 'executed' with evidence -> open in 'review' mode to trigger AI and show assessment
-    if (rep?.status === 'executed' && rep?.evidence && (isSCERep || isDRFRep || isFUWRep || isLWVRepLocal)) {
+    if (rep?.status === 'executed' && rep?.evidence && (isSCERep || isDRFRep || isFUWRep || isLWVRepLocal || isREDRep)) {
       return 'review';
     }
     
@@ -1855,7 +2391,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
     }
     
     return initialMode;
-  }, [rep?.status, rep?.evidence, rep?.repType, rep?.reviewViewedAt, freshReviewViewedAt, initialMode]);
+  }, [rep?.status, rep?.evidence, rep?.repType, rep?.reviewViewedAt, rep?.awaitingCTL, freshReviewViewedAt, initialMode]);
   
   // Get current week to check level/milestone
   const { currentWeek } = useDevPlan();
@@ -1874,11 +2410,12 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
   const saveTimeoutRef = useRef(null);
   const latestDraftState = useRef({});
   
-  // Rep type check for SCE, DRF, FUW, and LWV
+  // Rep type check for SCE, DRF, FUW, LWV, and RED
   const isSCERep = rep?.repType === 'set_clear_expectations';
   const isDRFRep = rep?.repType === 'deliver_reinforcing_feedback' || rep?.repType === 'reinforce_public';
   const isFUWRep = rep?.repType === 'follow_up_work';
   const isLWVRep = rep?.repType === 'lead_with_vulnerability';
+  const isREDRep = rep?.repType === 'deliver_redirecting_feedback';
 
   // Screen state - determine initial screen based on mode
   const getInitialScreen = () => {
@@ -2020,13 +2557,15 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
     if (effectiveMode === 'plan') {
        const existingResponses = isDRFRep 
         ? rep?.evidence?.drfEvidence?.completeLoopResponses 
+        : isREDRep
+        ? rep?.evidence?.redEvidence?.completeLoopResponses
         : rep?.evidence?.sceEvidence?.completeLoopResponses;
        
        if (existingResponses) {
          setCompleteLoopResponses(existingResponses);
        }
     }
-  }, [effectiveMode, rep, isDRFRep, db, user?.uid, freshReviewViewedAt]);
+  }, [effectiveMode, rep, isDRFRep, isREDRep, db, user?.uid, freshReviewViewedAt]);
 
   // Screen 2: What Happened (generic)
   const [whatHappened, setWhatHappened] = useState('');
@@ -2065,6 +2604,30 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
   
   // Screen 6: RepUp Review (AI feedback)
   const [qualityAssessment, setQualityAssessment] = useState(null);
+  
+  // CTL (Close the Loop) state - used when effectiveMode === 'ctl'
+  const [ctlDecision, setCtlDecision] = useState(null); // 'changed' | 'not_changed' | 'not_observed'
+  const [ctlObservation, setCtlObservation] = useState({}); // { what_observed, observation_context }
+  const [ctlNotObservedReason, setCtlNotObservedReason] = useState(null);
+  const [ctlGaveReinforcing, setCtlGaveReinforcing] = useState(false);
+  const [ctlGaveFollowupFeedback, setCtlGaveFollowupFeedback] = useState(null); // true | false | null
+  const [ctlNextAction, setCtlNextAction] = useState('');
+  const [ctlNextCheckDate, setCtlNextCheckDate] = useState(() => {
+    // Default to 10 days from now (CTL_DEFAULT_SCHEDULE_DAYS)
+    const defaultDate = new Date(Date.now() + CTL_DEFAULT_SCHEDULE_DAYS * 24 * 60 * 60 * 1000);
+    return defaultDate.toISOString().split('T')[0];
+  });
+  const [continuationResponses, setContinuationResponses] = useState({}); // For new RED
+  const [ctlCurrentScreen, setCtlCurrentScreen] = useState(1); // 1=Decision, 2=Observation, 3=ContinueRED
+  const [ctlAssessment, setCtlAssessment] = useState(null); // AI assessment result
+  
+  // Update default date when decision changes to 'not_observed' (use 7-day defer default)
+  useEffect(() => {
+    if (ctlDecision === 'not_observed') {
+      const deferDate = new Date(Date.now() + CTL_DEFER_DEFAULT_DAYS * 24 * 60 * 60 * 1000);
+      setCtlNextCheckDate(deferDate.toISOString().split('T')[0]);
+    }
+  }, [ctlDecision]);
   
   // Track created separate reps
   const [createdReps, setCreatedReps] = useState([]);
@@ -2353,15 +2916,16 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
       // Build evidence data
       let responseLabel = "";
       if (isDRFRep) responseLabel = DRF_RESPONSE_OPTIONS.find(o => o.id === response)?.label || "";
+      else if (isREDRep) responseLabel = RED_RESPONSE_OPTIONS.find(o => o.id === response)?.label || "";
       else if (isFUWRep) responseLabel = FUW_RESPONSE_OPTIONS.find(o => o.id === response)?.label || "";
       else if (isLWVRep) responseLabel = LWV_RESPONSE_OPTIONS.find(o => o.id === response)?.label || "";
       else if (isSCERep) responseLabel = getSCEResponseOptions(typeof rep?.situation === 'object' ? (rep?.situation?.selected || '') : (rep?.situation || '')).find(o => o.id === response)?.label || "";
       else responseLabel = RESPONSE_OPTIONS.find(o => o.id === response)?.label || "";
       const evidenceData = {
-        whatYouSaid: (isSCERep || isDRFRep || isFUWRep || isLWVRep) ? null : whatHappened,
-        howTheyResponded: response === 'other' && (isDRFRep || isSCERep || isFUWRep || isLWVRep) ? `Other: ${otherResponseText}` : responseLabel,
+        whatYouSaid: (isSCERep || isDRFRep || isFUWRep || isLWVRep || isREDRep) ? null : whatHappened,
+        howTheyResponded: response === 'other' && (isDRFRep || isSCERep || isFUWRep || isLWVRep || isREDRep) ? `Other: ${otherResponseText}` : responseLabel,
         responseType: response,
-        otherResponseText: (response === 'other' && (isDRFRep || isSCERep || isFUWRep || isLWVRep)) ? otherResponseText : null,
+        otherResponseText: (response === 'other' && (isDRFRep || isSCERep || isFUWRep || isLWVRep || isREDRep)) ? otherResponseText : null,
         outcome,
         inputMethod: 'written',
         
@@ -2381,6 +2945,19 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
         drfEvidence: isDRFRep ? {
           responses: drfResponses,
           // DRF Reflection
+          nextTimeReflection: nextTimeReflection.trim() || null,
+          // completeLoopResponses moved to separate step
+          completeLoopResponses: null
+        } : null,
+        
+        // Deliver Redirecting Feedback - specific evidence
+        redEvidence: isREDRep ? {
+          situationBranch: getREDSituationBranch(
+            typeof rep?.situation === 'object' 
+              ? (rep.situation.selected || '') 
+              : (rep?.situation || '')
+          ),
+          responses: sceResponses, // Using sceResponses state for structured evidence
           nextTimeReflection: nextTimeReflection.trim() || null,
           // completeLoopResponses moved to separate step
           completeLoopResponses: null
@@ -2409,7 +2986,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
         } : null,
         
         // Self Assessment (checkboxes) from Step 5
-        selfAssessment: (isSCERep || isDRFRep || isFUWRep || isLWVRep) ? {
+        selfAssessment: (isSCERep || isDRFRep || isFUWRep || isLWVRep || isREDRep) ? {
           responses: selfAssessmentResponses
         } : null,
         
@@ -2441,8 +3018,8 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
       // Close the rep and trigger AI assessment for all rep types
       const closeData = {
         outcome,
-        whatWentWell: (isSCERep || isDRFRep || isFUWRep || isLWVRep) ? (nextTimeReflection.trim() || '') : (whatWentWell.trim() || ''),
-        whatDifferent: (isSCERep || isDRFRep || isFUWRep || isLWVRep) ? '' : (whatDifferent.trim() || '')
+        whatWentWell: (isSCERep || isDRFRep || isFUWRep || isLWVRep || isREDRep) ? (nextTimeReflection.trim() || '') : (whatWentWell.trim() || ''),
+        whatDifferent: (isSCERep || isDRFRep || isFUWRep || isLWVRep || isREDRep) ? '' : (whatDifferent.trim() || '')
       };
       await conditioningService.closeRepV2(db, userId, rep.id, closeData);
       
@@ -2467,14 +3044,9 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
         // Save complete loop responses and update status to 'loop_closed'
         const fieldPath = isDRFRep 
           ? 'evidence.drfEvidence.completeLoopResponses'
+          : isREDRep
+          ? 'evidence.redEvidence.completeLoopResponses'
           : 'evidence.sceEvidence.completeLoopResponses';
-          
-        await updateDoc(repRef, {
-          [fieldPath]: completeLoopResponses,
-          status: 'loop_closed',
-          loopClosedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        });
         
         // Extract reminder date from any date_optional or date field in completeLoopResponses
         // Field IDs vary by rep type: 'reminder', 'reinforce_reminder', 'alignment_reminder', 'review_date'
@@ -2489,9 +3061,41 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           }
         }
         
+        // For RED: if reminder is set, status is 'follow_up_pending' (awaiting CTL)
+        // For other rep types or RED without reminder: status is 'loop_closed'
+        const isRedWithReminder = isREDRep && reminderDate;
+        const newStatus = isRedWithReminder ? 'follow_up_pending' : 'loop_closed';
+        
+        // Generate threadId for RED (used to link CTL and continuation REDs)
+        const threadId = isREDRep ? (rep.threadId || `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`) : null;
+        
+        const updateData = {
+          [fieldPath]: completeLoopResponses,
+          status: newStatus,
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Add RED-specific fields for CTL tracking
+        if (isREDRep) {
+          updateData.threadId = threadId;
+          if (isRedWithReminder) {
+            updateData.ctlDueDate = reminderDate;
+            updateData.awaitingCTL = true;
+          } else {
+            updateData.loopClosedAt = new Date().toISOString();
+            updateData.awaitingCTL = false;
+          }
+        } else {
+          // Non-RED reps close immediately
+          updateData.loopClosedAt = new Date().toISOString();
+        }
+        
+        await updateDoc(repRef, updateData);
+        
         // If user requested a reminder, write to top-level follow_up_reminders collection
         if (reminderDate) {
           const repTypeLabel = rep?.repType === 'deliver_reinforcing_feedback' ? 'Reinforcing Feedback'
+            : rep?.repType === 'deliver_redirecting_feedback' ? 'Redirecting Feedback'
             : rep?.repType === 'set_clear_expectations' ? 'Set Clear Expectations'
             : rep?.repType || 'Rep';
           
@@ -2504,7 +3108,12 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
             reminderDate,
             createdAt: new Date().toISOString(),
             sent: false,
-            sentAt: null
+            sentAt: null,
+            // CTL-specific fields
+            ...(isREDRep && {
+              isCTLReminder: true,
+              threadId
+            })
           });
         }
       }
@@ -2514,6 +3123,274 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
     } catch (err) {
       console.error('Error saving loop plan:', err);
       setError('Failed to save your follow-up plan.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ============================================
+  // CTL (Close the Loop) Handlers
+  // ============================================
+  
+  // Handle CTL navigation
+  const handleCtlNext = () => {
+    if (ctlCurrentScreen === 1) {
+      // From Decision → Observation
+      setCtlCurrentScreen(2);
+    } else if (ctlCurrentScreen === 2) {
+      // From Observation → either submit or continue to RED
+      if (ctlDecision === 'not_changed' && ctlGaveFollowupFeedback === true) {
+        setCtlCurrentScreen(3); // Go to continuation RED screen
+      } else {
+        handleCtlSubmit();
+      }
+    }
+  };
+
+  const handleCtlBack = () => {
+    if (ctlCurrentScreen === 1) {
+      onClose?.(); // Cancel CTL
+    } else if (ctlCurrentScreen === 2) {
+      setCtlCurrentScreen(1);
+    } else if (ctlCurrentScreen === 3) {
+      setCtlCurrentScreen(2);
+    }
+  };
+
+  // Submit CTL (for changed, not_changed without feedback, and not_observed)
+  const handleCtlSubmit = async () => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      if (!rep?.id || !userId) {
+        throw new Error('Missing rep or user information');
+      }
+
+      const repRef = doc(db, 'users', userId, 'conditioning_reps', rep.id);
+      
+      // Build CTL data
+      const ctlData = {
+        decision: ctlDecision,
+        observation: ctlObservation,
+        submittedAt: new Date().toISOString()
+      };
+
+      // Handle each decision path
+      if (ctlDecision === 'changed') {
+        // Behavior changed → close the thread
+        ctlData.gaveReinforcingFeedback = ctlGaveReinforcing;
+        
+        await updateDoc(repRef, {
+          'ctlData': ctlData,
+          status: 'loop_closed',
+          awaitingCTL: false,
+          loopClosedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+        
+        // Call AI assessment for CTL
+        try {
+          const assessCTL = conditioningService.getCallableFunction('assessRepQuality');
+          const result = await assessCTL({
+            repType: 'close_the_loop',
+            linkedRepId: rep.id,
+            data: ctlData
+          });
+          setCtlAssessment(result?.data);
+        } catch (assessErr) {
+          console.warn('CTL assessment failed:', assessErr);
+        }
+        
+      } else if (ctlDecision === 'not_changed' && ctlGaveFollowupFeedback === false) {
+        // Behavior didn't change, no feedback given → keep thread open
+        ctlData.nextAction = ctlNextAction;
+        ctlData.nextCheckDate = ctlNextCheckDate;
+        
+        await updateDoc(repRef, {
+          'ctlData': ctlData,
+          ctlDueDate: ctlNextCheckDate,
+          updatedAt: new Date().toISOString()
+        });
+        
+        // Update follow_up_reminders with new date
+        // Note: In production, should query and update the existing reminder
+        await addDoc(collection(db, 'follow_up_reminders'), {
+          userId,
+          repId: rep.id,
+          repType: 'deliver_redirecting_feedback',
+          repTypeLabel: 'Redirecting Feedback',
+          person: rep.person || '',
+          reminderDate: ctlNextCheckDate,
+          createdAt: new Date().toISOString(),
+          sent: false,
+          sentAt: null,
+          isCTLReminder: true,
+          threadId: rep.threadId,
+          isReschedule: true
+        });
+        
+      } else if (ctlDecision === 'not_observed') {
+        // Not observed yet → defer with new date
+        ctlData.notObservedReason = ctlNotObservedReason;
+        ctlData.nextCheckDate = ctlNextCheckDate;
+        
+        await updateDoc(repRef, {
+          'ctlData': ctlData,
+          ctlDueDate: ctlNextCheckDate,
+          updatedAt: new Date().toISOString()
+        });
+        
+        // Schedule new reminder
+        await addDoc(collection(db, 'follow_up_reminders'), {
+          userId,
+          repId: rep.id,
+          repType: 'deliver_redirecting_feedback',
+          repTypeLabel: 'Redirecting Feedback',
+          person: rep.person || '',
+          reminderDate: ctlNextCheckDate,
+          createdAt: new Date().toISOString(),
+          sent: false,
+          sentAt: null,
+          isCTLReminder: true,
+          threadId: rep.threadId,
+          isDeferred: true,
+          deferReason: ctlNotObservedReason
+        });
+      }
+      
+      finishWizard();
+      
+    } catch (err) {
+      console.error('Error submitting CTL:', err);
+      setError(err.message || 'Failed to complete Close the Loop.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Submit CTL with continuation RED (behavior didn't change, gave feedback)
+  const handleCtlContinuationSubmit = async () => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      if (!rep?.id || !userId) {
+        throw new Error('Missing rep or user information');
+      }
+
+      const oldRepRef = doc(db, 'users', userId, 'conditioning_reps', rep.id);
+      
+      // Build CTL data for the original RED
+      const ctlData = {
+        decision: 'not_changed',
+        observation: ctlObservation,
+        gaveFollowupFeedback: true,
+        submittedAt: new Date().toISOString()
+      };
+
+      // Create the new continuation RED
+      const newRepId = `rep_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const newRepRef = doc(db, 'users', userId, 'conditioning_reps', newRepId);
+      
+      // Get the current week info for the new rep
+      const weekId = rep.weekId || `week_${new Date().toISOString().split('T')[0]}`;
+      
+      const continuationRedData = {
+        id: newRepId,
+        taxonomyVersion: 'v2',
+        repType: 'deliver_redirecting_feedback',
+        category: 'lead_the_team',
+        person: rep.person, // Same person (locked)
+        status: 'executed', // Pre-mark as executed since they already did the feedback
+        
+        // Thread linkage
+        threadId: rep.threadId,
+        parentRedId: rep.id,
+        isContinuation: true,
+        continuationNumber: (rep.continuationNumber || 0) + 1,
+        
+        // Pre-filled context from original
+        originalContext: {
+          behavior: rep.evidence?.redEvidence?.responses?.behavior_statement,
+          impact: rep.evidence?.redEvidence?.responses?.impact_statement,
+          request: rep.evidence?.redEvidence?.responses?.request_statement
+        },
+        
+        // New evidence from continuation form
+        evidence: {
+          inputMethod: 'structured_v2',
+          submittedAt: new Date().toISOString(),
+          level: 'level_1',
+          redEvidence: {
+            situationBranch: 'continuation',
+            responses: continuationResponses
+          }
+        },
+        
+        // Timing
+        weekId,
+        cohortId: rep.cohortId || null,
+        commitmentType: 'in_moment',
+        occurredAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        
+        // Mark as awaiting CTL by default
+        awaitingCTL: true,
+        ctlDueDate: new Date(Date.now() + CTL_DEFAULT_SCHEDULE_DAYS * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      };
+      
+      // Save both: update old RED with CTL data, create new RED
+      await Promise.all([
+        updateDoc(oldRepRef, {
+          'ctlData': ctlData,
+          'continuationRedId': newRepId,
+          updatedAt: new Date().toISOString()
+          // Note: old RED stays in follow_up_pending, thread continues
+        }),
+        // Note: Using setDoc equivalent - need to import or use different approach
+        // For now, use the conditioningService to create the rep
+      ]);
+      
+      // Create the new rep via service
+      await conditioningService.createRep(db, userId, continuationRedData);
+      
+      // Schedule CTL reminder for the new RED
+      await addDoc(collection(db, 'follow_up_reminders'), {
+        userId,
+        repId: newRepId,
+        repType: 'deliver_redirecting_feedback',
+        repTypeLabel: 'Redirecting Feedback (Continuation)',
+        person: rep.person || '',
+        reminderDate: continuationRedData.ctlDueDate,
+        createdAt: new Date().toISOString(),
+        sent: false,
+        sentAt: null,
+        isCTLReminder: true,
+        threadId: rep.threadId,
+        continuationNumber: continuationRedData.continuationNumber
+      });
+      
+      // Trigger AI assessment for the continuation RED
+      try {
+        const assessRed = conditioningService.getCallableFunction('assessRepQuality');
+        await assessRed({
+          repType: 'deliver_redirecting_feedback',
+          person: rep.person,
+          data: continuationResponses,
+          repId: newRepId
+        });
+      } catch (assessErr) {
+        console.warn('Continuation RED assessment failed:', assessErr);
+      }
+      
+      setConfirmationMessage(`Continuation feedback recorded. A new Close the Loop check will be scheduled.`);
+      finishWizard();
+      
+    } catch (err) {
+      console.error('Error submitting CTL continuation:', err);
+      setError(err.message || 'Failed to create follow-up rep.');
     } finally {
       setIsSubmitting(false);
     }
@@ -2565,18 +3442,39 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
     finishWizard();
   };
 
+  // Determine modal title and icon based on mode
+  const getModalTitle = () => {
+    if (effectiveMode === 'ctl') {
+      return ctlCurrentScreen === 3 ? 'Continue Redirecting' : 'Close the Loop';
+    }
+    if (currentScreen === 6) return 'RepUp Review';
+    if (currentScreen === 7) return 'Plan Follow-up';
+    return 'Capture Evidence';
+  };
+
+  const getModalIcon = () => {
+    if (effectiveMode === 'ctl') return RotateCw;
+    if (currentScreen === 6) return Award;
+    if (currentScreen === 7) return RotateCw;
+    return Camera;
+  };
+
   return (
     <>
       <ConditioningModal
         isOpen={true}
         onClose={onClose}
-        title={currentScreen === 6 ? "RepUp Review" : (currentScreen === 7 ? "Plan Follow-up" : "Capture Evidence")}
-        icon={currentScreen === 6 ? Award : (currentScreen === 7 ? RotateCw : Camera)}
-        currentStep={currentScreen - 1}
-        totalSteps={effectiveMode === 'review' ? 1 : effectiveMode === 'plan' ? 1 : 5}
-        stepLabels={(isSCERep || isDRFRep || isFUWRep || isLWVRep) 
-          ? ['Overview', 'Evidence', 'Response', 'Artifacts', 'Complete']
-          : ['Overview', 'What Happened', 'Response', 'Artifacts', 'Complete']
+        title={getModalTitle()}
+        icon={getModalIcon()}
+        currentStep={effectiveMode === 'ctl' ? ctlCurrentScreen - 1 : currentScreen - 1}
+        totalSteps={effectiveMode === 'ctl' ? (ctlDecision === 'not_changed' && ctlGaveFollowupFeedback === true ? 3 : 2) : (effectiveMode === 'review' ? 1 : effectiveMode === 'plan' ? 1 : 5)}
+        stepLabels={effectiveMode === 'ctl' 
+          ? (ctlDecision === 'not_changed' && ctlGaveFollowupFeedback === true 
+              ? ['Decision', 'Observation', 'Continue']
+              : ['Decision', 'Observation'])
+          : ((isSCERep || isDRFRep || isFUWRep || isLWVRep) 
+            ? ['Overview', 'Evidence', 'Response', 'Artifacts', 'Complete']
+            : ['Overview', 'What Happened', 'Response', 'Artifacts', 'Complete'])
         }
       >
         {/* Error display */}
@@ -2587,12 +3485,57 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           </div>
         )}
 
-        {/* Screens */}
-        {currentScreen === 1 && (
+        {/* CTL Screens (when effectiveMode === 'ctl') */}
+        {effectiveMode === 'ctl' && ctlCurrentScreen === 1 && (
+          <ScreenCTLDecision
+            linkedRep={rep}
+            ctlDecision={ctlDecision}
+            setCtlDecision={setCtlDecision}
+            onNext={handleCtlNext}
+            onBack={handleCtlBack}
+          />
+        )}
+
+        {effectiveMode === 'ctl' && ctlCurrentScreen === 2 && (
+          <ScreenCTLObservation
+            linkedRep={rep}
+            ctlDecision={ctlDecision}
+            ctlObservation={ctlObservation}
+            setCtlObservation={setCtlObservation}
+            ctlNotObservedReason={ctlNotObservedReason}
+            setCtlNotObservedReason={setCtlNotObservedReason}
+            ctlGaveReinforcing={ctlGaveReinforcing}
+            setCtlGaveReinforcing={setCtlGaveReinforcing}
+            ctlGaveFollowupFeedback={ctlGaveFollowupFeedback}
+            setCtlGaveFollowupFeedback={setCtlGaveFollowupFeedback}
+            ctlNextAction={ctlNextAction}
+            setCtlNextAction={setCtlNextAction}
+            ctlNextCheckDate={ctlNextCheckDate}
+            setCtlNextCheckDate={setCtlNextCheckDate}
+            onNext={handleCtlNext}
+            onBack={handleCtlBack}
+            showValidation={showValidation}
+          />
+        )}
+
+        {effectiveMode === 'ctl' && ctlCurrentScreen === 3 && (
+          <ScreenCTLContinueRED
+            linkedRep={rep}
+            continuationResponses={continuationResponses}
+            setContinuationResponses={setContinuationResponses}
+            onSubmit={handleCtlContinuationSubmit}
+            onBack={handleCtlBack}
+            isSubmitting={isSubmitting}
+            showValidation={showValidation}
+          />
+        )}
+
+        {/* Normal Evidence Capture Screens (when effectiveMode !== 'ctl') */}
+        {effectiveMode !== 'ctl' && currentScreen === 1 && (
           <ScreenOverview rep={rep} onNext={handleNext} />
         )}
         
-        {currentScreen === 2 && !isSCERep && !isDRFRep && !isFUWRep && !isLWVRep && (
+        {effectiveMode !== 'ctl' && currentScreen === 2 && !isSCERep && !isDRFRep && !isFUWRep && !isLWVRep && (
           <ScreenWhatHappened
             value={whatHappened}
             onChange={setWhatHappened}
@@ -2602,7 +3545,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           />
         )}
         
-        {currentScreen === 2 && (isSCERep || isDRFRep || isFUWRep || isLWVRep) && (
+        {effectiveMode !== 'ctl' && currentScreen === 2 && (isSCERep || isDRFRep || isFUWRep || isLWVRep) && (
           <ScreenStructuredEvidence
             rep={rep}
             responses={isSCERep ? sceResponses : ((isFUWRep || isLWVRep) ? sceResponses : drfResponses)}
@@ -2615,7 +3558,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           />
         )}
         
-        {currentScreen === 3 && (
+        {effectiveMode !== 'ctl' && currentScreen === 3 && (
           <ScreenResponseDynamics
             rep={rep}
             response={response}
@@ -2643,7 +3586,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           />
         )}
         
-        {currentScreen === 4 && (
+        {effectiveMode !== 'ctl' && currentScreen === 4 && (
           <ScreenArtifacts
             db={db}
             storage={storage}
@@ -2658,7 +3601,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           />
         )}
         
-        {currentScreen === 5 && (
+        {effectiveMode !== 'ctl' && currentScreen === 5 && (
           <ScreenCloseRR
             rep={rep}
             outcome={outcome}
@@ -2674,14 +3617,14 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           />
         )}
         
-        {currentScreen === 6 && (
+        {effectiveMode !== 'ctl' && currentScreen === 6 && (
           <ScreenRepUpReview
             qualityAssessment={qualityAssessment}
             onDone={handleRepUpDone}
           />
         )}
 
-        {currentScreen === 7 && (
+        {effectiveMode !== 'ctl' && currentScreen === 7 && (
           <ScreenCompleteLoop
             rep={rep}
             completeLoopResponses={completeLoopResponses}

@@ -44,7 +44,10 @@ const BugReportModal = ({ isOpen, onClose, currentScreen }) => {
         steps,
         severity: 'medium', // Default
         category: 'user_report'
-      }, systemInfo);
+      }, systemInfo, {
+        email: user?.email,
+        displayName: user?.displayName
+      });
 
       setIsSuccess(true);
       setTimeout(() => {

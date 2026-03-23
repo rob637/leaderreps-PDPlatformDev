@@ -202,44 +202,70 @@ export const LEVEL_2_PROMPTS = [
 /**
  * Get the current week ID (Sunday-Saturday)
  * Format: YYYY-Www (e.g., "2026-W06")
+ * 
+ * IMPORTANT: This uses a simple date-based calculation that doesn't rely on
+ * fragile ISO week number math. It calculates the Sunday of the current week
+ * and derives the week number from that.
  */
 export const getCurrentWeekId = (date = null) => {
   const d = date || timeService.getNow();
   
-  // Get the Sunday of the current week
+  // Get the Sunday of the current week (always go back to most recent Sunday)
   const sunday = new Date(d);
-  const dayOfWeek = sunday.getDay(); // 0 = Sunday
+  const dayOfWeek = sunday.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   sunday.setDate(sunday.getDate() - dayOfWeek);
   sunday.setHours(0, 0, 0, 0);
   
-  // Calculate ISO week number (adjusted for Sunday start)
-  const startOfYear = new Date(sunday.getFullYear(), 0, 1);
-  const days = Math.floor((sunday - startOfYear) / (24 * 60 * 60 * 1000));
-  const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+  // Calculate week number using a simple, reliable method:
+  // Count days from Jan 1 of the Sunday's year to this Sunday, divide by 7, add 1
+  const year = sunday.getFullYear();
+  const jan1 = new Date(year, 0, 1);
+  jan1.setHours(0, 0, 0, 0);
   
-  return `${sunday.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
+  // Days from Jan 1 to this Sunday (can be negative if Sunday is in late Dec of prev year)
+  const daysDiff = Math.round((sunday - jan1) / (24 * 60 * 60 * 1000));
+  
+  // Week number: which week does this Sunday fall in?
+  // Week 1 contains Jan 1. Add days from Jan 1 to Sunday, divide by 7, ceil.
+  // But we also need to account for what day Jan 1 falls on.
+  const jan1DayOfWeek = jan1.getDay(); // 0=Sunday, 6=Saturday
+  
+  // Week number = floor((daysDiff + jan1DayOfWeek) / 7) + 1
+  // This ensures the first week containing any January day is week 1
+  const weekNumber = Math.floor((daysDiff + jan1DayOfWeek) / 7) + 1;
+  
+  return `${year}-W${weekNumber.toString().padStart(2, '0')}`;
 };
 
 /**
  * Get the week boundaries (Sunday 00:00 to Saturday 23:59)
+ * 
+ * IMPORTANT: Uses a robust reverse calculation from week ID to actual dates.
+ * This ensures consistency with getCurrentWeekId().
  */
 export const getWeekBoundaries = (weekId = null) => {
   const targetWeekId = weekId || getCurrentWeekId();
   const [year, weekPart] = targetWeekId.split('-W');
   const weekNumber = parseInt(weekPart, 10);
+  const yearNum = parseInt(year, 10);
   
-  // Calculate the first Sunday of the year
-  const jan1 = new Date(parseInt(year, 10), 0, 1);
-  const jan1Day = jan1.getDay();
-  const firstSunday = new Date(jan1);
-  firstSunday.setDate(jan1.getDate() - jan1Day);
+  // Find Jan 1 of the target year
+  const jan1 = new Date(yearNum, 0, 1);
+  jan1.setHours(0, 0, 0, 0);
+  const jan1DayOfWeek = jan1.getDay(); // 0=Sunday
+  
+  // Find the first Sunday of week 1 (or late December of prev year)
+  // Week 1 is the week containing Jan 1
+  // The Sunday of week 1 is: Jan 1 minus jan1DayOfWeek days
+  const week1Sunday = new Date(jan1);
+  week1Sunday.setDate(jan1.getDate() - jan1DayOfWeek);
   
   // Calculate the Sunday of the target week
-  const weekStart = new Date(firstSunday);
-  weekStart.setDate(firstSunday.getDate() + (weekNumber - 1) * 7);
+  const weekStart = new Date(week1Sunday);
+  weekStart.setDate(week1Sunday.getDate() + (weekNumber - 1) * 7);
   weekStart.setHours(0, 0, 0, 0);
   
-  // Saturday 23:59:59
+  // Saturday 23:59:59.999
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
   weekEnd.setHours(23, 59, 59, 999);
@@ -1420,8 +1446,9 @@ export const conditioningService = {
     const completedStates = ['debriefed', 'loop_closed', 'completed'];
     
     // Active/in-progress states = reps needing attention (shown in "Active Reps")
+    // Note: 'debriefed' for SCE/DRF reps still needs loop closure
     // Note: 'follow_up_pending' needs attention (close the loop) but counts toward requirement
-    const activeStates = ['committed', 'prepared', 'scheduled', 'executed', 'follow_up_pending', 'active'];
+    const activeStates = ['committed', 'prepared', 'scheduled', 'executed', 'debriefed', 'follow_up_pending', 'active'];
     
     const completed = reps.filter(r => completedStates.includes(r.status));
     const active = reps.filter(r => activeStates.includes(r.status));

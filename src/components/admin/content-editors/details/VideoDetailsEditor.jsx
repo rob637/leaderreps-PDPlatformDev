@@ -1,9 +1,9 @@
 // src/components/admin/content-editors/details/VideoDetailsEditor.jsx
 import React, { useState } from 'react';
-import { ExternalLink, User, Film, Tag, Clock, Upload, Link as LinkIcon, Database } from 'lucide-react';
+import { ExternalLink, User, Film, Tag, Upload, Link as LinkIcon, Database } from 'lucide-react';
 import MediaSelector from '../../MediaSelector';
 
-const VideoDetailsEditor = ({ details = {}, onChange }) => {
+const VideoDetailsEditor = ({ details = {}, onChange, onEstimatedTimeChange }) => {
   const [sourceType, setSourceType] = useState(
     details.externalUrl?.includes('firebasestorage') ? 'VAULT' : 'LINK'
   );
@@ -15,8 +15,10 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
 
   const handleVaultSelect = (url, asset) => {
     handleChange('externalUrl', url);
-    // Optionally store other metadata from asset if needed
-    if (asset.duration) handleChange('durationMin', Math.round(asset.duration / 60));
+    // Auto-populate estimated time from vault video metadata
+    if (asset.duration && onEstimatedTimeChange) {
+      onEstimatedTimeChange(Math.round(asset.duration / 60));
+    }
   };
 
   return (
@@ -167,21 +169,6 @@ const VideoDetailsEditor = ({ details = {}, onChange }) => {
           <option value="Culture">Culture</option>
           <option value="Innovation">Innovation</option>
         </select>
-      </div>
-
-      {/* Duration */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-1">
-          <Clock size={14} />
-          Duration (minutes)
-        </label>
-        <input
-          type="number"
-          value={details.durationMin || ''}
-          onChange={(e) => handleChange('durationMin', parseInt(e.target.value) || '')}
-          placeholder="e.g. 18"
-          className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-        />
       </div>
 
       {/* Custom Thumbnail URL */}

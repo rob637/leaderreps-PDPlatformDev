@@ -323,21 +323,32 @@ const MissedRepDebriefModal = ({
         submittedAt: new Date().toISOString()
       };
       
-      // Save debrief to the rep
-      await conditioningService.saveMissedRepDebrief(db, userId, rep.id, debriefData);
-      
-      // Handle the recommit decision
-      switch (recommitOption) {
-        case 'recommit':
-          onRecommit?.(rep.id);
-          break;
-        case 'modify':
-          onModify?.(rep);
-          break;
-        case 'cancel':
-          onCancel?.(rep.id, cancelReason);
-          break;
+      // Handle the recommit decision BEFORE saving debrief as complete
+      // This ensures we don't lose the rep if recommit fails
+      try {
+        switch (recommitOption) {
+          case 'recommit':
+            await onRecommit?.(rep.id);
+            break;
+          case 'modify':
+            // Modify doesn't need await - it just opens the commit form
+            onModify?.(rep);
+            break;
+          case 'cancel':
+            await onCancel?.(rep.id, cancelReason);
+            break;
+        }
+      } catch (actionErr) {
+        console.error('Error handling recommit decision:', actionErr);
+        setError(recommitOption === 'recommit' 
+          ? 'Failed to recommit rep. Please try again.' 
+          : 'Failed to complete action. Please try again.');
+        return; // Don't save debrief if action failed
       }
+      
+      // Save debrief to the rep AFTER recommit/cancel succeeds
+      // This prevents the rep from disappearing if the action fails
+      await conditioningService.saveMissedRepDebrief(db, userId, rep.id, debriefData);
       
       onClose?.();
     } catch (err) {

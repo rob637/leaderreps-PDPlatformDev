@@ -765,3 +765,293 @@ export const getLWVSituationBranch = (situationText) => {
   
   return 'owned_mistake'; // Default
 };
+
+// ============================================
+// DELIVER REDIRECTING FEEDBACK (RED) - RESPONSE OPTIONS
+// How the other person responded to redirecting feedback
+// AI classifies internally: Acknowledged/Accepted, Agreed/Committed, Defensive/Justifying,
+//                          Denied/Disagreed, Shut down/Minimal, Unclear
+// ============================================
+export const RED_RESPONSE_OPTIONS = [
+  { id: 'acknowledged', label: 'Acknowledged / accepted the feedback' },
+  { id: 'agreed', label: 'Agreed and committed to change' },
+  { id: 'defensive', label: 'Became defensive or started justifying' },
+  { id: 'denied', label: 'Denied or disagreed with the feedback' },
+  { id: 'minimal', label: 'Shut down / minimal response' },
+  { id: 'unclear', label: 'Unclear / hard to read their response' },
+  { id: 'other', label: 'Other' }
+];
+
+// ============================================
+// DELIVER REDIRECTING FEEDBACK - DIFFICULTY OPTIONS
+// Leader's self-reported difficulty level
+// ============================================
+export const RED_DIFFICULTY_OPTIONS = [
+  { id: 'low', label: 'Low', description: 'Routine or minor issue' },
+  { id: 'moderate', label: 'Moderate', description: 'Some discomfort or stakes involved' },
+  { id: 'high', label: 'High', description: 'Significant tension, repeated issue, or high stakes' }
+];
+
+// ============================================
+// DELIVER REDIRECTING FEEDBACK - EVIDENCE QUESTIONS
+// Per spec: Behavior, Impact, Request are required; Difficulty, Internal Gap are optional/encouraged
+// ============================================
+export const RED_EVIDENCE_QUESTIONS = [
+  { 
+    id: 'behavior_statement', 
+    prompt: 'What did you say to describe the behavior gap?',
+    placeholder: 'Use the exact wording you used. A camera should be able to capture this behavior. Example: "You interrupted the client twice before they finished speaking."',
+    hint: 'Be specific and observable — what would a camera see?',
+    required: true 
+  },
+  { 
+    id: 'impact_statement', 
+    prompt: 'What did you say about why this matters?',
+    placeholder: 'Use the exact wording you used. Example: "That made it harder for them to explain their concern."',
+    hint: 'Describe the impact or the standard being violated',
+    required: true 
+  },
+  { 
+    id: 'request_statement', 
+    prompt: 'What did you ask them to do differently?',
+    placeholder: 'Use the exact wording you used. Example: "Let them finish before responding."',
+    hint: 'Be specific about the expected change',
+    required: true 
+  },
+  { 
+    id: 'their_response_detail', 
+    prompt: 'How did they respond? (Describe what they said)',
+    placeholder: 'What did they say or do after you delivered the feedback?',
+    hint: 'Capture their actual response as best you can',
+    required: true 
+  }
+];
+
+// ============================================
+// DELIVER REDIRECTING FEEDBACK - OPTIONAL FIELDS
+// Difficulty and Internal Gap — encouraged but optional
+// ============================================
+export const RED_OPTIONAL_FIELDS = [
+  { 
+    id: 'difficulty', 
+    prompt: 'How difficult was this conversation for you?',
+    type: 'options',
+    options: RED_DIFFICULTY_OPTIONS,
+    required: false 
+  },
+  { 
+    id: 'internal_gap', 
+    prompt: 'If anything felt hard to say, what was it?',
+    placeholder: 'Optional: What did you want to say but held back? What internal tension did you feel?',
+    hint: 'This helps identify growth areas',
+    required: false 
+  }
+];
+
+// ============================================
+// DELIVER REDIRECTING FEEDBACK - SELF-ASSESSMENT QUESTIONS
+// Self-reflection for the "Complete Real Rep" step
+// ============================================
+export const RED_SELF_ASSESSMENT = [
+  { 
+    id: 'behavior_observable', 
+    prompt: 'Did I clearly name an observable behavior?',
+    options: ['Passed the Camera Test', 'Mostly clear', 'Too general or interpretive']
+  },
+  { 
+    id: 'impact_stated', 
+    prompt: 'Did I explain why the behavior matters?',
+    options: ['Clear impact or standard stated', 'Impact implied', 'Not stated clearly']
+  },
+  { 
+    id: 'request_specific', 
+    prompt: 'Did I make a specific request for change?',
+    options: ['Specific and observable', 'Conversational but clear', 'Vague or implied']
+  },
+  { 
+    id: 'delivery_composed', 
+    prompt: 'Did I deliver the message directly and with composure?',
+    options: ['Direct and composed', 'Slightly softened or tense', 'Hedged or emotional']
+  }
+];
+
+// ============================================
+// DELIVER REDIRECTING FEEDBACK - COMPLETE THE LOOP
+// Follow-up and closure questions
+// ============================================
+export const RED_COMPLETE_LOOP = [
+  { id: 'watch_for', prompt: '"What behavior will I watch for to know if this landed?"', type: 'text' },
+  { id: 'next_step', prompt: '"What is the observable next step they committed to?"', type: 'text' },
+  { id: 'reminder', prompt: '"Do I want a reminder to follow up on this feedback?"', type: 'date_optional' }
+];
+
+// ============================================
+// DELIVER REDIRECTING FEEDBACK - REFLECTION PROMPT
+// ============================================
+export const RED_REFLECTION_PROMPT = 'Next time I deliver redirecting feedback I will ______ to be clearer and more direct.';
+export const RED_REFLECTION_EXAMPLES = [
+  '"Name the specific behavior I observed."',
+  '"State the expected standard directly."',
+  '"Ask for a specific commitment before closing."'
+];
+
+// Helper to get RED situation branch type
+export const getREDSituationBranch = (situationText) => {
+  if (!situationText) return null;
+  
+  const lowerSituation = situationText.toLowerCase();
+  
+  if (lowerSituation.includes('repeated') || lowerSituation.includes('pattern')) {
+    return 'repeated_behavior';
+  } else if (lowerSituation.includes('first time') || lowerSituation.includes('initial')) {
+    return 'first_occurrence';
+  } else if (lowerSituation.includes('real-time') || lowerSituation.includes('in the moment')) {
+    return 'real_time';
+  } else if (lowerSituation.includes('after the fact') || lowerSituation.includes('later')) {
+    return 'after_the_fact';
+  }
+  
+  return 'first_occurrence'; // Default
+};
+// ============================================
+// CLOSE THE LOOP (CTL) - CONSTANTS
+// CTL extends RED by verifying if behavior changed
+// ============================================
+
+// The core decision: "Did the behavior change?"
+export const CTL_DECISION_OPTIONS = [
+  { 
+    id: 'changed', 
+    label: 'Yes, the behavior changed',
+    description: 'I observed the person doing what I requested',
+    icon: '✅'
+  },
+  { 
+    id: 'not_changed', 
+    label: 'No, the behavior did not change',
+    description: 'The problem behavior continued or recurred',
+    icon: '❌'
+  },
+  { 
+    id: 'not_observed', 
+    label: 'Not observed yet',
+    description: 'Haven\'t had an opportunity to observe',
+    icon: '⏳'
+  }
+];
+
+// Evidence questions for CTL observation
+export const CTL_OBSERVATION_QUESTIONS = {
+  changed: [
+    { 
+      id: 'what_observed', 
+      prompt: 'What specific behavior did you observe?',
+      placeholder: 'Describe observable actions you saw or heard',
+      required: true
+    },
+    { 
+      id: 'observation_context', 
+      prompt: 'When and where did you observe this?',
+      placeholder: 'Date/time and setting',
+      required: true
+    }
+  ],
+  not_changed: [
+    { 
+      id: 'what_observed', 
+      prompt: 'What behavior did you observe that showed the issue continues?',
+      placeholder: 'Describe the specific behavior you saw',
+      required: true
+    },
+    { 
+      id: 'observation_context', 
+      prompt: 'When and where did you observe this?',
+      placeholder: 'Date/time and setting',
+      required: true
+    }
+  ]
+};
+
+// Reasons for not observing yet
+export const CTL_NOT_OBSERVED_REASONS = [
+  { id: 'no_opportunity', label: 'No opportunity to observe the behavior yet' },
+  { id: 'behavior_not_recurred', label: 'The situation hasn\'t come up again' },
+  { id: 'person_unavailable', label: 'Person has been unavailable (PTO, travel, etc.)' },
+  { id: 'too_soon', label: 'It\'s too soon to expect visible change' },
+  { id: 'other', label: 'Other reason' }
+];
+
+// If behavior changed, optional reinforcement checkbox
+export const CTL_REINFORCEMENT_QUESTION = {
+  id: 'gave_reinforcing_feedback',
+  prompt: 'Did you give reinforcing feedback?',
+  description: 'Acknowledging the positive change helps sustain it'
+};
+
+// If behavior did NOT change, continuation options
+export const CTL_CONTINUATION_OPTIONS = [
+  { 
+    id: 'gave_feedback', 
+    label: 'Yes, I gave follow-up redirecting feedback',
+    description: 'This will start a new redirecting feedback conversation linked to the original'
+  },
+  { 
+    id: 'no_feedback', 
+    label: 'No, I did not give feedback this time',
+    description: 'The loop will remain open until you address this'
+  }
+];
+
+// If they didn't give feedback when behavior didn't change
+export const CTL_NEXT_ACTION_QUESTIONS = [
+  { 
+    id: 'next_action', 
+    prompt: 'What will you do next?',
+    placeholder: 'Describe your plan to address this (e.g., schedule a conversation, wait for another occurrence)',
+    required: true
+  },
+  { 
+    id: 'next_check_date', 
+    prompt: 'When will you check again?',
+    type: 'date',
+    required: true
+  }
+];
+
+// CTL scoring criteria (3 binary pass/fail conditions)
+export const CTL_SCORING_CRITERIA = [
+  {
+    id: 'real_check',
+    name: 'Real Check',
+    description: 'Was this a deliberate, intentional follow-up (not incidental)?',
+    failIndicators: ['incidental observation', 'no effort to check', 'superficial']
+  },
+  {
+    id: 'usable_evidence',
+    name: 'Usable Evidence', 
+    description: 'Is the observation specific and observable (not vague or interpretive)?',
+    failIndicators: ['vague', 'assumptions', 'hearsay without source', 'impressions']
+  },
+  {
+    id: 'appropriate_response',
+    name: 'Appropriate Response',
+    description: 'Did the leader respond appropriately based on the outcome?',
+    failIndicators: ['no response when needed', 'inappropriate action', 'missing next step']
+  }
+];
+
+// Default CTL scheduling (days after RED completion)
+export const CTL_DEFAULT_SCHEDULE_DAYS = 10;
+export const CTL_DEFER_DEFAULT_DAYS = 7;
+
+// Secondhand observation rules
+export const CTL_SECONDHAND_RULES = {
+  allowed: true,
+  requirements: [
+    'Must name the source (who told you)',
+    'Must describe specific observable behavior',
+    'Cannot be vague or interpretive'
+  ],
+  maxQualityLevel: 'moderate', // Cannot exceed "moderate quality" for secondhand
+  prompt: 'Note: Secondhand observations are acceptable but must name the source and describe specific behaviors.'
+};

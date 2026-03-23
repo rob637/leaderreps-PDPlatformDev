@@ -164,7 +164,11 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
       case CONTENT_TYPES.READ_REP:
         return <RepDetailsEditor details={formData.details} onChange={handleDetailsUpdate} type={type} />;
       case CONTENT_TYPES.VIDEO:
-        return <VideoDetailsEditor details={formData.details} onChange={handleDetailsUpdate} />;
+        return <VideoDetailsEditor 
+          details={formData.details} 
+          onChange={handleDetailsUpdate}
+          onEstimatedTimeChange={(mins) => setFormData(prev => ({ ...prev, estimatedTime: mins }))}
+        />;
       case CONTENT_TYPES.DOCUMENT:
         return <DocumentDetailsEditor details={formData.details} onChange={handleDetailsUpdate} />;
       case CONTENT_TYPES.TOOL:
