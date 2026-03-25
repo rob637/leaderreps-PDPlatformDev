@@ -6722,6 +6722,7 @@ exports.gmailGetAuthUrl = onCall({
   }
 
   const userId = request.auth.uid;
+  const returnUrl = request.data.returnUrl; // Where to redirect after OAuth
   
   // Dynamic redirect URI based on project (Gen 2 functions use Cloud Run URLs)
   const projectId = process.env.GCLOUD_PROJECT || 'leaderreps-test';
@@ -6732,8 +6733,8 @@ exports.gmailGetAuthUrl = onCall({
       ? 'https://gmailoauthcallback-dzk3wipgfa-uc.a.run.app'
       : `https://us-central1-${projectId}.cloudfunctions.net/gmailOAuthCallback`;
   
-  // Encode state with userId so we know who to save tokens for
-  const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
+  // Encode state with userId and returnUrl so we know where to redirect after
+  const state = Buffer.from(JSON.stringify({ userId, returnUrl })).toString('base64');
   
   const scopes = [
     'https://www.googleapis.com/auth/gmail.send',
@@ -7107,6 +7108,7 @@ exports.gmailOAuthCallback = onRequest({
   
   if (error) {
     logger.error('Gmail OAuth error', { error });
+    // Can't get returnUrl if state parsing fails, use default
     return res.redirect(`${getAppUrl()}/settings?gmail_error=${encodeURIComponent(error)}`);
   }
   
@@ -7114,11 +7116,13 @@ exports.gmailOAuthCallback = onRequest({
     return res.redirect(`${getAppUrl()}/settings?gmail_error=missing_params`);
   }
   
-  // Decode state (contains userId)
-  let userId;
+  // Decode state (contains userId and optional returnUrl)
+  let userId, returnUrl;
   try {
     const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
     userId = stateData.userId;
+    // Use returnUrl from state, or default to main app settings
+    returnUrl = stateData.returnUrl || `${getAppUrl()}/settings`;
   } catch (e) {
     logger.error('Invalid OAuth state', { state });
     return res.redirect(`${getAppUrl()}/settings?gmail_error=invalid_state`);
@@ -7150,7 +7154,7 @@ exports.gmailOAuthCallback = onRequest({
   
   if (!clientId || !clientSecret) {
     logger.error('Gmail OAuth not configured');
-    return res.redirect(`${getAppUrl()}/settings?gmail_error=not_configured`);
+    return res.redirect(`${returnUrl}?gmail_error=not_configured`);
   }
   
   try {
@@ -7205,7 +7209,7 @@ exports.gmailOAuthCallback = onRequest({
     
     if (!tokenData.access_token) {
       logger.error('Failed to get access token', tokenData);
-      return res.redirect(`${getAppUrl()}/settings?gmail_error=token_exchange_failed`);
+      return res.redirect(`${returnUrl}?gmail_error=token_exchange_failed`);
     }
     
     // Get user's email from Gmail profile
@@ -7232,14 +7236,14 @@ exports.gmailOAuthCallback = onRequest({
       isActive: true
     });
     
-    logger.info('Gmail OAuth completed (team account)', { userId, email: connectedEmail });
+    logger.info('Gmail OAuth completed (team account)', { userId, email: connectedEmail, returnUrl });
     
-    // Redirect back to app with the connected email
-    return res.redirect(`${getAppUrl()}/settings?gmail_connected=${encodeURIComponent(connectedEmail)}`);
+    // Redirect back to originating app with the connected email
+    return res.redirect(`${returnUrl}?gmail_connected=${encodeURIComponent(connectedEmail)}`);
     
   } catch (error) {
     logger.error('Gmail OAuth callback error', error);
-    return res.redirect(`${getAppUrl()}/settings?gmail_error=callback_failed`);
+    return res.redirect(`${returnUrl}?gmail_error=callback_failed`);
   }
 });
 
