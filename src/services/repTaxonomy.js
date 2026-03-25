@@ -949,6 +949,19 @@ export const SESSION_REP_UNLOCKS = {
 };
 
 /**
+ * SIMPLIFIED REP TYPES (March 2026)
+ * ==================================
+ * For streamlined UX, show only these 4 core rep types directly
+ * without category drill-down. Unlock rules still apply.
+ */
+export const SIMPLIFIED_REP_TYPES = [
+  'set_clear_expectations',
+  'follow_up_work',
+  'deliver_reinforcing_feedback',
+  'deliver_redirecting_feedback'
+];
+
+/**
  * Session metadata for display purposes
  */
 export const SESSION_METADATA = {
@@ -1525,6 +1538,7 @@ export default {
   // Session-based unlocking exports (primary)
   SESSION_REP_UNLOCKS,
   SESSION_METADATA,
+  SIMPLIFIED_REP_TYPES,
   getSessionForRep,
   getUnlockedRepsBySessionAttendance
 };

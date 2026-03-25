@@ -2316,7 +2316,7 @@ const ConfirmationPopup = ({ message, onClose }) => (
 // ============================================
 // MAIN WIZARD COMPONENT
 // ============================================
-const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence' }) => {
+const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence', skipOverview = false }) => {
   const { db, user, storage } = useAppServices();
   const userId = user?.uid;
 
@@ -2422,7 +2422,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
     switch(effectiveMode) {
       case 'review': return 6;
       case 'plan': return 7;
-      default: return 1;
+      default: return skipOverview ? 2 : 1; // Skip Overview (screen 1) and go to Evidence (screen 2) when skipOverview is true
     }
   };
   

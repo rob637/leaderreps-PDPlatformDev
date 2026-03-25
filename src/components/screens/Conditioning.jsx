@@ -838,6 +838,20 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
           cohortId
         });
         console.log('[Conditioning] V2 Rep committed successfully:', repId);
+        
+        // For in-moment reps, auto-open evidence wizard (skip overview)
+        if (repData.commitmentType === 'in_moment') {
+          // Fetch the newly created rep to pass to wizard
+          const newRep = await conditioningService.getRep(db, userId, repId);
+          if (newRep) {
+            console.log('[Conditioning] Auto-opening evidence wizard for in-moment rep');
+            setShowCommitForm(false);
+            setEvidenceWizardMode('evidence');
+            setEvidenceWizardRep({ ...newRep, id: repId, skipOverview: true });
+            await loadData();
+            return; // Exit early - don't close commit form until evidence is done
+          }
+        }
       } else {
         // Legacy V1 flow
         console.log('[Conditioning] Using V1 commitRep flow');
@@ -1453,6 +1467,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
           }}
           onSubmit={handleEvidenceWizardSubmit}
           initialMode={evidenceWizardMode}
+          skipOverview={evidenceWizardRep?.skipOverview || false}
         />
       )}
     </PageLayout>
