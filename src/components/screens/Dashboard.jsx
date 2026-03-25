@@ -241,9 +241,13 @@ const Dashboard = () => {
   const hasShownAllPrepModal = useRef(false);
   
   // Show milestone modals when onboarding or all prep is complete
+  // ONLY during pre-start phase (before Session 1 begins)
   useEffect(() => {
-    // Only act during prep phase
-    if (currentPhase?.id !== 'pre-start') return;
+    // Strict phase check - ONLY show during prep phase (pre-start)
+    // Do NOT show during Foundation ('start') or any other phase
+    if (!currentPhase?.id || currentPhase?.id !== 'pre-start') {
+      return;
+    }
     
     // Need user ID for logging
     const userId = user?.uid;
