@@ -637,7 +637,7 @@ export default function SettingsPage() {
           {/* Connect Another Account */}
           <div className="pt-4 border-t dark:border-slate-700">
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-              Connect @leaderreps.biz Gmail accounts for cold outreach. Each account can send emails through LR-Outreach sequences.
+              Connect Gmail accounts for outreach. Each account can send emails through LR-Outreach sequences.
             </p>
             <button
               onClick={handleConnectGmail}
