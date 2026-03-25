@@ -92,19 +92,20 @@ const CloseRRModal = ({
   
 
   // Use the full Evidence Capture Wizard for Set Clear Expectations and Reinforcing Feedback reps
-  if (rep?.repType === 'set_clear_expectations' || rep?.repType === 'deliver_reinforcing_feedback') {
-    // If evidence already captured, go straight to Plan Follow-up (Complete the Loop)
-    // to avoid looping back through evidence capture screens
-    const mode = rep?.evidence ? 'plan' : 'evidence';
+  // ONLY when evidence hasn't been captured yet - if evidence exists, use simple completion flow
+  if ((rep?.repType === 'set_clear_expectations' || rep?.repType === 'deliver_reinforcing_feedback') && !rep?.evidence) {
+    // No evidence yet - use Evidence Capture Wizard to capture evidence
     return (
       <EvidenceCaptureWizard 
         rep={rep}
-        initialMode={mode}
+        initialMode="evidence"
         onClose={onClose}
         onSubmit={onSubmit}
       />
     );
   }
+  
+  // For reps WITH evidence (SCE/DRF) or other rep types (LWV/FUW), use simple close flow
 
   // Get dynamic evidence prompt based on outcome
   const getEvidencePrompt = () => {

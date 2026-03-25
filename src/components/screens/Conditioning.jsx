@@ -777,8 +777,11 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
         return bTime - aTime;
       });
       
-      // Load evidence for completed reps
-      const evidencePromises = completed.map(async (rep) => {
+      // Load evidence for completed reps AND active debriefed reps (SCE/DRF)
+      // SCE/DRF reps stay active when debriefed but need evidence loaded for the "Complete the Rep" button
+      const activeDebriefed = currentWeekActive.filter(r => r.status === 'debriefed');
+      const repsNeedingEvidence = [...completed, ...activeDebriefed];
+      const evidencePromises = repsNeedingEvidence.map(async (rep) => {
         const evidence = await conditioningService.getEvidence(db, userId, rep.id);
         return { repId: rep.id, evidence };
       });
