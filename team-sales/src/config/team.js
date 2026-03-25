@@ -5,6 +5,9 @@
 // Key = alias email, Value = primary/canonical email
 export const EMAIL_ALIASES = {
   'rob@leaderreps.biz': 'rob@sagecg.com',
+  'ryan@leaderreps.com': 'ryan@leaderreps.biz',
+  'jeff@leaderreps.com': 'jeff@leaderreps.biz',
+  'cristina@leaderreps.com': 'cristina@leaderreps.biz',
 };
 
 // Resolve an email to its canonical form (for data storage/lookup)
