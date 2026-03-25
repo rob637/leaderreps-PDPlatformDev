@@ -28,6 +28,7 @@ import ConditioningTutorialWidget from './ConditioningTutorialWidget';
 import { VideoSeriesPlayer } from '../video';
 import LeaderCertificateViewer from '../coaching/LeaderCertificateViewer';
 import conditioningService from '../../services/conditioningService';
+import { SIMPLIFIED_REP_TYPES } from '../../services/repTaxonomy';
 import { syncCompletionToCarryover } from '../../services/carryoverService';
 import CommitFlowSelector from '../conditioning/CommitFlowSelector';
 import EvidenceCaptureWizard from '../conditioning/EvidenceCaptureWizard';
@@ -328,13 +329,15 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   const [inProgressRepCounts, setInProgressRepCounts] = useState({});
   
   // Required rep counts for each type (defaults to 1 if not specified)
+  // Only active rep types from SIMPLIFIED_REP_TYPES
   const REQUIRED_REP_COUNTS = {
     // S1 reps
     'set_clear_expectations': 1,
     'deliver_reinforcing_feedback': 3,
     // S2 reps
-    'lead_with_vulnerability': 1,
     'follow_up_work': 2,
+    // S3 reps
+    'deliver_redirecting_feedback': 1,
   };
   
   // Function to refresh completed rep counts (called after rep completion)
@@ -766,7 +769,15 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           milestoneDoc.actions, 
           `milestone-${displayMilestone}`, 
           displayMilestone
-        ).filter(action => action.type !== 'daily_rep');
+        ).filter(action => {
+          // Filter out daily_rep type items
+          if (action.type === 'daily_rep') return false;
+          // Filter out conditioning-rep items with inactive rep types
+          if (action.handlerType === 'conditioning-rep' && action.repTypeId) {
+            if (!SIMPLIFIED_REP_TYPES.includes(action.repTypeId)) return false;
+          }
+          return true;
+        });
       }
       
       // =================== TRAINER-CONTROLLED SESSION ATTENDANCE ===================

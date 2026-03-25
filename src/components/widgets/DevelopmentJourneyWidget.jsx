@@ -19,6 +19,7 @@ import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { useAppServices } from '../../services/useAppServices';
 import { useCoachingRegistrations, REGISTRATION_STATUS } from '../../hooks/useCoachingRegistrations';
 import { conditioningService } from '../../services/conditioningService';
+import { SIMPLIFIED_REP_TYPES } from '../../services/repTaxonomy';
 import { SESSION_TYPES } from '../../data/Constants';
 
 // Session type labels for generating milestone coaching actions
@@ -670,13 +671,15 @@ const DevelopmentJourneyWidget = () => {
   const [inProgressRepCounts, setInProgressRepCounts] = useState({});
   
   // Required rep counts for each type (defaults to 1 if not specified)
+  // Only active rep types from SIMPLIFIED_REP_TYPES
   const REQUIRED_REP_COUNTS = {
     // S1 reps
     'set_clear_expectations': 1,
     'deliver_reinforcing_feedback': 3,
     // S2 reps
-    'lead_with_vulnerability': 1,
     'follow_up_work': 2,
+    // S3 reps
+    'deliver_redirecting_feedback': 1,
   };
   
   // Fetch completed and in-progress rep counts on mount and when user changes
