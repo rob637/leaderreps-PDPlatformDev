@@ -1,0 +1,170 @@
+# Social Media Monitor Configuration
+# Copy this to config.yaml and fill in your values
+
+# =============================================================================
+# API Keys
+# =============================================================================
+api_keys:
+  gemini: "YOUR_GEMINI_API_KEY"
+  resend: "YOUR_RESEND_API_KEY"
+  twitter:
+    api_key: ""
+    api_secret: ""
+    access_token: ""
+    access_token_secret: ""
+    bearer_token: ""
+
+# =============================================================================
+# Email Settings (via Resend)
+# =============================================================================
+email:
+  from_address: "monitor@yourdomain.com"
+  to_address: "your-email@example.com"
+  subject_prefix: "[Social Monitor]"
+
+# =============================================================================
+# Monitoring Settings
+# =============================================================================
+monitor:
+  # Check interval in seconds (for daemon mode)
+  interval_seconds: 300  # 5 minutes
+  
+  # Maximum posts to process per run
+  max_posts_per_run: 20
+  
+  # Maximum age of posts to consider (hours)
+  max_post_age_hours: 24
+
+# =============================================================================
+# Keywords to Monitor
+# =============================================================================
+# Posts containing ANY of these keywords will be flagged
+keywords:
+  # Primary leadership terms
+  - "leadership development"
+  - "leadership training"
+  - "leadership program"
+  - "leadership skills"
+  - "executive coaching"
+  - "leadership coaching"
+  
+  # Team/management terms
+  - "team leadership"
+  - "management training"
+  - "new manager"
+  - "first-time manager"
+  - "people management"
+  
+  # Professional development
+  - "professional development"
+  - "career development"
+  - "soft skills training"
+  
+  # Cohort/group learning
+  - "cohort-based learning"
+  - "cohort learning"
+  - "group coaching"
+  - "peer learning"
+  - "leadership cohort"
+  
+  # Specific methodologies
+  - "360 feedback"
+  - "leadership assessment"
+  - "leadership competencies"
+  - "emotional intelligence EQ"
+  - "situational leadership"
+
+# =============================================================================
+# Reddit Configuration
+# =============================================================================
+reddit:
+  enabled: true
+  
+  # Subreddits to monitor (without /r/ prefix)
+  subreddits:
+    - "leadership"
+    - "management"
+    - "careerdevelopment"
+    - "careeradvice"
+    - "jobs"
+    - "humanresources"
+    - "hr"
+    - "startups"
+    - "smallbusiness"
+    - "entrepreneur"
+    - "business"
+    - "MBA"
+    - "consulting"
+    - "cscareerquestions"
+    - "ExperiencedDevs"
+    - "AskHR"
+    
+  # RSS feed type: 'new' or 'hot'
+  feed_type: "new"
+  
+  # Maximum posts to fetch per subreddit
+  posts_per_subreddit: 25
+
+# =============================================================================
+# Twitter/X Configuration
+# =============================================================================
+twitter:
+  enabled: false  # Requires API keys
+  
+  # Search queries (in addition to keywords)
+  # Uses Twitter search operators
+  search_queries:
+    - "leadership development -is:retweet"
+    - "looking for leadership training -is:retweet"
+    - "recommend leadership coach -is:retweet"
+  
+  # Accounts to monitor (without @)
+  monitor_accounts: []
+  
+  # Maximum tweets per search
+  max_results: 50
+
+# =============================================================================
+# Discord Configuration
+# =============================================================================
+discord:
+  enabled: false  # Requires bot token
+  
+  # Discord bot token (for reading channels)
+  bot_token: ""
+  
+  # Channel IDs to monitor
+  channel_ids: []
+  
+  # Webhook URL for receiving alerts (alternative to email)
+  alert_webhook: ""
+
+# =============================================================================
+# Response Generation (Gemini)
+# =============================================================================
+gemini:
+  # Model to use
+  model: "gemini-1.5-flash"
+  
+  # Generation settings
+  temperature: 0.7
+  max_tokens: 500
+  
+  # Context for response generation (uses built-in context if not specified)
+  # The built-in context includes:
+  # - LeaderReps platform overview
+  # - Coaching the Coaches webinar CTA (https://www.leaderreps.com/coaching-the-coaches)
+  # - CLEAR Framework for feedback
+  # - Response guidelines for authentic engagement
+  #
+  # Override with custom context below if needed:
+  # context: |
+  #   Your custom context here...
+
+# =============================================================================
+# Logging
+# =============================================================================
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "monitor.log"
+  console: true

@@ -103,6 +103,27 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
+
+    // Assessment leads (from Leadership DNA Assessment)
+    // Admin read-only, Cloud Functions write
+    match /assessment-leads/{document} {
+      allow read: if isAdmin();
+      allow write: if false; // Only Cloud Functions can write
+    }
+
+    // ROI Calculator leads (from ROI Calculator app)
+    // Admin read-only, Cloud Functions write
+    match /roi-calculator-leads/{document} {
+      allow read: if isAdmin();
+      allow write: if false; // Only Cloud Functions can write
+    }
+
+    // Accountability Assessment leads
+    // Admin read-only, Cloud Functions write
+    match /accountability-leads/{document} {
+      allow read: if isAdmin();
+      allow write: if false; // Only Cloud Functions can write
+    }
     
     // Public read-only content
     match /public/{document=**} {

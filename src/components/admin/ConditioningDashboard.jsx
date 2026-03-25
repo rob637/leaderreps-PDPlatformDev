@@ -14,20 +14,93 @@ import {
   Users, CheckCircle, AlertTriangle, Clock, RefreshCw,
   Target, ChevronDown, ChevronUp, User, Calendar,
   BarChart3, FileText, ThumbsUp, MessageSquare, Handshake, Lightbulb,
-  Activity, Heart, TrendingUp, TrendingDown
+  Activity, Heart, TrendingUp, TrendingDown, History
 } from 'lucide-react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
 // ============================================
-// USER ROW COMPONENT
+// USER ROW COMPONENT (with full rep history)
 // ============================================
-const UserRow = ({ summary, isExpanded, onToggle }) => {
-  const { currentWeek, consecutiveMissedWeeks, needsAttention } = summary;
+const UserRow = ({ summary, isExpanded, onToggle, db, cohortId }) => {
+  const { currentWeek, consecutiveMissedWeeks, needsAttention, patterns } = summary;
   const [selectedRep, setSelectedRep] = useState(null);
+  // Use pre-fetched data if available, otherwise load on expand
+  const [allRepsData, setAllRepsData] = useState(summary.allRepsData || null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [expandedWeeks, setExpandedWeeks] = useState({});
+  
+  const currentWeekId = useMemo(() => getCurrentWeekId(), []);
+  
+  // Load all reps when expanding (if not already pre-fetched)
+  useEffect(() => {
+    if (isExpanded && !allRepsData && !isLoadingHistory && db) {
+      setIsLoadingHistory(true);
+      // Pass null for cohortId to get ALL reps across all cohorts
+      conditioningService.getAllRepsForUser(db, summary.userId, null)
+        .then(data => {
+          setAllRepsData(data);
+          // Auto-expand current week
+          setExpandedWeeks({ [currentWeekId]: true });
+        })
+        .catch(err => {
+          console.error('Error loading rep history:', err);
+        })
+        .finally(() => {
+          setIsLoadingHistory(false);
+        });
+    } else if (isExpanded && allRepsData && Object.keys(expandedWeeks).length === 0) {
+      // Auto-expand current week if data is already loaded
+      setExpandedWeeks({ [currentWeekId]: true });
+    }
+  }, [isExpanded, allRepsData, isLoadingHistory, db, summary.userId, currentWeekId, expandedWeeks]);
+  
+  // Reset expanded weeks when collapsed (keep allRepsData for quick re-expand)
+  useEffect(() => {
+    if (!isExpanded) {
+      setExpandedWeeks({});
+    }
+  }, [isExpanded]);
   
   const getRepTypeFriendlyName = (repTypeId) => {
     const repTypeConfig = getRepType(repTypeId);
     return repTypeConfig?.label || repTypeConfig?.shortLabel || repTypeId;
+  };
+  
+  const toggleWeek = (weekId) => {
+    setExpandedWeeks(prev => ({ ...prev, [weekId]: !prev[weekId] }));
+  };
+  
+  const getWeekStats = (reps) => {
+    const completed = reps.filter(r => ['debriefed', 'loop_closed', 'completed'].includes(r.status));
+    const active = reps.filter(r => ['committed', 'prepared', 'scheduled', 'executed', 'debriefed', 'follow_up_pending', 'active'].includes(r.status));
+    const missed = reps.filter(r => r.status === 'missed');
+    const canceled = reps.filter(r => r.status === 'canceled');
+    return { completed: completed.length, active: active.length, missed: missed.length, canceled: canceled.length, total: reps.length };
+  };
+  
+  const formatWeekLabel = (weekId) => {
+    if (weekId === currentWeekId) return 'Current Week';
+    // weekId format is YYYY-WXX (e.g., "2025-W12")
+    const match = weekId.match(/^(\d{4})-W(\d{2})$/);
+    if (match) {
+      return `Week ${parseInt(match[2], 10)}, ${match[1]}`;
+    }
+    return weekId;
+  };
+  
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'debriefed':
+      case 'loop_closed':
+      case 'completed':
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700';
+      case 'missed':
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700';
+      case 'canceled':
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400';
+      default:
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700';
+    }
   };
   
   return (
@@ -57,7 +130,10 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
               {summary.email || summary.userId}
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              {currentWeek?.totalCompleted || 0} completed, {currentWeek?.totalActive || 0} active
+              <span className="font-medium text-corporate-teal">{summary.totalHistoricalReps || 0}</span> total reps
+              {(currentWeek?.totalCompleted > 0 || currentWeek?.totalActive > 0) && (
+                <span className="ml-2 text-gray-400">• This week: {currentWeek?.totalCompleted || 0} done, {currentWeek?.totalActive || 0} active</span>
+              )}
             </div>
           </div>
         </div>
@@ -81,35 +157,115 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
         </div>
       </button>
       
-      {/* Expanded Details */}
-      {isExpanded && currentWeek?.reps && (
+      {/* Expanded Details - Full Rep History */}
+      {isExpanded && (
         <div className="px-4 pb-4 pt-2 bg-gray-50 dark:bg-gray-800">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">This Week's Reps</h4>
-          {currentWeek.reps.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400 italic">No reps committed this week</p>
-          ) : (
-            <div className="space-y-2">
-              {currentWeek.reps.map((rep) => (
-                <button 
-                  key={rep.id}
-                  onClick={() => setSelectedRep(rep)}
-                  className="flex items-center justify-between w-full p-2 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-gray-700 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-colors cursor-pointer text-left"
-                >
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-medium">{rep.person}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">({getRepTypeFriendlyName(rep.repType)})</span>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    rep.status === REP_STATUS.COMPLETED ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
-                    rep.status === REP_STATUS.MISSED ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' :
-                    rep.status === REP_STATUS.CANCELED ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400' :
-                    'bg-blue-100 dark:bg-blue-900/30 text-blue-700'
+          {/* Pattern alerts if any */}
+          {patterns && patterns.length > 0 && (
+            <div className="mb-3 p-2 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-700">
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-1">Patterns Detected:</p>
+              <div className="flex flex-wrap gap-1">
+                {patterns.map((p, i) => (
+                  <span key={i} className={`text-xs px-2 py-0.5 rounded-full ${
+                    p.severity === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700' :
+                    p.severity === 'medium' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' :
+                    'bg-gray-100 dark:bg-gray-700 text-gray-600'
                   }`}>
-                    {rep.status}
+                    {p.name || p.type}
                   </span>
-                </button>
-              ))}
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Loading state */}
+          {isLoadingHistory && (
+            <div className="flex items-center justify-center py-4">
+              <RefreshCw className="w-5 h-5 animate-spin text-gray-400 mr-2" />
+              <span className="text-sm text-gray-500">Loading rep history...</span>
+            </div>
+          )}
+          
+          {/* Rep History by Week */}
+          {allRepsData && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-3">
+                <History className="w-4 h-4 text-gray-500" />
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Rep History ({allRepsData.totalCount} total reps across {allRepsData.weekIds.length} weeks)
+                </h4>
+              </div>
+              
+              {allRepsData.weekIds.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 italic">No reps committed yet</p>
+              ) : (
+                <div className="space-y-1">
+                  {allRepsData.weekIds.map((weekId) => {
+                    const weekReps = allRepsData.byWeek[weekId];
+                    const stats = getWeekStats(weekReps);
+                    const isWeekExpanded = expandedWeeks[weekId];
+                    const isCurrentWeek = weekId === currentWeekId;
+                    
+                    return (
+                      <div key={weekId} className={`rounded border ${isCurrentWeek ? 'border-corporate-teal bg-corporate-teal/5' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800'}`}>
+                        {/* Week header - clickable */}
+                        <button
+                          onClick={() => toggleWeek(weekId)}
+                          className="w-full p-2 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors rounded-t"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Calendar className={`w-4 h-4 ${isCurrentWeek ? 'text-corporate-teal' : 'text-gray-400'}`} />
+                            <span className={`text-sm font-medium ${isCurrentWeek ? 'text-corporate-teal' : 'text-gray-700 dark:text-gray-200'}`}>
+                              {formatWeekLabel(weekId)}
+                            </span>
+                            {isCurrentWeek && (
+                              <span className="text-xs px-1.5 py-0.5 bg-corporate-teal/20 text-corporate-teal rounded">
+                                Current
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {/* Week stats summary */}
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-green-600 dark:text-green-400">{stats.completed} done</span>
+                              {stats.active > 0 && <span className="text-blue-600 dark:text-blue-400">{stats.active} active</span>}
+                              {stats.missed > 0 && <span className="text-red-600 dark:text-red-400">{stats.missed} missed</span>}
+                              {stats.canceled > 0 && <span className="text-gray-400">{stats.canceled} canceled</span>}
+                            </div>
+                            {isWeekExpanded ? (
+                              <ChevronUp className="w-4 h-4 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-gray-400" />
+                            )}
+                          </div>
+                        </button>
+                        
+                        {/* Week reps - expandable */}
+                        {isWeekExpanded && (
+                          <div className="px-2 pb-2 space-y-1">
+                            {weekReps.map((rep) => (
+                              <button 
+                                key={rep.id}
+                                onClick={() => setSelectedRep(rep)}
+                                className="flex items-center justify-between w-full p-2 bg-gray-50 dark:bg-slate-900/50 rounded border border-gray-100 dark:border-gray-700 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-colors cursor-pointer text-left"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <User className="w-3 h-3 text-gray-400" />
+                                  <span className="text-sm font-medium">{rep.person || 'Unknown'}</span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">({getRepTypeFriendlyName(rep.repType)})</span>
+                                </div>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(rep.status)}`}>
+                                  {rep.status}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -138,6 +294,11 @@ const UserRow = ({ summary, isExpanded, onToggle }) => {
 // COHORT SELECTOR
 // ============================================
 const CohortSelector = ({ cohorts, selectedCohortId, onSelect }) => {
+  // Sort cohorts alphabetically by name
+  const sortedCohorts = [...cohorts].sort((a, b) => 
+    (a.name || a.id).localeCompare(b.name || b.id)
+  );
+  
   return (
     <div className="flex items-center gap-2">
       <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Cohort:</label>
@@ -147,7 +308,7 @@ const CohortSelector = ({ cohorts, selectedCohortId, onSelect }) => {
         className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
       >
         <option value="">Select a cohort...</option>
-        {cohorts.map((cohort) => (
+        {sortedCohorts.map((cohort) => (
           <option key={cohort.id} value={cohort.id}>
             {cohort.name || cohort.id}
           </option>
@@ -288,39 +449,47 @@ const QualityMetrics = ({ cohortQualityStats }) => {
         </div>
       </div>
       
-      {/* Dimension Breakdown */}
-      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Dimension Pass Rates</h4>
-      <div className="space-y-2">
-        {Object.entries(dimensionStats || {}).map(([dimension, stats]) => {
-          const config = DIMENSION_CONFIG[dimension];
-          if (!config) return null;
-          const Icon = config.icon;
-          const colorClass = {
-            blue: 'bg-blue-500',
-            green: 'bg-green-500',
-            amber: 'bg-amber-500',
-            teal: 'bg-corporate-teal'
-          }[config.color] || 'bg-gray-500';
-          
-          return (
-            <div key={dimension} className="flex items-center gap-3">
-              <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-              <div className="flex-1">
-                <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 mb-1">
-                  <span>{config.label}</span>
-                  <span>{stats.passed}/{stats.total} ({stats.rate}%)</span>
+      {/* Dimension Breakdown - only show if there are reps with dimension data */}
+      {Object.values(dimensionStats || {}).some(s => s.total > 0) ? (
+        <>
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Dimension Pass Rates</h4>
+          <div className="space-y-2">
+            {Object.entries(dimensionStats || {}).map(([dimension, stats]) => {
+              const config = DIMENSION_CONFIG[dimension];
+              if (!config || stats.total === 0) return null;
+              const Icon = config.icon;
+              const colorClass = {
+                blue: 'bg-blue-500',
+                green: 'bg-green-500',
+                amber: 'bg-amber-500',
+                teal: 'bg-corporate-teal'
+              }[config.color] || 'bg-gray-500';
+              
+              return (
+                <div key={dimension} className="flex items-center gap-3">
+                  <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 mb-1">
+                      <span>{config.label}</span>
+                      <span>{stats.passed}/{stats.total} ({stats.rate}%)</span>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${colorClass} transition-all`}
+                        style={{ width: `${stats.rate}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full ${colorClass} transition-all`}
-                    style={{ width: `${stats.rate}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+          Dimension tracking not available for rep-type-specific assessments (SCE, DRF, etc.)
+        </p>
+      )}
     </Card>
   );
 };
@@ -361,7 +530,7 @@ const CohortHealthIndicator = ({ healthData, isLoading, cohortSummary }) => {
           </div>
           <div>
             <h3 className="font-semibold text-corporate-navy">Cohort Health</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Leader participation this week</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Leader participation (all time)</p>
           </div>
         </div>
         
@@ -494,29 +663,39 @@ const ConditioningDashboard = () => {
         ...doc.data()
       }));
       
-      // Get conditioning summaries for each user
-      const summaries = [];
-      for (const user of users) {
-        try {
-          const summary = await conditioningService.getUserConditioningSummary(db, user.id, selectedCohortId);
-          summaries.push({
-            ...summary,
-            email: user.email,
-            displayName: user.displayName
-          });
-        } catch (err) {
-          console.error(`Error getting summary for user ${user.id}:`, err);
-          summaries.push({
-            userId: user.id,
-            email: user.email,
-            currentWeek: { requiredRepCompleted: false, totalCompleted: 0, totalActive: 0, reps: [] },
-            consecutiveMissedWeeks: 0,
-            unresolvedMissedReps: 0,
-            needsAttention: false,
-            error: true
-          });
-        }
-      }
+      // Get conditioning summaries for each user (including total historical reps)
+      // PERF: Run all user queries in parallel instead of sequentially
+      const summaryResults = await Promise.all(
+        users.map(async (user) => {
+          try {
+            // Run both queries for this user in parallel
+            const [summary, allRepsData] = await Promise.all([
+              conditioningService.getUserConditioningSummary(db, user.id, selectedCohortId),
+              conditioningService.getAllRepsForUser(db, user.id, null)
+            ]);
+            return {
+              ...summary,
+              email: user.email,
+              displayName: user.displayName,
+              totalHistoricalReps: allRepsData.totalCount || 0,
+              allRepsData // Store for expanded view
+            };
+          } catch (err) {
+            console.error(`Error getting summary for user ${user.id}:`, err);
+            return {
+              userId: user.id,
+              email: user.email,
+              currentWeek: { requiredRepCompleted: false, totalCompleted: 0, totalActive: 0, reps: [] },
+              consecutiveMissedWeeks: 0,
+              unresolvedMissedReps: 0,
+              needsAttention: false,
+              totalHistoricalReps: 0,
+              error: true
+            };
+          }
+        })
+      );
+      const summaries = summaryResults;
       
       // Sort: completed first, then needs attention, then by email
       summaries.sort((a, b) => {
@@ -535,18 +714,17 @@ const ConditioningDashboard = () => {
       
       setUserSummaries(summaries);
       
-      // Calculate cohort summary
-      const totalRepsCompleted = summaries.reduce((sum, s) => sum + (s.currentWeek?.totalCompleted || 0), 0);
-      const totalRepsActive = summaries.reduce((sum, s) => sum + (s.currentWeek?.totalActive || 0), 0);
+      // Calculate cohort summary - use ALL TIME data, not just current week
+      const totalRepsCompleted = summaries.reduce((sum, s) => sum + (s.totalHistoricalReps || 0), 0);
+      const usersWithReps = summaries.filter(s => (s.totalHistoricalReps || 0) > 0).length;
       
       setCohortSummary({
         cohortId: selectedCohortId,
         weekId: getCurrentWeekId(),
         totalUsers: summaries.length,
-        usersCompleted: summaries.filter(s => s.currentWeek?.requiredRepCompleted).length,
+        usersCompleted: usersWithReps, // Users who have done ANY reps
         usersNeedingAttention: summaries.filter(s => s.needsAttention).length,
-        totalRepsCompleted,
-        totalRepsActive
+        totalRepsCompleted
       });
       
       // Phase 2: Calculate cohort-wide quality stats
@@ -589,17 +767,51 @@ const ConditioningDashboard = () => {
         dimensionStats: aggregatedDimensions
       });
       
-      // Load cohort health score (Sprint 6)
-      setIsLoadingHealth(true);
-      try {
-        const userIds = summaries.map(s => s.userId);
-        const health = await conditioningService.getCohortHealthScore(db, selectedCohortId, userIds);
-        setCohortHealth(health);
-      } catch (healthErr) {
-        console.error('Error loading cohort health:', healthErr);
-      } finally {
-        setIsLoadingHealth(false);
-      }
+      // Calculate cohort health from data we already have (no extra queries needed)
+      // PERF: Reuse allRepsData instead of re-querying in getCohortHealthScore
+      const DONE_STATUSES = ['executed', 'debriefed', 'loop_closed', 'follow_up_pending', 'completed'];
+      const ACTIVE_STATUSES = ['committed', 'prepared', 'scheduled', 'active'];
+      
+      let completedUserCount = 0;
+      let activeUserCount = 0;
+      
+      summaries.forEach(s => {
+        const allReps = s.allRepsData?.allReps || [];
+        const completedReps = allReps.filter(r => DONE_STATUSES.includes(r.status));
+        const activeReps = allReps.filter(r => ACTIVE_STATUSES.includes(r.status));
+        
+        if (completedReps.length > 0) {
+          completedUserCount++;
+        } else if (activeReps.length > 0) {
+          activeUserCount++;
+        }
+      });
+      
+      const totalUsers = summaries.length;
+      const completionRate = totalUsers > 0 ? completedUserCount / totalUsers : 0;
+      const activeRate = (completedUserCount + activeUserCount) / (totalUsers || 1);
+      
+      // Calculate health score
+      let score = completionRate * 60 + activeRate * 20;
+      score = Math.max(0, Math.min(100, Math.round(score)));
+      
+      let healthLevel;
+      if (score >= 80) healthLevel = 'healthy';
+      else if (score >= 60) healthLevel = 'caution';
+      else if (score >= 40) healthLevel = 'at-risk';
+      else healthLevel = 'critical';
+      
+      setCohortHealth({
+        score,
+        healthLevel,
+        breakdown: {
+          totalUsers,
+          completedUserCount,
+          activeUserCount,
+          incompleteUserCount: totalUsers - completedUserCount - activeUserCount,
+          completionRate: Math.round(completionRate * 100)
+        }
+      });
       
     } catch (err) {
       console.error('Error loading cohort data:', err);
@@ -757,6 +969,8 @@ const ConditioningDashboard = () => {
                   onToggle={() => setExpandedUserId(
                     expandedUserId === summary.userId ? null : summary.userId
                   )}
+                  db={db}
+                  cohortId={selectedCohortId}
                 />
               ))}
             </div>

@@ -4,8 +4,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Settings, ArrowLeft, Users, Calendar, FileText, Database,
-  PlaySquare, Dumbbell, BrainCircuit, List, Bell, Mail, Megaphone,
-  ShieldAlert, Wrench,
+  PlaySquare, Zap, BrainCircuit, List, Bell, Mail, Megaphone,
+  ShieldAlert, Wrench, Dumbbell,
 } from 'lucide-react';
 import UserManagement from './UserManagement';
 import ContentManager from './DailyPlanManager';
@@ -43,7 +43,7 @@ const TAB_GROUPS = [
   {
     label: 'Program',
     tabs: [
-      { id: 'conditioning-config', label: 'Conditioning Config', icon: Dumbbell },
+      { id: 'conditioning-config', label: 'Conditioning Config', icon: Zap },
       { id: 'community', label: 'Community', icon: Users },
       { id: 'coaching', label: 'Coaching', icon: BrainCircuit },
     ],

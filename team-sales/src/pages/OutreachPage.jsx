@@ -9,7 +9,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useSequenceStore } from '../stores/sequenceStore';
 import useGmailStore from '../stores/gmailStore';
 import * as gmail from '../lib/gmail';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { SequenceBuilder, SequenceEnrollmentsDashboard, EmailQueue } from '../components/sequences';
 
 const CHANNEL_ICONS = {

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useTasksStore, TASK_TYPES, TASK_PRIORITIES } from '../stores/tasksStore';
 import { useProspectsStore } from '../stores/prospectsStore';
 import { useAuthStore } from '../stores/authStore';
-import { format, isToday, isTomorrow, isPast, addDays } from 'date-fns';
+import { format, isToday, isTomorrow, isPast } from 'date-fns';
 import toast from 'react-hot-toast';
 import {
   CheckCircle,

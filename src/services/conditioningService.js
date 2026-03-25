@@ -983,6 +983,59 @@ export const conditioningService = {
   },
   
   /**
+   * Get ALL reps for a user (for trainer dashboard history view)
+   * Returns all reps grouped by weekId, ordered by week descending then createdAt descending
+   * @param {Object} db Firestore instance
+   * @param {string} userId User ID
+   * @param {string|null} cohortId Optional cohort filter - if null/undefined, returns ALL reps
+   * @param {number} limitCount Max reps to return
+   */
+  getAllRepsForUser: async (db, userId, cohortId = null, limitCount = 200) => {
+    const repsRef = collection(db, 'users', userId, 'conditioning_reps');
+    
+    // Build query - only filter by cohortId if provided
+    let q;
+    if (cohortId) {
+      q = query(
+        repsRef,
+        where('cohortId', '==', cohortId),
+        orderBy('createdAt', 'desc')
+      );
+    } else {
+      // No cohort filter - get ALL reps for this user
+      q = query(
+        repsRef,
+        orderBy('createdAt', 'desc')
+      );
+    }
+    
+    const snapshot = await getDocs(q);
+    const allReps = snapshot.docs
+      .slice(0, limitCount)
+      .map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Group by weekId
+    const byWeek = {};
+    allReps.forEach(rep => {
+      const weekId = rep.weekId || 'unknown';
+      if (!byWeek[weekId]) {
+        byWeek[weekId] = [];
+      }
+      byWeek[weekId].push(rep);
+    });
+    
+    // Sort weeks descending (newest first) and reps within each week
+    const sortedWeekIds = Object.keys(byWeek).sort((a, b) => b.localeCompare(a));
+    
+    return {
+      totalCount: allReps.length,
+      weekIds: sortedWeekIds,
+      byWeek,
+      allReps
+    };
+  },
+  
+  /**
    * Get rep history (completed + canceled)
    */
   getRepHistory: async (db, userId, cohortId = null, limitCount = 50) => {
@@ -2731,21 +2784,25 @@ export const conditioningService = {
     
     const level1Count = repsWithEvidence.filter(r => r.evidence.level === EVIDENCE_LEVEL.LEVEL_1).length;
     const level2Count = repsWithEvidence.filter(r => r.evidence.level === EVIDENCE_LEVEL.LEVEL_2).length;
-    const meetsStandardCount = repsWithQuality.filter(r => r.qualityAssessment.meetsStandard).length;
+    const meetsStandardCount = repsWithQuality.filter(r => 
+      r.qualityAssessment.meetsStandard || r.qualityAssessment.repPassed
+    ).length;
     
-    // Dimension breakdown
+    // Dimension breakdown - only count reps that have dimensions (generic assessments)
+    // Rep-specific assessments (SCE, DRF, etc.) use conditions, not dimensions
+    const repsWithDimensions = repsWithQuality.filter(r => r.qualityAssessment.dimensions);
     const dimensionStats = {};
     Object.values(QUALITY_DIMENSIONS).forEach(dim => {
-      const passed = repsWithQuality.filter(r => r.qualityAssessment.dimensions?.[dim]?.passed).length;
+      const passed = repsWithDimensions.filter(r => r.qualityAssessment.dimensions?.[dim]?.passed).length;
       dimensionStats[dim] = {
         passed,
-        total: repsWithQuality.length,
-        rate: repsWithQuality.length > 0 ? Math.round((passed / repsWithQuality.length) * 100) : 0
+        total: repsWithDimensions.length,
+        rate: repsWithDimensions.length > 0 ? Math.round((passed / repsWithDimensions.length) * 100) : 0
       };
     });
     
     return {
-      totalCompleted: history.filter(r => r.status === REP_STATUS.COMPLETED).length,
+      totalCompleted: history.filter(r => r.status === REP_STATUS.COMPLETED || r.status === REP_STATUS.DEBRIEFED).length,
       evidenceSubmitted: repsWithEvidence.length,
       level1Evidence: level1Count,
       level2Evidence: level2Count,
@@ -2756,7 +2813,10 @@ export const conditioningService = {
       qualityRate: repsWithQuality.length > 0 
         ? Math.round((meetsStandardCount / repsWithQuality.length) * 100) 
         : 0,
-      dimensionStats
+      dimensionStats,
+      // Include counts for transparency
+      totalWithDimensions: repsWithDimensions.length,
+      totalWithQuality: repsWithQuality.length
     };
   },
   
@@ -3759,15 +3819,21 @@ export const conditioningService = {
     let highPatternCount = 0;
     let mediumPatternCount = 0;
     
-    const weekId = getCurrentWeekId();
+    // Statuses that indicate a leader has "done" at least one rep
+    const DONE_STATUSES = ['executed', 'debriefed', 'loop_closed', 'follow_up_pending', 'completed'];
+    // Statuses that indicate a leader has active work in progress
+    const ACTIVE_STATUSES = ['committed', 'prepared', 'scheduled', 'active'];
     
     for (const userId of userIds) {
       try {
-        // Check current week status
-        const status = await conditioningService.getWeeklyStatus(db, userId, weekId, cohortId);
-        if (status.requiredRepCompleted) {
+        // Check ALL TIME reps (not just current week)
+        const { allReps } = await conditioningService.getAllRepsForUser(db, userId, cohortId);
+        const completedReps = allReps.filter(r => DONE_STATUSES.includes(r.status));
+        const activeReps = allReps.filter(r => ACTIVE_STATUSES.includes(r.status));
+        
+        if (completedReps.length > 0) {
           completedUserCount++;
-        } else if (status.totalActive > 0) {
+        } else if (activeReps.length > 0) {
           activeUserCount++;
         }
         

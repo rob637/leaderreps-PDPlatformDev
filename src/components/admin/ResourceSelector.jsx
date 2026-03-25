@@ -14,7 +14,7 @@ import {
   Layers,
   ClipboardEdit,
   ListVideo,
-  Dumbbell,
+  Zap,
   Wrench
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
@@ -288,7 +288,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
       case 'coaching': return MessageSquare;
       case 'interactive': return ClipboardEdit;
       case 'video_series': return ListVideo;
-      case 'conditioning_rep': return Dumbbell;
+      case 'conditioning_rep': return Zap;
       default: return LinkIcon;
     }
   };

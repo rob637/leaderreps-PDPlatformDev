@@ -12,7 +12,7 @@ import { Card } from '../ui';
 import { RepDetailModal } from '../conditioning';
 import { 
   Search, Loader, User, Calendar, CheckCircle, Circle, Clock, 
-  Video, FileText, MessageSquare, Dumbbell, Award, ChevronDown, 
+  Video, FileText, MessageSquare, Zap, Award, ChevronDown, 
   ChevronUp, Target, Activity, BookOpen, ArrowLeft, Download,
   Users, AlertTriangle, Settings, Star, Eye
 } from 'lucide-react';
@@ -79,6 +79,11 @@ const getStatusColor = (status) => {
 // COHORT SELECTOR
 // ============================================
 const CohortSelector = ({ cohorts, selectedCohortId, onSelect, loading }) => {
+  // Sort cohorts alphabetically by name
+  const sortedCohorts = [...cohorts].sort((a, b) => 
+    (a.name || a.id).localeCompare(b.name || b.id)
+  );
+  
   return (
     <div className="flex items-center gap-3">
       <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Cohort:</label>
@@ -89,7 +94,7 @@ const CohortSelector = ({ cohorts, selectedCohortId, onSelect, loading }) => {
         className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 min-w-[200px]"
       >
         <option value="">All Cohorts</option>
-        {cohorts.map((cohort) => (
+        {sortedCohorts.map((cohort) => (
           <option key={cohort.id} value={cohort.id}>
             {cohort.name || `Cohort ${cohort.id.slice(0,8)}`}
           </option>
@@ -100,43 +105,257 @@ const CohortSelector = ({ cohorts, selectedCohortId, onSelect, loading }) => {
 };
 
 // ============================================
-// LEADER SELECTOR
+// COHORT SUMMARY STATS
 // ============================================
-const LeaderSelector = ({ leaders, selectedLeaderId, onSelect, loading, searchTerm, onSearchChange }) => {
+const CohortSummaryStats = ({ users, leaderStats }) => {
+  const totalLeaders = users.length;
+  
+  // Calculate aggregate stats
+  const stats = useMemo(() => {
+    if (!leaderStats || Object.keys(leaderStats).length === 0) {
+      return { avgProgress: 0, onTrack: 0, needsAttention: 0, inactive: 0 };
+    }
+    
+    let totalProgress = 0;
+    let onTrack = 0;
+    let needsAttention = 0;
+    let inactive = 0;
+    const now = new Date();
+    const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    users.forEach(user => {
+      const stats = leaderStats[user.id] || {};
+      const lastActive = stats.lastActive ? new Date(stats.lastActive) : null;
+      const progress = stats.overallProgress || 0;
+      totalProgress += progress;
+      
+      if (!lastActive || lastActive < sevenDaysAgo) {
+        inactive++;
+      } else if (progress >= 70 || lastActive >= threeDaysAgo) {
+        onTrack++;
+      } else {
+        needsAttention++;
+      }
+    });
+    
+    return {
+      avgProgress: totalLeaders > 0 ? Math.round(totalProgress / totalLeaders) : 0,
+      onTrack,
+      needsAttention,
+      inactive
+    };
+  }, [users, leaderStats, totalLeaders]);
+  
   return (
-    <div className="space-y-3">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-        <input
-          type="text"
-          placeholder="Search leaders by name or email..."
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20 bg-white dark:bg-slate-800"
-        />
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-center">
+        <div className="text-3xl font-bold text-corporate-navy dark:text-white">{totalLeaders}</div>
+        <div className="text-sm text-slate-600 dark:text-slate-400">Total Leaders</div>
+      </div>
+      <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
+        <div className="text-3xl font-bold text-green-600">{stats.onTrack}</div>
+        <div className="text-sm text-green-600">On Track</div>
+      </div>
+      <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 text-center">
+        <div className="text-3xl font-bold text-amber-600">{stats.needsAttention}</div>
+        <div className="text-sm text-amber-600">Needs Attention</div>
+      </div>
+      <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 text-center">
+        <div className="text-3xl font-bold text-red-600">{stats.inactive}</div>
+        <div className="text-sm text-red-600">Inactive (7+ days)</div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// LEADER SUMMARY ROW (Enhanced list item)
+// ============================================
+const LeaderSummaryRow = ({ leader, stats, isSelected, onSelect }) => {
+  const lastActiveDate = stats?.lastActive ? new Date(stats.lastActive) : null;
+  const now = new Date();
+  const daysSinceActive = lastActiveDate 
+    ? Math.floor((now - lastActiveDate) / (1000 * 60 * 60 * 24))
+    : null;
+  
+  // Determine status
+  const getStatus = () => {
+    if (daysSinceActive === null || daysSinceActive >= 7) return { label: 'Inactive', color: 'bg-red-100 text-red-700 dark:bg-red-900/30' };
+    if (daysSinceActive >= 3) return { label: 'At Risk', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' };
+    return { label: 'Active', color: 'bg-green-100 text-green-700 dark:bg-green-900/30' };
+  };
+  
+  const status = getStatus();
+  const progress = stats?.overallProgress || 0;
+  
+  // Progress bar color
+  const getProgressColor = (pct) => {
+    if (pct >= 70) return 'bg-green-500';
+    if (pct >= 40) return 'bg-amber-500';
+    return 'bg-red-400';
+  };
+  
+  return (
+    <button
+      onClick={() => onSelect(leader.id)}
+      className={`w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors grid grid-cols-12 gap-4 items-center ${
+        isSelected ? 'bg-corporate-teal/10 border-l-4 border-corporate-teal' : ''
+      }`}
+    >
+      {/* Name & Email - 3 cols */}
+      <div className="col-span-3">
+        <div className="font-medium text-corporate-navy dark:text-white truncate">
+          {leader.displayName || leader.email?.split('@')[0] || 'Unknown'}
+        </div>
+        <div className="text-xs text-slate-500 truncate">{leader.email}</div>
       </div>
       
-      <div className="max-h-[300px] overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-700">
-        {loading ? (
-          <div className="p-4 text-center text-slate-500">
-            <Loader className="w-5 h-5 animate-spin mx-auto" />
+      {/* Progress Bar - 3 cols */}
+      <div className="col-span-3">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
+            <div 
+              className={`h-full rounded-full transition-all ${getProgressColor(progress)}`}
+              style={{ width: `${progress}%` }}
+            />
           </div>
-        ) : leaders.length === 0 ? (
-          <div className="p-4 text-center text-slate-500">No leaders found</div>
+          <span className="text-xs font-medium text-slate-600 dark:text-slate-400 w-8">{progress}%</span>
+        </div>
+      </div>
+      
+      {/* Stats - 3 cols */}
+      <div className="col-span-3 flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-1 text-green-600" title="Actions completed">
+          <CheckCircle className="w-3.5 h-3.5" />
+          <span>{stats?.actionsCompleted || 0}</span>
+        </div>
+        <div className="flex items-center gap-1 text-orange-600" title="Reps completed">
+          <Zap className="w-3.5 h-3.5" />
+          <span>{stats?.repsCompleted || 0}</span>
+        </div>
+        <div className="flex items-center gap-1 text-purple-600" title="Days logged">
+          <FileText className="w-3.5 h-3.5" />
+          <span>{stats?.daysLogged || 0}</span>
+        </div>
+      </div>
+      
+      {/* Status & Last Active - 3 cols */}
+      <div className="col-span-3 flex items-center justify-between">
+        <span className={`text-xs px-2 py-1 rounded-full font-medium ${status.color}`}>
+          {status.label}
+        </span>
+        <span className="text-xs text-slate-400">
+          {lastActiveDate 
+            ? daysSinceActive === 0 ? 'Today' : daysSinceActive === 1 ? 'Yesterday' : `${daysSinceActive}d ago`
+            : 'Never'
+          }
+        </span>
+      </div>
+    </button>
+  );
+};
+
+// ============================================
+// LEADER SELECTOR (Enhanced with summary stats)
+// ============================================
+const LeaderSelector = ({ 
+  leaders, 
+  selectedLeaderId, 
+  onSelect, 
+  loading, 
+  searchTerm, 
+  onSearchChange,
+  leaderStats,
+  sortBy,
+  onSortChange 
+}) => {
+  // Sort leaders based on selected sort option
+  const sortedLeaders = useMemo(() => {
+    if (!sortBy || sortBy === 'name') {
+      return [...leaders].sort((a, b) => 
+        (a.displayName || a.email || '').localeCompare(b.displayName || b.email || '')
+      );
+    }
+    
+    return [...leaders].sort((a, b) => {
+      const statsA = leaderStats?.[a.id] || {};
+      const statsB = leaderStats?.[b.id] || {};
+      
+      switch (sortBy) {
+        case 'progress':
+          return (statsB.overallProgress || 0) - (statsA.overallProgress || 0);
+        case 'progress-asc':
+          return (statsA.overallProgress || 0) - (statsB.overallProgress || 0);
+        case 'lastActive': {
+          const dateA = statsA.lastActive ? new Date(statsA.lastActive) : new Date(0);
+          const dateB = statsB.lastActive ? new Date(statsB.lastActive) : new Date(0);
+          return dateB - dateA;
+        }
+        case 'inactive': {
+          const activeA = statsA.lastActive ? new Date(statsA.lastActive) : new Date(0);
+          const activeB = statsB.lastActive ? new Date(statsB.lastActive) : new Date(0);
+          return activeA - activeB;
+        }
+        default:
+          return 0;
+      }
+    });
+  }, [leaders, leaderStats, sortBy]);
+  
+  return (
+    <div className="space-y-3">
+      {/* Search and Sort Row */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search leaders by name or email..."
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20 bg-white dark:bg-slate-800"
+          />
+        </div>
+        <select
+          value={sortBy || 'name'}
+          onChange={(e) => onSortChange(e.target.value)}
+          className="border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
+        >
+          <option value="name">Sort: Name</option>
+          <option value="progress">Sort: Progress (High → Low)</option>
+          <option value="progress-asc">Sort: Progress (Low → High)</option>
+          <option value="lastActive">Sort: Recently Active</option>
+          <option value="inactive">Sort: Most Inactive</option>
+        </select>
+      </div>
+      
+      {/* Table Header */}
+      <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-t-lg text-xs font-semibold text-slate-600 dark:text-slate-400">
+        <div className="col-span-3">Leader</div>
+        <div className="col-span-3">Overall Progress</div>
+        <div className="col-span-3">Activity Stats</div>
+        <div className="col-span-3">Status / Last Active</div>
+      </div>
+      
+      {/* Leader List */}
+      <div className="max-h-[400px] overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-700">
+        {loading ? (
+          <div className="p-8 text-center text-slate-500">
+            <Loader className="w-6 h-6 animate-spin mx-auto mb-2" />
+            <div>Loading leader data...</div>
+          </div>
+        ) : sortedLeaders.length === 0 ? (
+          <div className="p-8 text-center text-slate-500">No leaders found</div>
         ) : (
-          leaders.map((leader) => (
-            <button
+          sortedLeaders.map((leader) => (
+            <LeaderSummaryRow
               key={leader.id}
-              onClick={() => onSelect(leader.id)}
-              className={`w-full text-left p-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${
-                selectedLeaderId === leader.id ? 'bg-corporate-teal/10 border-l-4 border-corporate-teal' : ''
-              }`}
-            >
-              <div className="font-medium text-corporate-navy dark:text-white">
-                {leader.displayName || leader.email?.split('@')[0] || 'Unknown'}
-              </div>
-              <div className="text-xs text-slate-500">{leader.email}</div>
-            </button>
+              leader={leader}
+              stats={leaderStats?.[leader.id]}
+              isSelected={selectedLeaderId === leader.id}
+              onSelect={onSelect}
+            />
           ))
         )}
       </div>
@@ -284,7 +503,7 @@ const ConditioningRepsSection = ({ reps, expanded, onToggle, userId }) => {
       >
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-orange-100 text-orange-600">
-            <Dumbbell className="w-5 h-5" />
+            <Zap className="w-5 h-5" />
           </div>
           <div className="text-left">
             <h3 className="font-semibold text-corporate-navy dark:text-white">Conditioning Reps</h3>
@@ -588,6 +807,8 @@ const LeaderActivityReport = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingUser, setLoadingUser] = useState(false);
+  const [sortBy, setSortBy] = useState('name');
+  const [leaderStats, setLeaderStats] = useState({});
   
   // User activity data
   const [userData, setUserData] = useState(null);
@@ -625,10 +846,11 @@ const LeaderActivityReport = () => {
     loadCohorts();
   }, [db]);
   
-  // Load users based on cohort selection
+  // Load users based on cohort selection and compute summary stats
   useEffect(() => {
     const loadUsers = async () => {
       setLoading(true);
+      setLeaderStats({});
       try {
         let usersQuery;
         if (selectedCohortId) {
@@ -645,6 +867,92 @@ const LeaderActivityReport = () => {
           .map(d => ({ id: d.id, ...d.data() }))
           .sort((a, b) => (a.displayName || a.email || '').localeCompare(b.displayName || b.email || ''));
         setUsers(userList);
+        
+        // Load summary stats for each user (in parallel, batched)
+        const statsMap = {};
+        
+        // Process users in batches of 10 to avoid overwhelming Firestore
+        const batchSize = 10;
+        for (let i = 0; i < userList.length; i += batchSize) {
+          const batch = userList.slice(i, i + batchSize);
+          
+          await Promise.all(batch.map(async (user) => {
+            try {
+              // Get counts from subcollections
+              const [actionsSnap, repsSnap, logsSnap] = await Promise.all([
+                getDocs(query(collection(db, 'users', user.id, 'action_progress'))),
+                getDocs(query(collection(db, 'users', user.id, 'conditioning_reps'))),
+                getDocs(query(collection(db, 'users', user.id, 'daily_logs')))
+              ]);
+              
+              const actionsCompleted = actionsSnap.docs.filter(d => d.data().status === 'completed').length;
+              const repsCompleted = repsSnap.docs.filter(d => 
+                ['completed', 'loop_closed', 'debriefed'].includes(d.data().status)
+              ).length;
+              const daysLogged = logsSnap.docs.length;
+              
+              // Calculate overall progress (simple formula: weighted completion)
+              // Actions worth 40%, Reps worth 40%, Daily logs worth 20%
+              const expectedActions = 20; // Rough estimate for 8-week program
+              const expectedReps = 16; // ~2 per week
+              const expectedDays = 40; // ~5 days per week * 8 weeks
+              
+              const actionProgress = Math.min(100, (actionsCompleted / expectedActions) * 100);
+              const repProgress = Math.min(100, (repsCompleted / expectedReps) * 100);
+              const logProgress = Math.min(100, (daysLogged / expectedDays) * 100);
+              
+              const overallProgress = Math.round((actionProgress * 0.4) + (repProgress * 0.4) + (logProgress * 0.2));
+              
+              // Find last active date
+              let lastActive = user.lastLogin || user.updatedAt || user.createdAt;
+              
+              // Check most recent activity across subcollections
+              const allDates = [];
+              actionsSnap.docs.forEach(d => {
+                const data = d.data();
+                if (data.completedAt) allDates.push(data.completedAt);
+              });
+              repsSnap.docs.forEach(d => {
+                const data = d.data();
+                if (data.createdAt) allDates.push(data.createdAt);
+                if (data.completedAt) allDates.push(data.completedAt);
+              });
+              logsSnap.docs.forEach(d => {
+                const data = d.data();
+                if (data.date) allDates.push(data.date);
+                if (data.createdAt) allDates.push(data.createdAt);
+              });
+              
+              // Find the most recent date
+              const validDates = allDates
+                .map(d => d?.toDate?.() || (d ? new Date(d) : null))
+                .filter(d => d && !isNaN(d.getTime()));
+              
+              if (validDates.length > 0) {
+                const mostRecent = new Date(Math.max(...validDates.map(d => d.getTime())));
+                const lastLoginDate = lastActive?.toDate?.() || (lastActive ? new Date(lastActive) : null);
+                if (!lastLoginDate || mostRecent > lastLoginDate) {
+                  lastActive = mostRecent;
+                }
+              }
+              
+              statsMap[user.id] = {
+                actionsCompleted,
+                repsCompleted,
+                daysLogged,
+                totalActions: actionsSnap.docs.length,
+                totalReps: repsSnap.docs.length,
+                overallProgress,
+                lastActive: lastActive?.toDate?.() || lastActive || null
+              };
+            } catch (err) {
+              console.error(`Error loading stats for user ${user.id}:`, err);
+              statsMap[user.id] = { actionsCompleted: 0, repsCompleted: 0, daysLogged: 0, overallProgress: 0, lastActive: null };
+            }
+          }));
+        }
+        
+        setLeaderStats(statsMap);
       } catch (err) {
         console.error('Error loading users:', err);
       } finally {
@@ -894,17 +1202,23 @@ const LeaderActivityReport = () => {
         </div>
       </div>
       
-      {/* Filters */}
+      {/* Cohort Selector */}
       <Card className="p-4">
-        <div className="flex items-center gap-6 mb-4">
-          <CohortSelector
-            cohorts={cohorts}
-            selectedCohortId={selectedCohortId}
-            onSelect={setSelectedCohortId}
-            loading={loading}
-          />
-        </div>
-        
+        <CohortSelector
+          cohorts={cohorts}
+          selectedCohortId={selectedCohortId}
+          onSelect={setSelectedCohortId}
+          loading={loading}
+        />
+      </Card>
+      
+      {/* Cohort Summary Stats */}
+      {users.length > 0 && (
+        <CohortSummaryStats users={users} leaderStats={leaderStats} />
+      )}
+      
+      {/* Leader List with Summary */}
+      <Card className="p-4">
         <LeaderSelector
           leaders={filteredUsers}
           selectedLeaderId={selectedUserId}
@@ -912,6 +1226,9 @@ const LeaderActivityReport = () => {
           loading={loading}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
+          leaderStats={leaderStats}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
         />
       </Card>
       

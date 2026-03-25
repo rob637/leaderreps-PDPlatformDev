@@ -20,6 +20,7 @@
     "firebase-functions": "^6.0.1",
     "google-auth-library": "^10.5.0",
     "nodemailer": "^7.0.12",
+    "rss-parser": "^3.13.0",
     "twilio": "^5.11.1"
   },
   "devDependencies": {

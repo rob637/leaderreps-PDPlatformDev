@@ -4792,7 +4792,7 @@ async function sendEmailNotification(email, subject, message, options = {}) {
  * Proxies Apollo.io API calls to avoid CORS issues in the browser.
  * Only admins can use this function.
  */
-exports.apolloSearchProxy = onCall({ cors: true, region: "us-central1" }, async (request) => {
+exports.apolloSearchProxy = onCall({ cors: true, region: "us-central1", invoker: "public" }, async (request) => {
   // Check authentication
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Must be authenticated to use Apollo search.');
@@ -4924,7 +4924,7 @@ exports.apolloSearchProxy = onCall({ cors: true, region: "us-central1" }, async 
  * Supports campaign listing, lead management, and status syncing.
  * API Docs: https://developer.instantly.ai/
  */
-exports.instantlyProxy = onCall({ cors: true, region: "us-central1" }, async (request) => {
+exports.instantlyProxy = onCall({ cors: true, region: "us-central1", invoker: "public" }, async (request) => {
   // Check authentication
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Must be authenticated to use Instantly API.');
@@ -5259,7 +5259,7 @@ exports.instantlyWebhook = onRequest({ cors: true, region: "us-central1" }, asyn
  * Supports campaign listing, contact management, and status syncing.
  * API Docs: https://docs.linkedhelper.com/api/
  */
-exports.linkedHelperProxy = onCall({ cors: true, region: "us-central1" }, async (request) => {
+exports.linkedHelperProxy = onCall({ cors: true, region: "us-central1", invoker: "public" }, async (request) => {
   // Check authentication
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Must be authenticated to use LinkedHelper API.');
@@ -5904,7 +5904,7 @@ exports.linkedHelperQueueComplete = onRequest({ cors: true, region: "us-central1
  * Adds a prospect to the LinkedHelper push queue.
  * Called from Team Sales Hub UI.
  */
-exports.linkedHelperQueueAdd = onCall({ cors: true, region: "us-central1" }, async (request) => {
+exports.linkedHelperQueueAdd = onCall({ cors: true, region: "us-central1", invoker: "public" }, async (request) => {
   // Check authentication
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Must be authenticated');
@@ -5984,7 +5984,7 @@ exports.linkedHelperQueueAdd = onCall({ cors: true, region: "us-central1" }, asy
  * Sends an email via Nodemailer for the Outreach module.
  * Can be used for live campaigns or test emails.
  */
-exports.sendOutreachEmail = onCall({ cors: true, region: "us-central1" }, async (request) => {
+exports.sendOutreachEmail = onCall({ cors: true, region: "us-central1", invoker: "public" }, async (request) => {
     // Check authentication
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
@@ -6433,7 +6433,8 @@ IMPORTANT:
  */
 exports.gmailListAccounts = onCall({ 
   cors: true, 
-  region: "us-central1"
+  region: "us-central1",
+  invoker: "public"
 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Must be authenticated.');
@@ -6708,6 +6709,7 @@ exports.importFromDrive = onCall({
 exports.gmailGetAuthUrl = onCall({ 
   cors: true, 
   region: "us-central1",
+  invoker: "public",
   secrets: ["GMAIL_CLIENT_ID"]
 }, async (request) => {
   if (!request.auth) {
@@ -6721,9 +6723,14 @@ exports.gmailGetAuthUrl = onCall({
 
   const userId = request.auth.uid;
   
-  // Dynamic redirect URI based on project
+  // Dynamic redirect URI based on project (Gen 2 functions use Cloud Run URLs)
   const projectId = process.env.GCLOUD_PROJECT || 'leaderreps-test';
-  const redirectUri = `https://us-central1-${projectId}.cloudfunctions.net/gmailOAuthCallback`;
+  // Cloud Run URL format for Gen 2 functions
+  const redirectUri = projectId === 'leaderreps-prod' 
+    ? 'https://gmailoauthcallback-z3b7uz7nma-uc.a.run.app'
+    : projectId === 'leaderreps-test'
+      ? 'https://gmailoauthcallback-dzk3wipgfa-uc.a.run.app'
+      : `https://us-central1-${projectId}.cloudfunctions.net/gmailOAuthCallback`;
   
   // Encode state with userId so we know who to save tokens for
   const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
@@ -6754,6 +6761,7 @@ exports.gmailGetAuthUrl = onCall({
 exports.gmailProxy = onCall({ 
   cors: true, 
   region: "us-central1",
+  invoker: "public",
   secrets: ["GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET"]
 }, async (request) => {
   // Check authentication
@@ -7119,9 +7127,14 @@ exports.gmailOAuthCallback = onRequest({
   const clientId = process.env.GMAIL_CLIENT_ID;
   const clientSecret = process.env.GMAIL_CLIENT_SECRET;
   
-  // Dynamic redirect URI based on project
+  // Dynamic redirect URI based on project (Gen 2 functions use Cloud Run URLs)
   const projectId = process.env.GCLOUD_PROJECT || 'leaderreps-test';
-  const redirectUri = `https://us-central1-${projectId}.cloudfunctions.net/gmailOAuthCallback`;
+  // Cloud Run URL format for Gen 2 functions
+  const redirectUri = projectId === 'leaderreps-prod' 
+    ? 'https://gmailoauthcallback-z3b7uz7nma-uc.a.run.app'
+    : projectId === 'leaderreps-test'
+      ? 'https://gmailoauthcallback-dzk3wipgfa-uc.a.run.app'
+      : `https://us-central1-${projectId}.cloudfunctions.net/gmailOAuthCallback`;
   
   // Debug logging - verbose mode
   logger.info('OAuth callback - FULL DEBUG', { 
@@ -7232,7 +7245,11 @@ exports.gmailOAuthCallback = onRequest({
 
 // Helper to get the app URL based on environment
 function getAppUrl() {
-  // LR-HubSpot / Team Sales app URL
+  // Return correct URL based on project
+  const projectId = process.env.GCLOUD_PROJECT || 'leaderreps-test';
+  if (projectId === 'leaderreps-prod') {
+    return 'https://arena.leaderreps.com';
+  }
   return process.env.APP_URL || 'https://leaderreps-team.web.app';
 }
 
@@ -8162,7 +8179,8 @@ exports.processSequenceQueue = onSchedule({
  */
 exports.processSequenceManual = onCall({ 
   cors: true, 
-  region: "us-central1" 
+  region: "us-central1",
+  invoker: "public" 
 }, async (request) => {
   // Check authentication
   if (!request.auth) {
@@ -8578,3 +8596,1932 @@ exports.scheduledFirestoreBackup = onSchedule({
     throw err;
   }
 });
+
+// ============================================================
+// SOCIAL MEDIA MONITOR - On-Demand Trigger
+// ============================================================
+// Allows admins to manually trigger the social media leadership finder
+// Fetches posts from Reddit RSS, generates AI responses, sends emails
+// ============================================================
+
+const Parser = require("rss-parser");
+// Create parser with proper User-Agent to avoid Reddit 403 blocks
+const rssParser = new Parser({
+  headers: {
+    'User-Agent': 'LeaderReps-SocialMonitor/1.0 (+https://leaderreps.com; cloud-function)',
+    'Accept': 'application/rss+xml, application/xml, text/xml',
+  },
+  timeout: 10000,
+});
+
+// Leadership-focused subreddits
+const LEADERSHIP_SUBREDDITS = [
+  "leadership", "management", "humanresources", "AskHR",
+  "careerdevelopment", "careeradvice", "smallbusiness", "startups",
+  "entrepreneur", "projectmanagement", "cscareerquestions"
+];
+
+// Leadership keywords (AI validates relevance after initial match)
+// Using phrase-based keywords to reduce false positives
+const LEADERSHIP_KEYWORDS = [
+  // Leadership development
+  "leadership development", "leadership training", "leadership skills",
+  "leadership coaching", "leadership advice", "better leader",
+  // Manager-specific
+  "new manager", "first time manager", "new to management",
+  "become a manager", "being a manager",
+  // Team leadership
+  "leading a team", "lead my team", "manage my team",
+  "managing people", "people management", "team management",
+  "managing direct reports",
+  // Feedback & coaching
+  "giving feedback", "difficult conversation", "coaching employees",
+  "1 on 1", "one on one",
+  // Challenges
+  "underperforming employee", "team morale", "delegation", "micromanaging"
+];
+
+/**
+ * Fetch posts from Reddit JSON API (with RSS fallback)
+ * Reddit requires proper User-Agent to avoid 403 blocks
+ */
+const fetchRedditPosts = async (subreddits, maxAge = 48) => {
+  const posts = [];
+  const cutoffTime = Date.now() - (maxAge * 60 * 60 * 1000);
+  const userAgent = 'LeaderReps-SocialMonitor/1.0 (+https://leaderreps.com; cloud-function)';
+  
+  for (const subreddit of subreddits) {
+    try {
+      // Try JSON API first (more reliable than RSS)
+      const jsonUrl = `https://www.reddit.com/r/${subreddit}/new.json?limit=50`;
+      const response = await fetch(jsonUrl, {
+        headers: {
+          'User-Agent': userAgent,
+          'Accept': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Status code ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const children = data?.data?.children || [];
+      
+      for (const child of children) {
+        const post = child.data;
+        if (!post) continue;
+        
+        const pubDate = (post.created_utc || 0) * 1000;
+        if (pubDate < cutoffTime) continue;
+        
+        const text = `${post.title || ""} ${post.selftext || ""}`.toLowerCase();
+        const matchedKeywords = LEADERSHIP_KEYWORDS.filter(kw => text.includes(kw.toLowerCase()));
+        
+        if (matchedKeywords.length > 0) {
+          posts.push({
+            id: post.id || post.permalink,
+            platform: "reddit",
+            subreddit,
+            title: post.title,
+            content: post.selftext || "",
+            author: post.author || "unknown",
+            url: `https://www.reddit.com${post.permalink}`,
+            createdAt: new Date(pubDate),
+            matchedKeywords,
+            score: post.score,
+            numComments: post.num_comments,
+          });
+        }
+      }
+    } catch (jsonErr) {
+      // Fallback to RSS if JSON fails
+      logger.warn(`Reddit JSON failed for r/${subreddit}: ${jsonErr.message}, trying RSS...`);
+      try {
+        const feedUrl = `https://www.reddit.com/r/${subreddit}/new.rss`;
+        const feed = await rssParser.parseURL(feedUrl);
+        
+        for (const item of feed.items || []) {
+          const pubDate = new Date(item.pubDate || item.isoDate).getTime();
+          if (pubDate < cutoffTime) continue;
+          
+          const text = `${item.title || ""} ${item.contentSnippet || ""}`.toLowerCase();
+          const matchedKeywords = LEADERSHIP_KEYWORDS.filter(kw => text.includes(kw.toLowerCase()));
+          
+          if (matchedKeywords.length > 0) {
+            posts.push({
+              id: item.guid || item.link,
+              platform: "reddit",
+              subreddit,
+              title: item.title,
+              content: item.contentSnippet || "",
+              author: item.creator || "unknown",
+              url: item.link,
+              createdAt: new Date(item.pubDate || item.isoDate),
+              matchedKeywords,
+            });
+          }
+        }
+      } catch (rssErr) {
+        logger.warn(`Failed to fetch r/${subreddit}:`, rssErr.message);
+      }
+    }
+  }
+  
+  return posts;
+};
+
+/**
+ * Fetch posts from Hacker News API
+ */
+const fetchHackerNewsPosts = async (maxAge = 48) => {
+  const posts = [];
+  const cutoffTime = Date.now() - (maxAge * 60 * 60 * 1000);
+  
+  try {
+    // Get recent stories (new, best, ask)
+    const storyTypes = ['newstories', 'beststories', 'askstories'];
+    const allStoryIds = [];
+    
+    for (const type of storyTypes) {
+      const response = await fetch(`https://hacker-news.firebaseio.com/v0/${type}.json`);
+      const ids = await response.json();
+      allStoryIds.push(...(ids || []).slice(0, 50)); // Top 50 from each
+    }
+    
+    // Dedupe and limit
+    const uniqueIds = [...new Set(allStoryIds)].slice(0, 100);
+    
+    // Fetch story details (batch)
+    for (const id of uniqueIds) {
+      try {
+        const storyRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+        const story = await storyRes.json();
+        
+        if (!story || !story.title) continue;
+        
+        const pubDate = (story.time || 0) * 1000;
+        if (pubDate < cutoffTime) continue;
+        
+        const text = `${story.title || ""} ${story.text || ""}`.toLowerCase();
+        const matchedKeywords = LEADERSHIP_KEYWORDS.filter(kw => text.includes(kw.toLowerCase()));
+        
+        if (matchedKeywords.length > 0) {
+          posts.push({
+            id: `hn-${story.id}`,
+            platform: "hackernews",
+            title: story.title,
+            content: story.text || "",
+            author: story.by || "unknown",
+            url: story.url || `https://news.ycombinator.com/item?id=${story.id}`,
+            createdAt: new Date(pubDate),
+            matchedKeywords,
+            score: story.score,
+          });
+        }
+      } catch (e) {
+        // Skip individual story errors
+      }
+    }
+  } catch (err) {
+    logger.warn("Failed to fetch Hacker News:", err.message);
+  }
+  
+  return posts;
+};
+
+/**
+ * Fetch posts from Stack Exchange Workplace API
+ */
+const fetchStackExchangePosts = async (maxAge = 48) => {
+  const posts = [];
+  const cutoffTime = Math.floor((Date.now() - (maxAge * 60 * 60 * 1000)) / 1000);
+  
+  try {
+    // Search for leadership-related questions
+    const searchTerms = ["leadership", "manager", "team lead", "managing", "feedback"];
+    
+    for (const term of searchTerms) {
+      const url = `https://api.stackexchange.com/2.3/search?order=desc&sort=creation&intitle=${encodeURIComponent(term)}&site=workplace&filter=withbody&pagesize=20`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      for (const item of data.items || []) {
+        if (item.creation_date < cutoffTime) continue;
+        
+        // Check for keyword match
+        const text = `${item.title || ""} ${item.body || ""}`.toLowerCase();
+        const matchedKeywords = LEADERSHIP_KEYWORDS.filter(kw => text.includes(kw.toLowerCase()));
+        
+        if (matchedKeywords.length > 0) {
+          const postId = `se-${item.question_id}`;
+          if (!posts.find(p => p.id === postId)) {
+            posts.push({
+              id: postId,
+              platform: "stackexchange",
+              title: item.title,
+              content: item.body?.replace(/<[^>]*>/g, "").substring(0, 500) || "",
+              author: item.owner?.display_name || "unknown",
+              url: item.link,
+              createdAt: new Date(item.creation_date * 1000),
+              matchedKeywords,
+              score: item.score,
+            });
+          }
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn("Failed to fetch Stack Exchange:", err.message);
+  }
+  
+  return posts;
+};
+
+/**
+ * Fetch posts from Dev.to API
+ */
+const fetchDevToPosts = async (maxAge = 48) => {
+  const posts = [];
+  const cutoffTime = Date.now() - (maxAge * 60 * 60 * 1000);
+  
+  try {
+    // Search for leadership-related articles
+    const tags = ["leadership", "management", "career", "teamwork", "softskills"];
+    
+    for (const tag of tags) {
+      const url = `https://dev.to/api/articles?tag=${tag}&per_page=30`;
+      const response = await fetch(url);
+      const articles = await response.json();
+      
+      for (const article of articles || []) {
+        const pubDate = new Date(article.published_at).getTime();
+        if (pubDate < cutoffTime) continue;
+        
+        const text = `${article.title || ""} ${article.description || ""}`.toLowerCase();
+        const matchedKeywords = LEADERSHIP_KEYWORDS.filter(kw => text.includes(kw.toLowerCase()));
+        
+        if (matchedKeywords.length > 0) {
+          const postId = `devto-${article.id}`;
+          if (!posts.find(p => p.id === postId)) {
+            posts.push({
+              id: postId,
+              platform: "devto",
+              title: article.title,
+              content: article.description || "",
+              author: article.user?.name || article.user?.username || "unknown",
+              url: article.url,
+              createdAt: new Date(pubDate),
+              matchedKeywords,
+            });
+          }
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn("Failed to fetch Dev.to:", err.message);
+  }
+  
+  return posts;
+};
+
+/**
+ * Fetch posts from Medium via RSS
+ */
+const fetchMediumPosts = async (maxAge = 48) => {
+  const posts = [];
+  const cutoffTime = Date.now() - (maxAge * 60 * 60 * 1000);
+  
+  // Medium tags with leadership content
+  const tags = ["leadership", "management", "team-leadership", "executive-coaching"];
+  
+  for (const tag of tags) {
+    try {
+      const feedUrl = `https://medium.com/feed/tag/${tag}`;
+      const feed = await rssParser.parseURL(feedUrl);
+      
+      for (const item of feed.items || []) {
+        const pubDate = new Date(item.pubDate || item.isoDate).getTime();
+        if (pubDate < cutoffTime) continue;
+        
+        const text = `${item.title || ""} ${item.contentSnippet || ""}`.toLowerCase();
+        const matchedKeywords = LEADERSHIP_KEYWORDS.filter(kw => text.includes(kw.toLowerCase()));
+        
+        if (matchedKeywords.length > 0) {
+          const postId = item.guid || item.link;
+          if (!posts.find(p => p.id === postId)) {
+            posts.push({
+              id: postId,
+              platform: "medium",
+              title: item.title,
+              content: item.contentSnippet || "",
+              author: item.creator || "unknown",
+              url: item.link,
+              createdAt: new Date(pubDate),
+              matchedKeywords,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn(`Failed to fetch Medium tag ${tag}:`, err.message);
+    }
+  }
+  
+  return posts;
+};
+
+/**
+ * Fetch posts from Indie Hackers RSS
+ */
+const fetchIndieHackersPosts = async (maxAge = 48) => {
+  const posts = [];
+  const cutoffTime = Date.now() - (maxAge * 60 * 60 * 1000);
+  
+  try {
+    // Note: Indie Hackers discontinued their RSS feed, trying Google News search as fallback
+    const feedUrl = "https://news.google.com/rss/search?q=indie+hackers+leadership+site:indiehackers.com&hl=en-US&gl=US&ceid=US:en";
+    const feed = await rssParser.parseURL(feedUrl);
+    
+    for (const item of feed.items || []) {
+      const pubDate = new Date(item.pubDate || item.isoDate).getTime();
+      if (pubDate < cutoffTime) continue;
+      
+      const text = `${item.title || ""} ${item.contentSnippet || ""}`.toLowerCase();
+      const matchedKeywords = LEADERSHIP_KEYWORDS.filter(kw => text.includes(kw.toLowerCase()));
+      
+      if (matchedKeywords.length > 0) {
+        posts.push({
+          id: item.guid || item.link,
+          platform: "indiehackers",
+          title: item.title,
+          content: item.contentSnippet || "",
+          author: item.creator || "unknown",
+          url: item.link,
+          createdAt: new Date(pubDate),
+          matchedKeywords,
+        });
+      }
+    }
+  } catch (err) {
+    logger.warn("Failed to fetch Indie Hackers:", err.message);
+  }
+  
+  return posts;
+};
+
+/**
+ * Fetch posts from Leadership RSS Blogs (HBR, First Round, etc.)
+ */
+const LEADERSHIP_RSS_FEEDS = [
+  // Working feeds as of 2026-03
+  { name: "Lara Hogan", url: "https://larahogan.me/feed.xml" },
+  { name: "Seth Godin", url: "https://seths.blog/feed/" },
+  { name: "MIT Sloan Review", url: "https://sloanreview.mit.edu/feed/" },
+  { name: "Know Your Team", url: "https://knowyourteam.com/blog/feed/" },
+  // Note: HBR, First Round Review, Manager's Handbook feeds are no longer available
+];
+
+const fetchLeadershipBlogPosts = async (maxAge = 48) => {
+  const posts = [];
+  const cutoffTime = Date.now() - (maxAge * 60 * 60 * 1000);
+  
+  for (const blog of LEADERSHIP_RSS_FEEDS) {
+    try {
+      const feed = await rssParser.parseURL(blog.url);
+      
+      for (const item of feed.items || []) {
+        const pubDate = new Date(item.pubDate || item.isoDate).getTime();
+        if (pubDate < cutoffTime) continue;
+        
+        // Leadership blogs are pre-qualified, but still check keywords for relevance
+        const text = `${item.title || ""} ${item.contentSnippet || ""}`.toLowerCase();
+        const matchedKeywords = LEADERSHIP_KEYWORDS.filter(kw => text.includes(kw.toLowerCase()));
+        
+        // Include all from leadership blogs even without keyword match
+        posts.push({
+          id: item.guid || item.link,
+          platform: "rss",
+          source: blog.name,
+          title: item.title,
+          content: item.contentSnippet || "",
+          author: item.creator || blog.name,
+          url: item.link,
+          createdAt: new Date(pubDate),
+          matchedKeywords: matchedKeywords.length > 0 ? matchedKeywords : ["leadership blog"],
+        });
+      }
+    } catch (err) {
+      logger.warn(`Failed to fetch ${blog.name}:`, err.message);
+    }
+  }
+  
+  return posts;
+};
+
+/**
+ * Fetch posts from ALL platforms
+ */
+const fetchAllPlatformPosts = async (maxAge = 48) => {
+  logger.info("Fetching from all 7 platforms...");
+  
+  const [reddit, hackernews, stackexchange, devto, medium, indiehackers, rss] = await Promise.all([
+    fetchRedditPosts(LEADERSHIP_SUBREDDITS, maxAge),
+    fetchHackerNewsPosts(maxAge),
+    fetchStackExchangePosts(maxAge),
+    fetchDevToPosts(maxAge),
+    fetchMediumPosts(maxAge),
+    fetchIndieHackersPosts(maxAge),
+    fetchLeadershipBlogPosts(maxAge),
+  ]);
+  
+  logger.info(`Fetched: Reddit=${reddit.length}, HN=${hackernews.length}, SE=${stackexchange.length}, Dev.to=${devto.length}, Medium=${medium.length}, IH=${indiehackers.length}, RSS=${rss.length}`);
+  
+  return [...reddit, ...hackernews, ...stackexchange, ...devto, ...medium, ...indiehackers, ...rss];
+};
+
+/**
+ * Generate AI response for a post using Gemini
+ */
+const generateSocialResponse = async (post, genAI) => {
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  
+  const prompt = `You are helping respond to social media posts about leadership development.
+
+ABOUT LEADERREPS:
+LeaderReps is a leadership professional development platform offering cohort-based 8-week leadership programs, daily practices, AI coaching, and community events.
+
+CURRENT PROMOTION - COACHING THE COACHES WEBINAR:
+"Why Feedback Fails" - A FREE 60-minute working session on giving effective feedback.
+URL: https://www.leaderreps.com/coaching-the-coaches
+
+CLEAR Framework for feedback:
+- Check: Make sure they're open to feedback
+- Label: Give them a headline  
+- Evidence: Describe only what a camera would record
+- Anchor: Connect the behavior to the impact
+- Request: Be clear about what you want moving forward
+
+RESPONSE GUIDELINES:
+1. First, genuinely address the person's question or pain point
+2. Provide actionable value they can use immediately
+3. Keep the tone conversational and authentic - NOT salesy
+4. Only mention LeaderReps/the webinar if genuinely relevant
+5. Keep responses concise - 2-3 short paragraphs max
+6. Match the platform's tone (Reddit = casual)
+
+---
+Platform: Reddit (r/${post.subreddit}) - use casual, helpful tone, don't be promotional
+
+POST TO RESPOND TO:
+Author: ${post.author}
+Title: ${post.title}
+Content: ${post.content}
+---
+
+Generate a helpful, authentic response to this post.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  } catch (err) {
+    logger.error(`Gemini error for ${post.id}:`, err.message);
+    return null;
+  }
+};
+
+/**
+ * AI-based relevance check - determines if a post is actually about leadership development
+ * Returns true if the post is relevant, false otherwise
+ */
+const checkLeadershipRelevance = async (post, genAI) => {
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  
+  const prompt = `You are a content classifier for a leadership development platform.
+
+WHAT WE ARE LOOKING FOR (RELEVANT):
+- People asking for advice on managing/leading teams
+- Questions about giving feedback, difficult conversations, coaching employees
+- New managers seeking guidance on leadership skills
+- People struggling with team dynamics, delegation, motivation
+- Questions about leadership training or development programs
+- Posts about executive presence, influence, or leadership style
+- HR professionals discussing people management challenges
+
+WHAT WE ARE NOT LOOKING FOR (IRRELEVANT):
+- Generic career advice (salary negotiation, job searching, resumes)
+- Technical questions about project management tools/software
+- Posts about "being a leader" in gaming, sports, or competitions
+- Job postings or hiring announcements
+- Pure rants/venting without asking for advice
+- Questions about becoming a manager (job hunting), not being a manager (skill development)
+- Posts where "manager" or "leader" is used in a non-leadership context (e.g., "package manager", "project leader" as job title)
+
+---
+POST TO EVALUATE:
+Title: ${post.title}
+Content: ${post.content}
+Subreddit: r/${post.subreddit}
+---
+
+Is this post genuinely about leadership development, managing people, or becoming a better leader where we could provide valuable advice?
+
+Reply with ONLY "YES" or "NO" followed by a brief reason (10 words max).
+Example: "YES - asking for feedback advice"
+Example: "NO - job posting not seeking advice"`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = result.response.text().trim().toUpperCase();
+    const isRelevant = response.startsWith("YES");
+    logger.info(`Relevance check for "${post.title.substring(0, 50)}...": ${response}`);
+    return isRelevant;
+  } catch (err) {
+    logger.warn(`Relevance check failed for ${post.id}, including by default:`, err.message);
+    return true; // Include on error to avoid missing content
+  }
+};
+
+/**
+ * Build HTML email body
+ */
+const buildSocialMonitorEmail = (posts, responses) => {
+  // Distinct colors for all 7 platforms
+  const platformColors = { 
+    reddit: "#FF4500",       // Reddit orange
+    hackernews: "#FF6600",   // HN orange
+    stackexchange: "#F48024", // Stack orange
+    devto: "#0A0A0A",        // Dev.to black
+    medium: "#00AB6C",       // Medium green
+    indiehackers: "#1F64D5", // IH blue
+    rss: "#8B5CF6",          // RSS purple (leadership blogs)
+  };
+  
+  let postsHtml = "";
+  for (const post of posts) {
+    if (!post) continue; // Skip undefined posts
+    
+    const response = responses[post.id];
+    const badgeColor = platformColors[post.platform] || "#666666";
+    const postUrl = post.url || "#";
+    const createdDate = post.createdAt instanceof Date && !isNaN(post.createdAt) 
+      ? post.createdAt.toLocaleDateString() 
+      : "Recent";
+    
+    postsHtml += `
+      <div style="background: white; border-radius: 8px; padding: 16px; margin-bottom: 16px; border-left: 4px solid ${badgeColor};">
+        <div style="margin-bottom: 8px;">
+          <span style="display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; background: ${badgeColor}; text-transform: uppercase;">
+            ${post.platform === "rss" ? (post.source || "Blog") : post.platform === "stackexchange" ? "Stack Exchange" : post.platform === "hackernews" ? "Hacker News" : post.platform === "devto" ? "Dev.to" : post.platform === "indiehackers" ? "Indie Hackers" : (post.platform || "unknown")}
+          </span>
+          ${post.subreddit ? `<span style="color: #666; margin-left: 8px;">r/${post.subreddit}</span>` : ""}
+        </div>
+        <h3 style="margin: 8px 0; color: #002E47; font-size: 16px;">
+          <a href="${postUrl}" style="color: #002E47; text-decoration: none;">${post.title || "View Post"}</a>
+        </h3>
+        <p style="color: #666; font-size: 13px; margin: 8px 0;">
+          By ${post.author || "unknown"} • ${createdDate}
+        </p>
+        <p style="color: #333; margin: 8px 0; font-size: 14px;">
+          ${(post.content || "").substring(0, 300)}${(post.content || "").length > 300 ? "..." : ""}
+        </p>
+        ${response ? `
+          <div style="background: #E8F5E9; padding: 12px; border-radius: 6px; margin-top: 12px;">
+            <p style="color: #2E7D32; font-weight: bold; margin: 0 0 8px 0; font-size: 13px;">💡 Suggested Response:</p>
+            <p style="color: #333; margin: 0; font-size: 13px; white-space: pre-wrap;">${response}</p>
+          </div>
+        ` : ""}
+        <a href="${postUrl}" style="display: inline-block; margin-top: 12px; padding: 8px 16px; background: #47A88D; color: white; text-decoration: none; border-radius: 6px; font-size: 13px;">
+          View & Respond →
+        </a>
+      </div>
+    `;
+  }
+  
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: #002E47; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+      <h1 style="margin: 0; font-size: 22px;">🎯 Leadership Content Finder</h1>
+      <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 14px;">${posts.length} new leadership discussions found</p>
+    </div>
+    <div style="background: #f1f5f9; padding: 20px; border-radius: 0 0 8px 8px;">
+      ${postsHtml}
+    </div>
+    <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
+      <p style="margin: 0;">Social Media Monitor for LeaderReps</p>
+      <p style="margin: 4px 0;"><a href="https://www.leaderreps.com" style="color: #47A88D;">www.leaderreps.com</a></p>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
+/**
+ * Callable function to run social media monitor on demand
+ * 
+ * Features:
+ * - Deduplication: Tracks sent posts in Firestore to avoid re-sending
+ * - Per-subscriber filtering: Each subscriber only gets posts for their selected platforms
+ * - AI responses: Gemini generates contextual reply suggestions
+ */
+exports.runSocialMediaMonitor = onCall({ 
+  cors: true, 
+  region: "us-central1",
+  timeoutSeconds: 180,
+  memory: "512MiB"
+}, async (request) => {
+  // Verify admin
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Must be logged in");
+  }
+  
+  const userEmail = request.auth.token.email?.toLowerCase();
+  const adminDoc = await db.collection("metadata").doc("config").get();
+  const adminEmails = (adminDoc.exists && adminDoc.data().adminemails) || [];
+  const isAdmin = adminEmails.some(e => e.toLowerCase() === userEmail);
+  
+  if (!isAdmin) {
+    throw new HttpsError("permission-denied", "Admin access required");
+  }
+  
+  const { testMode = false, recipientEmail, forceResend = false } = request.data || {};
+  
+  logger.info("Social media monitor triggered", { userEmail, testMode, forceResend });
+  
+  try {
+    // 1. Fetch posts from ALL 7 platforms
+    logger.info("Fetching posts from all platforms...");
+    const posts = await fetchAllPlatformPosts(48); // 48 hours
+    logger.info(`Found ${posts.length} matching posts across all platforms`);
+    
+    if (posts.length === 0) {
+      return { success: true, message: "No matching posts found", postsFound: 0, newPosts: 0, emailsSent: 0 };
+    }
+    
+    // 2. Deduplication - filter out posts already sent
+    const sentPostsDoc = await db.doc("config/social-monitor-sent-posts").get();
+    const sentPostIds = sentPostsDoc.exists ? (sentPostsDoc.data().postIds || []) : [];
+    const sentPostsSet = new Set(sentPostIds);
+    
+    let newPosts = posts;
+    if (!forceResend) {
+      newPosts = posts.filter(p => !sentPostsSet.has(p.id));
+      logger.info(`Filtered to ${newPosts.length} new posts (${posts.length - newPosts.length} already sent)`);
+    }
+    
+    if (newPosts.length === 0) {
+      return { 
+        success: true, 
+        message: "All posts have already been sent", 
+        postsFound: posts.length, 
+        newPosts: 0, 
+        emailsSent: 0 
+      };
+    }
+    
+    // Limit to 15 posts for initial processing
+    let limitedPosts = newPosts.slice(0, 15);
+    
+    // 3. AI Relevance Check - filter to only truly leadership-relevant posts
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const responses = {};
+    
+    if (geminiKey) {
+      const genAI = new GoogleGenerativeAI(geminiKey);
+      
+      // First pass: check relevance of each post
+      logger.info("Checking AI relevance of posts...");
+      const relevantPosts = [];
+      for (const post of limitedPosts) {
+        const isRelevant = await checkLeadershipRelevance(post, genAI);
+        if (isRelevant) {
+          relevantPosts.push(post);
+        }
+      }
+      logger.info(`${relevantPosts.length}/${limitedPosts.length} posts passed AI relevance check`);
+      
+      // Update limitedPosts to only relevant ones
+      limitedPosts = relevantPosts;
+      
+      if (limitedPosts.length === 0) {
+        return {
+          success: true,
+          message: `Found ${posts.length} keyword matches, but none were relevant to leadership development after AI review`,
+          postsFound: posts.length,
+          newPosts: 0,
+          emailsSent: 0,
+        };
+      }
+      
+      // Second pass: generate responses for relevant posts
+      logger.info("Generating AI responses for relevant posts...");
+      for (const post of limitedPosts) {
+        const response = await generateSocialResponse(post, genAI);
+        if (response) {
+          responses[post.id] = response;
+        }
+      }
+      logger.info(`Generated ${Object.keys(responses).length} responses`);
+    }
+    
+    // 4. Get subscriptions or use provided recipient
+    let recipients = [];
+    
+    if (recipientEmail) {
+      recipients = [{ email: recipientEmail, platforms: ["reddit"] }];
+    } else {
+      const subsDoc = await db.doc("config/social-monitor-subscriptions").get();
+      if (subsDoc.exists) {
+        const subs = subsDoc.data().subscriptions || [];
+        recipients = subs.filter(s => s.enabled !== false && s.email);
+      }
+    }
+    
+    // Fallback to requesting user
+    if (recipients.length === 0) {
+      recipients = [{ email: userEmail, platforms: ["reddit"] }];
+    }
+    
+    // 4. Send emails
+    if (!testMode) {
+      const emailUser = process.env.NODEMAILER_EMAIL;
+      const emailPass = process.env.NODEMAILER_PASSWORD;
+      
+      if (emailUser && emailPass) {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: { user: emailUser, pass: emailPass },
+        });
+        
+        const htmlBody = buildSocialMonitorEmail(limitedPosts, responses);
+        
+        for (const recipient of recipients) {
+          await transporter.sendMail({
+            from: `"LeaderReps Social Monitor" <${emailUser}>`,
+            to: recipient.email,
+            subject: `🎯 [Leadership Finder] ${limitedPosts.length} new discussions found`,
+            html: htmlBody,
+          });
+          logger.info(`Email sent to ${recipient.email}`);
+        }
+      }
+    }
+    
+    // 5. Mark posts as sent (for deduplication)
+    if (!testMode && limitedPosts.length > 0) {
+      const newSentIds = limitedPosts.map(p => p.id);
+      // Keep last 500 sent post IDs (rolling window)
+      const allSentIds = [...new Set([...newSentIds, ...sentPostIds])].slice(0, 500);
+      
+      await db.doc("config/social-monitor-sent-posts").set({
+        postIds: allSentIds,
+        lastRun: admin.firestore.FieldValue.serverTimestamp(),
+        lastRunBy: userEmail,
+        lastPostCount: limitedPosts.length,
+      }, { merge: true });
+      
+      logger.info(`Marked ${newSentIds.length} posts as sent`);
+    }
+    
+    return {
+      success: true,
+      postsFound: posts.length,
+      newPosts: limitedPosts.length,
+      responsesGenerated: Object.keys(responses).length,
+      emailsSent: testMode ? 0 : recipients.length,
+      recipients: recipients.map(r => r.email),
+    };
+    
+  } catch (err) {
+    logger.error("Social media monitor failed:", err);
+    throw new HttpsError("internal", `Monitor failed: ${err.message}`);
+  }
+});
+
+/**
+ * SCHEDULED SOCIAL MEDIA MONITOR
+ * Runs every morning at 9:00 AM ET to send leadership content digests
+ */
+exports.scheduledSocialMediaMonitor = onSchedule(
+  {
+    schedule: "0 9 * * *", // 9:00 AM every day
+    timeZone: "America/New_York",
+    region: "us-central1",
+    timeoutSeconds: 300,
+    memory: "512MiB",
+  },
+  async (event) => {
+    logger.info("🎯 Starting scheduled social media monitor at 9:00 AM ET");
+    
+    try {
+      // 1. Get subscribers
+      const subsDoc = await db.doc("config/social-monitor-subscriptions").get();
+      if (!subsDoc.exists) {
+        logger.info("No subscriptions found, skipping");
+        return;
+      }
+      
+      const subs = subsDoc.data().subscriptions || [];
+      const enabledSubs = subs.filter(s => s.enabled !== false && s.email);
+      
+      if (enabledSubs.length === 0) {
+        logger.info("No enabled subscriptions, skipping");
+        return;
+      }
+      
+      logger.info(`Found ${enabledSubs.length} enabled subscribers`);
+      
+      // 2. Fetch posts from ALL 7 platforms
+      const posts = await fetchAllPlatformPosts(48); // 48 hours
+      logger.info(`Found ${posts.length} matching posts from all platforms`);
+      
+      if (posts.length === 0) {
+        logger.info("No posts found, skipping");
+        return;
+      }
+      
+      // 3. Deduplication - filter out posts already sent
+      const sentPostsDoc = await db.doc("config/social-monitor-sent-posts").get();
+      const sentPostIds = sentPostsDoc.exists ? (sentPostsDoc.data().postIds || []) : [];
+      const sentPostsSet = new Set(sentPostIds);
+      
+      const newPosts = posts.filter(p => !sentPostsSet.has(p.id));
+      logger.info(`Filtered to ${newPosts.length} new posts (${posts.length - newPosts.length} already sent)`);
+      
+      if (newPosts.length === 0) {
+        logger.info("All posts already sent, skipping");
+        return;
+      }
+      
+      // Limit to 15 posts
+      let limitedPosts = newPosts.slice(0, 15);
+      
+      // 4. AI Relevance Check
+      const geminiKey = process.env.GEMINI_API_KEY;
+      const responses = {};
+      
+      if (geminiKey) {
+        const genAI = new GoogleGenerativeAI(geminiKey);
+        
+        // Check relevance
+        logger.info("Checking AI relevance of posts...");
+        const relevantPosts = [];
+        for (const post of limitedPosts) {
+          const isRelevant = await checkLeadershipRelevance(post, genAI);
+          if (isRelevant) {
+            relevantPosts.push(post);
+          }
+        }
+        logger.info(`${relevantPosts.length}/${limitedPosts.length} posts passed AI relevance check`);
+        
+        limitedPosts = relevantPosts;
+        
+        if (limitedPosts.length === 0) {
+          logger.info("No relevant posts after AI filter, skipping");
+          return;
+        }
+        
+        // Generate responses
+        logger.info("Generating AI responses...");
+        for (const post of limitedPosts) {
+          const response = await generateSocialResponse(post, genAI);
+          if (response) {
+            responses[post.id] = response;
+          }
+        }
+        logger.info(`Generated ${Object.keys(responses).length} responses`);
+      }
+      
+      // 5. Send emails to each subscriber
+      const emailUser = process.env.NODEMAILER_EMAIL;
+      const emailPass = process.env.NODEMAILER_PASSWORD;
+      
+      if (!emailUser || !emailPass) {
+        logger.error("Email credentials not configured");
+        return;
+      }
+      
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: emailUser, pass: emailPass },
+      });
+      
+      const htmlBody = buildSocialMonitorEmail(limitedPosts, responses);
+      let emailsSent = 0;
+      
+      for (const sub of enabledSubs) {
+        try {
+          await transporter.sendMail({
+            from: `"LeaderReps Social Monitor" <${emailUser}>`,
+            to: sub.email,
+            subject: `🎯 [Leadership Finder] ${limitedPosts.length} new discussions found`,
+            html: htmlBody,
+          });
+          logger.info(`Email sent to ${sub.email}`);
+          emailsSent++;
+        } catch (emailErr) {
+          logger.error(`Failed to send to ${sub.email}:`, emailErr.message);
+        }
+      }
+      
+      // 6. Mark posts as sent
+      if (limitedPosts.length > 0) {
+        const newSentIds = limitedPosts.map(p => p.id);
+        const allSentIds = [...new Set([...newSentIds, ...sentPostIds])].slice(0, 500);
+        
+        await db.doc("config/social-monitor-sent-posts").set({
+          postIds: allSentIds,
+          lastRun: admin.firestore.FieldValue.serverTimestamp(),
+          lastRunBy: "scheduled-function",
+          lastPostCount: limitedPosts.length,
+        }, { merge: true });
+      }
+      
+      logger.info(`✅ Scheduled social media monitor complete: ${limitedPosts.length} posts sent to ${emailsSent} subscribers`);
+      
+    } catch (err) {
+      logger.error("Scheduled social media monitor failed:", err);
+    }
+  }
+);
+
+// ============================================================================
+// LEADERSHIP ASSESSMENT ENGINE
+// ============================================================================
+
+const LEADERSHIP_DIMENSIONS_DATA = {
+  vision: {
+    name: 'Vision & Strategy',
+    shortName: 'Visionary',
+    icon: '🔭',
+    color: '#8B5CF6',
+    description: 'You see the big picture and inspire others with a compelling future.',
+  },
+  people: {
+    name: 'People & Empathy',
+    shortName: 'Connector',
+    icon: '💚',
+    color: '#10B981',
+    description: 'You lead through relationships and genuine care.',
+  },
+  execution: {
+    name: 'Execution & Drive',
+    shortName: 'Driver',
+    icon: '🎯',
+    color: '#EF4444',
+    description: 'You turn plans into results.',
+  },
+  communication: {
+    name: 'Communication',
+    shortName: 'Communicator',
+    icon: '🎙️',
+    color: '#F59E0B',
+    description: 'You excel at getting ideas across clearly and persuasively.',
+  },
+  adaptability: {
+    name: 'Adaptability',
+    shortName: 'Navigator',
+    icon: '🌊',
+    color: '#06B6D4',
+    description: 'You thrive in change and help others navigate uncertainty.',
+  },
+  innovation: {
+    name: 'Innovation & Growth',
+    shortName: 'Innovator',
+    icon: '💡',
+    color: '#EC4899',
+    description: 'You challenge the status quo and find creative solutions.',
+  },
+};
+
+/**
+ * Generate personalized AI insights for leadership assessment
+ */
+const generateLeadershipInsights = async (results, firstName) => {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) {
+    logger.warn("No Gemini API key - using fallback insights");
+    return null;
+  }
+
+  const genAI = new GoogleGenerativeAI(geminiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const topDims = results.topDimensions || [];
+  const scores = results.scores || {};
+  const archetype = results.archetypeData?.name || "Balanced Leader";
+
+  const prompt = `You are a world-class executive coach providing personalized feedback to ${firstName || "a leader"}.
+
+Based on their Leadership DNA Assessment results:
+- Archetype: ${archetype}
+- Top strengths: ${topDims.map(d => LEADERSHIP_DIMENSIONS_DATA[d]?.name).join(', ')}
+- Dimension scores: ${Object.entries(scores).map(([k, v]) => `${LEADERSHIP_DIMENSIONS_DATA[k]?.name}: ${v}%`).join(', ')}
+
+Write a personalized coaching insight (250-300 words) that:
+1. Celebrates their unique leadership combination
+2. Provides one specific strength to double down on
+3. Identifies one growth opportunity with actionable advice
+4. Ends with an inspiring call to action
+
+Be warm, specific, and actionable. Use "you" language. Don't use headings or bullet points - make it feel like a personal letter from a mentor.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  } catch (err) {
+    logger.error("Gemini insight generation failed:", err.message);
+    return null;
+  }
+};
+
+/**
+ * Build beautiful HTML email for assessment results
+ */
+const buildAssessmentEmail = (firstName, results, aiInsights) => {
+  const archetype = results.archetypeData || {};
+  const sortedDimensions = results.sortedDimensions || [];
+  const scores = results.scores || {};
+  
+  const dimensionBars = sortedDimensions.map(([dim, score]) => {
+    const data = LEADERSHIP_DIMENSIONS_DATA[dim];
+    return `
+      <div style="margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span style="color: #fff; font-weight: 500;">${data.icon} ${data.name}</span>
+          <span style="color: rgba(255,255,255,0.7);">${score}%</span>
+        </div>
+        <div style="background: rgba(255,255,255,0.1); border-radius: 8px; height: 8px; overflow: hidden;">
+          <div style="background: ${data.color}; height: 100%; width: ${score}%; border-radius: 8px;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Leadership DNA Results</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #002E47 0%, #001a2b 100%); border-radius: 16px 16px 0 0; padding: 32px; text-align: center;">
+      <div style="display: inline-block; padding: 8px 16px; background: rgba(71,168,141,0.2); border-radius: 20px; color: #47A88D; font-size: 12px; font-weight: 600; margin-bottom: 16px;">
+        ✨ YOUR RESULTS ARE READY
+      </div>
+      <h1 style="margin: 0; color: #fff; font-size: 28px; font-weight: 700;">
+        Hi ${firstName || 'Leader'}, here's your<br/>Leadership DNA
+      </h1>
+    </div>
+    
+    <!-- Archetype Card -->
+    <div style="background: linear-gradient(135deg, #002E47 0%, #003d5c 100%); padding: 32px; text-align: center;">
+      <div style="color: rgba(255,255,255,0.6); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+        Your Leadership Archetype
+      </div>
+      <h2 style="margin: 0 0 8px 0; color: #fff; font-size: 24px; font-weight: 700;">
+        ${archetype.name || 'Leadership Excellence'}
+      </h2>
+      <p style="margin: 0 0 12px 0; color: #47A88D; font-size: 14px; font-weight: 600;">
+        ${archetype.tagline || ''}
+      </p>
+      ${archetype.superpower ? `
+      <div style="display: inline-block; padding: 8px 16px; background: rgba(255,255,255,0.1); border-radius: 20px; color: #fff; font-size: 13px; margin-bottom: 16px;">
+        ⚡ Superpower: <strong>${archetype.superpower}</strong>
+      </div>
+      ` : ''}
+      <p style="margin: 0 0 12px 0; color: rgba(255,255,255,0.8); font-size: 14px; line-height: 1.6;">
+        ${archetype.description || ''}
+      </p>
+      ${archetype.famousLeaders ? `
+      <p style="margin: 0; color: rgba(255,255,255,0.5); font-size: 12px;">
+        Similar leaders: ${archetype.famousLeaders.join(', ')}
+      </p>
+      ` : ''}
+    </div>
+    
+    <!-- Dimensions -->
+    <div style="background: #002E47; padding: 24px;">
+      <h3 style="margin: 0 0 20px 0; color: #fff; font-size: 16px; font-weight: 600;">
+        Your Leadership Dimensions
+      </h3>
+      ${dimensionBars}
+    </div>
+    
+    <!-- AI Insights -->
+    ${aiInsights ? `
+    <div style="background: linear-gradient(135deg, #002E47 0%, #003d5c 100%); padding: 24px;">
+      <div style="display: flex; align-items: center; margin-bottom: 16px;">
+        <span style="margin-right: 8px;">✨</span>
+        <h3 style="margin: 0; color: #fff; font-size: 16px; font-weight: 600;">
+          Personalized Insights
+        </h3>
+      </div>
+      <p style="margin: 0; color: rgba(255,255,255,0.85); font-size: 14px; line-height: 1.7; white-space: pre-wrap;">
+${aiInsights}
+      </p>
+    </div>
+    ` : ''}
+    
+    <!-- CTA -->
+    <div style="background: linear-gradient(135deg, #47A88D 0%, #3a8a73 100%); padding: 32px; text-align: center; border-radius: 0 0 16px 16px;">
+      <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 20px; font-weight: 700;">
+        Ready to Level Up?
+      </h3>
+      <p style="margin: 0 0 20px 0; color: rgba(255,255,255,0.9); font-size: 14px;">
+        Join our 8-week leadership development program and go from knowing your strengths to mastering them.
+      </p>
+      <a href="https://www.leaderreps.com" style="display: inline-block; padding: 14px 28px; background: #fff; color: #002E47; font-weight: 700; text-decoration: none; border-radius: 10px; font-size: 14px;">
+        Explore LeaderReps Programs →
+      </a>
+    </div>
+    
+    <!-- Footer -->
+    <div style="padding: 24px; text-align: center;">
+      <p style="margin: 0 0 8px 0; color: rgba(255,255,255,0.5); font-size: 12px;">
+        © 2026 LeaderReps. All rights reserved.
+      </p>
+      <a href="https://www.leaderreps.com" style="color: #47A88D; font-size: 12px; text-decoration: none;">
+        www.leaderreps.com
+      </a>
+    </div>
+    
+  </div>
+</body>
+</html>`;
+};
+
+/**
+ * Cloud Function: Analyze leadership assessment and send results email
+ * Called from the assessment app after email capture
+ */
+exports.analyzeLeadershipAssessment = onRequest(
+  {
+    region: "us-central1",
+    timeoutSeconds: 60,
+    memory: "256MiB",
+    cors: true, // Enable CORS for browser requests
+  },
+  async (req, res) => {
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'POST');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+      res.status(204).send('');
+      return;
+    }
+
+    // Set CORS headers for actual request
+    res.set('Access-Control-Allow-Origin', '*');
+
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const { email, firstName, answers, results } = req.body;
+
+    if (!email || !results) {
+      res.status(400).json({ error: 'Missing required fields: email and results' });
+      return;
+    }
+
+    logger.info(`Processing leadership assessment for ${email}`);
+
+    try {
+      // 1. Generate AI insights
+      const aiInsights = await generateLeadershipInsights(results, firstName);
+      logger.info(`AI insights generated: ${aiInsights ? 'yes' : 'no'}`);
+
+      // 2. Send email FIRST (before Firestore which can fail on complex objects)
+      const emailUser = process.env.EMAIL_USER;
+      const emailPass = process.env.EMAIL_PASS;
+      let emailSent = false;
+
+      if (emailUser && emailPass) {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: { user: emailUser, pass: emailPass },
+        });
+
+        const htmlEmail = buildAssessmentEmail(firstName, results, aiInsights);
+
+        await transporter.sendMail({
+          from: `"LeaderReps" <arena@leaderreps.com>`,
+          to: email,
+          subject: `🎯 ${firstName ? firstName + ', your' : 'Your'} Leadership DNA Results Are Ready`,
+          html: htmlEmail,
+        });
+        
+        emailSent = true;
+        logger.info(`Results email sent to ${email}`);
+      } else {
+        logger.warn("Email credentials not configured - skipping email");
+      }
+
+      // 3. Store the lead in Firestore (sanitized data)
+      // Flatten results to avoid Firestore nested entity issues
+      const sanitizedResults = {
+        scores: results.scores || {},
+        topDimensions: results.topDimensions || [],
+        archetype: results.archetype || 'balanced-leader',
+        archetypeName: results.archetypeData?.name || '',
+      };
+
+      logger.info(`Attempting to store lead for ${email}...`);
+      try {
+        const docRef = await db.collection('assessment-leads').add({
+          email: email.toLowerCase(),
+          firstName: firstName || '',
+          results: sanitizedResults,
+          aiInsights: aiInsights || null,
+          source: 'leadership-dna-assessment',
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          marketingOptIn: true,
+          emailSent,
+        });
+        logger.info(`Lead stored successfully for ${email}, docId: ${docRef.id}`);
+      } catch (firestoreErr) {
+        logger.error(`Firestore write FAILED for ${email}:`, firestoreErr);
+      }
+
+      // Return insights to display on results page
+      res.json({
+        success: true,
+        aiInsights: aiInsights || null,
+        message: 'Assessment processed successfully',
+      });
+
+    } catch (err) {
+      logger.error("Assessment processing failed:", err);
+      res.status(500).json({ error: 'Processing failed', details: err.message });
+    }
+  }
+);
+
+// ===========================================
+// ROI Calculator Functions
+// ===========================================
+
+/**
+ * Generate personalized AI insights for ROI calculation
+ */
+const generateROIInsights = async (inputs, results) => {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) {
+    logger.warn("No Gemini API key - using fallback ROI insights");
+    return null;
+  }
+
+  const genAI = new GoogleGenerativeAI(geminiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  // Use results.totalInvestment (calculated value) since inputs only has investmentPerLeader
+  const totalInvestment = results.totalInvestment || (inputs.investmentPerLeader * inputs.numLeaders) || 0;
+
+  const prompt = `You are a strategic business consultant helping a ${inputs.title || 'business leader'} at ${inputs.company || 'their organization'} build the business case for leadership development investment.
+
+ROI Calculation Results:
+- Industry: ${inputs.industry || 'General'}
+- Number of Leaders: ${inputs.numLeaders || 10}
+- Employees Impacted: ${(inputs.numLeaders || 10) * (inputs.teamSize || 8)}
+- Current Turnover Rate: ${inputs.turnoverRate || 15}%
+- Total Investment: $${totalInvestment.toLocaleString()}
+- Projected Annual Savings: $${(results.totalAnnualSavings || 0).toLocaleString()}
+- ROI: ${results.roiPercentage || 0}%
+- Payback Period: ${results.paybackMonths || 0} months
+
+Breakdown:
+- Turnover Savings: $${(results.turnoverSavings || 0).toLocaleString()}
+- Productivity Gains: $${(results.productivityGains || 0).toLocaleString()}
+- Absenteeism Reduction: $${(results.absenteeismSavings || 0).toLocaleString()}
+- Engagement Value: $${(results.engagementValue || 0).toLocaleString()}
+
+Write a personalized executive summary (200-250 words) that:
+1. Highlights the most compelling ROI insight for their specific industry
+2. Provides 2-3 key talking points they can use to present this to stakeholders
+3. Identifies the biggest risk of NOT investing in leadership development
+4. Ends with a clear next step recommendation
+
+Use confident, professional language appropriate for a boardroom presentation. Be specific with numbers. Make them feel confident presenting this case.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  } catch (err) {
+    logger.error("Gemini ROI insight generation failed:", err.message);
+    return null;
+  }
+};
+
+/**
+ * Build beautiful HTML email for ROI Calculator results
+ */
+const buildROIEmail = (firstName, inputs, results, aiInsights) => {
+  const formatCurrency = (num) => 
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num || 0);
+
+  // Calculate totalInvestment from results or derive from inputs
+  const totalInvestment = results.totalInvestment || (inputs.investmentPerLeader * inputs.numLeaders) || 0;
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #002E47 0%, #003d5c 100%); padding: 40px 30px; text-align: center;">
+      <img src="https://leaderreps.com/logo-white.png" alt="LeaderReps" style="height: 40px; margin-bottom: 20px;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">
+        Your Leadership ROI Report
+      </h1>
+      <p style="color: rgba(255,255,255,0.8); margin: 10px 0 0; font-size: 16px;">
+        ${firstName ? `${firstName}, here's` : "Here's"} your personalized ROI analysis
+      </p>
+    </div>
+
+    <!-- Main Stats -->
+    <div style="padding: 30px;">
+      <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 16px; padding: 30px; text-align: center; margin-bottom: 20px;">
+        <p style="color: rgba(255,255,255,0.8); margin: 0 0 5px; font-size: 14px;">Projected Annual Savings</p>
+        <p style="color: #ffffff; margin: 0; font-size: 42px; font-weight: 700;">${formatCurrency(results.totalAnnualSavings)}</p>
+        <p style="color: rgba(255,255,255,0.7); margin: 10px 0 0; font-size: 13px;">
+          Range: ${formatCurrency(results.savingsRange.conservative)} – ${formatCurrency(results.savingsRange.optimistic)}
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 15px;">
+        <div style="flex: 1; background: #f1f5f9; border-radius: 12px; padding: 20px; text-align: center;">
+          <p style="color: #64748b; margin: 0 0 5px; font-size: 12px;">ROI</p>
+          <p style="color: #002E47; margin: 0; font-size: 28px; font-weight: 700;">${results.roiPercentage}%</p>
+        </div>
+        <div style="flex: 1; background: #f1f5f9; border-radius: 12px; padding: 20px; text-align: center;">
+          <p style="color: #64748b; margin: 0 0 5px; font-size: 12px;">Payback</p>
+          <p style="color: #002E47; margin: 0; font-size: 28px; font-weight: 700;">${results.paybackMonths} mo</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details -->
+    <div style="padding: 0 30px 30px;">
+      <h3 style="color: #002E47; margin: 0 0 15px; font-size: 18px;">Your Input Summary</h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Industry</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; text-align: right; color: #002E47; font-weight: 500;">${inputs.industry}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Leaders in Program</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; text-align: right; color: #002E47; font-weight: 500;">${inputs.numLeaders}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Employees Impacted</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; text-align: right; color: #002E47; font-weight: 500;">${inputs.numLeaders * inputs.teamSize}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Current Turnover</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; text-align: right; color: #002E47; font-weight: 500;">${inputs.turnoverRate}%</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; color: #64748b;">Investment</td>
+          <td style="padding: 10px 0; text-align: right; color: #002E47; font-weight: 500;">${formatCurrency(totalInvestment)}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Breakdown -->
+    <div style="padding: 0 30px 30px;">
+      <h3 style="color: #002E47; margin: 0 0 15px; font-size: 18px;">Savings Breakdown</h3>
+      <div style="background: #002E47; border-radius: 12px; padding: 20px;">
+        <div style="margin-bottom: 15px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="color: rgba(255,255,255,0.7); font-size: 13px;">Turnover Cost Savings</span>
+            <span style="color: #10B981; font-weight: 600;">${formatCurrency(results.turnoverSavings)}</span>
+          </div>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="color: rgba(255,255,255,0.7); font-size: 13px;">Productivity Gains</span>
+            <span style="color: #06B6D4; font-weight: 600;">${formatCurrency(results.productivityGains)}</span>
+          </div>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="color: rgba(255,255,255,0.7); font-size: 13px;">Absenteeism Reduction</span>
+            <span style="color: #fbbf24; font-weight: 600;">${formatCurrency(results.absenteeismSavings)}</span>
+          </div>
+        </div>
+        <div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: rgba(255,255,255,0.7); font-size: 13px;">Engagement Value</span>
+            <span style="color: #E04E1B; font-weight: 600;">${formatCurrency(results.engagementValue)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${aiInsights ? `
+    <!-- AI Insights -->
+    <div style="padding: 0 30px 30px;">
+      <h3 style="color: #002E47; margin: 0 0 15px; font-size: 18px;">💡 Executive Summary</h3>
+      <div style="background: #f8fafc; border-radius: 12px; padding: 20px; border-left: 4px solid #47A88D;">
+        <p style="color: #334155; margin: 0; font-size: 14px; line-height: 1.7; white-space: pre-wrap;">${aiInsights}</p>
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- CTA -->
+    <div style="padding: 0 30px 40px; text-align: center;">
+      <a href="https://leaderreps.com/programs" style="display: inline-block; background: #47A88D; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 16px;">
+        Explore Our Programs →
+      </a>
+      <p style="color: #64748b; margin: 20px 0 0; font-size: 13px;">
+        Ready to realize these savings? Let's discuss how we can help.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+      <p style="color: #64748b; margin: 0; font-size: 12px;">
+        © ${new Date().getFullYear()} LeaderReps. Developing exceptional leaders.<br>
+        <a href="https://leaderreps.com" style="color: #47A88D;">leaderreps.com</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
+/**
+ * Cloud Function: Process ROI Calculator submission and send results email
+ * Called from the ROI calculator app after email capture
+ */
+exports.processROICalculator = onRequest(
+  {
+    region: "us-central1",
+    timeoutSeconds: 60,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (req, res) => {
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'POST');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+      res.status(204).send('');
+      return;
+    }
+
+    res.set('Access-Control-Allow-Origin', '*');
+
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const { email, firstName, lastName, company, title, inputs, results } = req.body;
+
+    if (!email || !inputs || !results) {
+      res.status(400).json({ error: 'Missing required fields: email, inputs, and results' });
+      return;
+    }
+
+    logger.info(`Processing ROI calculator for ${email}`);
+
+    try {
+      // 1. Generate AI insights
+      const aiInsights = await generateROIInsights(
+        { ...inputs, company, title },
+        results
+      );
+      logger.info(`AI ROI insights generated: ${aiInsights ? 'yes' : 'no'}`);
+
+      // 2. Send email
+      const emailUser = process.env.EMAIL_USER;
+      const emailPass = process.env.EMAIL_PASS;
+      let emailSent = false;
+
+      if (emailUser && emailPass) {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: { user: emailUser, pass: emailPass },
+        });
+
+        const htmlEmail = buildROIEmail(firstName, inputs, results, aiInsights);
+
+        await transporter.sendMail({
+          from: `"LeaderReps" <arena@leaderreps.com>`,
+          to: email,
+          subject: `📊 ${firstName ? firstName + ', your' : 'Your'} Leadership ROI Report: ${results.roiPercentage}% Return`,
+          html: htmlEmail,
+        });
+        
+        emailSent = true;
+        logger.info(`ROI report email sent to ${email}`);
+      } else {
+        logger.warn("Email credentials not configured - skipping email");
+      }
+
+      // 3. Store lead in Firestore
+      try {
+        const docRef = await db.collection('roi-calculator-leads').add({
+          email: email.toLowerCase(),
+          firstName: firstName || '',
+          lastName: lastName || '',
+          company: company || '',
+          title: title || '',
+          inputs: inputs,
+          results: {
+            totalAnnualSavings: results.totalAnnualSavings,
+            roiPercentage: results.roiPercentage,
+            paybackMonths: results.paybackMonths,
+            turnoverSavings: results.turnoverSavings,
+            productivityGains: results.productivityGains,
+            absenteeismSavings: results.absenteeismSavings,
+            engagementValue: results.engagementValue,
+            totalInvestment: results.totalInvestment,
+          },
+          aiInsights: aiInsights || null,
+          source: 'roi-calculator',
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          marketingOptIn: true,
+          emailSent,
+        });
+        logger.info(`ROI lead stored successfully for ${email}, docId: ${docRef.id}`);
+      } catch (firestoreErr) {
+        logger.error(`Firestore write FAILED for ROI lead ${email}:`, firestoreErr);
+      }
+
+      res.json({
+        success: true,
+        aiInsights: aiInsights || null,
+        message: 'ROI calculation processed successfully',
+      });
+
+    } catch (err) {
+      logger.error("ROI calculator processing failed:", err);
+      res.status(500).json({ error: 'Processing failed', details: err.message });
+    }
+  }
+);
+
+// ===========================================
+// Accountability Assessment Functions
+// ===========================================
+
+/**
+ * Accountability dimensions data for AI insights and email generation
+ */
+const ACCOUNTABILITY_DIMENSIONS_DATA = {
+  ownership: {
+    id: 'ownership',
+    name: 'Ownership Mindset',
+    icon: '🎯',
+    color: '#E04E1B',
+  },
+  reliability: {
+    id: 'reliability',
+    name: 'Commitment Reliability',
+    icon: '✅',
+    color: '#47A88D',
+  },
+  transparency: {
+    id: 'transparency',
+    name: 'Transparent Communication',
+    icon: '🔍',
+    color: '#06B6D4',
+  },
+  standards: {
+    id: 'standards',
+    name: 'Standards & Expectations',
+    icon: '📏',
+    color: '#8B5CF6',
+  },
+  feedback: {
+    id: 'feedback',
+    name: 'Feedback & Growth',
+    icon: '💪',
+    color: '#10B981',
+  },
+};
+
+/**
+ * Generate personalized AI insights for accountability assessment
+ */
+const generateAccountabilityInsights = async (results, firstName) => {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) {
+    logger.warn("No Gemini API key - using fallback insights");
+    return null;
+  }
+
+  const genAI = new GoogleGenerativeAI(geminiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const topDims = results.topDimensions || [];
+  const weakestDim = results.weakestDimension || 'ownership';
+  const scores = results.scores || {};
+  const archetype = results.archetypeData?.name || "Accountable Leader";
+  const overallScore = results.overallScore || 50;
+  const maturityLevel = results.maturityLevel || "Developing";
+
+  const prompt = `You are a world-class executive coach specializing in accountability and leadership development, providing personalized feedback to ${firstName || "a leader"}.
+
+Based on their Accountability Assessment results:
+- Overall Score: ${overallScore}/100 (${maturityLevel})
+- Archetype: ${archetype}
+- Top strengths: ${topDims.map(d => ACCOUNTABILITY_DIMENSIONS_DATA[d]?.name).join(', ')}
+- Biggest growth area: ${ACCOUNTABILITY_DIMENSIONS_DATA[weakestDim]?.name}
+- Dimension scores: ${Object.entries(scores).map(([k, v]) => `${ACCOUNTABILITY_DIMENSIONS_DATA[k]?.name}: ${v}%`).join(', ')}
+
+Write a personalized accountability coaching insight (250-300 words) that:
+1. Acknowledges their current accountability level honestly but encouragingly
+2. Highlights their top accountability strength and how to leverage it
+3. Identifies their biggest accountability gap with one specific, actionable practice to start THIS WEEK
+4. Explains how LeaderReps' 8-week program builds accountability through daily micro-practices, AI coaching, and peer accountability partners
+5. Ends with an inspiring but direct call to action about choosing accountability
+
+Be direct and honest—accountability requires facing the truth. Use "you" language. Don't use headings or bullet points - make it feel like a personal message from a tough but caring coach who believes in their potential.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  } catch (err) {
+    logger.error("Gemini accountability insight generation failed:", err.message);
+    return null;
+  }
+};
+
+/**
+ * Build HTML email for accountability assessment results
+ */
+const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights) => {
+  const archetype = results.archetypeData || {};
+  const sortedDimensions = results.sortedDimensions || [];
+  const overallScore = results.overallScore || 50;
+  const maturityLevel = results.maturityLevel || 'Developing';
+  const weakestDim = results.weakestDimension || 'ownership';
+  const weakestDimData = ACCOUNTABILITY_DIMENSIONS_DATA[weakestDim] || {};
+  
+  const dimensionBars = sortedDimensions.map(([dim, score]) => {
+    const data = ACCOUNTABILITY_DIMENSIONS_DATA[dim];
+    return `
+      <div style="margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span style="color: #fff; font-weight: 500;">${data.icon} ${data.name}</span>
+          <span style="color: rgba(255,255,255,0.7);">${score}%</span>
+        </div>
+        <div style="background: rgba(255,255,255,0.1); border-radius: 8px; height: 8px; overflow: hidden;">
+          <div style="background: ${data.color}; height: 100%; width: ${score}%; border-radius: 8px;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Color for score
+  const getScoreColor = () => {
+    if (overallScore >= 80) return '#10B981';
+    if (overallScore >= 65) return '#47A88D';
+    if (overallScore >= 50) return '#F59E0B';
+    return '#E04E1B';
+  };
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Accountability Assessment Results</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #002E47 0%, #001a2b 100%); border-radius: 16px 16px 0 0; padding: 32px; text-align: center;">
+      <div style="display: inline-block; padding: 8px 16px; background: rgba(224,78,27,0.2); border-radius: 20px; color: #E04E1B; font-size: 12px; font-weight: 600; margin-bottom: 16px;">
+        🎯 YOUR ACCOUNTABILITY PROFILE
+      </div>
+      <h1 style="margin: 0; color: #fff; font-size: 28px; font-weight: 700;">
+        Hi ${firstName || 'Leader'}, here are<br/>your results
+      </h1>
+    </div>
+    
+    <!-- Score Card -->
+    <div style="background: linear-gradient(135deg, #002E47 0%, #003d5c 100%); padding: 32px; text-align: center;">
+      <div style="display: inline-block; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 4px solid ${getScoreColor()}; line-height: 1;">
+        <div style="padding-top: 30px;">
+          <span style="color: #fff; font-size: 42px; font-weight: 700;">${overallScore}</span>
+          <span style="color: rgba(255,255,255,0.6); font-size: 14px; display: block;">/100</span>
+        </div>
+      </div>
+      <div style="margin-top: 16px;">
+        <span style="display: inline-block; padding: 8px 20px; background: ${getScoreColor()}; color: #fff; border-radius: 20px; font-weight: 700; font-size: 16px;">
+          ${maturityLevel}
+        </span>
+      </div>
+    </div>
+    
+    <!-- Archetype Card -->
+    <div style="background: #002E47; padding: 24px;">
+      <div style="color: rgba(255,255,255,0.6); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+        Your Accountability Archetype
+      </div>
+      <h2 style="margin: 0 0 8px 0; color: #fff; font-size: 22px; font-weight: 700;">
+        ${archetype.name || 'Accountable Leader'}
+      </h2>
+      <p style="margin: 0 0 12px 0; color: #E04E1B; font-size: 14px; font-weight: 600;">
+        ${archetype.tagline || ''}
+      </p>
+      ${archetype.superpower ? `
+      <div style="display: inline-block; padding: 8px 16px; background: rgba(255,255,255,0.1); border-radius: 20px; color: #fff; font-size: 13px; margin-bottom: 16px;">
+        ⚡ Superpower: <strong>${archetype.superpower}</strong>
+      </div>
+      ` : ''}
+      <p style="margin: 0; color: rgba(255,255,255,0.8); font-size: 14px; line-height: 1.6;">
+        ${archetype.description || ''}
+      </p>
+    </div>
+    
+    <!-- Dimensions -->
+    <div style="background: linear-gradient(135deg, #002E47 0%, #001a2b 100%); padding: 24px;">
+      <h3 style="margin: 0 0 20px 0; color: #fff; font-size: 16px; font-weight: 600;">
+        Your 5 Accountability Dimensions
+      </h3>
+      ${dimensionBars}
+    </div>
+    
+    <!-- Growth Focus -->
+    <div style="background: #002E47; padding: 24px;">
+      <h3 style="margin: 0 0 12px 0; color: #E04E1B; font-size: 16px; font-weight: 600;">
+        ⚠️ Your #1 Growth Focus
+      </h3>
+      <p style="margin: 0; color: #fff; font-size: 14px; font-weight: 600;">
+        ${weakestDimData.icon || '🎯'} ${weakestDimData.name || 'Accountability'}
+      </p>
+      <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.7); font-size: 13px; line-height: 1.5;">
+        This is your biggest opportunity for growth. Small improvements here will have an outsized impact on your effectiveness as a leader.
+      </p>
+    </div>
+    
+    <!-- AI Insights -->
+    ${aiInsights ? `
+    <div style="background: linear-gradient(135deg, #002E47 0%, #003d5c 100%); padding: 24px;">
+      <div style="display: flex; align-items: center; margin-bottom: 16px;">
+        <span style="margin-right: 8px;">✨</span>
+        <h3 style="margin: 0; color: #fff; font-size: 16px; font-weight: 600;">
+          Your Personalized Coaching
+        </h3>
+      </div>
+      <p style="margin: 0; color: rgba(255,255,255,0.85); font-size: 14px; line-height: 1.7; white-space: pre-wrap;">
+${aiInsights}
+      </p>
+    </div>
+    ` : ''}
+    
+    <!-- CTA -->
+    <div style="background: linear-gradient(135deg, #E04E1B 0%, #c43d12 100%); padding: 32px; text-align: center; border-radius: 0 0 16px 16px;">
+      <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 20px; font-weight: 700;">
+        Ready to Build Unshakeable Accountability?
+      </h3>
+      <p style="margin: 0 0 20px 0; color: rgba(255,255,255,0.9); font-size: 14px;">
+        Join LeaderReps' 8-week program with daily accountability practices, AI coaching, and peer accountability partners.
+      </p>
+      <a href="https://www.leaderreps.com" style="display: inline-block; padding: 14px 28px; background: #fff; color: #002E47; font-weight: 700; text-decoration: none; border-radius: 10px; font-size: 14px;">
+        Explore LeaderReps Programs →
+      </a>
+    </div>
+    
+    <!-- Footer -->
+    <div style="padding: 24px; text-align: center;">
+      <p style="margin: 0 0 8px 0; color: rgba(255,255,255,0.5); font-size: 12px;">
+        © 2026 LeaderReps. Building accountable leaders.
+      </p>
+      <a href="https://www.leaderreps.com" style="color: #E04E1B; font-size: 12px; text-decoration: none;">
+        www.leaderreps.com
+      </a>
+    </div>
+    
+  </div>
+</body>
+</html>`;
+};
+
+/**
+ * Cloud Function: Analyze accountability assessment and send results email
+ * Called from the accountability assessment app after email capture
+ */
+exports.analyzeAccountabilityAssessment = onRequest(
+  {
+    region: "us-central1",
+    timeoutSeconds: 60,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (req, res) => {
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'POST');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+      res.status(204).send('');
+      return;
+    }
+
+    res.set('Access-Control-Allow-Origin', '*');
+
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const { email, firstName, answers, results } = req.body;
+
+    if (!email || !results) {
+      res.status(400).json({ error: 'Missing required fields: email and results' });
+      return;
+    }
+
+    logger.info(`Processing accountability assessment for ${email}`);
+
+    try {
+      // 1. Generate AI insights
+      const aiInsights = await generateAccountabilityInsights(results, firstName);
+      logger.info(`AI insights generated: ${aiInsights ? 'yes' : 'no'}`);
+
+      // 2. Send email
+      const emailUser = process.env.EMAIL_USER;
+      const emailPass = process.env.EMAIL_PASS;
+      let emailSent = false;
+
+      if (emailUser && emailPass) {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: { user: emailUser, pass: emailPass },
+        });
+
+        const htmlEmail = buildAccountabilityAssessmentEmail(firstName, results, aiInsights);
+
+        await transporter.sendMail({
+          from: `"LeaderReps" <arena@leaderreps.com>`,
+          to: email,
+          subject: `🎯 ${firstName ? firstName + ', your' : 'Your'} Accountability Assessment: ${results.overallScore || 0}/100`,
+          html: htmlEmail,
+        });
+        
+        emailSent = true;
+        logger.info(`Accountability results email sent to ${email}`);
+      } else {
+        logger.warn("Email credentials not configured - skipping email");
+      }
+
+      // 3. Store the lead in Firestore
+      const sanitizedResults = {
+        scores: results.scores || {},
+        topDimensions: results.topDimensions || [],
+        weakestDimension: results.weakestDimension || '',
+        archetype: results.archetype || 'balanced-accountable',
+        archetypeName: results.archetypeData?.name || '',
+        overallScore: results.overallScore || 0,
+        maturityLevel: results.maturityLevel || '',
+      };
+
+      try {
+        const docRef = await db.collection('accountability-leads').add({
+          email: email.toLowerCase(),
+          firstName: firstName || '',
+          results: sanitizedResults,
+          aiInsights: aiInsights || null,
+          source: 'accountability-assessment',
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          marketingOptIn: true,
+          emailSent,
+        });
+        logger.info(`Accountability lead stored for ${email}, docId: ${docRef.id}`);
+      } catch (firestoreErr) {
+        logger.error(`Firestore write FAILED for ${email}:`, firestoreErr);
+      }
+
+      res.json({
+        success: true,
+        aiInsights: aiInsights || null,
+        message: 'Accountability assessment processed successfully',
+      });
+
+    } catch (err) {
+      logger.error("Accountability assessment processing failed:", err);
+      res.status(500).json({ error: 'Processing failed', details: err.message });
+    }
+  }
+);

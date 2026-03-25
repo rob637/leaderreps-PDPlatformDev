@@ -12,8 +12,6 @@ import OutreachPage from './pages/OutreachPage';
 import ActivitiesPage from './pages/ActivitiesPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
-// DEPRECATED: Original Instantly.ai integration - replaced by LR-Instantly (see sequenceStore.js)
-// import InstantlyPushModal from './components/instantly/InstantlyPushModal';
 import LinkedHelperPushModal from './components/linkedhelper/LinkedHelperPushModal';
 
 // Protected Route wrapper
@@ -110,8 +108,6 @@ function App() {
       <BrowserRouter>
         <AppRoutes />
       </BrowserRouter>
-      {/* Global Push Modals */}
-      {/* DEPRECATED: <InstantlyPushModal /> - replaced by LR-Instantly */}
       <LinkedHelperPushModal />
     </>
   );

@@ -1,6 +1,6 @@
 // src/components/admin/TrainerSessionsPanel.jsx
-// Trainer view of their scheduled sessions and open sessions
-// Shows: My Sessions (assigned to me), Open Sessions (still have spots)
+// Trainer view of all coaching sessions
+// Shows: Sessions with Attendees, Sessions without signups, All sessions
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
@@ -12,12 +12,7 @@ import { useAppServices } from '../../services/useAppServices';
 import { Card } from '../ui';
 import {
   collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  doc,
-  getDoc
+  getDocs
 } from 'firebase/firestore';
 import {
   COACHING_SESSIONS_COLLECTION,
@@ -256,13 +251,13 @@ const SessionCard = ({ session, registrations, expanded, onToggle }) => {
 // MAIN COMPONENT
 // ============================================
 const TrainerSessionsPanel = () => {
-  const { db, user } = useAppServices();
+  const { db } = useAppServices();
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState([]);
   const [registrationsBySession, setRegistrationsBySession] = useState({});
   const [expandedSession, setExpandedSession] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [view, setView] = useState('my-sessions'); // 'my-sessions', 'open-sessions', 'all'
+  const [view, setView] = useState('with-attendees'); // 'with-attendees', 'open-sessions', 'all'
   const [refreshing, setRefreshing] = useState(false);
 
   // Fetch sessions and registrations
@@ -317,27 +312,20 @@ const TrainerSessionsPanel = () => {
     
     // Filter by view
     switch (view) {
-      case 'my-sessions':
-        // Sessions where I'm the coach OR assigned facilitator
-        // Check coach field, facilitator field, or email match
-        const userEmail = user?.email?.toLowerCase();
-        const userName = user?.displayName?.toLowerCase();
+      case 'with-attendees':
+        // Sessions that have at least 1 registered attendee
         result = result.filter(s => {
-          const coach = (s.coach || '').toLowerCase();
-          const facilitator = (s.facilitator || '').toLowerCase();
-          const facilitatorEmail = (s.facilitatorEmail || '').toLowerCase();
-          return (
-            coach.includes('ryan') || // For now, show Ryan's sessions for admins
-            coach === userEmail ||
-            coach === userName ||
-            facilitator === userEmail ||
-            facilitatorEmail === userEmail
-          );
+          const regs = registrationsBySession[s.id] || [];
+          const activeRegs = regs.filter(r => 
+            r.status !== REGISTRATION_STATUS.CANCELLED && 
+            r.status !== REGISTRATION_STATUS.NO_SHOW
+          ).length;
+          return activeRegs > 0;
         });
         break;
         
       case 'open-sessions':
-        // Sessions with spots still available
+        // Sessions with spots still available (but no registrations yet)
         result = result.filter(s => {
           const maxAttendees = s.maxAttendees || getDefaultMaxAttendees(s.sessionType);
           const regs = registrationsBySession[s.id] || [];
@@ -345,7 +333,7 @@ const TrainerSessionsPanel = () => {
             r.status !== REGISTRATION_STATUS.CANCELLED && 
             r.status !== REGISTRATION_STATUS.NO_SHOW
           ).length;
-          return (maxAttendees - activeRegs) > 0;
+          return activeRegs === 0 && (maxAttendees - activeRegs) > 0;
         });
         break;
         
@@ -376,26 +364,30 @@ const TrainerSessionsPanel = () => {
     });
     
     return result;
-  }, [sessions, view, searchTerm, registrationsBySession, user]);
+  }, [sessions, view, searchTerm, registrationsBySession]);
 
   // Stats
   const stats = useMemo(() => {
     const upcoming = sessions.filter(s => isUpcoming(s.date));
-    const userEmail = user?.email?.toLowerCase();
     
-    const mySessions = upcoming.filter(s => {
-      const coach = (s.coach || '').toLowerCase();
-      return coach.includes('ryan') || coach === userEmail;
-    });
-    
-    const openSessions = upcoming.filter(s => {
-      const maxAttendees = s.maxAttendees || getDefaultMaxAttendees(s.sessionType);
+    // Sessions with at least 1 registered attendee
+    const sessionsWithAttendees = upcoming.filter(s => {
       const regs = registrationsBySession[s.id] || [];
       const activeRegs = regs.filter(r => 
         r.status !== REGISTRATION_STATUS.CANCELLED && 
         r.status !== REGISTRATION_STATUS.NO_SHOW
       ).length;
-      return (maxAttendees - activeRegs) > 0;
+      return activeRegs > 0;
+    });
+    
+    // Sessions with no registrations (available)
+    const openSessions = upcoming.filter(s => {
+      const regs = registrationsBySession[s.id] || [];
+      const activeRegs = regs.filter(r => 
+        r.status !== REGISTRATION_STATUS.CANCELLED && 
+        r.status !== REGISTRATION_STATUS.NO_SHOW
+      ).length;
+      return activeRegs === 0;
     });
     
     const totalRegistrations = Object.values(registrationsBySession)
@@ -404,11 +396,11 @@ const TrainerSessionsPanel = () => {
     
     return {
       totalUpcoming: upcoming.length,
-      mySessions: mySessions.length,
+      sessionsWithAttendees: sessionsWithAttendees.length,
       openSessions: openSessions.length,
       totalRegistrations
     };
-  }, [sessions, registrationsBySession, user]);
+  }, [sessions, registrationsBySession]);
 
   if (loading) {
     return (
@@ -424,10 +416,10 @@ const TrainerSessionsPanel = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-corporate-navy dark:text-white">
-            Trainer Sessions
+            Session Management
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            View your scheduled sessions and manage open sessions
+            View sessions by registration status • Click any session to see attendee details
           </p>
         </div>
         <button
@@ -450,24 +442,24 @@ const TrainerSessionsPanel = () => {
             Upcoming Sessions
           </div>
         </Card>
-        <Card className="p-4 text-center">
+        <Card className="p-4 text-center cursor-pointer hover:ring-2 ring-corporate-teal/50 transition-all" onClick={() => setView('with-attendees')}>
           <div className="text-2xl font-bold text-corporate-teal">
-            {stats.mySessions}
+            {stats.sessionsWithAttendees}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 uppercase">
-            My Sessions
+            With Attendees
+          </div>
+        </Card>
+        <Card className="p-4 text-center cursor-pointer hover:ring-2 ring-amber-500/50 transition-all" onClick={() => setView('open-sessions')}>
+          <div className="text-2xl font-bold text-amber-600">
+            {stats.openSessions}
+          </div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 uppercase">
+            No Signups Yet
           </div>
         </Card>
         <Card className="p-4 text-center">
           <div className="text-2xl font-bold text-green-600">
-            {stats.openSessions}
-          </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 uppercase">
-            Open Sessions
-          </div>
-        </Card>
-        <Card className="p-4 text-center">
-          <div className="text-2xl font-bold text-blue-600">
             {stats.totalRegistrations}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 uppercase">
@@ -482,15 +474,15 @@ const TrainerSessionsPanel = () => {
           {/* View Toggle */}
           <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
             <button
-              onClick={() => setView('my-sessions')}
+              onClick={() => setView('with-attendees')}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                view === 'my-sessions'
+                view === 'with-attendees'
                   ? 'bg-white dark:bg-slate-600 text-corporate-navy dark:text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-300 hover:text-corporate-navy'
               }`}
             >
-              <User className="w-4 h-4 inline mr-1" />
-              My Sessions
+              <UserCheck className="w-4 h-4 inline mr-1" />
+              With Attendees
             </button>
             <button
               onClick={() => setView('open-sessions')}
@@ -501,7 +493,7 @@ const TrainerSessionsPanel = () => {
               }`}
             >
               <Eye className="w-4 h-4 inline mr-1" />
-              Open Sessions
+              No Signups Yet
             </button>
             <button
               onClick={() => setView('all')}
@@ -539,10 +531,10 @@ const TrainerSessionsPanel = () => {
               No Sessions Found
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {view === 'my-sessions' 
-                ? 'You have no upcoming sessions assigned to you.'
+              {view === 'with-attendees' 
+                ? 'No sessions have registered attendees yet.'
                 : view === 'open-sessions'
-                  ? 'All sessions are currently full.'
+                  ? 'All sessions have at least one registration.'
                   : 'No sessions match your search.'}
             </p>
           </Card>

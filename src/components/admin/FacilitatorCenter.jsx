@@ -3,12 +3,12 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Users, ArrowLeft, Dumbbell, BookOpen, CheckCircle, Award, FileText,
+  Users, ArrowLeft, Zap, BookOpen, CheckCircle, Award, FileText,
   ShieldAlert, ClipboardList, Calendar,
 } from 'lucide-react';
 import ConditioningDashboard from './ConditioningDashboard';
 import SessionAttendanceQueue from './SessionAttendanceQueue';
-import MilestoneSignOffQueue from './MilestoneSignOffQueue';
+import LevelSignOffQueue from './LevelSignOffQueue';
 import CoachingCertificationQueue from './CoachingCertificationQueue';
 import LeaderProfileReports from './LeaderProfileReports';
 import LeaderActivityReport from './LeaderActivityReport';
@@ -17,19 +17,19 @@ import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 
 const TABS = [
+  { id: 'trainer-sessions', label: 'My Sessions', icon: Calendar },
   { id: 'activity-report', label: 'Leader Activity', icon: ClipboardList },
   { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
-  { id: 'trainer-sessions', label: 'My Sessions', icon: Calendar },
-  { id: 'conditioning', label: 'Conditioning', icon: Dumbbell },
+  { id: 'conditioning', label: 'Conditioning', icon: Zap },
   { id: 'session-attendance', label: 'Session Attendance', icon: BookOpen },
-  { id: 'sign-off-queue', label: 'Sign-Off Queue', icon: CheckCircle },
+  { id: 'sign-off-queue', label: 'Level Sign-Off', icon: CheckCircle },
   { id: 'coaching-cert', label: 'Certification Queue', icon: Award },
 ];
 
 const FacilitatorCenter = () => {
   const { user, isAdmin, navigate } = useAppServices();
   const { navParams } = useNavigation();
-  const [activeTab, setActiveTab] = useState(navParams?.tab || 'activity-report');
+  const [activeTab, setActiveTab] = useState(navParams?.tab || 'trainer-sessions');
 
   useEffect(() => {
     if (navParams?.tab) setActiveTab(navParams.tab);
@@ -48,7 +48,7 @@ const FacilitatorCenter = () => {
     switch (activeTab) {
       case 'conditioning': return <ConditioningDashboard />;
       case 'session-attendance': return <SessionAttendanceQueue />;
-      case 'sign-off-queue': return <MilestoneSignOffQueue />;
+      case 'sign-off-queue': return <LevelSignOffQueue />;
       case 'coaching-cert': return <CoachingCertificationQueue />;
       case 'leader-profiles': return <LeaderProfileReports />;
       case 'activity-report': return <LeaderActivityReport />;
