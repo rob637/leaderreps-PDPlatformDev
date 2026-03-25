@@ -1630,6 +1630,14 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       if (item.id && sessionAttendanceData[item.id]?.attended === true) {
         return true;
       }
+      // Conditioning rep items use autoComplete (based on loopClosedRepCounts)
+      if (item.handlerType === 'conditioning-rep' && item.autoComplete === true) {
+        return true;
+      }
+      // Interactive items with pre-computed autoComplete status
+      if (item.isInteractive && item.autoComplete === true) {
+        return true;
+      }
       const progress = getItemProgress(item.id);
       return progress.status === 'completed' || completedItems.includes(item.id);
     }).length;
@@ -3450,6 +3458,14 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               const completedThisWeek = milestoneActions.filter(item => {
                 // Check facilitator-controlled session attendance (Deliberate Practice sessions)
                 if (item.id && sessionAttendanceData[item.id]?.attended === true) {
+                  return true;
+                }
+                // Conditioning rep items use autoComplete (based on loopClosedRepCounts)
+                if (item.handlerType === 'conditioning-rep' && item.autoComplete === true) {
+                  return true;
+                }
+                // Interactive items with pre-computed autoComplete status
+                if (item.isInteractive && item.autoComplete === true) {
                   return true;
                 }
                 // Special handling for coaching items that require certification
