@@ -870,6 +870,14 @@ const DevelopmentJourneyWidget = () => {
         id: a.id || `milestone-${milestone}-action-${idx}`
       }));
       
+      // Filter out inactive rep types (only show SIMPLIFIED_REP_TYPES)
+      const filteredActionsWithId = actionsWithId.filter(a => {
+        if (a.handlerType === 'conditioning-rep' && a.repTypeId) {
+          return SIMPLIFIED_REP_TYPES.includes(a.repTypeId);
+        }
+        return true;
+      });
+      
       // Generate coaching session actions from milestone's coachingSessionTypes
       let coachingActions = [];
       if (milestoneContent?.coachingSessionTypes && milestoneContent.coachingSessionTypes.length > 0) {
@@ -943,7 +951,7 @@ const DevelopmentJourneyWidget = () => {
       }
       
       // Check completion status for regular actions
-      const actionsWithStatus = actionsWithId.map(a => {
+      const actionsWithStatus = filteredActionsWithId.map(a => {
         // Check facilitator-controlled session attendance (Deliberate Practice sessions)
         if (a.id && sessionAttendance[a.id]?.attended === true) {
           return { ...a, isCompleted: true };
