@@ -6716,7 +6716,7 @@ exports.gmailGetAuthUrl = onCall({
     throw new HttpsError('unauthenticated', 'Must be authenticated.');
   }
 
-  const clientId = process.env.GMAIL_CLIENT_ID;
+  const clientId = process.env.GMAIL_CLIENT_ID?.trim();
   if (!clientId) {
     throw new HttpsError('failed-precondition', 'Gmail OAuth not configured.');
   }
@@ -6829,8 +6829,8 @@ exports.gmailProxy = onCall({
 
   // Helper to refresh access token
   const refreshAccessToken = async (refreshToken) => {
-    const clientId = process.env.GMAIL_CLIENT_ID;
-    const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+    const clientId = process.env.GMAIL_CLIENT_ID?.trim();
+    const clientSecret = process.env.GMAIL_CLIENT_SECRET?.trim();
     
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -7124,8 +7124,8 @@ exports.gmailOAuthCallback = onRequest({
     return res.redirect(`${getAppUrl()}/settings?gmail_error=invalid_state`);
   }
   
-  const clientId = process.env.GMAIL_CLIENT_ID;
-  const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+  const clientId = process.env.GMAIL_CLIENT_ID?.trim();
+  const clientSecret = process.env.GMAIL_CLIENT_SECRET?.trim();
   
   // Dynamic redirect URI based on project (Gen 2 functions use Cloud Run URLs)
   const projectId = process.env.GCLOUD_PROJECT || 'leaderreps-test';
@@ -7267,8 +7267,8 @@ exports.gmailSyncJob = onSchedule({
 }, async (event) => {
   logger.info("Gmail sync job started");
   
-  const clientId = process.env.GMAIL_CLIENT_ID;
-  const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+  const clientId = process.env.GMAIL_CLIENT_ID?.trim();
+  const clientSecret = process.env.GMAIL_CLIENT_SECRET?.trim();
   
   try {
     // 1. Get all connected team Gmail accounts
