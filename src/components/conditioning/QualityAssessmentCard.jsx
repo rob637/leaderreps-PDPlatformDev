@@ -9,7 +9,7 @@ import { Card } from '../ui';
 import { 
   CheckCircle, XCircle, AlertTriangle, Send, RotateCcw,
   MessageSquare, Target, Handshake, Lightbulb, ChevronDown, HelpCircle,
-  ClipboardCheck, Eye, UserCheck, ThumbsUp, Megaphone, X, TrendingUp, TrendingDown, Minus, Info, ArrowRight
+  ClipboardCheck, Eye, UserCheck, ThumbsUp, Megaphone, X, TrendingUp, TrendingDown, Minus, Info, ArrowRight, User, Shield
 } from 'lucide-react';
 
 // Dimension icons and labels - use string keys to avoid module initialization order issues
@@ -228,12 +228,82 @@ const LWV_CONDITION_CONFIG = {
   }
 };
 
+// RED condition config - 5-condition scored rubric (0-3 per condition)
+const RED_CONDITION_CONFIG = {
+  behavior_named: {
+    icon: Eye,
+    label: 'Behavior Named',
+    description: 'The specific behavior was clearly identified and observable',
+    isCritical: true,
+    scoringGuide: {
+      3: { label: 'Strong', desc: 'Specific, observable behavior named', example: '"You interrupted the client twice before they finished speaking."' },
+      2: { label: 'Adequate', desc: 'Behavior identified but slightly general', example: '"You talked over people in the meeting."' },
+      1: { label: 'Weak', desc: 'Behavior vague or interpretive', example: '"You were disrespectful."' },
+      0: { label: 'None', desc: 'No behavior named or completely interpretive', example: '"Your attitude needs work."' }
+    },
+    improvementHint: 'Name specific, observable actions: what would a camera capture?'
+  },
+  impact_explained: {
+    icon: Target,
+    label: 'Impact Explained',
+    description: 'The impact or standard violation was clearly explained',
+    isCritical: false,
+    scoringGuide: {
+      3: { label: 'Strong', desc: 'Clear impact on outcomes or standard stated', example: '"That made it harder for them to explain their concern."' },
+      2: { label: 'Adequate', desc: 'Impact mentioned but not fully developed', example: '"That\'s not how we work with clients."' },
+      1: { label: 'Weak', desc: 'Impact vague or assumed', example: '"That\'s not good."' },
+      0: { label: 'None', desc: 'No impact or consequence explained', example: null }
+    },
+    improvementHint: 'Explain why it matters: impact on results, relationships, or standards.'
+  },
+  request_made: {
+    icon: MessageSquare,
+    label: 'Request Made',
+    description: 'A clear request for changed behavior was stated',
+    isCritical: true,
+    scoringGuide: {
+      3: { label: 'Strong', desc: 'Specific behavior change requested and confirmed', example: '"Let them finish before responding. Can you commit to that?"' },
+      2: { label: 'Adequate', desc: 'Request made but not confirmed or slightly vague', example: '"Please work on that."' },
+      1: { label: 'Weak', desc: 'Request implied or too general', example: '"Think about that."' },
+      0: { label: 'None', desc: 'No request for change made', example: null }
+    },
+    improvementHint: 'State the expected behavior directly and get confirmation.'
+  },
+  direct_delivery: {
+    icon: User,
+    label: 'Direct Delivery',
+    description: 'Feedback was delivered directly to the person, not through others',
+    isCritical: true,
+    scoringGuide: {
+      3: { label: 'Strong', desc: 'Delivered directly, one-on-one or appropriate setting', example: 'Private conversation with the person' },
+      2: { label: 'Adequate', desc: 'Direct but setting could be improved', example: 'In front of others but addressed to them' },
+      1: { label: 'Weak', desc: 'Indirect or group-delivered', example: 'General team reminder' },
+      0: { label: 'None', desc: 'Not delivered directly to the person', example: 'Through email CC or third party' }
+    },
+    improvementHint: 'Deliver feedback directly to the person, ideally one-on-one.'
+  },
+  delivery_discipline: {
+    icon: Shield,
+    label: 'Delivery Discipline',
+    description: 'Maintained composure and stuck to the feedback without retreating',
+    isCritical: true,
+    scoringGuide: {
+      3: { label: 'Strong', desc: 'Composed, clear, stuck to the message', example: 'Stayed calm, restated request when challenged' },
+      2: { label: 'Adequate', desc: 'Mostly composed, minor softening', example: 'Slight hedging but maintained message' },
+      1: { label: 'Weak', desc: 'Backed off, diluted message', example: 'Softened significantly under pushback' },
+      0: { label: 'None', desc: 'Retreated, apologized for feedback, or lost composure', example: '"Never mind, forget I said anything."' }
+    },
+    improvementHint: 'Stay composed. Restate the request if challenged; don\'t retreat.'
+  }
+};
+
 // Map evaluationType to its condition config
 const SCORED_CONDITION_CONFIGS = {
   sce_scored: SCE_CONDITION_CONFIG,
   drf_scored: DRF_CONDITION_CONFIG,
   fuw_scored: FUW_CONDITION_CONFIG,
-  lwv_scored: LWV_CONDITION_CONFIG
+  lwv_scored: LWV_CONDITION_CONFIG,
+  red_scored: RED_CONDITION_CONFIG
 };
 
 // Scoring rubric metadata
@@ -277,6 +347,19 @@ const SCORING_RUBRICS = {
       'Ownership Present < 2',
       'Any condition scores 0',
       'Two or more conditions score 1'
+    ]
+  },
+  red_scored: {
+    title: 'Deliver Redirecting Feedback',
+    maxScore: 15,
+    passThreshold: 9,
+    autoFailRules: [
+      'Any condition scores 0',
+      'Two or more conditions score 1',
+      'Behavior Named = 1',
+      'Request Made ≤ 1',
+      'Delivery Discipline = 0',
+      'Direct Delivery = 0'
     ]
   }
 };
