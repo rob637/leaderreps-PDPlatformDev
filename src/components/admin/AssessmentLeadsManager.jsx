@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Download, Mail, Search, RefreshCw, ExternalLink,
   TrendingUp, Calendar, Target, Award, ChevronDown, ChevronUp,
-  Copy, Check, Filter, Dna, ShieldCheck, Calculator, DollarSign, Building2
+  Copy, Check, Filter, Dna, ShieldCheck, Calculator, DollarSign, Building2, Compass
 } from 'lucide-react';
 import { collection, query, orderBy, getDocs, limit, startAfter } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
@@ -75,6 +75,27 @@ const ROI_INDUSTRY_NAMES = {
   'other': 'Other',
 };
 
+// Leadership Readiness Assessment Archetypes
+const READINESS_ARCHETYPE_COLORS = {
+  'self-aware-leader': '#8B5CF6',      // Purple
+  'empathetic-connector': '#F59E0B',   // Amber
+  'strategic-visionary': '#06B6D4',    // Cyan
+  'inspiring-influencer': '#E04E1B',   // Orange (brand)
+  'resilient-navigator': '#47A88D',    // Teal (brand)
+  'balanced-ready': '#002E47',         // Navy (brand)
+  'emerging-leader': '#10B981',        // Green
+};
+
+const READINESS_ARCHETYPE_NAMES = {
+  'self-aware-leader': 'Self-Aware Leader',
+  'empathetic-connector': 'Empathetic Connector',
+  'strategic-visionary': 'Strategic Visionary',
+  'inspiring-influencer': 'Inspiring Influencer',
+  'resilient-navigator': 'Resilient Navigator',
+  'balanced-ready': 'Balanced Leader',
+  'emerging-leader': 'Emerging Leader',
+};
+
 const formatCurrency = (num) => 
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num || 0);
 
@@ -136,6 +157,26 @@ const ASSESSMENT_CONFIG = {
       'Offer a free consultation to discuss their specific situation',
       'Invite to a leadership development ROI webinar',
       'Segment by company size for targeted enterprise outreach',
+    ],
+  },
+  readiness: {
+    collection: 'readiness-leads',
+    title: 'Leadership Readiness',
+    subtitle: 'Leads from the Leadership Readiness Assessment',
+    icon: Compass,
+    accentColor: 'teal',
+    archetypeColors: READINESS_ARCHETYPE_COLORS,
+    archetypeNames: READINESS_ARCHETYPE_NAMES,
+    assessmentUrl: 'https://leaderreps-readiness.web.app',
+    scoresLabel: 'Readiness Scores',
+    filterLabel: 'Archetypes',
+    isROI: false,
+    marketingTips: [
+      'Welcome sequence with leadership readiness tips based on their archetype',
+      'Share personalized development resources for their growth areas',
+      'Invite to a free leadership readiness webinar',
+      'Offer a complimentary coaching discovery call',
+      'Segment by readiness level for targeted nurture campaigns',
     ],
   },
 };
@@ -322,6 +363,14 @@ const AssessmentLeadsManager = () => {
       bar: 'bg-emerald-500',
       tabActive: 'border-emerald-600 text-emerald-600',
     },
+    teal: {
+      icon: 'text-teal-600',
+      badge: 'bg-teal-100 text-teal-800',
+      button: 'bg-teal-600 hover:bg-teal-700',
+      gradient: 'from-teal-600 to-cyan-600',
+      bar: 'bg-teal-500',
+      tabActive: 'border-teal-600 text-teal-600',
+    },
   };
   const accent = accentClasses[config.accentColor];
 
@@ -362,6 +411,17 @@ const AssessmentLeadsManager = () => {
           >
             <Calculator className="w-4 h-4" />
             ROI Calculator
+          </button>
+          <button
+            onClick={() => setActiveTab('readiness')}
+            className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+              activeTab === 'readiness'
+                ? 'border-teal-600 text-teal-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <Compass className="w-4 h-4" />
+            Leadership Readiness
           </button>
         </div>
       </div>

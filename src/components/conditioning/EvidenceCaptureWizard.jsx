@@ -3765,7 +3765,7 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           <ScreenOverview rep={rep} onNext={handleNext} />
         )}
         
-        {effectiveMode !== 'ctl' && currentScreen === 2 && !isSCERep && !isDRFRep && !isFUWRep && !isLWVRep && (
+        {effectiveMode !== 'ctl' && currentScreen === 2 && !isSCERep && !isDRFRep && !isFUWRep && !isLWVRep && !isREDRep && (
           <ScreenWhatHappened
             value={whatHappened}
             onChange={setWhatHappened}
