@@ -7,6 +7,7 @@ import {
   addDoc, 
   updateDoc, 
   deleteDoc, 
+  setDoc,
   query,
   orderBy,
   onSnapshot,
@@ -122,7 +123,6 @@ export const useBookStore = create((set, get) => ({
         updatedAt: serverTimestamp(),
       }).catch(async () => {
         // If doc doesn't exist, set it
-        const { setDoc } = await import('firebase/firestore');
         await setDoc(docRef, {
           ...updates,
           updatedAt: serverTimestamp(),
