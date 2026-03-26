@@ -10720,3 +10720,363 @@ exports.analyzeAccountabilityAssessment = onRequest(
     }
   }
 );
+
+// ========================================
+// Leadership Readiness Assessment Functions
+// ========================================
+
+/**
+ * Leadership Readiness dimensions data for AI insights and email generation
+ */
+const READINESS_DIMENSIONS_DATA = {
+  selfAwareness: {
+    id: 'selfAwareness',
+    name: 'Self-Awareness',
+    icon: '🪞',
+    color: '#8B5CF6',
+  },
+  emotionalIntelligence: {
+    id: 'emotionalIntelligence',
+    name: 'Emotional Intelligence',
+    icon: '💛',
+    color: '#F59E0B',
+  },
+  strategicThinking: {
+    id: 'strategicThinking',
+    name: 'Strategic Thinking',
+    icon: '🎯',
+    color: '#06B6D4',
+  },
+  influence: {
+    id: 'influence',
+    name: 'Influence & Communication',
+    icon: '📢',
+    color: '#E04E1B',
+  },
+  resilience: {
+    id: 'resilience',
+    name: 'Resilience & Adaptability',
+    icon: '🔄',
+    color: '#47A88D',
+  },
+};
+
+/**
+ * Generate personalized AI insights for leadership readiness assessment
+ */
+const generateReadinessInsights = async (results, firstName) => {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) {
+    logger.warn("No Gemini API key - using fallback insights");
+    return null;
+  }
+
+  const genAI = new GoogleGenerativeAI(geminiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const topDims = results.topDimensions || [];
+  const growthArea = results.growthArea || 'selfAwareness';
+  const scores = results.scores || {};
+  const archetype = results.archetype || 'balanced-ready';
+  const overallScore = results.overallScore || 50;
+  const readinessLevel = results.readinessLevel || "Developing";
+
+  const prompt = `You are a world-class executive coach specializing in leadership development, providing personalized feedback to ${firstName || "an aspiring leader"}.
+
+Based on their Leadership Readiness Assessment results:
+- Overall Readiness Score: ${overallScore}/100 (${readinessLevel})
+- Leadership Archetype: ${archetype.replace(/-/g, ' ')}
+- Top strengths: ${topDims.map(d => READINESS_DIMENSIONS_DATA[d]?.name).join(', ')}
+- Biggest growth area: ${READINESS_DIMENSIONS_DATA[growthArea]?.name}
+- Dimension scores: ${Object.entries(scores).map(([k, v]) => `${READINESS_DIMENSIONS_DATA[k]?.name}: ${v}%`).join(', ')}
+
+Write a personalized leadership readiness coaching insight (250-300 words) that:
+1. Honestly assesses their current readiness level with encouragement about their potential
+2. Highlights their strongest leadership quality and how it sets them apart
+3. Identifies their biggest development opportunity with one specific, actionable practice to start THIS WEEK
+4. Explains how LeaderReps' 8-week program accelerates leadership development through daily practices, AI coaching, and real-world application
+5. Ends with an inspiring call to action about stepping into their leadership potential
+
+Be direct and supportive—great leaders embrace honest feedback. Use "you" language. Don't use headings or bullet points - make it feel like a personal letter from a mentor who sees their potential and wants to help them realize it.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  } catch (err) {
+    logger.error("Gemini readiness insight generation failed:", err.message);
+    return null;
+  }
+};
+
+/**
+ * Build HTML email for leadership readiness assessment results
+ */
+const buildReadinessAssessmentEmail = (firstName, results, aiInsights) => {
+  const sortedDimensions = results.sortedDimensions || [];
+  const overallScore = results.overallScore || 50;
+  const readinessLevel = results.readinessLevel || 'Developing';
+  const growthArea = results.growthArea || 'selfAwareness';
+  const growthDimData = READINESS_DIMENSIONS_DATA[growthArea] || {};
+  const archetype = results.archetype || 'balanced-ready';
+  
+  const archetypeNames = {
+    'self-aware-leader': 'Self-Aware Leader',
+    'empathetic-connector': 'Empathetic Connector',
+    'strategic-visionary': 'Strategic Visionary',
+    'inspiring-influencer': 'Inspiring Influencer',
+    'resilient-navigator': 'Resilient Navigator',
+    'balanced-ready': 'Balanced Leader',
+    'emerging-leader': 'Emerging Leader',
+  };
+  
+  const archetypeTaglines = {
+    'self-aware-leader': 'Leads from a place of authenticity and self-knowledge',
+    'empathetic-connector': 'Builds bridges and brings out the best in people',
+    'strategic-visionary': 'Sees around corners and charts the course forward',
+    'inspiring-influencer': 'Moves people to action through powerful communication',
+    'resilient-navigator': 'Thrives in chaos and leads through uncertainty',
+    'balanced-ready': 'Well-rounded and ready for the next level',
+    'emerging-leader': 'On the path with tremendous potential',
+  };
+  
+  const dimensionBars = sortedDimensions.map(([dim, score]) => {
+    const data = READINESS_DIMENSIONS_DATA[dim];
+    return `
+      <div style="margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span style="color: #fff; font-weight: 500;">${data.icon} ${data.name}</span>
+          <span style="color: rgba(255,255,255,0.7);">${score}%</span>
+        </div>
+        <div style="background: rgba(255,255,255,0.1); border-radius: 8px; height: 8px; overflow: hidden;">
+          <div style="background: ${data.color}; height: 100%; width: ${score}%; border-radius: 8px;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Color for score
+  const getScoreColor = () => {
+    if (overallScore >= 80) return '#10B981';
+    if (overallScore >= 65) return '#47A88D';
+    if (overallScore >= 50) return '#F59E0B';
+    return '#E04E1B';
+  };
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Leadership Readiness Results</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #002E47 0%, #001a2b 100%); border-radius: 16px 16px 0 0; padding: 32px; text-align: center;">
+      <div style="display: inline-block; padding: 8px 16px; background: rgba(71,168,141,0.2); border-radius: 20px; color: #47A88D; font-size: 12px; font-weight: 600; margin-bottom: 16px;">
+        🚀 YOUR LEADERSHIP READINESS PROFILE
+      </div>
+      <h1 style="margin: 0; color: #fff; font-size: 28px; font-weight: 700;">
+        Hi ${firstName || 'Future Leader'}, here are<br/>your results
+      </h1>
+    </div>
+    
+    <!-- Score Card -->
+    <div style="background: linear-gradient(135deg, #002E47 0%, #003d5c 100%); padding: 32px; text-align: center;">
+      <div style="display: inline-block; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 4px solid ${getScoreColor()}; line-height: 1;">
+        <div style="padding-top: 30px;">
+          <span style="color: #fff; font-size: 42px; font-weight: 700;">${overallScore}</span>
+          <span style="color: rgba(255,255,255,0.6); font-size: 14px; display: block;">/100</span>
+        </div>
+      </div>
+      <div style="margin-top: 16px;">
+        <span style="display: inline-block; padding: 8px 20px; background: ${getScoreColor()}; color: #fff; border-radius: 20px; font-weight: 700; font-size: 16px;">
+          ${readinessLevel}
+        </span>
+      </div>
+    </div>
+    
+    <!-- Archetype Card -->
+    <div style="background: #002E47; padding: 24px;">
+      <div style="color: rgba(255,255,255,0.6); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+        Your Leadership Archetype
+      </div>
+      <h2 style="margin: 0 0 8px 0; color: #fff; font-size: 22px; font-weight: 700;">
+        ${archetypeNames[archetype] || 'Balanced Leader'}
+      </h2>
+      <p style="margin: 0; color: #47A88D; font-size: 14px; font-weight: 600;">
+        ${archetypeTaglines[archetype] || ''}
+      </p>
+    </div>
+    
+    <!-- Dimensions -->
+    <div style="background: linear-gradient(135deg, #002E47 0%, #001a2b 100%); padding: 24px;">
+      <h3 style="margin: 0 0 20px 0; color: #fff; font-size: 16px; font-weight: 600;">
+        Your 5 Leadership Readiness Dimensions
+      </h3>
+      ${dimensionBars}
+    </div>
+    
+    <!-- Growth Focus -->
+    <div style="background: #002E47; padding: 24px;">
+      <h3 style="margin: 0 0 12px 0; color: #E04E1B; font-size: 16px; font-weight: 600;">
+        🎯 Your #1 Development Priority
+      </h3>
+      <p style="margin: 0; color: #fff; font-size: 14px; font-weight: 600;">
+        ${growthDimData.icon || '🎯'} ${growthDimData.name || 'Leadership'}
+      </p>
+      <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.7); font-size: 13px; line-height: 1.5;">
+        This is your biggest opportunity for growth. Focused development here will accelerate your leadership impact significantly.
+      </p>
+    </div>
+    
+    <!-- AI Insights -->
+    ${aiInsights ? `
+    <div style="background: linear-gradient(135deg, #002E47 0%, #003d5c 100%); padding: 24px;">
+      <div style="display: flex; align-items: center; margin-bottom: 16px;">
+        <span style="margin-right: 8px;">✨</span>
+        <h3 style="margin: 0; color: #fff; font-size: 16px; font-weight: 600;">
+          Your Personalized Coaching
+        </h3>
+      </div>
+      <p style="margin: 0; color: rgba(255,255,255,0.85); font-size: 14px; line-height: 1.7; white-space: pre-wrap;">
+${aiInsights}
+      </p>
+    </div>
+    ` : ''}
+    
+    <!-- CTA -->
+    <div style="background: linear-gradient(135deg, #47A88D 0%, #3a8a73 100%); padding: 32px; text-align: center; border-radius: 0 0 16px 16px;">
+      <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 20px; font-weight: 700;">
+        Ready to Accelerate Your Leadership?
+      </h3>
+      <p style="margin: 0 0 20px 0; color: rgba(255,255,255,0.9); font-size: 14px;">
+        Join LeaderReps' 8-week program with daily leadership practices, AI coaching, and peer collaboration.
+      </p>
+      <a href="https://www.leaderreps.com" style="display: inline-block; padding: 14px 28px; background: #fff; color: #002E47; font-weight: 700; text-decoration: none; border-radius: 10px; font-size: 14px;">
+        Explore LeaderReps Programs →
+      </a>
+    </div>
+    
+    <!-- Footer -->
+    <div style="padding: 24px; text-align: center;">
+      <p style="margin: 0 0 8px 0; color: rgba(255,255,255,0.5); font-size: 12px;">
+        © 2026 LeaderReps. Building tomorrow's leaders.
+      </p>
+      <a href="https://www.leaderreps.com" style="color: #47A88D; font-size: 12px; text-decoration: none;">
+        www.leaderreps.com
+      </a>
+    </div>
+    
+  </div>
+</body>
+</html>`;
+};
+
+/**
+ * Analyze Leadership Readiness Assessment
+ * Called from the readiness assessment app after email capture
+ */
+exports.analyzeReadinessAssessment = onRequest(
+  {
+    region: "us-central1",
+    timeoutSeconds: 60,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (req, res) => {
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'POST');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+      res.status(204).send('');
+      return;
+    }
+
+    res.set('Access-Control-Allow-Origin', '*');
+
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const { email, firstName, answers, results } = req.body;
+
+    if (!email || !results) {
+      res.status(400).json({ error: 'Missing required fields: email and results' });
+      return;
+    }
+
+    logger.info(`Processing leadership readiness assessment for ${email}`);
+
+    try {
+      // 1. Generate AI insights
+      const aiInsights = await generateReadinessInsights(results, firstName);
+      logger.info(`AI insights generated: ${aiInsights ? 'yes' : 'no'}`);
+
+      // 2. Send email
+      const emailUser = process.env.EMAIL_USER;
+      const emailPass = process.env.EMAIL_PASS;
+      let emailSent = false;
+
+      if (emailUser && emailPass) {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: { user: emailUser, pass: emailPass },
+        });
+
+        const htmlEmail = buildReadinessAssessmentEmail(firstName, results, aiInsights);
+
+        await transporter.sendMail({
+          from: `"LeaderReps" <arena@leaderreps.com>`,
+          to: email,
+          subject: `🚀 ${firstName ? firstName + ', your' : 'Your'} Leadership Readiness: ${results.overallScore || 0}/100`,
+          html: htmlEmail,
+        });
+        
+        emailSent = true;
+        logger.info(`Readiness results email sent to ${email}`);
+      } else {
+        logger.warn("Email credentials not configured - skipping email");
+      }
+
+      // 3. Store the lead in Firestore
+      const sanitizedResults = {
+        scores: results.scores || {},
+        topDimensions: results.topDimensions || [],
+        growthArea: results.growthArea || '',
+        archetype: results.archetype || 'balanced-ready',
+        overallScore: results.overallScore || 0,
+        readinessLevel: results.readinessLevel || '',
+      };
+
+      try {
+        const docRef = await db.collection('readiness-leads').add({
+          email: email.toLowerCase(),
+          firstName: firstName || '',
+          results: sanitizedResults,
+          aiInsights: aiInsights || null,
+          source: 'readiness-assessment',
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          marketingOptIn: true,
+          emailSent,
+        });
+        logger.info(`Readiness lead stored for ${email}, docId: ${docRef.id}`);
+      } catch (firestoreErr) {
+        logger.error(`Firestore write FAILED for ${email}:`, firestoreErr);
+      }
+
+      res.json({
+        success: true,
+        aiInsights: aiInsights || null,
+        message: 'Leadership readiness assessment processed successfully',
+      });
+
+    } catch (err) {
+      logger.error("Readiness assessment processing failed:", err);
+      res.status(500).json({ error: 'Processing failed', details: err.message });
+    }
+  }
+);

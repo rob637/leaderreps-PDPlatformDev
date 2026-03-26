@@ -17,7 +17,8 @@ import {
   Bell,
   Mail,
   Activity,
-  BarChart3
+  BarChart3,
+  BookOpen
 } from 'lucide-react';
 
 const navItems = [
@@ -27,6 +28,7 @@ const navItems = [
   { path: '/activities', icon: Activity, label: 'Activities' },
   { path: '/analytics', icon: BarChart3, label: 'Analytics' },
   { path: '/tasks', icon: Bell, label: 'Tasks' },
+  { path: '/book', icon: BookOpen, label: 'Book Builder' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 

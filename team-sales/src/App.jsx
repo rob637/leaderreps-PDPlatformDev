@@ -12,6 +12,7 @@ import OutreachPage from './pages/OutreachPage';
 import ActivitiesPage from './pages/ActivitiesPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
+import BookBuilderPage from './pages/BookBuilderPage';
 import LinkedHelperPushModal from './components/linkedhelper/LinkedHelperPushModal';
 
 // Protected Route wrapper
@@ -60,6 +61,7 @@ function AppRoutes() {
         <Route path="activities" element={<ActivitiesPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="tasks" element={<TasksPage />} />
+        <Route path="book" element={<BookBuilderPage />} />
         <Route path="settings" element={<SettingsPage />} />
         
         {/* Catch-all redirect to prospects */}

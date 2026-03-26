@@ -124,6 +124,13 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if false; // Only Cloud Functions can write
     }
+
+    // Leadership Readiness Assessment leads
+    // Admin read-only, Cloud Functions write
+    match /readiness-leads/{document} {
+      allow read: if isAdmin();
+      allow write: if false; // Only Cloud Functions can write
+    }
     
     // Public read-only content
     match /public/{document=**} {
@@ -482,6 +489,19 @@ service cloud.firestore {
     
     // Admin tool data (UX Audit Lab, etc.)
     match /admin/{docId}/{subcollection}/{subDoc} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Book Builder (Sales & Marketing book creation tool)
+    match /book/{document} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /book_sources/{document} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /book_chapters/{document} {
       allow read, write: if isAdmin();
     }
 
