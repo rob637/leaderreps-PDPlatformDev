@@ -621,5 +621,9 @@ export default {
   linkRedToThread,
   getThreadAnalytics,
   markCtlReminderSent,
-  detectAntiGamingPattern
+  detectAntiGamingPattern,
+  // Re-export constants for convenience
+  CTL_THREAD_STATES,
+  CTL_DEFAULT_SCHEDULE_DAYS,
+  CTL_DEFER_DEFAULT_DAYS
 };

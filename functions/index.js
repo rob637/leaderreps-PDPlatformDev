@@ -4547,10 +4547,23 @@ exports.scheduledFollowUpReminders = onSchedule("every 6 hours", async (event) =
       }
       
       // Build notification content
+      // CTL reminders have different messaging than regular follow-ups
       const personText = reminder.person ? ` with ${reminder.person}` : '';
       const repLabel = reminder.repTypeLabel || 'Rep';
-      const title = '🔔 Follow-Up Reminder';
-      const message = `Time to follow up on your ${repLabel} rep${personText}. Check in on progress and give additional feedback if needed.`;
+      const isCTL = reminder.isCTLReminder === true;
+      
+      let title, message;
+      if (isCTL) {
+        // Close the Loop reminder
+        title = '🔄 Close the Loop Reminder';
+        message = reminder.continuationNumber 
+          ? `Time to check if ${reminder.person || 'they'} made the change you requested (attempt ${reminder.continuationNumber + 1}).`
+          : `Time to check if ${reminder.person || 'they'} made the change you requested after your redirecting feedback.`;
+      } else {
+        // Standard follow-up reminder
+        title = '🔔 Follow-Up Reminder';
+        message = `Time to follow up on your ${repLabel} rep${personText}. Check in on progress and give additional feedback if needed.`;
+      }
       
       // Send push notification
       if (sendPush && user.fcmToken) {
@@ -4562,14 +4575,16 @@ exports.scheduledFollowUpReminders = onSchedule("every 6 hours", async (event) =
               body: message
             },
             data: {
-              url: '/conditioning',
-              type: 'follow_up_reminder',
-              repId: reminder.repId || ''
+              url: isCTL ? '/conditioning?mode=ctl' : '/conditioning',
+              type: isCTL ? 'ctl_reminder' : 'follow_up_reminder',
+              repId: reminder.repId || '',
+              threadId: reminder.threadId || '',
+              isCTL: String(isCTL)
             }
           });
-          logger.info(`Follow-up push sent to ${user.email} for rep ${reminder.repId}`);
+          logger.info(`${isCTL ? 'CTL' : 'Follow-up'} push sent to ${user.email} for rep ${reminder.repId}`);
         } catch (pushErr) {
-          logger.warn(`Follow-up push failed for ${user.email}: ${pushErr.message}`);
+          logger.warn(`${isCTL ? 'CTL' : 'Follow-up'} push failed for ${user.email}: ${pushErr.message}`);
         }
       }
       
@@ -4578,17 +4593,19 @@ exports.scheduledFollowUpReminders = onSchedule("every 6 hours", async (event) =
         const targetEmail = isTestUser ? (overrideEmail || null) : user.email;
         if (targetEmail) {
           const subjectPrefix = isTestUser ? `[TEST for ${user.email}] ` : '';
+          const linkText = isCTL ? 'Close the Loop' : 'Check in on progress';
+          const linkUrl = isCTL ? '/conditioning?mode=ctl' : '/conditioning';
           await sendEmailNotification(
             targetEmail,
             `${subjectPrefix}${title}`,
             message,
-            { linkText: 'Check in on progress', linkUrl: '/conditioning' }
+            { linkText, linkUrl }
           );
           if (isTestUser) {
-            logger.info(`🧪 Follow-up email redirected: ${user.email} -> ${overrideEmail}`);
+            logger.info(`🧪 ${isCTL ? 'CTL' : 'Follow-up'} email redirected: ${user.email} -> ${overrideEmail}`);
           }
         } else if (isTestUser) {
-          logger.info(`🧪 Test user ${user.email} has no override email, skipping follow-up email`);
+          logger.info(`🧪 Test user ${user.email} has no override email, skipping ${isCTL ? 'CTL' : 'follow-up'} email`);
         }
       }
       
