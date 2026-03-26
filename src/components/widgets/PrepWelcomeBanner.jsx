@@ -188,9 +188,9 @@ const PrepWelcomeBanner = () => {
 
   const _hasIncompleteRequiredActions = incompleteRequiredActions.length > 0;
   
-  // Determine if prep is complete using the completion-based flag
-  // Progress-based: not day or time dependent
-  const isPrepComplete = prepRequirementsComplete?.allComplete || false;
+  // Determine if prep for Session One is complete
+  // Only check onboarding + session1 items (not session2-5 prep)
+  const isPrepComplete = (prepRequirementsComplete?.onboardingComplete && prepRequirementsComplete?.session1Complete) || false;
 
   // Build headline - progress-based, not day-based
   const getPersonalizedHeadline = () => {
@@ -246,14 +246,18 @@ const PrepWelcomeBanner = () => {
       return `Great work — you're all set for Session 1! Explore additional content below while you wait, or check out the Content Library.`;
     }
 
-    // Show remaining count
-    const remaining = prepRequirementsComplete?.remaining || [];
-    const count = remaining.length;
+    // For "get ready for Session One" message, only count onboarding + session1 items
+    // NOT session2-5 prep items which are for later sessions
+    const onboardingItems = prepRequirementsComplete?.onboardingItems || [];
+    const session1Items = prepRequirementsComplete?.session1Items || [];
+    const sessionOneItems = [...onboardingItems, ...session1Items];
+    const sessionOneRemaining = sessionOneItems.filter(i => !i.complete);
+    const sessionOneCompleted = sessionOneItems.filter(i => i.complete).length;
+    const count = sessionOneRemaining.length;
     
     if (count > 0) {
-      const completed = prepRequirementsComplete?.completedCount || 0;
-      if (completed > 0) {
-        return `You've completed ${completed} of ${completed + count} required items. Keep going!`;
+      if (sessionOneCompleted > 0) {
+        return `You've completed ${sessionOneCompleted} of ${sessionOneItems.length} required items. Keep going!`;
       }
       return `Complete ${count} required item${count === 1 ? '' : 's'} to get ready for Session One.`;
     }

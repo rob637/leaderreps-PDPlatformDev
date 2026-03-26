@@ -7,6 +7,7 @@ import {
   Settings,
   Users,
   Wrench,
+  Megaphone,
   ChevronRight,
   Loader,
 } from 'lucide-react';
@@ -28,6 +29,14 @@ const CENTERS = [
     bg: 'bg-corporate-orange/10 hover:bg-corporate-orange/20 border-corporate-orange/30',
     iconBg: 'bg-corporate-orange/20',
     iconColor: 'text-corporate-orange',
+  },
+  {
+    id: 'marketing-center',
+    title: 'Sales & Marketing',
+    icon: Megaphone,
+    bg: 'bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30',
+    iconBg: 'bg-purple-500/20',
+    iconColor: 'text-purple-600',
   },
   {
     id: 'system-center',

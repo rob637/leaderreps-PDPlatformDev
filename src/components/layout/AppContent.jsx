@@ -96,7 +96,7 @@ const AppContent = ({
   const currentYear = new Date().getFullYear();
 
   const isFullWidthScreen = currentScreen.startsWith('admin-') || 
-                           ['data-maintenance', 'debug-data', 'config-center', 'facilitator-center', 'system-center'].includes(currentScreen);
+                           ['data-maintenance', 'debug-data', 'config-center', 'facilitator-center', 'system-center', 'marketing-center'].includes(currentScreen);
 
   return (
     <NavigationProvider

@@ -3,8 +3,15 @@
 
 // Email aliases - map alternate emails to primary account
 // Key = alias email, Value = primary/canonical email
+// NOTE: Primary emails are @leaderreps.com, with @leaderreps.biz as aliases
+//       for backwards compatibility with older prospect records
 export const EMAIL_ALIASES = {
   'rob@leaderreps.biz': 'rob@sagecg.com',
+  'rob@leaderreps.com': 'rob@sagecg.com',
+  // .biz → .com mappings (old data uses .biz)
+  'ryan@leaderreps.biz': 'ryan@leaderreps.com',
+  'jeff@leaderreps.biz': 'jeff@leaderreps.com',
+  'cristina@leaderreps.biz': 'cristina@leaderreps.com',
 };
 
 // Resolve an email to its canonical form (for data storage/lookup)
@@ -23,28 +30,31 @@ export const isSameUser = (email1, email2) => {
 export const TEAM_MEMBERS = [
   {
     email: 'rob@sagecg.com',
-    aliases: ['rob@leaderreps.biz'],
+    aliases: ['rob@leaderreps.biz', 'rob@leaderreps.com'],
     name: 'Rob',
     role: 'admin',
     color: '#3B82F6', // Blue
     initials: 'RB'
   },
   {
-    email: 'ryan@leaderreps.biz',
+    email: 'ryan@leaderreps.com',
+    aliases: ['ryan@leaderreps.biz'],
     name: 'Ryan',
     role: 'member',
     color: '#8B5CF6', // Purple
     initials: 'RY'
   },
   {
-    email: 'jeff@leaderreps.biz',
+    email: 'jeff@leaderreps.com',
+    aliases: ['jeff@leaderreps.biz'],
     name: 'Jeff',
     role: 'member',
     color: '#F59E0B', // Amber
     initials: 'JF'
   },
   {
-    email: 'cristina@leaderreps.biz',
+    email: 'cristina@leaderreps.com',
+    aliases: ['cristina@leaderreps.biz'],
     name: 'Cristina',
     role: 'member',
     color: '#EC4899', // Pink

@@ -5,8 +5,6 @@ import {
   Sun, Moon, Mail, Linkedin, MailCheck, RefreshCw, Shield, Gauge
 } from 'lucide-react';
 import { useApolloStore } from '../stores/apolloStore';
-// DEPRECATED: Original Instantly.ai - replaced by LR-Instantly (sequenceStore.js)
-// import { useInstantlyStore } from '../stores/instantlyStore';
 import { useLinkedHelperStore } from '../stores/linkedHelperStore';
 import { useGmailStore } from '../stores/gmailStore';
 import { useAuthStore } from '../stores/authStore';
@@ -28,15 +26,6 @@ export default function SettingsPage() {
     loadApiKey: loadApolloKey, 
     saveApiKey: saveApolloKey 
   } = useApolloStore();
-  
-  // DEPRECATED: Instantly.ai store - replaced by LR-Instantly
-  // const {
-  //   apiKey: instantlyApiKey,
-  //   apiKeyLoaded: instantlyKeyLoaded,
-  //   loadApiKey: loadInstantlyKey,
-  //   saveApiKey: saveInstantlyKey,
-  //   removeApiKey: removeInstantlyKey
-  // } = useInstantlyStore();
   
   // LinkedHelper store
   const {
@@ -63,12 +52,6 @@ export default function SettingsPage() {
   const [savingApollo, setSavingApollo] = useState(false);
   const [showApolloHelp, setShowApolloHelp] = useState(false);
   
-  // DEPRECATED: Instantly state - replaced by LR-Instantly
-  // const [newInstantlyKey, setNewInstantlyKey] = useState('');
-  // const [showInstantlyKey, setShowInstantlyKey] = useState(false);
-  // const [savingInstantly, setSavingInstantly] = useState(false);
-  // const [showInstantlyHelp, setShowInstantlyHelp] = useState(false);
-  
   // LinkedHelper state
   const [newLinkedHelperKey, setNewLinkedHelperKey] = useState('');
   const [showLinkedHelperKey, setShowLinkedHelperKey] = useState(false);
@@ -89,7 +72,6 @@ export default function SettingsPage() {
   useEffect(() => {
     if (user?.uid) {
       loadApolloKey(user.uid);
-      // loadInstantlyKey(user.uid); // DEPRECATED: replaced by LR-Instantly
       loadLinkedHelperKey(user.uid);
       loadConnectedAccounts(); // Team-level Gmail accounts
       
@@ -166,24 +148,6 @@ export default function SettingsPage() {
       toast.success('API key removed');
     }
   };
-  
-  // DEPRECATED: Instantly handlers - replaced by LR-Instantly
-  // const handleSaveInstantlyKey = async () => {
-  //   if (!newInstantlyKey.trim()) {
-  //     toast.error('Please enter an API key');
-  //     return;
-  //   }
-  //   setSavingInstantly(true);
-  //   await saveInstantlyKey(user.uid, newInstantlyKey.trim());
-  //   setNewInstantlyKey('');
-  //   setShowInstantlyKey(false);
-  //   setSavingInstantly(false);
-  // };
-  // const handleRemoveInstantlyKey = async () => {
-  //   if (confirm('Remove your Instantly API key? You can add it back anytime.')) {
-  //     await removeInstantlyKey(user.uid);
-  //   }
-  // };
   
   // LinkedHelper handlers
   const handleSaveLinkedHelperKey = async () => {
@@ -673,7 +637,7 @@ export default function SettingsPage() {
           {/* Connect Another Account */}
           <div className="pt-4 border-t dark:border-slate-700">
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-              Connect @leaderreps.biz Gmail accounts for cold outreach. Each account can send emails through LR-Outreach sequences.
+              Connect Gmail accounts for outreach. Each account can send emails through LR-Outreach sequences.
             </p>
             <button
               onClick={handleConnectGmail}

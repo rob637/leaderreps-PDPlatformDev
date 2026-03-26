@@ -257,8 +257,90 @@ export const useCarryover = () => {
     return purgeCompletedItems(db, user.uid);
   }, [db, user?.uid]);
   
-  // Computed values
-  const carryoverItems = carryoverState.items;
+  // =============================================================================
+  // FALLBACK LOGIC: Compute carryover from prepRequirementsComplete if doc empty
+  // =============================================================================
+  // This handles the edge case where a user skips the entire prep phase
+  // and the carryover doc never got seeded due to timing/race conditions.
+  const computedFallbackItems = useMemo(() => {
+    // Only compute fallback if:
+    // 1. We're in foundation phase (Level 1+)
+    // 2. Carryover doc is empty
+    // 3. prepRequirementsComplete has items
+    if (currentLevel === 0) return [];
+    if (carryoverState.items.length > 0) return []; // Doc has items, no fallback needed
+    if (!prepRequirementsComplete?.items?.length) return [];
+    
+    console.log('[useCarryover] Computing fallback items from prepRequirementsComplete');
+    
+    // Get incomplete prep items
+    const incompleteItems = [];
+    prepRequirementsComplete.items.forEach(item => {
+      // Use the same completion check as the initialization logic
+      const isComplete = isItemTrulyComplete(item);
+      if (isComplete) return;
+      if (item.type === 'daily_rep') return; // Skip reps
+      
+      // Determine category from prep section
+      const prepSection = item.prepSection || 'onboarding';
+      const sessionMatch = prepSection.match(/session(\d+)/);
+      const sessionNum = sessionMatch ? parseInt(sessionMatch[1], 10) : 0;
+      
+      // Skip prep for sessions beyond current level
+      if (sessionNum > currentLevel) return;
+      
+      let category = 'Onboarding';
+      if (sessionNum > 0) {
+        category = `Session ${sessionNum} Prep`;
+      }
+      
+      incompleteItems.push({
+        id: item.id,
+        label: item.label || 'Preparation Item',
+        category,
+        prepSection,
+        type: item.type || 'content',
+        handlerType: item.handlerType || null,
+        isInteractive: ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(item.handlerType),
+        estimatedMinutes: item.estimatedMinutes || null,
+        resourceId: item.resourceId || null,
+        resourceType: item.resourceType || null,
+        completedAt: null
+      });
+    });
+    
+    return incompleteItems;
+  }, [currentLevel, carryoverState.items.length, prepRequirementsComplete?.items, isItemTrulyComplete]);
+  
+  // Auto-seed carryover if we're using fallback items
+  // This runs once when fallback is detected to persist the items
+  const [fallbackSeeded, setFallbackSeeded] = useState(false);
+  useEffect(() => {
+    if (!db || !user?.uid) return;
+    if (currentLevel === 0) return;
+    if (carryoverState.items.length > 0) return; // Already have persisted items
+    if (computedFallbackItems.length === 0) return; // No fallback items to seed
+    if (fallbackSeeded) return; // Already seeded this session
+    if (loading) return; // Still loading carryover doc
+    
+    console.log('[useCarryover] Auto-seeding carryover with', computedFallbackItems.length, 'fallback items');
+    setFallbackSeeded(true);
+    
+    // Seed in background
+    initializeCarryoverForLevel(db, user.uid, currentLevel, computedFallbackItems)
+      .then(state => {
+        console.log('[useCarryover] Auto-seeded carryover for level', currentLevel, 'with', state.items.length, 'items');
+      })
+      .catch(err => {
+        console.error('[useCarryover] Auto-seed error:', err);
+        setFallbackSeeded(false); // Allow retry
+      });
+  }, [db, user?.uid, currentLevel, carryoverState.items.length, computedFallbackItems, fallbackSeeded, loading]);
+  
+  // Computed values - use persisted items if available, otherwise fallback
+  const carryoverItems = carryoverState.items.length > 0 
+    ? carryoverState.items 
+    : computedFallbackItems;
   const incompleteCount = carryoverItems.filter(item => !item.completedAt).length;
   const completedCount = carryoverItems.filter(item => !!item.completedAt).length;
   const allComplete = carryoverItems.length > 0 && incompleteCount === 0;

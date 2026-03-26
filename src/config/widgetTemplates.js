@@ -1203,7 +1203,7 @@ render(<NotificationsWidget />);
       {/* Conditioning - Weekly */}
       <div className={\`flex items-center justify-between p-2 rounded-lg border \${conditioningMet ? 'bg-emerald-50 border-emerald-100' : 'bg-blue-50 border-blue-100'}\`}>
         <div className="flex items-center gap-2">
-          <Dumbbell className={\`w-4 h-4 \${conditioningMet ? 'text-emerald-600' : 'text-blue-600'}\`} />
+          <Zap className={\`w-4 h-4 \${conditioningMet ? 'text-emerald-600' : 'text-blue-600'}\`} />
           <span className="font-medium text-slate-700">Conditioning</span>
           <span className="text-xs text-slate-400">(weekly)</span>
         </div>

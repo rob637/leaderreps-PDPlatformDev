@@ -1,0 +1,33 @@
+# Social Monitor - Gitignore
+
+# Config files with secrets
+config.yaml
+
+# State files
+seen_posts.json
+
+# Logs
+*.log
+monitor.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.eggs/
+*.egg-info/
+*.egg
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

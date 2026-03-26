@@ -1,0 +1,41 @@
+# Social Media Monitor - Python Dependencies
+
+# HTTP requests
+requests>=2.31.0
+httpx>=0.27.0
+
+# RSS/XML parsing
+feedparser>=6.0.11
+
+# Twitter API
+tweepy>=4.14.0
+
+# Discord
+discord.py>=2.3.2
+
+# Google Gemini
+google-generativeai>=0.4.0
+
+# Firebase Admin SDK (for Firestore subscriptions)
+firebase-admin>=6.0.0
+
+# Resend email
+resend>=0.8.0
+
+# Config management
+pyyaml>=6.0.1
+
+# CLI
+click>=8.1.7
+
+# Async support
+aiohttp>=3.9.3
+
+# Date handling
+python-dateutil>=2.8.2
+
+# Rate limiting
+ratelimit>=2.2.1
+
+# Logging
+structlog>=24.1.0

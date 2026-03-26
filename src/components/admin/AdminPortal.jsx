@@ -15,7 +15,7 @@ import {
   ArrowLeftRight,
   BrainCircuit,
   List,
-  Dumbbell,
+  Zap,
   Bell,
   Eye,
   PlaySquare,
@@ -38,7 +38,7 @@ import CoachingManager from './CoachingManager';
 import LOVManager from './LOVManager';
 import DailyRepsLibrary from './DailyRepsLibrary';
 import ContentManager from './DailyPlanManager';
-import MilestoneSignOffQueue from './MilestoneSignOffQueue';
+import LevelSignOffQueue from './LevelSignOffQueue';
 import SessionAttendanceQueue from './SessionAttendanceQueue';
 import CoachingCertificationQueue from './CoachingCertificationQueue';
 import CohortManager from './CohortManager';
@@ -158,17 +158,17 @@ const AdminPortal = () => {
       title: 'Trainer',
       items: [
         { id: 'session-attendance', label: 'Session Attendance', icon: BookOpen },
-        { id: 'sign-off-queue', label: 'Sign-Off Queue', icon: CheckCircle },
+        { id: 'sign-off-queue', label: 'Level Sign-Off', icon: CheckCircle },
         { id: 'coaching-cert', label: 'Leader Certification', icon: Award },
         { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
-        { id: 'conditioning', label: 'Conditioning', icon: Dumbbell }
+        { id: 'conditioning', label: 'Conditioning', icon: Zap }
       ]
     },
     {
       title: 'Advanced Management',
       items: [
-        { id: 'conditioning-config', label: 'Conditioning Config', icon: Dumbbell },
-        { id: 'daily-reps', label: 'Daily Reps', icon: Dumbbell },
+        { id: 'conditioning-config', label: 'Conditioning Config', icon: Zap },
+        { id: 'daily-reps', label: 'Daily Reps', icon: Zap },
         { id: 'community', label: 'Community', icon: Users },
         { id: 'coaching', label: 'Coaching', icon: BrainCircuit },
         { id: 'lov', label: 'System Values', icon: List }
@@ -206,7 +206,7 @@ const AdminPortal = () => {
       case 'content-manager':
         return <ContentManager />;
       case 'sign-off-queue':
-        return <MilestoneSignOffQueue />;
+        return <LevelSignOffQueue />;
       case 'session-attendance':
         return <SessionAttendanceQueue />;
       case 'coaching-cert':

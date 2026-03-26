@@ -32,10 +32,22 @@ import {
 // Re-export constants for convenience
 export { SESSION_TYPES, SESSION_STATUS };
 
+// Parse date string as local date (not UTC)
+// "2026-03-23" should be treated as local March 23, not UTC midnight
+const parseLocalDate = (dateString) => {
+  if (!dateString) return null;
+  // If already has time component, parse as-is
+  if (dateString.includes('T')) {
+    return new Date(dateString);
+  }
+  // Add noon time to prevent timezone shift
+  return new Date(dateString + 'T12:00:00');
+};
+
 // Helper to check if a session is in the current week
 const isThisWeek = (dateString) => {
   if (!dateString) return false;
-  const sessionDate = new Date(dateString);
+  const sessionDate = parseLocalDate(dateString);
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
@@ -48,7 +60,7 @@ const isThisWeek = (dateString) => {
 // Helper to check if a session is upcoming (today or future)
 const isUpcoming = (dateString) => {
   if (!dateString) return false;
-  const sessionDate = new Date(dateString);
+  const sessionDate = parseLocalDate(dateString);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return sessionDate >= today;
@@ -57,7 +69,7 @@ const isUpcoming = (dateString) => {
 // Helper to check if a session is live now (within 15 min buffer)
 const isLiveNow = (dateString, durationMinutes = 60) => {
   if (!dateString) return false;
-  const sessionStart = new Date(dateString);
+  const sessionStart = parseLocalDate(dateString);
   const sessionEnd = new Date(sessionStart.getTime() + durationMinutes * 60000);
   const now = new Date();
   const bufferStart = new Date(sessionStart.getTime() - 15 * 60000); // 15 min before
@@ -65,7 +77,7 @@ const isLiveNow = (dateString, durationMinutes = 60) => {
 };
 
 export const useCoachingSessions = (options = {}) => {
-  const { db } = useAppServices();
+  const { db, user } = useAppServices();
   const [sessions, setSessions] = useState([]);
   const [sessionTypes, setSessionTypes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,8 +89,12 @@ export const useCoachingSessions = (options = {}) => {
     filterCoach = null,       // Filter by coach
     dateRange = 'all',        // 'this_week', 'this_month', 'upcoming', 'all'
     includeCompleted = false, // Include past sessions
+    skipCohortFilter = false, // Set true for admin views to see all sessions
     limit = 50
   } = options;
+  
+  // Get user's cohort for filtering
+  const userCohortId = user?.cohortId;
 
   // Fetch session types (templates)
   useEffect(() => {
@@ -161,6 +177,24 @@ export const useCoachingSessions = (options = {}) => {
       if (filterCoach) {
         items = items.filter(s => s.coach === filterCoach);
       }
+      
+      // Filter by cohort access (unless skipCohortFilter is true for admin views)
+      // Sessions are visible if:
+      // 1. cohortAccess is 'all' or not set (backward compatibility)
+      // 2. cohortAccess is 'specific' AND user's cohortId is in cohortIds array
+      if (!skipCohortFilter && userCohortId) {
+        items = items.filter(s => {
+          // No cohortAccess field = available to all (backward compatibility)
+          if (!s.cohortAccess || s.cohortAccess === 'all') {
+            return true;
+          }
+          // Specific cohorts only
+          if (s.cohortAccess === 'specific') {
+            return s.cohortIds?.includes(userCohortId);
+          }
+          return true; // Fallback: show
+        });
+      }
 
       // Limit results
       if (limit && items.length > limit) {
@@ -176,7 +210,7 @@ export const useCoachingSessions = (options = {}) => {
     });
 
     return () => unsubscribe();
-  }, [db, filterType, filterSkill, filterCoach, dateRange, includeCompleted, limit]);
+  }, [db, filterType, filterSkill, filterCoach, dateRange, includeCompleted, skipCohortFilter, userCohortId, limit]);
 
   // Get session by ID
   const getSession = useCallback(async (sessionId) => {

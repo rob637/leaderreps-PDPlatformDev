@@ -28,6 +28,13 @@ module.exports = {
         'corporate-light-gray': '#E5E7EB',
         'corporate-subtle-teal': '#349881',
         
+        // Brand aliases (for CRM compatibility)
+        'brand': {
+          navy: '#002E47',
+          teal: '#47A88D',
+          orange: '#E04E1B',
+        },
+        
         // State colors (using brand-compatible vibrant versions)
         'success': '#16A34A',      // Vibrant green (universal)
         'warning': '#F59E0B',      // Amber (universal)

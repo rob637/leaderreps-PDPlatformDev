@@ -1,0 +1,47 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#002E47"/>
+      <stop offset="100%" style="stop-color:#001a2b"/>
+    </linearGradient>
+    <linearGradient id="orange-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#E04E1B"/>
+      <stop offset="100%" style="stop-color:#f56b3d"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  
+  <!-- Decorative circles -->
+  <circle cx="100" cy="100" r="200" fill="#E04E1B" opacity="0.1"/>
+  <circle cx="1100" cy="530" r="150" fill="#47A88D" opacity="0.1"/>
+  
+  <!-- Icon -->
+  <circle cx="600" cy="150" r="60" fill="#E04E1B" opacity="0.2"/>
+  <text x="600" y="170" text-anchor="middle" font-size="60">🎯</text>
+  
+  <!-- Main title -->
+  <text x="600" y="280" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="64" font-weight="700">
+    How Accountable Are You,
+  </text>
+  <text x="600" y="360" text-anchor="middle" fill="url(#orange-gradient)" font-family="system-ui, sans-serif" font-size="64" font-weight="700">
+    Really?
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="600" y="430" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="system-ui, sans-serif" font-size="28">
+    Discover your accountability strengths and blindspots in 5 minutes
+  </text>
+  
+  <!-- Badge -->
+  <rect x="450" y="480" width="300" height="44" rx="22" fill="rgba(224,78,27,0.2)"/>
+  <text x="600" y="510" text-anchor="middle" fill="#E04E1B" font-family="system-ui, sans-serif" font-size="18" font-weight="600">
+    ✨ Free AI-Powered Assessment
+  </text>
+  
+  <!-- Logo text -->
+  <text x="600" y="590" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="24" font-weight="600">
+    LeaderReps
+  </text>
+</svg>

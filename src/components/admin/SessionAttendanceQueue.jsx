@@ -14,7 +14,9 @@ import {
   Search,
   Loader,
   Calendar,
-  BookOpen
+  BookOpen,
+  Info,
+  X
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -37,39 +39,102 @@ const FACILITATOR_SESSIONS = {
   1: {
     id: 'action-s1-deliberate-practice',
     name: 'Session 1: Deliberate Practice',
-    milestone: 1,
+    shortName: 'S1',
+    level: 1,
     description: 'First live deliberate practice session',
     unlocksReps: ['Set Clear Expectations', 'Deliver Reinforcing Feedback']
   },
   2: {
     id: 'action-s2-deliberate-practice',
     name: 'Session 2: 1:1 Coaching',
-    milestone: 2,
+    shortName: 'S2',
+    level: 2,
     description: '1:1 Coaching Session attendance',
     unlocksReps: ['Follow-up on Work', 'Lead with Vulnerability']
   },
   3: {
     id: 'action-s3-deliberate-practice',
-    name: 'Session 3: Open Gym Redirecting Feedback',
-    milestone: 3,
+    name: 'Session 3: Open Gym Redirecting',
+    shortName: 'S3',
+    level: 3,
     description: 'Open gym practice session',
     unlocksReps: ['Deliver Redirecting Feedback', 'Close the Loop']
   },
   4: {
     id: 'action-s4-deliberate-practice',
-    name: 'Session 4: Open Gym Handling Pushback',
-    milestone: 4,
+    name: 'Session 4: Open Gym Pushback',
+    shortName: 'S4',
+    level: 4,
     description: 'Open gym practice session',
     unlocksReps: ['Handle Pushback', 'Hold the Line', 'Be Curious']
   },
   5: {
     id: 'action-s5-deliberate-practice',
     name: 'Session 5: Graduation',
-    milestone: 5,
+    shortName: 'S5',
+    level: 5,
     description: 'Graduation session - unlocks Ascent phase',
     unlocksReps: null // Unlocks Ascent, not specific reps
   }
 };
+
+// ============================================
+// INFO PANEL - Explains what Session Attendance is
+// ============================================
+const AttendanceInfo = ({ onClose }) => (
+  <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl p-4 mb-4">
+    <div className="flex items-start justify-between">
+      <div className="flex items-start gap-3">
+        <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+        <div>
+          <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">What is Session Attendance?</h3>
+          <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+            Session Attendance tracks which <strong>Deliberate Practice</strong> and <strong>Coaching sessions</strong> each leader has completed.
+            Marking attendance is a <strong>trainer verification</strong> that confirms:
+          </p>
+          <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside">
+            <li>The leader physically participated in the live session</li>
+            <li>They engaged with the practice content and exercises</li>
+            <li>Unlocks the next set of conditioning rep types</li>
+          </ul>
+          <p className="text-sm text-blue-600 dark:text-blue-400 mt-3 italic">
+            Sessions are tied to levels — each session unlocks specific rep types for that level.
+          </p>
+        </div>
+      </div>
+      <button onClick={onClose} className="text-blue-400 hover:text-blue-600 p-1">
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  </div>
+);
+
+// ============================================
+// SESSION PROGRESS BUBBLES - Horizontal indicators
+// ============================================
+const SessionProgressBubbles = ({ sessions }) => (
+  <div className="flex items-center gap-1.5">
+    {[1, 2, 3, 4, 5].map(num => {
+      const session = sessions.find(s => s.sessionNumber === num);
+      const attended = session?.attended;
+      const sessionDef = FACILITATOR_SESSIONS[num];
+      
+      return (
+        <div
+          key={num}
+          className={`relative w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+            attended
+              ? 'bg-emerald-500 text-white shadow-sm'
+              : 'bg-slate-200 dark:bg-slate-600 text-slate-400 dark:text-slate-500'
+          }`}
+          title={`${sessionDef.name}: ${attended ? 'Attended' : 'Not yet'}`}
+        >
+          {attended ? <Check className="w-4 h-4" /> : sessionDef.shortName}
+        </div>
+      );
+    })}
+  </div>
+);
 
 const SessionAttendanceQueue = () => {
   const { db, user } = useAppServices();
@@ -82,6 +147,7 @@ const SessionAttendanceQueue = () => {
   const [expandedUser, setExpandedUser] = useState(null);
   const [processingId, setProcessingId] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   // Fetch cohorts on mount
   useEffect(() => {
@@ -157,15 +223,15 @@ const SessionAttendanceQueue = () => {
           });
         }
         
-        // Find current milestone
-        let currentMilestone = 1;
+        // Find current level
+        let currentLevel = 1;
         for (let m = 1; m <= 5; m++) {
           const mData = milestoneProgress[`milestone_${m}`] || {};
           if (mData.signedOff === true) {
-            currentMilestone = m + 1;
+            currentLevel = m + 1;
           }
         }
-        if (currentMilestone > 5) currentMilestone = 5;
+        if (currentLevel > 5) currentLevel = 5;
         
         const attendedCount = sessions.filter(s => s.attended).length;
         
@@ -174,17 +240,17 @@ const SessionAttendanceQueue = () => {
           email: userData.email || 'Unknown',
           displayName: userData.displayName || userData.email?.split('@')[0] || 'Unknown User',
           photoURL: userData.photoURL,
-          currentMilestone,
+          currentLevel,
           sessions,
           attendedCount,
           joinedAt: userData.createdAt?.toDate?.() || null
         });
       }
       
-      // Sort by current milestone, then by name
+      // Sort by current level, then by name
       participantList.sort((a, b) => {
-        if (a.currentMilestone !== b.currentMilestone) {
-          return a.currentMilestone - b.currentMilestone;
+        if (a.currentLevel !== b.currentLevel) {
+          return a.currentLevel - b.currentLevel;
         }
         return a.displayName.localeCompare(b.displayName);
       });
@@ -304,14 +370,12 @@ const SessionAttendanceQueue = () => {
           </div>
           
           <div className="flex items-center gap-4">
-            {/* Attendance summary */}
-            <div className="text-sm text-slate-600 dark:text-slate-400">
-              <span className="font-medium text-corporate-teal">{participant.attendedCount}</span>/5 sessions
-            </div>
+            {/* Session progress bubbles */}
+            <SessionProgressBubbles sessions={participant.sessions} />
             
-            {/* Current milestone badge */}
+            {/* Current level badge */}
             <span className="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-              M{participant.currentMilestone}
+              L{participant.currentLevel}
             </span>
             
             {isExpanded ? (
@@ -328,7 +392,7 @@ const SessionAttendanceQueue = () => {
             <div className="space-y-3">
               {participant.sessions.map((session) => {
                 const isProcessing = processingId === `${participant.id}-${session.id}`;
-                const isCurrentMilestone = session.milestone === participant.currentMilestone;
+                const isCurrentLevel = session.level === participant.currentLevel;
                 
                 return (
                   <div 
@@ -336,7 +400,7 @@ const SessionAttendanceQueue = () => {
                     className={`flex items-center justify-between p-3 rounded-lg border ${
                       session.attended 
                         ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
-                        : isCurrentMilestone
+                        : isCurrentLevel
                           ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
                           : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600'
                     }`}
@@ -421,7 +485,17 @@ const SessionAttendanceQueue = () => {
             Mark attendance for Deliberate Practice and Coaching sessions
           </p>
         </div>
+        <button
+          onClick={() => setShowInfo(!showInfo)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+        >
+          <Info className="w-4 h-4" />
+          What is this?
+        </button>
       </div>
+      
+      {/* Info Panel */}
+      {showInfo && <AttendanceInfo onClose={() => setShowInfo(false)} />}
       
       {/* Success Message */}
       {successMessage && (

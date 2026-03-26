@@ -6,7 +6,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Zap, CheckCircle, Clock, Target, Calendar,
-  ChevronDown, ChevronUp, AlertTriangle, XCircle, ChevronRight
+  ChevronDown, ChevronUp, AlertTriangle, XCircle, ChevronRight,
+  Award
 } from 'lucide-react';
 import { Card } from '../ui';
 import { RepDetailModal } from '../conditioning';
@@ -251,7 +252,12 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                   <div className="border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/30 p-4">
                     {week.reps.length > 0 ? (
                       <div className="space-y-2">
-                        {week.reps.map((rep, idx) => (
+                        {week.reps.map((rep, idx) => {
+                          const qa = rep.qualityAssessment;
+                          const hasScore = qa && typeof qa.totalScore === 'number' && typeof qa.maxScore === 'number';
+                          const passed = qa?.repPassed || qa?.meetsStandard;
+                          
+                          return (
                           <button 
                             key={rep.id || idx}
                             onClick={() => setSelectedRep(rep)}
@@ -296,9 +302,25 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                                 </p>
                               )}
                             </div>
+                            {/* Score Badge */}
+                            {hasScore && (
+                              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold flex-shrink-0 ${
+                                passed 
+                                  ? 'bg-corporate-teal/10 text-corporate-teal' 
+                                  : 'bg-corporate-orange/10 text-corporate-orange'
+                              }`}>
+                                {passed ? (
+                                  <Award className="w-3.5 h-3.5" />
+                                ) : (
+                                  <XCircle className="w-3.5 h-3.5" />
+                                )}
+                                <span>{qa.totalScore}/{qa.maxScore}</span>
+                              </div>
+                            )}
                             <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-500 group-hover:text-corporate-teal flex-shrink-0 mt-1" />
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-2">

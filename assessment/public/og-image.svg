@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#002E47"/>
+      <stop offset="100%" style="stop-color:#001a2b"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#47A88D"/>
+      <stop offset="100%" style="stop-color:#5cb89e"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  
+  <!-- Decorative circles -->
+  <circle cx="100" cy="100" r="200" fill="#47A88D" opacity="0.05"/>
+  <circle cx="1100" cy="530" r="250" fill="#47A88D" opacity="0.05"/>
+  
+  <!-- Badge -->
+  <rect x="450" y="120" width="300" height="40" rx="20" fill="rgba(71,168,141,0.2)"/>
+  <text x="600" y="147" font-family="system-ui, sans-serif" font-size="16" fill="#47A88D" text-anchor="middle" font-weight="600">✨ AI-Powered Assessment</text>
+  
+  <!-- Main headline -->
+  <text x="600" y="230" font-family="system-ui, sans-serif" font-size="64" fill="white" text-anchor="middle" font-weight="700">Discover Your</text>
+  <text x="600" y="310" font-family="system-ui, sans-serif" font-size="64" fill="#47A88D" text-anchor="middle" font-weight="700">Leadership DNA</text>
+  
+  <!-- Subheadline -->
+  <text x="600" y="400" font-family="system-ui, sans-serif" font-size="24" fill="rgba(255,255,255,0.7)" text-anchor="middle">Uncover your unique leadership style in 5 minutes.</text>
+  <text x="600" y="435" font-family="system-ui, sans-serif" font-size="24" fill="rgba(255,255,255,0.7)" text-anchor="middle">Get personalized AI insights and actionable strategies.</text>
+  
+  <!-- CTA Button -->
+  <rect x="450" y="480" width="300" height="60" rx="16" fill="#47A88D"/>
+  <text x="600" y="520" font-family="system-ui, sans-serif" font-size="20" fill="white" text-anchor="middle" font-weight="700">Start Free Assessment →</text>
+  
+  <!-- Trust indicators -->
+  <text x="400" y="580" font-family="system-ui, sans-serif" font-size="14" fill="rgba(255,255,255,0.5)" text-anchor="middle">⏱ 5 minutes</text>
+  <text x="600" y="580" font-family="system-ui, sans-serif" font-size="14" fill="rgba(255,255,255,0.5)" text-anchor="middle">📋 12 questions</text>
+  <text x="800" y="580" font-family="system-ui, sans-serif" font-size="14" fill="rgba(255,255,255,0.5)" text-anchor="middle">🏆 Free forever</text>
+  
+  <!-- Logo -->
+  <text x="60" y="50" font-family="system-ui, sans-serif" font-size="24" fill="white" font-weight="700">LeaderReps</text>
+</svg>

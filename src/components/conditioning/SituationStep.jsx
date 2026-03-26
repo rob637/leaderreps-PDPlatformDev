@@ -1,17 +1,19 @@
 // src/components/conditioning/SituationStep.jsx
 // Situation picker for V2 commitment flows
 // Shows 4 suggested situations + "Something else" option per rep type
+// RED reps use scenario options (one-time, repeated, team, high-stakes)
 // Updated March 2026 to match Conditioning Layer specifications
 
 import React from 'react';
-import { Check, Edit3 } from 'lucide-react';
+import { Check, Edit3, AlertCircle } from 'lucide-react';
 import { getSuggestedSituations } from '../../services/repTaxonomy';
+import { RED_SCENARIO_OPTIONS } from './constants';
 import VoiceTextarea from './VoiceTextarea';
 
 // ============================================
 // SITUATION OPTION CARD
 // ============================================
-const SituationOption = ({ label, isSelected, onClick }) => {
+const SituationOption = ({ label, description, isSelected, onClick }) => {
   return (
     <button
       type="button"
@@ -23,11 +25,18 @@ const SituationOption = ({ label, isSelected, onClick }) => {
       }`}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className={`text-sm ${
-          isSelected ? 'text-corporate-teal font-medium' : 'text-gray-700 dark:text-slate-300'
-        }`}>
-          {label}
-        </span>
+        <div className="flex-1">
+          <span className={`text-sm ${
+            isSelected ? 'text-corporate-teal font-medium' : 'text-gray-700 dark:text-slate-300'
+          }`}>
+            {label}
+          </span>
+          {description && (
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+              {description}
+            </p>
+          )}
+        </div>
         {isSelected && (
           <div className="p-1 rounded-full bg-corporate-teal/10 flex-shrink-0">
             <Check className="w-4 h-4 text-corporate-teal" />
@@ -65,6 +74,62 @@ const SomethingElseOption = ({ isSelected, onClick }) => {
 };
 
 // ============================================
+// RED SCENARIO SELECTION (NEW)
+// For Deliver Redirecting Feedback - uses scenario options that seed intensity
+// ============================================
+const RedScenarioStep = ({ 
+  selectedScenario, 
+  onScenarioChange, 
+  customContext, 
+  onCustomContextChange,
+  error 
+}) => {
+  return (
+    <div className="space-y-4">
+      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">
+        What type of situation are you addressing?
+      </label>
+      
+      {/* Scenario options */}
+      <div className="space-y-2">
+        {RED_SCENARIO_OPTIONS.map((scenario) => (
+          <SituationOption
+            key={scenario.id}
+            label={scenario.label}
+            description={scenario.description}
+            isSelected={selectedScenario === scenario.id}
+            onClick={() => onScenarioChange(scenario.id)}
+          />
+        ))}
+      </div>
+      
+      {/* Context input - encouraged but not required */}
+      {selectedScenario && (
+        <div className="pt-2">
+          <VoiceTextarea
+            id="red-context"
+            label="Add one sentence of context (recommended)"
+            value={customContext}
+            onChange={onCustomContextChange}
+            placeholder="e.g., Addressing missed deadlines on client deliverables..."
+            rows={2}
+            maxLength={200}
+          />
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" />
+            Context helps personalize your coaching feedback
+          </p>
+        </div>
+      )}
+      
+      {error && (
+        <p className="text-sm text-corporate-orange">{error}</p>
+      )}
+    </div>
+  );
+};
+
+// ============================================
 // MAIN SITUATION STEP COMPONENT
 // ============================================
 const SituationStep = ({
@@ -80,7 +145,23 @@ const SituationStep = ({
   // Validation error message
   error = null
 }) => {
-  // Get suggested situations for this rep type
+  // Check if this is a RED rep - uses scenario selection instead
+  const isRedRep = repTypeId === 'deliver_redirecting_feedback';
+  
+  // For RED reps, use the scenario selection component
+  if (isRedRep) {
+    return (
+      <RedScenarioStep
+        selectedScenario={selectedSituation}
+        onScenarioChange={onSituationChange}
+        customContext={customContext}
+        onCustomContextChange={onCustomContextChange}
+        error={error}
+      />
+    );
+  }
+  
+  // Get suggested situations for this rep type (non-RED)
   const suggestions = getSuggestedSituations(repTypeId);
   
   // Track if "Something else" is selected

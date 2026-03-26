@@ -35,7 +35,6 @@ import {
   Terminal,
   Mic,
   Layout,
-  Dumbbell,
   Zap,
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
@@ -67,7 +66,7 @@ const AUDIT_TYPES = [
     id: 'conditioning',
     label: 'Conditioning Flow',
     description: 'Walk through conditioning — commit rep, debrief, modals, colors',
-    icon: Dumbbell,
+    icon: Zap,
     color: 'text-corporate-teal',
   },
   {

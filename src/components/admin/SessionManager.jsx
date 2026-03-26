@@ -54,6 +54,12 @@ import {
   SESSION_STATUS
 } from '../../data/Constants';
 
+// Cohort access modes
+const COHORT_ACCESS = {
+  ALL: 'all',           // Available to all active cohorts
+  SPECIFIC: 'specific'  // Limited to selected cohorts
+};
+
 // Session Type Configurations for display
 const SESSION_TYPE_CONFIG = {
   open_gym: {
@@ -175,6 +181,7 @@ const SessionManager = () => {
   const [sessions, setSessions] = useState([]);
   const [_sessionTypes, setSessionTypes] = useState([]);
   const [registrations, setRegistrations] = useState([]);
+  const [cohorts, setCohorts] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // UI state
@@ -248,10 +255,19 @@ const SessionManager = () => {
       setLoading(false);
     });
     
+    // Listen to cohorts (for access control)
+    const cohortsRef = collection(db, 'cohorts');
+    const cohortsQuery = query(cohortsRef, orderBy('startDate', 'desc'));
+    const unsubCohorts = onSnapshot(cohortsQuery, (snapshot) => {
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCohorts(items);
+    });
+    
     return () => {
       unsubSessions();
       unsubTypes();
       unsubRegs();
+      unsubCohorts();
     };
   }, [db]);
 
@@ -335,7 +351,9 @@ const SessionManager = () => {
       notesUrl: '',
       skillFocus: [],
       targetAudience: '',
-      prerequisites: ''
+      prerequisites: '',
+      cohortAccess: COHORT_ACCESS.ALL,  // Default to all cohorts
+      cohortIds: []                      // Specific cohort IDs (if cohortAccess = 'specific')
     });
     setIsCreatingNew(true);
   };
@@ -735,6 +753,7 @@ const SessionManager = () => {
           session={editingSession}
           setSession={setEditingSession}
           isNew={isCreatingNew}
+          cohorts={cohorts}
           onSave={handleSaveSession}
           onCancel={() => { setEditingSession(null); setIsCreatingNew(false); }}
         />
@@ -918,7 +937,20 @@ const SessionManager = () => {
 };
 
 // Session Edit Form Component
-const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
+const SessionEditForm = ({ session, setSession, isNew, cohorts, onSave, onCancel }) => {
+  // Get active cohorts for the selector
+  const activeCohorts = cohorts.filter(c => c.status === 'active' || !c.status);
+  
+  // Handle cohort checkbox toggle
+  const handleCohortToggle = (cohortId) => {
+    const currentIds = session.cohortIds || [];
+    if (currentIds.includes(cohortId)) {
+      setSession({ ...session, cohortIds: currentIds.filter(id => id !== cohortId) });
+    } else {
+      setSession({ ...session, cohortIds: [...currentIds, cohortId] });
+    }
+  };
+  
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-corporate-teal p-6">
       <h3 className="text-lg font-bold text-corporate-navy mb-4">
@@ -1070,6 +1102,82 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
           />
         </div>
         
+        {/* Cohort Access Control */}
+        <div className="md:col-span-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 border border-slate-200 dark:border-slate-600">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+            <Users className="w-4 h-4 inline mr-1" />
+            Cohort Access
+          </label>
+          
+          {/* Access Mode Toggle */}
+          <div className="flex gap-3 mb-3">
+            <button
+              type="button"
+              onClick={() => setSession({ ...session, cohortAccess: COHORT_ACCESS.ALL, cohortIds: [] })}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                session.cohortAccess !== COHORT_ACCESS.SPECIFIC
+                  ? 'bg-corporate-teal text-white'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}
+            >
+              All Active Cohorts
+            </button>
+            <button
+              type="button"
+              onClick={() => setSession({ ...session, cohortAccess: COHORT_ACCESS.SPECIFIC })}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                session.cohortAccess === COHORT_ACCESS.SPECIFIC
+                  ? 'bg-corporate-teal text-white'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}
+            >
+              Specific Cohorts Only
+            </button>
+          </div>
+          
+          {/* Cohort Checkboxes (only show if specific) */}
+          {session.cohortAccess === COHORT_ACCESS.SPECIFIC && (
+            <div className="border border-slate-200 dark:border-slate-600 rounded-lg p-3 bg-white dark:bg-slate-800 max-h-48 overflow-y-auto">
+              {activeCohorts.length === 0 ? (
+                <p className="text-sm text-slate-500 italic">No active cohorts found</p>
+              ) : (
+                <div className="space-y-2">
+                  {activeCohorts.map(cohort => (
+                    <label key={cohort.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={(session.cohortIds || []).includes(cohort.id)}
+                        onChange={() => handleCohortToggle(cohort.id)}
+                        className="w-4 h-4 rounded border-slate-300 text-corporate-teal focus:ring-corporate-teal"
+                      />
+                      <span className="text-sm text-slate-700 dark:text-slate-200">
+                        {cohort.name || cohort.id}
+                      </span>
+                      {cohort.status === 'active' && (
+                        <span className="text-xs px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 rounded">
+                          Active
+                        </span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              )}
+              {session.cohortAccess === COHORT_ACCESS.SPECIFIC && (session.cohortIds || []).length === 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                  ⚠️ No cohorts selected — session won&apos;t be visible to anyone
+                </p>
+              )}
+            </div>
+          )}
+          
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+            {session.cohortAccess === COHORT_ACCESS.SPECIFIC 
+              ? 'Only members of selected cohorts will see this session'
+              : 'This session will be visible to all active cohort members'
+            }
+          </p>
+        </div>
+        
         {/* Description */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
@@ -1188,7 +1296,14 @@ const SessionRow = ({
     <tr className="hover:bg-slate-50">
       <td className="px-4 py-3">
         <div>
-          <p className="font-medium text-slate-800 dark:text-slate-200">{session.title}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-slate-800 dark:text-slate-200">{session.title}</p>
+            {session.cohortAccess === 'specific' && (
+              <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 rounded" title={`Restricted to: ${session.cohortIds?.join(', ') || 'none'}`}>
+                🔒 Restricted
+              </span>
+            )}
+          </div>
           <p className="text-sm text-slate-500 dark:text-slate-400">{session.coach && `with ${session.coach}`}</p>
         </div>
       </td>

@@ -2,6 +2,7 @@
 // V2 Rep Type Picker - 3 categories (Lead the Work/Team/Yourself), 10 rep types
 // No difficulty labels, clean drill-down UX
 // Updated: Milestone-based unlocking (March 2026)
+// Updated: Simplified mode for 4-type flat view (March 2026)
 
 import React, { useState, useMemo } from 'react';
 import { 
@@ -11,7 +12,7 @@ import {
 // Use RepTypeContext for Firestore-driven rep type data
 import { useRepTypeContext } from '../../providers/RepTypeProvider';
 // Still need these from repTaxonomy until migrated to Firestore
-import { getBehaviorFocusReminder } from '../../services/repTaxonomy';
+import { getBehaviorFocusReminder, SIMPLIFIED_REP_TYPES } from '../../services/repTaxonomy';
 
 // Icon mapping for V2 categories
 const CATEGORY_ICONS = {
@@ -175,7 +176,9 @@ const RepTypePickerV2 = ({
   sessionAttendance = null,
   // Milestone-based unlocking (legacy fallback)
   milestoneProgress = {},
-  completedRepTypes = []
+  completedRepTypes = [],
+  // Simplified mode: show 4 core rep types directly (no category drill-down)
+  simplifiedMode = true
 }) => {
   // Get rep type data from context (Firestore-driven with fallback)
   const { 
@@ -202,6 +205,11 @@ const RepTypePickerV2 = ({
     return selectedRepTypeId ? getBehaviorFocusReminder(selectedRepTypeId) : null;
   }, [selectedRepTypeId]);
   
+  // Get simplified rep types for flat view
+  const simplifiedRepTypes = useMemo(() => {
+    return SIMPLIFIED_REP_TYPES.map(id => getRepTypeV2(id)).filter(Boolean);
+  }, [getRepTypeV2]);
+  
   // If a rep type is already selected, show summary with change option
   if (selectedRepType && !selectedCategory) {
     return (
@@ -209,11 +217,54 @@ const RepTypePickerV2 = ({
         <SelectedRepSummary 
           repType={selectedRepType} 
           onClear={() => {
-            setSelectedCategory(selectedRepType.category);
+            // In simplified mode, just clear selection; in full mode, go to category
+            if (simplifiedMode) {
+              onSelect(null);
+            } else {
+              setSelectedCategory(selectedRepType.category);
+            }
           }} 
         />
         {showBehaviorFocus && behaviorFocus && (
           <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+            <p className="text-sm text-amber-800 dark:text-amber-300 font-medium">
+              Behavior Focus
+            </p>
+            <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+              {behaviorFocus}
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+  
+  // SIMPLIFIED MODE: Show 4 core rep types directly (no categories)
+  if (simplifiedMode && !selectedCategory) {
+    return (
+      <div className="space-y-3">
+        <label className="block text-base font-bold text-corporate-navy dark:text-white">
+          {headerText}
+        </label>
+        <div className="space-y-2">
+          {simplifiedRepTypes.map((repType) => {
+            const unlockStatus = isRepUnlocked(repType.id, milestoneProgress, completedRepTypes, sessionAttendance);
+            return (
+              <RepTypeCard
+                key={repType.id}
+                repType={repType}
+                isSelected={selectedRepTypeId === repType.id}
+                unlockStatus={unlockStatus}
+                onClick={() => {
+                  onSelect(repType.id);
+                }}
+              />
+            );
+          })}
+        </div>
+        {/* Show behavior focus for selected type */}
+        {showBehaviorFocus && selectedRepType && behaviorFocus && (
+          <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
             <p className="text-sm text-amber-800 dark:text-amber-300 font-medium">
               Behavior Focus
             </p>

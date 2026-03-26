@@ -31,18 +31,6 @@ const SESSION_TYPE_CONFIG = {
     accent: 'border-l-orange-500',
     calendarColor: 'bg-blue-100 text-blue-700'
   },
-  open_gym_redirecting_feedback: {
-    label: 'Open Gym - Redirecting Feedback',
-    color: 'bg-orange-100 text-orange-800 border-orange-200',
-    accent: 'border-l-orange-500',
-    calendarColor: 'bg-blue-100 text-blue-700'
-  },
-  open_gym_handling_pushback: {
-    label: 'Open Gym - Handling Pushback',
-    color: 'bg-orange-100 text-orange-800 border-orange-200',
-    accent: 'border-l-orange-500',
-    calendarColor: 'bg-blue-100 text-blue-700'
-  },
   leader_circle: {
     label: 'Leader Circle',
     color: 'bg-teal-100 text-teal-800 border-teal-200',
@@ -221,6 +209,10 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel, showSwitch =
 // Day Sessions Modal Component
 const DaySessionsModal = ({ isOpen, onClose, date, sessions, registeredIds, onRegister, onCancel, existingExclusiveRegistrations }) => {
   const [registering, setRegistering] = useState(null);
+  
+  // Extract existing 1:1 session ID for Switch UX
+  const existing1on1SessionId = existingExclusiveRegistrations?.one_on_one?.sessionId || 
+                                 existingExclusiveRegistrations?.['1:1']?.sessionId || null;
   
   if (!isOpen) return null;
   
@@ -432,7 +424,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
   // Internal state for calendar if not controlled externally
   const [internalViewMode] = useState('list');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [typeFilter, setTypeFilter] = useState(initialTypeFilter);
+  const [typeFilter, setTypeFilter] = useState(initialTypeFilter || 'all');
   
   // State for day modal
   const [selectedDay, setSelectedDay] = useState(null);
@@ -446,7 +438,9 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
     if (upcomingSessions?.length > 0) return upcomingSessions;
     return (sessions || []).filter(s => {
       if (!s.date) return true;
-      const sessionDate = new Date(s.date);
+      // Parse date as local time (add T12:00:00 to prevent UTC timezone shift)
+      const dateStr = s.date.includes('T') ? s.date : s.date + 'T12:00:00';
+      const sessionDate = new Date(dateStr);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       return sessionDate >= today;
@@ -464,6 +458,16 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
       return derivedType === typeFilter || s.sessionType === typeFilter;
     });
   }, [allUpcomingSessions, typeFilter]);
+  
+  // Get friendly label for the current filter
+  const getFilterLabel = (filter) => {
+    if (filter === 'all') return '';
+    if (filter === 'one_on_one' || filter === '1:1') return '1:1 Coaching';
+    if (filter === 'open_gym') return 'Open Gym';
+    if (filter === 'leader_circle') return 'Leader Circle';
+    if (filter === 'workshop') return 'Workshop';
+    return filter;
+  };
   
   // Get unique session types for filter buttons
   const availableTypes = useMemo(() => {
@@ -517,13 +521,32 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
     return !!registeredIds[sessionId];
   };
   
+  // Show filter-specific empty state if a filter is applied
   if (displaySessions.length === 0) {
+    const filterLabel = getFilterLabel(typeFilter);
+    const hasOtherSessions = allUpcomingSessions.length > 0;
+    
     return (
       <Card title="Live Sessions" icon={Calendar} accent="ORANGE" helpText={helpText}>
         <div className="text-center py-8">
           <Calendar className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-          <h3 className="font-bold text-slate-600 dark:text-slate-300 mb-1">No Upcoming Sessions</h3>
-          <p className="text-sm text-slate-400 dark:text-slate-500">Check back soon for new coaching opportunities.</p>
+          <h3 className="font-bold text-slate-600 dark:text-slate-300 mb-1">
+            {filterLabel ? `No Upcoming ${filterLabel} Sessions` : 'No Upcoming Sessions'}
+          </h3>
+          <p className="text-sm text-slate-400 dark:text-slate-500 mb-4">
+            {filterLabel 
+              ? `There are no ${filterLabel.toLowerCase()} sessions scheduled at this time.`
+              : 'Check back soon for new coaching opportunities.'
+            }
+          </p>
+          {hasOtherSessions && typeFilter !== 'all' && (
+            <button
+              onClick={() => setTypeFilter('all')}
+              className="text-sm text-corporate-teal hover:text-teal-600 font-medium"
+            >
+              View all {allUpcomingSessions.length} available sessions →
+            </button>
+          )}
         </div>
       </Card>
     );

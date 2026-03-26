@@ -14,7 +14,12 @@ import {
   Award,
   Users,
   GraduationCap,
-  FileCheck
+  FileCheck,
+  Info,
+  X,
+  Zap,
+  BookOpen,
+  Target
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -30,28 +35,170 @@ import {
 import { Card } from '../ui';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
+import conditioningService from '../../services/conditioningService';
 
-// Milestone metadata - Updated to match 5-milestone structure
-const MILESTONES = {
-  1: { name: 'Reinforcing', title: 'Reinforcing', emoji: '📍', color: 'emerald', description: 'Core leadership principles and self-awareness' },
-  2: { name: 'One-on-One', title: 'One-on-One (1:1)', emoji: '🎯', color: 'blue', description: 'Personalized coaching sessions' },
-  3: { name: 'Redirecting', title: 'Redirecting', emoji: '💡', color: 'amber', description: 'Delivering and receiving effective feedback' },
-  4: { name: 'Readiness', title: 'Readiness', emoji: '🚀', color: 'purple', description: 'Handling resistance and pushback' },
-  5: { name: 'Graduate', title: 'Graduation', emoji: '🏆', color: 'rose', description: 'Program completion and graduation' }
+// ============================================
+// INFO PANEL - Explains what Level Sign-Off means
+// ============================================
+const SignOffInfo = ({ onClose }) => (
+  <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl p-4 mb-4">
+    <div className="flex items-start justify-between">
+      <div className="flex items-start gap-3">
+        <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+        <div>
+          <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">What is Level Sign-Off?</h3>
+          <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+            Level Sign-Off confirms a leader has demonstrated competency at their current level and is ready to advance. 
+            This is a <strong>trainer verification</strong> that certifies the leader has:
+          </p>
+          <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside">
+            <li>Completed required conditioning reps with quality debriefs</li>
+            <li>Attended the associated deliberate practice session</li>
+            <li>Shown consistent application of leadership skills</li>
+          </ul>
+          <p className="text-sm text-blue-600 dark:text-blue-400 mt-3 italic">
+            Signing off unlocks the next level&apos;s content, rep types, and certification.
+          </p>
+        </div>
+      </div>
+      <button onClick={onClose} className="text-blue-400 hover:text-blue-600 p-1">
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  </div>
+);
+
+// ============================================
+// LEVEL PROGRESS BUBBLES - Horizontal indicators
+// ============================================
+const LevelProgressBubbles = ({ levelDetails, currentLevel, isGraduated }) => (
+  <div className="flex items-center gap-1.5">
+    {[1, 2, 3, 4, 5].map(lvl => {
+      const detail = levelDetails[lvl - 1];
+      const isComplete = detail?.signedOff;
+      const isCurrent = lvl === currentLevel && !isGraduated;
+      const levelData = LEVELS[lvl];
+      
+      return (
+        <div
+          key={lvl}
+          className={`relative w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+            isComplete
+              ? 'bg-emerald-500 text-white shadow-sm'
+              : isCurrent
+              ? 'bg-corporate-teal text-white ring-2 ring-corporate-teal ring-offset-2 shadow-md'
+              : 'bg-slate-200 dark:bg-slate-600 text-slate-400 dark:text-slate-500'
+          }`}
+          title={`${levelData.name}: ${isComplete ? 'Complete' : isCurrent ? 'Current' : 'Locked'}`}
+        >
+          {isComplete ? <Check className="w-4 h-4" /> : levelData.shortName}
+        </div>
+      );
+    })}
+  </div>
+);
+
+// Reps required per level
+const LEVEL_REPS = {
+  1: ['set_clear_expectations', 'deliver_reinforcing_feedback'],
+  2: ['follow_up_on_work', 'lead_with_vulnerability'],
+  3: ['deliver_redirecting_feedback', 'close_the_loop'],
+  4: ['handle_pushback', 'hold_the_line', 'be_curious'],
+  5: []
 };
 
-const MilestoneSignOffQueue = () => {
+// ============================================
+// ACCOMPLISHMENT CHECKLIST - Shows what's done/not done
+// ============================================
+const AccomplishmentChecklist = ({ levelNumber, repStats, sessionsAttended }) => {
+  const requiredReps = LEVEL_REPS[levelNumber] || [];
+  const sessionAttended = sessionsAttended?.[`action-s${levelNumber}-deliberate-practice`]?.attended;
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 mt-4">
+      <h4 className="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+        <Target className="w-4 h-4 text-corporate-teal" />
+        Level {levelNumber} Accomplishments
+      </h4>
+      
+      <div className="space-y-3">
+        {/* Session Attendance */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className={`w-4 h-4 ${sessionAttended ? 'text-emerald-500' : 'text-slate-400'}`} />
+            <span className="text-sm text-slate-700 dark:text-slate-300">Session {levelNumber} Attendance</span>
+          </div>
+          {sessionAttended ? (
+            <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-full">
+              ✓ Attended
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full">
+              Not yet
+            </span>
+          )}
+        </div>
+        
+        {/* Rep Completion */}
+        {requiredReps.length > 0 ? (
+          requiredReps.map(repType => {
+            const completed = (repStats?.[repType] || 0) > 0;
+            const count = repStats?.[repType] || 0;
+            const repLabel = repType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            return (
+              <div key={repType} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Zap className={`w-4 h-4 ${completed ? 'text-emerald-500' : 'text-slate-400'}`} />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">{repLabel}</span>
+                </div>
+                {completed ? (
+                  <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-full">
+                    ✓ {count} done
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-500 text-xs font-medium rounded-full">
+                    0 reps
+                  </span>
+                )}
+              </div>
+            );
+          })
+        ) : (
+          <p className="text-sm text-slate-500 dark:text-slate-400 italic">
+            No specific rep requirements for graduation level
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Level metadata - 5-level structure
+const LEVELS = {
+  1: { name: 'Reinforcing', shortName: 'L1', emoji: '📍', color: 'emerald', description: 'Set Clear Expectations & Reinforcing Feedback' },
+  2: { name: 'One-on-One', shortName: 'L2', emoji: '🎯', color: 'blue', description: 'Follow-up & Lead with Vulnerability' },
+  3: { name: 'Redirecting', shortName: 'L3', emoji: '💡', color: 'amber', description: 'Redirecting Feedback & Close the Loop' },
+  4: { name: 'Readiness', shortName: 'L4', emoji: '🚀', color: 'purple', description: 'Handle Pushback & Hold the Line' },
+  5: { name: 'Graduate', shortName: 'Grad', emoji: '🏆', color: 'rose', description: 'Program completion & ongoing development' }
+};
+
+// For backward compatibility
+const MILESTONES = LEVELS;
+
+const LevelSignOffQueue = () => {
   const { db, user } = useAppServices();
   const [loading, setLoading] = useState(true);
   const [cohorts, setCohorts] = useState([]);
   const [selectedCohort, setSelectedCohort] = useState('');
   const [participants, setParticipants] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterMilestone, setFilterMilestone] = useState('all');
+  const [filterLevel, setFilterLevel] = useState('all');
   const [expandedUser, setExpandedUser] = useState(null);
   const [processingId, setProcessingId] = useState(null);
   const [signOffSuccess, setSignOffSuccess] = useState(null);
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'graduated'
+  const [showInfo, setShowInfo] = useState(false);
 
   // Fetch cohorts on mount
   useEffect(() => {
@@ -143,6 +290,17 @@ const MilestoneSignOffQueue = () => {
         // Get incomplete actions for current milestone
         const incompleteActions = getIncompleteActionsForMilestone(currentMilestone, userData);
         
+        // Get rep completion stats
+        let repStats = {};
+        try {
+          repStats = await conditioningService.getCompletedRepCounts(db, userDoc.id);
+        } catch (e) {
+          console.warn('Could not fetch rep stats for', userDoc.id);
+        }
+        
+        // Get session attendance data
+        const sessionAttendance = userData.sessionAttendance || {};
+        
         participantList.push({
           id: userDoc.id,
           email: userData.email || 'Unknown',
@@ -153,6 +311,8 @@ const MilestoneSignOffQueue = () => {
           isGraduated: signedOffCount === 5,
           milestoneDetails,
           incompleteActions,
+          repStats,
+          sessionAttendance,
           joinedAt: userData.createdAt?.toDate?.() || null
         });
       }
@@ -275,8 +435,8 @@ const MilestoneSignOffQueue = () => {
       }, 2000);
       
     } catch (error) {
-      console.error('Error signing off milestone:', error);
-      alert('Failed to sign off milestone. Please try again.');
+      console.error('Error signing off level:', error);
+      alert('Failed to sign off level. Please try again.');
     } finally {
       setProcessingId(null);
     }
@@ -294,13 +454,13 @@ const MilestoneSignOffQueue = () => {
         p.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.email.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Milestone filter
-      const matchesMilestone = filterMilestone === 'all' || 
-        p.currentMilestone === parseInt(filterMilestone);
+      // Level filter
+      const matchesLevel = filterLevel === 'all' || 
+        p.currentMilestone === parseInt(filterLevel);
       
-      return matchesSearch && matchesMilestone;
+      return matchesSearch && matchesLevel;
     });
-  }, [participants, activeTab, searchTerm, filterMilestone]);
+  }, [participants, activeTab, searchTerm, filterLevel]);
 
   const activeCount = participants.filter(p => !p.isGraduated).length;
   const graduatedCount = participants.filter(p => p.isGraduated).length;
@@ -357,13 +517,23 @@ const MilestoneSignOffQueue = () => {
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Award className="w-6 h-6 text-corporate-teal" />
-              Milestone Sign-Off
+              Level Sign-Off
             </h1>
             <p className="text-slate-500 text-sm mt-1">
-              Review participant progress and sign off on completed milestones
+              Review leader progress and sign off on completed levels
             </p>
           </div>
+          <button
+            onClick={() => setShowInfo(!showInfo)}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+          >
+            <Info className="w-4 h-4" />
+            What is this?
+          </button>
         </div>
+        
+        {/* Info Panel */}
+        {showInfo && <SignOffInfo onClose={() => setShowInfo(false)} />}
 
         {/* Cohort Selector */}
         <div className="flex items-center gap-4 mb-4">
@@ -436,14 +606,14 @@ const MilestoneSignOffQueue = () => {
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-slate-400" />
               <select
-                value={filterMilestone}
-                onChange={(e) => setFilterMilestone(e.target.value)}
+                value={filterLevel}
+                onChange={(e) => setFilterLevel(e.target.value)}
                 className="px-3 py-2 bg-slate-100 dark:bg-slate-700 border-0 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal"
               >
-                <option value="all">All Milestones</option>
+                <option value="all">All Levels</option>
                 {Object.entries(MILESTONES).map(([num, data]) => (
                   <option key={num} value={num}>
-                    {data.emoji} {data.name}
+                    {data.emoji} Level {num}: {data.name}
                   </option>
                 ))}
               </select>
@@ -478,7 +648,7 @@ const MilestoneSignOffQueue = () => {
             </p>
             <p className="text-slate-400 text-sm mt-1">
               {activeTab === 'graduated'
-                ? 'Participants who complete all 5 milestones will appear here'
+                ? 'Participants who complete all 5 levels will appear here'
                 : 'No participants match your filters'}
             </p>
           </div>
@@ -529,31 +699,15 @@ const MilestoneSignOffQueue = () => {
                           </div>
                         ) : (
                           <>
-                            {/* Milestone Progress Dots */}
-                            <div className="flex items-center gap-1">
-                              {[1, 2, 3, 4, 5].map(m => {
-                                const mDetail = participant.milestoneDetails[m - 1];
-                                const mData = MILESTONES[m];
-                                return (
-                                  <div
-                                    key={m}
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                                      mDetail.signedOff
-                                        ? 'bg-emerald-500 text-white'
-                                        : m === participant.currentMilestone
-                                        ? 'bg-corporate-teal text-white ring-2 ring-corporate-teal ring-offset-2'
-                                        : 'bg-slate-200 dark:bg-slate-600 text-slate-500'
-                                    }`}
-                                    title={`${mData.name}: ${mDetail.signedOff ? 'Complete' : m === participant.currentMilestone ? 'Current' : 'Locked'}`}
-                                  >
-                                    {mDetail.signedOff ? <Check className="w-4 h-4" /> : m}
-                                  </div>
-                                );
-                              })}
-                            </div>
+                            {/* Level Progress Bubbles */}
+                            <LevelProgressBubbles 
+                              levelDetails={participant.milestoneDetails}
+                              currentLevel={participant.currentMilestone}
+                              isGraduated={participant.isGraduated}
+                            />
                             
-                            {/* Current Milestone Badge */}
-                            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border ${getColorClasses(currentMilestoneData?.color)}`}>
+                            {/* Current Level Badge */}
+                            <div className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border ${getColorClasses(currentMilestoneData?.color)}`}>
                               <span>{currentMilestoneData?.emoji}</span>
                               <span>{currentMilestoneData?.name}</span>
                             </div>
@@ -654,6 +808,15 @@ const MilestoneSignOffQueue = () => {
                         </div>
                       )}
                       
+                      {/* Accomplishment Checklist - Shows reps/sessions completed */}
+                      {!participant.isGraduated && (
+                        <AccomplishmentChecklist 
+                          levelNumber={participant.currentMilestone}
+                          repStats={participant.repStats}
+                          sessionsAttended={participant.sessionAttendance}
+                        />
+                      )}
+                      
                       {/* Sign-off History */}
                       {participant.milestoneDetails.some(m => m.signedOff) && (
                         <div className="mt-4">
@@ -691,7 +854,7 @@ const MilestoneSignOffQueue = () => {
             )}
             <div>
               <p className="font-semibold">
-                {signOffSuccess.isGraduation ? '🎉 Graduation!' : 'Milestone Signed Off!'}
+                {signOffSuccess.isGraduation ? '🎉 Graduation!' : 'Level Signed Off!'}
               </p>
               <p className="text-sm text-emerald-100">
                 {signOffSuccess.userName} — {MILESTONES[signOffSuccess.milestone]?.name}
@@ -704,4 +867,4 @@ const MilestoneSignOffQueue = () => {
   );
 };
 
-export default MilestoneSignOffQueue;
+export default LevelSignOffQueue;

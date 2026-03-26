@@ -11,7 +11,7 @@ import {
 import { Card } from '../ui';
 import { 
   Target, CheckCircle, Clock, AlertTriangle, 
-  ChevronRight, Dumbbell, Plus
+  ChevronRight, Zap, Plus
 } from 'lucide-react';
 
 const ConditioningCard = ({ onNavigate }) => {
@@ -87,7 +87,7 @@ const ConditioningCard = ({ onNavigate }) => {
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Dumbbell className="w-5 h-5 text-corporate-navy" />
+            <Zap className="w-5 h-5 text-corporate-navy" />
             <h3 className="font-bold text-corporate-navy">Conditioning</h3>
           </div>
           <ChevronRight className="w-5 h-5 text-gray-400" />

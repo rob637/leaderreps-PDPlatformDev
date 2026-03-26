@@ -67,11 +67,14 @@ async function callGmail(action, payload = {}, tokens = {}) {
  * Get the Gmail OAuth URL to start connection flow.
  * Calls Cloud Function which has access to OAuth secrets.
  * @param {string} userId - Current user's UID
+ * @param {string} returnUrl - URL to redirect back to after OAuth
  * @returns {Promise<string>} OAuth URL to redirect to
  */
-export async function getOAuthUrl(userId) {
+export async function getOAuthUrl(userId, returnUrl) {
   try {
-    const result = await gmailGetAuthUrlFn({ userId });
+    // Default to current page if no returnUrl specified
+    const redirectTo = returnUrl || window.location.href;
+    const result = await gmailGetAuthUrlFn({ userId, returnUrl: redirectTo });
     return result.data.authUrl;
   } catch (error) {
     console.error('Error getting OAuth URL:', error);

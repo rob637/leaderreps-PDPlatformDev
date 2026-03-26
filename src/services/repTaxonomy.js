@@ -805,16 +805,17 @@ export const REP_TYPES_V2 = [
     prepOptional: true,
     allowSoloRep: false
   },
-  {
-    id: 'make_clean_handoff',
-    category: 'lead_the_work',
-    label: 'Make a Clean Handoff',
-    shortLabel: 'Clean Handoff',
-    description: 'Explicitly transfer ownership of the work',
-    order: 2,
-    prepOptional: true,
-    allowSoloRep: false
-  },
+  // COMMENTED OUT - Not in active 4-rep curriculum (March 2026)
+  // {
+  //   id: 'make_clean_handoff',
+  //   category: 'lead_the_work',
+  //   label: 'Make a Clean Handoff',
+  //   shortLabel: 'Clean Handoff',
+  //   description: 'Explicitly transfer ownership of the work',
+  //   order: 2,
+  //   prepOptional: true,
+  //   allowSoloRep: false
+  // },
   {
     id: 'follow_up_work',
     category: 'lead_the_work',
@@ -825,16 +826,17 @@ export const REP_TYPES_V2 = [
     prepOptional: true,
     allowSoloRep: false
   },
-  {
-    id: 'hold_the_line',
-    category: 'lead_the_work',
-    label: 'Hold the Line',
-    shortLabel: 'Hold the Line',
-    description: 'Support development without taking back ownership',
-    order: 4,
-    prepOptional: true,
-    allowSoloRep: false
-  },
+  // COMMENTED OUT - Not in active 4-rep curriculum (March 2026)
+  // {
+  //   id: 'hold_the_line',
+  //   category: 'lead_the_work',
+  //   label: 'Hold the Line',
+  //   shortLabel: 'Hold the Line',
+  //   description: 'Support development without taking back ownership',
+  //   order: 4,
+  //   prepOptional: true,
+  //   allowSoloRep: false
+  // },
 
   // =========================================
   // LEAD THE TEAM (4 types)
@@ -859,50 +861,52 @@ export const REP_TYPES_V2 = [
     prepOptional: true,
     allowSoloRep: false
   },
-  {
-    id: 'close_the_loop',
-    category: 'lead_the_team',
-    label: 'Close the Loop',
-    shortLabel: 'Close the Loop',
-    description: 'Verify that feedback actually drives behavior change',
-    order: 3,
-    prepOptional: true,
-    allowSoloRep: false
-  },
-  {
-    id: 'handle_pushback',
-    category: 'lead_the_team',
-    label: 'Handle Pushback',
-    shortLabel: 'Handle Pushback',
-    description: 'Stay composed and adapt when met with pushback',
-    order: 4,
-    prepOptional: true,
-    allowSoloRep: false
-  },
+  // COMMENTED OUT - Not in active 4-rep curriculum (March 2026)
+  // {
+  //   id: 'close_the_loop',
+  //   category: 'lead_the_team',
+  //   label: 'Close the Loop',
+  //   shortLabel: 'Close the Loop',
+  //   description: 'Verify that feedback actually drives behavior change',
+  //   order: 3,
+  //   prepOptional: true,
+  //   allowSoloRep: false
+  // },
+  // COMMENTED OUT - Not in active 4-rep curriculum (March 2026)
+  // {
+  //   id: 'handle_pushback',
+  //   category: 'lead_the_team',
+  //   label: 'Handle Pushback',
+  //   shortLabel: 'Handle Pushback',
+  //   description: 'Stay composed and adapt when met with pushback',
+  //   order: 4,
+  //   prepOptional: true,
+  //   allowSoloRep: false
+  // },
 
   // =========================================
-  // LEAD YOURSELF (2 types)
+  // LEAD YOURSELF (2 types) - COMMENTED OUT - Not in active 4-rep curriculum (March 2026)
   // =========================================
-  {
-    id: 'lead_with_vulnerability',
-    category: 'lead_yourself',
-    label: 'Lead with Vulnerability',
-    shortLabel: 'Be Vulnerable',
-    description: 'Model vulnerability and build psychological safety',
-    order: 1,
-    prepOptional: true,
-    allowSoloRep: true
-  },
-  {
-    id: 'be_curious',
-    category: 'lead_yourself',
-    label: 'Be Curious',
-    shortLabel: 'Be Curious',
-    description: 'Lead with a coach-like mindset and create space',
-    order: 2,
-    prepOptional: true,
-    allowSoloRep: true
-  }
+  // {
+  //   id: 'lead_with_vulnerability',
+  //   category: 'lead_yourself',
+  //   label: 'Lead with Vulnerability',
+  //   shortLabel: 'Be Vulnerable',
+  //   description: 'Model vulnerability and build psychological safety',
+  //   order: 1,
+  //   prepOptional: true,
+  //   allowSoloRep: true
+  // },
+  // {
+  //   id: 'be_curious',
+  //   category: 'lead_yourself',
+  //   label: 'Be Curious',
+  //   shortLabel: 'Be Curious',
+  //   description: 'Lead with a coach-like mindset and create space',
+  //   order: 2,
+  //   prepOptional: true,
+  //   allowSoloRep: true
+  // }
 ];
 
 /**
@@ -922,9 +926,13 @@ export const REP_TYPES_V2 = [
  */
 export const MILESTONE_REP_UNLOCKS = {
   1: ['set_clear_expectations', 'deliver_reinforcing_feedback'],
-  2: ['follow_up_work', 'lead_with_vulnerability'],
-  3: ['deliver_redirecting_feedback', 'close_the_loop'],
-  4: ['handle_pushback', 'hold_the_line', 'be_curious'],
+  2: ['follow_up_work'],
+  3: ['deliver_redirecting_feedback'],
+  // Commented out - Not in active 4-rep curriculum (March 2026)
+  // 2: ['follow_up_work', 'lead_with_vulnerability'],
+  // 3: ['deliver_redirecting_feedback', 'close_the_loop'],
+  // 4: ['handle_pushback', 'hold_the_line', 'be_curious'],
+  4: [],
   5: []
 };
 
@@ -942,11 +950,27 @@ export const MILESTONE_REP_UNLOCKS = {
  */
 export const SESSION_REP_UNLOCKS = {
   'action-s1-deliberate-practice': ['set_clear_expectations', 'deliver_reinforcing_feedback'],
-  'action-s2-deliberate-practice': ['follow_up_work', 'lead_with_vulnerability'],
-  'action-s3-deliberate-practice': ['deliver_redirecting_feedback', 'close_the_loop'],
-  'action-s4-deliberate-practice': ['handle_pushback', 'hold_the_line', 'be_curious']
+  'action-s2-deliberate-practice': ['follow_up_work'],
+  'action-s3-deliberate-practice': ['deliver_redirecting_feedback']
+  // Commented out - Not in active 4-rep curriculum (March 2026)
+  // 'action-s2-deliberate-practice': ['follow_up_work', 'lead_with_vulnerability'],
+  // 'action-s3-deliberate-practice': ['deliver_redirecting_feedback', 'close_the_loop'],
+  // 'action-s4-deliberate-practice': ['handle_pushback', 'hold_the_line', 'be_curious']
   // Session 5 unlocks Ascent access, not specific reps
 };
+
+/**
+ * SIMPLIFIED REP TYPES (March 2026)
+ * ==================================
+ * For streamlined UX, show only these 4 core rep types directly
+ * without category drill-down. Unlock rules still apply.
+ */
+export const SIMPLIFIED_REP_TYPES = [
+  'set_clear_expectations',
+  'follow_up_work',
+  'deliver_reinforcing_feedback',
+  'deliver_redirecting_feedback'
+];
 
 /**
  * Session metadata for display purposes
@@ -1525,6 +1549,7 @@ export default {
   // Session-based unlocking exports (primary)
   SESSION_REP_UNLOCKS,
   SESSION_METADATA,
+  SIMPLIFIED_REP_TYPES,
   getSessionForRep,
   getUnlockedRepsBySessionAttendance
 };

@@ -798,16 +798,24 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
 
   const upcomingSessions = useMemo(() => {
     const now = new Date();
+    now.setHours(0, 0, 0, 0); // Compare at midnight local
     return (sessions || []).filter(s => {
       if (!s.date) return true; // Show sessions without date
-      return new Date(s.date) >= now;
+      // Parse as local date to avoid timezone issues
+      const dateStr = s.date.includes('T') ? s.date : s.date + 'T12:00:00';
+      return new Date(dateStr) >= now;
     });
   }, [sessions]);
 
   const pastSessions = useMemo(() => {
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
     return (sessions || [])
-      .filter(s => s.date && new Date(s.date) < now && registeredIds.has(s.id))
+      .filter(s => {
+        if (!s.date) return false;
+        const dateStr = s.date.includes('T') ? s.date : s.date + 'T12:00:00';
+        return new Date(dateStr) < now && registeredIds.has(s.id);
+      })
       .slice(0, 6);
   }, [sessions, registeredIds]);
 
