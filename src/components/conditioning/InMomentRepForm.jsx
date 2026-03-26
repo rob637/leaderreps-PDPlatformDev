@@ -239,6 +239,9 @@ const InMomentRepForm = ({
     // For in-the-moment reps, use current date as deadline since it's already executed
     const now = new Date();
     
+    // Check if this is a RED rep
+    const isRedRep = repTypeId === 'deliver_redirecting_feedback';
+    
     const repData = {
       repType: repTypeId,
       person: person.trim(),
@@ -251,6 +254,16 @@ const InMomentRepForm = ({
       occurredAt: getOccurredAt(),
       deadline: Timestamp.fromDate(now)
     };
+    
+    // For RED reps, store scenario type which seeds intensity level
+    if (isRedRep) {
+      repData.scenario = selectedSituation; // one_time, repeated, team, high_stakes
+      repData.situation = {
+        selected: selectedSituation,
+        customContext: customContext.trim(),
+        isScenario: true // Flag to indicate this is a scenario, not a situation
+      };
+    }
     
     // Submit the rep
     await onSubmit(repData);

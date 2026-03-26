@@ -2707,6 +2707,44 @@ export const conditioningService = {
         return result.data;
       }
       
+      // RED reps use structured redirecting feedback evidence
+      if (rep.repType === 'deliver_redirecting_feedback' && evidence.redEvidence) {
+        const red = evidence.redEvidence;
+
+        // Extract context and scenario from rep.situation/scenario if available
+        let commitContext = '';
+        let scenarioType = '';
+        if (typeof rep.situation === 'object') {
+          commitContext = rep.situation?.customContext || '';
+          scenarioType = rep.situation?.isScenario ? rep.situation?.selected : '';
+        } else if (typeof rep.scenario === 'object') {
+          scenarioType = rep.scenario?.selected || '';
+        }
+
+        const structured = {
+          situation_branch: red.situationBranch || '',
+          scenario_type: scenarioType || rep.scenarioType || '',
+          commit_context: commitContext,
+          red_responses: red.responses || {},
+          self_assessment: evidence.selfAssessment?.responses || {},
+          response_type: evidence.responseType || '',
+          other_response_text: evidence.otherResponseText || '',
+          // Optional signals from spec
+          difficulty: red.difficulty || null,
+          internal_gap: red.internalGap || null,
+          internal_gap_detail: red.internalGapDetail || null,
+          notes: evidence.notes || ''
+        };
+        
+        const result = await assessRepQuality({
+          repType: rep.repType,
+          person: rep.person,
+          structured
+        });
+        
+        return result.data;
+      }
+      
       // LWV reps use structured vulnerability evidence
       if (rep.repType === 'lead_with_vulnerability' && evidence.lwvEvidence) {
         const lwv = evidence.lwvEvidence;

@@ -6,6 +6,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import conditioningService from '../../services/conditioningService.js';
+import feedbackThreadService from '../../services/feedbackThreadService.js';
 import { getRepTypeV2 } from '../../services/repTaxonomy.js';
 import { formatDisplayDateTime } from '../../services/dateUtils.js';
 import { saveEvidenceDraft, getEvidenceDraft, deleteEvidenceDraft, hasEvidenceProgress } from '../../services/draftRepService.js';
@@ -61,19 +62,25 @@ import {
   RED_EVIDENCE_QUESTIONS,
   RED_OPTIONAL_FIELDS,
   RED_RESPONSE_OPTIONS,
+  RED_RESPONSE_DETAIL_QUESTION,
   RED_SELF_ASSESSMENT,
   RED_COMPLETE_LOOP,
   RED_REFLECTION_PROMPT,
+  RED_REFLECTION_PLACEHOLDER,
   RED_REFLECTION_EXAMPLES,
   RED_DIFFICULTY_OPTIONS,
+  RED_INTERNAL_GAP_OPTIONS,
+  RED_SCENARIO_OPTIONS,
   getREDSituationBranch,
   // CTL (Close the Loop) imports
+  CTL_THREAD_STATES,
   CTL_DECISION_OPTIONS,
   CTL_OBSERVATION_QUESTIONS,
   CTL_NOT_OBSERVED_REASONS,
   CTL_REINFORCEMENT_QUESTION,
   CTL_CONTINUATION_OPTIONS,
-  CTL_NEXT_ACTION_QUESTIONS,
+  CTL_NEXT_ACTION_QUESTION,
+  CTL_NO_FEEDBACK_REASON,
   CTL_SCORING_CRITERIA,
   CTL_DEFAULT_SCHEDULE_DAYS,
   CTL_DEFER_DEFAULT_DAYS,
@@ -608,6 +615,12 @@ const ScreenResponseDynamics = ({
   setResponse,
   otherResponseText,
   setOtherResponseText,
+  redDifficulty,
+  setRedDifficulty,
+  redInternalGap,
+  setRedInternalGap,
+  redInternalGapDetail,
+  setRedInternalGapDetail,
   pushbackLogOption,
   setPushbackLogOption,
   pushbackResponses,
@@ -730,6 +743,83 @@ const ScreenResponseDynamics = ({
             </div>
           )}
         </div>
+
+        {/* RED-specific: Difficulty Rating (optional) */}
+        {isRedirectingFeedback && (
+          <div className="space-y-2 animate-in slide-in-from-top-2">
+            <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+              How difficult was this conversation? <span className="text-gray-400 text-xs">(optional)</span>
+            </label>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              This helps calibrate coaching to your experience
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {RED_DIFFICULTY_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setRedDifficulty(redDifficulty === option.id ? null : option.id)}
+                  className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                    redDifficulty === option.id
+                      ? 'border-corporate-teal bg-corporate-teal/10'
+                      : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
+                  }`}
+                >
+                  <span className={redDifficulty === option.id ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                    {option.label}
+                  </span>
+                  <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    {option.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* RED-specific: Internal Gap / What Felt Difficult (optional) */}
+        {isRedirectingFeedback && (
+          <div className="space-y-2 animate-in slide-in-from-top-2">
+            <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+              What felt most difficult? <span className="text-gray-400 text-xs">(optional)</span>
+            </label>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Helps identify growth edges for coaching
+            </p>
+            <div className="space-y-2">
+              {RED_INTERNAL_GAP_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setRedInternalGap(redInternalGap === option.id ? null : option.id)}
+                  className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+                    redInternalGap === option.id
+                      ? 'border-corporate-teal bg-corporate-teal/10'
+                      : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
+                  }`}
+                >
+                  <span className={redInternalGap === option.id ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                    {option.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+            
+            {/* Optional detail text for internal gap (except "nothing") */}
+            {redInternalGap && redInternalGap !== 'nothing' && (
+              <div className="mt-3 animate-in slide-in-from-top-2">
+                <VoiceTextarea
+                  id="red-internal-gap-detail"
+                  label="Add detail (optional)"
+                  value={redInternalGapDetail}
+                  onChange={setRedInternalGapDetail}
+                  placeholder="What specifically was difficult?"
+                  rows={2}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-3 mt-4">
           <Button onClick={onBack} variant="outline" className="flex-1">
@@ -1433,6 +1523,9 @@ const ScreenCloseRR = ({
     if (rep?.repType === 'lead_with_vulnerability') {
       return LWV_SELF_ASSESSMENT;
     }
+    if (rep?.repType === 'deliver_redirecting_feedback') {
+      return RED_SELF_ASSESSMENT;
+    }
     if (rep?.repType === 'set_clear_expectations') {
       const situationText = typeof rep?.situation === 'object' 
         ? (rep.situation.selected || '') 
@@ -1574,6 +1667,27 @@ const ScreenCloseRR = ({
               placeholder={'Examples:\n• "I rushed that decision."\n• "I should have handled that differently."\n• "Here\'s how I\'m going to approach it next time."'}
               rows={3}
             />
+          </div>
+        )}
+
+        {/* RED: "Next time I deliver redirecting feedback, I will..." reflection */}
+        {rep?.repType === 'deliver_redirecting_feedback' && (
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-corporate-navy dark:text-white">
+              {RED_REFLECTION_PROMPT}
+            </label>
+            <VoiceTextarea
+              value={nextTimeReflection}
+              onChange={setNextTimeReflection}
+              placeholder={RED_REFLECTION_PLACEHOLDER || RED_REFLECTION_EXAMPLES.map(ex => `• ${ex}`).join('\n')}
+              rows={3}
+            />
+            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+              <p className="font-medium">Examples:</p>
+              {RED_REFLECTION_EXAMPLES.map((ex, idx) => (
+                <p key={idx}>• {ex}</p>
+              ))}
+            </div>
           </div>
         )}
 
@@ -2583,6 +2697,12 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
   // Screen 3: Response & Dynamics
   const [response, setResponse] = useState(null);
   const [otherResponseText, setOtherResponseText] = useState(''); // Added for DRF "Other" option
+  
+  // RED-specific optional signals (difficulty and internal gap)
+  const [redDifficulty, setRedDifficulty] = useState(null); // 'low' | 'moderate' | 'high'
+  const [redInternalGap, setRedInternalGap] = useState(null); // 'nothing' | 'mild' | 'strong' | 'avoided'
+  const [redInternalGapDetail, setRedInternalGapDetail] = useState(''); // Optional free text detail
+  
   const [pushbackLogOption, setPushbackLogOption] = useState(null);
   const [pushbackResponses, setPushbackResponses] = useState([]);
   const [pushbackNote, setPushbackNote] = useState('');
@@ -2671,6 +2791,10 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           setSelfAssessmentResponses(fd.selfAssessmentResponses || {});
           setResponse(fd.response || null);
           setOtherResponseText(fd.otherResponseText || '');
+          // RED optional signals
+          setRedDifficulty(fd.redDifficulty || null);
+          setRedInternalGap(fd.redInternalGap || null);
+          setRedInternalGapDetail(fd.redInternalGapDetail || '');
           setPushbackLogOption(fd.pushbackLogOption || null);
           setPushbackResponses(fd.pushbackResponses || []);
           setPushbackNote(fd.pushbackNote || '');
@@ -2714,6 +2838,9 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           selfAssessmentResponses, // New
           response,
           otherResponseText, // Added
+          redDifficulty, // RED optional signal
+          redInternalGap, // RED optional signal
+          redInternalGapDetail, // RED optional signal
           pushbackLogOption,
           pushbackResponses,
           pushbackNote,
@@ -2740,7 +2867,8 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
     };
   }, [
     draftLoaded, db, userId, rep?.id,
-    currentScreen, whatHappened, sceResponses, drfResponses, selfAssessmentResponses, response, otherResponseText, pushbackLogOption, pushbackResponses,
+    currentScreen, whatHappened, sceResponses, drfResponses, selfAssessmentResponses, response, otherResponseText,
+    redDifficulty, redInternalGap, redInternalGapDetail, pushbackLogOption, pushbackResponses,
     pushbackNote, closeLoopOption, closeLoopLogOption, behaviorChange,
     behaviorChangeNote, notes, artifacts, outcome, whatWentWell, whatDifferent, completeLoopResponses
   ]);
@@ -2757,6 +2885,9 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
       selfAssessmentResponses,
       response,
       otherResponseText, // Added
+      redDifficulty, // RED optional signal
+      redInternalGap, // RED optional signal
+      redInternalGapDetail, // RED optional signal
       pushbackLogOption,
       pushbackResponses,
       pushbackNote,
@@ -2773,7 +2904,8 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
     };
   }, [
     isSubmitting, draftLoaded,
-    currentScreen, whatHappened, sceResponses, drfResponses, selfAssessmentResponses, response, otherResponseText, pushbackLogOption, pushbackResponses,
+    currentScreen, whatHappened, sceResponses, drfResponses, selfAssessmentResponses, response, otherResponseText,
+    redDifficulty, redInternalGap, redInternalGapDetail, pushbackLogOption, pushbackResponses,
     pushbackNote, closeLoopOption, closeLoopLogOption, behaviorChange,
     behaviorChangeNote, notes, artifacts, outcome, whatWentWell, whatDifferent, completeLoopResponses
   ]);
@@ -2791,6 +2923,9 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           drfResponses: state.drfResponses,
           selfAssessmentResponses: state.selfAssessmentResponses,
           response: state.response,
+          redDifficulty: state.redDifficulty, // RED optional signal
+          redInternalGap: state.redInternalGap, // RED optional signal
+          redInternalGapDetail: state.redInternalGapDetail, // RED optional signal
           pushbackLogOption: state.pushbackLogOption,
           pushbackResponses: state.pushbackResponses,
           pushbackNote: state.pushbackNote,
@@ -2959,6 +3094,10 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           ),
           responses: sceResponses, // Using sceResponses state for structured evidence
           nextTimeReflection: nextTimeReflection.trim() || null,
+          // Optional signals for coaching and anti-gaming
+          difficulty: redDifficulty || null,
+          internalGap: redInternalGap || null,
+          internalGapDetail: redInternalGapDetail.trim() || null,
           // completeLoopResponses moved to separate step
           completeLoopResponses: null
         } : null,
@@ -3081,6 +3220,25 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           if (isRedWithReminder) {
             updateData.ctlDueDate = reminderDate;
             updateData.awaitingCTL = true;
+            
+            // Create the actual feedback thread document via feedbackThreadService
+            try {
+              await feedbackThreadService.createFeedbackThread(db, userId, {
+                threadId,
+                initialRedId: rep.id,
+                person: rep.person || '',
+                scenarioType: rep.situation?.selected || 'other',
+                scheduledCtlDate: reminderDate,
+                // Include initial context if available
+                behaviorStatement: rep.evidence?.redEvidence?.responses?.behavior_statement || null,
+                impactStatement: rep.evidence?.redEvidence?.responses?.impact_statement || null,
+                requestStatement: rep.evidence?.redEvidence?.responses?.request_statement || null,
+                requestConfirmationType: rep.evidence?.redEvidence?.responses?.confirm_choice || null
+              });
+            } catch (threadErr) {
+              console.warn('Failed to create feedback thread:', threadErr);
+              // Continue even if thread creation fails - rep is still saved
+            }
           } else {
             updateData.loopClosedAt = new Date().toISOString();
             updateData.awaitingCTL = false;
@@ -3169,6 +3327,25 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
 
       const repRef = doc(db, 'users', userId, 'conditioning_reps', rep.id);
       
+      // Get thread context for anti-gaming
+      let thread = null;
+      let cycleNumber = 1;
+      let previousCtlDecisions = [];
+      
+      if (rep.threadId) {
+        try {
+          thread = await feedbackThreadService.getFeedbackThread(db, userId, rep.threadId);
+          if (thread) {
+            cycleNumber = thread.cycles?.length || 1;
+            previousCtlDecisions = thread.cycles
+              ?.filter(c => c.ctlDecision)
+              .map(c => c.ctlDecision) || [];
+          }
+        } catch (threadErr) {
+          console.warn('Failed to get thread context:', threadErr);
+        }
+      }
+      
       // Build CTL data
       const ctlData = {
         decision: ctlDecision,
@@ -3189,13 +3366,30 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           updatedAt: new Date().toISOString()
         });
         
-        // Call AI assessment for CTL
+        // Update thread state to CLOSED via thread service
+        if (rep.threadId) {
+          try {
+            await feedbackThreadService.completeCtlChanged(db, userId, rep.threadId, {
+              ctlId: rep.id,
+              observation: ctlObservation,
+              gaveReinforcingFeedback: ctlGaveReinforcing
+            });
+          } catch (threadErr) {
+            console.warn('Failed to update thread state:', threadErr);
+          }
+        }
+        
+        // Call AI assessment for CTL with anti-gaming context
         try {
           const assessCTL = conditioningService.getCallableFunction('assessRepQuality');
           const result = await assessCTL({
             repType: 'close_the_loop',
             linkedRepId: rep.id,
-            data: ctlData
+            data: {
+              ...ctlData,
+              cycleNumber,
+              previousCtlDecisions
+            }
           });
           setCtlAssessment(result?.data);
         } catch (assessErr) {
@@ -3212,6 +3406,21 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           ctlDueDate: ctlNextCheckDate,
           updatedAt: new Date().toISOString()
         });
+        
+        // Update thread state to OPEN_CONTINUE via thread service
+        if (rep.threadId) {
+          try {
+            await feedbackThreadService.completeCtlNotChanged(db, userId, rep.threadId, {
+              ctlId: rep.id,
+              observation: ctlObservation,
+              gaveFollowupFeedback: false,
+              nextActionDate: ctlNextCheckDate,
+              noFeedbackReason: ctlNextAction
+            });
+          } catch (threadErr) {
+            console.warn('Failed to update thread state:', threadErr);
+          }
+        }
         
         // Update follow_up_reminders with new date
         // Note: In production, should query and update the existing reminder
@@ -3240,6 +3449,18 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           ctlDueDate: ctlNextCheckDate,
           updatedAt: new Date().toISOString()
         });
+        
+        // Update thread state to DEFERRED via thread service
+        if (rep.threadId) {
+          try {
+            await feedbackThreadService.completeCtlDeferred(db, userId, rep.threadId, {
+              notObservedReason: ctlNotObservedReason,
+              rescheduleDate: ctlNextCheckDate
+            });
+          } catch (threadErr) {
+            console.warn('Failed to update thread state:', threadErr);
+          }
+        }
         
         // Schedule new reminder
         await addDoc(collection(db, 'follow_up_reminders'), {
@@ -3291,7 +3512,6 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
 
       // Create the new continuation RED
       const newRepId = `rep_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const newRepRef = doc(db, 'users', userId, 'conditioning_reps', newRepId);
       
       // Get the current week info for the new rep
       const weekId = rep.weekId || `week_${new Date().toISOString().split('T')[0]}`;
@@ -3341,20 +3561,30 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
         ctlDueDate: new Date(Date.now() + CTL_DEFAULT_SCHEDULE_DAYS * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       };
       
-      // Save both: update old RED with CTL data, create new RED
-      await Promise.all([
-        updateDoc(oldRepRef, {
-          'ctlData': ctlData,
-          'continuationRedId': newRepId,
-          updatedAt: new Date().toISOString()
-          // Note: old RED stays in follow_up_pending, thread continues
-        }),
-        // Note: Using setDoc equivalent - need to import or use different approach
-        // For now, use the conditioningService to create the rep
-      ]);
+      // Update old RED with CTL data
+      await updateDoc(oldRepRef, {
+        'ctlData': ctlData,
+        'continuationRedId': newRepId,
+        updatedAt: new Date().toISOString()
+      });
       
       // Create the new rep via service
       await conditioningService.createRep(db, userId, continuationRedData);
+      
+      // Update thread via feedbackThreadService
+      if (rep.threadId) {
+        try {
+          await feedbackThreadService.addContinuationRed(db, userId, rep.threadId, {
+            redId: newRepId,
+            ctlDecision: 'not_changed',
+            observation: ctlObservation,
+            continuationNumber: continuationRedData.continuationNumber,
+            scheduledCtlDate: continuationRedData.ctlDueDate
+          });
+        } catch (threadErr) {
+          console.warn('Failed to update thread with continuation:', threadErr);
+        }
+      }
       
       // Schedule CTL reminder for the new RED
       await addDoc(collection(db, 'follow_up_reminders'), {
@@ -3565,6 +3795,12 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
             setResponse={setResponse}
             otherResponseText={otherResponseText}
             setOtherResponseText={setOtherResponseText}
+            redDifficulty={redDifficulty}
+            setRedDifficulty={setRedDifficulty}
+            redInternalGap={redInternalGap}
+            setRedInternalGap={setRedInternalGap}
+            redInternalGapDetail={redInternalGapDetail}
+            setRedInternalGapDetail={setRedInternalGapDetail}
             pushbackLogOption={pushbackLogOption}
             setPushbackLogOption={setPushbackLogOption}
             pushbackResponses={pushbackResponses}

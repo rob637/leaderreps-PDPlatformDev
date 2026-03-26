@@ -2742,9 +2742,13 @@ async function assessREDRep(data, person, repType, previousQuestions = []) {
   const redResponses = data.red_responses || data.sce_responses || {};
   const selfAssessment = data.self_assessment || {};
   const responseType = data.response_type || '';
+  const otherResponseText = data.other_response_text || '';
   const notes = data.notes || '';
   const situationBranch = data.situation_branch || '';
-  const difficulty = data.difficulty || '';
+  const difficulty = data.difficulty || ''; // 'low' | 'moderate' | 'high'
+  const internalGap = data.internal_gap || ''; // 'nothing' | 'mild' | 'strong' | 'avoided'
+  const internalGapDetail = data.internal_gap_detail || '';
+  const scenarioType = data.scenario_type || ''; // 'one_time' | 'repeated' | 'team' | 'high_stakes'
 
   // Build evidence summary from structured RED fields
   const evidenceLines = [];
@@ -2778,7 +2782,25 @@ async function assessREDRep(data, person, repType, previousQuestions = []) {
     'after_the_fact': 'After-the-fact feedback'
   };
 
+  // Scenario type descriptions (seeds intensity level)
+  const scenarioDescriptions = {
+    'one_time': 'One-time behavior miss (Intensity Level 1)',
+    'repeated': 'Repeated pattern or ongoing issue (Intensity Level 2)',
+    'team': 'Team or group behavior (Intensity Level 2)',
+    'high_stakes': 'High-stakes or sensitive situation (Intensity Level 3)'
+  };
+
+  // Internal gap descriptions
+  const internalGapDescriptions = {
+    'nothing': 'Nothing felt difficult',
+    'mild': 'Mild tension',
+    'strong': 'Strong emotion',
+    'avoided': 'Leader avoided saying something'
+  };
+
   const situationLabel = situationDescriptions[situationBranch] || situationBranch || 'Not specified';
+  const scenarioLabel = scenarioDescriptions[scenarioType] || scenarioType || 'Not specified';
+  const internalGapLabel = internalGapDescriptions[internalGap] || internalGap || 'Not specified';
 
   const prompt = `You are evaluating a leadership practice exercise ("Real Rep") for Deliver Redirecting Feedback.
 
@@ -2795,10 +2817,14 @@ PURPOSE:
 - preserve trust
 
 CONTEXT:
+- Scenario type: ${scenarioLabel}
 - Situation type: ${situationLabel}
 - Person involved: ${person || 'Not specified'}
 - Their response (selected): ${responseType || 'Not specified'}
-- Difficulty level: ${difficulty || 'Not specified'}
+${otherResponseText ? `- Their response (detail): ${otherResponseText}` : ''}
+- Self-reported difficulty: ${difficulty || 'Not specified'}
+- Internal gap (what felt difficult): ${internalGapLabel}
+${internalGapDetail ? `- Internal gap detail: "${internalGapDetail}"` : ''}
 
 EVIDENCE PROVIDED:
 ${evidenceLines.join('\n') || '(No structured evidence provided)'}
@@ -2869,15 +2895,31 @@ Did the leader explain why this matters?
 
 CONDITION 3 — REQUEST (Critical)
 Did the leader make a specific request for change?
-3: specific, observable future behavior (e.g., "Let them finish before responding.")
-2: conversational + anchored to change (e.g., "What will you do differently next time?") — applies to Challenge/Collaborate requests
+
+CRITICAL RULE: Request = 3 (Strong) ONLY IF the expected behavior is explicitly stated AND confirmed.
+
+Two paths to Request = 3:
+1. Leader-Defined: Leader states the expected behavior directly
+   Example: "Submit it by 3pm going forward."
+2. Direct-Defined + Leader Confirmed: Direct states it, leader confirms
+   Example: Direct: "I'll send it before 3." → Leader: "Good—send it by 3pm."
+
+Scoring:
+3: specific, observable future behavior + confirmation (see paths above)
+2: conversational + anchored to change (e.g., "What will you do differently next time?") — applies to Challenge/Collaborate requests where direct stated action but leader did NOT confirm
 1: vague (e.g., "Be more mindful.") — AUTO-FAIL if <= 1
 0: missing
 
-REQUEST CLASSIFICATION (Internal - classify but don't show):
+REQUEST CLASSIFICATION (required in output):
 - Command: explicit directive (e.g., "Submit by 3pm going forward.")
 - Challenge: question prompting ownership (e.g., "What will you do differently?")
 - Collaborate: joint discussion framing (e.g., "Let's talk about how to prevent this.")
+
+REQUEST CONFIRMATION TYPE (required in output):
+- leader_stated: Leader explicitly stated the expected behavior
+- direct_stated_leader_confirmed: Direct stated, leader echoed/confirmed
+- direct_stated_not_confirmed: Direct stated action, but leader did NOT confirm (triggers Closure Check)
+- none: No clear request made
 
 CONDITION 4 — DIRECT DELIVERY
 Was the feedback delivered directly to the right person?
@@ -2946,23 +2988,45 @@ If Intensity = 1 AND Behavior ≥ 2 AND Impact ≥ 2 AND Request = 2:
 Output coaching: "This reads more like a light nudge than a full redirect. The behavior is clear, but the expected change is not fully defined yet."
 
 CONVERSATION CLOSURE CHECK:
-Trigger if Request = 2 (coaching only, does NOT change score):
+Trigger if Request = 2 AND requestConfirmationType = direct_stated_not_confirmed:
+Output coaching: "You asked what they would do differently, and they identified a clear action. However, the expectation was not explicitly confirmed. How could you reinforce the standard so it is clearly owned going forward?"
+
+Also trigger if Request = 2 generally (coaching only, does NOT change score):
 "Did this conversation end with a clear, observable next step?"
 If weak: "The conversation opened well but may not have landed on a clear behavioral change. What specifically will be different next time?"
 
 ANTI-GAMING CHECKS:
 
 A. Internal Gap Cross-Check:
-If Internal Gap Intensity = strong emotion AND ≥ 2 of (Behavior, Impact, Request) = 3:
+If Internal Gap = "strong" (strong emotion) AND ≥ 2 of (Behavior, Impact, Request) = 3:
 Cap Delivery Discipline at 2
+Flag: antiGamingInternalGapTriggered = true
 
-B. Difficulty Mismatch:
-If Difficulty = Low AND Intensity ≥ 2:
+B. Internal Gap Avoided Cross-Check:
+If Internal Gap = "avoided" AND Delivery Discipline ≥ 2:
+Flag but don't penalize: "You noted something was held back. What might have been clearer if it was said?"
+Flag: antiGamingAvoidedTriggered = true
+
+C. Difficulty Mismatch:
+If Difficulty = "low" AND Intensity ≥ 2:
 Flag but don't penalize: "The self-reported difficulty seems low for the intensity of this situation."
+Flag: antiGamingDifficultyMismatch = true
+
+D. Mixed Feedback Detection:
+If reinforcing + redirecting feedback mixed in same evidence:
+Behavior capped at 2
+Flag: mixedFeedbackDetected = true
 
 COACHING OUTPUT RULES:
 - Max 2-3 insights total
-- Priority Order: Fail reason > Lowest condition > Intensity/Light Nudge > Closure check > Anti-gaming > Pattern feedback
+- Priority Order (MANDATORY): 
+  1. Fail reason (if triggered)
+  2. Request weakness when Intensity ≥ 2 (forced priority)
+  3. Lowest scoring condition
+  4. Under-Scaling / Light Nudge
+  5. Closure Check
+  6. Anti-Gaming flags
+  7. Pattern feedback (if provided)
 - If fail triggered → prioritize fail + 1 improvement
 - Do NOT stack redundant insights
 
@@ -3012,7 +3076,8 @@ Respond ONLY with valid JSON in this exact format:
       "label": "Strong" | "Adequate" | "Weak" | "None",
       "feedback": "Brief observation about this condition",
       "quote": "exact evidence excerpt if relevant, or null",
-      "requestType": "Command" | "Challenge" | "Collaborate" | null
+      "requestType": "Command" | "Challenge" | "Collaborate" | null,
+      "requestConfirmationType": "leader_stated" | "direct_stated_leader_confirmed" | "direct_stated_not_confirmed" | "none"
     },
     "direct_delivery": {
       "score": 0-3,
@@ -3028,6 +3093,15 @@ Respond ONLY with valid JSON in this exact format:
   "intensityLevel": 1 | 2 | 3,
   "autoFailTriggered": boolean,
   "autoFailReason": "Reason if auto-fail, null otherwise",
+  "failTriggeredBy": "behavior_one" | "request_lte_one" | "delivery_zero" | "direct_delivery_zero" | "two_conditions_one" | "any_zero" | null,
+  "mixedFeedbackDetected": boolean,
+  "antiGamingFlags": {
+    "internalGapTriggered": boolean,
+    "avoidedTriggered": boolean,
+    "difficultyMismatch": boolean
+  },
+  "underScalingDetected": boolean,
+  "closureCheckTriggered": boolean,
   "totalScore": number,
   "repPassed": boolean,
   "coachingQuestions": ["question1", "question2"],
@@ -3083,11 +3157,22 @@ Respond ONLY with valid JSON in this exact format:
     // Auto-fail logic per spec
     const autoFailTriggered = hasZero || onesCount >= 2 || behaviorIsOne || requestLteOne || deliveryDisciplineZero || directDeliveryZero;
 
+    // Determine fail reason for tracking
+    let failTriggeredBy = null;
+    if (autoFailTriggered) {
+      if (hasZero) failTriggeredBy = 'any_zero';
+      else if (behaviorIsOne) failTriggeredBy = 'behavior_one';
+      else if (requestLteOne) failTriggeredBy = 'request_lte_one';
+      else if (deliveryDisciplineZero) failTriggeredBy = 'delivery_zero';
+      else if (directDeliveryZero) failTriggeredBy = 'direct_delivery_zero';
+      else if (onesCount >= 2) failTriggeredBy = 'two_conditions_one';
+    }
+
     const isValid = assessment.repValidity !== 'invalid';
     const repPassed = isValid && !autoFailTriggered && totalScore >= 9;
 
     logger.info("RED rep assessment completed", { 
-      repType, totalScore, repPassed, autoFailTriggered, isValid
+      repType, totalScore, repPassed, autoFailTriggered, isValid, failTriggeredBy
     });
 
     return {
@@ -3098,6 +3183,18 @@ Respond ONLY with valid JSON in this exact format:
       intensityLevel: assessment.intensityLevel || 1,
       autoFailTriggered,
       autoFailReason: autoFailTriggered ? (assessment.autoFailReason || 'Automatic fail condition met') : null,
+      failTriggeredBy,
+      // New fields from spec
+      mixedFeedbackDetected: assessment.mixedFeedbackDetected || false,
+      antiGamingFlags: assessment.antiGamingFlags || {
+        internalGapTriggered: false,
+        avoidedTriggered: false,
+        difficultyMismatch: false
+      },
+      underScalingDetected: assessment.underScalingDetected || false,
+      closureCheckTriggered: assessment.closureCheckTriggered || false,
+      requestConfirmationType: conditions.request_made?.requestConfirmationType || null,
+      // Standard fields
       totalScore,
       maxScore: 15,
       repPassed,
@@ -3128,6 +3225,12 @@ Respond ONLY with valid JSON in this exact format:
  * 1. Real Check - Was this a deliberate, intentional follow-up?
  * 2. Usable Evidence - Is the observation specific and observable?
  * 3. Appropriate Response - Did the leader respond appropriately?
+ * 
+ * Anti-Gaming Checks:
+ * - Evidence Enforcement: Vague evidence → Fail
+ * - Drive-By Detection: Minimal observation + no response → Fail/Flag
+ * - Avoidance Pattern: Repeated CTL without follow-up RED → Coaching escalation
+ * - Over-Polished Pattern: Strong REDs + weak CTLs → Coaching
  */
 async function assessCTLRep(data, linkedRepId) {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -3139,12 +3242,18 @@ async function assessCTLRep(data, linkedRepId) {
 
   const {
     decision,        // 'changed' | 'not_changed' | 'not_observed'
-    observation,     // { what_observed, observation_context }
+    observation,     // { what_observed, observation_context, is_secondhand, secondhand_source }
     gaveReinforcingFeedback,   // boolean (for 'changed')
     gaveFollowupFeedback,      // boolean (for 'not_changed')
     nextAction,      // string (for 'not_changed' without feedback)
+    nextActionDate,  // string/date (for 'not_changed' without feedback)
     nextCheckDate,   // string (for rescheduling)
-    notObservedReason // string (for 'not_observed')
+    notObservedReason, // string (for 'not_observed')
+    notObservedDetail, // string (optional detail for 'not_observed')
+    // Anti-gaming context
+    cycleNumber,     // Which cycle this is (1, 2, 3...)
+    previousCtlDecisions, // Array of previous CTL decisions in this thread
+    originalRedScore  // Score of the original RED that started this thread
   } = data;
 
   // Not observed is a valid deferral, not scored
@@ -3153,16 +3262,33 @@ async function assessCTLRep(data, linkedRepId) {
       evaluationType: 'ctl_deferred',
       decision,
       notObservedReason,
+      notObservedDetail: notObservedDetail || null,
       nextCheckDate,
       criteria: null,
       allPassed: null,
       summary: 'Close the Loop deferred - no opportunity to observe yet.',
-      assessedAt: new Date().toISOString()
+      assessedAt: new Date().toISOString(),
+      // Flag excessive deferrals
+      deferralWarning: cycleNumber > 1 ? 'This thread has been deferred before. Consider whether follow-up is being avoided.' : null
     };
   }
 
   const observationText = observation?.what_observed || '';
   const contextText = observation?.observation_context || '';
+  const isSecondhand = observation?.is_secondhand || false;
+  const secondhandSource = observation?.secondhand_source || '';
+
+  // Build anti-gaming context for prompt
+  const antiGamingContext = [];
+  if (cycleNumber && cycleNumber > 1) {
+    antiGamingContext.push(`This is cycle ${cycleNumber} of this feedback thread.`);
+  }
+  if (previousCtlDecisions && previousCtlDecisions.length > 0) {
+    const notChangedCount = previousCtlDecisions.filter(d => d === 'not_changed').length;
+    if (notChangedCount >= 1) {
+      antiGamingContext.push(`Previous CTL checks: ${notChangedCount} showed behavior not changed.`);
+    }
+  }
 
   const prompt = `You are evaluating a "Close the Loop" (CTL) action for a leadership development program.
 
@@ -3173,12 +3299,18 @@ DECISION: ${decision === 'changed' ? 'The leader reports the behavior CHANGED' :
 OBSERVATION:
 What they observed: "${observationText}"
 Context (when/where): "${contextText}"
+${isSecondhand ? `This is SECONDHAND information. Source: "${secondhandSource || 'Not named'}"` : ''}
 
 ${decision === 'changed' ? `
 RESPONSE: ${gaveReinforcingFeedback ? 'Leader gave reinforcing feedback to acknowledge the change' : 'Leader did not give explicit reinforcing feedback'}
 ` : `
-RESPONSE: ${gaveFollowupFeedback ? 'Leader gave additional redirecting feedback' : `Leader did not give feedback. Next action: "${nextAction || 'Not specified'}"`}
+RESPONSE: ${gaveFollowupFeedback ? 'Leader gave additional redirecting feedback' : `Leader did not give feedback. Next action: "${nextAction || 'Not specified'}" on date: ${nextActionDate || 'Not specified'}`}
 `}
+
+${antiGamingContext.length > 0 ? `
+PATTERN CONTEXT (for anti-gaming detection):
+${antiGamingContext.join('\n')}
+` : ''}
 
 Evaluate this CTL action against THREE criteria. Each is pass/fail.
 
@@ -3187,21 +3319,40 @@ Did the leader perform a DELIBERATE, intentional follow-up?
 - PASS: They specifically looked for behavior change (scheduled check, intentional observation)
 - FAIL: Incidental observation, no real effort to check, or superficial check
 
-CRITERION 2: USABLE EVIDENCE
-Is the observation SPECIFIC and OBSERVABLE?
+DRIVE-BY DETECTION: If observation is minimal (few words, no specifics) AND no response was given, this is likely a "drive-by check" → FAIL
+
+CRITERION 2: USABLE EVIDENCE (Camera Test)
+Is the observation SPECIFIC and OBSERVABLE? Would a camera capture this?
 - PASS: Describes concrete actions seen/heard, specific enough to verify behavior change
-- FAIL: Vague impressions, assumptions, hearsay without source, or interpretive statements
-Note: Secondhand observations are OK if they name the source and describe specific behaviors.
+- FAIL: 
+  - Vague impressions ("seems better", "appears improved")
+  - Assumptions about mindset
+  - Hearsay without named source
+  - Interpretive statements instead of observable facts
+
+SECONDHAND RULES:
+- If secondhand: Source MUST be named for pass
+- Secondhand can still pass if observation is specific and source is credible
 
 CRITERION 3: APPROPRIATE RESPONSE
 Did the leader respond appropriately to what they observed?
+
 For "behavior changed":
 - PASS: Either reinforced the change OR appropriately did nothing (change was acknowledged)
 - FAIL: Missing any acknowledgment when one was warranted
 
 For "behavior not changed":
-- PASS: Either gave follow-up feedback OR has a clear next action plan
-- FAIL: No response and no plan, or gave up
+- PASS: Either gave follow-up feedback OR has a SPECIFIC next action plan with DATE
+- FAIL: 
+  - No response and no plan
+  - Vague plan without specific date
+  - Gave up / avoidance signals
+
+ANTI-GAMING FLAGS TO DETECT:
+1. driveByCheck: Minimal effort observation (few words) + no meaningful response
+2. vagueEvidence: "Seems better", "appears", "I think" without specifics
+3. avoidanceSignal: Not changed + no feedback + weak/no plan (repeated pattern)
+4. overPolished: Perfect observation format but no actual follow-through
 
 Respond with JSON only:
 {
@@ -3213,12 +3364,19 @@ Respond with JSON only:
     "usable_evidence": {
       "passed": boolean,
       "feedback": "One sentence explaining the assessment",
-      "isSecondhand": boolean
+      "isSecondhand": boolean,
+      "evidenceQuality": "strong" | "adequate" | "weak" | "vague"
     },
     "appropriate_response": {
       "passed": boolean,
       "feedback": "One sentence explaining the assessment"
     }
+  },
+  "antiGamingFlags": {
+    "driveByCheck": boolean,
+    "vagueEvidence": boolean,
+    "avoidanceSignal": boolean,
+    "overPolished": boolean
   },
   "summary": "One sentence overall summary",
   "coachingTip": "One actionable coaching tip if any criterion failed, or encouragement if all passed"
@@ -3253,8 +3411,19 @@ Respond with JSON only:
     const allPassed = realCheckPassed && evidencePassed && responsePassed;
     const passedCount = [realCheckPassed, evidencePassed, responsePassed].filter(Boolean).length;
 
+    // Extract anti-gaming flags
+    const antiGamingFlags = assessment.antiGamingFlags || {
+      driveByCheck: false,
+      vagueEvidence: false,
+      avoidanceSignal: false,
+      overPolished: false
+    };
+
+    // Determine if any anti-gaming flag was triggered
+    const anyAntiGamingTriggered = Object.values(antiGamingFlags).some(v => v === true);
+
     logger.info("CTL assessment completed", { 
-      decision, allPassed, passedCount, linkedRepId
+      decision, allPassed, passedCount, linkedRepId, anyAntiGamingTriggered
     });
 
     return {
@@ -3265,6 +3434,11 @@ Respond with JSON only:
       totalCriteria: 3,
       allPassed,
       meetsStandard: allPassed,
+      // Anti-gaming outputs
+      antiGamingFlags,
+      anyAntiGamingTriggered,
+      evidenceQuality: criteria.usable_evidence?.evidenceQuality || null,
+      // Summaries
       summary: assessment.summary || (allPassed ? 'Loop closed successfully' : 'Close the Loop needs improvement'),
       coachingTip: assessment.coachingTip || null,
       assessedAt: new Date().toISOString(),

@@ -767,132 +767,192 @@ export const getLWVSituationBranch = (situationText) => {
 };
 
 // ============================================
+// DELIVER REDIRECTING FEEDBACK (RED) - SCENARIO OPTIONS
+// What type of situation is the leader addressing?
+// Seeds intensity level for AI evaluation
+// ============================================
+export const RED_SCENARIO_OPTIONS = [
+  { 
+    id: 'one_time', 
+    label: 'A one-time behavior miss', 
+    description: 'First occurrence of this specific issue',
+    intensityDefault: 1 
+  },
+  { 
+    id: 'repeated', 
+    label: 'A repeated pattern or ongoing issue', 
+    description: 'This behavior has happened before',
+    intensityDefault: 2 
+  },
+  { 
+    id: 'team', 
+    label: 'A team or group behavior', 
+    description: 'Addressing behavior with a team, not just one person',
+    intensityDefault: 2 
+  },
+  { 
+    id: 'high_stakes', 
+    label: 'A high-stakes or sensitive situation', 
+    description: 'Significant consequences, risk, or emotional sensitivity',
+    intensityDefault: 3 
+  }
+];
+
+// ============================================
 // DELIVER REDIRECTING FEEDBACK (RED) - RESPONSE OPTIONS
 // How the other person responded to redirecting feedback
 // AI classifies internally: Acknowledged/Accepted, Agreed/Committed, Defensive/Justifying,
 //                          Denied/Disagreed, Shut down/Minimal, Unclear
 // ============================================
 export const RED_RESPONSE_OPTIONS = [
-  { id: 'acknowledged', label: 'Acknowledged / accepted the feedback' },
-  { id: 'agreed', label: 'Agreed and committed to change' },
-  { id: 'defensive', label: 'Became defensive or started justifying' },
-  { id: 'denied', label: 'Denied or disagreed with the feedback' },
-  { id: 'minimal', label: 'Shut down / minimal response' },
-  { id: 'unclear', label: 'Unclear / hard to read their response' },
+  { id: 'acknowledged', label: 'Acknowledged / Accepted' },
+  { id: 'agreed', label: 'Agreed / Committed to change' },
+  { id: 'defensive', label: 'Defensive / Justifying' },
+  { id: 'denied', label: 'Denied / Disagreed' },
+  { id: 'minimal', label: 'Minimal / Shut down' },
   { id: 'other', label: 'Other' }
 ];
 
 // ============================================
 // DELIVER REDIRECTING FEEDBACK - DIFFICULTY OPTIONS
-// Leader's self-reported difficulty level
+// Leader's self-reported difficulty level (anchored descriptions)
 // ============================================
 export const RED_DIFFICULTY_OPTIONS = [
-  { id: 'low', label: 'Low', description: 'Routine or minor issue' },
-  { id: 'moderate', label: 'Moderate', description: 'Some discomfort or stakes involved' },
-  { id: 'high', label: 'High', description: 'Significant tension, repeated issue, or high stakes' }
+  { id: 'low', label: 'Low', description: 'Routine, no resistance expected' },
+  { id: 'moderate', label: 'Moderate', description: 'Some tension or discomfort' },
+  { id: 'high', label: 'High', description: 'Strong emotion, resistance, or risk' }
+];
+
+// ============================================
+// DELIVER REDIRECTING FEEDBACK - INTERNAL GAP OPTIONS
+// Structured selection for what felt difficult (anti-gaming signal)
+// ============================================
+export const RED_INTERNAL_GAP_OPTIONS = [
+  { id: 'nothing', label: 'Nothing felt difficult' },
+  { id: 'mild', label: 'Mild tension' },
+  { id: 'strong', label: 'Strong emotion' },
+  { id: 'avoided', label: 'I avoided saying something' }
 ];
 
 // ============================================
 // DELIVER REDIRECTING FEEDBACK - EVIDENCE QUESTIONS
-// Per spec: Behavior, Impact, Request are required; Difficulty, Internal Gap are optional/encouraged
+// Per spec: Behavior, Impact, Request are REQUIRED (Core Evidence)
+// Response detail helps AI classify and coach
 // ============================================
 export const RED_EVIDENCE_QUESTIONS = [
   { 
     id: 'behavior_statement', 
-    prompt: 'What did you say to describe the behavior gap?',
-    placeholder: 'Use the exact wording you used. A camera should be able to capture this behavior. Example: "You interrupted the client twice before they finished speaking."',
-    hint: 'Be specific and observable — what would a camera see?',
+    prompt: 'What did you say to describe the behavior?',
+    placeholder: 'Use your actual wording. Example: "You interrupted the client twice before they finished speaking."',
+    hint: 'Be specific and observable — what would a camera capture?',
     required: true 
   },
   { 
     id: 'impact_statement', 
     prompt: 'What did you say about why this matters?',
-    placeholder: 'Use the exact wording you used. Example: "That made it harder for them to explain their concern."',
-    hint: 'Describe the impact or the standard being violated',
+    placeholder: 'Use your actual wording. Example: "That made it harder for them to explain their concern."',
+    hint: 'Impact on outcomes OR standard being violated',
     required: true 
   },
   { 
     id: 'request_statement', 
     prompt: 'What did you ask them to do differently?',
-    placeholder: 'Use the exact wording you used. Example: "Let them finish before responding."',
-    hint: 'Be specific about the expected change',
-    required: true 
-  },
-  { 
-    id: 'their_response_detail', 
-    prompt: 'How did they respond? (Describe what they said)',
-    placeholder: 'What did they say or do after you delivered the feedback?',
-    hint: 'Capture their actual response as best you can',
+    placeholder: 'Use your actual wording. Example: "Let them finish before responding."',
+    hint: 'Define the expected behavior — specific and observable',
     required: true 
   }
 ];
 
 // ============================================
-// DELIVER REDIRECTING FEEDBACK - OPTIONAL FIELDS
-// Difficulty and Internal Gap — encouraged but optional
+// DELIVER REDIRECTING FEEDBACK - RESPONSE DETAIL
+// Separate from response option selection — captures what they actually said
+// ============================================
+export const RED_RESPONSE_DETAIL_QUESTION = {
+  id: 'their_response_detail',
+  prompt: 'Add details about their response (if needed)',
+  placeholder: 'What did they say? Did they propose a solution? Any additional context?',
+  hint: 'Helps AI evaluate whether the expected behavior was confirmed',
+  required: false
+};
+
+// ============================================
+// DELIVER REDIRECTING FEEDBACK - OPTIONAL SIGNALS
+// Difficulty and Internal Gap — encouraged for coaching & anti-gaming
 // ============================================
 export const RED_OPTIONAL_FIELDS = [
   { 
     id: 'difficulty', 
-    prompt: 'How difficult was this conversation for you?',
+    prompt: 'How difficult was this conversation?',
     type: 'options',
-    options: RED_DIFFICULTY_OPTIONS,
+    options: 'RED_DIFFICULTY_OPTIONS', // Reference to options above
     required: false 
   },
   { 
-    id: 'internal_gap', 
-    prompt: 'If anything felt hard to say, what was it?',
-    placeholder: 'Optional: What did you want to say but held back? What internal tension did you feel?',
+    id: 'internal_gap_selection', 
+    prompt: 'What felt difficult or uncomfortable to say?',
+    type: 'options',
+    options: 'RED_INTERNAL_GAP_OPTIONS', // Reference to options above
+    required: false 
+  },
+  { 
+    id: 'internal_gap_detail', 
+    prompt: 'What did you hold back or avoid saying?',
+    placeholder: 'Optional: Describe what you wanted to say but didn\'t',
     hint: 'This helps identify growth areas',
+    type: 'text',
     required: false 
   }
 ];
 
 // ============================================
 // DELIVER REDIRECTING FEEDBACK - SELF-ASSESSMENT QUESTIONS
-// Self-reflection for the "Complete Real Rep" step
+// Reflection only — not used in scoring (v1)
+// Matches spec: 4 questions with anchored options
 // ============================================
 export const RED_SELF_ASSESSMENT = [
   { 
-    id: 'behavior_observable', 
-    prompt: 'Did I clearly name an observable behavior?',
-    options: ['Passed the Camera Test', 'Mostly clear', 'Too general or interpretive']
+    id: 'behavior_clear', 
+    prompt: 'Did I clearly describe the behavior?',
+    options: ['Observable and specific', 'Somewhat clear', 'Too vague']
   },
   { 
-    id: 'impact_stated', 
-    prompt: 'Did I explain why the behavior matters?',
-    options: ['Clear impact or standard stated', 'Impact implied', 'Not stated clearly']
+    id: 'impact_clear', 
+    prompt: 'Did I clearly define why it matters?',
+    options: ['Clear impact/standard', 'Somewhat clear', 'Unclear']
   },
   { 
-    id: 'request_specific', 
-    prompt: 'Did I make a specific request for change?',
-    options: ['Specific and observable', 'Conversational but clear', 'Vague or implied']
+    id: 'request_clear', 
+    prompt: 'Did I clearly define what should change?',
+    options: ['Specific behavior', 'Somewhat clear', 'Too vague']
   },
   { 
     id: 'delivery_composed', 
-    prompt: 'Did I deliver the message directly and with composure?',
-    options: ['Direct and composed', 'Slightly softened or tense', 'Hedged or emotional']
+    prompt: 'Did I deliver it directly and with composure?',
+    options: ['Yes', 'Somewhat', 'No']
   }
 ];
 
 // ============================================
 // DELIVER REDIRECTING FEEDBACK - COMPLETE THE LOOP
-// Follow-up and closure questions
+// Follow-up planning questions
 // ============================================
 export const RED_COMPLETE_LOOP = [
-  { id: 'watch_for', prompt: '"What behavior will I watch for to know if this landed?"', type: 'text' },
-  { id: 'next_step', prompt: '"What is the observable next step they committed to?"', type: 'text' },
-  { id: 'reminder', prompt: '"Do I want a reminder to follow up on this feedback?"', type: 'date_optional' }
+  { id: 'watch_for', prompt: 'What behavior will I watch for to know if this landed?', type: 'text' },
+  { id: 'next_step', prompt: 'What is the observable next step they committed to?', type: 'text' },
+  { id: 'reminder', prompt: 'Do I want a reminder to follow up on this feedback?', type: 'date_optional' }
 ];
 
 // ============================================
 // DELIVER REDIRECTING FEEDBACK - REFLECTION PROMPT
+// Required reflection commitment (always included)
 // ============================================
-export const RED_REFLECTION_PROMPT = 'Next time I deliver redirecting feedback I will ______ to be clearer and more direct.';
+export const RED_REFLECTION_PROMPT = 'Next time I deliver redirecting feedback, I will:';
+export const RED_REFLECTION_PLACEHOLDER = 'Complete this sentence with your commitment...';
 export const RED_REFLECTION_EXAMPLES = [
-  '"Name the specific behavior I observed."',
-  '"State the expected standard directly."',
-  '"Ask for a specific commitment before closing."'
+  'Name the specific behavior I observed.',
+  'State the expected standard directly.',
+  'Ask for a specific commitment before closing.',
+  'Stay composed even if they get defensive.'
 ];
 
 // Helper to get RED situation branch type
@@ -915,21 +975,30 @@ export const getREDSituationBranch = (situationText) => {
 };
 // ============================================
 // CLOSE THE LOOP (CTL) - CONSTANTS
-// CTL extends RED by verifying if behavior changed
+// CTL verifies if RED resulted in behavior change
+// Thread-based: Open → Closed OR Open → Continue with new RED
 // ============================================
+
+// Thread states
+export const CTL_THREAD_STATES = {
+  OPEN: 'open',              // Awaiting CTL check
+  OPEN_CONTINUE: 'open_continue', // CTL done, behavior not changed, new RED needed
+  DEFERRED: 'deferred',      // Not observed yet, rescheduled
+  CLOSED: 'closed'           // Behavior changed, loop complete
+};
 
 // The core decision: "Did the behavior change?"
 export const CTL_DECISION_OPTIONS = [
   { 
     id: 'changed', 
-    label: 'Yes, the behavior changed',
-    description: 'I observed the person doing what I requested',
+    label: 'Yes — Behavior changed',
+    description: 'I observed the expected change in behavior',
     icon: '✅'
   },
   { 
     id: 'not_changed', 
-    label: 'No, the behavior did not change',
-    description: 'The problem behavior continued or recurred',
+    label: 'No — Behavior did not change',
+    description: 'The issue continued or recurred',
     icon: '❌'
   },
   { 
@@ -1003,20 +1072,22 @@ export const CTL_CONTINUATION_OPTIONS = [
 ];
 
 // If they didn't give feedback when behavior didn't change
-export const CTL_NEXT_ACTION_QUESTIONS = [
-  { 
-    id: 'next_action', 
-    prompt: 'What will you do next?',
-    placeholder: 'Describe your plan to address this (e.g., schedule a conversation, wait for another occurrence)',
-    required: true
-  },
-  { 
-    id: 'next_check_date', 
-    prompt: 'When will you check again?',
-    type: 'date',
-    required: true
-  }
-];
+// CRITICAL: Leader must commit to when they will address this
+export const CTL_NEXT_ACTION_QUESTION = {
+  id: 'next_action_date',
+  prompt: 'When will you address this behavior again?',
+  description: 'A clear commitment is required to keep the loop open',
+  type: 'date',
+  required: true
+};
+
+// Optional explanation for why no feedback was given
+export const CTL_NO_FEEDBACK_REASON = {
+  id: 'no_feedback_reason',
+  prompt: 'Why didn\'t you give follow-up feedback?',
+  placeholder: 'Optional: Explain the circumstances',
+  required: false
+};
 
 // CTL scoring criteria (3 binary pass/fail conditions)
 export const CTL_SCORING_CRITERIA = [
