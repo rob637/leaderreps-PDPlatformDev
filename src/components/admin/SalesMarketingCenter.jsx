@@ -22,7 +22,7 @@ const TAB_GROUPS = [
   {
     label: 'Lead Generation',
     tabs: [
-      { id: 'assessment-leads', label: 'Assessment Leads', icon: Users },
+      { id: 'assessment-leads', label: 'Lead Magnets', icon: Users },
     ],
   },
   {

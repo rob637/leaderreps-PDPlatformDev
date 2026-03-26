@@ -3775,11 +3775,11 @@ const EvidenceCaptureWizard = ({ rep, onClose, onSubmit, initialMode = 'evidence
           />
         )}
         
-        {effectiveMode !== 'ctl' && currentScreen === 2 && (isSCERep || isDRFRep || isFUWRep || isLWVRep) && (
+        {effectiveMode !== 'ctl' && currentScreen === 2 && (isSCERep || isDRFRep || isFUWRep || isLWVRep || isREDRep) && (
           <ScreenStructuredEvidence
             rep={rep}
-            responses={isSCERep ? sceResponses : ((isFUWRep || isLWVRep) ? sceResponses : drfResponses)}
-            setResponses={isSCERep ? setSceResponses : ((isFUWRep || isLWVRep) ? setSceResponses : setDrfResponses)}
+            responses={isSCERep ? sceResponses : ((isFUWRep || isLWVRep || isREDRep) ? sceResponses : drfResponses)}
+            setResponses={isSCERep ? setSceResponses : ((isFUWRep || isLWVRep || isREDRep) ? setSceResponses : setDrfResponses)}
             showOwnershipWarning={showOwnershipWarning}
             setShowOwnershipWarning={setShowOwnershipWarning}
             onNext={handleNext}
