@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, ArrowLeft, Zap, BookOpen, CheckCircle, Award, FileText,
-  ShieldAlert, ClipboardList, Calendar,
+  ShieldAlert, ClipboardList, Calendar, MessageSquare,
 } from 'lucide-react';
 import ConditioningDashboard from './ConditioningDashboard';
 import SessionAttendanceQueue from './SessionAttendanceQueue';
@@ -13,6 +13,7 @@ import CoachingCertificationQueue from './CoachingCertificationQueue';
 import LeaderProfileReports from './LeaderProfileReports';
 import LeaderActivityReport from './LeaderActivityReport';
 import TrainerSessionsPanel from './TrainerSessionsPanel';
+import RedAnalyticsPanel from './RedAnalyticsPanel';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 
@@ -21,6 +22,7 @@ const TABS = [
   { id: 'activity-report', label: 'Leader Activity', icon: ClipboardList },
   { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
   { id: 'conditioning', label: 'Conditioning', icon: Zap },
+  { id: 'red-analytics', label: 'RED Analytics', icon: MessageSquare },
   { id: 'session-attendance', label: 'Session Attendance', icon: BookOpen },
   { id: 'sign-off-queue', label: 'Level Sign-Off', icon: CheckCircle },
   { id: 'coaching-cert', label: 'Certification Queue', icon: Award },
@@ -47,6 +49,7 @@ const FacilitatorCenter = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'conditioning': return <ConditioningDashboard />;
+      case 'red-analytics': return <RedAnalyticsPanel />;
       case 'session-attendance': return <SessionAttendanceQueue />;
       case 'sign-off-queue': return <LevelSignOffQueue />;
       case 'coaching-cert': return <CoachingCertificationQueue />;
