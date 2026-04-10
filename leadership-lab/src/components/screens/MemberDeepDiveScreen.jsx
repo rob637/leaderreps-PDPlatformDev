@@ -114,9 +114,9 @@ export default function MemberDeepDiveScreen() {
         <div className="flex-1">
           <h1 className="text-xl font-bold text-lab-navy">{member.firstName}</h1>
           <p className="text-sm text-stone-500">
-            {(member.currentWeek || 1) > 6
+            {(member.currentWeek || 1) > 5
               ? `Ascent \u00b7 Week ${member.currentWeek}`
-              : `Week ${member.currentWeek || 1} of 6`}
+              : `Milestone ${member.currentWeek || 1} of 5`}
             {member.onboardingComplete ? '' : ' \u00b7 Not onboarded'}
           </p>
         </div>

@@ -25,7 +25,7 @@ function WelcomeStep({ onNext }) {
           See yourself. Change yourself.
         </p>
         <p className="text-stone-400 text-sm leading-relaxed mb-12">
-          Over the next 6 weeks, you will work with an AI coach who learns who you
+          Through this program, you will work with an AI coach who learns who you
           really are as a leader — not who you think you are. It starts with a
           conversation.
         </p>
@@ -51,7 +51,7 @@ function IntroStep({ onNext }) {
         </p>
         <p className="text-stone-400 text-sm mb-8">
           This will take about 10 minutes. Your answers shape every interaction
-          we will have over the next 6 weeks.
+          we will have throughout the program.
         </p>
         <button
           onClick={onNext}
@@ -70,7 +70,7 @@ function OnboardingConversation({ onComplete }) {
       id: 'opening',
       role: 'ai',
       content:
-        "Welcome to Leadership Lab. I'm your coach for the next 6 weeks — but before we start, I'd like to get to know you. Not through a form, but through a conversation.\n\nTell me about yourself — what do you do, and what's your role?",
+        "Welcome to Leadership Lab. I'm your coach for this journey — but before we start, I'd like to get to know you. Not through a form, but through a conversation.\n\nTell me about yourself — what do you do, and what's your role?",
     },
   ]);
   const [input, setInput] = useState('');

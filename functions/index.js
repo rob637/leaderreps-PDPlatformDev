@@ -14615,7 +14615,7 @@ exports.labAddParticipant = onCall(
  */
 exports.labScheduledSms = onSchedule(
   {
-    schedule: "0 9,17 * * 1-5", // 9 AM and 5 PM UTC, weekdays
+    schedule: "0 9,17 * * 1-5", // 9 AM and 5 PM ET, weekdays
     timeZone: "America/New_York",
     secrets: ["ANTHROPIC_API_KEY"],
     region: "us-central1",
@@ -16673,6 +16673,10 @@ exports.labWarRoom = onCall(
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-test\.web\.app$/,
+      /leaderreps-test\.firebaseapp\.com$/,
+      /leaderreps-prod\.web\.app$/,
+      /leaderreps-prod\.firebaseapp\.com$/,
       /leaderreps-lab\.web\.app$/,
       /leaderreps-lab\.firebaseapp\.com$/,
       /localhost/,
@@ -16835,6 +16839,10 @@ exports.labDeepDive = onCall(
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-test\.web\.app$/,
+      /leaderreps-test\.firebaseapp\.com$/,
+      /leaderreps-prod\.web\.app$/,
+      /leaderreps-prod\.firebaseapp\.com$/,
       /leaderreps-lab\.web\.app$/,
       /leaderreps-lab\.firebaseapp\.com$/,
       /localhost/,
@@ -16984,6 +16992,10 @@ exports.labGetConversation = onCall(
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-test\.web\.app$/,
+      /leaderreps-test\.firebaseapp\.com$/,
+      /leaderreps-prod\.web\.app$/,
+      /leaderreps-prod\.firebaseapp\.com$/,
       /leaderreps-lab\.web\.app$/,
       /leaderreps-lab\.firebaseapp\.com$/,
       /localhost/,
@@ -17048,6 +17060,10 @@ exports.labSessionPlanner = onCall(
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-test\.web\.app$/,
+      /leaderreps-test\.firebaseapp\.com$/,
+      /leaderreps-prod\.web\.app$/,
+      /leaderreps-prod\.firebaseapp\.com$/,
       /leaderreps-lab\.web\.app$/,
       /leaderreps-lab\.firebaseapp\.com$/,
       /localhost/,
@@ -17227,6 +17243,10 @@ exports.labSendText = onCall(
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-test\.web\.app$/,
+      /leaderreps-test\.firebaseapp\.com$/,
+      /leaderreps-prod\.web\.app$/,
+      /leaderreps-prod\.firebaseapp\.com$/,
       /leaderreps-lab\.web\.app$/,
       /leaderreps-lab\.firebaseapp\.com$/,
       /localhost/,

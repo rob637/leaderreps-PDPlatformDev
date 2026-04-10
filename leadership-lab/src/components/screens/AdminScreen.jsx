@@ -516,7 +516,7 @@ function CohortCard({ cohort, onAddMember, onStart, onViewWarRoom, onUnlockApp, 
                             className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs border transition-colors disabled:opacity-50 ${
                               m.currentWeek === wk
                                 ? 'bg-lab-teal/10 text-lab-teal border-lab-teal/30 font-medium'
-                                : wk > 6
+                                : wk > 5
                                   ? 'bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100'
                                   : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-100'
                             }`}
@@ -526,7 +526,7 @@ function CohortCard({ cohort, onAddMember, onStart, onViewWarRoom, onUnlockApp, 
                             ) : (
                               <FastForward size={11} />
                             )}
-                            {wk > 6 ? `A${wk - 6}` : `Wk ${wk}`}
+                            {wk > 5 ? `A${wk - 5}` : `Wk ${wk}`}
                           </button>
                         ))}
                       </div>

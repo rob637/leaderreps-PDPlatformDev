@@ -195,9 +195,10 @@ export function AuthProvider({ children }) {
    * Calls the labRedeemUnlock endpoint, gets a custom token, signs in.
    */
   const signInWithUnlockCode = async (code) => {
+    const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'leaderreps-pd-platform';
     const url = import.meta.env.VITE_FUNCTIONS_URL
       ? `${import.meta.env.VITE_FUNCTIONS_URL}/labRedeemUnlock`
-      : 'https://us-central1-leaderreps-pd-platform.cloudfunctions.net/labRedeemUnlock';
+      : `https://us-central1-${projectId}.cloudfunctions.net/labRedeemUnlock`;
 
     const response = await fetch(url, {
       method: 'POST',

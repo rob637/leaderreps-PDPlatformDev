@@ -122,7 +122,7 @@ export default function FeedScreen() {
     );
   }
 
-  const isAscent = userProfile?.phase === 'ascent' || currentWeek > 6;
+  const isAscent = userProfile?.phase === 'ascent' || currentWeek > 5;
   const [showEngagement, setShowEngagement] = useState(false);
   const engagementLevel = userProfile?.engagementLevel || 2;
   const engLabels = { 1: 'Light', 2: 'Medium', 3: 'Heavy' };
@@ -155,7 +155,7 @@ export default function FeedScreen() {
         ) : (
           <>
             <p className="text-sm text-stone-500 font-medium">
-              Week {currentWeek} of 6
+              Milestone {currentWeek} of 5
             </p>
             <h1 className="text-2xl font-bold text-lab-navy mt-1">
               {theme?.title || 'Leadership Lab'}
