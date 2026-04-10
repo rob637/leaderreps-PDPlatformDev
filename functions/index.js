@@ -12643,6 +12643,9 @@ async function evolveProfileIfStale(uid, apiKey) {
     keyInsights: profile.keyInsights || [],
     growthEdges: profile.growthEdges || [],
     coachingApproach: profile.coachingApproach || "",
+    people: profile.people || [],
+    commitments: profile.commitments || [],
+    emotionalArc: profile.emotionalArc || "",
   });
 
   const anthropic = new Anthropic({ apiKey });
@@ -12664,8 +12667,17 @@ Return ONLY a JSON object with the same structure:
   "corePatterns": ["Pattern in 1 sentence"],
   "keyInsights": [{"insight": "...", "evidence": "..."}],
   "growthEdges": ["..."],
-  "coachingApproach": "Updated 2-sentence coaching recommendation"
+  "coachingApproach": "Updated 2-sentence coaching recommendation",
+  "people": [{"name": "First name", "role": "boss/direct-report/peer/mentor/partner/other", "context": "1 sentence about this person's significance"}],
+  "commitments": [{"what": "What they committed to", "when": "When mentioned", "status": "pending/done/dropped"}],
+  "emotionalArc": "1-2 sentences on their emotional trajectory: trending up, down, stuck, or oscillating — with evidence"
 }
+
+IMPORTANT for "people": Extract specific names the leader mentions — their boss, direct reports, peers, partners, family members. These are the cast of characters in their leadership story. Include only real named individuals they've mentioned, not generic references.
+
+IMPORTANT for "commitments": Track specific things the leader said they would do: "I'll try giving Sarah feedback tomorrow", "I want to stop checking email in 1:1s." Include the conversational context.
+
+IMPORTANT for "emotionalArc": Look at the emotional tone across conversations. Are they gaining confidence? Getting frustrated? Stuck in the same loop? Be honest.
 
 Return ONLY valid JSON. No markdown, no explanation.`,
     messages: [{ role: "user", content: transcripts.join("\n\n") }],
@@ -13525,6 +13537,28 @@ LEADERSHIP PROFILE — what you know about ${userName}:
     if (leadershipProfile.coachingApproach) {
       prompt += `COACHING APPROACH: ${leadershipProfile.coachingApproach}\n`;
     }
+
+    // --- Relational memory: the cast of characters in their life ---
+    if (leadershipProfile.people && leadershipProfile.people.length > 0) {
+      prompt += `\nPEOPLE IN THEIR WORLD (use names naturally — this is what makes you feel like a real coach who remembers):\n`;
+      leadershipProfile.people.forEach((p) => {
+        prompt += `- ${p.name} (${p.role}): ${p.context}\n`;
+      });
+    }
+
+    // --- Commitment tracking: what they said they'd do ---
+    const pendingCommitments = (leadershipProfile.commitments || []).filter((c) => c.status === "pending");
+    if (pendingCommitments.length > 0) {
+      prompt += `\nOPEN COMMITMENTS — things they said they'd do (follow up naturally when relevant, don't interrogate):\n`;
+      pendingCommitments.forEach((c) => {
+        prompt += `- "${c.what}" (mentioned: ${c.when})\n`;
+      });
+    }
+
+    // --- Emotional arc ---
+    if (leadershipProfile.emotionalArc) {
+      prompt += `\nEMOTIONAL ARC: ${leadershipProfile.emotionalArc}\n`;
+    }
   } else {
     prompt += `\nLEADERSHIP PROFILE: Not yet established. This leader is new. Listen deeply and start building your understanding.\n`;
   }
@@ -13644,7 +13678,15 @@ RULES:
 - When you spot a gap between their Presented Self and Observed Self, name it gently but clearly.
 - Use their name occasionally — not every message.
 - If they deflect with humor or intellectualizing, gently name it.
-- Don't keep returning to the same tension or growth edge conversation after conversation. If you've explored it recently, move to a different facet of their leadership.`,
+- Don't keep returning to the same tension or growth edge conversation after conversation. If you've explored it recently, move to a different facet of their leadership.
+
+ADVANCED COACHING MOVES (use when the moment is right):
+- CONTRADICTION CATCH: If what they're saying NOW contradicts a pattern from their profile or evidence, name it. "Last week you said you were going to let the team decide. What happened?" This shows you're actually paying attention.
+- PREDICTION: If you know their pattern well enough, predict what they'll do next. "I bet when the meeting got tense, you stepped in to smooth things over." If you're right, they'll feel seen. If you're wrong, they'll correct you — and either way, you've created a real moment.
+- STRATEGIC WITHHOLDING: Sometimes the most powerful move is NOT sharing your observation. If you see something big, hold it. Let them get closer to it themselves. Drop a breadcrumb: "There's something I'm noticing but I want to see if you get there first."
+- OPEN LOOPS: End conversations with something that will make them think later. Plant a seed they'll chew on: "I have a theory about why that keeps happening to you. Let's test it this week." Don't resolve everything — leave them wanting the next conversation.
+- NAME DROP: When you know the people in their life (boss, reports, peers), use those names. "How did Sarah react when you tried that?" is 10x more powerful than "How did your team react?"
+- COMMITMENT CALLBACK: When they told you they'd try something, follow up specifically: "You said you'd try the 2-minute silence in your 1:1 with Marcus. What happened?" This is the single biggest differentiator from a generic AI.`,
 
     practice: `
 MODE: PRACTICE — Situation Simulator. You role-play real scenarios.
@@ -14212,8 +14254,12 @@ Analyze the conversation transcript and produce a JSON object with this exact st
   "corePatterns": ["Pattern 1 in 1 sentence", "Pattern 2 in 1 sentence"],
   "keyInsights": [{"insight": "Key observation", "evidence": "Their own words or behavior"}],
   "growthEdges": ["Area for development 1", "Area for development 2"],
-  "coachingApproach": "A 2-sentence recommendation for how to coach this specific person."
+  "coachingApproach": "A 2-sentence recommendation for how to coach this specific person.",
+  "people": [{"name": "First name", "role": "boss/direct-report/peer/mentor/partner/other", "context": "1 sentence about this person"}],
+  "emotionalArc": "1 sentence on their current emotional state and openness to coaching"
 }
+
+For "people": Extract any specific names they mention — their boss, team members, partner, etc. These become the cast of characters the AI coach will reference by name in future conversations. Only include real named individuals, not generic roles.
 
 Return ONLY the JSON object. No markdown. Be honest but compassionate.`,
     messages: [{ role: "user", content: transcript }],
@@ -14231,6 +14277,9 @@ Return ONLY the JSON object. No markdown. Be honest but compassionate.`,
       corePatterns: [],
       keyInsights: [],
       growthEdges: [],
+      coachingApproach: "",
+      people: [],
+      emotionalArc: "",
       coachingApproach: "",
     };
   }
@@ -14784,6 +14833,18 @@ exports.labScheduledSms = onSchedule(
             });
           }
 
+          // Load leadership profile for context
+          const lpSnap = await db.doc(`${LL_PREFIX}users/${memberId}/leadershipProfile/current`).get();
+          const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
+
+          // Load recent evidence for personalized outbound
+          let outboundEvidence = [];
+          try {
+            const evSnap = await db.collection(`${LL_PREFIX}users/${memberId}/evidence`)
+              .orderBy("createdAt", "desc").limit(5).get();
+            outboundEvidence = evSnap.docs.map((d) => d.data());
+          } catch { /* OK */ }
+
           // Generate the AI-initiated message
           const prompt = buildOutboundSmsPrompt({
             interactionType,
@@ -14791,11 +14852,9 @@ exports.labScheduledSms = onSchedule(
             weekNumber: memberWeek,
             weekTheme: LL_WEEK_THEMES[weekIdx(memberWeek)],
             experiment: personalExperiment,
+            leadershipProfile,
+            recentEvidence: outboundEvidence,
           });
-
-          // Load leadership profile for context
-          const lpSnap = await db.doc(`${LL_PREFIX}users/${memberId}/leadershipProfile/current`).get();
-          const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
 
           const systemPrompt = buildLabSystemPrompt({
             mode: "coach",
@@ -14934,14 +14993,42 @@ function selectInteractionType({ weekNumber, isAM, userProfile, weekDay }) {
  * Build the "user" message that prompts Claude to generate an AI-initiated text.
  * This is a meta-prompt — the AI generates the text TO send, not a reply to a user.
  */
-function buildOutboundSmsPrompt({ interactionType, userName, weekNumber, weekTheme, experiment }) {
-  return `Generate a single outbound text message to send to ${userName}. This is an AI-INITIATED text — the user did NOT text first. You are reaching out.
+function buildOutboundSmsPrompt({ interactionType, userName, weekNumber, weekTheme, experiment, leadershipProfile, recentEvidence }) {
+  let prompt = `Generate a single outbound text message to send to ${userName}. This is an AI-INITIATED text — the user did NOT text first. You are reaching out.
 
 Interaction type: ${interactionType}
 Week ${weekNumber}: ${weekTheme}
 Current experiment: ${experiment}
+`;
 
-Write ONLY the text message itself. No preamble, no explanation, no "Here's a message:" — just the raw text as it would appear on their phone. Keep it under 320 characters. Make it feel like it's from a real coach who knows them, not a bot.`;
+  // Personalize with profile knowledge
+  if (leadershipProfile) {
+    if (leadershipProfile.people && leadershipProfile.people.length > 0) {
+      const person = leadershipProfile.people[Math.floor(Math.random() * leadershipProfile.people.length)];
+      prompt += `\nA person in their world: ${person.name} (${person.role}) — ${person.context}. If it fits the interaction type, reference this person by name.\n`;
+    }
+    const pendingCommitments = (leadershipProfile.commitments || []).filter((c) => c.status === "pending");
+    if (pendingCommitments.length > 0) {
+      const commitment = pendingCommitments[Math.floor(Math.random() * pendingCommitments.length)];
+      prompt += `They committed to: "${commitment.what}". If appropriate, follow up on this specifically.\n`;
+    }
+    if (leadershipProfile.growthEdges && leadershipProfile.growthEdges.length > 0) {
+      prompt += `Their growth edge: "${leadershipProfile.growthEdges[0]}"\n`;
+    }
+  }
+
+  // Add a recent evidence quote for grounding
+  if (recentEvidence && recentEvidence.length > 0) {
+    const evidence = recentEvidence[Math.floor(Math.random() * recentEvidence.length)];
+    if (evidence.quote) {
+      prompt += `Something they said recently: "${evidence.quote}"\n`;
+    }
+  }
+
+  prompt += `
+Write ONLY the text message itself. No preamble, no explanation, no "Here's a message:" — just the raw text as it would appear on their phone. Keep it under 320 characters. Make it feel like it's from a real coach who knows them deeply — reference specific things from their life, not generic coaching platitudes. The text should make them WANT to reply.`;
+
+  return prompt;
 }
 
 /**
