@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-lab-cream text-lab-navy;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Mobile viewport fix */
+  :root {
+    --vh: 1vh;
+  }
+}
+
+@layer components {
+  /* Chat bubble styles */
+  .bubble-ai {
+    @apply bg-white border border-stone-200 text-lab-navy rounded-2xl rounded-tl-sm px-4 py-3 shadow-card;
+  }
+
+  .bubble-user {
+    @apply bg-lab-teal text-white rounded-2xl rounded-tr-sm px-4 py-3;
+  }
+
+  /* Glass card effect */
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-sm border border-stone-200/50 rounded-2xl shadow-card;
+  }
+
+  /* Tension node */
+  .tension-node {
+    @apply inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium;
+  }
+
+  /* Status indicator */
+  .status-dot {
+    @apply w-2.5 h-2.5 rounded-full;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area padding for mobile */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
