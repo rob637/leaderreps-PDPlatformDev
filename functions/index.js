@@ -12542,6 +12542,12 @@ Write the full chapter now:`;
 
 const LL_PREFIX = 'll-';
 
+/** Mask a phone number for safe logging: +1xxxxx3200 */
+function maskPhone(phone) {
+  if (!phone || phone.length < 6) return '***';
+  return phone.slice(0, 2) + 'x'.repeat(phone.length - 6) + phone.slice(-4);
+}
+
 /** Get the Firebase project ID at runtime. */
 function getLabProjectId() {
   return process.env.GCLOUD_PROJECT
@@ -12817,18 +12823,45 @@ async function processLabMessage(uid, text, options = {}) {
     content: m.content,
   }));
 
-  // --- Call Claude ---
+  // --- Call Claude (with Gemini fallback) ---
   // SMS responses should be shorter to fit text messages well
   const maxTokens = channel === "sms" ? 400 : 1024;
-  const anthropic = new Anthropic({ apiKey });
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: maxTokens,
-    system: systemPrompt,
-    messages: claudeMessages,
-  });
+  let aiText;
+  let usageInfo;
+  try {
+    const anthropic = new Anthropic({ apiKey });
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: claudeMessages,
+    });
+    aiText = response.content[0]?.text || "I'm here. Tell me more.";
+    usageInfo = response.usage;
+  } catch (claudeErr) {
+    logger.warn("Claude API failed, falling back to Gemini", { uid, error: claudeErr.message });
+    // Fallback to Gemini 2.0 Flash
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) {
+      throw new Error("Both AI providers unavailable");
+    }
+    const genAI = new GoogleGenerativeAI(geminiKey);
+    const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    // Convert messages to Gemini format
+    const geminiHistory = claudeMessages.slice(0, -1).map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+    const chat = geminiModel.startChat({
+      history: geminiHistory,
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+    });
+    const lastMsg = claudeMessages[claudeMessages.length - 1]?.content || text;
+    const geminiResult = await chat.sendMessage(lastMsg);
+    aiText = geminiResult.response.text() || "I'm here. Tell me more.";
+    usageInfo = { provider: "gemini-fallback" };
+  }
 
-  const aiText = response.content[0]?.text || "I'm here. Tell me more.";
   const aiMessage = { role: "assistant", content: aiText, timestamp: new Date().toISOString(), channel };
   existingMessages.push(aiMessage);
 
@@ -12844,8 +12877,9 @@ async function processLabMessage(uid, text, options = {}) {
     channel,
     conversationId: convoRef.id,
     messageCount: existingMessages.length,
-    inputTokens: response.usage?.input_tokens,
-    outputTokens: response.usage?.output_tokens,
+    inputTokens: usageInfo?.input_tokens,
+    outputTokens: usageInfo?.output_tokens,
+    provider: usageInfo?.provider || "claude",
   });
 
   // --- Auto-evolve Leadership Profile ---
@@ -12864,7 +12898,7 @@ async function processLabMessage(uid, text, options = {}) {
   return {
     response: aiText,
     conversationId: convoRef.id,
-    usage: response.usage,
+    usage: usageInfo,
   };
 }
 
@@ -12893,7 +12927,7 @@ async function sendLabSms(to, body) {
     msgOptions.from = from;
   }
   const result = await client.messages.create(msgOptions);
-  logger.info(`Lab SMS sent to ${to}: ${result.sid}`);
+  logger.info("Lab SMS sent", { to: maskPhone(to), sid: result.sid });
   return result.sid;
 }
 
@@ -13579,7 +13613,7 @@ exports.labSmsWebhook = onRequest(
     const url = `https://${req.headers.host}${req.originalUrl}`;
     const valid = twilio.validateRequest(twilioAuth, signature, url, req.body);
     if (!valid) {
-      logger.warn("Invalid Twilio signature on labSmsWebhook", { from: req.body?.From });
+      logger.warn("Invalid Twilio signature on labSmsWebhook", { from: maskPhone(req.body?.From) });
       res.status(403).send("Forbidden");
       return;
     }
@@ -13587,8 +13621,23 @@ exports.labSmsWebhook = onRequest(
     const fromPhone = req.body.From; // E.164
     const body = (req.body.Body || "").trim();
     const numMedia = parseInt(req.body.NumMedia || "0", 10);
+    const smsSid = req.body.MessageSid || req.body.SmsSid;
 
-    logger.info("Lab SMS received", { from: fromPhone, bodyLength: body.length, numMedia });
+    // --- IDEMPOTENCY: Prevent duplicate processing on Twilio retries ---
+    if (smsSid) {
+      const dedupRef = admin.firestore().doc(`${LL_PREFIX}processed-sms/${smsSid}`);
+      const dedupSnap = await dedupRef.get();
+      if (dedupSnap.exists) {
+        logger.info("Duplicate SMS webhook ignored", { smsSid, from: maskPhone(fromPhone) });
+        res.set("Content-Type", "text/xml");
+        res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+        return;
+      }
+      // Mark as processing immediately (before AI call)
+      await dedupRef.set({ processedAt: admin.firestore.FieldValue.serverTimestamp() });
+    }
+
+    logger.info("Lab SMS received", { from: maskPhone(fromPhone), bodyLength: body.length, numMedia });
 
     // TwiML helper
     const twiml = (message) => {
@@ -13609,10 +13658,10 @@ exports.labSmsWebhook = onRequest(
             smsOptIn: false,
             smsOptOutAt: admin.firestore.FieldValue.serverTimestamp(),
           });
-          logger.info("User opted out of SMS", { phone: fromPhone, uid: optOutUser.uid });
+          logger.info("User opted out of SMS", { phone: maskPhone(fromPhone), uid: optOutUser.uid });
         }
       } catch (optOutErr) {
-        logger.error("Failed to record opt-out", { phone: fromPhone, error: optOutErr.message });
+        logger.error("Failed to record opt-out", { phone: maskPhone(fromPhone), error: optOutErr.message });
       }
       // Twilio auto-handles STOP for toll-free/short codes, but we send confirmation anyway
       twiml("You've been unsubscribed from Leadership Lab texts. Reply START to re-subscribe anytime.");
@@ -13633,10 +13682,10 @@ exports.labSmsWebhook = onRequest(
             smsOptIn: true,
             smsOptOutAt: null,
           });
-          logger.info("User re-subscribed to SMS", { phone: fromPhone, uid: startUser.uid });
+          logger.info("User re-subscribed to SMS", { phone: maskPhone(fromPhone), uid: startUser.uid });
         }
       } catch (startErr) {
-        logger.error("Failed to record re-subscribe", { phone: fromPhone, error: startErr.message });
+        logger.error("Failed to record re-subscribe", { phone: maskPhone(fromPhone), error: startErr.message });
       }
       twiml("Welcome back! You're re-subscribed to Leadership Lab. Your coach is here whenever you need.");
       return;
@@ -13653,10 +13702,10 @@ exports.labSmsWebhook = onRequest(
             engagementLevel: levelMap[upperBody],
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
-          logger.info("User changed engagement level", { phone: fromPhone, level: upperBody });
+          logger.info("User changed engagement level", { phone: maskPhone(fromPhone), level: upperBody });
         }
       } catch (engErr) {
-        logger.error("Failed to update engagement level", { phone: fromPhone, error: engErr.message });
+        logger.error("Failed to update engagement level", { phone: maskPhone(fromPhone), error: engErr.message });
       }
       twiml(`Got it — switched to ${upperBody.toLowerCase()} mode (${descMap[upperBody]}). You can change anytime by texting LIGHT, MEDIUM, or HEAVY.`);
       return;
