@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Megaphone, ArrowLeft, Globe, Users,
-  ShieldAlert, ExternalLink, Sparkles
+  ShieldAlert, ExternalLink, Sparkles, BookOpen
 } from 'lucide-react';
 import SocialMediaManager from './SocialMediaManager';
 import AssessmentLeadsManager from './AssessmentLeadsManager';
@@ -29,6 +29,12 @@ const TAB_GROUPS = [
     label: 'Social Media',
     tabs: [
       { id: 'social-media', label: 'Social Media Monitor', icon: Globe },
+    ],
+  },
+  {
+    label: 'Content',
+    tabs: [
+      { id: 'book-builder', label: 'Book Builder', icon: BookOpen },
     ],
   },
 ];
@@ -88,6 +94,30 @@ const SalesMarketingCenter = () => {
         return <AssessmentLeadsManager />;
       case 'social-media':
         return <SocialMediaManager />;
+      case 'book-builder':
+        return (
+          <div className="flex flex-col items-center justify-center h-96 gap-6">
+            <div className="p-6 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl shadow-xl">
+              <BookOpen className="w-16 h-16 text-white" />
+            </div>
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                Book Builder
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md">
+                Create your leadership book with AI-powered drafting, source management, 
+                chapter organization, and export to markdown.
+              </p>
+              <button
+                onClick={() => navigate('book-builder')}
+                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl shadow-lg transition-all flex items-center gap-2 mx-auto"
+              >
+                <BookOpen className="w-5 h-5" />
+                Open Book Builder
+              </button>
+            </div>
+          </div>
+        );
       default:
         return null;
     }

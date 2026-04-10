@@ -6,12 +6,16 @@ import {
   Edit,
   Trash2,
   Loader,
-  ArrowLeft
+  ArrowLeft,
+  BookOpen,
+  FileText,
+  Check
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
   getUnifiedContent, 
-  deleteUnifiedContent
+  deleteUnifiedContent,
+  CONTENT_TYPES
 } from '../../services/unifiedContentService';
 import GenericContentEditor from './content-editors/GenericContentEditor';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav';
@@ -139,7 +143,13 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
               </button>
             </div>
           ) : (
-            filteredList.map(item => (
+            filteredList.map(item => {
+              // Determine if content has been transcribed/extracted
+              const hasTranscript = item.type === CONTENT_TYPES.VIDEO && item.details?.transcript;
+              const hasFullText = (item.type === CONTENT_TYPES.DOCUMENT || item.type === CONTENT_TYPES.TOOL) && item.details?.fullText;
+              const isTranscribed = hasTranscript || hasFullText;
+              
+              return (
               <div 
                 key={item.id}
                 className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 border border-slate-100 rounded-xl hover:border-slate-300 transition-all group"
@@ -155,6 +165,20 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
                     <span className="text-xs text-slate-400">
                       {item.difficulty} • {item.estimatedTime} min
                     </span>
+                    {/* Book inclusion indicator */}
+                    {item.includeInBook && (
+                      <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700" title="Included in Book">
+                        <BookOpen size={12} />
+                        Book
+                      </span>
+                    )}
+                    {/* Transcription/extraction indicator */}
+                    {isTranscribed && (
+                      <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700" title={hasTranscript ? "Transcribed" : "Text Extracted"}>
+                        <FileText size={12} />
+                        <Check size={10} />
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -172,7 +196,7 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
                   </button>
                 </div>
               </div>
-            ))
+            )})
           )}
         </div>
       )}

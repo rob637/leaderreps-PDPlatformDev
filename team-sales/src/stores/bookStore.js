@@ -369,6 +369,48 @@ export const useBookStore = create((set, get) => ({
     
     return sources.filter(s => chapter.sourceRefs.includes(s.id));
   },
+  
+  linkSourceToChapter: async (sourceId, chapterId) => {
+    try {
+      const { chapters } = get();
+      const chapter = chapters.find(c => c.id === chapterId);
+      if (!chapter) return;
+      
+      const currentRefs = chapter.sourceRefs || [];
+      if (currentRefs.includes(sourceId)) return; // Already linked
+      
+      const docRef = doc(db, CHAPTERS_COLLECTION, chapterId);
+      await updateDoc(docRef, {
+        sourceRefs: [...currentRefs, sourceId],
+        updatedAt: serverTimestamp(),
+      });
+      toast.success('Source linked to chapter');
+    } catch (err) {
+      console.error('Error linking source:', err);
+      toast.error('Failed to link source');
+    }
+  },
+  
+  unlinkSourceFromChapter: async (sourceId, chapterId) => {
+    try {
+      const { chapters } = get();
+      const chapter = chapters.find(c => c.id === chapterId);
+      if (!chapter) return;
+      
+      const currentRefs = chapter.sourceRefs || [];
+      const updatedRefs = currentRefs.filter(id => id !== sourceId);
+      
+      const docRef = doc(db, CHAPTERS_COLLECTION, chapterId);
+      await updateDoc(docRef, {
+        sourceRefs: updatedRefs,
+        updatedAt: serverTimestamp(),
+      });
+      toast.success('Source unlinked');
+    } catch (err) {
+      console.error('Error unlinking source:', err);
+      toast.error('Failed to unlink source');
+    }
+  },
 
   // ==================== CLEANUP ====================
   

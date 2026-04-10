@@ -4,11 +4,17 @@ import {
   Search, Filter, X, Save, ChevronRight, ChevronDown,
   GripVertical, Eye, Sparkles, Download, Settings,
   Clock, User, Tag, CheckCircle, AlertCircle, Loader2,
-  LayoutDashboard, FolderOpen, ListOrdered, PenTool
+  LayoutDashboard, FolderOpen, ListOrdered, PenTool,
+  RefreshCw, Wand2
 } from 'lucide-react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app } from '../lib/firebase';
 import { useBookStore, SOURCE_TYPES, CHAPTER_STATUSES, BOOK_STATUSES } from '../stores/bookStore';
 import { useAuthStore } from '../stores/authStore';
 import toast from 'react-hot-toast';
+
+// Initialize Firebase Functions
+const functions = getFunctions(app, 'us-central1');
 
 // ==================== TAB NAVIGATION ====================
 
@@ -25,6 +31,7 @@ function DashboardTab() {
   const { metadata, metadataLoading, updateMetadata, chapters, sources, getProgress } = useBookStore();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
+  const [exporting, setExporting] = useState(false);
   
   useEffect(() => {
     if (metadata) {
@@ -242,9 +249,58 @@ function DashboardTab() {
             <ListOrdered className="w-4 h-4" />
             Edit Outline
           </button>
-          <button className="px-3 py-2 text-sm bg-green-50 text-green-600 rounded-lg hover:bg-green-100 flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Export Draft
+          <button 
+            onClick={async () => {
+              if (chapters.length === 0) {
+                toast.error('No chapters to export');
+                return;
+              }
+              setExporting(true);
+              try {
+                const exportBookToDocx = httpsCallable(functions, 'exportBookToDocx');
+                const result = await exportBookToDocx({
+                  chapters: chapters.map(c => ({
+                    title: c.title,
+                    content: c.content || '',
+                  })),
+                  metadata: {
+                    title: metadata?.title || 'Untitled Book',
+                    subtitle: metadata?.subtitle || '',
+                    authors: metadata?.authors || [],
+                  },
+                });
+                
+                if (result.data?.success) {
+                  // Download as markdown file
+                  const blob = new Blob([result.data.content], { type: 'text/markdown' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${(metadata?.title || 'book').toLowerCase().replace(/\s+/g, '-')}.md`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  toast.success('Book exported!');
+                } else {
+                  throw new Error(result.data?.error || 'Export failed');
+                }
+              } catch (err) {
+                console.error('Export error:', err);
+                toast.error('Failed to export book');
+              } finally {
+                setExporting(false);
+              }
+            }}
+            disabled={exporting || chapters.length === 0}
+            className="px-3 py-2 text-sm bg-green-50 text-green-600 rounded-lg hover:bg-green-100 disabled:opacity-50 flex items-center gap-2"
+          >
+            {exporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {exporting ? 'Exporting...' : 'Export Draft'}
           </button>
         </div>
       </div>
@@ -727,10 +783,13 @@ function OutlineTab() {
 
 function ChaptersTab() {
   const { user } = useAuthStore();
-  const { chapters, selectedChapter, setSelectedChapter, updateChapter, sources, getSourcesByChapter } = useBookStore();
+  const { chapters, selectedChapter, setSelectedChapter, updateChapter, sources, getSourcesByChapter, metadata, linkSourceToChapter, unlinkSourceFromChapter } = useBookStore();
   const [content, setContent] = useState('');
   const [autoSaveTimer, setAutoSaveTimer] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [aiMode, setAiMode] = useState('draft'); // 'draft', 'expand', 'refine'
+  const [showSourcePicker, setShowSourcePicker] = useState(false);
   
   // Load content when chapter is selected
   useEffect(() => {
@@ -761,6 +820,66 @@ function ChaptersTab() {
   };
   
   const linkedSources = selectedChapter ? getSourcesByChapter(selectedChapter.id) : [];
+  
+  // AI Generation handler
+  const handleAIGenerate = async (mode) => {
+    if (!selectedChapter) return;
+    
+    setGenerating(true);
+    setAiMode(mode);
+    
+    try {
+      const generateBookDraft = httpsCallable(functions, 'generateBookDraft');
+      
+      // Prepare source content for AI
+      const sourceContent = linkedSources.map(s => ({
+        title: s.title,
+        type: s.type,
+        content: s.content || '',
+        notes: s.notes || '',
+      }));
+      
+      const result = await generateBookDraft({
+        chapterTitle: selectedChapter.title,
+        chapterSummary: selectedChapter.summary || '',
+        sources: sourceContent,
+        existingContent: content,
+        bookMetadata: {
+          title: metadata?.title || 'Untitled Book',
+          targetAudience: metadata?.targetAudience || '',
+          tone: metadata?.tone || '',
+        },
+        mode,
+      });
+      
+      if (result.data?.success) {
+        const newContent = mode === 'draft' 
+          ? result.data.content 
+          : content + '\n\n' + result.data.content;
+        setContent(newContent);
+        toast.success(`${mode === 'draft' ? 'Draft generated' : mode === 'expand' ? 'Content expanded' : 'Content refined'}!`);
+      } else {
+        throw new Error(result.data?.error || 'Generation failed');
+      }
+    } catch (err) {
+      console.error('AI generation error:', err);
+      toast.error(err.message || 'Failed to generate content');
+    } finally {
+      setGenerating(false);
+    }
+  };
+  
+  // Source linking
+  const handleLinkSource = async (sourceId) => {
+    await linkSourceToChapter(sourceId, selectedChapter.id);
+    setShowSourcePicker(false);
+  };
+  
+  const handleUnlinkSource = async (sourceId) => {
+    await unlinkSourceFromChapter(sourceId, selectedChapter.id);
+  };
+  
+  const unlinkedSources = sources.filter(s => !linkedSources.find(ls => ls.id === s.id));
   
   if (!selectedChapter) {
     return (
@@ -886,37 +1005,109 @@ The content auto-saves as you type."
       {/* Source References Panel */}
       <div className="w-64 flex-shrink-0 space-y-4">
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-            <FolderOpen className="w-4 h-4" />
-            Linked Sources
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <FolderOpen className="w-4 h-4" />
+              Linked Sources
+            </h3>
+            <button
+              onClick={() => setShowSourcePicker(!showSourcePicker)}
+              className="p-1 text-brand-teal hover:bg-brand-teal/10 rounded"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          
+          {/* Source Picker Dropdown */}
+          {showSourcePicker && unlinkedSources.length > 0 && (
+            <div className="mb-3 p-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg max-h-32 overflow-y-auto">
+              {unlinkedSources.map(source => (
+                <button
+                  key={source.id}
+                  onClick={() => handleLinkSource(source.id)}
+                  className="w-full p-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-600 rounded"
+                >
+                  {source.title}
+                </button>
+              ))}
+            </div>
+          )}
           
           {linkedSources.length > 0 ? (
             <div className="space-y-2">
               {linkedSources.map(source => (
-                <div key={source.id} className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg text-sm">
-                  <p className="font-medium truncate">{source.title}</p>
+                <div key={source.id} className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg text-sm flex items-center justify-between group">
+                  <p className="font-medium truncate flex-1">{source.title}</p>
+                  <button
+                    onClick={() => handleUnlinkSource(source.id)}
+                    className="p-1 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-500">No sources linked to this chapter yet.</p>
+            <p className="text-sm text-slate-500">No sources linked. Click + to add sources the AI can reference.</p>
           )}
         </div>
         
-        {/* AI Assist (placeholder) */}
+        {/* AI Writing Assistant */}
         <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl border border-purple-200 dark:border-purple-800 p-4">
           <h3 className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-2 flex items-center gap-2">
             <Sparkles className="w-4 h-4" />
             AI Writing Assistant
           </h3>
           <p className="text-xs text-purple-600 dark:text-purple-400 mb-3">
-            Generate drafts, expand ideas, or refine your writing.
+            {linkedSources.length > 0 
+              ? `Using ${linkedSources.length} source${linkedSources.length > 1 ? 's' : ''} for context`
+              : 'Link sources above for richer drafts'}
           </p>
-          <button className="w-full px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center justify-center gap-2">
-            <Sparkles className="w-4 h-4" />
-            Generate Draft
-          </button>
+          
+          <div className="space-y-2">
+            <button 
+              onClick={() => handleAIGenerate('draft')}
+              disabled={generating}
+              className="w-full px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {generating && aiMode === 'draft' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              {generating && aiMode === 'draft' ? 'Generating...' : 'Generate Draft'}
+            </button>
+            
+            {content && (
+              <>
+                <button 
+                  onClick={() => handleAIGenerate('expand')}
+                  disabled={generating}
+                  className="w-full px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {generating && aiMode === 'expand' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Wand2 className="w-4 h-4" />
+                  )}
+                  {generating && aiMode === 'expand' ? 'Expanding...' : 'Expand Ideas'}
+                </button>
+                
+                <button 
+                  onClick={() => handleAIGenerate('refine')}
+                  disabled={generating}
+                  className="w-full px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {generating && aiMode === 'refine' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  {generating && aiMode === 'refine' ? 'Refining...' : 'Refine Writing'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

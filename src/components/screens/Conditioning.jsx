@@ -1307,6 +1307,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
                 onCaptureEvidence={handleOpenEvidenceWizard}
                 onCloseLoop={handleOpenLoopClosure}
                 onViewDetail={handleOpenRepDetail}
+                evidence={evidenceMap[rep.id]}
                 isLoading={isSubmitting}
               />
             ))

@@ -35,6 +35,7 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
     roleLevel: ROLE_LEVELS.ALL,
     estimatedTime: '', // in minutes
     isHiddenUntilUnlocked: false,
+    includeInBook: false, // Include in Leadership Playbook generation
     visibility: [], // Array of CONTENT_TYPES to display in
     // NEW: Arrays of group IDs for the simplified model
     programs: [],   // Array of program IDs from LOV
@@ -59,7 +60,8 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
         programs: item.programs || [],
         workouts: item.workouts || [],
         skills: item.skills || [],
-        visibility: item.visibility || []
+        visibility: item.visibility || [],
+        includeInBook: item.includeInBook || false
       });
     } else {
       // For new items, default visibility includes the primary type
@@ -325,6 +327,23 @@ const GenericContentEditor = ({ item, type, onSave, onCancel }) => {
               <p className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5">
                 If checked, this content will only be visible to users who have it assigned in their Development Plan.
                 Uncheck to make it available to everyone in the Library.
+              </p>
+            </label>
+          </div>
+
+          <div className="col-span-2 flex items-center gap-2 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700">
+            <input
+              type="checkbox"
+              id="includeInBook"
+              name="includeInBook"
+              checked={formData.includeInBook}
+              onChange={handleChange}
+              className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
+            />
+            <label htmlFor="includeInBook" className="text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer">
+              <span className="flex items-center gap-1"><BookOpen size={14} className="text-amber-600" /> Include in Leadership Playbook</span>
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5">
+                If checked, this content will be used as source material when generating the AI-powered Leadership Playbook.
               </p>
             </label>
           </div>

@@ -180,7 +180,7 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel, showSwitch =
         {session.maxAttendees && (
           <div className="flex items-center gap-1">
             <Users className="w-3.5 h-3.5" />
-            <span>{session.registrationCount || session.currentAttendees || 0}/{session.maxAttendees}</span>
+            <span>{session.registrationCount ?? session.currentAttendees ?? 0}/{session.maxAttendees}</span>
           </div>
         )}
         {session.location && (

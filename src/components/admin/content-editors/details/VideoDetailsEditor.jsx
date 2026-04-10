@@ -1,6 +1,8 @@
 // src/components/admin/content-editors/details/VideoDetailsEditor.jsx
 import React, { useState } from 'react';
-import { ExternalLink, User, Film, Tag, Upload, Link as LinkIcon, Database } from 'lucide-react';
+import { ExternalLink, User, Film, Tag, Upload, Link as LinkIcon, Database, FileText, Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../../../lib/firebase';
 import MediaSelector from '../../MediaSelector';
 
 const VideoDetailsEditor = ({ details = {}, onChange, onEstimatedTimeChange }) => {
@@ -8,16 +10,56 @@ const VideoDetailsEditor = ({ details = {}, onChange, onEstimatedTimeChange }) =
     details.externalUrl?.includes('firebasestorage') ? 'VAULT' : 'LINK'
   );
   const [showMediaSelector, setShowMediaSelector] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [transcribeError, setTranscribeError] = useState(null);
 
   const handleChange = (key, value) => {
     onChange(key, value);
   };
 
   const handleVaultSelect = (url, asset) => {
+    // Clear transcript if URL is changing (file replaced)
+    if (url !== details.externalUrl && details.transcript) {
+      handleChange('transcript', '');
+    }
     handleChange('externalUrl', url);
     // Auto-populate estimated time from vault video metadata
     if (asset.duration && onEstimatedTimeChange) {
       onEstimatedTimeChange(Math.round(asset.duration / 60));
+    }
+  };
+
+  const handleUrlChange = (newUrl) => {
+    // Clear transcript if URL is changing (file replaced)
+    if (newUrl !== details.externalUrl && details.transcript) {
+      handleChange('transcript', '');
+    }
+    handleChange('externalUrl', newUrl);
+  };
+
+  const handleTranscribe = async () => {
+    if (!details.externalUrl) {
+      setTranscribeError('Please add a video URL first');
+      return;
+    }
+    
+    setTranscribing(true);
+    setTranscribeError(null);
+    
+    try {
+      const transcribeVideo = httpsCallable(functions, 'transcribeVideo');
+      const result = await transcribeVideo({ videoUrl: details.externalUrl });
+      
+      if (result.data?.transcript) {
+        handleChange('transcript', result.data.transcript);
+      } else {
+        throw new Error(result.data?.error || 'Failed to transcribe');
+      }
+    } catch (error) {
+      console.error('Transcription error:', error);
+      setTranscribeError(error.message || 'Failed to transcribe video');
+    } finally {
+      setTranscribing(false);
     }
   };
 
@@ -68,7 +110,7 @@ const VideoDetailsEditor = ({ details = {}, onChange, onEstimatedTimeChange }) =
             <input
               type="url"
               value={details.externalUrl || ''}
-              onChange={(e) => handleChange('externalUrl', e.target.value)}
+              onChange={(e) => handleUrlChange(e.target.value)}
               placeholder="https://youtube.com/watch?v=..."
               className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
             />
@@ -86,7 +128,7 @@ const VideoDetailsEditor = ({ details = {}, onChange, onEstimatedTimeChange }) =
                 <span className="text-sm text-gray-700 dark:text-gray-200 truncate flex-1">{details.externalUrl}</span>
                 <button
                   type="button"
-                  onClick={() => handleChange('externalUrl', '')}
+                  onClick={() => handleUrlChange('')}
                   className="text-xs text-red-500 hover:text-red-700 px-2"
                 >
                   Change
@@ -200,6 +242,53 @@ const VideoDetailsEditor = ({ details = {}, onChange, onEstimatedTimeChange }) =
           rows={4}
           className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
         />
+      </div>
+
+      {/* Transcript */}
+      <div className="border-t border-orange-200 dark:border-orange-800 pt-4 mt-4">
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-1">
+            <FileText size={14} />
+            Transcript
+          </label>
+          <button
+            type="button"
+            onClick={handleTranscribe}
+            disabled={transcribing || !details.externalUrl}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-lg hover:bg-purple-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {transcribing ? (
+              <>
+                <Loader2 size={12} className="animate-spin" />
+                Transcribing...
+              </>
+            ) : (
+              <>
+                <Sparkles size={12} />
+                Transcribe with AI
+              </>
+            )}
+          </button>
+        </div>
+        
+        {transcribeError && (
+          <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400 mb-2 bg-red-50 dark:bg-red-900/20 p-2 rounded">
+            <AlertCircle size={14} />
+            {transcribeError}
+          </div>
+        )}
+        
+        <textarea
+          value={details.transcript || ''}
+          onChange={(e) => handleChange('transcript', e.target.value)}
+          placeholder="Paste or generate video transcript here. This content is used for AI book generation and search."
+          rows={8}
+          className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-orange-500 font-mono text-sm"
+        />
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          {details.transcript ? `${details.transcript.split(/\s+/).length} words` : 'No transcript yet'} 
+          {' • '} Used for Leadership Playbook generation when "Include in Book" is checked.
+        </p>
       </div>
     </div>
   );

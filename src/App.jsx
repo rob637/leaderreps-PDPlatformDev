@@ -236,7 +236,6 @@ function App() {
             <FeatureProvider db={firebaseServices?.db}>
               <LayoutProvider>
                 <AccessControlProvider>
-                  <NotificationProvider>
                     {/* Offline Banner - shows when connection is lost */}
                     <OfflineBanner position="top" />
                     
@@ -248,19 +247,20 @@ function App() {
                         onSuccess={() => navigate('dashboard')}
                       />
                     ) : (
-                      <AppContent
-                        currentScreen={currentScreen}
-                        user={user}
-                        navParams={navParams}
-                        isMobileOpen={isMobileOpen}
-                        setIsMobileOpen={setIsMobileOpen}
-                        isAuthRequired={isAuthRequired}
-                        auth={firebaseServices.auth}
-                        goBack={goBack}
-                        canGoBack={canGoBack}
-                      />
+                      <NotificationProvider>
+                        <AppContent
+                          currentScreen={currentScreen}
+                          user={user}
+                          navParams={navParams}
+                          isMobileOpen={isMobileOpen}
+                          setIsMobileOpen={setIsMobileOpen}
+                          isAuthRequired={isAuthRequired}
+                          auth={firebaseServices.auth}
+                          goBack={goBack}
+                          canGoBack={canGoBack}
+                        />
+                      </NotificationProvider>
                     )}
-                  </NotificationProvider>
                 </AccessControlProvider>
               </LayoutProvider>
             </FeatureProvider>

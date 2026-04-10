@@ -150,6 +150,9 @@ const ScreenMap = {
   'marketing-center': lazy(() =>
     import('../components/admin/SalesMarketingCenter.jsx')
   ),
+  'book-builder': lazy(() =>
+    import('../components/admin/BookBuilder.jsx')
+  ),
   
   // Feature Lab Screens
   'reading-hub': lazy(() => import('../components/screens/features/ReadingHub.jsx')),

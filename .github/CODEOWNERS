@@ -1,0 +1,6 @@
+# Default — Rob reviews everything
+* @rob637
+
+# CRM developer can own CRM files, but Rob still reviews
+team-sales/ @rob637
+src/components/admin/crm/ @rob637

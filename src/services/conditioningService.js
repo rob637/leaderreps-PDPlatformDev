@@ -1994,6 +1994,10 @@ export const conditioningService = {
     
     // Must be in executed status (evidence already submitted)
     if (currentRep.status !== REP_STATUS.EXECUTED) {
+      // Provide specific error message for already-debriefed reps
+      if (currentRep.status === REP_STATUS.DEBRIEFED || currentRep.status === 'debriefed') {
+        throw new Error('This rep has already been debriefed. Use "Complete the Rep" to close the loop.');
+      }
       throw new Error(`Cannot close rep in '${currentRep.status}' status. Submit evidence first.`);
     }
     
