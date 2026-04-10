@@ -12730,6 +12730,35 @@ async function processLabMessage(uid, text, options = {}) {
   const lpSnap = await lpRef.get();
   const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
 
+  // --- Load recent evidence (last 15 items for coaching context) ---
+  let recentEvidence = [];
+  try {
+    const evidenceSnap = await db
+      .collection(`${LL_PREFIX}users/${uid}/evidence`)
+      .orderBy("createdAt", "desc")
+      .limit(15)
+      .get();
+    recentEvidence = evidenceSnap.docs.map((d) => d.data());
+  } catch {
+    // Evidence collection may not exist yet — safe to continue
+  }
+
+  // --- Load active reveal (if any) ---
+  let activeReveal = null;
+  try {
+    const revealSnap = await db
+      .collection(`${LL_PREFIX}users/${uid}/reveals`)
+      .where("status", "in", ["pending", "delivered"])
+      .orderBy("createdAt", "desc")
+      .limit(1)
+      .get();
+    if (!revealSnap.empty) {
+      activeReveal = revealSnap.docs[0].data();
+    }
+  } catch {
+    // Reveals collection may not exist yet
+  }
+
   // --- Resolve or create conversation ---
   let convoRef;
   let existingMessages = [];
@@ -12774,6 +12803,8 @@ async function processLabMessage(uid, text, options = {}) {
     weekTheme: LL_WEEK_THEMES[wIdx],
     experiment: LL_EXPERIMENTS[wIdx],
     leadershipProfile,
+    recentEvidence,
+    activeReveal,
     messageCount: existingMessages.length,
     channel,
     interactionType,
@@ -13232,7 +13263,7 @@ Return ONLY valid JSON. No markdown, no explanation.`,
 /**
  * Build the system prompt for Leadership Lab coaching modes.
  */
-function buildLabSystemPrompt({ mode, userName, weekNumber, weekTheme, experiment, leadershipProfile, messageCount, channel, interactionType, phase }) {
+function buildLabSystemPrompt({ mode, userName, weekNumber, weekTheme, experiment, leadershipProfile, recentEvidence, activeReveal, messageCount, channel, interactionType, phase }) {
   // --- Base context ---
   const isAscent = phase === "ascent" || weekNumber > 5;
 
@@ -13286,6 +13317,31 @@ LEADERSHIP PROFILE — what you know about ${userName}:
     }
   } else {
     prompt += `\nLEADERSHIP PROFILE: Not yet established. This leader is new. Listen deeply and start building your understanding.\n`;
+  }
+
+  // --- Behavioral evidence context ---
+  if (recentEvidence && recentEvidence.length > 0) {
+    prompt += `\nBEHAVIORAL EVIDENCE — specific observations from recent conversations (use these to ground your coaching in real data, not theory):\n`;
+    recentEvidence.slice(0, 10).forEach((e) => {
+      const cat = e.category ? `[${e.category}]` : "";
+      prompt += `${cat} "${e.quote || e.observation}"`;
+      if (e.relatedPattern) prompt += ` (pattern: ${e.relatedPattern})`;
+      prompt += `\n`;
+    });
+    prompt += `Use this evidence naturally — reference specific things they've said or done when it deepens the conversation. Don't list it back to them.\n`;
+  }
+
+  // --- Active reveal context ---
+  if (activeReveal) {
+    prompt += `\nACTIVE REVEAL — a strategic observation was recently shared with this leader:\n`;
+    prompt += `Type: ${activeReveal.type || "mirror-moment"}\n`;
+    if (activeReveal.content) prompt += `What was said: "${activeReveal.content}"\n`;
+    if (activeReveal.evidence) prompt += `Evidence behind it: ${activeReveal.evidence}\n`;
+    if (activeReveal.status === "delivered") {
+      prompt += `Status: Delivered but not yet acknowledged. If they bring it up, engage deeply. If they don't, don't force it — but it's context for understanding where they are.\n`;
+    } else if (activeReveal.status === "pending") {
+      prompt += `Status: Pending delivery (will be sent soon). Don't reference it directly — but you can steer the conversation toward the underlying pattern.\n`;
+    }
   }
 
   // --- Mode-specific instructions ---
