@@ -56,3 +56,17 @@ export async function sendText(cohortId, memberId, message) {
   const result = await fn({ cohortId, memberId, message });
   return result.data;
 }
+
+/**
+ * Fetch full conversation transcript for facilitator review.
+ *
+ * @param {string} cohortId
+ * @param {string} memberId
+ * @param {string} conversationId
+ * @returns {Promise<{ id, mode, channel, messages }>}
+ */
+export async function getConversation(cohortId, memberId, conversationId) {
+  const fn = httpsCallable(functions, 'labGetConversation');
+  const result = await fn({ cohortId, memberId, conversationId });
+  return result.data;
+}

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   ArrowLeft, Send, Sliders, Loader2, User, Eye, Zap,
-  FlaskConical, Quote, MessageCircle, X, Check,
+  FlaskConical, Quote, MessageCircle, X, Check, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { useNavigation } from '../../providers/NavigationProvider.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
-import { getMemberDeepDive, sendText } from '../../services/facilitatorService.js';
+import { getMemberDeepDive, sendText, getConversation } from '../../services/facilitatorService.js';
 
 export default function MemberDeepDiveScreen() {
   const { goBack, screenParams } = useNavigation();
@@ -19,6 +19,9 @@ export default function MemberDeepDiveScreen() {
   const [textMessage, setTextMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [expandedConvo, setExpandedConvo] = useState(null);
+  const [convoMessages, setConvoMessages] = useState([]);
+  const [loadingConvo, setLoadingConvo] = useState(false);
 
   useEffect(() => {
     if (!memberId || !cohortId) {
@@ -56,6 +59,24 @@ export default function MemberDeepDiveScreen() {
       // Could show error toast
     } finally {
       setSending(false);
+    }
+  }
+
+  async function toggleConversation(convoId) {
+    if (expandedConvo === convoId) {
+      setExpandedConvo(null);
+      setConvoMessages([]);
+      return;
+    }
+    setExpandedConvo(convoId);
+    setLoadingConvo(true);
+    try {
+      const result = await getConversation(cohortId, memberId, convoId);
+      setConvoMessages(result.messages || []);
+    } catch {
+      setConvoMessages([{ role: 'system', content: 'Failed to load conversation.' }]);
+    } finally {
+      setLoadingConvo(false);
     }
   }
 
@@ -307,22 +328,59 @@ export default function MemberDeepDiveScreen() {
             Recent Conversations
           </h3>
           <div className="space-y-2">
-            {recentConversations.slice(0, 5).map((c) => (
-              <div key={c.id} className="flex items-start gap-2 py-2 border-b border-stone-50 last:border-0">
-                <span className="text-xs text-stone-400 uppercase mt-0.5 min-w-[50px]">
-                  {getModeLabel(c.mode)}
-                </span>
-                <div className="flex-1">
-                  <p className="text-sm text-stone-600 truncate">{c.lastMessage || 'No messages'}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-stone-400">
-                      {c.channel === 'sms' ? '📱' : '💻'} {c.messageCount} msgs
-                    </span>
-                    {c.interactionType && (
-                      <span className="text-xs text-stone-300">{c.interactionType}</span>
+            {recentConversations.slice(0, 10).map((c) => (
+              <div key={c.id}>
+                <button
+                  onClick={() => toggleConversation(c.id)}
+                  className="w-full flex items-start gap-2 py-2 border-b border-stone-50 last:border-0 text-left hover:bg-stone-50 rounded-lg px-1 transition-colors"
+                >
+                  <span className="text-xs text-stone-400 uppercase mt-0.5 min-w-[50px]">
+                    {getModeLabel(c.mode)}
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-sm text-stone-600 truncate">{c.lastMessage || 'No messages'}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-stone-400">
+                        {c.channel === 'sms' ? '📱' : '💻'} {c.messageCount} msgs
+                      </span>
+                      {c.interactionType && (
+                        <span className="text-xs text-stone-300">{c.interactionType}</span>
+                      )}
+                    </div>
+                  </div>
+                  {expandedConvo === c.id
+                    ? <ChevronUp size={16} className="text-stone-400 mt-1" />
+                    : <ChevronDown size={16} className="text-stone-400 mt-1" />}
+                </button>
+                {expandedConvo === c.id && (
+                  <div className="bg-stone-50 rounded-xl p-3 mt-1 mb-2 max-h-96 overflow-y-auto">
+                    {loadingConvo ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 className="animate-spin text-lab-teal" size={18} />
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {convoMessages.map((m, i) => (
+                          <div
+                            key={i}
+                            className={`text-sm leading-relaxed ${
+                              m.role === 'user'
+                                ? 'text-lab-navy font-medium'
+                                : m.role === 'system'
+                                  ? 'text-red-500 italic'
+                                  : 'text-stone-600'
+                            }`}
+                          >
+                            <span className="text-xs text-stone-400 uppercase mr-1">
+                              {m.role === 'user' ? member.firstName : 'Coach'}:
+                            </span>
+                            {m.content}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>

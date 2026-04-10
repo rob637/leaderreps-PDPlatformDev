@@ -12542,6 +12542,31 @@ Write the full chapter now:`;
 
 const LL_PREFIX = 'll-';
 
+/**
+ * Validate required Lab environment variables on cold start.
+ * Logs errors for any missing secrets so misconfiguration is immediately visible.
+ */
+let _labEnvValidated = false;
+function validateLabEnvironment() {
+  if (_labEnvValidated) return;
+  _labEnvValidated = true;
+  const required = [
+    'ANTHROPIC_API_KEY',
+    'TWILIO_ACCOUNT_SID',
+    'TWILIO_AUTH_TOKEN',
+    'TWILIO_MESSAGING_SERVICE_SID',
+  ];
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length > 0) {
+    logger.error('CRITICAL: Lab environment misconfigured — missing secrets', { missing });
+  }
+  const optional = ['GEMINI_API_KEY'];
+  const missingOptional = optional.filter((k) => !process.env[k]);
+  if (missingOptional.length > 0) {
+    logger.warn('Lab optional env vars missing (fallback AI, transcription may fail)', { missingOptional });
+  }
+}
+
 /** Mask a phone number for safe logging: +1xxxxx3200 */
 function maskPhone(phone) {
   if (!phone || phone.length < 6) return '***';
@@ -12760,6 +12785,31 @@ async function processLabMessage(uid, text, options = {}) {
   const db = admin.firestore();
   const now = admin.firestore.FieldValue.serverTimestamp();
   const nowISO = new Date().toISOString();
+
+  // --- Per-user rate limit: prevent runaway AI costs ---
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const recentMsgsSnap = await db
+    .collection(`${LL_PREFIX}users/${uid}/conversations`)
+    .where("updatedAt", ">=", oneHourAgo)
+    .get();
+  let recentUserMsgCount = 0;
+  recentMsgsSnap.forEach((doc) => {
+    const msgs = doc.data().messages || [];
+    recentUserMsgCount += msgs.filter(
+      (m) => m.role === "user" && m.timestamp && new Date(m.timestamp) >= oneHourAgo
+    ).length;
+  });
+  const hourlyLimit = channel === "sms" ? 15 : 25;
+  if (recentUserMsgCount >= hourlyLimit) {
+    logger.warn("User rate-limited", { uid, channel, recentUserMsgCount, limit: hourlyLimit });
+    return {
+      response: channel === "sms"
+        ? "You've been on a roll! Take a breather and I'll be here when you're ready."
+        : "You've been going hard — let's pause for a bit. Take some time to sit with what we've discussed, and come back when you're ready.",
+      conversationId: conversationId || null,
+      rateLimited: true,
+    };
+  }
 
   // --- Load user profile ---
   const userDocRef = db.doc(`${LL_PREFIX}users/${uid}`);
@@ -13221,6 +13271,7 @@ exports.labCoach = onCall(
     maxInstances: 10,
   },
   async (request) => {
+    validateLabEnvironment();
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "User must be authenticated");
     }
@@ -13895,6 +13946,8 @@ exports.labSmsWebhook = onRequest(
     maxInstances: 20,
   },
   async (req, res) => {
+    validateLabEnvironment();
+
     // Twilio sends POST requests
     if (req.method !== "POST") {
       res.status(405).send("Method not allowed");
@@ -14218,11 +14271,19 @@ async function completeLabOnboarding(uid, conversationId) {
 
   const db = admin.firestore();
 
-  // Idempotency guard — don't re-process if already onboarded
-  const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
-  if (userSnap.exists && userSnap.data().onboardingComplete) {
+  // Race-condition-safe idempotency guard using transaction
+  const userDocRef = db.doc(`${LL_PREFIX}users/${uid}`);
+  const claimed = await db.runTransaction(async (txn) => {
+    const snap = await txn.get(userDocRef);
+    if (snap.exists && snap.data().onboardingComplete) return false;
+    // Claim the onboarding lock so parallel calls skip
+    txn.update(userDocRef, { _onboardingLock: conversationId });
+    return true;
+  });
+  if (!claimed) {
     logger.info("Onboarding already complete, skipping", { uid });
-    return userSnap.data();
+    const snap = await userDocRef.get();
+    return snap.data();
   }
 
   const convoRef = db.doc(`${LL_PREFIX}users/${uid}/conversations/${conversationId}`);
@@ -14270,8 +14331,9 @@ Return ONLY the JSON object. No markdown. Be honest but compassionate.`,
   try {
     profile = JSON.parse(profileText);
   } catch {
+    logger.warn("Failed to parse onboarding profile JSON — using raw text as presentedSelf", { uid });
     profile = {
-      presentedSelf: profileText,
+      presentedSelf: profileText.slice(0, 500),
       observedSelf: "",
       tensions: [],
       corePatterns: [],
@@ -14280,8 +14342,21 @@ Return ONLY the JSON object. No markdown. Be honest but compassionate.`,
       coachingApproach: "",
       people: [],
       emotionalArc: "",
-      coachingApproach: "",
     };
+  }
+
+  // Validate profile quality — at least presentedSelf must be meaningful
+  const filledFields = [
+    profile.presentedSelf, profile.observedSelf, profile.coachingApproach, profile.emotionalArc,
+  ].filter((v) => v && v.length > 10).length;
+  const hasArrayContent = [profile.tensions, profile.corePatterns, profile.growthEdges]
+    .filter((a) => Array.isArray(a) && a.length > 0).length;
+  if (filledFields + hasArrayContent < 3) {
+    logger.error("Onboarding profile too sparse — releasing lock for retry", {
+      uid, filledFields, hasArrayContent,
+    });
+    await userDocRef.update({ _onboardingLock: admin.firestore.FieldValue.delete() });
+    throw new Error("Profile extraction produced insufficient data — will retry");
   }
 
   const now = admin.firestore.FieldValue.serverTimestamp();
@@ -14548,6 +14623,7 @@ exports.labScheduledSms = onSchedule(
     timeoutSeconds: 540,
   },
   async (event) => {
+    validateLabEnvironment();
     const db = admin.firestore();
     const now = new Date();
     const hour = now.getHours(); // In ET due to timeZone config
@@ -16894,6 +16970,66 @@ exports.labDeepDive = onCall(
       logger.error("labDeepDive error", error);
       throw new HttpsError("internal", "Failed to load member deep dive");
     }
+  }
+);
+
+/**
+ * labGetConversation — Fetch full conversation transcript for facilitator review.
+ *
+ * Returns all messages for a specific conversation belonging to a cohort member.
+ * Facilitator/admin only.
+ */
+exports.labGetConversation = onCall(
+  {
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const { cohortId, memberId, conversationId } = request.data || {};
+    if (!cohortId || !memberId || !conversationId) {
+      throw new HttpsError("invalid-argument", "cohortId, memberId, and conversationId are required");
+    }
+
+    const authorized = await isFacilitatorOrAdmin(request.auth, cohortId);
+    if (!authorized) {
+      throw new HttpsError("permission-denied", "Facilitator or admin access required");
+    }
+
+    const db = admin.firestore();
+    const convoSnap = await db
+      .doc(`${LL_PREFIX}users/${memberId}/conversations/${conversationId}`)
+      .get();
+
+    if (!convoSnap.exists) {
+      throw new HttpsError("not-found", "Conversation not found");
+    }
+
+    const data = convoSnap.data();
+    return {
+      id: conversationId,
+      mode: data.mode,
+      channel: data.channel,
+      weekNumber: data.weekNumber,
+      interactionType: data.interactionType,
+      summary: data.summary,
+      messages: (data.messages || []).map((m) => ({
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp,
+      })),
+    };
   }
 );
 
