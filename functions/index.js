@@ -13031,6 +13031,26 @@ async function processLabMessage(uid, text, options = {}) {
     provider: usageInfo?.provider || "claude",
   });
 
+  // --- Detect engagement frequency change requests ---
+  const lowerText = sanitizedText.toLowerCase();
+  const morePattern = /\b(more (texts?|messages?|often)|text me more|send more|increase.*frequen|too (few|infrequent)|hear from you more|heavy)\b/;
+  const lessPattern = /\b(less (texts?|messages?|often)|fewer (texts?|messages?)|text me less|send less|too many|too much|back off|decrease.*frequen|not as (often|much)|hear from you less|light)\b/;
+  const medPattern = /\b(medium|moderate|normal|default|in between|middle)\b/;
+  if (mode !== "onboarding") {
+    let newLevel = null;
+    if (lessPattern.test(lowerText)) newLevel = 1;
+    else if (morePattern.test(lowerText)) newLevel = 3;
+    else if (medPattern.test(lowerText) && /\b(texts?|messages?|frequen|hear from)\b/.test(lowerText)) newLevel = 2;
+
+    if (newLevel !== null && newLevel !== (userProfile.engagementLevel || 2)) {
+      const levelNames = { 1: "Light", 2: "Medium", 3: "Heavy" };
+      await db.doc(`${LL_PREFIX}users/${uid}`).update({ engagementLevel: newLevel });
+      logger.info("Engagement level auto-adjusted from conversation", {
+        uid, oldLevel: userProfile.engagementLevel || 2, newLevel, levelName: levelNames[newLevel],
+      });
+    }
+  }
+
   // --- Auto-summarize completed conversations (fire-and-forget) ---
   if (mode !== "onboarding" && totalMsgs >= 6) {
     summarizeConversation(convoRef, existingMessages, apiKey).catch((err) =>
@@ -13702,7 +13722,8 @@ UNIVERSAL RULES (all modes):
 - OPENING VARIETY: Don't start every message the same way. Vary your openings — sometimes lead with an observation, sometimes a question, sometimes a challenge, sometimes just a thought. Never use the same opening pattern twice in a row within a conversation.
 - NOT EVERY MESSAGE NEEDS A QUESTION. Sometimes the most powerful response is a statement, an observation, or just sitting with what they said. If you've asked 2+ questions in recent messages, make your next one a declarative observation or a challenge.
 - CLOSINGS: When wrapping up a conversation, don't summarize what they said back to them — they already know. Instead, name one thing they might not have seen yet, or give them something specific to carry into their next real-world interaction.
-- Don't repeat the same insight, metaphor, or framing across multiple conversations. If you've used a particular lens before (e.g., "control vs. trust"), find a new angle.`;
+- Don't repeat the same insight, metaphor, or framing across multiple conversations. If you've used a particular lens before (e.g., "control vs. trust"), find a new angle.
+- TEXT FREQUENCY: If the leader asks to receive more or fewer texts (e.g., "can you text me less?", "I want more check-ins"), acknowledge it naturally and confirm the change. Their preference will be updated automatically — just confirm warmly. Options: Light (~2-3/week), Medium (~5/week), Heavy (~10/week). Don't bring this up unless they do.`;
 
   // --- SMS channel adjustments ---
   if (channel === "sms") {
