@@ -13674,7 +13674,7 @@ CONVERSATION FLOW:
 2. "What kind of leader do you think you are? And what's the hardest part right now?" (1 message)
 3. Follow up on what they said — dig into one thing that feels real (1 message)
 4. "If your team described working with you — what would they say? And what do you hope they wouldn't?" (1 message)
-5. Wrap up: reflect back 1-2 sharp observations about their leadership, and tell them you're ready to start. (1 message)
+5. Wrap up: reflect back 1-2 sharp observations about their leadership. Then ask about their preferred text frequency: "One last thing — how often do you want to hear from me? Light (a couple times a week), Medium (most weekday mornings), or Heavy (morning and afternoon). You can always change it later by texting LIGHT, MEDIUM, or HEAVY." End by telling them you're ready to start.
 
 RULES:
 - Keep it to 4-5 total exchanges. Do NOT keep asking new questions after exchange 5.
@@ -13682,8 +13682,9 @@ RULES:
 - Be warm and genuinely curious — this sets the tone for the entire program.
 - Keep responses conversational and under 60 words.
 - Listen for: values, fears, blind spots, self-awareness signals.
-${messageCount >= 8 ? "- YOU MUST WRAP UP NOW. Summarize what you heard, share 1-2 observations, and tell them you're excited to start working together. Do not ask another question." : ""}
-${messageCount >= 6 ? "- Begin wrapping up soon. One more exchange at most before your summary." : ""}`,
+- The engagement level question in step 5 is important — always include it in your wrap-up. Frame it naturally, not like a settings menu.
+${messageCount >= 8 ? "- YOU MUST WRAP UP NOW. Summarize what you heard, share 1-2 observations, ask about text frequency preference (Light/Medium/Heavy), and tell them you're excited to start working together. Do not ask another question after this." : ""}
+${messageCount >= 6 ? "- Begin wrapping up soon. One more exchange at most before your summary and frequency question." : ""}`,
   };
 
   prompt += modePrompts[mode] || modePrompts.coach;
@@ -14235,10 +14236,18 @@ Return ONLY the JSON object. No markdown. Be honest but compassionate.`,
   await convoRef.update({ summary, updatedAt: now });
 
   // Mark user as onboarded
+  // Parse engagement level preference from conversation
+  const lastUserMsgs = messages.filter((m) => m.role === "user").slice(-2);
+  const lastMsgText = lastUserMsgs.map((m) => m.content.toLowerCase()).join(" ");
+  let engagementLevel = 2; // default medium
+  if (/\bheavy\b/.test(lastMsgText)) engagementLevel = 3;
+  else if (/\blight\b/.test(lastMsgText)) engagementLevel = 1;
+
   await db.doc(`${LL_PREFIX}users/${uid}`).update({
     onboardingComplete: true,
     currentPhase: "foundation",
     currentWeek: 1,
+    engagementLevel,
     onboardedAt: now,
   });
 
