@@ -24,6 +24,9 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Anthropic = require("@anthropic-ai/sdk");
 const nodemailer = require("nodemailer");
 const twilio = require("twilio");
+const path = require("path");
+const os = require("os");
+const fs = require("fs");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -4865,13 +4868,14 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
   logger.info("SMS disabled for go-live. Would have sent to:", phoneNumber);
   return;
   
-  // Original implementation below (disabled)
+  // Original implementation below (disabled until 10DLC campaign approved)
   /*
   const twilioSid = process.env.TWILIO_ACCOUNT_SID;
   const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
+  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
   const twilioFrom = process.env.TWILIO_PHONE_NUMBER;
 
-  if (!twilioSid || !twilioAuth || !twilioFrom) {
+  if (!twilioSid || !twilioAuth || (!messagingServiceSid && !twilioFrom)) {
     logger.warn("Twilio credentials not configured. SMS not sent.");
     return;
   }
@@ -4895,11 +4899,16 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
 
   try {
     const client = twilio(twilioSid, twilioAuth);
-    const result = await client.messages.create({
+    const msgOptions = {
       body: `LeaderReps: ${message} ${linkToInclude}`,
-      from: twilioFrom,
       to: phoneNumber
-    });
+    };
+    if (messagingServiceSid) {
+      msgOptions.messagingServiceSid = messagingServiceSid;
+    } else {
+      msgOptions.from = twilioFrom;
+    }
+    const result = await client.messages.create(msgOptions);
     logger.info(`SMS sent to ${phoneNumber}: ${result.sid}`);
   } catch (e) {
     logger.error(`Failed to send SMS to ${phoneNumber}`, e);
@@ -10044,6 +10053,15 @@ exports.analyzeLeadershipAssessment = onRequest(
           emailSent,
         });
         logger.info(`Lead stored successfully for ${email}, docId: ${docRef.id}`);
+
+        // Sync to Kit (non-blocking)
+        syncLeadToKit(email, firstName, 'leadership-dna', {
+          archetype: sanitizedResults.archetype,
+        }).then(kitResult => {
+          if (kitResult.success) {
+            docRef.update({ kitSyncedAt: admin.firestore.FieldValue.serverTimestamp(), kitSubscriberId: kitResult.subscriberId });
+          }
+        }).catch(err => logger.warn('Kit sync error (non-blocking):', err.message));
       } catch (firestoreErr) {
         logger.error(`Firestore write FAILED for ${email}:`, firestoreErr);
       }
@@ -10355,6 +10373,16 @@ exports.processROICalculator = onRequest(
           emailSent,
         });
         logger.info(`ROI lead stored successfully for ${email}, docId: ${docRef.id}`);
+
+        // Sync to Kit (non-blocking)
+        syncLeadToKit(email, firstName, 'roi-calculator', {
+          company: company || '',
+          roi_percentage: String(results.roiPercentage || ''),
+        }).then(kitResult => {
+          if (kitResult.success) {
+            docRef.update({ kitSyncedAt: admin.firestore.FieldValue.serverTimestamp(), kitSubscriberId: kitResult.subscriberId });
+          }
+        }).catch(err => logger.warn('Kit sync error (non-blocking):', err.message));
       } catch (firestoreErr) {
         logger.error(`Firestore write FAILED for ROI lead ${email}:`, firestoreErr);
       }
@@ -10704,6 +10732,16 @@ exports.analyzeAccountabilityAssessment = onRequest(
           emailSent,
         });
         logger.info(`Accountability lead stored for ${email}, docId: ${docRef.id}`);
+
+        // Sync to Kit (non-blocking)
+        syncLeadToKit(email, firstName, 'accountability', {
+          archetype: sanitizedResults.archetype,
+          score: String(sanitizedResults.overallScore || ''),
+        }).then(kitResult => {
+          if (kitResult.success) {
+            docRef.update({ kitSyncedAt: admin.firestore.FieldValue.serverTimestamp(), kitSubscriberId: kitResult.subscriberId });
+          }
+        }).catch(err => logger.warn('Kit sync error (non-blocking):', err.message));
       } catch (firestoreErr) {
         logger.error(`Firestore write FAILED for ${email}:`, firestoreErr);
       }
@@ -11064,6 +11102,16 @@ exports.analyzeReadinessAssessment = onRequest(
           emailSent,
         });
         logger.info(`Readiness lead stored for ${email}, docId: ${docRef.id}`);
+
+        // Sync to Kit (non-blocking)
+        syncLeadToKit(email, firstName, 'readiness', {
+          archetype: sanitizedResults.archetype,
+          score: String(sanitizedResults.overallScore || ''),
+        }).then(kitResult => {
+          if (kitResult.success) {
+            docRef.update({ kitSyncedAt: admin.firestore.FieldValue.serverTimestamp(), kitSubscriberId: kitResult.subscriberId });
+          }
+        }).catch(err => logger.warn('Kit sync error (non-blocking):', err.message));
       } catch (firestoreErr) {
         logger.error(`Firestore write FAILED for ${email}:`, firestoreErr);
       }
@@ -11077,6 +11125,7307 @@ exports.analyzeReadinessAssessment = onRequest(
     } catch (err) {
       logger.error("Readiness assessment processing failed:", err);
       res.status(500).json({ error: 'Processing failed', details: err.message });
+    }
+  }
+);
+
+// ============================================================
+// KIT (ConvertKit) INTEGRATION
+// Syncs leads to Kit for newsletter management
+// ============================================================
+
+// Tag mappings for different lead sources
+const KIT_TAG_MAPPINGS = {
+  'leadership-dna': 'leadership-dna-assessment',
+  'accountability': 'accountability-assessment',
+  'roi-calculator': 'roi-calculator',
+  'readiness': 'leadership-readiness-assessment',
+};
+
+/**
+ * Helper function to add a subscriber to Kit
+ * @param {string} email - Subscriber email
+ * @param {string} firstName - Subscriber first name
+ * @param {string} source - Lead source (leadership-dna, accountability, roi-calculator, readiness)
+ * @param {object} customFields - Additional custom fields to store
+ * @returns {object} - Result of the Kit API call
+ */
+async function syncLeadToKit(email, firstName, source, customFields = {}) {
+  const kitApiKey = process.env.KIT_API_KEY;
+
+  if (!kitApiKey || kitApiKey === 'your_kit_api_key_here') {
+    logger.warn('Kit API key not configured - skipping Kit sync');
+    return { success: false, reason: 'not_configured' };
+  }
+
+  try {
+    // Step 1: Create or update the subscriber
+    // Kit v4 API uses the API Key as a Bearer token
+    const subscriberResponse = await fetch('https://api.kit.com/v4/subscribers', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${kitApiKey}`,
+      },
+      body: JSON.stringify({
+        email_address: email.toLowerCase(),
+        first_name: firstName || '',
+        state: 'active',
+        fields: {
+          lead_source: source,
+          ...customFields,
+        },
+      }),
+    });
+
+    if (!subscriberResponse.ok) {
+      const errorText = await subscriberResponse.text();
+      logger.error(`Kit subscriber creation failed: ${subscriberResponse.status} - ${errorText}`);
+      return { success: false, reason: 'api_error', status: subscriberResponse.status };
+    }
+
+    const subscriberData = await subscriberResponse.json();
+    const subscriberId = subscriberData.subscriber?.id;
+    logger.info(`Kit subscriber created/updated: ${email}, id: ${subscriberId}`);
+
+    // Step 2: Add tag based on source (if tag ID is configured)
+    const tagName = KIT_TAG_MAPPINGS[source];
+    if (tagName && subscriberId) {
+      // Note: You'll need to create these tags in Kit and get their IDs
+      // For now, we log the intent - tags can be added via Kit's tag API
+      logger.info(`Kit: Would tag subscriber ${subscriberId} with '${tagName}'`);
+    }
+
+    return { 
+      success: true, 
+      subscriberId,
+      email: email.toLowerCase(),
+    };
+
+  } catch (error) {
+    logger.error('Kit sync error:', error);
+    return { success: false, reason: 'exception', error: error.message };
+  }
+}
+
+/**
+ * Webhook endpoint for Kit unsubscribe events
+ * Configure this URL in Kit: https://app.kit.com/account/webhooks
+ */
+exports.kitWebhook = onRequest(
+  {
+    region: "us-central1",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+  },
+  async (req, res) => {
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'POST');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+      res.status(204).send('');
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const { subscriber, event_type } = req.body || {};
+
+    if (!subscriber || !subscriber.email_address) {
+      logger.warn('Kit webhook: Missing subscriber data');
+      res.status(400).json({ error: 'Missing subscriber data' });
+      return;
+    }
+
+    const email = subscriber.email_address.toLowerCase();
+    logger.info(`Kit webhook received: ${event_type} for ${email}`);
+
+    try {
+      // Handle unsubscribe events
+      if (event_type === 'subscriber.subscriber_unsubscribe' || 
+          event_type === 'subscriber.complaint') {
+        
+        // Update lead records across all collections
+        const collections = [
+          'assessment-leads',
+          'accountability-leads',
+          'roi-calculator-leads',
+          'readiness-leads',
+        ];
+
+        for (const collectionName of collections) {
+          const snapshot = await db.collection(collectionName)
+            .where('email', '==', email)
+            .get();
+
+          for (const doc of snapshot.docs) {
+            await doc.ref.update({
+              marketingOptIn: false,
+              kitUnsubscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+              kitUnsubscribeReason: event_type,
+            });
+            logger.info(`Updated ${collectionName}/${doc.id} - marketing opt-out`);
+          }
+        }
+
+        res.json({ success: true, message: `Processed ${event_type} for ${email}` });
+      } else {
+        // Log other events but don't process them
+        logger.info(`Kit webhook: Unhandled event type ${event_type}`);
+        res.json({ success: true, message: 'Event acknowledged' });
+      }
+
+    } catch (error) {
+      logger.error('Kit webhook error:', error);
+      res.status(500).json({ error: 'Processing failed', details: error.message });
+    }
+  }
+);
+
+/**
+ * Manual sync function to push existing leads to Kit
+ * Call this via Firebase console or admin panel
+ */
+exports.syncLeadsToKit = onRequest(
+  {
+    region: "us-central1",
+    timeoutSeconds: 300,
+    memory: "512MiB",
+    cors: true,
+  },
+  async (req, res) => {
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'POST');
+      res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.status(204).send('');
+      return;
+    }
+
+    res.set('Access-Control-Allow-Origin', '*');
+
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    // Verify admin access via ID token
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    try {
+      const idToken = authHeader.split('Bearer ')[1];
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      const userEmail = decodedToken.email?.toLowerCase();
+      
+      // Check if user is admin
+      const adminEmails = ['rob@sagecg.com', 'admin@leaderreps.com', 'ryan@leaderreps.com'];
+      if (!adminEmails.includes(userEmail)) {
+        res.status(403).json({ error: 'Admin access required' });
+        return;
+      }
+    } catch (authError) {
+      logger.error('Auth verification failed:', authError);
+      res.status(401).json({ error: 'Invalid token' });
+      return;
+    }
+
+    const { collection: collectionName, limit: syncLimit = 100 } = req.body || {};
+
+    const collectionsToSync = collectionName 
+      ? [collectionName]
+      : ['assessment-leads', 'accountability-leads', 'roi-calculator-leads', 'readiness-leads'];
+
+    const sourceMap = {
+      'assessment-leads': 'leadership-dna',
+      'accountability-leads': 'accountability',
+      'roi-calculator-leads': 'roi-calculator',
+      'readiness-leads': 'readiness',
+    };
+
+    const results = {
+      synced: 0,
+      skipped: 0,
+      failed: 0,
+      details: [],
+    };
+
+    try {
+      for (const coll of collectionsToSync) {
+        // Only sync leads that opted in and haven't been synced yet
+        const snapshot = await db.collection(coll)
+          .where('marketingOptIn', '==', true)
+          .limit(syncLimit)
+          .get();
+
+        for (const doc of snapshot.docs) {
+          const data = doc.data();
+          
+          // Skip if already synced to Kit
+          if (data.kitSyncedAt) {
+            results.skipped++;
+            continue;
+          }
+
+          const syncResult = await syncLeadToKit(
+            data.email,
+            data.firstName || data.contact?.firstName || '',
+            sourceMap[coll],
+            {
+              archetype: data.results?.archetype || data.results?.category || '',
+              score: String(data.results?.overallScore || data.results?.score || ''),
+            }
+          );
+
+          if (syncResult.success) {
+            // Mark as synced
+            await doc.ref.update({
+              kitSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+              kitSubscriberId: syncResult.subscriberId,
+            });
+            results.synced++;
+            results.details.push({ email: data.email, status: 'synced' });
+          } else if (syncResult.reason === 'not_configured') {
+            results.skipped++;
+            results.details.push({ email: data.email, status: 'skipped', reason: 'Kit not configured' });
+          } else {
+            results.failed++;
+            results.details.push({ email: data.email, status: 'failed', reason: syncResult.reason });
+          }
+
+          // Rate limit: Kit allows 120 requests per minute
+          await new Promise(resolve => setTimeout(resolve, 600));
+        }
+      }
+
+      logger.info(`Kit sync complete: ${results.synced} synced, ${results.skipped} skipped, ${results.failed} failed`);
+      res.json({
+        success: true,
+        ...results,
+      });
+
+    } catch (error) {
+      logger.error('Kit bulk sync error:', error);
+      res.status(500).json({ error: 'Sync failed', details: error.message });
+    }
+  }
+);
+
+// ============================================================
+// BOOK BUILDER - AI DRAFT GENERATION
+// Generates chapter drafts from source materials using AI
+// ============================================================
+
+exports.generateBookDraft = onCall(
+  { cors: true, region: "us-central1", invoker: "public" },
+  async (request) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      logger.error("GEMINI_API_KEY is not configured");
+      throw new HttpsError('internal', 'AI service not configured');
+    }
+
+    const { chapterTitle, chapterSummary, sources, bookMetadata, mode = 'draft' } = request.data;
+
+    if (!chapterTitle) {
+      throw new HttpsError('invalid-argument', 'Chapter title is required');
+    }
+
+    // Build context from source materials
+    const sourceContext = sources?.map((s, i) => 
+      `--- SOURCE ${i + 1}: ${s.title} (${s.type}) ---\n${s.content?.substring(0, 8000) || '(No content)'}\n`
+    ).join('\n\n') || '(No source materials provided)';
+
+    // Build book context
+    const bookContext = bookMetadata ? `
+Book Title: ${bookMetadata.title || 'Untitled'}
+${bookMetadata.subtitle ? `Subtitle: ${bookMetadata.subtitle}` : ''}
+Target Audience: ${bookMetadata.targetAudience || 'Business leaders'}
+Tone/Style: ${bookMetadata.tone || 'Professional yet conversational'}
+${bookMetadata.authors?.length ? `Authors: ${bookMetadata.authors.join(', ')}` : ''}
+` : '';
+
+    // Different prompts based on mode
+    let prompt = '';
+    
+    if (mode === 'draft') {
+      prompt = `You are a professional book writer helping to draft a chapter for a leadership development book.
+
+${bookContext}
+
+CHAPTER TO WRITE:
+Title: ${chapterTitle}
+${chapterSummary ? `Summary/Direction: ${chapterSummary}` : ''}
+
+SOURCE MATERIALS TO DRAW FROM:
+${sourceContext}
+
+INSTRUCTIONS:
+1. Write a compelling chapter draft that synthesizes the source materials
+2. Use a confident, authoritative voice appropriate for a business/leadership book
+3. Include:
+   - An engaging opening hook
+   - Clear section headings (use ## for H2, ### for H3)
+   - Concrete examples and actionable insights
+   - A summary or key takeaways at the end
+4. Target 2,000-3,000 words
+5. Write in a way that's publisher-ready (Chicago Manual of Style)
+6. Transform the raw source materials into polished prose
+7. Don't simply quote sources - synthesize and integrate them naturally
+
+Write the chapter now:`;
+    } else if (mode === 'expand') {
+      prompt = `You are a professional book editor helping to expand and develop a chapter section.
+
+${bookContext}
+
+CHAPTER: ${chapterTitle}
+
+SOURCE MATERIALS:
+${sourceContext}
+
+Take the key concepts and expand them into richer, more detailed prose. Add examples, clarifications, and deeper explanations. Target 1,500-2,000 words of additional content.`;
+    } else if (mode === 'refine') {
+      prompt = `You are a professional book editor refining a chapter draft.
+
+${bookContext}
+
+CHAPTER: ${chapterTitle}
+
+SOURCE MATERIALS (for context):
+${sourceContext}
+
+Review the following content and improve it:
+1. Strengthen the prose and transitions
+2. Ensure consistent tone and voice
+3. Add more vivid language where appropriate
+4. Improve clarity and flow
+5. Keep the core content but enhance the writing quality
+
+Content to refine:
+${chapterSummary || '(No content provided)'}`;
+    }
+
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash",
+        systemInstruction: `You are an expert book writer specializing in leadership and business content. You write in a clear, engaging style suitable for publication. You synthesize source materials into original prose rather than simply quoting them.`
+      });
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      logger.info(`Book draft generated successfully for chapter: ${chapterTitle}`);
+
+      return {
+        success: true,
+        content: text,
+        wordCount: text.split(/\s+/).filter(Boolean).length,
+        mode
+      };
+    } catch (error) {
+      logger.error("Book draft generation error:", error);
+      throw new HttpsError('internal', 'Failed to generate draft: ' + error.message);
+    }
+  }
+);
+
+// ============================================================
+// BOOK BUILDER - EXPORT TO DOCX
+// Generates a downloadable Word document from book content
+// ============================================================
+
+exports.exportBookToDocx = onCall(
+  { cors: true, region: "us-central1", invoker: "public", memory: "512MiB" },
+  async (request) => {
+    const { chapters, metadata } = request.data;
+
+    if (!chapters || !chapters.length) {
+      throw new HttpsError('invalid-argument', 'Chapters are required');
+    }
+
+    try {
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak, AlignmentType, BorderStyle } = require('docx');
+      
+      // Helper to parse markdown-like content into paragraphs
+      const parseContentToParagraphs = (content) => {
+        if (!content) return [new Paragraph({ children: [new TextRun({ text: '(No content yet)', italics: true })] })];
+        
+        const paragraphs = [];
+        const lines = content.split('\n');
+        let currentParagraph = [];
+        
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          
+          // Empty line = new paragraph
+          if (!trimmedLine) {
+            if (currentParagraph.length > 0) {
+              paragraphs.push(new Paragraph({
+                children: currentParagraph,
+                spacing: { after: 200 }
+              }));
+              currentParagraph = [];
+            }
+            continue;
+          }
+          
+          // Heading (## or ###)
+          if (trimmedLine.startsWith('### ')) {
+            if (currentParagraph.length > 0) {
+              paragraphs.push(new Paragraph({ children: currentParagraph, spacing: { after: 200 } }));
+              currentParagraph = [];
+            }
+            paragraphs.push(new Paragraph({
+              children: [new TextRun({ text: trimmedLine.replace(/^###\s*/, ''), bold: true, size: 26 })],
+              spacing: { before: 300, after: 150 }
+            }));
+            continue;
+          }
+          
+          if (trimmedLine.startsWith('## ')) {
+            if (currentParagraph.length > 0) {
+              paragraphs.push(new Paragraph({ children: currentParagraph, spacing: { after: 200 } }));
+              currentParagraph = [];
+            }
+            paragraphs.push(new Paragraph({
+              children: [new TextRun({ text: trimmedLine.replace(/^##\s*/, ''), bold: true, size: 28 })],
+              spacing: { before: 400, after: 200 }
+            }));
+            continue;
+          }
+          
+          // Bullet point
+          if (trimmedLine.startsWith('• ') || trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+            if (currentParagraph.length > 0) {
+              paragraphs.push(new Paragraph({ children: currentParagraph, spacing: { after: 200 } }));
+              currentParagraph = [];
+            }
+            paragraphs.push(new Paragraph({
+              children: [new TextRun({ text: trimmedLine.replace(/^[•\-\*]\s*/, ''), size: 24 })],
+              bullet: { level: 0 },
+              spacing: { after: 100 }
+            }));
+            continue;
+          }
+          
+          // Bold text handling (**text**)
+          if (trimmedLine.includes('**')) {
+            const parts = trimmedLine.split(/\*\*([^*]+)\*\*/g);
+            for (let i = 0; i < parts.length; i++) {
+              if (parts[i]) {
+                currentParagraph.push(new TextRun({
+                  text: parts[i],
+                  bold: i % 2 === 1,
+                  size: 24
+                }));
+              }
+            }
+            currentParagraph.push(new TextRun({ text: ' ', size: 24 }));
+            continue;
+          }
+          
+          // Regular text
+          currentParagraph.push(new TextRun({ text: trimmedLine + ' ', size: 24 }));
+        }
+        
+        // Don't forget the last paragraph
+        if (currentParagraph.length > 0) {
+          paragraphs.push(new Paragraph({
+            children: currentParagraph,
+            spacing: { after: 200 }
+          }));
+        }
+        
+        return paragraphs.length > 0 ? paragraphs : [new Paragraph({ children: [new TextRun({ text: '(No content yet)', italics: true })] })];
+      };
+      
+      // Build document sections
+      const children = [];
+      
+      // ===== TITLE PAGE =====
+      children.push(new Paragraph({ children: [] })); // Spacer
+      children.push(new Paragraph({ children: [] }));
+      children.push(new Paragraph({ children: [] }));
+      children.push(new Paragraph({ children: [] }));
+      
+      // Title
+      children.push(new Paragraph({
+        children: [new TextRun({
+          text: metadata?.title || 'Untitled Book',
+          bold: true,
+          size: 72, // 36pt
+          font: 'Georgia'
+        })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 400 }
+      }));
+      
+      // Subtitle
+      if (metadata?.subtitle) {
+        children.push(new Paragraph({
+          children: [new TextRun({
+            text: metadata.subtitle,
+            italics: true,
+            size: 36, // 18pt
+            font: 'Georgia'
+          })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 600 }
+        }));
+      }
+      
+      // Authors
+      if (metadata?.authors?.length) {
+        children.push(new Paragraph({ children: [] })); // Spacer
+        children.push(new Paragraph({
+          children: [new TextRun({
+            text: 'By',
+            size: 24,
+            font: 'Georgia'
+          })],
+          alignment: AlignmentType.CENTER
+        }));
+        children.push(new Paragraph({
+          children: [new TextRun({
+            text: metadata.authors.join(', '),
+            bold: true,
+            size: 28,
+            font: 'Georgia'
+          })],
+          alignment: AlignmentType.CENTER
+        }));
+      }
+      
+      // Page break after title
+      children.push(new Paragraph({ children: [new PageBreak()] }));
+      
+      // ===== TABLE OF CONTENTS =====
+      children.push(new Paragraph({
+        children: [new TextRun({
+          text: 'Table of Contents',
+          bold: true,
+          size: 48,
+          font: 'Georgia'
+        })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 600 }
+      }));
+      
+      chapters.forEach((ch, i) => {
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: `Chapter ${i + 1}: `, bold: true, size: 24 }),
+            new TextRun({ text: ch.title, size: 24 })
+          ],
+          spacing: { after: 150 }
+        }));
+      });
+      
+      // Page break after TOC
+      children.push(new Paragraph({ children: [new PageBreak()] }));
+      
+      // ===== CHAPTERS =====
+      chapters.forEach((ch, i) => {
+        // Chapter number
+        children.push(new Paragraph({
+          children: [new TextRun({
+            text: `CHAPTER ${i + 1}`,
+            bold: true,
+            size: 24,
+            color: '666666',
+            font: 'Arial'
+          })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 200, after: 200 }
+        }));
+        
+        // Chapter title
+        children.push(new Paragraph({
+          children: [new TextRun({
+            text: ch.title,
+            bold: true,
+            size: 48,
+            font: 'Georgia'
+          })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 200 }
+        }));
+        
+        // Chapter summary (if exists)
+        if (ch.summary) {
+          children.push(new Paragraph({
+            children: [new TextRun({
+              text: ch.summary,
+              italics: true,
+              size: 26,
+              color: '555555'
+            })],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 400 }
+          }));
+        }
+        
+        // Decorative divider
+        children.push(new Paragraph({
+          children: [new TextRun({ text: '———', size: 24, color: 'CCCCCC' })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 400 }
+        }));
+        
+        // Chapter content
+        const contentParagraphs = parseContentToParagraphs(ch.content);
+        children.push(...contentParagraphs);
+        
+        // Page break after each chapter (except the last)
+        if (i < chapters.length - 1) {
+          children.push(new Paragraph({ children: [new PageBreak()] }));
+        }
+      });
+      
+      // Create the document
+      const doc = new Document({
+        creator: 'LeaderReps Book Builder',
+        title: metadata?.title || 'Untitled Book',
+        description: metadata?.subtitle || '',
+        styles: {
+          default: {
+            document: {
+              run: {
+                font: 'Calibri',
+                size: 24 // 12pt
+              }
+            }
+          }
+        },
+        sections: [{
+          properties: {
+            page: {
+              margin: {
+                top: 1440, // 1 inch
+                right: 1440,
+                bottom: 1440,
+                left: 1440
+              }
+            }
+          },
+          children
+        }]
+      });
+      
+      // Generate the document buffer
+      const buffer = await Packer.toBuffer(doc);
+      const base64 = buffer.toString('base64');
+      
+      logger.info('Book exported successfully', {
+        chapterCount: chapters.length,
+        size: buffer.length
+      });
+      
+      return {
+        success: true,
+        docx: base64,
+        format: 'docx',
+        fileName: `${(metadata?.title || 'book').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.docx`,
+        size: buffer.length,
+        chapterCount: chapters.length
+      };
+    } catch (error) {
+      logger.error("Book export error:", error);
+      throw new HttpsError('internal', 'Failed to export book: ' + error.message);
+    }
+  }
+);
+
+// ============================================================
+// VIDEO TRANSCRIPTION
+// Transcribes video content using Gemini's multimodal capabilities
+// Uses File API for large videos (up to 2GB)
+// ============================================================
+
+exports.transcribeVideo = onCall(
+  { cors: true, region: "us-central1", invoker: "public", timeoutSeconds: 540, memory: "2GiB" },
+  async (request) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      logger.error("GEMINI_API_KEY is not configured");
+      throw new HttpsError('internal', 'AI service not configured');
+    }
+
+    const { videoUrl } = request.data;
+    
+    if (!videoUrl) {
+      throw new HttpsError('invalid-argument', 'Video URL is required');
+    }
+
+    logger.info('Starting video transcription', { videoUrl: videoUrl.substring(0, 100) });
+
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      
+      // Check if it's a YouTube video
+      const youtubeMatch = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+      
+      if (youtubeMatch) {
+        const videoId = youtubeMatch[1];
+        logger.info('YouTube video detected', { videoId });
+        
+        // For YouTube, Gemini can process directly with the watch URL
+        const model = genAI.getGenerativeModel({
+          model: "gemini-2.0-flash",
+          systemInstruction: `You are a professional transcriptionist. Your task is to create an accurate, readable transcript of the video content.`
+        });
+
+        const result = await model.generateContent([
+          {
+            fileData: {
+              fileUri: `https://www.youtube.com/watch?v=${videoId}`,
+              mimeType: "video/mp4"
+            }
+          },
+          `Please transcribe the spoken content of this video. Create a clean, readable transcript that:
+1. Captures all spoken words accurately
+2. Uses proper punctuation and paragraph breaks
+3. Includes speaker labels if there are multiple speakers (e.g., "Speaker 1:", "Host:", "Guest:")
+4. Omits filler words like "um", "uh" unless they're significant
+5. Notes any significant non-verbal elements in [brackets] if relevant (e.g., [applause], [showing slide])
+
+Return ONLY the transcript text, no commentary or metadata.`
+        ]);
+
+        const transcript = result.response.text();
+        logger.info('Transcription complete', { wordCount: transcript.split(/\s+/).length });
+
+        return { 
+          success: true, 
+          transcript,
+          source: 'youtube',
+          videoId
+        };
+      } else if (videoUrl.includes('firebasestorage.googleapis.com')) {
+        // For Firebase Storage videos, use the Gemini File API for large file support
+        logger.info('Firebase Storage video detected, downloading...');
+        
+        const fetch = (await import('node-fetch')).default;
+        const { GoogleAIFileManager, FileState } = await import('@google/generative-ai/server');
+        const fs = await import('fs');
+        const os = await import('os');
+        const path = await import('path');
+        
+        // Download video to temp file
+        const response = await fetch(videoUrl);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to download video: ${response.status}`);
+        }
+        
+        const contentLength = response.headers.get('content-length');
+        const fileSizeMB = contentLength ? parseInt(contentLength) / (1024 * 1024) : 0;
+        logger.info('Video size', { sizeMB: fileSizeMB.toFixed(2) });
+        
+        // Limit to 500MB (Gemini File API supports 2GB but we'll be conservative)
+        if (fileSizeMB > 500) {
+          throw new HttpsError(
+            'failed-precondition', 
+            `Video is too large (${fileSizeMB.toFixed(0)}MB). Maximum size for AI transcription is 500MB. Please use a shorter video or paste the transcript manually.`
+          );
+        }
+        
+        // Save to temp file
+        const tempFilePath = path.join(os.tmpdir(), `video_${Date.now()}.mp4`);
+        const arrayBuffer = await response.arrayBuffer();
+        fs.writeFileSync(tempFilePath, Buffer.from(arrayBuffer));
+        
+        logger.info('Video downloaded to temp file, uploading to Gemini File API...');
+        
+        // Upload to Gemini File API
+        const fileManager = new GoogleAIFileManager(apiKey);
+        const uploadResult = await fileManager.uploadFile(tempFilePath, {
+          mimeType: "video/mp4",
+          displayName: `transcription_${Date.now()}`
+        });
+        
+        logger.info('File uploaded, waiting for processing...', { fileName: uploadResult.file.name });
+        
+        // Wait for file to be processed
+        let file = uploadResult.file;
+        let waitTime = 0;
+        const maxWait = 300000; // 5 minutes max wait
+        
+        while (file.state === FileState.PROCESSING && waitTime < maxWait) {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          waitTime += 5000;
+          file = await fileManager.getFile(file.name);
+          logger.info('File processing status', { state: file.state, waitTime: waitTime / 1000 });
+        }
+        
+        // Clean up temp file
+        try { fs.unlinkSync(tempFilePath); } catch (e) { /* ignore */ }
+        
+        if (file.state === FileState.FAILED) {
+          throw new Error('File processing failed on Gemini servers');
+        }
+        
+        if (file.state !== FileState.ACTIVE) {
+          throw new Error(`File processing timed out (state: ${file.state})`);
+        }
+        
+        logger.info('File ready, generating transcript...');
+        
+        // Generate transcript
+        const model = genAI.getGenerativeModel({
+          model: "gemini-2.0-flash",
+          systemInstruction: `You are a professional transcriptionist. Your task is to create an accurate, readable transcript of the video content.`
+        });
+
+        const result = await model.generateContent([
+          {
+            fileData: {
+              fileUri: file.uri,
+              mimeType: file.mimeType
+            }
+          },
+          `Please transcribe the spoken content of this video. Create a clean, readable transcript that:
+1. Captures all spoken words accurately
+2. Uses proper punctuation and paragraph breaks
+3. Includes speaker labels if there are multiple speakers
+4. Omits unnecessary filler words
+5. Notes any significant visual elements in [brackets] if relevant
+
+Return ONLY the transcript text, no commentary or metadata.`
+        ]);
+
+        const transcript = result.response.text();
+        logger.info('Transcription complete', { wordCount: transcript.split(/\s+/).length });
+        
+        // Clean up the uploaded file from Gemini
+        try { await fileManager.deleteFile(file.name); } catch (e) { /* ignore - will auto-delete in 48h */ }
+
+        return { 
+          success: true, 
+          transcript,
+          source: 'storage',
+          fileSizeMB: fileSizeMB.toFixed(1)
+        };
+      } else {
+        // For other URLs, try to process but may not work
+        logger.warn('Unknown video source, attempting transcription', { videoUrl });
+        
+        throw new HttpsError(
+          'invalid-argument', 
+          'Currently only YouTube and uploaded videos are supported for transcription. For other video sources, please paste the transcript manually.'
+        );
+      }
+    } catch (error) {
+      logger.error("Transcription error:", error);
+      
+      // Provide helpful error messages
+      if (error.message?.includes('SAFETY')) {
+        throw new HttpsError('failed-precondition', 'Video content could not be processed due to safety filters.');
+      }
+      if (error.message?.includes('RESOURCE_EXHAUSTED')) {
+        throw new HttpsError('resource-exhausted', 'Video is too long. Please try a shorter video or paste the transcript manually.');
+      }
+      if (error.code) {
+        throw error; // Re-throw HttpsError
+      }
+      throw new HttpsError('internal', 'Failed to transcribe video: ' + error.message);
+    }
+  }
+);
+
+// ============================================================
+// EXTRACT DOCUMENT TEXT
+// Extracts text content from PDFs using Gemini
+// ============================================================
+
+exports.extractDocumentText = onCall(
+  { cors: true, region: "us-central1", invoker: "public", timeoutSeconds: 540, memory: "2GiB" },
+  async (request) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      logger.error("GEMINI_API_KEY is not configured");
+      throw new HttpsError('internal', 'AI service not configured');
+    }
+
+    const { documentUrl, fileType } = request.data;
+
+    if (!documentUrl) {
+      throw new HttpsError('invalid-argument', 'Document URL is required');
+    }
+
+    logger.info('Starting document text extraction', { documentUrl: documentUrl.substring(0, 100), fileType });
+
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const { GoogleAIFileManager, FileState } = require('@google/generative-ai/server');
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    try {
+      // Check if it's a Firebase Storage URL
+      if (documentUrl.includes('firebasestorage.googleapis.com')) {
+        logger.info('Downloading from Firebase Storage...');
+        
+        // Download the document first, then use Gemini File API
+        const response = await fetch(documentUrl);
+        
+        if (!response.ok) {
+          throw new HttpsError('not-found', 'Could not access document URL');
+        }
+        
+        // Check file size - Gemini File API supports up to 2GB but be conservative
+        const contentLength = response.headers.get('content-length');
+        const fileSizeMB = contentLength ? parseInt(contentLength) / (1024 * 1024) : 0;
+        logger.info('Document file size', { fileSizeMB: fileSizeMB.toFixed(1) });
+        
+        if (fileSizeMB > 100) {
+          throw new HttpsError(
+            'failed-precondition', 
+            `Document is too large (${fileSizeMB.toFixed(0)}MB). Maximum size for extraction is 100MB.`
+          );
+        }
+        
+        // Determine mime type based on file type
+        let mimeType = 'application/pdf';
+        if (fileType === 'DOCX') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        else if (fileType === 'PPTX') mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+        else if (fileType === 'XLSX') mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        
+        // Get extension from file type
+        const ext = (fileType || 'pdf').toLowerCase();
+        
+        // Save to temp file
+        const tempFilePath = path.join(os.tmpdir(), `doc_${Date.now()}.${ext}`);
+        const arrayBuffer = await response.arrayBuffer();
+        fs.writeFileSync(tempFilePath, Buffer.from(arrayBuffer));
+        
+        logger.info('Document downloaded to temp file, uploading to Gemini File API...');
+        
+        // Upload to Gemini File API
+        const fileManager = new GoogleAIFileManager(apiKey);
+        const uploadResult = await fileManager.uploadFile(tempFilePath, {
+          mimeType: mimeType,
+          displayName: `document_${Date.now()}`
+        });
+        
+        logger.info('File uploaded, waiting for processing...', { fileName: uploadResult.file.name });
+        
+        // Wait for file to be processed
+        let file = uploadResult.file;
+        let waitTime = 0;
+        const maxWait = 120000; // 2 minutes max wait for documents
+        
+        while (file.state === FileState.PROCESSING && waitTime < maxWait) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          waitTime += 3000;
+          file = await fileManager.getFile(file.name);
+          logger.info('File processing status', { state: file.state, waitTime: waitTime / 1000 });
+        }
+        
+        // Clean up temp file
+        try { fs.unlinkSync(tempFilePath); } catch (e) { /* ignore */ }
+        
+        if (file.state === FileState.FAILED) {
+          throw new Error('File processing failed on Gemini servers');
+        }
+        
+        if (file.state !== FileState.ACTIVE) {
+          throw new Error(`File processing timed out (state: ${file.state})`);
+        }
+        
+        logger.info('File ready, extracting text...');
+        
+        // Extract text
+        const model = genAI.getGenerativeModel({
+          model: "gemini-2.0-flash",
+          systemInstruction: `You are a professional document transcriber. Your task is to extract all text content from documents accurately while maintaining structure and readability.`
+        });
+
+        const result = await model.generateContent([
+          {
+            fileData: {
+              fileUri: file.uri,
+              mimeType: file.mimeType
+            }
+          },
+          `Please extract ALL the text content from this document. Maintain the structure and formatting as much as possible:
+1. Preserve headings, subheadings, and section breaks
+2. Maintain paragraph structure
+3. Include bullet points and numbered lists
+4. Preserve any important formatting like bold text indicators
+5. For tables, convert to a readable text format
+6. Include page breaks as "---" separators if detectable
+
+Return ONLY the extracted text, no commentary. Do your best to capture every piece of text content.`
+        ]);
+
+        const text = result.response.text();
+        logger.info('Text extraction complete', { wordCount: text.split(/\s+/).length });
+        
+        // Clean up the uploaded file from Gemini
+        try { await fileManager.deleteFile(file.name); } catch (e) { /* ignore - will auto-delete in 48h */ }
+
+        return { 
+          success: true, 
+          text,
+          source: 'storage',
+          fileSizeMB: fileSizeMB.toFixed(1)
+        };
+      } else {
+        // For external URLs, try direct access with Gemini (if it's a public PDF)
+        throw new HttpsError(
+          'invalid-argument', 
+          'Currently only uploaded documents from Media Vault are supported for text extraction. For external documents, please copy/paste the text manually.'
+        );
+      }
+    } catch (error) {
+      logger.error("Document extraction error:", error);
+      
+      if (error.message?.includes('SAFETY')) {
+        throw new HttpsError('failed-precondition', 'Document content could not be processed due to safety filters.');
+      }
+      if (error.message?.includes('UNSUPPORTED')) {
+        throw new HttpsError('failed-precondition', 'This document format is not supported for text extraction. Please paste the text manually.');
+      }
+      if (error.code) {
+        throw error; // Re-throw HttpsError
+      }
+      throw new HttpsError('internal', 'Failed to extract text: ' + error.message);
+    }
+  }
+);
+
+// ============================================================
+// BOOK BUILDER - GENERATE FULL BOOK
+// Analyzes all sources and generates chapter outline + drafts
+// ============================================================
+
+// Helper function to build content string from content_library item for AI consumption
+function buildSourceContent(item) {
+  const parts = [];
+  
+  if (item.description) {
+    parts.push(item.description);
+  }
+  
+  // Extract content from details based on content type
+  if (item.details) {
+    if (item.details.content) parts.push(item.details.content);
+    if (item.details.overview) parts.push(item.details.overview);
+    if (item.details.keyPoints && item.details.keyPoints.length) {
+      parts.push('Key Points: ' + item.details.keyPoints.join(', '));
+    }
+    if (item.details.summary) parts.push(item.details.summary);
+    if (item.details.instructions) parts.push(item.details.instructions);
+    if (item.details.steps && item.details.steps.length) {
+      parts.push('Steps: ' + item.details.steps.map(s => s.title || s).join(' → '));
+    }
+    if (item.details.reflection) parts.push('Reflection: ' + item.details.reflection);
+    if (item.details.applicationTips && item.details.applicationTips.length) {
+      parts.push('Tips: ' + item.details.applicationTips.join(', '));
+    }
+    // Include transcript for videos
+    if (item.details.transcript) {
+      parts.push('Transcript:\n' + item.details.transcript);
+    }
+    // Include full text for documents
+    if (item.details.fullText) {
+      parts.push('Document Content:\n' + item.details.fullText);
+    }
+    // Include key takeaways for videos
+    if (item.details.keyTakeaways) {
+      parts.push('Key Takeaways: ' + item.details.keyTakeaways);
+    }
+  }
+  
+  return parts.join('\n\n') || item.description || 'No content available';
+}
+
+exports.generateFullBook = onCall(
+  { cors: true, region: "us-central1", invoker: "public", timeoutSeconds: 540 },
+  async (request) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      logger.error("GEMINI_API_KEY is not configured");
+      throw new HttpsError('internal', 'AI service not configured');
+    }
+
+    const { bookMetadata, regenerate = false } = request.data;
+    
+    logger.info('Starting full book generation', { regenerate });
+
+    try {
+      // Step 1: Fetch all sources from content_library where includeInBook is true
+      const sourcesSnap = await db.collection('content_library')
+        .where('includeInBook', '==', true)
+        .orderBy('createdAt', 'desc')
+        .get();
+      
+      // Map content_library items to source format
+      const sources = sourcesSnap.docs.map(doc => {
+        const item = doc.data();
+        return {
+          id: doc.id,
+          title: item.title || 'Untitled',
+          type: item.type || 'DOCUMENT',
+          content: buildSourceContent(item),
+          tags: [...(item.programs || []), ...(item.skills || [])],
+          description: item.description || '',
+          createdAt: item.createdAt
+        };
+      });
+      
+      if (sources.length === 0) {
+        throw new HttpsError('failed-precondition', 'No content marked for book. Check "Include in Leadership Playbook" on content items in Media Vault.');
+      }
+
+      logger.info(`Found ${sources.length} sources from content_library`);
+
+      // Step 1b: Fetch notes for this book (both shared and book-specific)
+      const noteCategoryLabels = {
+        context: 'Context/Background',
+        direction: 'Direction',
+        idea: 'Idea',
+        structure: 'Structure',
+        tone: 'Tone/Style',
+        audience: 'Audience',
+        other: 'Other'
+      };
+      
+      let notes = [];
+      try {
+        // Fetch shared notes (bookId is null)
+        const sharedNotesSnap = await db.collection('book_notes')
+          .where('bookId', '==', null)
+          .get();
+        
+        // Fetch book-specific notes if bookId provided
+        let bookSpecificNotes = [];
+        if (bookMetadata?.id) {
+          const bookNotesSnap = await db.collection('book_notes')
+            .where('bookId', '==', bookMetadata.id)
+            .get();
+          bookSpecificNotes = bookNotesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+        
+        notes = [
+          ...sharedNotesSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), scope: 'shared' })),
+          ...bookSpecificNotes.map(n => ({ ...n, scope: 'book-specific' }))
+        ];
+        
+        logger.info(`Found ${notes.length} notes (${sharedNotesSnap.size} shared, ${bookSpecificNotes.length} book-specific)`);
+      } catch (notesError) {
+        logger.warn('Could not fetch notes:', notesError.message);
+        notes = [];
+      }
+      
+      // Extract style prompt from book metadata
+      const stylePrompt = bookMetadata?.stylePrompt || '';
+
+      // Build source summaries for AI
+      const sourceSummaries = sources.map((s, i) => 
+        `${i + 1}. "${s.title}" (${s.type})\n   Tags: ${s.tags?.join(', ') || 'none'}\n   Preview: ${s.content?.substring(0, 500) || '(empty)'}...`
+      ).join('\n\n');
+
+      // Step 2: Generate chapter outline using AI
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash",
+        systemInstruction: `You are an expert book strategist and author specializing in leadership development content. You create compelling, practical book structures.`
+      });
+
+      // Build notes context for outline generation
+      const notesContext = notes.length > 0 
+        ? notes.map(n => `[${noteCategoryLabels[n.category] || n.category}] ${n.title}: ${n.content}`).join('\n\n')
+        : '';
+
+      const outlinePrompt = `You are planning a leadership development book based on the following source materials.
+
+BOOK DETAILS:
+Title: ${bookMetadata?.title || 'The LeaderReps Method'}
+${bookMetadata?.subtitle ? `Subtitle: ${bookMetadata.subtitle}` : 'Subtitle: A Practical Guide to Leadership Development'}
+Target Audience: ${bookMetadata?.targetAudience || 'HR Leaders, L&D Professionals, and Executive Teams'}
+Tone: ${bookMetadata?.tone || 'Professional yet conversational, practical and actionable'}
+${stylePrompt ? `
+BOOK STYLE DIRECTION:
+${stylePrompt}
+` : ''}
+${notesContext ? `
+AUTHOR NOTES & DIRECTION:
+${notesContext}
+` : ''}
+SOURCE MATERIALS AVAILABLE:
+${sourceSummaries}
+
+INSTRUCTIONS:
+Create a compelling book outline. For each chapter, specify:
+1. Chapter title (compelling, specific)
+2. Brief summary (2-3 sentences describing what the chapter covers)
+3. Which source materials (by number) should be referenced
+
+Return ONLY a valid JSON array with this exact structure:
+[
+  {
+    "title": "Chapter Title Here",
+    "summary": "Brief 2-3 sentence description of what this chapter covers.",
+    "sourceRefs": [1, 3, 5]
+  }
+]
+
+The book style and notes should heavily influence the structure, number of chapters, and approach. Create a logical flow appropriate for the style.
+
+Return ONLY the JSON array, no other text.`;
+
+      logger.info('Generating chapter outline...');
+      const outlineResult = await model.generateContent(outlinePrompt);
+      const outlineText = outlineResult.response.text();
+      
+      // Parse the JSON outline
+      let chapters;
+      try {
+        // Extract JSON from response (handle markdown code blocks)
+        const jsonMatch = outlineText.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) {
+          throw new Error('No JSON array found in response');
+        }
+        chapters = JSON.parse(jsonMatch[0]);
+      } catch (parseError) {
+        logger.error('Failed to parse outline JSON:', outlineText);
+        throw new HttpsError('internal', 'AI returned invalid chapter outline format');
+      }
+
+      logger.info(`Generated ${chapters.length} chapters outline`);
+
+      // Step 3: Clear existing chapters if regenerating
+      if (regenerate) {
+        const existingChapters = await db.collection('book_chapters').get();
+        const batch = db.batch();
+        existingChapters.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        logger.info(`Deleted ${existingChapters.size} existing chapters`);
+      }
+
+      // Step 4: Create chapters and generate drafts
+      const results = [];
+      
+      for (let i = 0; i < chapters.length; i++) {
+        const chapter = chapters[i];
+        logger.info(`Processing chapter ${i + 1}/${chapters.length}: ${chapter.title}`);
+
+        // Get source content for this chapter
+        const chapterSources = (chapter.sourceRefs || [])
+          .map(ref => sources[ref - 1])
+          .filter(Boolean);
+
+        const sourceContext = chapterSources.map((s, idx) => 
+          `--- SOURCE: ${s.title} (${s.type}) ---\n${s.content?.substring(0, 6000) || '(No content)'}\n`
+        ).join('\n\n');
+
+        // Build author notes context for chapter generation
+        const authorNotesContext = notes.length > 0 
+          ? notes.map(n => `[${noteCategoryLabels[n.category] || n.category}] ${n.title}: ${n.content}`).join('\n\n')
+          : '';
+
+        // Generate chapter draft
+        const draftPrompt = `You are writing a chapter for a leadership development book.
+
+BOOK: ${bookMetadata?.title || 'The LeaderReps Method'}
+Target Audience: ${bookMetadata?.targetAudience || 'Business leaders and HR professionals'}
+Tone: ${bookMetadata?.tone || 'Professional yet conversational'}
+${stylePrompt ? `
+BOOK STYLE DIRECTION (IMPORTANT - follow this closely):
+${stylePrompt}
+` : ''}
+CHAPTER ${i + 1}: ${chapter.title}
+Summary: ${chapter.summary}
+
+SOURCE MATERIALS TO SYNTHESIZE:
+${sourceContext || '(No specific sources assigned - draw from general leadership knowledge)'}
+${authorNotesContext ? `
+
+AUTHOR NOTES & DIRECTION:
+Consider these notes from the author when writing this chapter. They provide important context, tone guidance, and ideas:
+
+${authorNotesContext}` : ''}
+
+INSTRUCTIONS:
+1. Write a compelling chapter that synthesizes the source materials and follows the book style direction
+2. Use a voice and approach consistent with the style direction provided
+3. Make it engaging, practical, and appropriate for the target audience
+4. Don't reference sources directly - integrate concepts naturally
+5. Make it publisher-ready quality
+
+Write the full chapter now:`;
+
+        try {
+          const draftResult = await model.generateContent(draftPrompt);
+          const draftContent = draftResult.response.text();
+
+          // Save chapter to Firestore
+          const chapterData = {
+            bookId: bookMetadata?.id || null,
+            order: i + 1,
+            title: chapter.title,
+            summary: chapter.summary,
+            content: draftContent,
+            status: 'drafting',
+            sourceRefs: chapterSources.map(s => s.id),
+            wordCount: draftContent.split(/\s+/).filter(Boolean).length,
+            createdBy: 'ai-generator',
+            lastEditedBy: 'ai-generator',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
+
+          const chapterRef = await db.collection('book_chapters').add(chapterData);
+          
+          results.push({
+            id: chapterRef.id,
+            order: i + 1,
+            title: chapter.title,
+            wordCount: chapterData.wordCount,
+            status: 'success'
+          });
+
+          logger.info(`Chapter ${i + 1} created: ${chapterData.wordCount} words`);
+
+          // Small delay to avoid rate limiting
+          if (i < chapters.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } catch (chapterError) {
+          logger.error(`Error generating chapter ${i + 1}:`, chapterError);
+          results.push({
+            order: i + 1,
+            title: chapter.title,
+            status: 'failed',
+            error: chapterError.message
+          });
+        }
+      }
+
+      // Calculate totals
+      const totalWords = results.reduce((sum, r) => sum + (r.wordCount || 0), 0);
+      const successCount = results.filter(r => r.status === 'success').length;
+
+      logger.info(`Book generation complete: ${successCount}/${chapters.length} chapters, ${totalWords} words`);
+
+      return {
+        success: true,
+        chaptersGenerated: successCount,
+        chaptersTotal: chapters.length,
+        totalWordCount: totalWords,
+        chapters: results
+      };
+
+    } catch (error) {
+      logger.error("Full book generation error:", error);
+      throw new HttpsError('internal', 'Failed to generate book: ' + error.message);
+    }
+  }
+);
+
+
+// ============================================================================
+// LEADERSHIP LAB — AI Coaching Engine
+// ============================================================================
+
+const LL_PREFIX = 'll-';
+
+/** Get the Firebase project ID at runtime. */
+function getLabProjectId() {
+  return process.env.GCLOUD_PROJECT
+    || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId)
+    || 'leaderreps-pd-platform';
+}
+
+/** Build a Cloud Functions URL dynamically based on project ID. */
+function labFunctionUrl(functionName) {
+  return `https://us-central1-${getLabProjectId()}.cloudfunctions.net/${functionName}`;
+}
+
+/** Get the Leadership Lab hosting domain based on project ID. */
+function labHostingDomain() {
+  const projectId = getLabProjectId();
+  if (projectId === 'leaderreps-prod') return 'https://leaderreps-lab-prod.web.app';
+  if (projectId === 'leaderreps-test') return 'https://leaderreps-lab-test.web.app';
+  return 'https://leaderreps-lab.web.app';
+}
+
+const LL_WEEK_THEMES = [
+  "Reinforcing — Recognizing & Reinforcing Great Leadership",
+  "One-on-One — Mastering the 1:1 Conversation",
+  "Redirecting — Giving Feedback That Actually Lands",
+  "Readiness — Handling Pushback & Resistance",
+  "Graduation — Leading With Confidence",
+];
+
+const LL_EXPERIMENTS = [
+  "Before your first meeting today, write down the one thing each person in that room does better than anyone else on the team. During the meeting, find a natural moment to name ONE of those things — out loud, in front of the group. Watch what happens to the room.",
+  "The 2-Minute Silence: In your next 1:1, ask your most important question. After they answer, say nothing. Just stay present for a full two minutes. The real answer almost always comes after the first one.",
+  "Think of the person you MOST need to give redirecting feedback to — the one you've been putting off. Write it in one sentence: 'When you [behavior], the impact is [consequence].' Now deliver it today. Not tomorrow. Today.",
+  "The Columbo Method: Next time someone pushes back, say 'You might be right — help me see what I'm missing.' Then actually listen. Track three things: their energy shift, how the conversation changes, and your own impulse to fight back.",
+  "Before your most important meeting this week, write down: What would the leader I'm becoming do differently than the leader I was 5 weeks ago? Then walk in and do exactly that. After, tell your coach what happened.",
+];
+
+/** Safely clamp a weekNumber to a valid array index for themes/experiments. */
+function weekIdx(weekNumber) {
+  return Math.max(0, Math.min(weekNumber - 1, LL_WEEK_THEMES.length - 1));
+}
+
+/**
+ * evolveProfileIfStale — Background profile evolution.
+ * Checks if the Leadership Profile hasn't been updated recently, and if stale,
+ * runs a lightweight profile update from recent conversations.
+ * Threshold: at least 3 days AND at least 3 conversations since last update.
+ */
+async function evolveProfileIfStale(uid, apiKey) {
+  const db = admin.firestore();
+  const lpRef = db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`);
+  const lpSnap = await lpRef.get();
+  if (!lpSnap.exists) return;
+
+  const profile = lpSnap.data();
+  const lastUpdated = profile.updatedAt?.toDate?.() || profile.createdAt?.toDate?.() || new Date(0);
+  const daysSinceUpdate = (Date.now() - lastUpdated.getTime()) / (1000 * 60 * 60 * 24);
+
+  // Not stale yet — at least 3 days between updates
+  if (daysSinceUpdate < 3) return;
+
+  // Check if there are enough new conversations since last update
+  const recentConvos = await db
+    .collection(`${LL_PREFIX}users/${uid}/conversations`)
+    .where("updatedAt", ">", profile.updatedAt || profile.createdAt)
+    .limit(3)
+    .get();
+
+  if (recentConvos.size < 3) return;
+
+  logger.info("evolveProfileIfStale: profile is stale, updating", { uid, daysSinceUpdate });
+
+  // Load last 10 conversations for analysis
+  const convosSnap = await db
+    .collection(`${LL_PREFIX}users/${uid}/conversations`)
+    .orderBy("updatedAt", "desc")
+    .limit(10)
+    .get();
+
+  const transcripts = [];
+  convosSnap.forEach((doc) => {
+    const data = doc.data();
+    const msgs = (data.messages || [])
+      .map((m) => `${m.role === "user" ? "LEADER" : "COACH"}: ${m.content}`)
+      .join("\n");
+    transcripts.push(`--- Conversation (${data.mode}, Week ${data.weekNumber}) ---\n${msgs}`);
+  });
+
+  const currentProfileJSON = JSON.stringify({
+    presentedSelf: profile.presentedSelf || "",
+    observedSelf: profile.observedSelf || "",
+    tensions: profile.tensions || [],
+    corePatterns: profile.corePatterns || [],
+    keyInsights: profile.keyInsights || [],
+    growthEdges: profile.growthEdges || [],
+    coachingApproach: profile.coachingApproach || "",
+  });
+
+  const anthropic = new Anthropic({ apiKey });
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 2048,
+    system: `You are a leadership psychologist updating a leader's behavioral profile based on new conversation data.
+
+CURRENT PROFILE:
+${currentProfileJSON}
+
+Analyze the new conversations below. Update the profile to reflect any new observations, shifts in patterns, emerging tensions, or growth. Preserve existing insights that are still valid. Add new ones that emerge. Remove or revise any that are contradicted by new evidence.
+
+Return ONLY a JSON object with the same structure:
+{
+  "presentedSelf": "Updated 2-3 sentence summary",
+  "observedSelf": "Updated 2-3 sentence summary of observed patterns",
+  "tensions": [{"left": "...", "right": "...", "position": 0-100, "evidence": "..."}],
+  "corePatterns": ["Pattern in 1 sentence"],
+  "keyInsights": [{"insight": "...", "evidence": "..."}],
+  "growthEdges": ["..."],
+  "coachingApproach": "Updated 2-sentence coaching recommendation"
+}
+
+Return ONLY valid JSON. No markdown, no explanation.`,
+    messages: [{ role: "user", content: transcripts.join("\n\n") }],
+  });
+
+  const profileText = response.content[0]?.text || "{}";
+  let updatedProfile;
+  try {
+    updatedProfile = JSON.parse(profileText);
+  } catch {
+    logger.warn("evolveProfileIfStale: failed to parse profile JSON", { uid });
+    return;
+  }
+
+  await lpRef.set(
+    {
+      ...updatedProfile,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastAnalyzedAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastEvolutionSource: "auto",
+    },
+    { merge: true }
+  );
+
+  logger.info("evolveProfileIfStale: profile updated", { uid });
+}
+
+/**
+ * processLabMessage — Shared AI coaching logic for both web app and SMS.
+ *
+ * @param {string} uid - Firestore user ID
+ * @param {string} text - User message
+ * @param {object} options
+ * @param {string} [options.conversationId] - Existing conversation to continue
+ * @param {string} [options.mode] - Coaching mode (coach, practice, mirror, debrief, onboarding)
+ * @param {number} [options.weekNumber] - Current milestone (1-5)
+ * @param {string} [options.channel] - "app" or "sms"
+ * @param {string} [options.interactionType] - SMS interaction type for prompt context
+ * @returns {{ response: string, conversationId: string, usage: object }}
+ */
+async function processLabMessage(uid, text, options = {}) {
+  const {
+    conversationId,
+    mode = "coach",
+    weekNumber = 1,
+    channel = "app",
+    interactionType,
+  } = options;
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error("ANTHROPIC_API_KEY not configured");
+  }
+
+  const sanitizedText = text.trim().slice(0, 5000);
+  const db = admin.firestore();
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const nowISO = new Date().toISOString();
+
+  // --- Load user profile ---
+  const userDocRef = db.doc(`${LL_PREFIX}users/${uid}`);
+  const userSnap = await userDocRef.get();
+  const userProfile = userSnap.exists ? userSnap.data() : {};
+  const userName = userProfile.displayName || userProfile.firstName || "there";
+
+  // --- Load Leadership Profile ---
+  const lpRef = db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`);
+  const lpSnap = await lpRef.get();
+  const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
+
+  // --- Resolve or create conversation ---
+  let convoRef;
+  let existingMessages = [];
+  let simulationPrompt = null;
+
+  if (conversationId) {
+    convoRef = db.doc(`${LL_PREFIX}users/${uid}/conversations/${conversationId}`);
+    const convoSnap = await convoRef.get();
+    if (!convoSnap.exists) {
+      throw new Error("Conversation not found");
+    }
+    existingMessages = convoSnap.data().messages || [];
+    // If this is a simulation conversation, use its stored system prompt
+    if (convoSnap.data().simulation?.systemPrompt) {
+      simulationPrompt = convoSnap.data().simulation.systemPrompt;
+    }
+  } else {
+    convoRef = db.collection(`${LL_PREFIX}users/${uid}/conversations`).doc();
+    await convoRef.set({
+      mode,
+      weekNumber,
+      channel,
+      interactionType: interactionType || null,
+      messages: [],
+      summary: "",
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  // --- Append user message ---
+  const userMessage = { role: "user", content: sanitizedText, timestamp: nowISO, channel };
+  existingMessages.push(userMessage);
+
+  // --- Build system prompt ---
+  // Use stored simulation prompt for practice-mode SMS, otherwise build standard prompt
+  const wIdx = weekIdx(weekNumber);
+  const systemPrompt = simulationPrompt || buildLabSystemPrompt({
+    mode,
+    userName,
+    weekNumber,
+    weekTheme: LL_WEEK_THEMES[wIdx],
+    experiment: LL_EXPERIMENTS[wIdx],
+    leadershipProfile,
+    messageCount: existingMessages.length,
+    channel,
+    interactionType,
+    phase: userProfile.phase || (weekNumber > 5 ? "ascent" : "foundation"),
+  });
+
+  // --- Prepare messages for Claude ---
+  const claudeMessages = existingMessages.map((m) => ({
+    role: m.role === "user" ? "user" : "assistant",
+    content: m.content,
+  }));
+
+  // --- Call Claude ---
+  // SMS responses should be shorter to fit text messages well
+  const maxTokens = channel === "sms" ? 400 : 1024;
+  const anthropic = new Anthropic({ apiKey });
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: maxTokens,
+    system: systemPrompt,
+    messages: claudeMessages,
+  });
+
+  const aiText = response.content[0]?.text || "I'm here. Tell me more.";
+  const aiMessage = { role: "assistant", content: aiText, timestamp: new Date().toISOString(), channel };
+  existingMessages.push(aiMessage);
+
+  // --- Save to Firestore ---
+  await convoRef.update({
+    messages: existingMessages,
+    updatedAt: now,
+  });
+
+  logger.info("processLabMessage response generated", {
+    uid,
+    mode,
+    channel,
+    conversationId: convoRef.id,
+    messageCount: existingMessages.length,
+    inputTokens: response.usage?.input_tokens,
+    outputTokens: response.usage?.output_tokens,
+  });
+
+  // --- Auto-evolve Leadership Profile ---
+  // Fire-and-forget: check if the profile is stale and trigger an update.
+  // Runs after every 10th user message since last profile update.
+  if (leadershipProfile && mode !== "onboarding") {
+    const userMsgCount = existingMessages.filter((m) => m.role === "user").length;
+    // Only check on every 5th message in a conversation to reduce overhead
+    if (userMsgCount % 5 === 0) {
+      evolveProfileIfStale(uid, apiKey).catch((err) =>
+        logger.warn("Background profile evolution failed", { uid, error: err.message })
+      );
+    }
+  }
+
+  return {
+    response: aiText,
+    conversationId: convoRef.id,
+    usage: response.usage,
+  };
+}
+
+/**
+ * Send an SMS via Twilio for Leadership Lab.
+ * @param {string} to - Phone number in E.164 format
+ * @param {string} body - Message text
+ * @returns {Promise<string>} Twilio message SID
+ */
+async function sendLabSms(to, body) {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const auth = process.env.TWILIO_AUTH_TOKEN;
+  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+  const from = process.env.TWILIO_PHONE_NUMBER;
+
+  if (!sid || !auth || (!messagingServiceSid && !from)) {
+    logger.error("Twilio credentials not configured for Lab SMS");
+    throw new Error("SMS service not configured");
+  }
+
+  const client = twilio(sid, auth);
+  const msgOptions = { body, to };
+  if (messagingServiceSid) {
+    msgOptions.messagingServiceSid = messagingServiceSid;
+  } else {
+    msgOptions.from = from;
+  }
+  const result = await client.messages.create(msgOptions);
+  logger.info(`Lab SMS sent to ${to}: ${result.sid}`);
+  return result.sid;
+}
+
+/**
+ * Normalize a phone number to E.164 format.
+ * @param {string} phone - Raw phone number
+ * @returns {string} E.164 formatted phone number
+ */
+function normalizePhoneE164(phone) {
+  if (!phone) return phone;
+  // Strip all non-digit characters except leading +
+  let cleaned = phone.replace(/[^\d+]/g, "");
+  // If it starts with +, keep it; otherwise normalize
+  if (cleaned.startsWith("+")) return cleaned;
+  // Strip leading 1 for US numbers and re-add with +
+  if (cleaned.startsWith("1") && cleaned.length === 11) return `+${cleaned}`;
+  // Assume US number if 10 digits
+  if (cleaned.length === 10) return `+1${cleaned}`;
+  // Fallback — add + prefix
+  return `+${cleaned}`;
+}
+
+/**
+ * Look up a Lab user by phone number.
+ * Normalizes to E.164 before querying.
+ * @param {string} phone - Phone number (any format)
+ * @returns {{ uid: string, profile: object } | null}
+ */
+async function lookupLabUserByPhone(phone) {
+  const db = admin.firestore();
+  const normalized = normalizePhoneE164(phone);
+  const snap = await db
+    .collection(`${LL_PREFIX}users`)
+    .where("phone", "==", normalized)
+    .limit(1)
+    .get();
+
+  if (snap.empty) return null;
+  const doc = snap.docs[0];
+  return { uid: doc.id, profile: doc.data() };
+}
+
+/**
+ * Get the current week number for a cohort based on its start date.
+ * Uses Eastern Time to match the cohort schedule.
+ * @param {Date|FirebaseTimestamp} startDate
+ * @param {number} [maxWeeks=6] - Maximum week number (from cohort weekCount)
+ */
+function getCohortWeekNumber(startDate, maxWeeks = 6, { clamp = true } = {}) {
+  const start = startDate instanceof Date ? startDate : startDate.toDate();
+  // Use Eastern Time for consistent day boundaries
+  const nowET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const startET = new Date(start.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const diffMs = nowET - startET;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const week = Math.floor(diffDays / 7) + 1;
+  if (!clamp) return Math.max(1, week);
+  return Math.max(1, Math.min(week, maxWeeks));
+}
+
+/**
+ * Get the active SMS conversation for a user (today in ET), or null.
+ */
+async function getActiveSmsConversation(uid) {
+  const db = admin.firestore();
+  // Use Eastern Time for "today" boundary so conversations don't fragment at 7PM ET
+  const todayET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+  todayET.setHours(0, 0, 0, 0);
+
+  const snap = await db
+    .collection(`${LL_PREFIX}users/${uid}/conversations`)
+    .where("channel", "==", "sms")
+    .where("createdAt", ">=", todayET)
+    .orderBy("createdAt", "desc")
+    .limit(1)
+    .get();
+
+  if (snap.empty) return null;
+  return { conversationId: snap.docs[0].id, data: snap.docs[0].data() };
+}
+
+// ---- Exported Cloud Functions ----
+
+/**
+ * labCoach — Web app callable. Thin wrapper around processLabMessage.
+ */
+exports.labCoach = onCall(
+  {
+    secrets: ["ANTHROPIC_API_KEY"],
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-test\.web\.app$/,
+      /leaderreps-test\.firebaseapp\.com$/,
+      /leaderreps-prod\.web\.app$/,
+      /leaderreps-prod\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 10,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "User must be authenticated");
+    }
+
+    const authUid = request.auth.uid;
+    const { text, conversationId, mode = "coach", weekNumber = 1 } = request.data || {};
+
+    if (!text || typeof text !== "string" || text.trim().length === 0) {
+      throw new HttpsError("invalid-argument", "Message text is required");
+    }
+
+    // Resolve the ll-users doc ID (may differ from auth UID for SMS-originated users)
+    const db = admin.firestore();
+    let uid = authUid;
+    const directSnap = await db.doc(`${LL_PREFIX}users/${authUid}`).get();
+    if (!directSnap.exists) {
+      // Check for SMS user linked via firebaseAuthUid
+      const q = await db.collection(`${LL_PREFIX}users`)
+        .where("firebaseAuthUid", "==", authUid)
+        .limit(1)
+        .get();
+      if (!q.empty) {
+        uid = q.docs[0].id;
+      }
+    }
+
+    try {
+      const result = await processLabMessage(uid, text, {
+        conversationId,
+        mode,
+        weekNumber,
+        channel: "app",
+      });
+
+      // Auto-complete onboarding after enough exchanges
+      if (mode === "onboarding" && result.conversationId) {
+        const convoSnap = await db
+          .doc(`${LL_PREFIX}users/${uid}/conversations/${result.conversationId}`)
+          .get();
+        const msgs = convoSnap.exists ? convoSnap.data().messages || [] : [];
+        const userMsgCount = msgs.filter((m) => m.role === "user").length;
+
+        if (userMsgCount >= 4) {
+          try {
+            const profile = await completeLabOnboarding(uid, result.conversationId);
+            result.onboardingComplete = true;
+            result.profile = {
+              presentedSelf: profile.presentedSelf,
+              tensions: profile.tensions,
+              growthEdges: profile.growthEdges,
+            };
+          } catch (e) {
+            logger.warn("Web onboarding auto-completion failed", { uid, error: e.message });
+          }
+        }
+      }
+
+      return result;
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labCoach error", error);
+      throw new HttpsError("internal", "Failed to generate coaching response");
+    }
+  }
+);
+
+/**
+ * labCompleteOnboarding — Called after the onboarding conversation concludes.
+ * Web app callable — delegates to shared completeLabOnboarding().
+ */
+exports.labCompleteOnboarding = onCall(
+  {
+    secrets: ["ANTHROPIC_API_KEY"],
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-test\.web\.app$/,
+      /leaderreps-test\.firebaseapp\.com$/,
+      /leaderreps-prod\.web\.app$/,
+      /leaderreps-prod\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "User must be authenticated");
+    }
+
+    const authUid = request.auth.uid;
+    const { conversationId } = request.data || {};
+
+    if (!conversationId || typeof conversationId !== "string") {
+      throw new HttpsError("invalid-argument", "conversationId is required and must be a string");
+    }
+
+    // Resolve the ll-users doc ID (may differ from auth UID for SMS-originated users)
+    const db = admin.firestore();
+    let uid = authUid;
+    const directSnap = await db.doc(`${LL_PREFIX}users/${authUid}`).get();
+    if (!directSnap.exists) {
+      const q = await db.collection(`${LL_PREFIX}users`)
+        .where("firebaseAuthUid", "==", authUid)
+        .limit(1)
+        .get();
+      if (!q.empty) uid = q.docs[0].id;
+    }
+
+    try {
+      const profile = await completeLabOnboarding(uid, conversationId);
+
+      logger.info("labCompleteOnboarding success", { uid, conversationId });
+
+      return {
+        success: true,
+        profile: {
+          presentedSelf: profile.presentedSelf,
+          tensions: profile.tensions,
+          growthEdges: profile.growthEdges,
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labCompleteOnboarding error", error);
+      throw new HttpsError("internal", "Failed to complete onboarding");
+    }
+  }
+);
+
+/**
+ * labUpdateProfile — Re-analyzes recent conversations to update the Leadership Profile.
+ *
+ * Can be called periodically or after significant conversations.
+ */
+exports.labUpdateProfile = onCall(
+  {
+    secrets: ["ANTHROPIC_API_KEY"],
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-test\.web\.app$/,
+      /leaderreps-test\.firebaseapp\.com$/,
+      /leaderreps-prod\.web\.app$/,
+      /leaderreps-prod\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "User must be authenticated");
+    }
+
+    const uid = request.auth.uid;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new HttpsError("internal", "AI service not configured");
+    }
+
+    const db = admin.firestore();
+
+    try {
+      // Load current profile
+      const lpRef = db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`);
+      const lpSnap = await lpRef.get();
+      const currentProfile = lpSnap.exists ? lpSnap.data() : {};
+
+      // Load recent conversations (last 10)
+      const convosSnap = await db
+        .collection(`${LL_PREFIX}users/${uid}/conversations`)
+        .orderBy("updatedAt", "desc")
+        .limit(10)
+        .get();
+
+      if (convosSnap.empty) {
+        return { success: true, updated: false, reason: "No conversations to analyze" };
+      }
+
+      // Build transcript of recent conversations
+      const transcripts = [];
+      convosSnap.forEach((doc) => {
+        const data = doc.data();
+        const msgs = (data.messages || [])
+          .map((m) => `${m.role === "user" ? "LEADER" : "COACH"}: ${m.content}`)
+          .join("\n");
+        transcripts.push(`--- Conversation (${data.mode}, Week ${data.weekNumber}) ---\n${msgs}`);
+      });
+
+      const fullTranscript = transcripts.join("\n\n");
+      const currentProfileJSON = JSON.stringify({
+        presentedSelf: currentProfile.presentedSelf || "",
+        observedSelf: currentProfile.observedSelf || "",
+        tensions: currentProfile.tensions || [],
+        corePatterns: currentProfile.corePatterns || [],
+        keyInsights: currentProfile.keyInsights || [],
+        growthEdges: currentProfile.growthEdges || [],
+      });
+
+      const anthropic = new Anthropic({ apiKey });
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2048,
+        system: `You are a leadership psychologist updating a leader's behavioral profile based on new conversation data.
+
+CURRENT PROFILE:
+${currentProfileJSON}
+
+Analyze the new conversations below. Update the profile to reflect any new observations, shifts in patterns, emerging tensions, or growth. Preserve existing insights that are still valid. Add new ones that emerge.
+
+Return ONLY a JSON object with the same structure:
+{
+  "presentedSelf": "Updated 2-3 sentence summary",
+  "observedSelf": "Updated 2-3 sentence summary of observed patterns",
+  "tensions": [{"left": "...", "right": "...", "position": 0-100, "evidence": "..."}],
+  "corePatterns": ["Pattern in 1 sentence"],
+  "keyInsights": [{"insight": "...", "evidence": "..."}],
+  "growthEdges": ["..."],
+  "coachingApproach": "Updated 2-sentence coaching recommendation"
+}
+
+Return ONLY valid JSON. No markdown, no explanation.`,
+        messages: [{ role: "user", content: fullTranscript }],
+      });
+
+      const profileText = response.content[0]?.text || "{}";
+      let updatedProfile;
+      try {
+        updatedProfile = JSON.parse(profileText);
+      } catch {
+        logger.warn("Failed to parse updated profile JSON");
+        return { success: false, reason: "Failed to parse profile update" };
+      }
+
+      await lpRef.set(
+        {
+          ...updatedProfile,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          lastAnalyzedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      logger.info("labUpdateProfile success", { uid });
+
+      return { success: true, updated: true };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labUpdateProfile error", error);
+      throw new HttpsError("internal", "Failed to update profile");
+    }
+  }
+);
+
+/**
+ * Build the system prompt for Leadership Lab coaching modes.
+ */
+function buildLabSystemPrompt({ mode, userName, weekNumber, weekTheme, experiment, leadershipProfile, messageCount, channel, interactionType, phase }) {
+  // --- Base context ---
+  const isAscent = phase === "ascent" || weekNumber > 5;
+
+  let prompt;
+  if (isAscent) {
+    prompt = `You are the AI coach for Leadership Lab. ${userName} has completed the Arena Foundations program and is now in the Ascent Phase — an ongoing, open-ended coaching relationship.
+
+Your purpose: continue building your model of this leader's identity, deepen self-awareness, and help them apply what they learned during Foundations to evolving real-world challenges. You know them well by now — coach accordingly.
+
+They are in Week ${weekNumber} overall. There is no end date. You are their permanent leadership coach.
+`;
+  } else {
+    prompt = `You are the AI coach for Leadership Lab — a text-based coaching companion that supports leaders going through the Arena Foundations in-person training program. Your job is to fill the gap between live training sessions: reinforce what was taught, provide quick practice moments, and keep leaders engaged between sessions. Be warm, concise, a little fun — never annoying.
+
+The program has 5 milestones: Reinforcing → One-on-One → Redirecting → Readiness → Graduation. Each milestone is gated by an in-person training session.
+
+${weekNumber > 0 ? `You are coaching ${userName}, who is currently in Milestone ${weekNumber}: "${weekTheme}".
+
+This week's practice challenge: "${experiment}"` : `You are coaching ${userName}, who is just beginning the program.`}
+
+Your purpose: reinforce the concepts being taught in live sessions, help leaders practice between meetings, and build a model of who they are as a leader — then use that to create moments of genuine self-awareness.
+`;
+  }
+
+
+  // --- Leadership Profile context ---
+  if (leadershipProfile) {
+    prompt += `
+LEADERSHIP PROFILE — what you know about ${userName}:
+`;
+    if (leadershipProfile.presentedSelf) {
+      prompt += `PRESENTED SELF (how they see themselves): ${leadershipProfile.presentedSelf}\n`;
+    }
+    if (leadershipProfile.observedSelf) {
+      prompt += `OBSERVED SELF (what you've noticed): ${leadershipProfile.observedSelf}\n`;
+    }
+    if (leadershipProfile.tensions && leadershipProfile.tensions.length > 0) {
+      const tensionStr = leadershipProfile.tensions
+        .map((t) => `${t.left} ←→ ${t.right} (leans ${t.position > 50 ? t.right : t.left})`)
+        .join("; ");
+      prompt += `TENSIONS: ${tensionStr}\n`;
+    }
+    if (leadershipProfile.corePatterns && leadershipProfile.corePatterns.length > 0) {
+      prompt += `CORE PATTERNS: ${leadershipProfile.corePatterns.join("; ")}\n`;
+    }
+    if (leadershipProfile.growthEdges && leadershipProfile.growthEdges.length > 0) {
+      prompt += `GROWTH EDGES: ${leadershipProfile.growthEdges.join("; ")}\n`;
+    }
+    if (leadershipProfile.coachingApproach) {
+      prompt += `COACHING APPROACH: ${leadershipProfile.coachingApproach}\n`;
+    }
+  } else {
+    prompt += `\nLEADERSHIP PROFILE: Not yet established. This leader is new. Listen deeply and start building your understanding.\n`;
+  }
+
+  // --- Mode-specific instructions ---
+  const modePrompts = {
+    coach: `
+MODE: COACH — Open, warm, but incisive coaching conversation.
+
+RULES:
+- Ask ONE question at a time. Never stack questions.
+- Your questions should be impossible to answer without genuine reflection.
+- Connect what they say now to patterns from previous conversations when relevant.
+- Never give advice directly. Help them discover insights themselves.
+- Be warm but never soft. Real growth requires real honesty.
+- Keep responses under 100 words unless the moment requires more.
+- Notice what they DON'T say as much as what they do.
+- When you spot a gap between their Presented Self and Observed Self, name it gently but clearly.
+- Use their name occasionally — not every message.
+- If they deflect with humor or intellectualizing, gently name it.`,
+
+    practice: `
+MODE: PRACTICE — Situation Simulator. You role-play real scenarios.
+
+RULES:
+- The user will describe a real situation they want to rehearse. You play the other person.
+- Stay in character as the other person. Don't break character to coach.
+- Be realistic — don't make it easy. Real people push back, get defensive, go quiet.
+- After 4-6 exchanges in character, pause and step OUT of character to debrief.
+- In debrief: ask "What did you notice? Where did you fall back on old patterns?"
+- If their approach reveals a gap in their Leadership Profile, note it.
+- When starting, ask: "Who am I playing, and what's the situation?"`,
+
+    mirror: `
+MODE: MIRROR — Reflecting behavioral patterns back to the leader.
+
+RULES:
+- Share specific observations with evidence (their own words when possible).
+- Present the gap: what they say about themselves vs. what you've observed.
+- Be direct but not cruel. This is confrontation in service of growth.
+- Ask: "Does this land? Or does it feel off?" — give them space to push back.
+- If they dismiss a valid observation, gently name the dismissal pattern.
+- Reference specific tensions and where they sit on each spectrum.
+- This mode is powerful — use it to create genuine "aha" moments.`,
+
+    debrief: `
+MODE: DEBRIEF — Structured weekly reflection on the experiment.
+
+RULES:
+- Focus on this week's experiment: "${experiment}"
+- Walk through: What happened? What surprised you? What was hard? What did you learn?
+- Connect the experiment to their broader leadership patterns.
+- Help them see growth — even small shifts matter.
+- End with: "What's one thing you want to carry into next week?"
+- Keep it grounded in specifics, not abstract philosophizing.
+- Celebrate genuine effort even when results were messy.`,
+
+    onboarding: `
+MODE: ONBOARDING — Building the initial Leadership Profile through conversation.
+
+This is your FIRST conversation with this leader. You know nothing about them yet. Your job is to understand who they are as a leader — not through a form, but through genuine curiosity.
+
+IMPORTANT: This should be a SHORT conversation — 4-5 exchanges total. Users are busy leaders. Get what you need efficiently while keeping it warm and human.
+
+CONVERSATION FLOW:
+1. Welcome + ask about their role and team (1 message)
+2. "What kind of leader do you think you are? And what's the hardest part right now?" (1 message)
+3. Follow up on what they said — dig into one thing that feels real (1 message)
+4. "If your team described working with you — what would they say? And what do you hope they wouldn't?" (1 message)
+5. Wrap up: reflect back 1-2 sharp observations about their leadership, and tell them you're ready to start. (1 message)
+
+RULES:
+- Keep it to 4-5 total exchanges. Do NOT keep asking new questions after exchange 5.
+- Combine related questions into one message when natural.
+- Be warm and genuinely curious — this sets the tone for the entire program.
+- Keep responses conversational and under 60 words.
+- Listen for: values, fears, blind spots, self-awareness signals.
+${messageCount >= 8 ? "- YOU MUST WRAP UP NOW. Summarize what you heard, share 1-2 observations, and tell them you're excited to start working together. Do not ask another question." : ""}
+${messageCount >= 6 ? "- Begin wrapping up soon. One more exchange at most before your summary." : ""}`,
+  };
+
+  prompt += modePrompts[mode] || modePrompts.coach;
+
+  // --- Universal rules ---
+  prompt += `
+
+UNIVERSAL RULES (all modes):
+- Never mention that you're an AI, a language model, or that you have a "system prompt."
+- Never use bullet points in your responses — write naturally, like a real conversation.
+- Never say "That's a great question" or "Thanks for sharing." Just respond.
+- If you don't know something, say so. Don't fabricate insights.
+- Match the leader's energy — if they're brief, be brief. If they're reflective, go deeper.
+- This is a conversation, not a coaching session template. Be human.`;
+
+  // --- SMS channel adjustments ---
+  if (channel === "sms") {
+    prompt += `
+
+SMS CHANNEL RULES (in addition to above):
+- Keep responses under 320 characters (2 SMS segments max). Be concise.
+- No formatting — no asterisks, no markdown, no bullet points.
+- Write like a text message from a trusted mentor, not a chatbot.
+- One thought per message. If you have two things to say, say the more important one.
+- Match texting energy — casual but substantive.`;
+
+    if (interactionType) {
+      const smsTypeInstructions = {
+        "live-ammo": "This is a LIVE-AMMO QUESTION — connected to something real happening in their work today. Be specific and timely.",
+        "pattern-interrupt": "This is a PATTERN INTERRUPT — an unexpected observation that disrupts autopilot thinking. Be surprising but grounded in evidence from their profile.",
+        "micro-experiment": "This is a MICRO-EXPERIMENT — suggest a tiny 30-second behavioral experiment they can try RIGHT NOW. Make it concrete and doable.",
+        "moment-capture": "This is a MOMENT CAPTURE — they're reporting a leadership moment in real-time. Capture the raw experience before they rationalize it. Ask what they felt, not what they think.",
+        "connector": "This is a CONNECTOR — link something they just said to something they said in a previous conversation. Show the pattern. Let them sit with it.",
+        "pre-game": "This is a PRE-GAME — mental warm-up before a known high-stakes moment. Help them show up intentionally, not reactively.",
+        "post-game": "This is a POST-GAME — they just went through something significant. Capture what happened while it's fresh. Don't coach yet — just help them process.",
+        "provocation": "This is a PROVOCATION — a deliberately uncomfortable observation. Use sparingly. It should be something true that they haven't been willing to see. Say it with care but don't soften it into nothing.",
+        "cohort-thread": "This is a COHORT THREAD — share an anonymous insight from their cohort peers. Create belonging and normalization. Never reveal who said it.",
+        "celebration": "This is a CELEBRATION — specific, evidence-backed recognition of genuine growth. Reference exactly what changed and when. No generic praise.",
+        "reveal": "This is a REVEAL FOLLOW-UP — you previously sent a strategic observation about a pattern or tension. The leader is responding. Hold the mirror steady. Don't soften what you said. Don't over-explain. Let them process. Ask what landed, what they're sitting with. If they push back, don't retreat — get curious about the pushback. This is the most important conversation you'll have with them.",
+        "simulation": "This is a SIMULATION — you are role-playing a real person from their life. Stay in character. Be realistic. After 4-5 exchanges, break character with '--- TIMEOUT ---' and debrief what you observed about their patterns.",
+        "prescription": "This is a PRESCRIPTION FOLLOW-UP — a piece of curated content was delivered to this leader based on their growth edge. If they respond, help them connect the concept to their real leadership. Don't lecture — help them apply it. Ask what resonated and what felt off.",
+        "ascent-checkin": "This is an ASCENT PHASE CHECK-IN — this leader has completed the Arena Foundations program and is in ongoing coaching. You know them well. Be warm but don't coddle. Reference specific patterns and growth edges from their program. One question. Make it count.",
+      };
+      if (smsTypeInstructions[interactionType]) {
+        prompt += `\n\nINTERACTION TYPE: ${smsTypeInstructions[interactionType]}`;
+      }
+    }
+  }
+
+  return prompt;
+}
+
+// ============================================================================
+// LEADERSHIP LAB — SMS Integration
+// ============================================================================
+
+/**
+ * transcribeVoiceMemo — Downloads audio from Twilio and transcribes via Gemini.
+ *
+ * Uses Gemini's native audio understanding (no File API needed for short clips).
+ * Twilio voice memos are typically < 2 min, well within Gemini's inline limit.
+ *
+ * @param {string} mediaUrl - Twilio MediaUrl (includes auth)
+ * @param {string} mimeType - e.g. "audio/ogg", "audio/amr", "audio/mpeg"
+ * @returns {Promise<string>} Transcribed text
+ */
+async function transcribeVoiceMemo(mediaUrl, mimeType) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    logger.error("GEMINI_API_KEY not configured for voice memo transcription");
+    throw new Error("Transcription service not configured");
+  }
+
+  // Download audio from Twilio (URL includes account auth)
+  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+  const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
+  const fetchOptions = {};
+  if (twilioSid && twilioAuth) {
+    fetchOptions.headers = {
+      Authorization: "Basic " + Buffer.from(`${twilioSid}:${twilioAuth}`).toString("base64"),
+    };
+  }
+
+  const response = await fetch(mediaUrl, fetchOptions);
+  if (!response.ok) {
+    throw new Error(`Failed to download voice memo: ${response.status}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const audioBuffer = Buffer.from(arrayBuffer);
+  const audioBase64 = audioBuffer.toString("base64");
+
+  // Size check — Gemini inline limit is ~20MB
+  const sizeMB = audioBuffer.length / (1024 * 1024);
+  if (sizeMB > 20) {
+    throw new Error(`Voice memo too large (${sizeMB.toFixed(1)}MB)`);
+  }
+
+  logger.info("Transcribing voice memo", { sizeMB: sizeMB.toFixed(2), mimeType });
+
+  // Use Gemini for transcription — it natively understands audio
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const result = await model.generateContent([
+    {
+      inlineData: {
+        mimeType: mimeType || "audio/ogg",
+        data: audioBase64,
+      },
+    },
+    {
+      text: "Transcribe this voice memo exactly as spoken. Return ONLY the transcription — no labels, timestamps, or commentary. If the audio is unclear or silent, respond with '[inaudible]'.",
+    },
+  ]);
+
+  const transcription = result.response.text().trim();
+  if (!transcription || transcription === "[inaudible]") {
+    throw new Error("Could not transcribe voice memo");
+  }
+
+  logger.info("Voice memo transcribed", { length: transcription.length });
+  return transcription;
+}
+
+/**
+ * labSmsWebhook — Receives inbound SMS from Twilio.
+ *
+ * Flow:
+ * 1. Twilio POSTs to this endpoint when a user texts the Lab number.
+ * 2. Look up user by phone number in ll-users.
+ * 3. If unknown number, reply with a "not enrolled" message.
+ * 4. If user hasn't completed onboarding, route to onboarding mode.
+ * 5. Otherwise find/create today's active SMS conversation and route through AI.
+ * 6. Reply via TwiML.
+ */
+exports.labSmsWebhook = onRequest(
+  {
+    secrets: ["ANTHROPIC_API_KEY"],
+    region: "us-central1",
+    maxInstances: 20,
+  },
+  async (req, res) => {
+    // Twilio sends POST requests
+    if (req.method !== "POST") {
+      res.status(405).send("Method not allowed");
+      return;
+    }
+
+    // Validate Twilio signature — MANDATORY for production security
+    const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
+    if (!twilioAuth) {
+      logger.error("TWILIO_AUTH_TOKEN not configured — rejecting webhook");
+      res.status(500).send("Server misconfiguration");
+      return;
+    }
+    const signature = req.headers["x-twilio-signature"];
+    const url = `https://${req.headers.host}${req.originalUrl}`;
+    const valid = twilio.validateRequest(twilioAuth, signature, url, req.body);
+    if (!valid) {
+      logger.warn("Invalid Twilio signature on labSmsWebhook", { from: req.body?.From });
+      res.status(403).send("Forbidden");
+      return;
+    }
+
+    const fromPhone = req.body.From; // E.164
+    const body = (req.body.Body || "").trim();
+    const numMedia = parseInt(req.body.NumMedia || "0", 10);
+
+    logger.info("Lab SMS received", { from: fromPhone, bodyLength: body.length, numMedia });
+
+    // TwiML helper
+    const twiml = (message) => {
+      res.set("Content-Type", "text/xml");
+      res.status(200).send(
+        `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(message)}</Message></Response>`
+      );
+    };
+
+    // --- TCPA COMPLIANCE: Handle opt-out and help keywords ---
+    const upperBody = body.toUpperCase();
+    if (["STOP", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"].includes(upperBody)) {
+      // Mark user as opted out in Firestore
+      try {
+        const optOutUser = await lookupLabUserByPhone(fromPhone);
+        if (optOutUser) {
+          await admin.firestore().doc(`${LL_PREFIX}users/${optOutUser.uid}`).update({
+            smsOptIn: false,
+            smsOptOutAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          logger.info("User opted out of SMS", { phone: fromPhone, uid: optOutUser.uid });
+        }
+      } catch (optOutErr) {
+        logger.error("Failed to record opt-out", { phone: fromPhone, error: optOutErr.message });
+      }
+      // Twilio auto-handles STOP for toll-free/short codes, but we send confirmation anyway
+      twiml("You've been unsubscribed from Leadership Lab texts. Reply START to re-subscribe anytime.");
+      return;
+    }
+
+    if (["HELP", "INFO"].includes(upperBody)) {
+      twiml("Leadership Lab \u2014 AI leadership coaching via text. Reply STOP to unsubscribe. For support, contact your facilitator or email support@leaderreps.com.");
+      return;
+    }
+
+    if (upperBody === "START") {
+      // Re-subscribe
+      try {
+        const startUser = await lookupLabUserByPhone(fromPhone);
+        if (startUser) {
+          await admin.firestore().doc(`${LL_PREFIX}users/${startUser.uid}`).update({
+            smsOptIn: true,
+            smsOptOutAt: null,
+          });
+          logger.info("User re-subscribed to SMS", { phone: fromPhone, uid: startUser.uid });
+        }
+      } catch (startErr) {
+        logger.error("Failed to record re-subscribe", { phone: fromPhone, error: startErr.message });
+      }
+      twiml("Welcome back! You're re-subscribed to Leadership Lab. Your coach is here whenever you need.");
+      return;
+    }
+
+    // --- ENGAGEMENT LEVEL: Let users text LIGHT / MEDIUM / HEAVY to change frequency ---
+    if (["LIGHT", "MEDIUM", "HEAVY"].includes(upperBody)) {
+      const levelMap = { LIGHT: 1, MEDIUM: 2, HEAVY: 3 };
+      const descMap = { LIGHT: "2-3 texts/week", MEDIUM: "~5 texts/week", HEAVY: "~10 texts/week" };
+      try {
+        const engUser = await lookupLabUserByPhone(fromPhone);
+        if (engUser) {
+          await admin.firestore().doc(`${LL_PREFIX}users/${engUser.uid}`).update({
+            engagementLevel: levelMap[upperBody],
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          logger.info("User changed engagement level", { phone: fromPhone, level: upperBody });
+        }
+      } catch (engErr) {
+        logger.error("Failed to update engagement level", { phone: fromPhone, error: engErr.message });
+      }
+      twiml(`Got it — switched to ${upperBody.toLowerCase()} mode (${descMap[upperBody]}). You can change anytime by texting LIGHT, MEDIUM, or HEAVY.`);
+      return;
+    }
+
+    try {
+      // --- Look up user by phone ---
+      const user = await lookupLabUserByPhone(fromPhone);
+
+      if (!user) {
+        twiml("Hey — this number isn't enrolled in Leadership Lab yet. If you think this is a mistake, reach out to your facilitator.");
+        return;
+      }
+
+      const { uid, profile } = user;
+
+      // Handle voice memo (MMS with audio)
+      let messageText = body;
+      let isVoiceMemo = false;
+      if (numMedia > 0) {
+        const mediaType = req.body.MediaContentType0 || "";
+        if (mediaType.startsWith("audio/")) {
+          // Voice memo — transcribe via Gemini
+          try {
+            const mediaUrl = req.body.MediaUrl0;
+            const transcription = await transcribeVoiceMemo(mediaUrl, mediaType);
+            // Use transcription as the message (append to any accompanying text)
+            messageText = body
+              ? `${body}\n\n[Voice memo]: ${transcription}`
+              : transcription;
+            isVoiceMemo = true;
+            logger.info("Voice memo transcribed for Lab user", { uid, length: transcription.length });
+          } catch (transcribeErr) {
+            logger.warn("Voice memo transcription failed", { uid, error: transcribeErr.message });
+            // Graceful fallback — let them know we heard them
+            if (!body) {
+              twiml("I got your voice memo but had trouble understanding it. Could you text me what you were saying?");
+              return;
+            }
+            // If they sent text + voice, just process the text
+          }
+        } else if (!body) {
+          messageText = "[Media received]";
+        }
+      }
+
+      if (!messageText) {
+        twiml("Got it. Text me anytime you want to talk leadership.");
+        return;
+      }
+
+      // --- Determine mode and week ---
+      let mode = "coach";
+      let weekNumber = profile.currentWeek || 1;
+
+      if (!profile.onboardingComplete) {
+        mode = "onboarding";
+        weekNumber = 0;
+      }
+
+      // --- Find or create today's SMS conversation ---
+      let conversationId = null;
+      const activeConvo = await getActiveSmsConversation(uid);
+      if (activeConvo) {
+        conversationId = activeConvo.conversationId;
+        // Inherit mode from the active conversation if it was AI-initiated
+        if (activeConvo.data.mode) {
+          mode = activeConvo.data.mode;
+        }
+      }
+
+      // --- SITUATION SIMULATOR: Launch from pre-game replies ---
+      // Only launch simulation when user is replying to a pre-game interaction
+      // AND explicitly signals they want to practice (not just a long reflection).
+      const simTriggerPhrases = ["practice", "simulate", "roleplay", "role play", "rehearse", "let's try", "lets try", "run through", "role-play", "prep me"];
+      const wantsSimulation =
+        activeConvo?.data?.interactionType === "pre-game" &&
+        mode !== "onboarding" &&
+        simTriggerPhrases.some((phrase) => messageText.toLowerCase().includes(phrase));
+
+      if (wantsSimulation) {
+        // First, save their reply to the pre-game conversation normally
+        await processLabMessage(uid, messageText, {
+          conversationId,
+          mode: "coach",
+          weekNumber,
+          channel: "sms",
+          interactionType: "pre-game",
+        });
+
+        // Parse scenario from their message using Claude
+        try {
+          const apiKey = process.env.ANTHROPIC_API_KEY;
+          const anthropic = new Anthropic({ apiKey });
+          const parseResponse = await anthropic.messages.create({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 256,
+            system: `Extract the scenario details from this leader's message about an upcoming situation. Return ONLY a JSON object: { "person": "who they'll be talking to (role/name)", "situation": "brief description of the conversation/scenario", "stakes": "what's at risk" }. If the message doesn't describe a clear scenario, return { "valid": false }.`,
+            messages: [{ role: "user", content: messageText }],
+          });
+          const parsed = JSON.parse(parseResponse.content[0]?.text || "{}");
+
+          if (parsed.valid !== false && parsed.situation) {
+            // Launch the simulation
+            const sim = await initiateSimulation(uid, fromPhone, {
+              person: parsed.person || "the other person",
+              situation: parsed.situation,
+              stakes: parsed.stakes || "",
+              weekNumber,
+            });
+
+            // Reply with the simulation's first message (already sent via SMS by initiateSimulation)
+            // Return empty TwiML since the SMS was already sent
+            res.set("Content-Type", "text/xml");
+            res.status(200).send(
+              `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`
+            );
+            return;
+          }
+        } catch (simErr) {
+          logger.warn("Simulation auto-launch failed, falling back to normal reply", {
+            uid,
+            error: simErr.message,
+          });
+          // Fall through to normal processing
+        }
+      }
+
+      // --- Process through AI ---
+      const result = await processLabMessage(uid, messageText, {
+        conversationId,
+        mode,
+        weekNumber,
+        channel: "sms",
+        interactionType: activeConvo?.data?.interactionType || null,
+      });
+
+      // Track last SMS response time for re-engagement detection
+      try {
+        await admin.firestore().doc(`${LL_PREFIX}users/${uid}`).update({
+          lastSmsResponseAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (trackErr) {
+        logger.warn("Failed to track lastSmsResponseAt", { uid, error: trackErr.message });
+      }
+
+      // --- REVEAL ENGINE: Track reveal responses ---
+      if (activeConvo?.data?.revealId) {
+        const revealId = activeConvo.data.revealId;
+        try {
+          const revealRef = admin.firestore().doc(`${LL_PREFIX}users/${uid}/reveals/${revealId}`);
+          const revealSnap = await revealRef.get();
+          if (revealSnap.exists && revealSnap.data().status === "delivered") {
+            await revealRef.update({
+              status: "acknowledged",
+              userResponse: messageText.slice(0, 500),
+              acknowledgedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            logger.info("Reveal acknowledged by user", { uid, revealId });
+          }
+        } catch (revealErr) {
+          logger.warn("Failed to update reveal response", { uid, revealId, error: revealErr.message });
+        }
+      }
+
+      // --- Check if onboarding should auto-complete ---
+      if (mode === "onboarding") {
+        const convoSnap = await admin.firestore()
+          .doc(`${LL_PREFIX}users/${uid}/conversations/${result.conversationId}`)
+          .get();
+        const messages = convoSnap.exists ? convoSnap.data().messages || [] : [];
+        const userMessages = messages.filter((m) => m.role === "user");
+
+        if (userMessages.length >= 4) {
+          // Enough exchanges — trigger onboarding completion
+          try {
+            await completeLabOnboarding(uid, result.conversationId);
+            logger.info("SMS onboarding auto-completed", { uid });
+          } catch (e) {
+            logger.warn("SMS onboarding completion failed, will retry later", { uid, error: e.message });
+          }
+        }
+      }
+
+      twiml(result.response);
+    } catch (error) {
+      logger.error("labSmsWebhook error", error);
+      twiml("Something went wrong on my end. Try again in a minute.");
+    }
+  }
+);
+
+/** Escape XML special characters for TwiML */
+function escapeXml(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+/**
+ * Shared onboarding completion logic — used by both labCompleteOnboarding callable
+ * and the SMS webhook auto-complete.
+ */
+async function completeLabOnboarding(uid, conversationId) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("AI service not configured");
+
+  const db = admin.firestore();
+
+  // Idempotency guard — don't re-process if already onboarded
+  const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+  if (userSnap.exists && userSnap.data().onboardingComplete) {
+    logger.info("Onboarding already complete, skipping", { uid });
+    return userSnap.data();
+  }
+
+  const convoRef = db.doc(`${LL_PREFIX}users/${uid}/conversations/${conversationId}`);
+  const convoSnap = await convoRef.get();
+  if (!convoSnap.exists) throw new Error("Onboarding conversation not found");
+
+  const messages = convoSnap.data().messages || [];
+  if (messages.length < 4) throw new Error("Conversation too short");
+
+  const transcript = messages
+    .map((m) => `${m.role === "user" ? "LEADER" : "COACH"}: ${m.content}`)
+    .join("\n\n");
+
+  const anthropic = new Anthropic({ apiKey });
+
+  // Build Leadership Profile
+  const profileResponse = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 2048,
+    system: `You are a leadership psychologist analyzing an onboarding conversation between a leadership coach and a new program participant. Your job is to create an initial Leadership Profile.
+
+Analyze the conversation transcript and produce a JSON object with this exact structure:
+{
+  "presentedSelf": "A 2-3 sentence summary of how this leader describes themselves.",
+  "observedSelf": "A 2-3 sentence summary of behavioral patterns you OBSERVED in the conversation.",
+  "tensions": [
+    {"left": "Value A", "right": "Opposing Value B", "position": 50, "evidence": "Brief quote or observation"}
+  ],
+  "corePatterns": ["Pattern 1 in 1 sentence", "Pattern 2 in 1 sentence"],
+  "keyInsights": [{"insight": "Key observation", "evidence": "Their own words or behavior"}],
+  "growthEdges": ["Area for development 1", "Area for development 2"],
+  "coachingApproach": "A 2-sentence recommendation for how to coach this specific person."
+}
+
+Return ONLY the JSON object. No markdown. Be honest but compassionate.`,
+    messages: [{ role: "user", content: transcript }],
+  });
+
+  const profileText = profileResponse.content[0]?.text || "{}";
+  let profile;
+  try {
+    profile = JSON.parse(profileText);
+  } catch {
+    profile = {
+      presentedSelf: profileText,
+      observedSelf: "",
+      tensions: [],
+      corePatterns: [],
+      keyInsights: [],
+      growthEdges: [],
+      coachingApproach: "",
+    };
+  }
+
+  const now = admin.firestore.FieldValue.serverTimestamp();
+
+  // Save Leadership Profile
+  await db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`).set({
+    ...profile,
+    createdAt: now,
+    updatedAt: now,
+    source: "onboarding",
+    onboardingConversationId: conversationId,
+  });
+
+  // Generate summary
+  const summaryResponse = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 256,
+    system: "Summarize this coaching onboarding conversation in 1-2 sentences. Focus on key themes and the leader's primary growth area.",
+    messages: [{ role: "user", content: transcript }],
+  });
+  const summary = summaryResponse.content[0]?.text || "";
+  await convoRef.update({ summary, updatedAt: now });
+
+  // Mark user as onboarded
+  await db.doc(`${LL_PREFIX}users/${uid}`).update({
+    onboardingComplete: true,
+    currentPhase: "foundation",
+    currentWeek: 1,
+    onboardedAt: now,
+  });
+
+  return profile;
+}
+
+// ============================================================================
+// LEADERSHIP LAB — Cohort Management
+// ============================================================================
+
+/**
+ * labSetupCohort — Create a new cohort with start date and facilitators.
+ * Admin-only callable.
+ */
+exports.labSetupCohort = onCall(
+  {
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const db = admin.firestore();
+
+    // Check admin
+    const adminDoc = await db.doc("metadata/config").get();
+    const adminEmails = adminDoc.exists ? (adminDoc.data().adminemails || []) : [];
+    const userEmail = (request.auth.token.email || "").toLowerCase();
+    if (!adminEmails.map((e) => e.toLowerCase()).includes(userEmail)) {
+      throw new HttpsError("permission-denied", "Admin access required");
+    }
+
+    const { name, startDate, facilitatorIds = [], weekCount = 6 } = request.data || {};
+
+    if (!name || typeof name !== "string") {
+      throw new HttpsError("invalid-argument", "Cohort name is required");
+    }
+    if (!startDate || typeof startDate !== "string") {
+      throw new HttpsError("invalid-argument", "Start date is required (YYYY-MM-DD)");
+    }
+
+    // Validate date format
+    const parsedDate = new Date(startDate + "T00:00:00Z");
+    if (isNaN(parsedDate.getTime())) {
+      throw new HttpsError("invalid-argument", "Invalid date format. Use YYYY-MM-DD.");
+    }
+
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    const cohortRef = db.collection(`${LL_PREFIX}cohorts`).doc();
+
+    await cohortRef.set({
+      name,
+      startDate: admin.firestore.Timestamp.fromDate(parsedDate),
+      facilitatorIds,
+      weekCount,
+      phase: "prep", // prep → active → post
+      isActive: false,
+      memberCount: 0,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: request.auth.uid,
+    });
+
+    // Create facilitator records
+    for (const fId of facilitatorIds) {
+      await db.doc(`${LL_PREFIX}facilitators/${fId}`).set(
+        { cohorts: admin.firestore.FieldValue.arrayUnion(cohortRef.id), updatedAt: now },
+        { merge: true }
+      );
+    }
+
+    logger.info("labSetupCohort created", { cohortId: cohortRef.id, name, startDate });
+
+    return {
+      success: true,
+      cohortId: cohortRef.id,
+      name,
+      startDate,
+    };
+  }
+);
+
+/**
+ * labAddParticipant — Add a participant to a cohort by phone number.
+ * Creates ll-user record, links to cohort, sends welcome text.
+ * Admin-only callable.
+ */
+exports.labAddParticipant = onCall(
+  {
+    secrets: ["ANTHROPIC_API_KEY"],
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const db = admin.firestore();
+
+    // Check admin
+    const adminDoc = await db.doc("metadata/config").get();
+    const adminEmails = adminDoc.exists ? (adminDoc.data().adminemails || []) : [];
+    const userEmail = (request.auth.token.email || "").toLowerCase();
+    if (!adminEmails.map((e) => e.toLowerCase()).includes(userEmail)) {
+      throw new HttpsError("permission-denied", "Admin access required");
+    }
+
+    const { cohortId, phone, firstName, lastName, email, role, engagementLevel } = request.data || {};
+
+    if (!cohortId || typeof cohortId !== "string") {
+      throw new HttpsError("invalid-argument", "cohortId is required");
+    }
+    if (!phone || typeof phone !== "string") {
+      throw new HttpsError("invalid-argument", "Phone number is required (E.164 format)");
+    }
+
+    // Validate E.164 format
+    if (!/^\+[1-9]\d{1,14}$/.test(phone)) {
+      throw new HttpsError("invalid-argument", "Phone must be E.164 format (e.g. +15551234567)");
+    }
+
+    // Verify cohort exists
+    const cohortRef = db.doc(`${LL_PREFIX}cohorts/${cohortId}`);
+    const cohortSnap = await cohortRef.get();
+    if (!cohortSnap.exists) {
+      throw new HttpsError("not-found", "Cohort not found");
+    }
+
+    // Check if phone already registered
+    const existing = await lookupLabUserByPhone(phone);
+    let uid;
+
+    const now = admin.firestore.FieldValue.serverTimestamp();
+
+    if (existing) {
+      uid = existing.uid;
+      // Update existing user with cohort assignment
+      await db.doc(`${LL_PREFIX}users/${uid}`).update({
+        cohortId,
+        updatedAt: now,
+      });
+    } else {
+      // Create new ll-user (no Firebase Auth account needed for SMS-only users)
+      const userRef = db.collection(`${LL_PREFIX}users`).doc();
+      uid = userRef.id;
+      await userRef.set({
+        phone,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        displayName: firstName || null,
+        email: email || null,
+        role: role || null,
+        cohortId,
+        onboardingComplete: false,
+        currentPhase: "prep",
+        currentWeek: 0,
+        smsOptIn: true,
+        engagementLevel: [1, 2, 3].includes(engagementLevel) ? engagementLevel : 2,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // Add to cohort members
+    await db.doc(`${LL_PREFIX}cohorts/${cohortId}/members/${uid}`).set({
+      phone,
+      firstName: firstName || null,
+      status: "enrolled",
+      joinedAt: now,
+    });
+
+    // Update member count
+    await cohortRef.update({
+      memberCount: admin.firestore.FieldValue.increment(1),
+      updatedAt: now,
+    });
+
+    // Send welcome text
+    const cohortData = cohortSnap.data();
+    try {
+      await sendLabSms(
+        phone,
+        `Welcome to Leadership Lab${firstName ? ", " + firstName : ""}. Over the next ${cohortData.weekCount || 6} weeks, I'll be your AI coach — texting you 1-2x a day to help you see your leadership clearly. No app needed. Just reply to my texts. Your first real message comes when your program starts. Talk soon.`
+      );
+      logger.info("Welcome SMS sent", { uid, phone });
+    } catch (smsErr) {
+      logger.warn("Failed to send welcome SMS", { phone, error: smsErr.message });
+      // Don't fail the operation — user is still enrolled
+    }
+
+    logger.info("labAddParticipant success", { uid, cohortId, phone });
+
+    return {
+      success: true,
+      userId: uid,
+      cohortId,
+      phone,
+    };
+  }
+);
+
+// ============================================================================
+// LEADERSHIP LAB — Scheduled SMS Engine
+// ============================================================================
+
+/**
+ * labScheduledSms — Runs twice daily (9 AM and 5 PM ET).
+ *
+ * For each active cohort:
+ * 1. Determine current week and day
+ * 2. Select the right interaction type for each member
+ * 3. Generate a personalized AI message
+ * 4. Send via SMS
+ * 5. Store the conversation in Firestore
+ */
+exports.labScheduledSms = onSchedule(
+  {
+    schedule: "0 9,17 * * 1-5", // 9 AM and 5 PM UTC, weekdays
+    timeZone: "America/New_York",
+    secrets: ["ANTHROPIC_API_KEY"],
+    region: "us-central1",
+    maxInstances: 1,
+    timeoutSeconds: 540,
+  },
+  async (event) => {
+    const db = admin.firestore();
+    const now = new Date();
+    const hour = now.getHours(); // In ET due to timeZone config
+    const isAM = hour < 12;
+
+    logger.info("labScheduledSms triggered", { hour, isAM });
+
+    // Get active cohorts
+    const cohortsSnap = await db
+      .collection(`${LL_PREFIX}cohorts`)
+      .where("isActive", "==", true)
+      .get();
+
+    if (cohortsSnap.empty) {
+      logger.info("No active cohorts — nothing to send");
+      return;
+    }
+
+    let totalSent = 0;
+    let totalErrors = 0;
+
+    for (const cohortDoc of cohortsSnap.docs) {
+      const cohort = cohortDoc.data();
+      const cohortId = cohortDoc.id;
+      const weekNumber = getCohortWeekNumber(cohort.startDate, cohort.weekCount || 6);
+
+      if (weekNumber > (cohort.weekCount || 6)) {
+        logger.info("Cohort past end date, skipping", { cohortId });
+        continue;
+      }
+
+      // Get cohort members
+      const membersSnap = await db
+        .collection(`${LL_PREFIX}cohorts/${cohortId}/members`)
+        .where("status", "==", "enrolled")
+        .get();
+
+      for (const memberDoc of membersSnap.docs) {
+        const memberId = memberDoc.id;
+        const member = memberDoc.data();
+
+        try {
+          // Load user profile
+          const userSnap = await db.doc(`${LL_PREFIX}users/${memberId}`).get();
+          if (!userSnap.exists) continue;
+          const userProfile = userSnap.data();
+
+          // Skip if not onboarded or opted out
+          if (!userProfile.onboardingComplete || !userProfile.smsOptIn) continue;
+
+          // --- ENGAGEMENT LEVEL FILTERING ---
+          // 1=light (~2-3/wk: Mon AM + Thu PM reveal only)
+          // 2=medium (~5/wk: weekday AM only)
+          // 3=heavy (~10/wk: weekday AM + PM — current full behavior)
+          const engLevel = userProfile.engagementLevel || 2;
+          const weekDay = now.getDay();
+          if (engLevel === 1) {
+            // Light: only Mon AM and Thu PM
+            if (!(weekDay === 1 && isAM) && !(weekDay === 4 && !isAM)) continue;
+          } else if (engLevel === 2) {
+            // Medium: AM only (no PM texts)
+            if (!isAM) continue;
+          }
+          // engLevel 3 (heavy): no filtering, send AM + PM
+
+          // Use stored currentWeek from user profile if available, else calculate
+          const memberWeek = userProfile.currentWeek || weekNumber;
+
+          // --- RE-ENGAGEMENT: Check for silent participants (3+ days) ---
+          if (isAM) {
+            const lastActivity = userProfile.lastSmsResponseAt;
+            if (lastActivity) {
+              const lastDate = lastActivity.toDate ? lastActivity.toDate() : new Date(lastActivity);
+              const daysSilent = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
+              if (daysSilent >= 3) {
+                // Send a gentle re-engagement nudge instead of regular content
+                const nudges = [
+                  `Hey ${userProfile.displayName || userProfile.firstName || "there"} — haven't heard from you in a few days. No pressure, just checking in. How's the experiment going?`,
+                  `${userProfile.displayName || userProfile.firstName || "Hey"} — quick check-in. Even a one-word reply keeps the momentum going. What's on your mind today?`,
+                  `Missing our chats, ${userProfile.displayName || userProfile.firstName || "friend"}. Leadership growth happens in the small moments. What's one thing you noticed about yourself this week?`,
+                ];
+                const nudge = nudges[daysSilent % nudges.length];
+
+                const convoRef = db.collection(`${LL_PREFIX}users/${memberId}/conversations`).doc();
+                const serverNow = admin.firestore.FieldValue.serverTimestamp();
+                await convoRef.set({
+                  mode: "coach",
+                  weekNumber: memberWeek,
+                  channel: "sms",
+                  interactionType: "re-engagement",
+                  aiInitiated: true,
+                  messages: [
+                    { role: "assistant", content: nudge, timestamp: new Date().toISOString(), channel: "sms" },
+                  ],
+                  summary: "",
+                  createdAt: serverNow,
+                  updatedAt: serverNow,
+                });
+
+                await sendLabSms(member.phone, nudge);
+                totalSent++;
+                logger.info("Re-engagement SMS sent", { memberId, cohortId, daysSilent });
+                continue; // Skip normal SMS for this user today
+              }
+            }
+          }
+
+          // Don't send more than 2 texts per day
+          const todayConvos = await getActiveSmsConversation(memberId);
+          if (todayConvos) {
+            const messages = todayConvos.data.messages || [];
+            const aiMessages = messages.filter((m) => m.role === "assistant" && m.channel === "sms");
+            if (aiMessages.length >= 2) continue; // Already sent 2 today
+          }
+
+          // Select interaction type
+          const interactionType = selectInteractionType({
+            weekNumber: memberWeek,
+            isAM,
+            userProfile,
+            weekDay: now.getDay(), // 0=Sun, 1=Mon, ...
+          });
+
+          // Skip PM if AM already covered this type
+          if (!isAM && todayConvos && todayConvos.data.interactionType === interactionType) {
+            continue;
+          }
+
+          // --- REVEAL ENGINE: Thursday PM = reveal delivery slot ---
+          const pendingReveal = (!isAM && now.getDay() === 4) ? await getPendingReveal(memberId) : null;
+
+          if (pendingReveal) {
+            // Deliver the reveal instead of a normal SMS
+            const revealText = pendingReveal.data.content;
+            const serverNow = admin.firestore.FieldValue.serverTimestamp();
+
+            // Save reveal conversation
+            const convoRef = db.collection(`${LL_PREFIX}users/${memberId}/conversations`).doc();
+            await convoRef.set({
+              mode: "mirror",
+              weekNumber: memberWeek,
+              channel: "sms",
+              interactionType: "reveal",
+              aiInitiated: true,
+              revealId: pendingReveal.id,
+              messages: [
+                { role: "assistant", content: revealText, timestamp: new Date().toISOString(), channel: "sms" },
+              ],
+              summary: "",
+              createdAt: serverNow,
+              updatedAt: serverNow,
+            });
+
+            // Mark reveal as delivered
+            await db.doc(`${LL_PREFIX}users/${memberId}/reveals/${pendingReveal.id}`).update({
+              status: "delivered",
+              deliveredAt: serverNow,
+              conversationId: convoRef.id,
+            });
+
+            // Send the SMS
+            await sendLabSms(member.phone, revealText);
+            totalSent++;
+
+            logger.info("Reveal delivered via SMS", {
+              memberId,
+              cohortId,
+              weekNumber: memberWeek,
+              revealType: pendingReveal.data.type,
+              revealId: pendingReveal.id,
+            });
+            continue; // Skip normal SMS for this user
+          }
+
+          // --- PRESCRIPTION ENGINE: Wednesday AM = prescription delivery slot ---
+          if (interactionType === "prescription") {
+            const rxSnap = await db.doc(`${LL_PREFIX}users/${memberId}/prescriptions/${memberWeek}`).get();
+            if (rxSnap.exists && rxSnap.data().status === "pending") {
+              const rxData = rxSnap.data();
+              const rxText = rxData.smsDelivery;
+
+              if (rxText) {
+                const serverNow = admin.firestore.FieldValue.serverTimestamp();
+
+                // Save prescription delivery conversation
+                const convoRef = db.collection(`${LL_PREFIX}users/${memberId}/conversations`).doc();
+                await convoRef.set({
+                  mode: "coach",
+                  weekNumber: memberWeek,
+                  channel: "sms",
+                  interactionType: "prescription",
+                  aiInitiated: true,
+                  prescriptionWeek: memberWeek,
+                  messages: [
+                    { role: "assistant", content: rxText, timestamp: new Date().toISOString(), channel: "sms" },
+                  ],
+                  summary: "",
+                  createdAt: serverNow,
+                  updatedAt: serverNow,
+                });
+
+                // Mark prescription as delivered
+                await rxSnap.ref.update({
+                  status: "delivered",
+                  deliveredAt: serverNow,
+                });
+
+                // Send the SMS
+                await sendLabSms(member.phone, rxText);
+                totalSent++;
+
+                logger.info("Prescription delivered via SMS", {
+                  memberId,
+                  cohortId,
+                  weekNumber: memberWeek,
+                  type: rxData.type,
+                  topic: rxData.topic,
+                });
+                continue; // Skip normal SMS generation
+              }
+            }
+            // If no prescription found, fall through to normal AI message
+          }
+
+          // Load personalized experiment (fall back to base if not designed yet)
+          const challengeSnap = await db.doc(`${LL_PREFIX}users/${memberId}/challenges/${memberWeek}`).get();
+          const personalExperiment = challengeSnap.exists
+            ? (challengeSnap.data().personalizedExperiment || LL_EXPERIMENTS[weekIdx(memberWeek)])
+            : LL_EXPERIMENTS[weekIdx(memberWeek)];
+
+          // If experiment exists and is "assigned", mark as in-progress on first text
+          if (challengeSnap.exists && challengeSnap.data().status === "assigned") {
+            await challengeSnap.ref.update({
+              status: "in-progress",
+              startedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
+
+          // Generate the AI-initiated message
+          const prompt = buildOutboundSmsPrompt({
+            interactionType,
+            userName: userProfile.displayName || userProfile.firstName || "there",
+            weekNumber: memberWeek,
+            weekTheme: LL_WEEK_THEMES[weekIdx(memberWeek)],
+            experiment: personalExperiment,
+          });
+
+          // Load leadership profile for context
+          const lpSnap = await db.doc(`${LL_PREFIX}users/${memberId}/leadershipProfile/current`).get();
+          const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
+
+          const systemPrompt = buildLabSystemPrompt({
+            mode: "coach",
+            userName: userProfile.displayName || userProfile.firstName || "there",
+            weekNumber: memberWeek,
+            weekTheme: LL_WEEK_THEMES[weekIdx(memberWeek)],
+            experiment: personalExperiment,
+            leadershipProfile,
+            messageCount: 0,
+            channel: "sms",
+            interactionType,
+            phase: userProfile.phase || (memberWeek > 6 ? "ascent" : "foundation"),
+          });
+
+          const apiKey = process.env.ANTHROPIC_API_KEY;
+          const anthropic = new Anthropic({ apiKey });
+          const aiResponse = await anthropic.messages.create({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 400,
+            system: systemPrompt,
+            messages: [{ role: "user", content: prompt }],
+          });
+
+          const aiText = aiResponse.content[0]?.text || "";
+          if (!aiText) continue;
+
+          // Save as a new conversation
+          const convoRef = db.collection(`${LL_PREFIX}users/${memberId}/conversations`).doc();
+          const serverNow = admin.firestore.FieldValue.serverTimestamp();
+          await convoRef.set({
+            mode: "coach",
+            weekNumber: memberWeek,
+            channel: "sms",
+            interactionType,
+            aiInitiated: true,
+            messages: [
+              { role: "assistant", content: aiText, timestamp: new Date().toISOString(), channel: "sms" },
+            ],
+            summary: "",
+            createdAt: serverNow,
+            updatedAt: serverNow,
+          });
+
+          // Send the SMS
+          await sendLabSms(member.phone, aiText);
+          totalSent++;
+
+          logger.info("Scheduled SMS sent", {
+            memberId,
+            cohortId,
+            weekNumber: memberWeek,
+            interactionType,
+          });
+        } catch (memberErr) {
+          totalErrors++;
+          logger.error("Failed to send scheduled SMS to member", {
+            memberId,
+            cohortId,
+            error: memberErr.message,
+          });
+        }
+      }
+    }
+
+    logger.info("labScheduledSms complete", { totalSent, totalErrors });
+  }
+);
+
+/**
+ * Select the right interaction type based on week, time of day, and user context.
+ */
+function selectInteractionType({ weekNumber, isAM, userProfile, weekDay }) {
+  // Monday AM = always live-ammo (start the week connected to reality)
+  if (weekDay === 1 && isAM) return "live-ammo";
+
+  // Tuesday AM = pre-game (sets up potential simulation if they reply)
+  if (weekDay === 2 && isAM && weekNumber >= 2) return "pre-game";
+
+  // Wednesday AM = prescribed content delivery
+  if (weekDay === 3 && isAM) return "prescription";
+
+  // Wednesday PM = mid-week experiment check
+  if (weekDay === 3 && !isAM) return "post-game";
+
+  // Friday PM = weekly debrief prompt
+  if (weekDay === 5 && !isAM) return "moment-capture";
+
+  // Provocation = max once per week, never on Monday
+  if (weekDay === 4 && isAM && weekNumber > 1) return "provocation";
+
+  // Build a weighted pool for other slots
+  const pool = [];
+
+  // AM tends toward forward-looking types
+  if (isAM) {
+    pool.push("live-ammo", "live-ammo", "micro-experiment", "pre-game", "connector");
+  } else {
+    // PM tends toward reflective types
+    pool.push("moment-capture", "moment-capture", "post-game", "connector", "pattern-interrupt");
+  }
+
+  // Later weeks get more mirrors and celebrations
+  if (weekNumber >= 3) pool.push("pattern-interrupt", "celebration");
+  if (weekNumber >= 5) pool.push("celebration", "celebration");
+
+  // Cohort thread sprinkled in (roughly 1x/week)
+  if (weekDay === 2 && !isAM) return "cohort-thread";
+
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/**
+ * Build the "user" message that prompts Claude to generate an AI-initiated text.
+ * This is a meta-prompt — the AI generates the text TO send, not a reply to a user.
+ */
+function buildOutboundSmsPrompt({ interactionType, userName, weekNumber, weekTheme, experiment }) {
+  return `Generate a single outbound text message to send to ${userName}. This is an AI-INITIATED text — the user did NOT text first. You are reaching out.
+
+Interaction type: ${interactionType}
+Week ${weekNumber}: ${weekTheme}
+Current experiment: ${experiment}
+
+Write ONLY the text message itself. No preamble, no explanation, no "Here's a message:" — just the raw text as it would appear on their phone. Keep it under 320 characters. Make it feel like it's from a real coach who knows them, not a bot.`;
+}
+
+/**
+ * labStartCohort — Activate a cohort and trigger the first onboarding texts.
+ * Admin-only callable.
+ */
+exports.labStartCohort = onCall(
+  {
+    secrets: ["ANTHROPIC_API_KEY"],
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const db = admin.firestore();
+
+    // Check admin
+    const adminDoc = await db.doc("metadata/config").get();
+    const adminEmails = adminDoc.exists ? (adminDoc.data().adminemails || []) : [];
+    const userEmail = (request.auth.token.email || "").toLowerCase();
+    if (!adminEmails.map((e) => e.toLowerCase()).includes(userEmail)) {
+      throw new HttpsError("permission-denied", "Admin access required");
+    }
+
+    const { cohortId } = request.data || {};
+    if (!cohortId || typeof cohortId !== "string") {
+      throw new HttpsError("invalid-argument", "cohortId is required");
+    }
+
+    const cohortRef = db.doc(`${LL_PREFIX}cohorts/${cohortId}`);
+    const cohortSnap = await cohortRef.get();
+    if (!cohortSnap.exists) {
+      throw new HttpsError("not-found", "Cohort not found");
+    }
+
+    const cohort = cohortSnap.data();
+    if (cohort.isActive) {
+      throw new HttpsError("already-exists", "Cohort is already active");
+    }
+
+    // Mark cohort as active
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    await cohortRef.update({
+      isActive: true,
+      phase: "active",
+      startDate: admin.firestore.Timestamp.fromDate(new Date()),
+      updatedAt: now,
+    });
+
+    // Send onboarding kick-off text to all enrolled members
+    const membersSnap = await db
+      .collection(`${LL_PREFIX}cohorts/${cohortId}/members`)
+      .where("status", "==", "enrolled")
+      .get();
+
+    let sent = 0;
+    let errors = 0;
+
+    for (const memberDoc of membersSnap.docs) {
+      const memberId = memberDoc.id;
+      const member = memberDoc.data();
+
+      try {
+        const userSnap = await db.doc(`${LL_PREFIX}users/${memberId}`).get();
+        if (!userSnap.exists) continue;
+        const userProfile = userSnap.data();
+
+        if (userProfile.onboardingComplete) continue; // Already onboarded
+
+        const firstName = userProfile.firstName || userProfile.displayName || "";
+
+        await sendLabSms(
+          member.phone,
+          `${firstName ? firstName + ", it's" : "It's"} time. Your Leadership Lab program starts now. I'm your AI coach, and I want to understand how you lead. Let's start simple — what's your role, and how big is your team? Just text back.`
+        );
+
+        // Create the onboarding conversation so replies continue it
+        const convoRef = db.collection(`${LL_PREFIX}users/${memberId}/conversations`).doc();
+        await convoRef.set({
+          mode: "onboarding",
+          weekNumber: 0,
+          channel: "sms",
+          aiInitiated: true,
+          messages: [
+            {
+              role: "assistant",
+              content: `${firstName ? firstName + ", it's" : "It's"} time. Your Leadership Lab program starts now. I'm your AI coach, and I want to understand how you lead. Let's start simple — what's your role, and how big is your team? Just text back.`,
+              timestamp: new Date().toISOString(),
+              channel: "sms",
+            },
+          ],
+          summary: "",
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        sent++;
+      } catch (err) {
+        errors++;
+        logger.error("Failed to send onboarding text", { memberId, error: err.message });
+      }
+    }
+
+    logger.info("labStartCohort complete", { cohortId, sent, errors });
+
+    return { success: true, cohortId, membersSent: sent, errors };
+  }
+);
+
+// ============================================================================
+// LEADERSHIP LAB — Situation Simulator
+// ============================================================================
+
+/**
+ * initiateSimulation — Creates a practice-mode SMS conversation where the AI
+ * role-plays a real person from the leader's life. Sends the first in-character text.
+ *
+ * Flow via SMS:
+ * 1. Pre-game text asks about an upcoming situation
+ * 2. Leader describes it (who, what, stakes)
+ * 3. This function launches: AI becomes that person and texts in-character
+ * 4. Leader practices their approach over 4-6 exchanges
+ * 5. AI breaks character and debriefs: "What did you notice?"
+ * 6. Debrief evidence gets captured for profile updates
+ *
+ * @param {string} uid - User ID
+ * @param {string} phone - User's phone number for SMS
+ * @param {object} scenario - { person, situation, stakes, weekNumber }
+ * @returns {Promise<object>} The created conversation
+ */
+async function initiateSimulation(uid, phone, scenario) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("AI service not configured");
+
+  const db = admin.firestore();
+
+  // Load Leadership Profile for context
+  const lpSnap = await db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`).get();
+  const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
+
+  const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+  const userName = userSnap.exists
+    ? (userSnap.data().displayName || userSnap.data().firstName || "there")
+    : "there";
+
+  const weekNumber = scenario.weekNumber || (userSnap.exists ? userSnap.data().currentWeek : 1) || 1;
+  const wIdx = weekIdx(weekNumber);
+
+  // Build the simulation-specific system prompt
+  let simPrompt = `You are playing a ROLE in a leadership simulation for ${userName}.
+
+SCENARIO: ${scenario.situation || "A difficult leadership conversation"}
+YOU ARE PLAYING: ${scenario.person || "A direct report"}
+STAKES: ${scenario.stakes || "Unknown"}
+
+RULES FOR THE SIMULATION:
+- You ARE this person. Stay in character completely.
+- Be realistic — push back, get defensive, go quiet, ask hard questions. Real people do.
+- Match the emotional reality of this relationship. If the person described is difficult, BE difficult.
+- Don't make it easy. Growth happens at the edge of comfort.
+- Keep responses under 280 characters (you're texting as this person).
+- After 4-5 exchanges, BREAK CHARACTER with "--- TIMEOUT ---" and debrief.
+- In debrief: "OK, let's pause. What did you notice about yourself just now?" — then coach.
+- In debrief, connect what happened to their Leadership Profile patterns.
+- The debrief is the real gold. Don't rush it.`;
+
+  if (leadershipProfile) {
+    simPrompt += `
+
+THINGS TO WATCH FOR (from their Leadership Profile):
+- Patterns: ${(leadershipProfile.corePatterns || []).join("; ") || "None identified"}
+- Growth Edges: ${(leadershipProfile.growthEdges || []).join("; ") || "None identified"}
+- They tend to: ${leadershipProfile.observedSelf || "Unknown"}`;
+    if (leadershipProfile.tensions && leadershipProfile.tensions.length > 0) {
+      const tensionStr = leadershipProfile.tensions
+        .map((t) => `lean toward ${t.position > 50 ? t.right : t.left} over ${t.position > 50 ? t.left : t.right}`)
+        .join("; ");
+      simPrompt += `\n- Tension habits: ${tensionStr}`;
+    }
+    simPrompt += `\n\nDuring the simulation, embody behaviors that will trigger their patterns. In the debrief, name what you saw.`;
+  }
+
+  simPrompt += `
+
+SMS RULES: No formatting. No asterisks. No bullets. Text naturally, in character. Under 280 chars per message.`;
+
+  // Generate the first in-character message
+  const anthropic = new Anthropic({ apiKey });
+  const firstMessage = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 400,
+    system: simPrompt,
+    messages: [{
+      role: "user",
+      content: `Start the simulation. You are ${scenario.person || "the other person"}. Open the conversation with something realistic that ${userName} would need to respond to. Stay in character.`,
+    }],
+  });
+
+  const aiText = firstMessage.content[0]?.text || "";
+  if (!aiText) throw new Error("Failed to generate simulation opening");
+
+  // Save as a practice-mode conversation with scenario metadata
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const convoRef = db.collection(`${LL_PREFIX}users/${uid}/conversations`).doc();
+  await convoRef.set({
+    mode: "practice",
+    weekNumber,
+    channel: "sms",
+    interactionType: "simulation",
+    aiInitiated: true,
+    simulation: {
+      person: scenario.person || "Unknown",
+      situation: scenario.situation || "",
+      stakes: scenario.stakes || "",
+      systemPrompt: simPrompt,
+    },
+    messages: [
+      { role: "assistant", content: aiText, timestamp: new Date().toISOString(), channel: "sms" },
+    ],
+    summary: "",
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  // Send the SMS
+  await sendLabSms(phone, aiText);
+
+  logger.info("Simulation initiated", {
+    uid,
+    weekNumber,
+    person: scenario.person,
+    conversationId: convoRef.id,
+  });
+
+  return {
+    conversationId: convoRef.id,
+    firstMessage: aiText,
+  };
+}
+
+/**
+ * labSimulate — Callable to initiate a situation simulation.
+ * Can be triggered from the web app or by a facilitator.
+ */
+exports.labSimulate = onCall(
+  {
+    secrets: ["ANTHROPIC_API_KEY"],
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-test\.web\.app$/,
+      /leaderreps-test\.firebaseapp\.com$/,
+      /leaderreps-prod\.web\.app$/,
+      /leaderreps-prod\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const uid = request.auth.uid;
+    const { person, situation, stakes } = request.data || {};
+
+    if (!situation) {
+      throw new HttpsError("invalid-argument", "Situation description is required");
+    }
+
+    const db = admin.firestore();
+    const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+    if (!userSnap.exists) {
+      throw new HttpsError("not-found", "User not found");
+    }
+
+    const phone = userSnap.data().phone;
+    if (!phone) {
+      throw new HttpsError("failed-precondition", "No phone number on file");
+    }
+
+    try {
+      const result = await initiateSimulation(uid, phone, {
+        person: person || "the other person",
+        situation,
+        stakes: stakes || "",
+        weekNumber: userSnap.data().currentWeek || 1,
+      });
+      return { success: true, ...result };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labSimulate error", error);
+      throw new HttpsError("internal", "Failed to start simulation");
+    }
+  }
+);
+
+// ============================================================================
+// LEADERSHIP LAB — Experiment Designer
+// ============================================================================
+
+/**
+ * labDesignExperiment — Generate a personalized experiment for a user's current week.
+ *
+ * Uses their Leadership Profile, conversation history, and week theme to create
+ * a tailored behavioral experiment that targets their specific growth edges.
+ *
+ * Can be called automatically on week transition or manually by facilitator.
+ */
+exports.labDesignExperiment = onCall(
+  {
+    secrets: ["ANTHROPIC_API_KEY"],
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const { userId, weekNumber } = request.data || {};
+
+    // Either the user designs their own, or an admin/facilitator does it for someone
+    const targetUid = userId || request.auth.uid;
+    if (userId && userId !== request.auth.uid) {
+      // Check admin/facilitator access
+      const db = admin.firestore();
+      const adminDoc = await db.doc("metadata/config").get();
+      const adminEmails = adminDoc.exists ? (adminDoc.data().adminemails || []) : [];
+      const userEmail = (request.auth.token.email || "").toLowerCase();
+      if (!adminEmails.map((e) => e.toLowerCase()).includes(userEmail)) {
+        throw new HttpsError("permission-denied", "Admin access required to design experiments for others");
+      }
+    }
+
+    try {
+      const result = await designExperimentForUser(targetUid, weekNumber);
+      return result;
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labDesignExperiment error", error);
+      throw new HttpsError("internal", "Failed to design experiment");
+    }
+  }
+);
+
+/**
+ * Core experiment design logic — shared between callable and scheduled functions.
+ */
+async function designExperimentForUser(uid, weekNumber) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("AI service not configured");
+
+  const db = admin.firestore();
+
+  // Load user profile
+  const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+  if (!userSnap.exists) throw new Error("User not found");
+  const userProfile = userSnap.data();
+  const week = weekNumber || userProfile.currentWeek || 1;
+  const wIdx = weekIdx(week);
+
+  // Load Leadership Profile
+  const lpSnap = await db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`).get();
+  const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
+
+  // Load previous week's challenge (if any) for continuity
+  let previousChallenge = null;
+  if (week > 1) {
+    const prevSnap = await db.doc(`${LL_PREFIX}users/${uid}/challenges/${week - 1}`).get();
+    if (prevSnap.exists) previousChallenge = prevSnap.data();
+  }
+
+  // Load recent conversations for behavioral context
+  const convosSnap = await db
+    .collection(`${LL_PREFIX}users/${uid}/conversations`)
+    .orderBy("updatedAt", "desc")
+    .limit(5)
+    .get();
+
+  const recentContext = [];
+  convosSnap.forEach((doc) => {
+    const data = doc.data();
+    const lastMsg = (data.messages || []).filter((m) => m.role === "user").slice(-1)[0];
+    if (lastMsg) {
+      recentContext.push(`[${data.mode}, Week ${data.weekNumber}]: "${lastMsg.content.slice(0, 200)}"`);
+    }
+  });
+
+  const baseTheme = LL_WEEK_THEMES[wIdx];
+  const baseExperiment = LL_EXPERIMENTS[wIdx];
+  const userName = userProfile.displayName || userProfile.firstName || "this leader";
+
+  // Build the prompt
+  let profileContext = "";
+  if (leadershipProfile) {
+    profileContext = `
+LEADERSHIP PROFILE:
+- Presented Self: ${leadershipProfile.presentedSelf || "Unknown"}
+- Observed Self: ${leadershipProfile.observedSelf || "Unknown"}
+- Core Patterns: ${(leadershipProfile.corePatterns || []).join("; ") || "None identified yet"}
+- Growth Edges: ${(leadershipProfile.growthEdges || []).join("; ") || "None identified yet"}
+- Coaching Approach: ${leadershipProfile.coachingApproach || "Not yet defined"}`;
+
+    if (leadershipProfile.tensions && leadershipProfile.tensions.length > 0) {
+      const tensionStr = leadershipProfile.tensions
+        .map((t) => `${t.left} ↔ ${t.right} (leans ${t.position > 50 ? t.right : t.left})`)
+        .join("; ");
+      profileContext += `\n- Tensions: ${tensionStr}`;
+    }
+  }
+
+  let prevContext = "";
+  if (previousChallenge) {
+    prevContext = `
+LAST WEEK'S EXPERIMENT:
+- Theme: ${previousChallenge.theme}
+- Experiment: ${previousChallenge.personalizedExperiment || previousChallenge.experiment}
+- Status: ${previousChallenge.status}
+- AI Observation: ${previousChallenge.aiObservation || "None"}`;
+  }
+
+  const recentContextStr = recentContext.length > 0
+    ? `\nRECENT CONVERSATION SNIPPETS:\n${recentContext.join("\n")}`
+    : "";
+
+  const anthropic = new Anthropic({ apiKey });
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    system: `You are the Experiment Designer for Leadership Lab, a 5-milestone leadership development program that supports the Arena Foundations in-person training.
+
+Your job: take this week's BASE experiment and PERSONALIZE it for this specific leader based on their Leadership Profile, behavioral patterns, and recent conversations.
+
+The base experiment is the starting point — your job is to make it hit harder and land more precisely for THIS person. Target their specific growth edges, tensions, and blind spots.
+
+Rules:
+- The personalized experiment must be BEHAVIORAL — something they DO, not something they think about
+- It must be completable in a normal work week
+- It must be specific enough that they'll know if they did it or didn't
+- It should feel slightly uncomfortable — right at the edge of their comfort zone
+- Include a "why this matters for YOU" sentence that connects it to their profile
+- Keep the experiment description under 100 words
+- Add 2-3 "notice" prompts — specific things to pay attention to while doing the experiment
+
+Return ONLY a JSON object:
+{
+  "personalizedExperiment": "The tailored experiment description",
+  "whyThisMatters": "1-2 sentences connecting this to their specific growth edge",
+  "noticePrompts": ["What to notice #1", "What to notice #2", "What to notice #3"],
+  "difficulty": "stretch | edge | deep-end",
+  "targetPattern": "The specific pattern this experiment is designed to surface or disrupt"
+}
+
+Return ONLY valid JSON. No markdown.`,
+    messages: [{
+      role: "user",
+      content: `Design a personalized experiment for ${userName}.
+
+WEEK ${week}: ${baseTheme}
+BASE EXPERIMENT: ${baseExperiment}
+${profileContext}
+${prevContext}
+${recentContextStr}`,
+    }],
+  });
+
+  const resultText = response.content[0]?.text || "{}";
+  let design;
+  try {
+    design = JSON.parse(resultText);
+  } catch {
+    logger.warn("Failed to parse experiment design JSON", { resultText });
+    design = {
+      personalizedExperiment: baseExperiment,
+      whyThisMatters: "",
+      noticePrompts: [],
+      difficulty: "stretch",
+      targetPattern: "",
+    };
+  }
+
+  // Save to challenges collection
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const challengeRef = db.doc(`${LL_PREFIX}users/${uid}/challenges/${week}`);
+  await challengeRef.set({
+    weekNumber: week,
+    theme: baseTheme,
+    experiment: baseExperiment,
+    personalizedExperiment: design.personalizedExperiment,
+    whyThisMatters: design.whyThisMatters,
+    noticePrompts: design.noticePrompts || [],
+    difficulty: design.difficulty || "stretch",
+    targetPattern: design.targetPattern || "",
+    status: "assigned", // assigned → in-progress → completed
+    assignedAt: now,
+    updatedAt: now,
+    aiObservation: null,
+  });
+
+  logger.info("Experiment designed", { uid, week, difficulty: design.difficulty });
+
+  return {
+    success: true,
+    weekNumber: week,
+    theme: baseTheme,
+    experiment: design.personalizedExperiment,
+    whyThisMatters: design.whyThisMatters,
+    noticePrompts: design.noticePrompts,
+    difficulty: design.difficulty,
+  };
+}
+
+// ============================================================================
+// LEADERSHIP LAB — Content Prescription System
+// ============================================================================
+
+/**
+ * prescribeContentForUser — AI generates a personalized leadership concept,
+ * framework, or micro-exercise matched to this leader's current tensions,
+ * growth edges, and experiment progress. "No content library — AI prescribes,
+ * the user doesn't browse."
+ *
+ * Called during labWeekTransition after experiment design.
+ * Delivered via SMS on Wednesday AM.
+ *
+ * @param {string} uid - User ID
+ * @param {number} weekNumber - Current week
+ * @returns {Promise<object>} Saved prescription document
+ */
+async function prescribeContentForUser(uid, weekNumber) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("AI service not configured");
+
+  const db = admin.firestore();
+
+  // Load user profile
+  const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+  if (!userSnap.exists) throw new Error("User not found");
+  const userProfile = userSnap.data();
+  const userName = userProfile.displayName || userProfile.firstName || "this leader";
+
+  // Load Leadership Profile
+  const lpSnap = await db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`).get();
+  const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
+
+  // Load this week's experiment
+  const challengeSnap = await db.doc(`${LL_PREFIX}users/${uid}/challenges/${weekNumber}`).get();
+  const experiment = challengeSnap.exists ? challengeSnap.data() : null;
+
+  // Load previous prescriptions for variety
+  const prevPrescriptions = await db
+    .collection(`${LL_PREFIX}users/${uid}/prescriptions`)
+    .orderBy("weekNumber", "desc")
+    .limit(3)
+    .get();
+
+  const previousTopics = [];
+  prevPrescriptions.forEach((doc) => {
+    const d = doc.data();
+    if (d.topic) previousTopics.push(d.topic);
+  });
+
+  // Load recent evidence for behavioral grounding
+  const evidenceSnap = await db
+    .collection(`${LL_PREFIX}users/${uid}/evidence`)
+    .orderBy("createdAt", "desc")
+    .limit(5)
+    .get();
+
+  const recentEvidence = [];
+  evidenceSnap.forEach((doc) => {
+    const d = doc.data();
+    if (d.quote) recentEvidence.push(`"${d.quote}"`);
+    if (d.observation) recentEvidence.push(d.observation);
+  });
+
+  const weekTheme = LL_WEEK_THEMES[weekIdx(weekNumber)];
+
+  // Build profile context
+  let profileContext = "LEADERSHIP PROFILE: Not yet established.";
+  if (leadershipProfile) {
+    profileContext = `LEADERSHIP PROFILE:
+- Presented Self: ${leadershipProfile.presentedSelf || "Unknown"}
+- Observed Self: ${leadershipProfile.observedSelf || "Unknown"}
+- Core Patterns: ${(leadershipProfile.corePatterns || []).join("; ") || "None yet"}
+- Growth Edges: ${(leadershipProfile.growthEdges || []).join("; ") || "None yet"}`;
+
+    if (leadershipProfile.tensions && leadershipProfile.tensions.length > 0) {
+      const tensionStr = leadershipProfile.tensions
+        .map((t) => `${t.left} ↔ ${t.right} (leans ${t.position > 50 ? t.right : t.left})`)
+        .join("; ");
+      profileContext += `\n- Active Tensions: ${tensionStr}`;
+    }
+  }
+
+  const experimentContext = experiment
+    ? `THIS WEEK'S EXPERIMENT: ${experiment.personalizedExperiment || experiment.experiment}\nTarget Pattern: ${experiment.targetPattern || "N/A"}`
+    : "No experiment assigned yet.";
+
+  const evidenceContext = recentEvidence.length > 0
+    ? `RECENT BEHAVIORAL EVIDENCE:\n${recentEvidence.slice(0, 6).join("\n")}`
+    : "";
+
+  const avoidContext = previousTopics.length > 0
+    ? `ALREADY PRESCRIBED (avoid repeating): ${previousTopics.join(", ")}`
+    : "";
+
+  const anthropic = new Anthropic({ apiKey });
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    system: `You are a leadership development content curator for Leadership Lab, a 5-milestone program supporting Arena Foundations in-person training.
+
+Your job: prescribe ONE specific leadership concept, framework, or micro-exercise that is precisely matched to this leader's current growth edge and behavioral patterns. You are NOT building a content library — you are making a SURGICAL prescription based on what you know about this person.
+
+PRESCRIPTION TYPES (pick the most fitting):
+- "concept" — A leadership framework or mental model they need right now (e.g., "Radical Candor's 2x2", "Lencioni's vulnerability-based trust")
+- "reframe" — A perspective shift on a pattern you've observed in them (e.g., "What if your need for consensus isn't empathy — it's conflict avoidance?")
+- "micro-exercise" — A 5-minute reflective exercise tied to their specific tension (e.g., "Write down the last 3 decisions you delegated vs. held onto. What pattern do you see?")
+- "reading" — A specific article concept, book chapter idea, or thought leader's framework (describe the core idea, don't just name-drop)
+
+Rules:
+- NEVER prescribe something generic. Every prescription must reference THIS leader's specific patterns or tensions.
+- The "whyYou" field should feel like the coach is speaking directly to them — connecting the prescription to something specific from their profile or conversations.
+- The "smsDelivery" field is the actual text message that will be sent — keep it under 300 characters, make it compelling and personal, and end with a question or call to reflection.
+- Keep "content" under 200 words — concise and actionable.
+- The prescription should complement (not duplicate) their weekly experiment.
+
+Return ONLY a JSON object:
+{
+  "type": "concept" | "reframe" | "micro-exercise" | "reading",
+  "topic": "Short title (3-6 words)",
+  "content": "The actual prescription content — the concept explained, the reframe articulated, or the exercise described",
+  "whyYou": "1-2 sentences explaining why THIS prescription for THIS leader right now",
+  "smsDelivery": "The SMS text to deliver this prescription (under 300 chars)",
+  "connectedTension": "Which tension or growth edge this targets (from their profile)"
+}
+
+Return ONLY valid JSON. No markdown.`,
+    messages: [{
+      role: "user",
+      content: `Prescribe content for ${userName}.
+
+WEEK ${weekNumber}: ${weekTheme}
+${profileContext}
+${experimentContext}
+${evidenceContext}
+${avoidContext}`,
+    }],
+  });
+
+  const resultText = response.content[0]?.text || "{}";
+  let prescription;
+  try {
+    prescription = JSON.parse(resultText);
+  } catch {
+    logger.warn("Failed to parse prescription JSON", { resultText });
+    prescription = {
+      type: "concept",
+      topic: weekTheme,
+      content: `This week focuses on ${weekTheme}. Reflect on how this theme shows up in your daily leadership.`,
+      whyYou: "Matched to your current week's theme.",
+      smsDelivery: `Something for you to sit with this week about ${weekTheme}. How does this show up in your leadership?`,
+      connectedTension: "",
+    };
+  }
+
+  // Save to prescriptions collection
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const prescriptionData = {
+    weekNumber,
+    type: prescription.type || "concept",
+    topic: prescription.topic || "",
+    content: prescription.content || "",
+    whyYou: prescription.whyYou || "",
+    smsDelivery: prescription.smsDelivery || "",
+    connectedTension: prescription.connectedTension || "",
+    status: "pending", // pending → delivered → read
+    createdAt: now,
+    deliveredAt: null,
+  };
+
+  await db.doc(`${LL_PREFIX}users/${uid}/prescriptions/${weekNumber}`).set(prescriptionData);
+
+  logger.info("Content prescribed", { uid, weekNumber, type: prescription.type, topic: prescription.topic });
+
+  return prescriptionData;
+}
+
+// ============================================================================
+// LEADERSHIP LAB — Reveal Engine
+// ============================================================================
+
+/**
+ * extractEvidenceFromConversations — Analyzes a week of coaching transcripts and
+ * extracts structured behavioral evidence (quotes, pattern signals, tension markers).
+ *
+ * Called during labWeekTransition after generating the weekly reflection.
+ *
+ * @param {string} uid - User ID
+ * @param {number} weekNumber - Week the conversations are from
+ * @param {string} transcript - Combined transcript of all conversations
+ * @param {object} leadershipProfile - Current Leadership Profile
+ * @returns {Promise<object[]>} Array of saved evidence documents
+ */
+async function extractEvidenceFromConversations(uid, weekNumber, transcript, leadershipProfile) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("AI service not configured");
+
+  const anthropic = new Anthropic({ apiKey });
+
+  let profileContext = "";
+  if (leadershipProfile) {
+    profileContext = `
+LEADERSHIP PROFILE:
+- Presented Self: ${leadershipProfile.presentedSelf || "Unknown"}
+- Observed Self: ${leadershipProfile.observedSelf || "Unknown"}
+- Tensions: ${(leadershipProfile.tensions || []).map((t) => `${t.left} ↔ ${t.right}`).join("; ") || "None"}
+- Core Patterns: ${(leadershipProfile.corePatterns || []).join("; ") || "None"}
+- Growth Edges: ${(leadershipProfile.growthEdges || []).join("; ") || "None"}`;
+  }
+
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    system: `You are a leadership psychologist extracting behavioral evidence from coaching conversations.
+
+Your job: identify specific moments in the transcript that reveal something important about this leader's identity, patterns, or tensions. Focus on:
+
+1. PRESENTED-SELF evidence: How they describe themselves or their leadership (their self-image)
+2. OBSERVED-BEHAVIOR evidence: What their word choices, stories, and reactions actually reveal (may contradict presented self)
+3. TENSION-SIGNAL evidence: Moments where two competing values or patterns collide
+4. GROWTH-SIGNAL evidence: Moments of genuine self-awareness, vulnerability, or pattern-breaking
+5. RESISTANCE evidence: Deflection, rationalization, humor-as-shield, or refusing to look at something
+
+Extract 3-7 evidence items. Quality over quantity. Only include evidence that's genuinely revealing — skip surface-level observations.
+${profileContext}
+
+Return ONLY a JSON array:
+[
+  {
+    "quote": "Their exact words or a close paraphrase (under 100 chars)",
+    "observation": "What this reveals about them (1 sentence)",
+    "category": "presented-self | observed-behavior | tension-signal | growth-signal | resistance",
+    "relatedTension": { "left": "Value A", "right": "Value B" } or null,
+    "relatedPattern": "Pattern name from their profile" or null,
+    "significance": "high | medium | low"
+  }
+]
+
+Return ONLY valid JSON. No markdown, no explanation.`,
+    messages: [{ role: "user", content: `WEEK ${weekNumber} CONVERSATIONS:\n\n${transcript}` }],
+  });
+
+  const resultText = response.content[0]?.text || "[]";
+  let evidenceItems;
+  try {
+    evidenceItems = JSON.parse(resultText);
+    if (!Array.isArray(evidenceItems)) evidenceItems = [];
+  } catch {
+    logger.warn("Failed to parse evidence extraction JSON", { uid, weekNumber });
+    return [];
+  }
+
+  // Save each evidence item to Firestore
+  const db = admin.firestore();
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const saved = [];
+
+  for (const item of evidenceItems) {
+    const ref = db.collection(`${LL_PREFIX}users/${uid}/evidence`).doc();
+    const doc = {
+      quote: (item.quote || "").slice(0, 200),
+      observation: (item.observation || "").slice(0, 300),
+      category: item.category || "observed-behavior",
+      relatedTension: item.relatedTension || null,
+      relatedPattern: item.relatedPattern || null,
+      significance: item.significance || "medium",
+      weekNumber,
+      usedInReveal: false,
+      createdAt: now,
+    };
+    await ref.set(doc);
+    saved.push({ id: ref.id, ...doc });
+  }
+
+  logger.info("Evidence extracted", { uid, weekNumber, count: saved.length });
+  return saved;
+}
+
+/**
+ * generateRevealIfReady — Checks if enough evidence has accumulated for a meaningful
+ * reveal, and if the timing is right. If so, generates and stores a pending reveal.
+ *
+ * Reveal timing strategy:
+ * - Week 1: No reveals (building trust)
+ * - Week 2: Pattern observation eligible (if enough evidence)
+ * - Week 3: Tension reveal eligible (Presented vs Observed)
+ * - Week 4: Connection reveal (linking multiple patterns)
+ * - Week 5: Deep reveal (core tension confrontation)
+ * - Week 5: Growth recognition (celebrating shifts with evidence)
+ * - Max 1 pending reveal at a time. 3-4 total across 5 milestones.
+ *
+ * @param {string} uid - User ID
+ * @param {number} upcomingWeek - The NEXT week (reveal will be delivered that week)
+ * @returns {Promise<object|null>} The generated reveal, or null if not ready
+ */
+async function generateRevealIfReady(uid, upcomingWeek) {
+  // No reveals in week 1 — build trust first
+  if (upcomingWeek <= 1) return null;
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("AI service not configured");
+
+  const db = admin.firestore();
+
+  // Check how many reveals have already been delivered or are pending
+  const existingReveals = await db
+    .collection(`${LL_PREFIX}users/${uid}/reveals`)
+    .get();
+  const deliveredCount = existingReveals.docs.filter(
+    (d) => d.data().status === "delivered" || d.data().status === "acknowledged"
+  ).length;
+  const hasPending = existingReveals.docs.some((d) => d.data().status === "pending");
+
+  // Foundation: max 4 reveals, Ascent: no cap. Max 1 pending at a time.
+  const isAscent = upcomingWeek > 5;
+  if ((!isAscent && deliveredCount >= 4) || hasPending) return null;
+
+  // Skip some weeks to make reveals feel strategic, not routine
+  // Ideal: weeks 2, 3, 4/5 — but dependent on evidence quality
+  // Week 5 is reserved for growth recognition (different from confrontation)
+  const revealSchedule = {
+    2: "pattern-reveal",
+    3: "tension-reveal",
+    4: "mirror-moment",
+    5: "growth-recognition",
+  };
+  // Ascent phase: generate periodic reveals based on ongoing conversations
+  let revealType = revealSchedule[upcomingWeek];
+  if (!revealType && upcomingWeek > 5) {
+    // In Ascent, generate a reveal every 3-4 weeks if there's enough evidence
+    const weeksSinceLastReveal = upcomingWeek - existingReveals.docs
+      .filter((d) => d.data().status !== "pending")
+      .reduce((max, d) => Math.max(max, d.data().weekNumber || 0), 0);
+    if (weeksSinceLastReveal >= 3) {
+      revealType = upcomingWeek % 2 === 0 ? "growth-recognition" : "mirror-moment";
+    }
+  }
+  if (!revealType) return null;
+
+  // Don't reveal every week — skip if they've already had one recently
+  if (deliveredCount > 0 && upcomingWeek - existingReveals.docs
+    .filter((d) => d.data().status !== "pending")
+    .reduce((max, d) => Math.max(max, d.data().weekNumber || 0), 0) < 2
+    && upcomingWeek < 5) {
+    // Last reveal was last week — skip unless it's week 5 (growth recognition)
+    return null;
+  }
+
+  // Load all accumulated evidence
+  const evidenceSnap = await db
+    .collection(`${LL_PREFIX}users/${uid}/evidence`)
+    .orderBy("createdAt", "asc")
+    .get();
+
+  if (evidenceSnap.empty) return null;
+
+  const allEvidence = evidenceSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+  // Need minimum evidence before attempting a reveal
+  const minEvidence = { "pattern-reveal": 3, "tension-reveal": 4, "mirror-moment": 5, "growth-recognition": 3 };
+  if (allEvidence.length < (minEvidence[revealType] || 3)) return null;
+
+  // Load Leadership Profile
+  const lpSnap = await db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`).get();
+  const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
+  if (!leadershipProfile) return null; // Can't reveal without a profile
+
+  // Load user profile for name
+  const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+  const userName = userSnap.exists
+    ? (userSnap.data().displayName || userSnap.data().firstName || "there")
+    : "there";
+
+  // Build the evidence context
+  const evidenceContext = allEvidence
+    .filter((e) => e.significance === "high" || e.significance === "medium")
+    .map((e) => `[Week ${e.weekNumber}, ${e.category}] "${e.quote}" — ${e.observation}`)
+    .join("\n");
+
+  // Build previous reveals context
+  const previousReveals = existingReveals.docs
+    .filter((d) => d.data().status !== "pending")
+    .map((d) => {
+      const r = d.data();
+      return `[Week ${r.weekNumber}, ${r.type}]: ${r.content?.slice(0, 100)}... Response: ${r.userResponse || "none"}`;
+    })
+    .join("\n");
+
+  const typeInstructions = {
+    "pattern-reveal": `Generate a PATTERN REVEAL — name a behavioral pattern you've observed that they may not be fully aware of. Ground it in specific evidence. This is a gentle first mirror: "I've noticed that when X happens, you tend to Y." Make them curious, not defensive.`,
+    "tension-reveal": `Generate a TENSION REVEAL — surface the gap between their Presented Self and their Observed Self. Use their own words against the evidence. This should be a "wait... you're right" moment. Example shape: "You describe yourself as [presented], but in our conversations I've noticed [observed]. What do you make of that gap?"`,
+    "mirror-moment": `Generate a MIRROR MOMENT — a direct, unflinching observation that connects multiple patterns into a deeper truth. This is the most confrontational reveal. It should be something they've been avoiding. Be caring but don't soften it into nothing. They need to feel this one.`,
+    "growth-recognition": `Generate a GROWTH RECOGNITION — celebrate a genuine shift you've observed, with specific evidence. Show them the before and after. This is NOT generic praise. Reference exact moments. Make them see how far they've come. This should feel earned and real.`,
+  };
+
+  const anthropic = new Anthropic({ apiKey });
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 512,
+    system: `You are the Reveal Engine for Leadership Lab. Your job is to craft a single, strategic reveal — a moment of confrontation or recognition that creates genuine self-awareness that cannot be unseen.
+
+${typeInstructions[revealType]}
+
+LEADERSHIP PROFILE:
+- Presented Self: ${leadershipProfile.presentedSelf || "Unknown"}
+- Observed Self: ${leadershipProfile.observedSelf || "Unknown"}
+- Tensions: ${(leadershipProfile.tensions || []).map((t) => `${t.left} ↔ ${t.right} (leans ${t.position > 50 ? t.right : t.left}, evidence: ${t.evidence || "none"})`).join("; ") || "None"}
+- Core Patterns: ${(leadershipProfile.corePatterns || []).join("; ") || "None"}
+- Growth Edges: ${(leadershipProfile.growthEdges || []).join("; ") || "None"}
+
+ACCUMULATED EVIDENCE:
+${evidenceContext}
+
+${previousReveals ? `PREVIOUS REVEALS (don't repeat these):\n${previousReveals}` : "No previous reveals — this is the first one."}
+
+The reveal will be delivered via TEXT MESSAGE. It must:
+- Be under 300 characters (fit in a text)
+- Feel personal and specific (never generic coaching platitudes)
+- Land as a genuine insight, not an accusation
+- End with a question or invitation to reflect (not a demand for response)
+- Use ${userName}'s name at most once
+
+Return ONLY a JSON object:
+{
+  "content": "The reveal text message",
+  "evidenceUsed": ["evidence_id_1", "evidence_id_2"],
+  "targetTension": { "left": "Value A", "right": "Value B" } or null,
+  "targetPattern": "The pattern this targets" or null,
+  "rationale": "1 sentence on why this reveal, why now (for internal tracking)"
+}
+
+Return ONLY valid JSON.`,
+    messages: [{
+      role: "user",
+      content: `Generate a ${revealType} for ${userName} to be delivered in Week ${upcomingWeek}.
+
+Evidence IDs for reference: ${allEvidence.map((e) => e.id).join(", ")}`,
+    }],
+  });
+
+  const resultText = response.content[0]?.text || "{}";
+  let reveal;
+  try {
+    reveal = JSON.parse(resultText);
+  } catch {
+    logger.warn("Failed to parse reveal JSON", { uid, upcomingWeek });
+    return null;
+  }
+
+  if (!reveal.content) return null;
+
+  // Save the pending reveal
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const revealRef = db.collection(`${LL_PREFIX}users/${uid}/reveals`).doc();
+  const revealDoc = {
+    type: revealType,
+    weekNumber: upcomingWeek,
+    content: reveal.content.slice(0, 500),
+    evidenceUsed: (reveal.evidenceUsed || []).slice(0, 10),
+    targetTension: reveal.targetTension || null,
+    targetPattern: reveal.targetPattern || null,
+    rationale: (reveal.rationale || "").slice(0, 300),
+    status: "pending",
+    deliveredAt: null,
+    conversationId: null,
+    userResponse: null,
+    impact: null,
+    createdAt: now,
+  };
+  await revealRef.set(revealDoc);
+
+  // Mark evidence as used in a reveal
+  for (const eid of (reveal.evidenceUsed || [])) {
+    const evidRef = db.doc(`${LL_PREFIX}users/${uid}/evidence/${eid}`);
+    const evidSnap = await evidRef.get();
+    if (evidSnap.exists) {
+      await evidRef.update({ usedInReveal: true });
+    }
+  }
+
+  logger.info("Reveal generated", { uid, upcomingWeek, type: revealType, revealId: revealRef.id });
+  return { id: revealRef.id, ...revealDoc };
+}
+
+/**
+ * getPendingReveal — Check if a user has a pending reveal ready for delivery.
+ *
+ * @param {string} uid - User ID
+ * @returns {Promise<{ id: string, data: object } | null>}
+ */
+async function getPendingReveal(uid) {
+  const db = admin.firestore();
+  const snap = await db
+    .collection(`${LL_PREFIX}users/${uid}/reveals`)
+    .where("status", "==", "pending")
+    .limit(1)
+    .get();
+
+  if (snap.empty) return null;
+  return { id: snap.docs[0].id, data: snap.docs[0].data() };
+}
+
+/**
+ * labWeekTransition — Scheduled function that runs Monday at 6 AM ET.
+ *
+ * For each active cohort:
+ * 1. Check if a new week has started
+ * 2. Update each member's currentWeek
+ * 3. Generate personalized experiments for the new week
+ * 4. Summarize last week's conversations and update observations
+ * 5. Create cohort pulse data
+ */
+exports.labWeekTransition = onSchedule(
+  {
+    schedule: "0 6 * * 1", // Monday 6 AM
+    timeZone: "America/New_York",
+    secrets: ["ANTHROPIC_API_KEY"],
+    region: "us-central1",
+    maxInstances: 1,
+    timeoutSeconds: 540,
+  },
+  async (event) => {
+    const db = admin.firestore();
+
+    logger.info("labWeekTransition triggered");
+
+    const cohortsSnap = await db
+      .collection(`${LL_PREFIX}cohorts`)
+      .where("isActive", "==", true)
+      .get();
+
+    if (cohortsSnap.empty) {
+      logger.info("No active cohorts");
+      return;
+    }
+
+    let totalProcessed = 0;
+    let totalErrors = 0;
+
+    for (const cohortDoc of cohortsSnap.docs) {
+      const cohort = cohortDoc.data();
+      const cohortId = cohortDoc.id;
+      const weekNumber = getCohortWeekNumber(cohort.startDate, cohort.weekCount || 6, { clamp: false });
+
+      if (weekNumber > (cohort.weekCount || 6)) {
+        // Program ended — mark cohort as post-program
+        await cohortDoc.ref.update({
+          isActive: false,
+          phase: "post",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Transition all members to ascent phase
+        const finishedMembers = await db
+          .collection(`${LL_PREFIX}cohorts/${cohortId}/members`)
+          .where("status", "==", "enrolled")
+          .get();
+
+        const batch = db.batch();
+        const now = admin.firestore.FieldValue.serverTimestamp();
+        for (const mDoc of finishedMembers.docs) {
+          // Update user profile to ascent phase
+          batch.update(db.doc(`${LL_PREFIX}users/${mDoc.id}`), {
+            phase: "ascent",
+            ascentStartDate: now,
+            updatedAt: now,
+          });
+          // Update cohort member status
+          batch.update(mDoc.ref, {
+            status: "ascent",
+            updatedAt: now,
+          });
+        }
+        await batch.commit();
+
+        logger.info("Cohort completed program, members transitioned to ascent", {
+          cohortId,
+          memberCount: finishedMembers.size,
+        });
+        continue;
+      }
+
+      // Get members
+      const membersSnap = await db
+        .collection(`${LL_PREFIX}cohorts/${cohortId}/members`)
+        .where("status", "==", "enrolled")
+        .get();
+
+      for (const memberDoc of membersSnap.docs) {
+        const memberId = memberDoc.id;
+
+        try {
+          const userSnap = await db.doc(`${LL_PREFIX}users/${memberId}`).get();
+          if (!userSnap.exists) continue;
+          const userProfile = userSnap.data();
+
+          if (!userProfile.onboardingComplete) continue;
+
+          const prevWeek = userProfile.currentWeek || 1;
+
+          // Only process if week actually changed
+          if (weekNumber <= prevWeek) continue;
+
+          // --- Summarize last week's conversations ---
+          const lastWeekConvos = await db
+            .collection(`${LL_PREFIX}users/${memberId}/conversations`)
+            .where("weekNumber", "==", prevWeek)
+            .get();
+
+          if (!lastWeekConvos.empty) {
+            const transcripts = [];
+            lastWeekConvos.forEach((doc) => {
+              const data = doc.data();
+              const msgs = (data.messages || [])
+                .map((m) => `${m.role === "user" ? "LEADER" : "COACH"}: ${m.content}`)
+                .join("\n");
+              if (msgs) transcripts.push(msgs);
+            });
+
+            if (transcripts.length > 0) {
+              const apiKey = process.env.ANTHROPIC_API_KEY;
+              const anthropic = new Anthropic({ apiKey });
+
+              // Generate weekly reflection/observation
+              const obsResponse = await anthropic.messages.create({
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 512,
+                system: `You are a leadership psychologist analyzing a week of coaching conversations. Write a brief observation note about this leader's week. Include: key themes, behavioral patterns noticed, experiment follow-through, and any shifts from previous weeks. Keep it under 150 words. Write in third person ("They...").`,
+                messages: [{ role: "user", content: transcripts.join("\n---\n") }],
+              });
+
+              const observation = obsResponse.content[0]?.text || "";
+
+              // Save weekly reflection
+              const now = admin.firestore.FieldValue.serverTimestamp();
+              await db.doc(`${LL_PREFIX}users/${memberId}/reflections/${prevWeek}`).set({
+                weekNumber: prevWeek,
+                summary: observation,
+                conversationCount: lastWeekConvos.size,
+                keyInsights: [],
+                patterns: [],
+                createdAt: now,
+              });
+
+              // Update last week's challenge with observation
+              const challengeRef = db.doc(`${LL_PREFIX}users/${memberId}/challenges/${prevWeek}`);
+              const challengeSnap = await challengeRef.get();
+              if (challengeSnap.exists) {
+                await challengeRef.update({
+                  aiObservation: observation,
+                  status: "completed",
+                  updatedAt: now,
+                });
+              }
+
+              // --- REVEAL ENGINE: Extract evidence from this week's conversations ---
+              try {
+                const lpSnap = await db.doc(`${LL_PREFIX}users/${memberId}/leadershipProfile/current`).get();
+                const lp = lpSnap.exists ? lpSnap.data() : null;
+                await extractEvidenceFromConversations(memberId, prevWeek, transcripts.join("\n---\n"), lp);
+              } catch (evidErr) {
+                logger.warn("Failed to extract evidence", { memberId, prevWeek, error: evidErr.message });
+              }
+            }
+          }
+
+          // --- REVEAL ENGINE: Generate reveal for upcoming week if ready ---
+          try {
+            const revealResult = await generateRevealIfReady(memberId, weekNumber);
+            if (revealResult) {
+              logger.info("Reveal queued for delivery", { memberId, weekNumber, type: revealResult.type });
+            }
+          } catch (revealErr) {
+            logger.warn("Failed to generate reveal", { memberId, weekNumber, error: revealErr.message });
+          }
+
+          // --- Advance to new week ---
+          await db.doc(`${LL_PREFIX}users/${memberId}`).update({
+            currentWeek: weekNumber,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+          // --- Design new experiment ---
+          try {
+            await designExperimentForUser(memberId, weekNumber);
+          } catch (expErr) {
+            logger.warn("Failed to design experiment", { memberId, weekNumber, error: expErr.message });
+          }
+
+          // --- Prescribe content for this week ---
+          try {
+            await prescribeContentForUser(memberId, weekNumber);
+          } catch (rxErr) {
+            logger.warn("Failed to prescribe content", { memberId, weekNumber, error: rxErr.message });
+          }
+
+          totalProcessed++;
+        } catch (memberErr) {
+          totalErrors++;
+          logger.error("Week transition error for member", { memberId, error: memberErr.message });
+        }
+      }
+
+      // --- Update cohort pulse ---
+      const now = admin.firestore.FieldValue.serverTimestamp();
+      await db.doc(`${LL_PREFIX}cohorts/${cohortId}/pulse/${weekNumber}`).set(
+        {
+          weekNumber,
+          memberCount: membersSnap.size,
+          processedAt: now,
+        },
+        { merge: true }
+      );
+    }
+
+    logger.info("labWeekTransition complete", { totalProcessed, totalErrors });
+  }
+);
+
+/**
+ * labTestAdvanceWeek — Admin-only tool for testing the full lifecycle.
+ * Sets a member's currentWeek, optionally marks onboarding complete,
+ * and optionally triggers the week transition logic (summaries, reveals, experiments).
+ */
+exports.labTestAdvanceWeek = onCall(
+  {
+    secrets: ["ANTHROPIC_API_KEY"],
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const db = admin.firestore();
+
+    // Check admin
+    const adminDoc = await db.doc("metadata/config").get();
+    const adminEmails = adminDoc.exists ? (adminDoc.data().adminemails || []) : [];
+    const userEmail = (request.auth.token.email || "").toLowerCase();
+    if (!adminEmails.map((e) => e.toLowerCase()).includes(userEmail)) {
+      throw new HttpsError("permission-denied", "Admin access required");
+    }
+
+    const { memberId, targetWeek, completeOnboarding, cohortId } = request.data || {};
+
+    if (!memberId || typeof memberId !== "string") {
+      throw new HttpsError("invalid-argument", "memberId is required");
+    }
+    if (!targetWeek || typeof targetWeek !== "number" || targetWeek < 0 || targetWeek > 52) {
+      throw new HttpsError("invalid-argument", "targetWeek must be 0-52");
+    }
+
+    const userRef = db.doc(`${LL_PREFIX}users/${memberId}`);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      throw new HttpsError("not-found", "User not found");
+    }
+
+    const userProfile = userSnap.data();
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    const updates = { currentWeek: targetWeek, updatedAt: now };
+
+    // Set phase based on week
+    if (targetWeek > 6) {
+      updates.phase = "ascent";
+      if (!userProfile.ascentStartDate) {
+        updates.ascentStartDate = now;
+      }
+    } else if (targetWeek >= 1) {
+      updates.phase = "foundation";
+    }
+
+    // Optionally mark onboarding as complete
+    if (completeOnboarding && !userProfile.onboardingComplete) {
+      updates.onboardingComplete = true;
+      updates.onboardedAt = now;
+    }
+
+    await userRef.update(updates);
+
+    // If advancing forward, try to design experiment and prescribe content
+    if (targetWeek > 0) {
+      try {
+        await designExperimentForUser(memberId, targetWeek);
+      } catch (e) {
+        logger.warn("Test advance: experiment design failed", { memberId, targetWeek, error: e.message });
+      }
+
+      try {
+        await prescribeContentForUser(memberId, targetWeek);
+      } catch (e) {
+        logger.warn("Test advance: prescription failed", { memberId, targetWeek, error: e.message });
+      }
+    }
+
+    // Also update cohort member doc if cohortId provided
+    if (cohortId) {
+      try {
+        await db.doc(`${LL_PREFIX}cohorts/${cohortId}/members/${memberId}`).update({
+          currentWeek: targetWeek,
+          updatedAt: now,
+        });
+      } catch (e) {
+        logger.warn("Test advance: cohort member update failed", { error: e.message });
+      }
+    }
+
+    logger.info("labTestAdvanceWeek", { memberId, targetWeek, completeOnboarding: !!completeOnboarding });
+
+    return {
+      success: true,
+      memberId,
+      previousWeek: userProfile.currentWeek || 0,
+      newWeek: targetWeek,
+      onboardingComplete: completeOnboarding ? true : userProfile.onboardingComplete,
+    };
+  }
+);
+
+/**
+ * labTestTriggerOnboarding — Admin-only. Creates a web-based onboarding
+ * conversation for a member without sending SMS. Allows testing the full
+ * onboarding flow via the app when SMS is unavailable.
+ */
+exports.labTestTriggerOnboarding = onCall(
+  {
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const db = admin.firestore();
+
+    // Check admin
+    const adminDoc = await db.doc("metadata/config").get();
+    const adminEmails = adminDoc.exists ? (adminDoc.data().adminemails || []) : [];
+    const userEmail = (request.auth.token.email || "").toLowerCase();
+    if (!adminEmails.map((e) => e.toLowerCase()).includes(userEmail)) {
+      throw new HttpsError("permission-denied", "Admin access required");
+    }
+
+    const { memberId } = request.data || {};
+
+    if (!memberId || typeof memberId !== "string") {
+      throw new HttpsError("invalid-argument", "memberId is required");
+    }
+
+    const userRef = db.doc(`${LL_PREFIX}users/${memberId}`);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      throw new HttpsError("not-found", "User not found");
+    }
+
+    const userProfile = userSnap.data();
+    if (userProfile.onboardingComplete) {
+      return { success: true, alreadyOnboarded: true, message: "User already completed onboarding" };
+    }
+
+    const firstName = userProfile.firstName || userProfile.displayName || "there";
+    const now = admin.firestore.FieldValue.serverTimestamp();
+
+    // Check for existing onboarding conversation
+    const existingSnap = await db
+      .collection(`${LL_PREFIX}users/${memberId}/conversations`)
+      .where("mode", "==", "onboarding")
+      .limit(1)
+      .get();
+
+    if (!existingSnap.empty) {
+      return {
+        success: true,
+        alreadyExists: true,
+        conversationId: existingSnap.docs[0].id,
+        message: "Onboarding conversation already exists",
+      };
+    }
+
+    // Create onboarding conversation (web channel, no SMS)
+    const openingMessage = `${firstName}, it's time. Your Leadership Lab program starts now. I'm your AI coach, and I want to understand how you lead. Let's start simple — what's your role, and how big is your team?`;
+
+    const convoRef = db.collection(`${LL_PREFIX}users/${memberId}/conversations`).doc();
+    await convoRef.set({
+      mode: "onboarding",
+      weekNumber: 0,
+      channel: "web",
+      aiInitiated: true,
+      messages: [
+        {
+          role: "assistant",
+          content: openingMessage,
+          timestamp: new Date().toISOString(),
+          channel: "web",
+        },
+      ],
+      summary: "",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    logger.info("labTestTriggerOnboarding", { memberId, conversationId: convoRef.id });
+
+    return {
+      success: true,
+      conversationId: convoRef.id,
+      message: "Onboarding conversation created via web",
+    };
+  }
+);
+
+/**
+ * labRevealStatus — Fetch a user's reveal history and evidence summary.
+ * Used by the web app's Mirror screen.
+ */
+exports.labRevealStatus = onCall(
+  {
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-test\.web\.app$/,
+      /leaderreps-test\.firebaseapp\.com$/,
+      /leaderreps-prod\.web\.app$/,
+      /leaderreps-prod\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const uid = request.auth.uid;
+    const db = admin.firestore();
+
+    try {
+      // Load all reveals
+      const revealsSnap = await db
+        .collection(`${LL_PREFIX}users/${uid}/reveals`)
+        .orderBy("createdAt", "asc")
+        .get();
+
+      const reveals = revealsSnap.docs.map((d) => ({
+        id: d.id,
+        type: d.data().type,
+        weekNumber: d.data().weekNumber,
+        content: d.data().content,
+        status: d.data().status,
+        deliveredAt: d.data().deliveredAt,
+        userResponse: d.data().userResponse,
+        targetTension: d.data().targetTension,
+        targetPattern: d.data().targetPattern,
+      }));
+
+      // Load evidence summary (counts by category, week)
+      const evidenceSnap = await db
+        .collection(`${LL_PREFIX}users/${uid}/evidence`)
+        .get();
+
+      const evidenceSummary = {
+        total: evidenceSnap.size,
+        byCategory: {},
+        byWeek: {},
+        highSignificance: 0,
+      };
+
+      evidenceSnap.forEach((d) => {
+        const data = d.data();
+        const cat = data.category || "unknown";
+        evidenceSummary.byCategory[cat] = (evidenceSummary.byCategory[cat] || 0) + 1;
+        const week = data.weekNumber || 0;
+        evidenceSummary.byWeek[week] = (evidenceSummary.byWeek[week] || 0) + 1;
+        if (data.significance === "high") evidenceSummary.highSignificance++;
+      });
+
+      return {
+        reveals,
+        evidenceSummary,
+        totalReveals: reveals.length,
+        deliveredReveals: reveals.filter((r) => r.status !== "pending").length,
+      };
+    } catch (error) {
+      logger.error("labRevealStatus error", error);
+      throw new HttpsError("internal", "Failed to fetch reveal status");
+    }
+  }
+);
+
+// ============================================================================
+// LEADERSHIP LAB — Facilitator Dashboard APIs
+// ============================================================================
+
+/**
+ * Check if a user is an admin or facilitator for a specific cohort.
+ */
+async function isFacilitatorOrAdmin(auth, cohortId) {
+  const db = admin.firestore();
+  const email = (auth.token?.email || "").toLowerCase();
+
+  // Check admin
+  const configDoc = await db.doc("metadata/config").get();
+  const adminEmails = configDoc.exists ? (configDoc.data().adminemails || []) : [];
+  if (adminEmails.map((e) => e.toLowerCase()).includes(email)) return true;
+
+  // Check facilitator
+  if (cohortId) {
+    const cohortSnap = await db.doc(`${LL_PREFIX}cohorts/${cohortId}`).get();
+    if (cohortSnap.exists) {
+      const facilIds = cohortSnap.data().facilitatorIds || [];
+      if (facilIds.includes(auth.uid)) return true;
+    }
+    // Also check ll-facilitators collection
+    const facSnap = await db.doc(`${LL_PREFIX}facilitators/${auth.uid}`).get();
+    if (facSnap.exists) return true;
+  }
+
+  return false;
+}
+
+/**
+ * labWarRoom — Real-time cohort overview for facilitators.
+ *
+ * Returns:
+ * - Each member's engagement status (active, quiet, at-risk)
+ * - Last text exchange timestamps
+ * - Current experiment status
+ * - Reveal status
+ * - Onboarding completion
+ * - Alerts (quiet members, failed experiments, strong reactions)
+ */
+exports.labWarRoom = onCall(
+  {
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const { cohortId } = request.data || {};
+    if (!cohortId) {
+      throw new HttpsError("invalid-argument", "cohortId is required");
+    }
+
+    const authorized = await isFacilitatorOrAdmin(request.auth, cohortId);
+    if (!authorized) {
+      throw new HttpsError("permission-denied", "Facilitator or admin access required");
+    }
+
+    const db = admin.firestore();
+
+    try {
+      // Load cohort
+      const cohortSnap = await db.doc(`${LL_PREFIX}cohorts/${cohortId}`).get();
+      if (!cohortSnap.exists) {
+        throw new HttpsError("not-found", "Cohort not found");
+      }
+      const cohort = cohortSnap.data();
+      const weekNumber = getCohortWeekNumber(cohort.startDate);
+
+      // Load members
+      const membersSnap = await db
+        .collection(`${LL_PREFIX}cohorts/${cohortId}/members`)
+        .where("status", "==", "enrolled")
+        .get();
+
+      const members = [];
+      const alerts = [];
+      const now = new Date();
+
+      for (const memberDoc of membersSnap.docs) {
+        const memberId = memberDoc.id;
+        const memberData = memberDoc.data();
+
+        // Load user profile
+        const userSnap = await db.doc(`${LL_PREFIX}users/${memberId}`).get();
+        if (!userSnap.exists) continue;
+        const userProfile = userSnap.data();
+
+        // Get recent conversations (last 7 days)
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const recentConvos = await db
+          .collection(`${LL_PREFIX}users/${memberId}/conversations`)
+          .where("createdAt", ">=", weekAgo)
+          .orderBy("createdAt", "desc")
+          .get();
+
+        // Engagement metrics
+        const totalMessages = recentConvos.docs.reduce((sum, d) => {
+          return sum + (d.data().messages || []).filter((m) => m.role === "user").length;
+        }, 0);
+        const lastActivity = recentConvos.empty
+          ? null
+          : recentConvos.docs[0].data().updatedAt;
+        const daysSinceActivity = lastActivity
+          ? Math.floor((now - (lastActivity.toDate ? lastActivity.toDate() : new Date(lastActivity))) / (1000 * 60 * 60 * 24))
+          : 999;
+
+        // Engagement status
+        let engagement = "active";
+        if (daysSinceActivity > 3) engagement = "at-risk";
+        else if (daysSinceActivity > 1 || totalMessages < 2) engagement = "quiet";
+
+        // Get current experiment status
+        const challengeSnap = await db.doc(`${LL_PREFIX}users/${memberId}/challenges/${weekNumber}`).get();
+        const experimentStatus = challengeSnap.exists ? challengeSnap.data().status : "none";
+
+        // Get reveal status
+        const revealSnap = await db
+          .collection(`${LL_PREFIX}users/${memberId}/reveals`)
+          .where("status", "in", ["pending", "delivered"])
+          .limit(1)
+          .get();
+        const hasActiveReveal = !revealSnap.empty;
+        const revealStatus = revealSnap.empty ? "none" : revealSnap.docs[0].data().status;
+
+        const memberSummary = {
+          id: memberId,
+          firstName: userProfile.displayName || userProfile.firstName || memberData.firstName || "Unknown",
+          phone: userProfile.phone || memberData.phone,
+          onboardingComplete: !!userProfile.onboardingComplete,
+          currentWeek: userProfile.currentWeek || 0,
+          engagement,
+          daysSinceActivity,
+          messagesThisWeek: totalMessages,
+          conversationsThisWeek: recentConvos.size,
+          experimentStatus,
+          revealStatus: hasActiveReveal ? revealStatus : "none",
+        };
+
+        members.push(memberSummary);
+
+        // Generate alerts
+        if (!userProfile.onboardingComplete && weekNumber > 0) {
+          alerts.push({ type: "onboarding-incomplete", memberId, name: memberSummary.firstName, severity: "high" });
+        }
+        if (engagement === "at-risk") {
+          alerts.push({ type: "quiet-member", memberId, name: memberSummary.firstName, days: daysSinceActivity, severity: "high" });
+        }
+        if (revealStatus === "delivered" && daysSinceActivity <= 1) {
+          alerts.push({ type: "reveal-delivered", memberId, name: memberSummary.firstName, severity: "info" });
+        }
+      }
+
+      // Sort: at-risk first, then quiet, then active
+      const engagementOrder = { "at-risk": 0, quiet: 1, active: 2 };
+      members.sort((a, b) => (engagementOrder[a.engagement] || 2) - (engagementOrder[b.engagement] || 2));
+
+      return {
+        cohort: {
+          id: cohortId,
+          name: cohort.name,
+          weekNumber,
+          phase: cohort.phase,
+          isActive: cohort.isActive,
+          memberCount: members.length,
+        },
+        members,
+        alerts: alerts.sort((a, b) => (a.severity === "high" ? -1 : 1) - (b.severity === "high" ? -1 : 1)),
+        summary: {
+          total: members.length,
+          active: members.filter((m) => m.engagement === "active").length,
+          quiet: members.filter((m) => m.engagement === "quiet").length,
+          atRisk: members.filter((m) => m.engagement === "at-risk").length,
+          onboarded: members.filter((m) => m.onboardingComplete).length,
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labWarRoom error", error);
+      throw new HttpsError("internal", "Failed to load war room data");
+    }
+  }
+);
+
+/**
+ * labDeepDive — Detailed view of an individual cohort member.
+ *
+ * Returns Leadership Profile, conversation summaries, evidence, reveals,
+ * experiment history, and AI coaching recommendations.
+ */
+exports.labDeepDive = onCall(
+  {
+    secrets: ["ANTHROPIC_API_KEY"],
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const { cohortId, memberId } = request.data || {};
+    if (!cohortId || !memberId) {
+      throw new HttpsError("invalid-argument", "cohortId and memberId are required");
+    }
+
+    const authorized = await isFacilitatorOrAdmin(request.auth, cohortId);
+    if (!authorized) {
+      throw new HttpsError("permission-denied", "Facilitator or admin access required");
+    }
+
+    const db = admin.firestore();
+
+    try {
+      // Load user profile
+      const userSnap = await db.doc(`${LL_PREFIX}users/${memberId}`).get();
+      if (!userSnap.exists) {
+        throw new HttpsError("not-found", "Member not found");
+      }
+      const userProfile = userSnap.data();
+
+      // Load Leadership Profile
+      const lpSnap = await db.doc(`${LL_PREFIX}users/${memberId}/leadershipProfile/current`).get();
+      const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
+
+      // Load all reflections (weekly summaries)
+      const reflectionsSnap = await db
+        .collection(`${LL_PREFIX}users/${memberId}/reflections`)
+        .orderBy("weekNumber", "asc")
+        .get();
+      const reflections = reflectionsSnap.docs.map((d) => ({
+        weekNumber: d.data().weekNumber,
+        summary: d.data().summary,
+        conversationCount: d.data().conversationCount,
+      }));
+
+      // Load challenges/experiments
+      const challengesSnap = await db
+        .collection(`${LL_PREFIX}users/${memberId}/challenges`)
+        .orderBy("weekNumber", "asc")
+        .get();
+      const challenges = challengesSnap.docs.map((d) => ({
+        weekNumber: d.data().weekNumber,
+        theme: d.data().theme,
+        experiment: d.data().personalizedExperiment || d.data().experiment,
+        status: d.data().status,
+        difficulty: d.data().difficulty,
+        aiObservation: d.data().aiObservation,
+      }));
+
+      // Load reveals
+      const revealsSnap = await db
+        .collection(`${LL_PREFIX}users/${memberId}/reveals`)
+        .orderBy("createdAt", "asc")
+        .get();
+      const reveals = revealsSnap.docs.map((d) => ({
+        id: d.id,
+        type: d.data().type,
+        weekNumber: d.data().weekNumber,
+        content: d.data().content,
+        status: d.data().status,
+        userResponse: d.data().userResponse,
+        rationale: d.data().rationale,
+        targetPattern: d.data().targetPattern,
+      }));
+
+      // Load high-significance evidence
+      const evidenceSnap = await db
+        .collection(`${LL_PREFIX}users/${memberId}/evidence`)
+        .where("significance", "==", "high")
+        .get();
+      const keyEvidence = evidenceSnap.docs.map((d) => ({
+        quote: d.data().quote,
+        observation: d.data().observation,
+        category: d.data().category,
+        weekNumber: d.data().weekNumber,
+      }));
+
+      // Recent conversation summaries (last 10)
+      const convosSnap = await db
+        .collection(`${LL_PREFIX}users/${memberId}/conversations`)
+        .orderBy("updatedAt", "desc")
+        .limit(10)
+        .get();
+      const recentConversations = convosSnap.docs.map((d) => ({
+        id: d.id,
+        mode: d.data().mode,
+        weekNumber: d.data().weekNumber,
+        channel: d.data().channel,
+        interactionType: d.data().interactionType,
+        messageCount: (d.data().messages || []).length,
+        lastMessage: (d.data().messages || []).slice(-1)[0]?.content?.slice(0, 100) || "",
+        createdAt: d.data().createdAt,
+      }));
+
+      return {
+        member: {
+          id: memberId,
+          firstName: userProfile.displayName || userProfile.firstName,
+          phone: userProfile.phone,
+          currentWeek: userProfile.currentWeek,
+          onboardingComplete: userProfile.onboardingComplete,
+          currentPhase: userProfile.currentPhase,
+        },
+        leadershipProfile: leadershipProfile ? {
+          presentedSelf: leadershipProfile.presentedSelf,
+          observedSelf: leadershipProfile.observedSelf,
+          tensions: leadershipProfile.tensions,
+          corePatterns: leadershipProfile.corePatterns,
+          growthEdges: leadershipProfile.growthEdges,
+          coachingApproach: leadershipProfile.coachingApproach,
+        } : null,
+        reflections,
+        challenges,
+        reveals,
+        keyEvidence,
+        recentConversations,
+      };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labDeepDive error", error);
+      throw new HttpsError("internal", "Failed to load member deep dive");
+    }
+  }
+);
+
+/**
+ * labSessionPlanner — AI-generated agenda for in-person facilitator sessions.
+ *
+ * Analyzes cohort data and generates a structured session plan with:
+ * - Discussion topics based on common tensions
+ * - Individual check-in prompts
+ * - Activities targeting the cohort's collective growth edges
+ * - Facilitator talking points
+ */
+exports.labSessionPlanner = onCall(
+  {
+    secrets: ["ANTHROPIC_API_KEY"],
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 3,
+    timeoutSeconds: 120,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const { cohortId, sessionDuration = 60 } = request.data || {};
+    if (!cohortId) {
+      throw new HttpsError("invalid-argument", "cohortId is required");
+    }
+
+    const authorized = await isFacilitatorOrAdmin(request.auth, cohortId);
+    if (!authorized) {
+      throw new HttpsError("permission-denied", "Facilitator or admin access required");
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new HttpsError("internal", "AI service not configured");
+    }
+
+    const db = admin.firestore();
+
+    try {
+      const cohortSnap = await db.doc(`${LL_PREFIX}cohorts/${cohortId}`).get();
+      if (!cohortSnap.exists) {
+        throw new HttpsError("not-found", "Cohort not found");
+      }
+      const cohort = cohortSnap.data();
+      const weekNumber = getCohortWeekNumber(cohort.startDate);
+      const wIdx = weekIdx(weekNumber);
+
+      // Gather cohort member data
+      const membersSnap = await db
+        .collection(`${LL_PREFIX}cohorts/${cohortId}/members`)
+        .where("status", "==", "enrolled")
+        .get();
+
+      const memberProfiles = [];
+      for (const memberDoc of membersSnap.docs) {
+        const memberId = memberDoc.id;
+        const userSnap = await db.doc(`${LL_PREFIX}users/${memberId}`).get();
+        if (!userSnap.exists) continue;
+        const user = userSnap.data();
+
+        const lpSnap = await db.doc(`${LL_PREFIX}users/${memberId}/leadershipProfile/current`).get();
+        const lp = lpSnap.exists ? lpSnap.data() : null;
+
+        // Get this week's reflection
+        const reflSnap = await db.doc(`${LL_PREFIX}users/${memberId}/reflections/${weekNumber - 1}`).get();
+        const weeklyReflection = reflSnap.exists ? reflSnap.data().summary : null;
+
+        // Get challenge status
+        const challSnap = await db.doc(`${LL_PREFIX}users/${memberId}/challenges/${weekNumber}`).get();
+        const challenge = challSnap.exists ? challSnap.data() : null;
+
+        memberProfiles.push({
+          name: user.displayName || user.firstName || "Unknown",
+          presentedSelf: lp?.presentedSelf || "Not yet profiled",
+          tensions: (lp?.tensions || []).map((t) => `${t.left} ↔ ${t.right}`).join("; "),
+          growthEdges: (lp?.growthEdges || []).join("; "),
+          weeklyReflection: weeklyReflection || "No reflection yet",
+          experimentStatus: challenge?.status || "none",
+          experiment: challenge?.personalizedExperiment || challenge?.experiment || "None assigned",
+        });
+      }
+
+      const memberContext = memberProfiles
+        .map((m) => `${m.name}:
+  Presented Self: ${m.presentedSelf}
+  Tensions: ${m.tensions || "None"}
+  Growth Edges: ${m.growthEdges || "None"}
+  Weekly Observation: ${m.weeklyReflection}
+  Experiment: ${m.experiment} (${m.experimentStatus})`)
+        .join("\n\n");
+
+      const anthropic = new Anthropic({ apiKey });
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2048,
+        system: `You are a session planner for Leadership Lab, a 5-milestone leadership development program that supports Arena Foundations in-person training. The facilitator is preparing for a group session with their cohort.
+
+Generate a detailed session plan that:
+1. Weaves AI coaching insights into group discussion
+2. Creates safe-enough space for vulnerability without forcing it
+3. Uses the real tensions and patterns from the cohort's AI coaching
+4. Includes at least one activity where members interact with each other's growth edges
+5. Never reveals individual AI coaching details publicly — only the facilitator sees this plan
+
+Session Duration: ${sessionDuration} minutes
+Week ${weekNumber}: ${LL_WEEK_THEMES[wIdx]}
+This week's base experiment: ${LL_EXPERIMENTS[wIdx]}
+
+Return ONLY a JSON object:
+{
+  "sessionTitle": "Compelling session title",
+  "openingPrompt": "1-2 sentence opening question for the group (under 50 words)",
+  "segments": [
+    {
+      "title": "Segment name",
+      "duration": 15,
+      "type": "discussion | activity | reflection | debrief",
+      "description": "What happens in this segment",
+      "facilitatorNotes": "What to watch for, who to check on, what patterns to name"
+    }
+  ],
+  "individualCheckIns": [
+    {
+      "name": "Member name",
+      "prompt": "Personalized question to ask them privately or in group",
+      "watchFor": "What to notice about their response"
+    }
+  ],
+  "closingPrompt": "Powerful closing reflection for the group",
+  "facilitatorPrep": "2-3 sentences on what to prepare or be aware of for this session"
+}`,
+        messages: [{
+          role: "user",
+          content: `Plan a ${sessionDuration}-minute session for Week ${weekNumber}.
+
+COHORT MEMBERS:
+${memberContext}`,
+        }],
+      });
+
+      const resultText = response.content[0]?.text || "{}";
+      let plan;
+      try {
+        plan = JSON.parse(resultText);
+      } catch {
+        logger.warn("Failed to parse session plan JSON");
+        plan = { sessionTitle: "Session Plan", segments: [], error: "Failed to generate structured plan", rawPlan: resultText };
+      }
+
+      // Save the session plan
+      const now = admin.firestore.FieldValue.serverTimestamp();
+      const planRef = db.collection(`${LL_PREFIX}cohorts/${cohortId}/sessionPlans`).doc();
+      await planRef.set({
+        weekNumber,
+        plan,
+        sessionDuration,
+        generatedBy: request.auth.uid,
+        createdAt: now,
+      });
+
+      return {
+        success: true,
+        planId: planRef.id,
+        weekNumber,
+        weekTheme: LL_WEEK_THEMES[wIdx],
+        plan,
+      };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labSessionPlanner error", error);
+      throw new HttpsError("internal", "Failed to generate session plan");
+    }
+  }
+);
+
+/**
+ * labSendText — Facilitator sends a manual text to a cohort member.
+ *
+ * Creates a conversation record and sends via SMS.
+ * The text appears as a coach message, maintaining the AI coaching voice.
+ */
+exports.labSendText = onCall(
+  {
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const { cohortId, memberId, message } = request.data || {};
+    if (!cohortId || !memberId || !message) {
+      throw new HttpsError("invalid-argument", "cohortId, memberId, and message are required");
+    }
+
+    const authorized = await isFacilitatorOrAdmin(request.auth, cohortId);
+    if (!authorized) {
+      throw new HttpsError("permission-denied", "Facilitator or admin access required");
+    }
+
+    const sanitizedMessage = message.trim().slice(0, 500);
+    if (!sanitizedMessage) {
+      throw new HttpsError("invalid-argument", "Message cannot be empty");
+    }
+
+    const db = admin.firestore();
+
+    try {
+      // Load member
+      const userSnap = await db.doc(`${LL_PREFIX}users/${memberId}`).get();
+      if (!userSnap.exists) {
+        throw new HttpsError("not-found", "Member not found");
+      }
+      const phone = userSnap.data().phone;
+      if (!phone) {
+        throw new HttpsError("failed-precondition", "Member has no phone number");
+      }
+
+      const weekNumber = userSnap.data().currentWeek || 1;
+      const now = admin.firestore.FieldValue.serverTimestamp();
+
+      // Save as a facilitator-initiated conversation
+      const convoRef = db.collection(`${LL_PREFIX}users/${memberId}/conversations`).doc();
+      await convoRef.set({
+        mode: "coach",
+        weekNumber,
+        channel: "sms",
+        interactionType: "facilitator-manual",
+        aiInitiated: false,
+        facilitatorId: request.auth.uid,
+        messages: [
+          { role: "assistant", content: sanitizedMessage, timestamp: new Date().toISOString(), channel: "sms" },
+        ],
+        summary: "",
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      // Send SMS
+      const sid = await sendLabSms(phone, sanitizedMessage);
+
+      logger.info("Facilitator text sent", {
+        facilitatorId: request.auth.uid,
+        memberId,
+        cohortId,
+      });
+
+      return {
+        success: true,
+        conversationId: convoRef.id,
+        messageSid: sid,
+      };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labSendText error", error);
+      throw new HttpsError("internal", "Failed to send text");
+    }
+  }
+);
+
+// ============================================================================
+// LEADERSHIP LAB — My Prescriptions (user-facing)
+// ============================================================================
+
+/**
+ * labMyPrescriptions — Returns the authenticated user's content prescriptions.
+ * Used by the Lab screen to show "Prescribed for You" content.
+ */
+exports.labMyPrescriptions = onCall(
+  {
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 10,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const uid = request.auth.uid;
+    const db = admin.firestore();
+
+    try {
+      // Get user's current week
+      const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+      if (!userSnap.exists) {
+        throw new HttpsError("not-found", "User not found");
+      }
+      const currentWeek = userSnap.data().currentWeek || 1;
+
+      // Load all prescriptions, most recent first
+      const rxSnap = await db
+        .collection(`${LL_PREFIX}users/${uid}/prescriptions`)
+        .orderBy("weekNumber", "desc")
+        .get();
+
+      const prescriptions = [];
+      rxSnap.forEach((doc) => {
+        const d = doc.data();
+        prescriptions.push({
+          id: doc.id,
+          weekNumber: d.weekNumber,
+          type: d.type,
+          topic: d.topic,
+          content: d.content,
+          whyYou: d.whyYou,
+          connectedTension: d.connectedTension,
+          status: d.status,
+          createdAt: d.createdAt ? d.createdAt.toDate().toISOString() : null,
+          deliveredAt: d.deliveredAt ? d.deliveredAt.toDate().toISOString() : null,
+        });
+      });
+
+      // Mark current week's prescription as "read" if user is viewing
+      const currentRx = prescriptions.find((p) => p.weekNumber === currentWeek && p.status === "delivered");
+      if (currentRx) {
+        await db.doc(`${LL_PREFIX}users/${uid}/prescriptions/${currentRx.id}`).update({
+          status: "read",
+        });
+        currentRx.status = "read";
+      }
+
+      return {
+        currentWeek,
+        prescriptions,
+      };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labMyPrescriptions error", error);
+      throw new HttpsError("internal", "Failed to load prescriptions");
+    }
+  }
+);
+
+// ============================================================================
+// LEADERSHIP LAB — 360 Feedback Integration
+// ============================================================================
+
+const { randomBytes } = require("crypto");
+
+/**
+ * labCreate360 — Creates a 360 feedback survey for a user. Returns a unique
+ * survey URL that can be shared with peers/team members.
+ *
+ * The facilitator or the leader themselves can trigger this.
+ */
+exports.labCreate360 = onCall(
+  {
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const { targetUserId } = request.data || {};
+    // If targetUserId is provided, must be facilitator/admin
+    // If not, the user is creating their own 360
+    const uid = targetUserId || request.auth.uid;
+
+    if (targetUserId && targetUserId !== request.auth.uid) {
+      // Verify caller is a facilitator or admin
+      const db = admin.firestore();
+      const cohortsSnap = await db
+        .collection(`${LL_PREFIX}cohorts`)
+        .where("facilitators", "array-contains", request.auth.uid)
+        .limit(1)
+        .get();
+
+      if (cohortsSnap.empty) {
+        throw new HttpsError("permission-denied", "Only facilitators can create 360s for other users");
+      }
+    }
+
+    const db = admin.firestore();
+
+    // Check if user exists
+    const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+    if (!userSnap.exists) {
+      throw new HttpsError("not-found", "User not found");
+    }
+    const userData = userSnap.data();
+    const leaderName = userData.displayName || userData.firstName || "this leader";
+
+    // Generate unique survey token
+    const token = randomBytes(16).toString("hex");
+
+    // Check for existing active survey
+    const existingSnap = await db
+      .collection(`${LL_PREFIX}360surveys`)
+      .where("userId", "==", uid)
+      .where("status", "==", "open")
+      .limit(1)
+      .get();
+
+    if (!existingSnap.empty) {
+      const existing = existingSnap.docs[0];
+      const baseUrl = labFunctionUrl('lab360Form');
+      return {
+        surveyId: existing.id,
+        surveyUrl: `${baseUrl}?token=${existing.data().token}`,
+        responseCount: existing.data().responseCount || 0,
+        status: "existing",
+      };
+    }
+
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    const surveyRef = db.collection(`${LL_PREFIX}360surveys`).doc();
+    await surveyRef.set({
+      userId: uid,
+      leaderName,
+      token,
+      status: "open", // open → processing → complete
+      responseCount: 0,
+      createdBy: request.auth.uid,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const baseUrl = labFunctionUrl('lab360Form');
+    const surveyUrl = `${baseUrl}?token=${token}`;
+
+    // If user has phone and SMS opt-in, text them the link
+    if (userData.phone && userData.smsOptIn) {
+      try {
+        await sendLabSms(
+          userData.phone,
+          `Your 360 feedback survey is ready. Share this link with 3-5 people who know your leadership well: ${surveyUrl}`
+        );
+      } catch {
+        // SMS is supplemental — don't fail the create
+      }
+    }
+
+    logger.info("360 survey created", { uid, surveyId: surveyRef.id });
+
+    return {
+      surveyId: surveyRef.id,
+      surveyUrl,
+      responseCount: 0,
+      status: "created",
+    };
+  }
+);
+
+/**
+ * lab360Form — HTTP GET that serves a self-contained HTML form for 360 respondents.
+ * No authentication required — access is via the unique survey token.
+ */
+exports.lab360Form = onRequest(
+  {
+    region: "us-central1",
+    maxInstances: 20,
+  },
+  async (req, res) => {
+    const token = req.query.token;
+    if (!token) {
+      res.status(400).send("Missing survey token");
+      return;
+    }
+
+    const db = admin.firestore();
+    const surveySnap = await db
+      .collection(`${LL_PREFIX}360surveys`)
+      .where("token", "==", token)
+      .where("status", "==", "open")
+      .limit(1)
+      .get();
+
+    if (surveySnap.empty) {
+      res.status(404).send("This survey is no longer accepting responses.");
+      return;
+    }
+
+    const survey = surveySnap.docs[0].data();
+    const leaderName = survey.leaderName;
+    const submitUrl = labFunctionUrl('lab360Submit');
+
+    if (req.method === "GET") {
+      res.set("Content-Type", "text/html");
+      res.status(200).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>360 Feedback for ${escapeHtml(leaderName)}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Nunito Sans', system-ui, sans-serif; background: #F5F4F0; color: #1a1a1a; padding: 20px; }
+    .container { max-width: 560px; margin: 0 auto; }
+    h1 { font-size: 24px; color: #002E47; margin-bottom: 8px; }
+    .subtitle { color: #777; font-size: 14px; margin-bottom: 32px; line-height: 1.5; }
+    .question { margin-bottom: 24px; }
+    label { display: block; font-weight: 600; font-size: 14px; color: #002E47; margin-bottom: 8px; line-height: 1.4; }
+    textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 12px; font-family: inherit; font-size: 14px; resize: vertical; min-height: 80px; }
+    textarea:focus { outline: none; border-color: #47A88D; box-shadow: 0 0 0 2px rgba(71,168,141,0.15); }
+    .relationship { margin-bottom: 24px; }
+    select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 12px; font-family: inherit; font-size: 14px; background: white; }
+    button { width: 100%; padding: 14px; background: #47A88D; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+    button:hover { background: #3d9179; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .note { font-size: 12px; color: #999; margin-top: 24px; text-align: center; }
+    .success { text-align: center; padding: 60px 20px; }
+    .success h2 { color: #47A88D; margin-bottom: 12px; }
+    .error { color: #E04E1B; font-size: 13px; margin-top: 8px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="container" id="form-view">
+    <h1>360 Feedback</h1>
+    <p class="subtitle">
+      You've been asked to share honest feedback about <strong>${escapeHtml(leaderName)}</strong>'s leadership.
+      Your responses are <strong>completely anonymous</strong> — ${escapeHtml(leaderName)} will see synthesized themes, not individual responses.
+    </p>
+    <form id="feedback-form">
+      <input type="hidden" name="token" value="${escapeHtml(token)}" />
+      <div class="relationship">
+        <label>Your relationship to ${escapeHtml(leaderName)}:</label>
+        <select name="relationship" required>
+          <option value="">Select one...</option>
+          <option value="direct-report">Direct report</option>
+          <option value="peer">Peer / colleague</option>
+          <option value="manager">Their manager</option>
+          <option value="cross-functional">Cross-functional partner</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="question">
+        <label>What is ${escapeHtml(leaderName)}'s greatest strength as a leader?</label>
+        <textarea name="q1" required minlength="20" placeholder="Be specific — think of a concrete example..."></textarea>
+      </div>
+      <div class="question">
+        <label>What is the one thing ${escapeHtml(leaderName)} should change about how they lead?</label>
+        <textarea name="q2" required minlength="20" placeholder="What would make the biggest difference?"></textarea>
+      </div>
+      <div class="question">
+        <label>Describe a recent moment where ${escapeHtml(leaderName)}'s leadership had a significant impact (positive or negative).</label>
+        <textarea name="q3" required minlength="20" placeholder="What happened, and what was the impact?"></textarea>
+      </div>
+      <div class="question">
+        <label>What does ${escapeHtml(leaderName)} seem to avoid or struggle with?</label>
+        <textarea name="q4" required minlength="20" placeholder="What patterns have you noticed?"></textarea>
+      </div>
+      <div class="question">
+        <label>If you could tell ${escapeHtml(leaderName)} one honest thing about their leadership that they might not want to hear, what would it be?</label>
+        <textarea name="q5" required minlength="20" placeholder="Be honest — this is anonymous and it helps them grow..."></textarea>
+      </div>
+      <p class="error" id="error-msg"></p>
+      <button type="submit" id="submit-btn">Submit Feedback</button>
+      <p class="note">Your identity will never be shared. Only synthesized themes are shown to ${escapeHtml(leaderName)}.</p>
+    </form>
+  </div>
+  <div class="container success" id="success-view" style="display:none">
+    <h2>Thank you</h2>
+    <p>Your feedback has been recorded anonymously. It will help ${escapeHtml(leaderName)} grow as a leader.</p>
+  </div>
+  <script>
+    document.getElementById('feedback-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      const errEl = document.getElementById('error-msg');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+      errEl.style.display = 'none';
+      try {
+        const fd = new FormData(this);
+        const body = {};
+        fd.forEach((v, k) => { body[k] = v; });
+        const resp = await fetch('${submitUrl}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!resp.ok) {
+          const text = await resp.text();
+          throw new Error(text || 'Submission failed');
+        }
+        document.getElementById('form-view').style.display = 'none';
+        document.getElementById('success-view').style.display = 'block';
+      } catch (err) {
+        errEl.textContent = err.message || 'Something went wrong. Please try again.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Submit Feedback';
+      }
+    });
+  </script>
+</body>
+</html>`);
+    } else {
+      res.status(405).send("Method not allowed");
+    }
+  }
+);
+
+/** Escape HTML for safe template rendering */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * lab360Submit — HTTP POST endpoint that saves anonymous 360 feedback responses.
+ * When 3+ responses are collected, automatically triggers synthesis.
+ */
+exports.lab360Submit = onRequest(
+  {
+    secrets: ["ANTHROPIC_API_KEY"],
+    region: "us-central1",
+    maxInstances: 20,
+    cors: true,
+  },
+  async (req, res) => {
+    if (req.method === "OPTIONS") {
+      res.set("Access-Control-Allow-Origin", "*");
+      res.set("Access-Control-Allow-Methods", "POST");
+      res.set("Access-Control-Allow-Headers", "Content-Type");
+      res.status(204).send("");
+      return;
+    }
+
+    if (req.method !== "POST") {
+      res.status(405).send("Method not allowed");
+      return;
+    }
+
+    res.set("Access-Control-Allow-Origin", "*");
+
+    const { token, relationship, q1, q2, q3, q4, q5 } = req.body || {};
+
+    if (!token || !relationship || !q1 || !q2 || !q3 || !q4 || !q5) {
+      res.status(400).send("All fields are required");
+      return;
+    }
+
+    const db = admin.firestore();
+
+    // Validate token
+    const surveySnap = await db
+      .collection(`${LL_PREFIX}360surveys`)
+      .where("token", "==", token)
+      .where("status", "==", "open")
+      .limit(1)
+      .get();
+
+    if (surveySnap.empty) {
+      res.status(404).send("This survey is no longer accepting responses.");
+      return;
+    }
+
+    const surveyDoc = surveySnap.docs[0];
+    const surveyId = surveyDoc.id;
+    const surveyData = surveyDoc.data();
+
+    try {
+      const now = admin.firestore.FieldValue.serverTimestamp();
+
+      // Save the response (anonymous — no identity stored)
+      await db.collection(`${LL_PREFIX}360surveys/${surveyId}/responses`).add({
+        relationship: String(relationship).slice(0, 50),
+        q1_strength: String(q1).slice(0, 2000),
+        q2_change: String(q2).slice(0, 2000),
+        q3_impact: String(q3).slice(0, 2000),
+        q4_avoids: String(q4).slice(0, 2000),
+        q5_honest: String(q5).slice(0, 2000),
+        submittedAt: now,
+      });
+
+      // Increment response count
+      const newCount = (surveyData.responseCount || 0) + 1;
+      await surveyDoc.ref.update({
+        responseCount: newCount,
+        updatedAt: now,
+      });
+
+      // If 3+ responses, trigger synthesis
+      if (newCount >= 3) {
+        try {
+          await process360Results(surveyId);
+        } catch (processErr) {
+          logger.warn("360 auto-processing failed, will retry", { surveyId, error: processErr.message });
+        }
+      }
+
+      res.status(200).json({ success: true, responseCount: newCount });
+    } catch (error) {
+      logger.error("lab360Submit error", { surveyId, error: error.message });
+      res.status(500).send("Failed to save response. Please try again.");
+    }
+  }
+);
+
+/**
+ * process360Results — Synthesizes all 360 feedback responses for a survey using AI.
+ * Updates the Leadership Profile with external perspective.
+ *
+ * @param {string} surveyId - The survey document ID
+ */
+async function process360Results(surveyId) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("AI service not configured");
+
+  const db = admin.firestore();
+
+  const surveySnap = await db.doc(`${LL_PREFIX}360surveys/${surveyId}`).get();
+  if (!surveySnap.exists) throw new Error("Survey not found");
+  const survey = surveySnap.data();
+  const uid = survey.userId;
+
+  // Load all responses
+  const responsesSnap = await db
+    .collection(`${LL_PREFIX}360surveys/${surveyId}/responses`)
+    .get();
+
+  if (responsesSnap.size < 3) {
+    logger.info("Not enough 360 responses yet", { surveyId, count: responsesSnap.size });
+    return;
+  }
+
+  const responses = [];
+  responsesSnap.forEach((doc) => {
+    const d = doc.data();
+    responses.push({
+      relationship: d.relationship,
+      strength: d.q1_strength,
+      change: d.q2_change,
+      impact: d.q3_impact,
+      avoids: d.q4_avoids,
+      honest: d.q5_honest,
+    });
+  });
+
+  // Load current Leadership Profile for comparison
+  const lpSnap = await db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`).get();
+  const currentProfile = lpSnap.exists ? lpSnap.data() : null;
+
+  let profileContext = "";
+  if (currentProfile) {
+    profileContext = `CURRENT LEADERSHIP PROFILE (from coaching conversations):
+- Presented Self: ${currentProfile.presentedSelf || "N/A"}
+- Observed Self (AI): ${currentProfile.observedSelf || "N/A"}
+- Tensions: ${(currentProfile.tensions || []).map((t) => `${t.left} ↔ ${t.right}`).join("; ") || "None"}
+- Growth Edges: ${(currentProfile.growthEdges || []).join("; ") || "None"}`;
+  }
+
+  // Build anonymized response text
+  const responseText = responses
+    .map((r, i) => {
+      return `RESPONDENT ${i + 1} (${r.relationship}):
+- Greatest Strength: ${r.strength}
+- Should Change: ${r.change}
+- Impact Moment: ${r.impact}
+- Avoids/Struggles: ${r.avoids}
+- Honest Truth: ${r.honest}`;
+    })
+    .join("\n\n");
+
+  const anthropic = new Anthropic({ apiKey });
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    system: `You are a leadership psychologist synthesizing 360 feedback for a leader in Leadership Lab.
+
+You have the leader's self-assessment (from coaching conversations) AND external feedback from their team/peers. Your job is to find the GAPS — where others see them differently from how they see themselves.
+
+This is the most powerful data in the program. Handle it with care but not cowardice.
+
+Rules:
+- Synthesize themes across respondents — never attribute quotes to specific people
+- Identify the strongest convergence points (things multiple people independently said)
+- Surface the biggest gap between how the leader sees themselves and how others see them
+- Be specific — use aggregated examples, not vague generalizations
+- The "blindSpot" should be something the leader genuinely can't see about themselves
+- "strengthsConfirmed" are things others agree on that the leader may undervalue
+- "shadowSide" is the downside of their strengths that others experience
+
+Return ONLY a JSON object:
+{
+  "externalObservedSelf": "3-4 sentence synthesis of how others actually experience this leader's leadership",
+  "strengthsConfirmed": ["Strength seen by multiple respondents #1", "Strength #2"],
+  "changeRequested": ["Change requested by multiple respondents #1", "Change #2"],
+  "blindSpot": "The most significant gap between self-perception and external perception — something they genuinely can't or won't see",
+  "shadowSide": "The downside of their strengths that others experience (e.g., 'decisiveness' experienced as 'steamrolling')",
+  "tensionEvidence": ["Evidence from 360 that relates to a specific tension in their profile"],
+  "gapSummary": "2-3 sentence summary comparing their Presented Self to what others actually experience. Be direct."
+}
+
+Return ONLY valid JSON. No markdown.`,
+    messages: [{
+      role: "user",
+      content: `Synthesize 360 feedback for ${survey.leaderName}.
+
+${profileContext}
+
+360 FEEDBACK RESPONSES (${responses.length} respondents):
+
+${responseText}`,
+    }],
+  });
+
+  const resultText = response.content[0]?.text || "{}";
+  let synthesis;
+  try {
+    synthesis = JSON.parse(resultText);
+  } catch {
+    logger.warn("Failed to parse 360 synthesis JSON", { resultText });
+    synthesis = {
+      externalObservedSelf: "Multiple perspectives have been collected. Review the themes below.",
+      strengthsConfirmed: [],
+      changeRequested: [],
+      blindSpot: "",
+      shadowSide: "",
+      tensionEvidence: [],
+      gapSummary: "",
+    };
+  }
+
+  const now = admin.firestore.FieldValue.serverTimestamp();
+
+  // Save 360 summary
+  await db.doc(`${LL_PREFIX}users/${uid}/360summary/current`).set({
+    surveyId,
+    respondentCount: responses.length,
+    externalObservedSelf: synthesis.externalObservedSelf || "",
+    strengthsConfirmed: synthesis.strengthsConfirmed || [],
+    changeRequested: synthesis.changeRequested || [],
+    blindSpot: synthesis.blindSpot || "",
+    shadowSide: synthesis.shadowSide || "",
+    tensionEvidence: synthesis.tensionEvidence || [],
+    gapSummary: synthesis.gapSummary || "",
+    status: "complete",
+    processedAt: now,
+    updatedAt: now,
+  });
+
+  // Update survey status
+  await surveySnap.ref.update({
+    status: "complete",
+    processedAt: now,
+    updatedAt: now,
+  });
+
+  // Update Leadership Profile with external perspective
+  if (currentProfile && synthesis.externalObservedSelf) {
+    const updatedProfile = {
+      externalObservedSelf: synthesis.externalObservedSelf,
+      blindSpot: synthesis.blindSpot || "",
+      shadowSide: synthesis.shadowSide || "",
+      has360: true,
+      updatedAt: now,
+    };
+    await db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`).update(updatedProfile);
+  }
+
+  // Notify user via SMS
+  const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+  if (userSnap.exists) {
+    const userData = userSnap.data();
+    if (userData.phone && userData.smsOptIn) {
+      try {
+        await sendLabSms(
+          userData.phone,
+          `Your 360 feedback is ready. ${responses.length} people shared their perspective on your leadership. Open the app to see the full picture — what they see that you might not.`
+        );
+      } catch {
+        // SMS is supplemental
+      }
+    }
+  }
+
+  logger.info("360 feedback processed", { uid, surveyId, respondentCount: responses.length });
+
+  return synthesis;
+}
+
+/**
+ * labMy360Summary — Returns the authenticated user's 360 feedback synthesis.
+ * Used by the Mirror screen.
+ */
+exports.labMy360Summary = onCall(
+  {
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 10,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const uid = request.auth.uid;
+    const db = admin.firestore();
+
+    try {
+      // Get 360 summary
+      const summarySnap = await db.doc(`${LL_PREFIX}users/${uid}/360summary/current`).get();
+
+      if (!summarySnap.exists) {
+        // Check for active survey
+        const surveySnap = await db
+          .collection(`${LL_PREFIX}360surveys`)
+          .where("userId", "==", uid)
+          .orderBy("createdAt", "desc")
+          .limit(1)
+          .get();
+
+        if (surveySnap.empty) {
+          return { hasSurvey: false, summary: null };
+        }
+
+        const survey = surveySnap.docs[0].data();
+        return {
+          hasSurvey: true,
+          surveyStatus: survey.status,
+          responseCount: survey.responseCount || 0,
+          summary: null,
+        };
+      }
+
+      const d = summarySnap.data();
+      return {
+        hasSurvey: true,
+        surveyStatus: "complete",
+        summary: {
+          respondentCount: d.respondentCount,
+          externalObservedSelf: d.externalObservedSelf,
+          strengthsConfirmed: d.strengthsConfirmed || [],
+          changeRequested: d.changeRequested || [],
+          blindSpot: d.blindSpot,
+          shadowSide: d.shadowSide,
+          tensionEvidence: d.tensionEvidence || [],
+          gapSummary: d.gapSummary,
+          processedAt: d.processedAt ? d.processedAt.toDate().toISOString() : null,
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labMy360Summary error", error);
+      throw new HttpsError("internal", "Failed to load 360 summary");
+    }
+  }
+);
+
+// ============================================================================
+// LEADERSHIP LAB — Ascent Phase (Post-Program)
+// ============================================================================
+
+/**
+ * generateWeatherReport — Analyzes the leader's full trajectory and recent
+ * conversations to produce a monthly "leadership weather report."
+ *
+ * The weather report uses meteorological metaphors to describe:
+ * - Current climate (overall leadership state)
+ * - Forecast (where they're headed based on patterns)
+ * - Growth patterns (what's shifted since the program)
+ * - Active tensions (which tensions are most alive right now)
+ * - Recommended focus (one thing to pay attention to this month)
+ *
+ * @param {string} uid - User ID
+ * @returns {Promise<object>} Saved weather report document
+ */
+async function generateWeatherReport(uid) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("AI service not configured");
+
+  const db = admin.firestore();
+
+  // Load user profile
+  const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+  if (!userSnap.exists) throw new Error("User not found");
+  const userProfile = userSnap.data();
+  const userName = userProfile.displayName || userProfile.firstName || "this leader";
+
+  // Load Leadership Profile
+  const lpSnap = await db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`).get();
+  const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
+
+  // Load all reflections (weekly summaries from the program)
+  const reflSnap = await db
+    .collection(`${LL_PREFIX}users/${uid}/reflections`)
+    .orderBy("weekNumber", "asc")
+    .get();
+
+  const reflections = [];
+  reflSnap.forEach((doc) => {
+    const d = doc.data();
+    reflections.push(`Week ${d.weekNumber}: ${d.summary}`);
+  });
+
+  // Load all challenges/experiments
+  const challSnap = await db
+    .collection(`${LL_PREFIX}users/${uid}/challenges`)
+    .orderBy("weekNumber", "asc")
+    .get();
+
+  const experiments = [];
+  challSnap.forEach((doc) => {
+    const d = doc.data();
+    experiments.push(
+      `Week ${d.weekNumber} (${d.status}): ${d.personalizedExperiment || d.experiment}${d.aiObservation ? ` — Observation: ${d.aiObservation}` : ""}`
+    );
+  });
+
+  // Load reveals
+  const revSnap = await db
+    .collection(`${LL_PREFIX}users/${uid}/reveals`)
+    .where("status", "in", ["delivered", "acknowledged"])
+    .orderBy("createdAt", "asc")
+    .get();
+
+  const reveals = [];
+  revSnap.forEach((doc) => {
+    const d = doc.data();
+    reveals.push(`${d.type}: ${d.content}${d.userResponse ? ` — Response: "${d.userResponse}"` : ""}`);
+  });
+
+  // Load recent conversations (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const recentConvos = await db
+    .collection(`${LL_PREFIX}users/${uid}/conversations`)
+    .where("createdAt", ">=", thirtyDaysAgo)
+    .orderBy("createdAt", "desc")
+    .limit(10)
+    .get();
+
+  const recentContext = [];
+  recentConvos.forEach((doc) => {
+    const data = doc.data();
+    const userMsgs = (data.messages || [])
+      .filter((m) => m.role === "user")
+      .map((m) => m.content.slice(0, 200));
+    if (userMsgs.length > 0) {
+      recentContext.push(`[${data.mode}, ${data.interactionType || "general"}]: ${userMsgs.join(" | ")}`);
+    }
+  });
+
+  // Load previous weather reports for continuity
+  const prevReports = await db
+    .collection(`${LL_PREFIX}users/${uid}/weatherReports`)
+    .orderBy("createdAt", "desc")
+    .limit(2)
+    .get();
+
+  const previousReports = [];
+  prevReports.forEach((doc) => {
+    const d = doc.data();
+    previousReports.push(`${d.month}: Climate — ${d.climate}. Focus — ${d.recommendedFocus}`);
+  });
+
+  // Build profile context
+  let profileContext = "LEADERSHIP PROFILE: Not established.";
+  if (leadershipProfile) {
+    profileContext = `LEADERSHIP PROFILE:
+- Presented Self: ${leadershipProfile.presentedSelf || "N/A"}
+- Observed Self: ${leadershipProfile.observedSelf || "N/A"}
+- Core Patterns: ${(leadershipProfile.corePatterns || []).join("; ") || "None"}
+- Growth Edges: ${(leadershipProfile.growthEdges || []).join("; ") || "None"}`;
+
+    if (leadershipProfile.tensions && leadershipProfile.tensions.length > 0) {
+      const tensionStr = leadershipProfile.tensions
+        .map((t) => `${t.left} ↔ ${t.right} (leans ${t.position > 50 ? t.right : t.left})`)
+        .join("; ");
+      profileContext += `\n- Tensions: ${tensionStr}`;
+    }
+  }
+
+  const monthName = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const anthropic = new Anthropic({ apiKey });
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    system: `You are the Leadership Weather Service for Leadership Lab. You've been coaching this leader through the Arena Foundations program and now they're in the Ascent Phase — ongoing post-program development.
+
+Your job: produce a monthly "Leadership Weather Report" — a rich metaphorical summary of where this leader stands and where they're heading. Think of it as a climate report for their leadership, not a report card.
+
+Weather metaphors to use naturally (don't force all of them):
+- Clear skies = alignment, confidence, self-awareness
+- Gathering clouds = unresolved tension building
+- High pressure = external demands creating compression
+- Trade winds = reliable patterns (can be strengths or ruts)
+- Front moving in = shift/transition approaching
+- Fog = uncertainty, lack of clarity
+- Thaw = old defenses softening
+- Turbulence = productive discomfort, growth happening
+
+Rules:
+- Ground every observation in EVIDENCE from their conversations, experiments, and reveals
+- Reference specific moments from their program — use their own words when possible
+- The "forecast" should be predictive based on patterns, not aspirational
+- "recommendedFocus" should be ONE specific, actionable focus area for the coming month
+- The "smsTeaser" is a compelling 1-line text message to entice them to open the full report in the app
+- Keep "climate" to 2-3 sentences. Keep "forecast" to 2-3 sentences.
+- "growthSignals" should reference specific behavioral shifts with evidence
+- "activeTensions" should name which tensions from their profile are most alive right now
+
+Return ONLY a JSON object:
+{
+  "climate": "2-3 sentence current state using weather metaphors, grounded in evidence",
+  "forecast": "2-3 sentence predictive outlook based on patterns",
+  "growthSignals": ["Specific shift #1 with evidence", "Specific shift #2"],
+  "activeTensions": ["Tension description with current state"],
+  "recommendedFocus": "One specific focus for this month",
+  "smsTeaser": "One compelling line to text them (under 160 chars)",
+  "weatherEmoji": "☀️ | 🌤️ | ⛅ | 🌥️ | 🌦️ | 🌧️ | ⛈️ | 🌫️"
+}
+
+Return ONLY valid JSON. No markdown.`,
+    messages: [{
+      role: "user",
+      content: `Generate ${monthName} weather report for ${userName}.
+
+${profileContext}
+
+PROGRAM REFLECTIONS:
+${reflections.join("\n") || "None recorded"}
+
+EXPERIMENTS:
+${experiments.join("\n") || "None recorded"}
+
+REVEALS:
+${reveals.join("\n") || "None delivered"}
+
+RECENT CONVERSATIONS (last 30 days):
+${recentContext.join("\n") || "No recent conversations"}
+
+PREVIOUS WEATHER REPORTS:
+${previousReports.join("\n") || "First report"}`,
+    }],
+  });
+
+  const resultText = response.content[0]?.text || "{}";
+  let report;
+  try {
+    report = JSON.parse(resultText);
+  } catch {
+    logger.warn("Failed to parse weather report JSON", { resultText });
+    report = {
+      climate: "Conditions are developing. More data needed to establish a clear pattern.",
+      forecast: "Continue engaging with coaching conversations to build a richer picture.",
+      growthSignals: [],
+      activeTensions: [],
+      recommendedFocus: "Stay engaged with weekly check-ins.",
+      smsTeaser: "Your monthly leadership weather report is ready.",
+      weatherEmoji: "🌤️",
+    };
+  }
+
+  // Save to weatherReports collection
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const reportData = {
+    month: monthName,
+    climate: report.climate || "",
+    forecast: report.forecast || "",
+    growthSignals: report.growthSignals || [],
+    activeTensions: report.activeTensions || [],
+    recommendedFocus: report.recommendedFocus || "",
+    smsTeaser: report.smsTeaser || "",
+    weatherEmoji: report.weatherEmoji || "🌤️",
+    status: "generated", // generated → delivered → read
+    createdAt: now,
+    deliveredAt: null,
+  };
+
+  const reportRef = db.collection(`${LL_PREFIX}users/${uid}/weatherReports`).doc();
+  await reportRef.set(reportData);
+
+  logger.info("Weather report generated", { uid, month: monthName });
+
+  return { id: reportRef.id, ...reportData };
+}
+
+/**
+ * labGenerateWeatherReport — Monthly scheduled function that generates weather
+ * reports for all leaders in the Ascent Phase.
+ *
+ * Runs on the 1st of each month at 6 AM ET.
+ */
+exports.labGenerateWeatherReport = onSchedule(
+  {
+    schedule: "0 6 1 * *", // 1st of month, 6 AM
+    timeZone: "America/New_York",
+    secrets: ["ANTHROPIC_API_KEY"],
+    region: "us-central1",
+    maxInstances: 1,
+    timeoutSeconds: 540,
+  },
+  async (event) => {
+    const db = admin.firestore();
+
+    logger.info("labGenerateWeatherReport triggered");
+
+    // Find all ascent-phase users
+    const usersSnap = await db
+      .collection(`${LL_PREFIX}users`)
+      .where("phase", "==", "ascent")
+      .get();
+
+    if (usersSnap.empty) {
+      logger.info("No ascent-phase users");
+      return;
+    }
+
+    let generated = 0;
+    let errors = 0;
+
+    for (const userDoc of usersSnap.docs) {
+      try {
+        const report = await generateWeatherReport(userDoc.id);
+
+        // Send the teaser via SMS if user has a phone
+        const userData = userDoc.data();
+        if (userData.phone && userData.smsOptIn) {
+          await sendLabSms(userData.phone, report.smsTeaser || "Your monthly leadership weather report is ready. Open the app to see the full forecast.");
+
+          // Mark as delivered
+          await db.doc(`${LL_PREFIX}users/${userDoc.id}/weatherReports/${report.id}`).update({
+            status: "delivered",
+            deliveredAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+
+        generated++;
+      } catch (err) {
+        errors++;
+        logger.error("Failed to generate weather report", { uid: userDoc.id, error: err.message });
+      }
+    }
+
+    logger.info("labGenerateWeatherReport complete", { generated, errors });
+  }
+);
+
+/**
+ * labAscentScheduledSms — Weekly coaching check-in for post-program leaders.
+ *
+ * Runs Monday 9 AM ET — one text per week instead of the daily cadence during
+ * the active program. Maintains the coaching relationship with lower touch.
+ */
+exports.labAscentScheduledSms = onSchedule(
+  {
+    schedule: "0 9 * * 1", // Monday 9 AM
+    timeZone: "America/New_York",
+    secrets: ["ANTHROPIC_API_KEY"],
+    region: "us-central1",
+    maxInstances: 1,
+    timeoutSeconds: 540,
+  },
+  async (event) => {
+    const db = admin.firestore();
+
+    logger.info("labAscentScheduledSms triggered");
+
+    // Find all ascent-phase users
+    const usersSnap = await db
+      .collection(`${LL_PREFIX}users`)
+      .where("phase", "==", "ascent")
+      .get();
+
+    if (usersSnap.empty) {
+      logger.info("No ascent-phase users");
+      return;
+    }
+
+    let totalSent = 0;
+    let totalErrors = 0;
+
+    for (const userDoc of usersSnap.docs) {
+      const userData = userDoc.data();
+      const uid = userDoc.id;
+
+      if (!userData.phone || !userData.smsOptIn) continue;
+
+      try {
+        // Load Leadership Profile
+        const lpSnap = await db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`).get();
+        const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
+
+        // Load most recent weather report for context
+        const recentReport = await db
+          .collection(`${LL_PREFIX}users/${uid}/weatherReports`)
+          .orderBy("createdAt", "desc")
+          .limit(1)
+          .get();
+
+        let reportContext = "";
+        if (!recentReport.empty) {
+          const r = recentReport.docs[0].data();
+          reportContext = `\nLATEST WEATHER REPORT:\n- Climate: ${r.climate}\n- Recommended Focus: ${r.recommendedFocus}`;
+        }
+
+        // Load last few ascent conversations for continuity
+        const recentConvos = await db
+          .collection(`${LL_PREFIX}users/${uid}/conversations`)
+          .orderBy("createdAt", "desc")
+          .limit(3)
+          .get();
+
+        const recentContext = [];
+        recentConvos.forEach((doc) => {
+          const data = doc.data();
+          const lastUserMsg = (data.messages || []).filter((m) => m.role === "user").slice(-1)[0];
+          if (lastUserMsg) recentContext.push(`"${lastUserMsg.content.slice(0, 200)}"`);
+        });
+
+        const userName = userData.displayName || userData.firstName || "there";
+
+        // Build profile context
+        let profileStr = "";
+        if (leadershipProfile) {
+          profileStr = `\nPROFILE:\n- Growth Edges: ${(leadershipProfile.growthEdges || []).join("; ") || "N/A"}`;
+          if (leadershipProfile.tensions && leadershipProfile.tensions.length > 0) {
+            const tensionStr = leadershipProfile.tensions
+              .map((t) => `${t.left} ↔ ${t.right}`)
+              .join("; ");
+            profileStr += `\n- Tensions: ${tensionStr}`;
+          }
+        }
+
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        const anthropic = new Anthropic({ apiKey });
+        const response = await anthropic.messages.create({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 400,
+          system: `You are the AI coach for Leadership Lab. ${userName} has completed the Arena Foundations program and is now in the Ascent Phase — ongoing weekly check-ins to sustain and deepen their growth.
+
+Your role has shifted from intensive daily coaching to a lighter weekly touch. Think of yourself as a trusted advisor who drops in once a week with something meaningful.
+
+ASCENT PHASE COACHING RULES:
+- ONE text per week. Make it count.
+- Rotate between: checking in on their recommended focus area, surfacing a pattern you've noticed, asking about a real leadership moment that week, or connecting something current to something from their program.
+- Reference their specific growth edges and tensions — show that you remember them.
+- Be warm but substantive. No generic "how's your week going?"
+- Keep it under 300 characters.
+- End with something that invites reflection but doesn't demand a response.
+${profileStr}
+${reportContext}
+
+RECENT EXCHANGES:
+${recentContext.join("\n") || "No recent exchanges"}`,
+          messages: [{
+            role: "user",
+            content: `Generate a weekly ascent check-in text for ${userName}. Write ONLY the text message. No preamble.`,
+          }],
+        });
+
+        const aiText = response.content[0]?.text || "";
+        if (!aiText) continue;
+
+        // Save conversation
+        const now = admin.firestore.FieldValue.serverTimestamp();
+        const convoRef = db.collection(`${LL_PREFIX}users/${uid}/conversations`).doc();
+        await convoRef.set({
+          mode: "coach",
+          weekNumber: userData.currentWeek || 6,
+          channel: "sms",
+          interactionType: "ascent-checkin",
+          aiInitiated: true,
+          messages: [
+            { role: "assistant", content: aiText, timestamp: new Date().toISOString(), channel: "sms" },
+          ],
+          summary: "",
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        // Send SMS
+        await sendLabSms(userData.phone, aiText);
+        totalSent++;
+
+        logger.info("Ascent check-in sent", { uid });
+      } catch (err) {
+        totalErrors++;
+        logger.error("Ascent SMS error", { uid, error: err.message });
+      }
+    }
+
+    logger.info("labAscentScheduledSms complete", { totalSent, totalErrors });
+  }
+);
+
+/**
+ * labMyWeatherReports — Returns the authenticated user's weather reports.
+ * Used by the Story screen to show monthly growth summaries.
+ */
+exports.labMyWeatherReports = onCall(
+  {
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 10,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const uid = request.auth.uid;
+    const db = admin.firestore();
+
+    try {
+      const reportsSnap = await db
+        .collection(`${LL_PREFIX}users/${uid}/weatherReports`)
+        .orderBy("createdAt", "desc")
+        .get();
+
+      const reports = [];
+      reportsSnap.forEach((doc) => {
+        const d = doc.data();
+        reports.push({
+          id: doc.id,
+          month: d.month,
+          climate: d.climate,
+          forecast: d.forecast,
+          growthSignals: d.growthSignals || [],
+          activeTensions: d.activeTensions || [],
+          recommendedFocus: d.recommendedFocus,
+          weatherEmoji: d.weatherEmoji || "🌤️",
+          status: d.status,
+          createdAt: d.createdAt ? d.createdAt.toDate().toISOString() : null,
+        });
+      });
+
+      // Mark the latest as "read" if user is viewing
+      if (reports.length > 0 && reports[0].status === "delivered") {
+        await db.doc(`${LL_PREFIX}users/${uid}/weatherReports/${reports[0].id}`).update({
+          status: "read",
+        });
+        reports[0].status = "read";
+      }
+
+      return { reports };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labMyWeatherReports error", error);
+      throw new HttpsError("internal", "Failed to load weather reports");
+    }
+  }
+);
+
+// ============================================================================
+// LEADERSHIP LAB — Growth Narrative Generator
+// ============================================================================
+
+/**
+ * generateGrowthNarrative — Synthesizes the leader's entire journey into a
+ * cohesive growth narrative: who they were, what shifted, and who they're becoming.
+ *
+ * Draws from: Leadership Profile (dual profile, tensions), all weekly reflections,
+ * all experiments (and their outcomes), reveals (and responses), 360 feedback
+ * (if available), evidence, and conversation history.
+ *
+ * The narrative has three acts:
+ * 1. ARRIVAL — Who they were when they started (from onboarding + Week 1)
+ * 2. THE CRUCIBLE — What happened, what surprised them, where they resisted and where they opened
+ * 3. EMERGENCE — Who they're becoming (with honest admission of what hasn't changed yet)
+ *
+ * @param {string} uid - User ID
+ * @returns {Promise<object>} The generated narrative document
+ */
+async function generateGrowthNarrative(uid) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("AI service not configured");
+
+  const db = admin.firestore();
+
+  // Load user profile
+  const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+  if (!userSnap.exists) throw new Error("User not found");
+  const userProfile = userSnap.data();
+  const userName = userProfile.displayName || userProfile.firstName || "this leader";
+
+  // Load Leadership Profile
+  const lpSnap = await db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`).get();
+  const leadershipProfile = lpSnap.exists ? lpSnap.data() : null;
+
+  // Load all weekly reflections
+  const reflSnap = await db
+    .collection(`${LL_PREFIX}users/${uid}/reflections`)
+    .orderBy("weekNumber", "asc")
+    .get();
+
+  const reflections = [];
+  reflSnap.forEach((doc) => {
+    const d = doc.data();
+    reflections.push(`Week ${d.weekNumber}: ${d.summary}`);
+  });
+
+  // Load all experiments and outcomes
+  const challSnap = await db
+    .collection(`${LL_PREFIX}users/${uid}/challenges`)
+    .orderBy("weekNumber", "asc")
+    .get();
+
+  const experiments = [];
+  challSnap.forEach((doc) => {
+    const d = doc.data();
+    const status = d.status || "unknown";
+    const obs = d.aiObservation ? ` | Observation: ${d.aiObservation}` : "";
+    const why = d.whyThisMatters ? ` | Why: ${d.whyThisMatters}` : "";
+    experiments.push(
+      `Week ${d.weekNumber} [${status}]: ${d.personalizedExperiment || d.experiment}${why}${obs}`
+    );
+  });
+
+  // Load all reveals + responses
+  const revSnap = await db
+    .collection(`${LL_PREFIX}users/${uid}/reveals`)
+    .orderBy("createdAt", "asc")
+    .get();
+
+  const reveals = [];
+  revSnap.forEach((doc) => {
+    const d = doc.data();
+    const resp = d.userResponse ? ` → Response: "${d.userResponse}"` : ` → ${d.status}`;
+    reveals.push(`[${d.type}] ${d.content}${resp}`);
+  });
+
+  // Load key evidence
+  const evSnap = await db
+    .collection(`${LL_PREFIX}users/${uid}/evidence`)
+    .orderBy("createdAt", "asc")
+    .limit(15)
+    .get();
+
+  const evidenceItems = [];
+  evSnap.forEach((doc) => {
+    const d = doc.data();
+    if (d.quote) evidenceItems.push(`Week ${d.weekNumber}: "${d.quote}" (${d.category || "general"})`);
+    if (d.observation) evidenceItems.push(`Week ${d.weekNumber}: ${d.observation}`);
+  });
+
+  // Load 360 summary if available
+  const threeSixtySnap = await db.doc(`${LL_PREFIX}users/${uid}/360summary/current`).get();
+  let threeSixtyContext = "";
+  if (threeSixtySnap.exists) {
+    const s = threeSixtySnap.data();
+    threeSixtyContext = `
+360 FEEDBACK (${s.respondentCount} respondents):
+- External Observed Self: ${s.externalObservedSelf}
+- Blind Spot: ${s.blindSpot}
+- Shadow Side: ${s.shadowSide}
+- Gap Summary: ${s.gapSummary}
+- Strengths Confirmed: ${(s.strengthsConfirmed || []).join("; ")}
+- Change Requested: ${(s.changeRequested || []).join("; ")}`;
+  }
+
+  // Load onboarding conversation for "arrival" context
+  const onboardingConvo = await db
+    .collection(`${LL_PREFIX}users/${uid}/conversations`)
+    .where("mode", "==", "onboarding")
+    .limit(1)
+    .get();
+
+  let arrivalContext = "";
+  if (!onboardingConvo.empty) {
+    const onbData = onboardingConvo.docs[0].data();
+    const transcript = (onbData.messages || [])
+      .map((m) => `${m.role === "user" ? "LEADER" : "COACH"}: ${m.content}`)
+      .join("\n");
+    arrivalContext = `ONBOARDING CONVERSATION:\n${transcript.slice(0, 2000)}`;
+  }
+
+  // Build profile context
+  let profileContext = "";
+  if (leadershipProfile) {
+    profileContext = `LEADERSHIP PROFILE:
+- Presented Self: ${leadershipProfile.presentedSelf || "N/A"}
+- Observed Self (AI): ${leadershipProfile.observedSelf || "N/A"}
+- Core Patterns: ${(leadershipProfile.corePatterns || []).join("; ") || "None"}
+- Growth Edges: ${(leadershipProfile.growthEdges || []).join("; ") || "None"}
+- Coaching Approach: ${leadershipProfile.coachingApproach || "N/A"}`;
+
+    if (leadershipProfile.tensions && leadershipProfile.tensions.length > 0) {
+      const tensionStr = leadershipProfile.tensions
+        .map((t) => `${t.left} ↔ ${t.right} (leans ${t.position > 50 ? t.right : t.left})`)
+        .join("; ");
+      profileContext += `\n- Tensions: ${tensionStr}`;
+    }
+
+    if (leadershipProfile.externalObservedSelf) {
+      profileContext += `\n- External Observed Self (360): ${leadershipProfile.externalObservedSelf}`;
+    }
+    if (leadershipProfile.blindSpot) {
+      profileContext += `\n- Blind Spot (360): ${leadershipProfile.blindSpot}`;
+    }
+  }
+
+  const anthropic = new Anthropic({ apiKey });
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 2048,
+    system: `You are writing a leadership growth narrative for ${userName} — a leader who completed Leadership Lab, a 5-milestone intensive leadership development program aligned with the Arena Foundations in-person training.
+
+This is NOT a report card. It's a STORY. A narrative about a real human being who showed up, got uncomfortable, and changed (or didn't, in some places). Write it as if you're a wise observer who knows them deeply and cares about their growth.
+
+NARRATIVE STRUCTURE (follow this):
+
+1. ARRIVAL — Who were they when they walked in? What did they believe about their leadership? What were they carrying? Draw from the onboarding conversation and early weeks.
+
+2. THE CRUCIBLE — What happened during the program? What experiments mattered most? Where did they resist? Where were they surprised by themselves? What reveals landed hardest? What moments cracked something open? Be specific — use their own words when possible.
+
+3. EMERGENCE — Who are they becoming? What has genuinely shifted? AND (critically) — what hasn't shifted yet? What tensions remain unresolved? What growth edges are still sharp? Be honest. The most powerful narratives don't pretend everything is resolved.
+
+4. WHAT OTHERS SEE — If 360 data is available, weave in how others experience their leadership. Surface the gaps — where self-perception and external perception don't match. This is powerful material.
+
+5. LOOKING AHEAD — One paragraph about what's next. Not advice. Just an honest reckoning with where the work continues.
+
+Rules:
+- Write in second person ("You arrived...") — make it feel personal
+- Use their actual words and specific moments when possible
+- Don't sugarcoat. Don't catastrophize. Be real.
+- Length: 500-800 words total
+- No bullet points, no headers in the narrative itself — write it as flowing prose
+- If 360 data exists, the gap between self and others' perception should be a key theme
+- End with something that resonates — a sentence they'll remember
+
+Return ONLY a JSON object:
+{
+  "narrative": "The full growth narrative text (500-800 words, flowing prose)",
+  "title": "A short evocative title for their narrative (3-8 words)",
+  "keyTheme": "The single most important theme of their growth journey (1 sentence)",
+  "unresolved": "The most significant unresolved tension or growth edge (1 sentence)",
+  "smsTeaser": "A compelling 1-line text to deliver: 'Your growth narrative is ready' (under 160 chars)"
+}
+
+Return ONLY valid JSON. No markdown.`,
+    messages: [{
+      role: "user",
+      content: `Write the growth narrative for ${userName}.
+
+${profileContext}
+
+${arrivalContext}
+
+WEEKLY REFLECTIONS:
+${reflections.join("\n") || "None recorded"}
+
+EXPERIMENTS:
+${experiments.join("\n") || "None recorded"}
+
+REVEALS:
+${reveals.join("\n") || "None delivered"}
+
+KEY EVIDENCE:
+${evidenceItems.join("\n") || "None collected"}
+${threeSixtyContext}`,
+    }],
+  });
+
+  const resultText = response.content[0]?.text || "{}";
+  let narrative;
+  try {
+    narrative = JSON.parse(resultText);
+  } catch {
+    logger.warn("Failed to parse growth narrative JSON", { resultText });
+    narrative = {
+      narrative: resultText,
+      title: "Your Leadership Story",
+      keyTheme: "Growth is a journey, not a destination.",
+      unresolved: "",
+      smsTeaser: "Your leadership growth narrative is ready. Open the app to read your story.",
+    };
+  }
+
+  // Save the narrative
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const narrativeData = {
+    title: narrative.title || "Your Leadership Story",
+    narrative: narrative.narrative || "",
+    keyTheme: narrative.keyTheme || "",
+    unresolved: narrative.unresolved || "",
+    smsTeaser: narrative.smsTeaser || "",
+    status: "generated", // generated → delivered → read
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  // Use set with merge so we can regenerate
+  await db.doc(`${LL_PREFIX}users/${uid}/growthNarrative/current`).set(narrativeData, { merge: true });
+
+  logger.info("Growth narrative generated", { uid, title: narrative.title });
+
+  return narrativeData;
+}
+
+/**
+ * labGenerateNarrative — Generates or regenerates the growth narrative for
+ * the authenticated user. Can be called from the Story screen.
+ */
+exports.labGenerateNarrative = onCall(
+  {
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    secrets: ["ANTHROPIC_API_KEY"],
+    maxInstances: 10,
+    timeoutSeconds: 120,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const uid = request.auth.uid;
+    const db = admin.firestore();
+
+    try {
+      // Verify user has enough data (at least 2 weeks)
+      const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+      if (!userSnap.exists) {
+        throw new HttpsError("not-found", "User not found");
+      }
+      const currentWeek = userSnap.data().currentWeek || 1;
+      if (currentWeek < 2) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Your narrative needs at least 2 weeks of data to generate."
+        );
+      }
+
+      const narrativeData = await generateGrowthNarrative(uid);
+
+      // Mark as delivered (user is actively requesting it)
+      await db.doc(`${LL_PREFIX}users/${uid}/growthNarrative/current`).update({
+        status: "read",
+      });
+
+      return {
+        title: narrativeData.title,
+        narrative: narrativeData.narrative,
+        keyTheme: narrativeData.keyTheme,
+        unresolved: narrativeData.unresolved,
+      };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labGenerateNarrative error", error);
+      throw new HttpsError("internal", "Failed to generate narrative");
+    }
+  }
+);
+
+/**
+ * labMyNarrative — Returns the authenticated user's current growth narrative.
+ * Used by the Story screen.
+ */
+exports.labMyNarrative = onCall(
+  {
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 10,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const uid = request.auth.uid;
+    const db = admin.firestore();
+
+    try {
+      const narrativeSnap = await db.doc(`${LL_PREFIX}users/${uid}/growthNarrative/current`).get();
+
+      if (!narrativeSnap.exists) {
+        return {
+          hasNarrative: false,
+          narrative: null,
+          canGenerate: (await db.doc(`${LL_PREFIX}users/${uid}`).get()).data()?.currentWeek >= 2,
+        };
+      }
+
+      const d = narrativeSnap.data();
+
+      // Mark as read if delivered
+      if (d.status === "delivered") {
+        await narrativeSnap.ref.update({ status: "read" });
+      }
+
+      return {
+        hasNarrative: true,
+        canGenerate: true,
+        narrative: {
+          title: d.title,
+          narrative: d.narrative,
+          keyTheme: d.keyTheme,
+          unresolved: d.unresolved,
+          status: d.status,
+          createdAt: d.createdAt ? d.createdAt.toDate().toISOString() : null,
+          updatedAt: d.updatedAt ? d.updatedAt.toDate().toISOString() : null,
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      logger.error("labMyNarrative error", error);
+      throw new HttpsError("internal", "Failed to load narrative");
+    }
+  }
+);
+
+// ============================================================================
+// LEADERSHIP LAB — App Unlock (SMS → App upgrade)
+// ============================================================================
+
+/**
+ * labUnlockApp — Generate a magic link so an SMS participant can access the web app.
+ * Creates a Firebase Auth user (by phone), stores an unlock code, and sends the link via SMS.
+ * Admin/facilitator-only callable.
+ */
+exports.labUnlockApp = onCall(
+  {
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const db = admin.firestore();
+
+    // Check admin
+    const adminDoc = await db.doc("metadata/config").get();
+    const adminEmails = adminDoc.exists ? (adminDoc.data().adminemails || []) : [];
+    const callerEmail = (request.auth.token.email || "").toLowerCase();
+    if (!adminEmails.map((e) => e.toLowerCase()).includes(callerEmail)) {
+      throw new HttpsError("permission-denied", "Admin access required");
+    }
+
+    const { memberId } = request.data || {};
+    if (!memberId) {
+      throw new HttpsError("invalid-argument", "memberId is required");
+    }
+
+    // Look up the ll-users doc
+    const userRef = db.doc(`${LL_PREFIX}users/${memberId}`);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      throw new HttpsError("not-found", "Member not found");
+    }
+
+    const userData = userSnap.data();
+    const phone = userData.phone;
+    if (!phone) {
+      throw new HttpsError("failed-precondition", "Member has no phone number");
+    }
+
+    // Create or find Firebase Auth user by phone
+    let authUser;
+    try {
+      authUser = await admin.auth().getUserByPhoneNumber(phone);
+      logger.info("Found existing auth user", { uid: authUser.uid, phone });
+    } catch {
+      // Create new auth user
+      authUser = await admin.auth().createUser({
+        phoneNumber: phone,
+        displayName: [userData.firstName, userData.lastName].filter(Boolean).join(" ") || undefined,
+      });
+      logger.info("Created new auth user", { uid: authUser.uid, phone });
+    }
+
+    // Store the auth UID link on the ll-users doc
+    await userRef.update({
+      firebaseAuthUid: authUser.uid,
+      appUnlocked: true,
+      appUnlockedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Also update the cohort member doc so AdminScreen can show unlock status
+    if (userData.cohortId) {
+      try {
+        await db.doc(`${LL_PREFIX}cohorts/${userData.cohortId}/members/${memberId}`).update({
+          appUnlocked: true,
+        });
+      } catch {
+        // Member doc may not have this path — non-critical
+      }
+    }
+
+    // Generate unlock code (128-bit, URL-safe)
+    const code = require("crypto").randomBytes(20).toString("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    await db.doc(`${LL_PREFIX}unlock-codes/${code}`).set({
+      memberId,
+      authUid: authUser.uid,
+      phone,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+      used: false,
+    });
+
+    // Send magic link via SMS
+    const link = `${labHostingDomain()}?unlock=${code}`;
+    const name = userData.firstName || "Hey";
+    try {
+      await sendLabSms(
+        phone,
+        `${name} — your Leadership Lab app is ready. See your leadership profile, run simulations, and go deeper. Tap to sign in (no password needed):\n\n${link}`
+      );
+      logger.info("Unlock link sent", { memberId, phone });
+    } catch (smsErr) {
+      logger.warn("Failed to send unlock SMS", { phone, error: smsErr.message });
+      // Still return success — code is created, admin can share link manually
+    }
+
+    return {
+      success: true,
+      link,
+      expiresAt: expiresAt.toISOString(),
+    };
+  }
+);
+
+/**
+ * labRedeemUnlock — Exchange an unlock code for a Firebase custom token.
+ * Public HTTPS endpoint (no auth required — the code IS the credential).
+ * One-time use, expires after 7 days.
+ */
+exports.labRedeemUnlock = onRequest(
+  {
+    region: "us-central1",
+    cors: true,
+    maxInstances: 10,
+  },
+  async (req, res) => {
+    // CORS headers
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+
+    if (req.method !== "POST") {
+      res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+
+    const { code } = req.body || {};
+    if (!code || typeof code !== "string") {
+      res.status(400).json({ error: "Missing unlock code" });
+      return;
+    }
+
+    // Sanitize — only hex chars allowed
+    if (!/^[a-f0-9]{40}$/.test(code)) {
+      res.status(400).json({ error: "Invalid code format" });
+      return;
+    }
+
+    const db = admin.firestore();
+    const codeRef = db.doc(`${LL_PREFIX}unlock-codes/${code}`);
+    const codeSnap = await codeRef.get();
+
+    if (!codeSnap.exists) {
+      res.status(404).json({ error: "Invalid or expired unlock code" });
+      return;
+    }
+
+    const codeData = codeSnap.data();
+
+    if (codeData.used) {
+      res.status(410).json({ error: "This link has already been used. Open the app and sign in normally." });
+      return;
+    }
+
+    // Expiration check — always enforce (expiresAt is required)
+    if (!codeData.expiresAt || codeData.expiresAt.toDate() < new Date()) {
+      res.status(410).json({ error: "This link has expired. Ask your facilitator for a new one." });
+      return;
+    }
+
+    // Mark as used
+    await codeRef.update({ used: true, usedAt: admin.firestore.FieldValue.serverTimestamp() });
+
+    // Generate custom token for the auth user
+    try {
+      const customToken = await admin.auth().createCustomToken(codeData.authUid);
+
+      logger.info("Unlock code redeemed", { memberId: codeData.memberId, authUid: codeData.authUid });
+
+      res.status(200).json({
+        success: true,
+        token: customToken,
+        memberId: codeData.memberId,
+      });
+    } catch (err) {
+      logger.error("Failed to create custom token", { error: err.message });
+      res.status(500).json({ error: "Failed to sign in. Please try again." });
     }
   }
 );
