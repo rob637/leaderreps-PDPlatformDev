@@ -18,6 +18,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [profileDocId, setProfileDocId] = useState(null);
+  const [viewAs, setViewAs] = useState('facilitator'); // 'facilitator' | 'participant'
   // Track the profile snapshot unsubscribe function
   let profileUnsub = null;
 
@@ -230,6 +231,7 @@ export function AuthProvider({ children }) {
     isFacilitator: isAdmin || userProfile?.role === 'facilitator',
     isAdmin,
     isOnboarded: isAdmin || userProfile?.onboardingComplete === true,
+    viewAs, setViewAs,
   };
 
   return (

@@ -66,7 +66,7 @@ function UnlockHandler({ code, onDone }) {
 }
 
 function AppContent() {
-  const { isAuthenticated, isOnboarded, isFacilitator, loading } = useAuth();
+  const { isAuthenticated, isOnboarded, isFacilitator, loading, viewAs } = useAuth();
   const [unlockCode, setUnlockCode] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('unlock');
@@ -97,7 +97,8 @@ function AppContent() {
   }
 
   // Facilitators/admins start on the Admin screen, participants on Feed
-  const initialScreen = isFacilitator ? SCREENS.ADMIN : SCREENS.FEED;
+  const viewingAsFacilitator = isFacilitator && viewAs === 'facilitator';
+  const initialScreen = viewingAsFacilitator ? SCREENS.ADMIN : SCREENS.FEED;
 
   return (
     <NavigationProvider initialScreen={initialScreen}>
