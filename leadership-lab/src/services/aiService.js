@@ -16,12 +16,13 @@ const labUpdateProfile = httpsCallable(functions, 'labUpdateProfile');
  * @param {number} [options.weekNumber] — Current week (1-6)
  * @returns {Promise<{response: string, conversationId: string}>}
  */
-export async function sendMessage(text, { conversationId, mode = 'coach', weekNumber = 1 } = {}) {
+export async function sendMessage(text, { conversationId, mode = 'coach', weekNumber = 1, experimentContext } = {}) {
   const result = await labCoach({
     text,
     conversationId,
     mode,
     weekNumber,
+    experimentContext,
   });
   return result.data;
 }
