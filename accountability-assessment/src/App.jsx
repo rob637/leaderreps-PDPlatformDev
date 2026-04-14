@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import Landing from './components/Landing';
 import AssessmentFlow from './components/AssessmentFlow';
-import EmailCapture from './components/EmailCapture';
 import Results from './components/Results';
 import { calculateResults } from './data/questions';
 
@@ -10,12 +9,11 @@ import { calculateResults } from './data/questions';
 const FUNCTION_URL = 'https://us-central1-leaderreps-prod.cloudfunctions.net';
 
 function App() {
-  const [stage, setStage] = useState('landing'); // landing | assessment | email | results
+  const [stage, setStage] = useState('landing'); // landing | assessment | results
   const [answers, setAnswers] = useState([]);
   const [results, setResults] = useState(null);
-  const [aiInsights, setAiInsights] = useState(null);
-  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [submitState, setSubmitState] = useState('idle');
 
   const handleStart = useCallback(() => {
     setStage('assessment');
@@ -25,15 +23,15 @@ function App() {
     setAnswers(finalAnswers);
     const calculatedResults = calculateResults(finalAnswers);
     setResults(calculatedResults);
-    setStage('email');
+    setSubmitState('idle');
+    setStage('results');
   }, []);
 
-  const handleEmailSubmit = useCallback(async (submittedEmail, firstName) => {
-    setEmail(submittedEmail);
+  const handleEmailSubmit = useCallback(async (submittedEmail, firstName = '') => {
     setIsLoading(true);
+    setSubmitState('idle');
 
     try {
-      // Call Cloud Function for AI analysis and email
       const response = await fetch(`${FUNCTION_URL}/analyzeAccountabilityAssessment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,26 +43,24 @@ function App() {
         }),
       });
 
-      const data = await response.json();
-      
-      if (data.aiInsights) {
-        setAiInsights(data.aiInsights);
+      if (!response.ok) {
+        throw new Error('Failed to submit email.');
       }
+
+      setSubmitState('success');
     } catch (error) {
-      console.error('Failed to get AI insights:', error);
-      // Continue anyway - they'll still see basic results
+      console.error('Failed to send accountability resources:', error);
+      setSubmitState('error');
     }
 
     setIsLoading(false);
-    setStage('results');
   }, [answers, results]);
 
   const handleRestart = useCallback(() => {
     setStage('landing');
     setAnswers([]);
     setResults(null);
-    setAiInsights(null);
-    setEmail('');
+    setSubmitState('idle');
   }, []);
 
   return (
@@ -80,23 +76,15 @@ function App() {
             onComplete={handleAssessmentComplete}
           />
         )}
-        
-        {stage === 'email' && (
-          <EmailCapture 
-            key="email" 
-            results={results}
-            onSubmit={handleEmailSubmit}
-            isLoading={isLoading}
-          />
-        )}
-        
+
         {stage === 'results' && (
           <Results 
             key="results"
             results={results}
-            aiInsights={aiInsights}
-            email={email}
             onRestart={handleRestart}
+            onEmailSubmit={handleEmailSubmit}
+            isSubmitting={isLoading}
+            submitState={submitState}
           />
         )}
       </AnimatePresence>

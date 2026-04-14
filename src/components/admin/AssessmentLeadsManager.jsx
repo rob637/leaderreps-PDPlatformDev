@@ -31,21 +31,15 @@ const LEADERSHIP_ARCHETYPE_NAMES = {
 
 // Accountability Assessment Archetypes
 const ACCOUNTABILITY_ARCHETYPE_COLORS = {
-  'ownership-champion': '#E04E1B',      // Orange (brand)
-  'reliable-executor': '#10B981',       // Green
-  'transparent-communicator': '#06B6D4', // Cyan
-  'standards-setter': '#8B5CF6',        // Purple
-  'accountability-coach': '#F59E0B',    // Amber
-  'balanced-accountable': '#002E47',    // Navy (brand)
+  'execution-engine': '#277A68',
+  'leaky-system': '#B84825',
+  'system-not-yet-installed': '#002E47',
 };
 
 const ACCOUNTABILITY_ARCHETYPE_NAMES = {
-  'ownership-champion': 'Ownership Champion',
-  'reliable-executor': 'Reliable Executor',
-  'transparent-communicator': 'Transparent Communicator',
-  'standards-setter': 'Standards Setter',
-  'accountability-coach': 'Accountability Coach',
-  'balanced-accountable': 'Balanced Accountable Leader',
+  'execution-engine': 'Execution Engine (4-5 Yes)',
+  'leaky-system': 'Leaky System (2-3 Yes)',
+  'system-not-yet-installed': 'System Not Yet Installed (0-1 Yes)',
 };
 
 // ROI Calculator Industries
@@ -121,8 +115,8 @@ const ASSESSMENT_CONFIG = {
   },
   accountability: {
     collection: 'accountability-leads',
-    title: 'Accountability Assessment',
-    subtitle: 'Leads from the Accountability Assessment',
+    title: 'Accountability System Assessment',
+    subtitle: 'Leads from the Accountability System Assessment',
     icon: ShieldCheck,
     accentColor: 'orange',
     archetypeColors: ACCOUNTABILITY_ARCHETYPE_COLORS,
@@ -132,11 +126,11 @@ const ASSESSMENT_CONFIG = {
     filterLabel: 'Archetypes',
     isROI: false,
     marketingTips: [
-      'Welcome sequence with accountability tips based on their archetype',
-      'Share accountability frameworks and tools',
-      'Invite to accountability coaching sessions',
-      'Offer a free Accountability Acceleration workshop',
-      'Segment by archetype for targeted follow-up',
+      'Send score-band follow-up by ASA tag (4-5, 2-3, 0-1)',
+      'Deliver the Accountability Blueprint + practical follow-through prompts',
+      'Invite leads to a live accountability systems workshop',
+      'Promote Foundation as the deeper next step for implementation',
+      'Track conversion by score band for campaign optimization',
     ],
   },
   roi: {

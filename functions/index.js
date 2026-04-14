@@ -10010,6 +10010,12 @@ exports.analyzeLeadershipAssessment = onRequest(
       const emailPass = process.env.EMAIL_PASS;
       let emailSent = false;
 
+      const yesCount = Number(results.yesCount || 0);
+      const totalQuestions = Number(results.totalQuestions || 5);
+      const scoreBand = results.scoreBand || (yesCount >= 4 ? '4-5' : (yesCount >= 2 ? '2-3' : '0-1'));
+      const scoreLabel = results.scoreLabel || (yesCount >= 4 ? 'Execution Engine' : (yesCount >= 2 ? 'Leaky System' : 'System Not Yet Installed'));
+      const kitTag = results.kitTag || `ASA ${scoreBand}`;
+
       if (emailUser && emailPass) {
         const transporter = nodemailer.createTransport({
           service: "gmail",
@@ -10453,30 +10459,31 @@ const generateAccountabilityInsights = async (results, firstName) => {
   const genAI = new GoogleGenerativeAI(geminiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-  const topDims = results.topDimensions || [];
-  const weakestDim = results.weakestDimension || 'ownership';
-  const scores = results.scores || {};
-  const archetype = results.archetypeData?.name || "Accountable Leader";
-  const overallScore = results.overallScore || 50;
-  const maturityLevel = results.maturityLevel || "Developing";
+  const yesCount = Number(results.yesCount || 0);
+  const totalQuestions = Number(results.totalQuestions || 5);
+  const scoreBand = results.scoreBand || (yesCount >= 4 ? '4-5' : (yesCount >= 2 ? '2-3' : '0-1'));
+  const scoreLabel = results.scoreLabel || (scoreBand === '4-5' ? 'Execution Engine' : (scoreBand === '2-3' ? 'Leaky System' : 'System Not Yet Installed'));
+  const questionResults = Array.isArray(results.questionResults) ? results.questionResults : [];
+
+  const notYetItems = questionResults
+    .filter(item => item.answer === 'not-yet')
+    .map(item => item.shortLabel)
+    .join(', ');
 
   const prompt = `You are a world-class executive coach specializing in accountability and leadership development, providing personalized feedback to ${firstName || "a leader"}.
 
-Based on their Accountability Assessment results:
-- Overall Score: ${overallScore}/100 (${maturityLevel})
-- Archetype: ${archetype}
-- Top strengths: ${topDims.map(d => ACCOUNTABILITY_DIMENSIONS_DATA[d]?.name).join(', ')}
-- Biggest growth area: ${ACCOUNTABILITY_DIMENSIONS_DATA[weakestDim]?.name}
-- Dimension scores: ${Object.entries(scores).map(([k, v]) => `${ACCOUNTABILITY_DIMENSIONS_DATA[k]?.name}: ${v}%`).join(', ')}
+Based on their Accountability System Assessment results:
+- Yes answers: ${yesCount}/${totalQuestions}
+- Score band: ${scoreBand} (${scoreLabel})
+- Not yet areas: ${notYetItems || 'None flagged'}
 
-Write a personalized accountability coaching insight (250-300 words) that:
-1. Acknowledges their current accountability level honestly but encouragingly
-2. Highlights their top accountability strength and how to leverage it
-3. Identifies their biggest accountability gap with one specific, actionable practice to start THIS WEEK
-4. Explains how LeaderReps' 8-week program builds accountability through daily micro-practices, AI coaching, and peer accountability partners
-5. Ends with an inspiring but direct call to action about choosing accountability
+Write a personalized coaching insight (160-220 words) that:
+1. Names what this score suggests about their current system
+2. Picks one high-leverage behavior to improve this week
+3. Encourages a repeatable weekly practice instead of trying to fix everything at once
+4. Ends with a direct call to action to keep ownership on their team
 
-Be direct and honest—accountability requires facing the truth. Use "you" language. Don't use headings or bullet points - make it feel like a personal message from a tough but caring coach who believes in their potential.`;
+Be direct and honest. Use "you" language. Do not use headings or bullets.`;
 
   try {
     const result = await model.generateContent(prompt);
@@ -10491,34 +10498,29 @@ Be direct and honest—accountability requires facing the truth. Use "you" langu
  * Build HTML email for accountability assessment results
  */
 const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights) => {
-  const archetype = results.archetypeData || {};
-  const sortedDimensions = results.sortedDimensions || [];
-  const overallScore = results.overallScore || 50;
-  const maturityLevel = results.maturityLevel || 'Developing';
-  const weakestDim = results.weakestDimension || 'ownership';
-  const weakestDimData = ACCOUNTABILITY_DIMENSIONS_DATA[weakestDim] || {};
-  
-  const dimensionBars = sortedDimensions.map(([dim, score]) => {
-    const data = ACCOUNTABILITY_DIMENSIONS_DATA[dim];
+  const yesCount = Number(results.yesCount || 0);
+  const totalQuestions = Number(results.totalQuestions || 5);
+  const scoreLabel = results.scoreLabel || 'Accountability System Score';
+  const summary = results.summary || '';
+  const questionResults = Array.isArray(results.questionResults) ? results.questionResults : [];
+
+  const questionRows = questionResults.map((item, index) => {
+    const answerLabel = item.answer === 'yes' ? 'Yes' : 'Inconsistent / Not Yet';
     return `
-      <div style="margin-bottom: 12px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-          <span style="color: #fff; font-weight: 500;">${data.icon} ${data.name}</span>
-          <span style="color: rgba(255,255,255,0.7);">${score}%</span>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); border-radius: 8px; height: 8px; overflow: hidden;">
-          <div style="background: ${data.color}; height: 100%; width: ${score}%; border-radius: 8px;"></div>
-        </div>
-      </div>
+      <tr>
+        <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: #fff; font-size: 14px;">
+          ${index + 1}. ${item.shortLabel || 'Question'}
+        </td>
+        <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: ${item.answer === 'yes' ? '#349881' : '#C85530'}; font-size: 14px; font-weight: 700; text-align: right;">
+          ${answerLabel}
+        </td>
+      </tr>
     `;
   }).join('');
 
-  // Color for score
-  const getScoreColor = () => {
-    if (overallScore >= 80) return '#10B981';
-    if (overallScore >= 65) return '#47A88D';
-    if (overallScore >= 50) return '#F59E0B';
-    return '#E04E1B';
+  const fallbackLinks = {
+    resultsPdf: process.env.ASA_RESULTS_PDF_URL || 'https://leaderreps-accountability.web.app',
+    blueprint: process.env.ASA_BLUEPRINT_URL || 'https://leaderreps-accountability.web.app',
   };
 
   return `<!DOCTYPE html>
@@ -10532,75 +10534,49 @@ const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights) => {
   <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
     
     <!-- Header -->
-    <div style="background: linear-gradient(135deg, #002E47 0%, #001a2b 100%); border-radius: 16px 16px 0 0; padding: 32px; text-align: center;">
-      <div style="display: inline-block; padding: 8px 16px; background: rgba(224,78,27,0.2); border-radius: 20px; color: #E04E1B; font-size: 12px; font-weight: 600; margin-bottom: 16px;">
-        🎯 YOUR ACCOUNTABILITY PROFILE
+    <div style="background: linear-gradient(135deg, #002E47 0%, #163e57 100%); border-radius: 16px 16px 0 0; padding: 32px; text-align: center;">
+      <div style="display: inline-block; padding: 8px 16px; background: rgba(184,72,37,0.22); border-radius: 20px; color: #C85530; font-size: 12px; font-weight: 700; margin-bottom: 16px;">
+        ACCOUNTABILITY SYSTEM ASSESSMENT
       </div>
       <h1 style="margin: 0; color: #fff; font-size: 28px; font-weight: 700;">
-        Hi ${firstName || 'Leader'}, here are<br/>your results
+        Hi ${firstName || 'Leader'}, your results are ready
       </h1>
     </div>
     
     <!-- Score Card -->
-    <div style="background: linear-gradient(135deg, #002E47 0%, #003d5c 100%); padding: 32px; text-align: center;">
-      <div style="display: inline-block; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 4px solid ${getScoreColor()}; line-height: 1;">
-        <div style="padding-top: 30px;">
-          <span style="color: #fff; font-size: 42px; font-weight: 700;">${overallScore}</span>
-          <span style="color: rgba(255,255,255,0.6); font-size: 14px; display: block;">/100</span>
-        </div>
-      </div>
-      <div style="margin-top: 16px;">
-        <span style="display: inline-block; padding: 8px 20px; background: ${getScoreColor()}; color: #fff; border-radius: 20px; font-weight: 700; font-size: 16px;">
-          ${maturityLevel}
+    <div style="background: #002E47; padding: 28px; text-align: center;">
+      <p style="margin: 0; color: rgba(255,255,255,0.85); font-size: 17px;">
+        You answered <strong style="color: #C85530;">Yes to ${yesCount} out of ${totalQuestions}</strong> questions.
+      </p>
+      <div style="margin-top: 12px;">
+        <span style="display: inline-block; padding: 8px 18px; background: #B84825; color: #fff; border-radius: 999px; font-weight: 700; font-size: 14px;">
+          ${scoreLabel}
         </span>
       </div>
     </div>
     
-    <!-- Archetype Card -->
+    <!-- Summary -->
     <div style="background: #002E47; padding: 24px;">
-      <div style="color: rgba(255,255,255,0.6); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-        Your Accountability Archetype
-      </div>
-      <h2 style="margin: 0 0 8px 0; color: #fff; font-size: 22px; font-weight: 700;">
-        ${archetype.name || 'Accountable Leader'}
-      </h2>
-      <p style="margin: 0 0 12px 0; color: #E04E1B; font-size: 14px; font-weight: 600;">
-        ${archetype.tagline || ''}
-      </p>
-      ${archetype.superpower ? `
-      <div style="display: inline-block; padding: 8px 16px; background: rgba(255,255,255,0.1); border-radius: 20px; color: #fff; font-size: 13px; margin-bottom: 16px;">
-        ⚡ Superpower: <strong>${archetype.superpower}</strong>
-      </div>
-      ` : ''}
       <p style="margin: 0; color: rgba(255,255,255,0.8); font-size: 14px; line-height: 1.6;">
-        ${archetype.description || ''}
+        ${summary}
       </p>
     </div>
     
-    <!-- Dimensions -->
+    <!-- Question Breakdown -->
     <div style="background: linear-gradient(135deg, #002E47 0%, #001a2b 100%); padding: 24px;">
       <h3 style="margin: 0 0 20px 0; color: #fff; font-size: 16px; font-weight: 600;">
-        Your 5 Accountability Dimensions
+        Question by question
       </h3>
-      ${dimensionBars}
-    </div>
-    
-    <!-- Growth Focus -->
-    <div style="background: #002E47; padding: 24px;">
-      <h3 style="margin: 0 0 12px 0; color: #E04E1B; font-size: 16px; font-weight: 600;">
-        ⚠️ Your #1 Growth Focus
-      </h3>
-      <p style="margin: 0; color: #fff; font-size: 14px; font-weight: 600;">
-        ${weakestDimData.icon || '🎯'} ${weakestDimData.name || 'Accountability'}
-      </p>
-      <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.7); font-size: 13px; line-height: 1.5;">
-        This is your biggest opportunity for growth. Small improvements here will have an outsized impact on your effectiveness as a leader.
-      </p>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tbody>
+          ${questionRows}
+        </tbody>
+      </table>
     </div>
     
     <!-- AI Insights -->
     ${aiInsights ? `
-    <div style="background: linear-gradient(135deg, #002E47 0%, #003d5c 100%); padding: 24px;">
+    <div style="background: linear-gradient(135deg, #002E47 0%, #163e57 100%); padding: 24px;">
       <div style="display: flex; align-items: center; margin-bottom: 16px;">
         <span style="margin-right: 8px;">✨</span>
         <h3 style="margin: 0; color: #fff; font-size: 16px; font-weight: 600;">
@@ -10612,17 +10588,28 @@ ${aiInsights}
       </p>
     </div>
     ` : ''}
+
+    <div style="background: #002E47; padding: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
+      <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 18px; font-weight: 700;">
+        Download your resources
+      </h3>
+      <p style="margin: 0 0 14px 0; color: rgba(255,255,255,0.8); font-size: 13px; line-height: 1.6;">
+        Here are your direct links to the Accountability System resources.
+      </p>
+      <a href="${fallbackLinks.resultsPdf}" style="display: inline-block; margin-right: 10px; margin-bottom: 10px; padding: 11px 18px; background: #C85530; color: #fff; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 700;">Download Results PDF</a>
+      <a href="${fallbackLinks.blueprint}" style="display: inline-block; margin-bottom: 10px; padding: 11px 18px; background: #277A68; color: #fff; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 700;">Download Accountability Blueprint</a>
+    </div>
     
     <!-- CTA -->
-    <div style="background: linear-gradient(135deg, #E04E1B 0%, #c43d12 100%); padding: 32px; text-align: center; border-radius: 0 0 16px 16px;">
+    <div style="background: linear-gradient(135deg, #B84825 0%, #C85530 100%); padding: 32px; text-align: center; border-radius: 0 0 16px 16px;">
       <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 20px; font-weight: 700;">
-        Ready to Build Unshakeable Accountability?
+        Ready to go deeper?
       </h3>
       <p style="margin: 0 0 20px 0; color: rgba(255,255,255,0.9); font-size: 14px;">
-        Join LeaderReps' 8-week program with daily accountability practices, AI coaching, and peer accountability partners.
+        Foundation is a small cohort for managers who want to build this system through practice.
       </p>
       <a href="https://www.leaderreps.com" style="display: inline-block; padding: 14px 28px; background: #fff; color: #002E47; font-weight: 700; text-decoration: none; border-radius: 10px; font-size: 14px;">
-        Explore LeaderReps Programs →
+        Learn more about Foundation →
       </a>
     </div>
     
@@ -10631,7 +10618,7 @@ ${aiInsights}
       <p style="margin: 0 0 8px 0; color: rgba(255,255,255,0.5); font-size: 12px;">
         © 2026 LeaderReps. Building accountable leaders.
       </p>
-      <a href="https://www.leaderreps.com" style="color: #E04E1B; font-size: 12px; text-decoration: none;">
+      <a href="https://www.leaderreps.com" style="color: #C85530; font-size: 12px; text-decoration: none;">
         www.leaderreps.com
       </a>
     </div>
@@ -10699,7 +10686,7 @@ exports.analyzeAccountabilityAssessment = onRequest(
         await transporter.sendMail({
           from: `"LeaderReps" <arena@leaderreps.com>`,
           to: email,
-          subject: `🎯 ${firstName ? firstName + ', your' : 'Your'} Accountability Assessment: ${results.overallScore || 0}/100`,
+          subject: `🎯 ${firstName ? firstName + ', your' : 'Your'} Accountability System Results: ${yesCount}/${totalQuestions} Yes`,
           html: htmlEmail,
         });
         
@@ -10712,12 +10699,14 @@ exports.analyzeAccountabilityAssessment = onRequest(
       // 3. Store the lead in Firestore
       const sanitizedResults = {
         scores: results.scores || {},
-        topDimensions: results.topDimensions || [],
-        weakestDimension: results.weakestDimension || '',
-        archetype: results.archetype || 'balanced-accountable',
-        archetypeName: results.archetypeData?.name || '',
+        yesCount,
+        totalQuestions,
+        scoreBand,
+        scoreLabel,
+        archetype: results.archetype || (scoreBand === '4-5' ? 'execution-engine' : (scoreBand === '2-3' ? 'leaky-system' : 'system-not-yet-installed')),
+        archetypeName: scoreLabel,
         overallScore: results.overallScore || 0,
-        maturityLevel: results.maturityLevel || '',
+        summary: results.summary || '',
       };
 
       try {
@@ -10730,13 +10719,23 @@ exports.analyzeAccountabilityAssessment = onRequest(
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           marketingOptIn: true,
           emailSent,
+          kitTag,
         });
         logger.info(`Accountability lead stored for ${email}, docId: ${docRef.id}`);
 
         // Sync to Kit (non-blocking)
-        syncLeadToKit(email, firstName, 'accountability', {
+        const kitSource = scoreBand === '4-5'
+          ? 'accountability-asa-4-5'
+          : scoreBand === '2-3'
+            ? 'accountability-asa-2-3'
+            : 'accountability-asa-0-1';
+
+        syncLeadToKit(email, firstName, kitSource, {
           archetype: sanitizedResults.archetype,
           score: String(sanitizedResults.overallScore || ''),
+          yes_count: String(yesCount),
+          score_band: scoreBand,
+          asa_tag: kitTag,
         }).then(kitResult => {
           if (kitResult.success) {
             docRef.update({ kitSyncedAt: admin.firestore.FieldValue.serverTimestamp(), kitSubscriberId: kitResult.subscriberId });
@@ -11138,6 +11137,9 @@ exports.analyzeReadinessAssessment = onRequest(
 const KIT_TAG_MAPPINGS = {
   'leadership-dna': 'leadership-dna-assessment',
   'accountability': 'accountability-assessment',
+  'accountability-asa-4-5': 'ASA 4-5',
+  'accountability-asa-2-3': 'ASA 2-3',
+  'accountability-asa-0-1': 'ASA 0-1',
   'roi-calculator': 'roi-calculator',
   'readiness': 'leadership-readiness-assessment',
 };

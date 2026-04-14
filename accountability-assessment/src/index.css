@@ -15,8 +15,12 @@ body {
   font-family: 'Nunito Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #002E47 0%, #001a2b 100%);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(52, 152, 129, 0.26), transparent 42%),
+    radial-gradient(circle at 85% 12%, rgba(184, 72, 37, 0.24), transparent 34%),
+    linear-gradient(165deg, #f8fafc 0%, #eef4f8 52%, #f7fbff 100%);
   min-height: 100vh;
+  color: #0f172a;
 }
 
 /* Custom scrollbar */
@@ -25,36 +29,36 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 46, 71, 0.08);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(224, 78, 27, 0.5);
+  background: rgba(184, 72, 37, 0.45);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(224, 78, 27, 0.7);
+  background: rgba(184, 72, 37, 0.7);
 }
 
 /* Glass morphism utility */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 46, 71, 0.08);
 }
 
-/* Gradient text - orange theme for Accountability */
+/* Gradient text - sienna theme for Accountability */
 .gradient-text-orange {
-  background: linear-gradient(135deg, #E04E1B 0%, #f56b3d 50%, #E04E1B 100%);
+  background: linear-gradient(135deg, #b84825 0%, #c85530 50%, #b84825 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Gradient text - teal (for accents) */
+/* Gradient text - teal */
 .gradient-text {
-  background: linear-gradient(135deg, #47A88D 0%, #5cb89e 50%, #47A88D 100%);
+  background: linear-gradient(135deg, #349881 0%, #277a68 50%, #349881 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -72,7 +76,7 @@ body {
   inset: -2px;
   border-radius: 18px;
   padding: 2px;
-  background: linear-gradient(135deg, #E04E1B, #47A88D, #E04E1B);
+  background: linear-gradient(135deg, #b84825, #349881, #c85530);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -91,7 +95,7 @@ body {
   inset: -2px;
   border-radius: 18px;
   padding: 2px;
-  background: linear-gradient(135deg, #47A88D, #E04E1B, #47A88D);
+  background: linear-gradient(135deg, #349881, #b84825, #277a68);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -114,7 +118,7 @@ body {
   position: absolute;
   inset: -4px;
   border-radius: inherit;
-  border: 2px solid #E04E1B;
+  border: 2px solid #b84825;
   opacity: 0;
   animation: pulseRing 2s ease-out infinite;
 }
@@ -129,7 +133,7 @@ body {
   position: absolute;
   inset: -4px;
   border-radius: inherit;
-  border: 2px solid #47A88D;
+  border: 2px solid #349881;
   opacity: 0;
   animation: pulseRing 2s ease-out infinite;
 }
