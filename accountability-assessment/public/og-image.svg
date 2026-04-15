@@ -1,47 +1,63 @@
 <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#002E47"/>
-      <stop offset="100%" style="stop-color:#001a2b"/>
-    </linearGradient>
-    <linearGradient id="orange-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#E04E1B"/>
-      <stop offset="100%" style="stop-color:#f56b3d"/>
+      <stop offset="0%" style="stop-color:#f8fafc"/>
+      <stop offset="100%" style="stop-color:#f1f5f9"/>
     </linearGradient>
   </defs>
-  
+
   <!-- Background -->
   <rect width="1200" height="630" fill="url(#bg)"/>
-  
-  <!-- Decorative circles -->
-  <circle cx="100" cy="100" r="200" fill="#E04E1B" opacity="0.1"/>
-  <circle cx="1100" cy="530" r="150" fill="#47A88D" opacity="0.1"/>
-  
-  <!-- Icon -->
-  <circle cx="600" cy="150" r="60" fill="#E04E1B" opacity="0.2"/>
-  <text x="600" y="170" text-anchor="middle" font-size="60">🎯</text>
-  
-  <!-- Main title -->
-  <text x="600" y="280" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="64" font-weight="700">
-    How Accountable Are You,
-  </text>
-  <text x="600" y="360" text-anchor="middle" fill="url(#orange-gradient)" font-family="system-ui, sans-serif" font-size="64" font-weight="700">
-    Really?
-  </text>
-  
+
+  <!-- Left accent bar -->
+  <rect x="0" y="0" width="10" height="630" fill="#B84825"/>
+
+  <!-- Navy card -->
+  <rect x="80" y="60" width="660" height="510" rx="24" fill="#002E47"/>
+
+  <!-- Eyebrow label -->
+  <text x="140" y="145" fill="#349881" font-family="system-ui, sans-serif" font-size="20" font-weight="700" letter-spacing="3">LEADERREPS ASSESSMENT</text>
+
+  <!-- Main title line 1 -->
+  <text x="140" y="225" fill="white" font-family="system-ui, sans-serif" font-size="54" font-weight="800">How Strong Is Your</text>
+  <!-- Main title line 2 -->
+  <text x="140" y="295" fill="white" font-family="system-ui, sans-serif" font-size="54" font-weight="800">Team's Accountability</text>
+  <!-- Main title line 3 — highlighted -->
+  <text x="140" y="365" fill="#B84825" font-family="system-ui, sans-serif" font-size="54" font-weight="800">System?</text>
+
+  <!-- Divider -->
+  <rect x="140" y="395" width="80" height="4" rx="2" fill="#349881"/>
+
   <!-- Subtitle -->
-  <text x="600" y="430" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="system-ui, sans-serif" font-size="28">
-    Discover your accountability strengths and blindspots in 5 minutes
-  </text>
-  
-  <!-- Badge -->
-  <rect x="450" y="480" width="300" height="44" rx="22" fill="rgba(224,78,27,0.2)"/>
-  <text x="600" y="510" text-anchor="middle" fill="#E04E1B" font-family="system-ui, sans-serif" font-size="18" font-weight="600">
-    ✨ Free AI-Powered Assessment
-  </text>
-  
-  <!-- Logo text -->
-  <text x="600" y="590" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="24" font-weight="600">
-    LeaderReps
-  </text>
+  <text x="140" y="445" fill="rgba(255,255,255,0.75)" font-family="system-ui, sans-serif" font-size="24">Five questions. Three minutes.</text>
+  <text x="140" y="480" fill="rgba(255,255,255,0.75)" font-family="system-ui, sans-serif" font-size="24">Instant score + full analysis.</text>
+
+  <!-- CTA pill -->
+  <rect x="140" y="510" width="240" height="42" rx="21" fill="#B84825"/>
+  <text x="260" y="537" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="18" font-weight="700">Take the Free Test →</text>
+
+  <!-- Right side — score band cards -->
+  <!-- Execution Engine -->
+  <rect x="800" y="60" width="320" height="150" rx="16" fill="white"/>
+  <rect x="800" y="60" width="8" height="150" rx="4" fill="#349881"/>
+  <text x="830" y="105" fill="#277A68" font-family="system-ui, sans-serif" font-size="14" font-weight="700" letter-spacing="2">4–5 YES</text>
+  <text x="830" y="138" fill="#002E47" font-family="system-ui, sans-serif" font-size="22" font-weight="800">Execution Engine</text>
+  <text x="830" y="165" fill="#64748b" font-family="system-ui, sans-serif" font-size="15">Your system is doing real work.</text>
+  <text x="830" y="185" fill="#64748b" font-family="system-ui, sans-serif" font-size="15">Time to sharpen the edges.</text>
+
+  <!-- Leaky System -->
+  <rect x="800" y="235" width="320" height="150" rx="16" fill="white"/>
+  <rect x="800" y="235" width="8" height="150" rx="4" fill="#B84825"/>
+  <text x="830" y="280" fill="#B84825" font-family="system-ui, sans-serif" font-size="14" font-weight="700" letter-spacing="2">2–3 YES</text>
+  <text x="830" y="313" fill="#002E47" font-family="system-ui, sans-serif" font-size="22" font-weight="800">Leaky System</text>
+  <text x="830" y="340" fill="#64748b" font-family="system-ui, sans-serif" font-size="15">Gaps are showing up. These</text>
+  <text x="830" y="360" fill="#64748b" font-family="system-ui, sans-serif" font-size="15">are fixable.</text>
+
+  <!-- System Not Yet -->
+  <rect x="800" y="410" width="320" height="150" rx="16" fill="white"/>
+  <rect x="800" y="410" width="8" height="150" rx="4" fill="#002E47"/>
+  <text x="830" y="455" fill="#002E47" font-family="system-ui, sans-serif" font-size="14" font-weight="700" letter-spacing="2">0–1 YES</text>
+  <text x="830" y="488" fill="#002E47" font-family="system-ui, sans-serif" font-size="20" font-weight="800">System Not Yet</text>
+  <text x="830" y="514" fill="#002E47" font-family="system-ui, sans-serif" font-size="20" font-weight="800">Installed</text>
+  <text x="830" y="542" fill="#64748b" font-family="system-ui, sans-serif" font-size="15">Time to rebuild from the</text>
 </svg>

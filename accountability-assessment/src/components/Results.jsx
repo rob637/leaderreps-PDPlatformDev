@@ -1,11 +1,9 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft,
   CheckCircle2,
   RotateCcw,
   Share2,
-  Send,
   ExternalLink,
   Mail,
 } from 'lucide-react';
@@ -40,37 +38,38 @@ const ResultCard = ({ item, index }) => {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.06 * index }}
-      className="rounded-2xl border border-slate-200 bg-white p-5"
+      className="py-10 border-t border-slate-100 first:border-t-0"
     >
       <h3 className="text-xl font-bold text-[#002E47]">
         Question {index + 1}: {item.shortLabel}
       </h3>
-      <p className="mt-2 text-slate-700">{item.prompt}</p>
-      {item.note && <p className="mt-1 text-sm text-slate-500">{item.note}</p>}
+      <p className="mt-2 text-slate-700 italic">
+        {item.prompt} {item.note && <span className="block mt-1 text-slate-500 not-italic">— {item.note}</span>}
+      </p>
 
-      <div className="mt-4 grid md:grid-cols-2 gap-3">
+      <div className="mt-6 grid md:grid-cols-2 gap-4">
         <div
-          className={`rounded-xl border p-4 ${
+          className={`rounded-xl border p-5 transition-all ${
             yesSelected
-              ? 'border-[#277A68] bg-[#277A68]/10'
-              : 'border-slate-200 bg-slate-50'
+              ? 'border-[#277A68] bg-[#277A68]/5 ring-1 ring-[#277A68]'
+              : 'border-slate-200 bg-slate-50 opacity-60'
           }`}
         >
-          <div className="text-xs font-semibold uppercase tracking-wide text-[#277A68] mb-2">
-            IF YES {yesSelected ? '[YOUR ANSWER]' : ''}
+          <div className={`text-xs font-bold uppercase tracking-widest mb-2 ${yesSelected ? 'text-[#277A68]' : 'text-slate-400'}`}>
+            IF YES {yesSelected && '[YOUR ANSWER]'}
           </div>
           <p className="text-slate-700 text-sm leading-relaxed">{item.ifYes}</p>
         </div>
 
         <div
-          className={`rounded-xl border p-4 ${
-            yesSelected
-              ? 'border-slate-200 bg-slate-50'
-              : 'border-[#B84825] bg-[#B84825]/10'
+          className={`rounded-xl border p-5 transition-all ${
+            !yesSelected
+              ? 'border-[#B84825] bg-[#B84825]/5 ring-1 ring-[#B84825]'
+              : 'border-slate-200 bg-slate-50 opacity-60'
           }`}
         >
-          <div className="text-xs font-semibold uppercase tracking-wide text-[#B84825] mb-2">
-            IF NOT YET {!yesSelected ? '[YOUR ANSWER]' : ''}
+          <div className={`text-xs font-bold uppercase tracking-widest mb-2 ${!yesSelected ? 'text-[#B84825]' : 'text-slate-400'}`}>
+            IF NOT YET {!yesSelected && '[YOUR ANSWER]'}
           </div>
           <p className="text-slate-700 text-sm leading-relaxed">{item.ifNotYet}</p>
         </div>
@@ -87,6 +86,8 @@ const Results = ({
   submitState,
 }) => {
   const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const theme = scoreTheme[results?.archetype] || scoreTheme['leaky-system'];
 
@@ -103,7 +104,7 @@ const Results = ({
   const handleEmailSubmit = (event) => {
     event.preventDefault();
     if (!email || !email.includes('@')) return;
-    onEmailSubmit(email.trim());
+    onEmailSubmit(email.trim(), firstName.trim());
   };
 
   if (!results) return null;
@@ -115,136 +116,188 @@ const Results = ({
       exit={{ opacity: 0 }}
       className="min-h-screen py-8 px-4"
     >
-      <div className="max-w-4xl mx-auto space-y-5">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8 shadow-lg">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Main Results Card */}
+        <section className="rounded-[2.5rem] border border-slate-200 bg-white p-8 md:p-12 shadow-xl">
+          <div className="flex flex-wrap items-start justify-between gap-6 mb-10">
+            <div className="space-y-2">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
                 Your Results
               </p>
-              <h1 className="text-3xl md:text-4xl font-bold text-[#002E47] mt-1">
-                You answered Yes to{' '}
-                <span className="text-[#B84825]">
-                  {results.yesCount} out of {results.totalQuestions}
-                </span>{' '}
-                questions.
+              <h1 className="text-4xl md:text-5xl font-black text-[#002E47] leading-tight">
+                You answered “Yes” to <span className="text-[#B84825]">{results.yesCount} out of {results.totalQuestions}</span> questions.
               </h1>
             </div>
 
             <button
               onClick={onRestart}
-              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700"
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-500 text-sm font-bold transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Back
+              <RotateCcw className="w-4 h-4" />
+              Retake Test
             </button>
           </div>
 
-          <div
-            className={`mt-5 inline-flex items-center rounded-full px-4 py-2 border ${theme.bg} ${theme.border} ${theme.text} font-semibold`}
-          >
-            {results.scoreLabel}
+          <div className="space-y-8">
+            <div
+              className={`inline-block px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest shadow-sm ${theme.bg} ${theme.text}`}
+            >
+              {results.scoreLabel}
+            </div>
+
+            <div className="space-y-6">
+              <h2 className="text-3xl md:text-4xl font-black text-[#002E47] leading-tight">
+                {results.headline}
+              </h2>
+              
+              <div className="space-y-6 text-slate-600 leading-relaxed text-lg max-w-3xl">
+                {results.summary.split('\n\n').map((para, i) => (
+                  <p key={i}>{para}</p>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <p className="mt-4 text-slate-700 leading-relaxed">{results.summary}</p>
+          <div className="mt-20 pt-16 border-t border-slate-100">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-12">
+              Question by Question
+            </h2>
+            <div className="space-y-2">
+              {results.questionResults.map((item, index) => (
+                <ResultCard key={item.id} item={item} index={index} />
+              ))}
+            </div>
+          </div>
+        </section>
 
-          <div className="mt-5 flex flex-wrap gap-3">
+        {/* LinkedIn Share */}
+        <div className="rounded-[2.5rem] border border-slate-200 bg-white p-8 md:p-10 shadow-lg">
+          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-6">Share Your Results</h3>
+          
+          <div className="space-y-4">
+            <p className="text-sm text-slate-500 font-medium">
+              LinkedIn won't let us pre-fill text — copy this first, then paste it as your caption after clicking Share.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+              <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 font-medium leading-relaxed select-all">
+                {getLinkedInShareText()} {START_ASSESSMENT_URL}
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`${getLinkedInShareText()} ${START_ASSESSMENT_URL}`);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2500);
+                }}
+                className={`px-5 py-3 rounded-xl font-black text-sm transition-all whitespace-nowrap ${
+                  copied
+                    ? 'bg-[#277A68] text-white'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                }`}
+              >
+                {copied ? '✓ Copied!' : 'Copy Text'}
+              </button>
+            </div>
+
             <a
               href={linkedInShareUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-3 bg-[#0077B5] text-white font-semibold"
+              className="inline-flex items-center gap-3 px-8 py-4 bg-[#0077b5] text-white rounded-2xl font-black hover:bg-[#00669c] transition-all shadow-xl shadow-blue-900/10 hover:translate-y-[-2px]"
             >
-              <Share2 className="w-4 h-4" />
-              Share on LinkedIn
+              <Share2 className="w-5 h-5 text-white/80" />
+              Open LinkedIn to Share
             </a>
-
-            <button
-              onClick={onRestart}
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-3 border border-slate-200 text-slate-700 hover:bg-slate-50"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Take assessment again
-            </button>
           </div>
-        </section>
+        </div>
 
-        <section className="space-y-4">
-          {results.questionResults.map((item, index) => (
-            <ResultCard key={item.id} item={item} index={index} />
-          ))}
-        </section>
+        {/* Blueprint & PDF CTA */}
+        <section className="rounded-[2.5rem] border border-slate-200 bg-white shadow-2xl overflow-hidden mt-8">
+          <div className="bg-slate-50 px-10 py-6 border-b border-slate-200">
+            <h3 className="text-lg font-black text-[#002E47] uppercase tracking-wide">
+              Get your results as a PDF + the Accountability Blueprint
+            </h3>
+          </div>
+          
+          <div className="p-10 space-y-12">
+            <div className="space-y-8 max-w-2xl">
+              <p className="text-slate-600 text-lg leading-relaxed">
+                A one-page reference showing what a fully functioning accountability system looks like in practice.
+              </p>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
-          <h2 className="text-2xl font-bold text-[#002E47] mb-2">
-            Get your results as a PDF + the Accountability Blueprint
-          </h2>
-          <p className="text-slate-700">
-            Enter your email to receive your results and the Accountability System Blueprint, a one-page reference showing what a fully functioning accountability system looks like in practice.
-          </p>
-          <p className="text-slate-500 text-sm mt-2">
-            You will also be subscribed to One More Rep, our free weekly leadership practice newsletter. Unsubscribe anytime.
-          </p>
+              {submitState === 'success' ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-teal-50 border border-teal-100 rounded-[2rem] p-10 text-center"
+                >
+                  <p className="text-[#277A68] font-black text-2xl mb-2">Success! Check your inbox.</p>
+                  <p className="text-[#349881] text-lg">We've sent your PDF results and the Accountability Blueprint.</p>
+                </motion.div>
+              ) : (
+                <form className="space-y-5" onSubmit={handleEmailSubmit}>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <input
+                      type="text"
+                      id="results-firstname"
+                      placeholder="First name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="sm:w-48 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-lg focus:outline-none focus:ring-4 focus:ring-[#B84825]/10 focus:border-[#B84825] transition-all"
+                      disabled={isSubmitting}
+                    />
+                    <div className="relative flex-1">
+                      <Mail className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="email"
+                        id="results-email"
+                        required
+                        placeholder="Work email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 py-4 text-lg focus:outline-none focus:ring-4 focus:ring-[#B84825]/10 focus:border-[#B84825] transition-all"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="bg-[#B84825] text-white px-8 py-4 rounded-2xl font-black text-lg hover:bg-[#C85530] transition-all shadow-xl shadow-orange-900/20 disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap active:scale-95"
+                    >
+                      {isSubmitting ? 'Sending...' : 'Send me the PDF and Blueprint →'}
+                    </button>
+                  </div>
+                  
+                  {submitState === 'error' && (
+                    <p className="text-red-500 font-bold ml-2">Something went wrong. Please try again.</p>
+                  )}
 
-          <form className="mt-5" onSubmit={handleEmailSubmit}>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <label className="sr-only" htmlFor="results-email">
-                Email address
-              </label>
-              <div className="relative flex-1">
-                <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  id="results-email"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="Your work email"
-                  className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-3 focus:outline-none focus:ring-2 focus:ring-[#277A68]"
-                  disabled={isSubmitting}
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-white font-semibold disabled:opacity-60"
-                style={{ backgroundColor: '#B84825' }}
-              >
-                <Send className="w-4 h-4" />
-                {isSubmitting ? 'Sending...' : 'Send me the Blueprint'}
-              </button>
+                  <p className="text-xs text-slate-400 leading-relaxed font-medium uppercase tracking-wider ml-2">
+                    You'll also be subscribed to One More Rep, our free weekly leadership newsletter. Unsubscribe anytime.
+                  </p>
+                </form>
+              )}
             </div>
-          </form>
 
-          {submitState === 'success' && (
-            <p className="mt-3 text-sm text-[#277A68] inline-flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" />
-              Check your inbox. Your resources are on the way.
-            </p>
-          )}
-          {submitState === 'error' && (
-            <p className="mt-3 text-sm text-[#B84825]">
-              We could not send that right now. Please try again in a minute.
-            </p>
-          )}
-        </section>
-
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
-          <h2 className="text-2xl font-bold text-[#002E47]">
-            Already know you want to go deeper?
-          </h2>
-          <p className="text-slate-700 mt-2">
-            Foundation is a small cohort for managers who want to build this system through practice, not lectures.
-          </p>
-          <a
-            href="https://www.leaderreps.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 mt-4 text-[#277A68] font-semibold"
-          >
-            Learn more
-            <ExternalLink className="w-4 h-4" />
-          </a>
+            <div className="pt-10 border-t border-slate-100">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                <div className="max-w-md space-y-4">
+                  <h4 className="text-xl font-black text-[#002E47] uppercase tracking-tight">Already know you want to go deeper?</h4>
+                  <p className="text-slate-600 text-base leading-relaxed">
+                    Foundation is a small cohort for managers who want to build this system through practice, not lectures. Eight sessions. Live reps. Coaching.
+                  </p>
+                </div>
+                <a
+                  href="https://www.leaderreps.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-[#349881] font-black text-lg hover:underline gap-1 group whitespace-nowrap"
+                >
+                  Learn more <ExternalLink size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </a>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
     </motion.div>

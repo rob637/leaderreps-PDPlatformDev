@@ -62,22 +62,25 @@ export const SCORE_BANDS = {
     key: 'execution-engine',
     label: 'Execution Engine',
     kitTag: 'ASA 4-5',
+    headline: 'Your system is doing real work.',
     summary:
-      'Your system is doing real work. The system structure is holding, which means you have capacity to sharpen the edges. Too many managers carry their team\'s accountability on their own, stepping in when they should hold back, accepting vague commitments because it\'s faster, delaying feedback because the moment never feels quite right. You are not doing that. That means your team has something many teams do not: a system that carries some of the load so you do not have to. One question worth sitting with as you read the analysis: if your team took this quiz about you, would their answers match yours?',
+      'The system structure is holding, which means you have capacity to sharpen the edges. Too many managers carry their team\'s accountability on their own, stepping in when they should hold back, accepting vague commitments because it\'s faster, delaying feedback because the moment never feels quite right. You are not doing that. That means your team has something many teams do not: a system that carries some of the load so you do not have to.\n\nBelow, you’ll see all five questions with the full if yes / if not yet analysis.\n\nOne question worth sitting with as you read through the analysis: if your team took this quiz about you, would their answers match yours? The gap between how you see your system and how your team experiences it is where the most useful work lives.',
   },
   '2-3': {
     key: 'leaky-system',
     label: 'Leaky System',
     kitTag: 'ASA 2-3',
+    headline: 'Your system is leaking in a few places.',
     summary:
-      'You have a system, but it is leaking in a few places. The gaps probably show up as recurring issues, more follow-up than you want, or a nagging sense that accountability is inconsistent. These are fixable. You are not starting from zero, but gaps compound. One unclear expectation leads to a missed handoff. One delayed piece of feedback becomes a pattern the team learns to expect. Start with the not-yet answer that costs you the most time or energy, then run one rep repeatedly until it is consistent.',
+      'You have a system, but it\'s leaking in a few places. The gaps probably show up as recurring issues, more follow-up than you want, or a nagging sense that accountability is inconsistent. These are fixable.\n\nYou\'re not starting from zero. Some of the system is already in place through the expectations you set, follow-up you do, or feedback you give.\n\nBut a few answers came back “not yet.” Those show your gaps, and in an accountability system, gaps compound. One unclear expectation leads to a missed handoff. One delayed piece of feedback becomes a pattern the team learns to expect. The load comes back to you.\n\nThese aren\'t character flaws. They\'re system gaps, and systems get fixed through practice. Below, you’ll see all five questions with the full if yes / if not yet analysis.\n\nStart with the not-yet answers that show up most in your actual work week. Not all of them at once. Start with the one that costs you the most time or energy when it\'s missing. One rep, repeated, until it\'s consistent.',
   },
   '0-1': {
     key: 'system-not-yet-installed',
     label: 'System Not Yet Installed',
     kitTag: 'ASA 0-1',
+    headline: 'Your system needs a rebuild.',
     summary:
-      'Your system needs a rebuild. This is not about how much you care or how hard you work. Many managers score here because nobody taught them how to build an accountability system. So they work harder, step in faster, and over-explain. It works until it does not, because the load becomes unsustainable and the team never fully owns its work. Find the not-yet that costs you the most time or energy. One behavior, practiced consistently for two weeks, will outperform five done inconsistently.',
+      'This isn\'t about how much you care or how hard you work. Many managers score exactly where you did. Not because they\'re bad at their jobs, but because nobody taught them how to build an accountability system.\n\nSo they do what feels natural: work harder, step in faster, over-explain. It works until it doesn\'t — because the load becomes unsustainable and the team never fully owns its work. That\'s not a people problem. It\'s a missing system.\n\nBelow, you’ll see all five questions with the full if yes / if not yet analysis.\n\nFind the “not yet” that costs you the most time or energy. One behavior, practiced consistently for two weeks, will do more than five behaviors practiced inconsistently. Build the system one rep at a time.',
   },
 };
 
@@ -136,6 +139,7 @@ export const calculateResults = (answers) => {
     scoreBand:
       yesCount >= 4 ? '4-5' : yesCount >= 2 ? '2-3' : '0-1',
     scoreLabel: scoreBand.label,
+    headline: scoreBand.headline,
     summary: scoreBand.summary,
     archetype: scoreBand.key,
     archetypeName: scoreBand.label,

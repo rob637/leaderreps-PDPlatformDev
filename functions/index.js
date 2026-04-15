@@ -10665,6 +10665,9 @@ exports.analyzeAccountabilityAssessment = onRequest(
 
     logger.info(`Processing accountability assessment for ${email}`);
 
+    // Destructure scoring fields from results object
+    const { yesCount = 0, totalQuestions = 5, scoreBand = '0-1', scoreLabel = '', kitTag = '' } = results;
+
     try {
       // 1. Generate AI insights
       const aiInsights = await generateAccountabilityInsights(results, firstName);
@@ -10710,18 +10713,39 @@ exports.analyzeAccountabilityAssessment = onRequest(
       };
 
       try {
-        const docRef = await db.collection('accountability-leads').add({
+        // Upsert by email — query for existing lead, update if found, create if not
+        const existingSnapshot = await db.collection('accountability-leads')
+          .where('email', '==', email.toLowerCase())
+          .limit(1)
+          .get();
+
+        let docRef;
+        const leadData = {
           email: email.toLowerCase(),
           firstName: firstName || '',
           results: sanitizedResults,
           aiInsights: aiInsights || null,
           source: 'accountability-assessment',
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           marketingOptIn: true,
           emailSent,
           kitTag,
-        });
-        logger.info(`Accountability lead stored for ${email}, docId: ${docRef.id}`);
+          runCount: admin.firestore.FieldValue.increment(1),
+        };
+
+        if (!existingSnapshot.empty) {
+          docRef = existingSnapshot.docs[0].ref;
+          await docRef.update(leadData);
+          logger.info(`Accountability lead updated (upsert) for ${email}, docId: ${docRef.id}`);
+        } else {
+          const { runCount, updatedAt, ...createData } = leadData;
+          docRef = await db.collection('accountability-leads').add({
+            ...createData,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            runCount: 1,
+          });
+          logger.info(`Accountability lead created for ${email}, docId: ${docRef.id}`);
+        }
 
         // Sync to Kit (non-blocking)
         const kitSource = scoreBand === '4-5'
@@ -11144,6 +11168,13 @@ const KIT_TAG_MAPPINGS = {
   'readiness': 'leadership-readiness-assessment',
 };
 
+// Kit tag IDs (numeric IDs from app.kit.com)
+const KIT_TAG_IDS = {
+  'ASA 4-5': 18928677,
+  'ASA 2-3': 18928684,
+  'ASA 0-1': 18928687,
+};
+
 /**
  * Helper function to add a subscriber to Kit
  * @param {string} email - Subscriber email
@@ -11192,10 +11223,24 @@ async function syncLeadToKit(email, firstName, source, customFields = {}) {
 
     // Step 2: Add tag based on source (if tag ID is configured)
     const tagName = KIT_TAG_MAPPINGS[source];
-    if (tagName && subscriberId) {
-      // Note: You'll need to create these tags in Kit and get their IDs
-      // For now, we log the intent - tags can be added via Kit's tag API
-      logger.info(`Kit: Would tag subscriber ${subscriberId} with '${tagName}'`);
+    const tagId = tagName ? KIT_TAG_IDS[tagName] : null;
+    if (tagId && subscriberId) {
+      const tagResponse = await fetch(`https://api.kit.com/v4/tags/${tagId}/subscribers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${kitApiKey}`,
+        },
+        body: JSON.stringify({ subscriber_id: subscriberId }),
+      });
+      if (tagResponse.ok) {
+        logger.info(`Kit: Tagged subscriber ${subscriberId} with '${tagName}' (id: ${tagId})`);
+      } else {
+        const tagError = await tagResponse.text();
+        logger.warn(`Kit: Failed to apply tag '${tagName}': ${tagResponse.status} - ${tagError}`);
+      }
+    } else if (tagName) {
+      logger.info(`Kit: No tag ID configured for '${tagName}' - skipping tag`);
     }
 
     return { 
