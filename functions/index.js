@@ -10848,7 +10848,7 @@ const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfU
     <!-- CTA Section — cream background, navy font -->
     <div style="background: #FAF8F5; padding: 32px 28px;">
       <p style="margin: 0 0 16px 0; color: #002E47; font-size: 15px; line-height: 1.7;">
-        <strong>Your assessment showed you the gaps.</strong> Foundation is where you close them. A small cohort. Live practice on the exact behaviors you just assessed. If you&apos;re ready to build the system, reply to this email with &ldquo;Foundation&rdquo; for details and to get on the waitlist.
+        <strong>Your assessment showed you the gaps. Foundation is where you close them.</strong> A small cohort. Live practice on the exact behaviors you just assessed. If you&apos;re ready to build the system, reply to this email with &ldquo;Foundation&rdquo; for details and to get on the waitlist.
       </p>
       <p style="margin: 0;">
         <a href="https://www.leaderreps.com" style="color: #277A68; font-weight: 700; text-decoration: none; font-size: 15px;">Learn More &rarr;</a>

@@ -251,8 +251,7 @@ const Results = ({
         {/* Foundation CTA */}
         <section className="rounded-[2.5rem] border border-slate-200 bg-white p-8 md:p-10 shadow-lg">
           <p className="text-slate-600 text-base leading-relaxed">
-            <strong className="text-[#002E47]">The assessment showed you where the gaps are.</strong>{' '}
-            Foundation is where you close them.{' '}
+            <strong className="text-[#002E47]">The assessment showed you where the gaps are. Foundation is where you close them.</strong>{' '}
             <a
               href="https://www.leaderreps.com"
               target="_blank"
