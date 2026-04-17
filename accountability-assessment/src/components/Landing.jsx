@@ -46,13 +46,15 @@ const Landing = ({ onStart }) => {
               <span className="block text-[#B84825] mt-2">Take the 3-Minute Assessment</span>
             </h1>
 
-            <p className="text-slate-700 text-lg leading-relaxed mb-5">
+            <p className="text-slate-700 text-lg leading-relaxed mb-4">
               When issues arise, it's tempting to blame your team: problems with attitude, urgency, follow-through. Sometimes that's true.
             </p>
 
-            <p className="text-slate-700 text-lg leading-relaxed mb-8">
+            <p className="text-slate-700 text-lg leading-relaxed mb-4">
               But more often, the system is broken. And when the system breaks, even great teams produce inconsistent results.
-              <br /><br />
+            </p>
+
+            <p className="text-slate-700 text-lg leading-relaxed mb-8">
               Find out where your system is strong, and where it's leaking.
             </p>
 
