@@ -10514,13 +10514,18 @@ const generateResultsPdf = (firstName, results) => {
     const SIENNA = '#B84825';
     const PAGE_W = doc.page.width - 100; // usable width
 
-    // ── Header bar — navy with LeaderReps wordmark ───────────────────
+    // ── Header bar — navy with LeaderReps logo image ─────────────────
     doc.rect(0, 0, doc.page.width, 70).fill(NAVY);
-    // Logo: teal chevron "^" + "Reps" wordmark approximated with text
-    doc.fontSize(26).fillColor(TEAL).font('Helvetica-Bold')
-      .text('Leader', 50, 20, { continued: true });
-    doc.fillColor('#FFFFFF')
-      .text('Reps');
+    const logoPath = path.join(__dirname, 'assets', 'leaderreps-logo.png');
+    if (fs.existsSync(logoPath)) {
+      // Logo height 36px, vertically centred in the 70px bar (y = 17)
+      doc.image(logoPath, 50, 17, { height: 36 });
+    } else {
+      // Fallback text if image not found
+      doc.fontSize(26).fillColor(TEAL).font('Helvetica-Bold')
+        .text('Leader', 50, 20, { continued: true });
+      doc.fillColor('#FFFFFF').text('Reps');
+    }
 
     // ── Title ────────────────────────────────────────────────────────
     doc.y = 90;
@@ -10591,10 +10596,10 @@ const generateResultsPdf = (firstName, results) => {
       }
     });
 
-    // ── Footer ───────────────────────────────────────────────────────
-    doc.moveDown(1.5);
+    // ── Footer — pinned to page bottom ────────────────────────────────
+    const footerY = doc.page.height - doc.page.margins.bottom - 12;
     doc.fontSize(8).fillColor('#94a3b8').font('Helvetica')
-      .text('© LeaderReps  ·  leaderreps.com', { align: 'center' });
+      .text('© LeaderReps  ·  leaderreps.com', 50, footerY, { width: PAGE_W, align: 'center' });
 
     doc.end();
   });
@@ -10706,9 +10711,10 @@ const generateBlueprintPdf = () => {
       .text('leaderreps.com', 60, ctaY + 28, { width: PAGE_W - 20 });
     doc.y = ctaY + 62;
 
-    // ── Footer ─────────────────────────────────────────────────────────
+    // ── Footer — pinned to page bottom ────────────────────────────────
+    const footerY = doc.page.height - doc.page.margins.bottom - 12;
     doc.fontSize(8).fillColor('#94a3b8').font('Helvetica')
-      .text('© LeaderReps  ·  leaderreps.com  ·  Building accountable leaders', { align: 'center' });
+      .text('© LeaderReps  ·  leaderreps.com  ·  Building accountable leaders', 50, footerY, { width: PAGE_W, align: 'center' });
 
     doc.end();
   });
@@ -10789,7 +10795,7 @@ const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfU
 
     <!-- Logo Header — white background -->
     <div style="background: #FFFFFF; padding: 32px; text-align: center;">
-      <img src="https://leaderreps-prod.web.app/logo-dark.png" alt="LeaderReps" style="height: 40px;">
+      <img src="https://leaderreps-prod.web.app/logo-email.png" alt="LeaderReps" style="height: 40px;">
     </div>
 
     <!-- Score / Results — cream background -->
@@ -10929,8 +10935,9 @@ exports.analyzeAccountabilityAssessment = onRequest(
       }
 
       // 3. Send email
-      const emailUser = process.env.EMAIL_USER;
-      const emailPass = process.env.EMAIL_PASS;
+      // Use dedicated team@ credentials if available, otherwise fall back to EMAIL_USER
+      const emailUser = process.env.EMAIL_TEAM_USER || process.env.EMAIL_USER;
+      const emailPass = process.env.EMAIL_TEAM_PASS || process.env.EMAIL_PASS;
       let emailSent = false;
 
       if (emailUser && emailPass) {
