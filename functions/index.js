@@ -10795,7 +10795,7 @@ const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfU
 
     <!-- Logo Header — white background -->
     <div style="background: #FFFFFF; padding: 32px; text-align: center;">
-      <img src="https://leaderreps-reppy.web.app/logo-full.png" alt="LeaderReps" style="height: 40px;">
+      <img src="https://leaderreps-prod.web.app/logo-dark.png" alt="LeaderReps" style="height: 40px;">
     </div>
 
     <!-- Score / Results — cream background -->
