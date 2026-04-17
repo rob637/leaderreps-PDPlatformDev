@@ -10503,7 +10503,7 @@ const PDFDocument = require('pdfkit');
  */
 const generateResultsPdf = (firstName, results) => {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 50, size: 'A4', info: { Title: 'Your Accountability System Results', Author: 'LeaderReps' } });
+    const doc = new PDFDocument({ margin: 50, size: 'A4', info: { Title: 'Your Accountability System Pulse Check Results', Author: 'LeaderReps' } });
     const chunks = [];
     doc.on('data', (c) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -10511,96 +10511,90 @@ const generateResultsPdf = (firstName, results) => {
 
     const NAVY = '#002E47';
     const TEAL = '#277A68';
-    const ORANGE = '#B84825';
+    const SIENNA = '#B84825';
     const PAGE_W = doc.page.width - 100; // usable width
 
-    // ── Header bar ──────────────────────────────────────────────────
+    // ── Header bar — navy with LeaderReps wordmark ───────────────────
     doc.rect(0, 0, doc.page.width, 70).fill(NAVY);
-    doc.fontSize(22).fillColor('#FFFFFF').font('Helvetica-Bold')
-      .text('LeaderReps', 50, 22);
-    doc.fontSize(9).fillColor('rgba(255,255,255,0.6)').font('Helvetica')
-      .text('leaderreps.com', 50, 48);
-    doc.moveDown(0);
+    // Logo: teal chevron "^" + "Reps" wordmark approximated with text
+    doc.fontSize(26).fillColor(TEAL).font('Helvetica-Bold')
+      .text('Leader', 50, 20, { continued: true });
+    doc.fillColor('#FFFFFF')
+      .text('Reps');
 
-    // ── Title block ─────────────────────────────────────────────────
+    // ── Title ────────────────────────────────────────────────────────
     doc.y = 90;
-    const greeting = firstName ? `${firstName}'s` : 'Your';
     doc.fontSize(20).fillColor(NAVY).font('Helvetica-Bold')
-      .text(`${greeting} Accountability System Results`, 50, doc.y, { width: PAGE_W });
-    doc.moveDown(0.4);
-    doc.fontSize(11).fillColor('#64748b').font('Helvetica')
-      .text(`Accountability System Pulse Check  ·  ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`, { width: PAGE_W });
+      .text('Your Accountability System Pulse Check Results', 50, doc.y, { width: PAGE_W });
+    doc.moveDown(1);
 
-    // ── Score pill ───────────────────────────────────────────────────
-    doc.moveDown(0.8);
+    // ── Score: answer count first then status ────────────────────────
     const yesCount = Number(results.yesCount || 0);
     const total = Number(results.totalQuestions || 5);
     const scoreLabel = results.scoreLabel || '';
-    const pillColor = scoreLabel === 'Execution Engine' ? TEAL : scoreLabel === 'Leaky System' ? ORANGE : NAVY;
-    doc.roundedRect(50, doc.y, PAGE_W, 52, 8).fill(pillColor);
+    const pillColor = results.archetype === 'execution-engine' ? TEAL : results.archetype === 'system-not-yet-installed' ? NAVY : SIENNA;
+
+    doc.fontSize(13).fillColor(NAVY).font('Helvetica-Bold')
+      .text(`You answered Yes to ${yesCount} of ${total} Questions`, 50, doc.y, { width: PAGE_W });
+    doc.moveDown(0.4);
+
+    // Status pill
     const pillY = doc.y;
-    doc.fontSize(13).fillColor('#fff').font('Helvetica-Bold')
-      .text(scoreLabel.toUpperCase(), 68, pillY + 10, { width: PAGE_W - 40 });
-    doc.fontSize(20).fillColor('#fff').font('Helvetica-Bold')
-      .text(`${yesCount} of ${total} Yes`, 68, pillY + 28, { width: PAGE_W - 40 });
-    doc.y = pillY + 68;
-
-    // ── Headline ────────────────────────────────────────────────────
-    doc.fontSize(15).fillColor(NAVY).font('Helvetica-Bold')
-      .text(results.headline || '', 50, doc.y, { width: PAGE_W });
-    doc.moveDown(0.5);
-
-    // ── Summary (first paragraph only to keep length reasonable) ────
-    const summaryParas = (results.summary || '').split('\n\n');
-    doc.fontSize(10).fillColor('#374151').font('Helvetica')
-      .text(summaryParas[0] || '', { width: PAGE_W, lineGap: 3 });
+    doc.roundedRect(50, pillY, PAGE_W, 32, 6).fill(pillColor);
+    doc.fontSize(11).fillColor('#fff').font('Helvetica-Bold')
+      .text(`Status: ${scoreLabel}`, 62, pillY + 9, { width: PAGE_W - 24 });
+    doc.y = pillY + 44;
     doc.moveDown(1);
 
     // ── Divider ──────────────────────────────────────────────────────
     doc.moveTo(50, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
-    doc.moveDown(0.6);
+    doc.moveDown(0.8);
 
-    // ── Question by Question ──────────────────────────────────────────
+    // ── Question by Question ─────────────────────────────────────────
     doc.fontSize(8).fillColor('#94a3b8').font('Helvetica-Bold')
       .text('QUESTION BY QUESTION', { width: PAGE_W, characterSpacing: 1.5 });
-    doc.moveDown(0.6);
+    doc.moveDown(0.8);
 
     const questionResults = Array.isArray(results.questionResults) ? results.questionResults : [];
     questionResults.forEach((item, i) => {
-      if (doc.y > 720) doc.addPage();
+      if (doc.y > 700) doc.addPage();
 
       const isYes = item.answer === 'yes';
-      const answerColor = isYes ? TEAL : ORANGE;
+      const answerColor = isYes ? TEAL : SIENNA;
       const answerLabel = isYes ? 'Yes' : 'Inconsistent / Not Yet';
 
-      // Question label row
-      doc.fontSize(10).fillColor(NAVY).font('Helvetica-Bold')
-        .text(`${i + 1}. ${item.shortLabel || ''}`, 50, doc.y, { continued: true, width: PAGE_W - 100 });
-      doc.fillColor(answerColor).font('Helvetica-Bold')
-        .text(answerLabel, { align: 'right', width: 100 });
+      // Question number + short label (navy bold)
+      doc.fontSize(11).fillColor(NAVY).font('Helvetica-Bold')
+        .text(`${i + 1}. ${item.shortLabel || ''}`, 50, doc.y, { width: PAGE_W });
+      doc.moveDown(0.3);
 
-      // Prompt (italic-style via Helvetica-Oblique)
+      // Prompt (oblique)
       doc.fontSize(9).fillColor('#475569').font('Helvetica-Oblique')
         .text(item.prompt || '', 50, doc.y, { width: PAGE_W, lineGap: 2 });
+      doc.moveDown(0.5);
+
+      // Your Answer label (colored)
+      doc.fontSize(9).fillColor(answerColor).font('Helvetica-Bold')
+        .text(`Your Answer: ${answerLabel}`, 50, doc.y, { width: PAGE_W });
       doc.moveDown(0.3);
 
       // Analysis for their answer
       const analysis = isYes ? item.ifYes : item.ifNotYet;
-      doc.rect(50, doc.y, PAGE_W, 1).fill(isYes ? `${TEAL}30` : `${ORANGE}30`);
-      doc.moveDown(0.15);
       doc.fontSize(9).fillColor('#374151').font('Helvetica')
-        .text(analysis || '', 56, doc.y, { width: PAGE_W - 12, lineGap: 2 });
+        .text(analysis || '', 50, doc.y, { width: PAGE_W, lineGap: 3 });
       doc.moveDown(0.8);
 
-      // Thin separator
-      doc.moveTo(50, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor('#f1f5f9').lineWidth(0.5).stroke();
-      doc.moveDown(0.5);
+      // Gray horizontal divider between questions
+      if (i < questionResults.length - 1) {
+        doc.moveTo(50, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor('#CBD5E1').lineWidth(0.75).stroke();
+        doc.moveDown(0.8);
+      }
     });
 
     // ── Footer ───────────────────────────────────────────────────────
-    doc.moveDown(1);
+    doc.moveDown(1.5);
     doc.fontSize(8).fillColor('#94a3b8').font('Helvetica')
-      .text('© LeaderReps  ·  leaderreps.com  ·  Building accountable leaders', { align: 'center' });
+      .text('© LeaderReps  ·  leaderreps.com', { align: 'center' });
 
     doc.end();
   });
