@@ -22,7 +22,7 @@ import {
 
 const navItems = [
   { path: '/prospects', icon: Users, label: 'Prospects', exact: true },
-  { path: '/apollo', icon: Sparkles, label: 'Apollo Search' },
+  { path: '/apollo', icon: Sparkles, label: 'Jeff Search' },
   { path: '/outreach', icon: Mail, label: 'Outreach' },
   { path: '/activities', icon: Activity, label: 'Activities' },
   { path: '/analytics', icon: BarChart3, label: 'Analytics' },

@@ -10494,135 +10494,374 @@ Be direct and honest. Use "you" language. Do not use headings or bullets.`;
   }
 };
 
+// ─── PDF Generation ────────────────────────────────────────────────────────
+
+const PDFDocument = require('pdfkit');
+
+/**
+ * Generate a personalized Results PDF buffer from the user's assessment answers.
+ */
+const generateResultsPdf = (firstName, results) => {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50, size: 'A4', info: { Title: 'Your Accountability System Results', Author: 'LeaderReps' } });
+    const chunks = [];
+    doc.on('data', (c) => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const NAVY = '#002E47';
+    const TEAL = '#277A68';
+    const ORANGE = '#B84825';
+    const PAGE_W = doc.page.width - 100; // usable width
+
+    // ── Header bar ──────────────────────────────────────────────────
+    doc.rect(0, 0, doc.page.width, 70).fill(NAVY);
+    doc.fontSize(22).fillColor('#FFFFFF').font('Helvetica-Bold')
+      .text('LeaderReps', 50, 22);
+    doc.fontSize(9).fillColor('rgba(255,255,255,0.6)').font('Helvetica')
+      .text('leaderreps.com', 50, 48);
+    doc.moveDown(0);
+
+    // ── Title block ─────────────────────────────────────────────────
+    doc.y = 90;
+    const greeting = firstName ? `${firstName}'s` : 'Your';
+    doc.fontSize(20).fillColor(NAVY).font('Helvetica-Bold')
+      .text(`${greeting} Accountability System Results`, 50, doc.y, { width: PAGE_W });
+    doc.moveDown(0.4);
+    doc.fontSize(11).fillColor('#64748b').font('Helvetica')
+      .text(`Accountability System Pulse Check  ·  ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`, { width: PAGE_W });
+
+    // ── Score pill ───────────────────────────────────────────────────
+    doc.moveDown(0.8);
+    const yesCount = Number(results.yesCount || 0);
+    const total = Number(results.totalQuestions || 5);
+    const scoreLabel = results.scoreLabel || '';
+    const pillColor = scoreLabel === 'Execution Engine' ? TEAL : scoreLabel === 'Leaky System' ? ORANGE : NAVY;
+    doc.roundedRect(50, doc.y, PAGE_W, 52, 8).fill(pillColor);
+    const pillY = doc.y;
+    doc.fontSize(13).fillColor('#fff').font('Helvetica-Bold')
+      .text(scoreLabel.toUpperCase(), 68, pillY + 10, { width: PAGE_W - 40 });
+    doc.fontSize(20).fillColor('#fff').font('Helvetica-Bold')
+      .text(`${yesCount} of ${total} Yes`, 68, pillY + 28, { width: PAGE_W - 40 });
+    doc.y = pillY + 68;
+
+    // ── Headline ────────────────────────────────────────────────────
+    doc.fontSize(15).fillColor(NAVY).font('Helvetica-Bold')
+      .text(results.headline || '', 50, doc.y, { width: PAGE_W });
+    doc.moveDown(0.5);
+
+    // ── Summary (first paragraph only to keep length reasonable) ────
+    const summaryParas = (results.summary || '').split('\n\n');
+    doc.fontSize(10).fillColor('#374151').font('Helvetica')
+      .text(summaryParas[0] || '', { width: PAGE_W, lineGap: 3 });
+    doc.moveDown(1);
+
+    // ── Divider ──────────────────────────────────────────────────────
+    doc.moveTo(50, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+    doc.moveDown(0.6);
+
+    // ── Question by Question ──────────────────────────────────────────
+    doc.fontSize(8).fillColor('#94a3b8').font('Helvetica-Bold')
+      .text('QUESTION BY QUESTION', { width: PAGE_W, characterSpacing: 1.5 });
+    doc.moveDown(0.6);
+
+    const questionResults = Array.isArray(results.questionResults) ? results.questionResults : [];
+    questionResults.forEach((item, i) => {
+      if (doc.y > 720) doc.addPage();
+
+      const isYes = item.answer === 'yes';
+      const answerColor = isYes ? TEAL : ORANGE;
+      const answerLabel = isYes ? 'Yes' : 'Inconsistent / Not Yet';
+
+      // Question label row
+      doc.fontSize(10).fillColor(NAVY).font('Helvetica-Bold')
+        .text(`${i + 1}. ${item.shortLabel || ''}`, 50, doc.y, { continued: true, width: PAGE_W - 100 });
+      doc.fillColor(answerColor).font('Helvetica-Bold')
+        .text(answerLabel, { align: 'right', width: 100 });
+
+      // Prompt (italic-style via Helvetica-Oblique)
+      doc.fontSize(9).fillColor('#475569').font('Helvetica-Oblique')
+        .text(item.prompt || '', 50, doc.y, { width: PAGE_W, lineGap: 2 });
+      doc.moveDown(0.3);
+
+      // Analysis for their answer
+      const analysis = isYes ? item.ifYes : item.ifNotYet;
+      doc.rect(50, doc.y, PAGE_W, 1).fill(isYes ? `${TEAL}30` : `${ORANGE}30`);
+      doc.moveDown(0.15);
+      doc.fontSize(9).fillColor('#374151').font('Helvetica')
+        .text(analysis || '', 56, doc.y, { width: PAGE_W - 12, lineGap: 2 });
+      doc.moveDown(0.8);
+
+      // Thin separator
+      doc.moveTo(50, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor('#f1f5f9').lineWidth(0.5).stroke();
+      doc.moveDown(0.5);
+    });
+
+    // ── Footer ───────────────────────────────────────────────────────
+    doc.moveDown(1);
+    doc.fontSize(8).fillColor('#94a3b8').font('Helvetica')
+      .text('© LeaderReps  ·  leaderreps.com  ·  Building accountable leaders', { align: 'center' });
+
+    doc.end();
+  });
+};
+
+/**
+ * Generate the static Accountability System Blueprint PDF (one-pager).
+ */
+const generateBlueprintPdf = () => {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50, size: 'A4', info: { Title: 'The Accountability System Blueprint', Author: 'LeaderReps' } });
+    const chunks = [];
+    doc.on('data', (c) => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const NAVY = '#002E47';
+    const TEAL = '#277A68';
+    const ORANGE = '#B84825';
+    const PAGE_W = doc.page.width - 100;
+
+    // ── Header ───────────────────────────────────────────────────────
+    doc.rect(0, 0, doc.page.width, 85).fill(NAVY);
+    doc.fontSize(24).fillColor('#FFFFFF').font('Helvetica-Bold')
+      .text('The Accountability System Blueprint', 50, 18, { width: PAGE_W });
+    doc.fontSize(10).fillColor('rgba(255,255,255,0.65)').font('Helvetica')
+      .text('What a fully functioning accountability system looks like in practice  ·  LeaderReps', 50, 52, { width: PAGE_W });
+
+    doc.y = 105;
+
+    const components = [
+      {
+        num: '1',
+        title: 'Shared Understanding',
+        color: TEAL,
+        practice: 'Before work starts, define success explicitly. Ask: "What does done look like?" Get alignment — not just acknowledgment.',
+        signal: 'Your direct report can describe their #1 priority\'s success criteria as clearly as you can.',
+      },
+      {
+        num: '2',
+        title: 'Ownership Language',
+        color: TEAL,
+        practice: 'Require a specific ownership claim for every assignment.\n"I\'ll have X done by Friday" — not "I\'m on it" or "I\'ll try."',
+        signal: 'Vague language triggers a follow-up question, not acceptance.',
+      },
+      {
+        num: '3',
+        title: 'Ownership Discipline',
+        color: TEAL,
+        practice: 'When it\'s faster to step in — don\'t. Return the work. Stay the coach. Every time you take work back, you signal you don\'t trust the handoff.',
+        signal: 'Your team solves problems without bringing them back to you.',
+      },
+      {
+        num: '4',
+        title: 'Timely Feedback',
+        color: ORANGE,
+        practice: 'Address issues within 24 hours of noticing them. Short, direct, no softening. Delayed feedback teaches your team that standards are flexible.',
+        signal: 'Standards feel real. Small problems don\'t accumulate into patterns.',
+      },
+      {
+        num: '5',
+        title: 'Pattern Feedback',
+        color: ORANGE,
+        practice: 'When the same issue appears more than once, name the behavior pattern — not just the task. The pattern is what needs to change.',
+        signal: 'You\'re having the same conversation less often.',
+      },
+    ];
+
+    components.forEach((c, i) => {
+      if (doc.y > 720) doc.addPage();
+
+      const rowTop = doc.y;
+
+      // Number badge
+      doc.circle(68, rowTop + 12, 11).fill(c.color);
+      doc.fontSize(10).fillColor('#fff').font('Helvetica-Bold')
+        .text(c.num, 63, rowTop + 7, { width: 12, align: 'center' });
+
+      // Title
+      doc.fontSize(12).fillColor(NAVY).font('Helvetica-Bold')
+        .text(c.title, 88, rowTop, { width: PAGE_W - 38 });
+      doc.moveDown(0.15);
+
+      // Practice block
+      doc.fontSize(9).fillColor('#374151').font('Helvetica')
+        .text(c.practice, 88, doc.y, { width: PAGE_W - 38, lineGap: 2 });
+      doc.moveDown(0.25);
+
+      // Signal line
+      doc.fontSize(8.5).fillColor(c.color).font('Helvetica-Bold')
+        .text('✓  Signal it\'s working: ', 88, doc.y, { continued: true, width: PAGE_W - 38 });
+      doc.fillColor('#374151').font('Helvetica')
+        .text(c.signal, { width: PAGE_W - 38, lineGap: 2 });
+      doc.moveDown(0.7);
+
+      if (i < components.length - 1) {
+        doc.moveTo(88, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+        doc.moveDown(0.5);
+      }
+    });
+
+    // ── Bottom CTA ────────────────────────────────────────────────────
+    doc.moveDown(1);
+    doc.rect(50, doc.y, PAGE_W, 48).fill(`${NAVY}10`).stroke('#e2e8f0');
+    const ctaY = doc.y;
+    doc.fontSize(10).fillColor(NAVY).font('Helvetica-Bold')
+      .text('Foundation — Build this system through practice, not lectures.', 60, ctaY + 10, { width: PAGE_W - 20 });
+    doc.fontSize(9).fillColor(TEAL).font('Helvetica')
+      .text('leaderreps.com', 60, ctaY + 28, { width: PAGE_W - 20 });
+    doc.y = ctaY + 62;
+
+    // ── Footer ─────────────────────────────────────────────────────────
+    doc.fontSize(8).fillColor('#94a3b8').font('Helvetica')
+      .text('© LeaderReps  ·  leaderreps.com  ·  Building accountable leaders', { align: 'center' });
+
+    doc.end();
+  });
+};
+
+/**
+ * Upload a PDF buffer to Firebase Storage and return a 30-day signed URL.
+ */
+const uploadPdfAndGetUrl = async (buffer, storagePath) => {
+  const bucket = admin.storage().bucket();
+  const file = bucket.file(storagePath);
+  await file.save(buffer, {
+    metadata: { contentType: 'application/pdf', cacheControl: 'private, max-age=2592000' },
+  });
+  const [url] = await file.getSignedUrl({
+    action: 'read',
+    expires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
+  });
+  return url;
+};
+
+// ─── End PDF Generation ────────────────────────────────────────────────────
+
 /**
  * Build HTML email for accountability assessment results
  */
-const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights) => {
+const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfUrls = {}) => {
   const yesCount = Number(results.yesCount || 0);
   const totalQuestions = Number(results.totalQuestions || 5);
   const scoreLabel = results.scoreLabel || 'Accountability System Score';
   const summary = results.summary || '';
   const questionResults = Array.isArray(results.questionResults) ? results.questionResults : [];
 
+  // Pill color based on archetype — matches results page design
+  const archetype = results.archetype || 'leaky-system';
+  let pillBg, pillText;
+  if (archetype === 'execution-engine') {
+    pillBg = 'rgba(39,122,104,0.12)';
+    pillText = '#277A68';
+  } else if (archetype === 'system-not-yet-installed') {
+    pillBg = 'rgba(0,46,71,0.1)';
+    pillText = '#002E47';
+  } else {
+    pillBg = 'rgba(184,72,37,0.12)';
+    pillText = '#B84825';
+  }
+
   const questionRows = questionResults.map((item, index) => {
     const answerLabel = item.answer === 'yes' ? 'Yes' : 'Inconsistent / Not Yet';
     return `
       <tr>
-        <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: #fff; font-size: 14px;">
+        <td style="padding: 10px 0; border-bottom: 1px solid rgba(0,46,71,0.1); color: #002E47; font-size: 14px;">
           ${index + 1}. ${item.shortLabel || 'Question'}
         </td>
-        <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: ${item.answer === 'yes' ? '#349881' : '#C85530'}; font-size: 14px; font-weight: 700; text-align: right;">
+        <td style="padding: 10px 0; border-bottom: 1px solid rgba(0,46,71,0.1); color: ${item.answer === 'yes' ? '#349881' : '#C85530'}; font-size: 14px; font-weight: 700; text-align: right;">
           ${answerLabel}
         </td>
       </tr>
     `;
   }).join('');
 
-  const fallbackLinks = {
-    resultsPdf: process.env.ASA_RESULTS_PDF_URL || 'https://leaderreps-accountability.web.app',
-    blueprint: process.env.ASA_BLUEPRINT_URL || 'https://leaderreps-accountability.web.app',
-  };
+  // Summary paragraphs with spacing
+  const summaryHtml = summary.split('\n\n').map(para =>
+    `<p style="margin: 0 0 16px 0; color: #002E47; font-size: 15px; line-height: 1.7;">${para}</p>`
+  ).join('');
+
+  const primaryPdfUrl = pdfUrls.resultsPdf || pdfUrls.blueprint || null;
 
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Accountability Assessment Results</title>
+  <title>Your Accountability System Pulse Check Results</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a;">
-  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-    
-    <!-- Header -->
-    <div style="background: linear-gradient(135deg, #002E47 0%, #163e57 100%); border-radius: 16px 16px 0 0; padding: 32px; text-align: center;">
-      <div style="display: inline-block; padding: 8px 16px; background: rgba(184,72,37,0.22); border-radius: 20px; color: #C85530; font-size: 12px; font-weight: 700; margin-bottom: 16px;">
-        ACCOUNTABILITY SYSTEM ASSESSMENT
-      </div>
-      <h1 style="margin: 0; color: #fff; font-size: 28px; font-weight: 700;">
-        Hi ${firstName || 'Leader'}, your results are ready
-      </h1>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #FFFFFF;">
+  <div style="max-width: 600px; margin: 0 auto; background: #FFFFFF;">
+
+    <!-- Logo Header — white background -->
+    <div style="background: #FFFFFF; padding: 32px; text-align: center;">
+      <img src="https://leaderreps-reppy.web.app/logo-full.png" alt="LeaderReps" style="height: 40px;">
     </div>
-    
-    <!-- Score Card -->
-    <div style="background: #002E47; padding: 28px; text-align: center;">
-      <p style="margin: 0; color: rgba(255,255,255,0.85); font-size: 17px;">
-        You answered <strong style="color: #C85530;">Yes to ${yesCount} out of ${totalQuestions}</strong> questions.
-      </p>
-      <div style="margin-top: 12px;">
-        <span style="display: inline-block; padding: 8px 18px; background: #B84825; color: #fff; border-radius: 999px; font-weight: 700; font-size: 14px;">
+
+    <!-- Score / Results — cream background -->
+    <div style="background: #FAF8F5; padding: 32px 28px 8px 28px; text-align: center;">
+      <h1 style="margin: 0 0 16px 0; color: #002E47; font-size: 22px; font-weight: 700; line-height: 1.4;">
+        You answered Yes to <span style="color: #C85530;">${yesCount} out of ${totalQuestions}</span> questions on the Accountability System Pulse Check.
+      </h1>
+      <div style="margin-bottom: 24px;">
+        <span style="display: inline-block; padding: 8px 18px; background: ${pillBg}; color: ${pillText}; border-radius: 8px; font-weight: 900; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;">
           ${scoreLabel}
         </span>
       </div>
     </div>
-    
-    <!-- Summary -->
-    <div style="background: #002E47; padding: 24px;">
-      <p style="margin: 0; color: rgba(255,255,255,0.8); font-size: 14px; line-height: 1.6;">
-        ${summary}
-      </p>
+
+    <!-- Summary — cream background -->
+    <div style="background: #FAF8F5; padding: 0 28px 16px 28px;">
+      ${summaryHtml}
     </div>
-    
-    <!-- Question Breakdown -->
-    <div style="background: linear-gradient(135deg, #002E47 0%, #001a2b 100%); padding: 24px;">
-      <h3 style="margin: 0 0 20px 0; color: #fff; font-size: 16px; font-weight: 600;">
-        Question by question
-      </h3>
+
+    <!-- Question by Question — cream background -->
+    <div style="background: #FAF8F5; padding: 0 28px 32px 28px;">
+      <p style="margin: 0 0 16px 0; color: #002E47; font-size: 11px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase;">Question by Question</p>
       <table style="width: 100%; border-collapse: collapse;">
         <tbody>
           ${questionRows}
         </tbody>
       </table>
     </div>
-    
-    <!-- AI Insights -->
+
+    <!-- AI Insights — cream background -->
     ${aiInsights ? `
-    <div style="background: linear-gradient(135deg, #002E47 0%, #163e57 100%); padding: 24px;">
-      <div style="display: flex; align-items: center; margin-bottom: 16px;">
-        <span style="margin-right: 8px;">✨</span>
-        <h3 style="margin: 0; color: #fff; font-size: 16px; font-weight: 600;">
-          Your Personalized Coaching
-        </h3>
-      </div>
-      <p style="margin: 0; color: rgba(255,255,255,0.85); font-size: 14px; line-height: 1.7; white-space: pre-wrap;">
-${aiInsights}
-      </p>
+    <div style="background: #FAF8F5; padding: 0 28px 32px 28px; border-top: 1px solid rgba(0,46,71,0.08);">
+      <p style="margin: 0 0 12px 0; color: #002E47; font-size: 16px; font-weight: 700;">✨ Your Personalized Coaching</p>
+      <p style="margin: 0; color: #002E47; font-size: 14px; line-height: 1.7; white-space: pre-wrap;">${aiInsights}</p>
     </div>
     ` : ''}
 
-    <div style="background: #002E47; padding: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
-      <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 18px; font-weight: 700;">
-        Download your resources
+    <!-- Download Section — navy background, white font -->
+    ${primaryPdfUrl ? `
+    <div style="background: #002E47; padding: 32px; text-align: center;">
+      <h3 style="margin: 0 0 20px 0; color: #fff; font-size: 20px; font-weight: 700;">
+        Download Your Free Resources
       </h3>
-      <p style="margin: 0 0 14px 0; color: rgba(255,255,255,0.8); font-size: 13px; line-height: 1.6;">
-        Here are your direct links to the Accountability System resources.
-      </p>
-      <a href="${fallbackLinks.resultsPdf}" style="display: inline-block; margin-right: 10px; margin-bottom: 10px; padding: 11px 18px; background: #C85530; color: #fff; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 700;">Download Results PDF</a>
-      <a href="${fallbackLinks.blueprint}" style="display: inline-block; margin-bottom: 10px; padding: 11px 18px; background: #277A68; color: #fff; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 700;">Download Accountability Blueprint</a>
-    </div>
-    
-    <!-- CTA -->
-    <div style="background: linear-gradient(135deg, #B84825 0%, #C85530 100%); padding: 32px; text-align: center; border-radius: 0 0 16px 16px;">
-      <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 20px; font-weight: 700;">
-        Ready to go deeper?
-      </h3>
-      <p style="margin: 0 0 20px 0; color: rgba(255,255,255,0.9); font-size: 14px;">
-        Foundation is a small cohort for managers who want to build this system through practice.
-      </p>
-      <a href="https://www.leaderreps.com" style="display: inline-block; padding: 14px 28px; background: #fff; color: #002E47; font-weight: 700; text-decoration: none; border-radius: 10px; font-size: 14px;">
-        Learn more about Foundation →
+      <a href="${primaryPdfUrl}" style="display: inline-block; padding: 14px 24px; background: #C85530; color: #fff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 700;">
+        Your Results and Accountability System Blueprint
       </a>
     </div>
-    
-    <!-- Footer -->
-    <div style="padding: 24px; text-align: center;">
-      <p style="margin: 0 0 8px 0; color: rgba(255,255,255,0.5); font-size: 12px;">
-        © 2026 LeaderReps. Building accountable leaders.
+    ` : ''}
+
+    <!-- CTA Section — cream background, navy font -->
+    <div style="background: #FAF8F5; padding: 32px 28px;">
+      <p style="margin: 0 0 16px 0; color: #002E47; font-size: 15px; line-height: 1.7;">
+        <strong>Your assessment showed you the gaps.</strong> Foundation is where you close them. A small cohort. Live practice on the exact behaviors you just assessed. If you&apos;re ready to build the system, reply to this email with &ldquo;Foundation&rdquo; for details and to get on the waitlist.
       </p>
-      <a href="https://www.leaderreps.com" style="color: #C85530; font-size: 12px; text-decoration: none;">
-        www.leaderreps.com
-      </a>
+      <p style="margin: 0;">
+        <a href="https://www.leaderreps.com" style="color: #277A68; font-weight: 700; text-decoration: none; font-size: 15px;">Learn More &rarr;</a>
+      </p>
     </div>
-    
+
+    <!-- Footer — white background -->
+    <div style="background: #FFFFFF; padding: 24px; text-align: center;">
+      <p style="margin: 0; color: #aaa; font-size: 12px;">
+        &copy; ${new Date().getFullYear()} LeaderReps. All rights reserved.
+      </p>
+    </div>
+
   </div>
 </body>
 </html>`;
@@ -10635,8 +10874,8 @@ ${aiInsights}
 exports.analyzeAccountabilityAssessment = onRequest(
   {
     region: "us-central1",
-    timeoutSeconds: 60,
-    memory: "256MiB",
+    timeoutSeconds: 120,
+    memory: "512MiB",
     cors: true,
   },
   async (req, res) => {
@@ -10673,7 +10912,29 @@ exports.analyzeAccountabilityAssessment = onRequest(
       const aiInsights = await generateAccountabilityInsights(results, firstName);
       logger.info(`AI insights generated: ${aiInsights ? 'yes' : 'no'}`);
 
-      // 2. Send email
+      // 2. Generate PDFs and upload to Storage
+      let pdfUrls = {};
+      try {
+        const [resultsPdfBuffer, blueprintBuffer] = await Promise.all([
+          generateResultsPdf(firstName, results),
+          generateBlueprintPdf(),
+        ]);
+
+        const safeEmail = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const timestamp = Date.now();
+        const [resultsPdfUrl, blueprintUrl] = await Promise.all([
+          uploadPdfAndGetUrl(resultsPdfBuffer, `accountability-pdfs/${safeEmail}/${timestamp}-results.pdf`),
+          uploadPdfAndGetUrl(blueprintBuffer, `accountability-pdfs/${safeEmail}/${timestamp}-blueprint.pdf`),
+        ]);
+
+        pdfUrls = { resultsPdf: resultsPdfUrl, blueprint: blueprintUrl };
+        logger.info(`PDFs generated and uploaded for ${email}`);
+      } catch (pdfErr) {
+        logger.error(`PDF generation failed for ${email}:`, pdfErr.message);
+        // Non-fatal — email still sends without download links
+      }
+
+      // 3. Send email
       const emailUser = process.env.EMAIL_USER;
       const emailPass = process.env.EMAIL_PASS;
       let emailSent = false;
@@ -10684,12 +10945,12 @@ exports.analyzeAccountabilityAssessment = onRequest(
           auth: { user: emailUser, pass: emailPass },
         });
 
-        const htmlEmail = buildAccountabilityAssessmentEmail(firstName, results, aiInsights);
+        const htmlEmail = buildAccountabilityAssessmentEmail(firstName, results, aiInsights, pdfUrls);
 
         await transporter.sendMail({
-          from: `"LeaderReps" <arena@leaderreps.com>`,
+          from: `"LeaderReps" <team@leaderreps.com>`,
           to: email,
-          subject: `🎯 ${firstName ? firstName + ', your' : 'Your'} Accountability System Results: ${yesCount}/${totalQuestions} Yes`,
+          subject: `Your Accountability System Pulse Check Results from LeaderReps`,
           html: htmlEmail,
         });
         
@@ -10747,24 +11008,31 @@ exports.analyzeAccountabilityAssessment = onRequest(
           logger.info(`Accountability lead created for ${email}, docId: ${docRef.id}`);
         }
 
-        // Sync to Kit (non-blocking)
+        // Sync to Kit — must be awaited before res.json() in Gen 2 functions
+        // (process terminates on response, so non-blocking .then() never runs)
         const kitSource = scoreBand === '4-5'
           ? 'accountability-asa-4-5'
           : scoreBand === '2-3'
             ? 'accountability-asa-2-3'
             : 'accountability-asa-0-1';
 
-        syncLeadToKit(email, firstName, kitSource, {
-          archetype: sanitizedResults.archetype,
-          score: String(sanitizedResults.overallScore || ''),
-          yes_count: String(yesCount),
-          score_band: scoreBand,
-          asa_tag: kitTag,
-        }).then(kitResult => {
+        try {
+          const kitResult = await syncLeadToKit(email, firstName, kitSource, {
+            archetype: sanitizedResults.archetype,
+            score: String(sanitizedResults.overallScore || ''),
+            yes_count: String(yesCount),
+            score_band: scoreBand,
+            asa_tag: kitTag,
+          });
           if (kitResult.success) {
-            docRef.update({ kitSyncedAt: admin.firestore.FieldValue.serverTimestamp(), kitSubscriberId: kitResult.subscriberId });
+            await docRef.update({ kitSyncedAt: admin.firestore.FieldValue.serverTimestamp(), kitSubscriberId: kitResult.subscriberId });
+            logger.info(`Kit sync complete for ${email}, subscriberId: ${kitResult.subscriberId}`);
+          } else {
+            logger.warn(`Kit sync skipped for ${email}: ${kitResult.reason}`);
           }
-        }).catch(err => logger.warn('Kit sync error (non-blocking):', err.message));
+        } catch (kitErr) {
+          logger.warn(`Kit sync error for ${email}:`, kitErr.message);
+        }
       } catch (firestoreErr) {
         logger.error(`Firestore write FAILED for ${email}:`, firestoreErr);
       }

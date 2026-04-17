@@ -1,9 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, Fragment } from 'react';
 import { motion } from 'framer-motion';
 import {
-  CheckCircle2,
   RotateCcw,
-  Share2,
   ExternalLink,
   Mail,
 } from 'lucide-react';
@@ -30,48 +28,69 @@ const scoreTheme = {
   },
 };
 
+// Renders text with quoted portions in italics
+const PromptText = ({ text }) => {
+  const parts = text.split(/("[^"]+")/)
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.startsWith('"') && part.endsWith('"') ? (
+          <em key={i}>{part}</em>
+        ) : (
+          <Fragment key={i}>{part}</Fragment>
+        )
+      )}
+    </>
+  );
+};
+
 const ResultCard = ({ item, index }) => {
   const yesSelected = item.answer === 'yes';
+  // Q4 (index=3): remove note from results display
+  const showNote = item.note && index !== 3;
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.06 * index }}
-      className="py-10 border-t border-slate-100 first:border-t-0"
+      className="py-6 border-t border-slate-100 first:border-t-0"
     >
       <h3 className="text-xl font-bold text-[#002E47]">
         Question {index + 1}: {item.shortLabel}
       </h3>
-      <p className="mt-2 text-slate-700 italic">
-        {item.prompt} {item.note && <span className="block mt-1 text-slate-500 not-italic">— {item.note}</span>}
+      <p className="mt-2 text-slate-700">
+        <PromptText text={item.prompt} />
+        {showNote && (
+          <span className="block mt-1 text-slate-500 text-sm">{item.note}</span>
+        )}
       </p>
 
-      <div className="mt-6 grid md:grid-cols-2 gap-4">
+      <div className="mt-4 grid md:grid-cols-2 gap-4">
         <div
           className={`rounded-xl border p-5 transition-all ${
             yesSelected
               ? 'border-[#277A68] bg-[#277A68]/5 ring-1 ring-[#277A68]'
-              : 'border-slate-200 bg-slate-50 opacity-60'
+              : 'border-slate-200 bg-slate-50'
           }`}
         >
           <div className={`text-xs font-bold uppercase tracking-widest mb-2 ${yesSelected ? 'text-[#277A68]' : 'text-slate-400'}`}>
             IF YES {yesSelected && '[YOUR ANSWER]'}
           </div>
-          <p className="text-slate-700 text-sm leading-relaxed">{item.ifYes}</p>
+          <p className={`text-sm leading-relaxed ${yesSelected ? 'text-slate-700' : 'text-slate-600'}`}>{item.ifYes}</p>
         </div>
 
         <div
           className={`rounded-xl border p-5 transition-all ${
             !yesSelected
               ? 'border-[#B84825] bg-[#B84825]/5 ring-1 ring-[#B84825]'
-              : 'border-slate-200 bg-slate-50 opacity-60'
+              : 'border-slate-200 bg-slate-50'
           }`}
         >
           <div className={`text-xs font-bold uppercase tracking-widest mb-2 ${!yesSelected ? 'text-[#B84825]' : 'text-slate-400'}`}>
             IF NOT YET {!yesSelected && '[YOUR ANSWER]'}
           </div>
-          <p className="text-slate-700 text-sm leading-relaxed">{item.ifNotYet}</p>
+          <p className={`text-sm leading-relaxed ${!yesSelected ? 'text-slate-700' : 'text-slate-600'}`}>{item.ifNotYet}</p>
         </div>
       </div>
     </motion.section>
@@ -86,25 +105,21 @@ const Results = ({
   submitState,
 }) => {
   const [email, setEmail] = useState('');
-  const [firstName, setFirstName] = useState('');
   const [copied, setCopied] = useState(false);
 
   const theme = scoreTheme[results?.archetype] || scoreTheme['leaky-system'];
 
   const linkedInShareUrl = useMemo(() => {
-    const text = getLinkedInShareText();
     const url = `${START_ASSESSMENT_URL}?utm_source=linkedin&utm_medium=organic-share`;
-    const finalText = `${text} ${url}`;
-
-    return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-      url,
-    )}&summary=${encodeURIComponent(finalText)}`;
+    return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
   }, []);
+
+  const shareText = useMemo(() => getLinkedInShareText(), []);
 
   const handleEmailSubmit = (event) => {
     event.preventDefault();
     if (!email || !email.includes('@')) return;
-    onEmailSubmit(email.trim(), firstName.trim());
+    onEmailSubmit(email.trim(), '');
   };
 
   if (!results) return null;
@@ -119,13 +134,17 @@ const Results = ({
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Main Results Card */}
         <section className="rounded-[2.5rem] border border-slate-200 bg-white p-8 md:p-12 shadow-xl">
-          <div className="flex flex-wrap items-start justify-between gap-6 mb-10">
+          <div className="flex flex-wrap items-start justify-between gap-6 mb-4">
             <div className="space-y-2">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
                 Your Results
               </p>
-              <h1 className="text-4xl md:text-5xl font-black text-[#002E47] leading-tight">
-                You answered “Yes” to <span className="text-[#B84825]">{results.yesCount} out of {results.totalQuestions}</span> questions.
+              <h1 className="text-xl md:text-2xl font-black text-[#002E47] leading-tight">
+                You answered &quot;Yes&quot; to{' '}
+                <span className="text-[#B84825]">
+                  {results.yesCount} out of {results.totalQuestions}
+                </span>{' '}
+                questions.
               </h1>
             </div>
 
@@ -134,23 +153,23 @@ const Results = ({
               className="inline-flex items-center gap-2 rounded-xl px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-500 text-sm font-bold transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
-              Retake Test
+              Retake
             </button>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-3">
             <div
               className={`inline-block px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest shadow-sm ${theme.bg} ${theme.text}`}
             >
               {results.scoreLabel}
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               <h2 className="text-3xl md:text-4xl font-black text-[#002E47] leading-tight">
                 {results.headline}
               </h2>
-              
-              <div className="space-y-6 text-slate-600 leading-relaxed text-lg max-w-3xl">
+
+              <div className="space-y-4 text-slate-600 leading-relaxed text-lg max-w-3xl">
                 {results.summary.split('\n\n').map((para, i) => (
                   <p key={i}>{para}</p>
                 ))}
@@ -158,11 +177,11 @@ const Results = ({
             </div>
           </div>
 
-          <div className="mt-20 pt-16 border-t border-slate-100">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-12">
+          <div className="mt-6 pt-4 border-t border-slate-100">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
               Question by Question
             </h2>
-            <div className="space-y-2">
+            <div>
               {results.questionResults.map((item, index) => (
                 <ResultCard key={item.id} item={item} index={index} />
               ))}
@@ -170,22 +189,97 @@ const Results = ({
           </div>
         </section>
 
+        {/* Blueprint & PDF CTA */}
+        <section className="rounded-[2.5rem] border border-slate-200 bg-white shadow-2xl overflow-hidden">
+          <div className="p-8 md:p-10">
+            {submitState === 'success' ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-teal-50 border border-teal-100 rounded-[2rem] p-10 text-center"
+              >
+                <p className="text-[#277A68] font-black text-2xl mb-2">Success! Check your inbox.</p>
+                <p className="text-[#349881] text-lg mb-4">
+                  We&apos;ve sent the PDF of your results and the Accountability System Blueprint.
+                </p>
+                <p className="text-[#349881]">
+                  If you don&apos;t see the email in your inbox, please check your spam folder.
+                </p>
+              </motion.div>
+            ) : (
+              <form className="space-y-5" onSubmit={handleEmailSubmit}>
+                <p className="text-slate-600 text-lg leading-relaxed">
+                  <strong className="text-[#002E47]">Enter your email to get a PDF of your results + the LeaderReps&apos; Accountability System Blueprint</strong> &mdash; a one-page reference showing what a fully functioning accountability system looks like in practice.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Mail className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="email"
+                      id="results-email"
+                      required
+                      placeholder="Work Email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 py-4 text-lg focus:outline-none focus:ring-4 focus:ring-[#B84825]/10 focus:border-[#B84825] transition-all"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-[#B84825] text-white px-8 py-4 rounded-2xl font-black text-lg hover:bg-[#C85530] transition-all shadow-xl shadow-orange-900/20 disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap active:scale-95"
+                  >
+                    {isSubmitting ? 'Sending...' : 'Send me the Blueprint'}
+                  </button>
+                </div>
+
+                {submitState === 'error' && (
+                  <p className="text-red-500 font-bold ml-2">Something went wrong. Please try again.</p>
+                )}
+
+                <p className="text-xs text-slate-400 leading-relaxed ml-2">
+                  You&apos;ll also be subscribed to One More Rep, our free weekly leadership newsletter.
+                  Unsubscribe anytime.
+                </p>
+              </form>
+            )}
+          </div>
+        </section>
+
+        {/* Foundation CTA */}
+        <section className="rounded-[2.5rem] border border-slate-200 bg-white p-8 md:p-10 shadow-lg">
+          <p className="text-slate-600 text-base leading-relaxed">
+            <strong className="text-[#002E47]">The assessment showed you where the gaps are.</strong>{' '}
+            Foundation is where you close them.{' '}
+            <a
+              href="https://www.leaderreps.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#349881] font-bold hover:underline"
+            >
+              Learn more &rarr;
+            </a>
+          </p>
+        </section>
+
         {/* LinkedIn Share */}
         <div className="rounded-[2.5rem] border border-slate-200 bg-white p-8 md:p-10 shadow-lg">
-          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-6">Share Your Results</h3>
-          
+          <h3 className="text-xl font-black text-[#002E47] mb-4">Share on LinkedIn</h3>
+
           <div className="space-y-4">
-            <p className="text-sm text-slate-500 font-medium">
-              LinkedIn won't let us pre-fill text — copy this first, then paste it as your caption after clicking Share.
+            <p className="text-sm text-slate-600">
+              Copy this text and paste it in your post after clicking Share.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 items-stretch">
               <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 font-medium leading-relaxed select-all">
-                {getLinkedInShareText()} {START_ASSESSMENT_URL}
+                {shareText}
               </div>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(`${getLinkedInShareText()} ${START_ASSESSMENT_URL}`);
+                  navigator.clipboard.writeText(shareText);
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2500);
                 }}
@@ -205,100 +299,11 @@ const Results = ({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-3 px-8 py-4 bg-[#0077b5] text-white rounded-2xl font-black hover:bg-[#00669c] transition-all shadow-xl shadow-blue-900/10 hover:translate-y-[-2px]"
             >
-              <Share2 className="w-5 h-5 text-white/80" />
-              Open LinkedIn to Share
+              <ExternalLink className="w-5 h-5 text-white/80" />
+              Share on LinkedIn
             </a>
           </div>
         </div>
-
-        {/* Blueprint & PDF CTA */}
-        <section className="rounded-[2.5rem] border border-slate-200 bg-white shadow-2xl overflow-hidden mt-8">
-          <div className="bg-slate-50 px-10 py-6 border-b border-slate-200">
-            <h3 className="text-lg font-black text-[#002E47] uppercase tracking-wide">
-              Get your results as a PDF + the Accountability Blueprint
-            </h3>
-          </div>
-          
-          <div className="p-10 space-y-12">
-            <div className="space-y-8 max-w-2xl">
-              <p className="text-slate-600 text-lg leading-relaxed">
-                A one-page reference showing what a fully functioning accountability system looks like in practice.
-              </p>
-
-              {submitState === 'success' ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-teal-50 border border-teal-100 rounded-[2rem] p-10 text-center"
-                >
-                  <p className="text-[#277A68] font-black text-2xl mb-2">Success! Check your inbox.</p>
-                  <p className="text-[#349881] text-lg">We've sent your PDF results and the Accountability Blueprint.</p>
-                </motion.div>
-              ) : (
-                <form className="space-y-5" onSubmit={handleEmailSubmit}>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <input
-                      type="text"
-                      id="results-firstname"
-                      placeholder="First name"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="sm:w-48 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-lg focus:outline-none focus:ring-4 focus:ring-[#B84825]/10 focus:border-[#B84825] transition-all"
-                      disabled={isSubmitting}
-                    />
-                    <div className="relative flex-1">
-                      <Mail className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="email"
-                        id="results-email"
-                        required
-                        placeholder="Work email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 py-4 text-lg focus:outline-none focus:ring-4 focus:ring-[#B84825]/10 focus:border-[#B84825] transition-all"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="bg-[#B84825] text-white px-8 py-4 rounded-2xl font-black text-lg hover:bg-[#C85530] transition-all shadow-xl shadow-orange-900/20 disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap active:scale-95"
-                    >
-                      {isSubmitting ? 'Sending...' : 'Send me the PDF and Blueprint →'}
-                    </button>
-                  </div>
-                  
-                  {submitState === 'error' && (
-                    <p className="text-red-500 font-bold ml-2">Something went wrong. Please try again.</p>
-                  )}
-
-                  <p className="text-xs text-slate-400 leading-relaxed font-medium uppercase tracking-wider ml-2">
-                    You'll also be subscribed to One More Rep, our free weekly leadership newsletter. Unsubscribe anytime.
-                  </p>
-                </form>
-              )}
-            </div>
-
-            <div className="pt-10 border-t border-slate-100">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-                <div className="max-w-md space-y-4">
-                  <h4 className="text-xl font-black text-[#002E47] uppercase tracking-tight">Already know you want to go deeper?</h4>
-                  <p className="text-slate-600 text-base leading-relaxed">
-                    Foundation is a small cohort for managers who want to build this system through practice, not lectures. Eight sessions. Live reps. Coaching.
-                  </p>
-                </div>
-                <a
-                  href="https://www.leaderreps.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-[#349881] font-black text-lg hover:underline gap-1 group whitespace-nowrap"
-                >
-                  Learn more <ExternalLink size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
     </motion.div>
   );

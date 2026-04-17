@@ -1,7 +1,23 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { ASSESSMENT_QUESTIONS } from '../data/questions';
+
+// Renders prompt text with quoted portions in italics
+const PromptText = ({ text }) => {
+  const parts = text.split(/("[^"]+")/);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.startsWith('"') && part.endsWith('"') ? (
+          <em key={i}>{part}</em>
+        ) : (
+          <Fragment key={i}>{part}</Fragment>
+        )
+      )}
+    </>
+  );
+};
 
 const ProgressBar = ({ current, total }) => (
   <div className="w-full max-w-md mx-auto mb-8">
@@ -102,7 +118,7 @@ const AssessmentFlow = ({ onComplete }) => {
     }
   }, [currentIndex]);
 
-  const getSectionLabel = () => 'Accountability System Assessment';
+  const getSectionLabel = () => 'Accountability System Pulse Check';
 
   return (
     <motion.div
@@ -133,8 +149,11 @@ const AssessmentFlow = ({ onComplete }) => {
               exit={{ opacity: 0, x: -50 }}
               transition={{ duration: 0.3 }}
             >
+              <p className="text-xs text-slate-400 text-center mb-3">
+                Go with your first instinct. If it isn't a consistent, recent "yes", it's a "not yet"
+              </p>
               <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 text-center mb-6">
-                {currentQuestion.prompt}
+                <PromptText text={currentQuestion.prompt} />
               </h2>
               <BinaryQuestion
                 question={currentQuestion}

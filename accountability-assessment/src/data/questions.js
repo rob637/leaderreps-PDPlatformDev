@@ -18,11 +18,11 @@ export const ASSESSMENT_QUESTIONS = [
     id: 'ownership-language',
     shortLabel: 'Ownership Language',
     prompt:
-      "When assigning work, do you require clear ownership language from your direct? 'I'll have this done by Friday' instead of 'I'm on it' or 'I'll try'?",
+      "When assigning work, do you require clear ownership language from your direct report? \"I'll have this done by Friday\" instead of \"I'm on it\" or \"I'll try\"?",
     ifYes:
       'Ownership language locks in commitment and makes accountability explicit. You are making it easy for people to be accountable and hard to slide through on vague agreements.',
     ifNotYet:
-      "'I'll get to it' is not a commitment, it is a placeholder. Every time you accept vague language, you take ownership back. The fix is simple: make the ask explicit and require an ownership claim.",
+      '"I\'ll get to it" is not a commitment, it is a placeholder. Every time you accept vague language, you take ownership back. The fix is simple: make the ask explicit and require an ownership claim.',
   },
   {
     id: 'ownership-discipline',
@@ -39,7 +39,7 @@ export const ASSESSMENT_QUESTIONS = [
     shortLabel: 'Timely Feedback',
     prompt:
       'The last few times something was off, did you address it soon after you noticed, ideally within 24 hours?',
-    note: "Softening it significantly or letting it go counts as a 'Not yet.'",
+    note: "❗ Softening it significantly or letting it go counts as a 'Not yet.'",
     ifYes:
       'Addressing issues quickly signals that standards are real. It also keeps small problems from becoming big ones.',
     ifNotYet:
@@ -151,4 +151,4 @@ export const calculateResults = (answers) => {
 };
 
 export const getLinkedInShareText = () =>
-  "I just took the Accountability System Assessment from LeaderReps - find out how strong your team's accountability system really is in 3 minutes";
+  "I took the Accountability System Pulse Check from LeaderReps. Find out how strong your team's accountability system really is in 3 minutes!";

@@ -15,7 +15,7 @@ const Landing = ({ onStart }) => {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img 
-              src="/logo-white.png" 
+              src="/logo-full.png" 
               alt="LeaderReps" 
               className="h-8 md:h-10"
             />
@@ -38,20 +38,22 @@ const Landing = ({ onStart }) => {
           >
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#B84825]/10 text-[#B84825] text-sm font-semibold mb-6">
               <ShieldCheck className="w-4 h-4" />
-              Accountability System Assessment
+              The Accountability System Pulse Check
             </div>
 
             <h1 className="text-3xl md:text-5xl font-bold text-[#002E47] leading-tight mb-4">
               {ASSESSMENT_TITLE}
-              <span className="block text-[#B84825] mt-2">Take the 3-Minute Test</span>
+              <span className="block text-[#B84825] mt-2">Take the 3-Minute Assessment</span>
             </h1>
 
             <p className="text-slate-700 text-lg leading-relaxed mb-5">
-              Every manager has an accountability system. The question is not whether yours exists. It is how consistent it is and how much weight it can carry.
+              When issues arise, it's tempting to blame your team: problems with attitude, urgency, follow-through. Sometimes that's true.
             </p>
 
-            <p className="text-slate-600 leading-relaxed mb-8">
-              This is a quick five-question check on where your system is strong and where it has room to grow. Go with your first instinct. If it is not a consistent, recent yes, choose Inconsistent / Not Yet.
+            <p className="text-slate-700 text-lg leading-relaxed mb-8">
+              But more often, the system is broken. And when the system breaks, even great teams produce inconsistent results.
+              <br /><br />
+              Find out where your system is strong, and where it's leaking.
             </p>
 
             <div className="grid sm:grid-cols-3 gap-3 mb-8">
@@ -74,7 +76,7 @@ const Landing = ({ onStart }) => {
               className="group inline-flex items-center gap-2 rounded-xl px-6 py-4 text-white font-bold shadow-lg"
               style={{ backgroundColor: '#B84825' }}
             >
-              Start Assessment
+              Start the Pulse Check
               <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition" />
             </button>
           </motion.div>
