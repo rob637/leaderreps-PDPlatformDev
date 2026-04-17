@@ -209,7 +209,7 @@ const Results = ({
             ) : (
               <form className="space-y-5" onSubmit={handleEmailSubmit}>
                 <p className="text-slate-600 text-lg leading-relaxed">
-                  <strong className="text-[#002E47]">Enter your email to get a PDF of your results + the LeaderReps&apos; Accountability System Blueprint</strong> &mdash; a one-page reference showing what a fully functioning accountability system looks like in practice.
+                  <strong className="font-black text-[#002E47]">Enter your email to get a PDF of your results + the LeaderReps&apos; Accountability System Blueprint</strong> &mdash; a one-page reference showing what a fully functioning accountability system looks like in practice.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4">
