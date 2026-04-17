@@ -10518,10 +10518,12 @@ const generateResultsPdf = (firstName, results) => {
     const SIENNA = '#B84825';
     const PAGE_W = doc.page.width - 100; // usable width
 
-    // ── Header bar — navy with LeaderReps logo image ─────────────────
-    doc.rect(0, 0, doc.page.width, 70).fill(NAVY);
+    // ── Header — white background with logo, then navy accent bar ─────
     const logoBuffer = Buffer.from(LEADERREPS_LOGO_BASE64, 'base64');
+    doc.rect(0, 0, doc.page.width, 70).fill('#FFFFFF');
     doc.image(logoBuffer, 50, 17, { height: 36 });
+    // Thin navy accent line under the header
+    doc.rect(0, 70, doc.page.width, 4).fill(NAVY);
 
     // ── Title ────────────────────────────────────────────────────────
     doc.y = 90;
