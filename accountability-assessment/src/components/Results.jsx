@@ -71,26 +71,26 @@ const ResultCard = ({ item, index }) => {
           className={`rounded-xl border p-5 transition-all ${
             yesSelected
               ? 'border-[#277A68] bg-[#277A68]/5 ring-1 ring-[#277A68]'
-              : 'border-slate-200 bg-slate-50'
+              : 'border-slate-200 bg-white'
           }`}
         >
-          <div className={`text-xs font-bold uppercase tracking-widest mb-2 ${yesSelected ? 'text-[#277A68]' : 'text-slate-400'}`}>
+          <div className={`text-xs font-bold uppercase tracking-widest mb-2 ${yesSelected ? 'text-[#277A68]' : 'text-slate-500'}`}>
             IF YES {yesSelected && '[YOUR ANSWER]'}
           </div>
-          <p className={`text-sm leading-relaxed ${yesSelected ? 'text-slate-700' : 'text-slate-600'}`}>{item.ifYes}</p>
+          <p className={`text-sm leading-relaxed ${yesSelected ? 'text-slate-700' : 'text-slate-700'}`}>{item.ifYes}</p>
         </div>
 
         <div
           className={`rounded-xl border p-5 transition-all ${
             !yesSelected
               ? 'border-[#B84825] bg-[#B84825]/5 ring-1 ring-[#B84825]'
-              : 'border-slate-200 bg-slate-50'
+              : 'border-slate-200 bg-white'
           }`}
         >
-          <div className={`text-xs font-bold uppercase tracking-widest mb-2 ${!yesSelected ? 'text-[#B84825]' : 'text-slate-400'}`}>
+          <div className={`text-xs font-bold uppercase tracking-widest mb-2 ${!yesSelected ? 'text-[#B84825]' : 'text-slate-500'}`}>
             IF NOT YET {!yesSelected && '[YOUR ANSWER]'}
           </div>
-          <p className={`text-sm leading-relaxed ${!yesSelected ? 'text-slate-700' : 'text-slate-600'}`}>{item.ifNotYet}</p>
+          <p className={`text-sm leading-relaxed ${!yesSelected ? 'text-slate-700' : 'text-slate-700'}`}>{item.ifNotYet}</p>
         </div>
       </div>
     </motion.section>
