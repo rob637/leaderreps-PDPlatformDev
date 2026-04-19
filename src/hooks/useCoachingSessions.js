@@ -90,7 +90,7 @@ export const useCoachingSessions = (options = {}) => {
     dateRange = 'all',        // 'this_week', 'this_month', 'upcoming', 'all'
     includeCompleted = false, // Include past sessions
     skipCohortFilter = false, // Set true for admin views to see all sessions
-    limit = 50
+    limit = 200
   } = options;
   
   // Get user's cohort for filtering
@@ -119,21 +119,26 @@ export const useCoachingSessions = (options = {}) => {
   // Fetch session instances
   useEffect(() => {
     if (!db) {
+      console.log('[useCoachingSessions] db is null, skipping query');
       setLoading(false);
       return;
     }
+    console.log('[useCoachingSessions] setting up query, userCohortId:', userCohortId);
 
     const sessionsRef = collection(db, COACHING_SESSIONS_COLLECTION);
     
-    // Filter to sessions from 60 days ago onwards to prevent the limit from
-    // cutting off future sessions when many past sessions accumulate.
+    // Filter to sessions from 30 days ago onwards so that the limit doesn't
+    // cut off future sessions when past sessions accumulate in the collection.
+    // Using 30 days instead of 60 keeps the window small enough that the limit
+    // is never exceeded even in large collections.
     // where + orderBy on the same field uses the auto-created single-field index.
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    const sixtyDaysAgoStr = `${sixtyDaysAgo.getFullYear()}-${String(sixtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(sixtyDaysAgo.getDate()).padStart(2, '0')}`;
-    let q = query(sessionsRef, where('date', '>=', sixtyDaysAgoStr), orderBy('date', 'asc'));
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = `${thirtyDaysAgo.getFullYear()}-${String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(thirtyDaysAgo.getDate()).padStart(2, '0')}`;
+    let q = query(sessionsRef, where('date', '>=', thirtyDaysAgoStr), orderBy('date', 'asc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('[useCoachingSessions] snapshot size:', snapshot.size, '| thirtyDaysAgoStr:', thirtyDaysAgoStr, '| userCohortId:', userCohortId);
       let items = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -143,6 +148,7 @@ export const useCoachingSessions = (options = {}) => {
       
       // Filter by status (exclude cancelled unless specifically requested)
       items = items.filter(s => s.status !== SESSION_STATUS.CANCELLED);
+      console.log('[useCoachingSessions] after status filter:', items.length);
       
       // Filter completed sessions
       if (!includeCompleted) {
@@ -206,6 +212,7 @@ export const useCoachingSessions = (options = {}) => {
       }
 
       setSessions(items);
+      console.log('[useCoachingSessions] final sessions returned:', items.length);
       setLoading(false);
     }, (err) => {
       console.error('[useCoachingSessions] Error fetching sessions:', err);

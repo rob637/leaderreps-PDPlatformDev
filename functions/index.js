@@ -138,7 +138,25 @@ const generateEmailHtml = (template, variables, appUrl) => {
     }
     return line ? `<p style="margin: 8px 0;">${line}</p>` : '';
   }).join('');
-  
+
+  // Inject Meet link / Google Calendar buttons when those variables are provided.
+  // This keeps ALL templated emails (coaching, community, etc.) consistent without
+  // requiring template authors to hand-write button HTML.
+  const meetLink = variables && variables.meetLink ? variables.meetLink : '';
+  const googleCalendarUrl = variables && variables.googleCalendarUrl ? variables.googleCalendarUrl : '';
+  const meetLinkHtml = meetLink ? `
+        <p style="text-align: center; margin: 16px 0;">
+          <a href="${meetLink}" style="background: #34a853; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">📹 Join Google Meet</a>
+        </p>
+        <p style="text-align: center; font-size: 12px; color: #666; margin-top: -8px;">${meetLink}</p>
+  ` : '';
+  const calendarHtml = (googleCalendarUrl || meetLink) ? `
+        <p style="text-align: center; margin: 16px 0;">
+          ${googleCalendarUrl ? `<a href="${googleCalendarUrl}" style="background: #1a73e8; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; margin-right: 8px;">📅 Add to Google Calendar</a>` : ''}
+          <span style="background: #e0f2fe; color: #0369a1; padding: 10px 16px; border-radius: 6px; font-size: 14px; display: inline-block;">📎 .ics file attached for other calendars</span>
+        </p>
+  ` : '';
+
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
@@ -146,7 +164,8 @@ const generateEmailHtml = (template, variables, appUrl) => {
       </div>
       <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
         ${bodyHtml}
-        
+        ${meetLinkHtml}
+        ${calendarHtml}
         <p style="text-align: center; margin-top: 24px;">
           <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">${buttonText}</a>
         </p>
@@ -611,7 +630,7 @@ const generateICSContent = ({ title, description, location, startDate, startTime
  * Sends email notifications to facilitators when a user registers for a coaching session.
  * Also sends confirmation to the user with calendar attachment.
  */
-exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDocumentWritten("coaching_registrations/{registrationId}", async (event) => {
+exports.onCoachingRegistrationEvent = require("firebase-functions/v2/firestore").onDocumentWritten("coaching_registrations/{registrationId}", async (event) => {
   const afterSnapshot = event.data?.after;
   const beforeSnapshot = event.data?.before;
   
@@ -670,6 +689,40 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
     : 'Date TBD';
   const sessionTime = registration.sessionTime || 'Time TBD';
 
+  // Build Google Calendar "add to calendar" URL (used in both templated and fallback emails).
+  const buildGoogleCalendarUrl = () => {
+    try {
+      const title = encodeURIComponent(`LeaderReps: ${registration.sessionTitle || 'Coaching Session'}`);
+      const description = encodeURIComponent(
+        `Coaching session${registration.coach ? ` with ${registration.coach}` : ''}` +
+        (registration.zoomLink ? `\n\nGoogle Meet: ${registration.zoomLink}` : `\n\nOpen LeaderReps: ${appUrl}`)
+      );
+      const location = encodeURIComponent(registration.zoomLink || 'Virtual Session');
+      let startDt = null;
+      if (registration.sessionDate) {
+        const dateParts = registration.sessionDate.split('T')[0].split('-');
+        const timeParts = registration.sessionTime
+          ? registration.sessionTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i)
+          : null;
+        if (dateParts.length === 3) {
+          let h = timeParts ? parseInt(timeParts[1]) : 12;
+          const m = timeParts ? parseInt(timeParts[2]) : 0;
+          const period = timeParts && timeParts[3] ? timeParts[3].toUpperCase() : null;
+          if (period === 'PM' && h !== 12) h += 12;
+          if (period === 'AM' && h === 12) h = 0;
+          startDt = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]), h, m);
+        }
+      }
+      if (!startDt) return null;
+      const endDt = new Date(startDt.getTime() + 60 * 60 * 1000);
+      const pad = n => String(n).padStart(2, '0');
+      const fmt = dt => `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(startDt)}/${fmt(endDt)}&details=${description}&location=${location}`;
+    } catch (e) { return null; }
+  };
+  const googleCalendarUrl = buildGoogleCalendarUrl();
+  const meetLink = registration.zoomLink || null;
+
   // Build template variables
   const templateVars = {
     userName: registration.userName || 'there',
@@ -680,7 +733,8 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
     sessionTime,
     coach: registration.coach || '',
     coachingItemId: registration.coachingItemId || '',
-    meetLink: registration.zoomLink || ''
+    meetLink: meetLink || '',
+    googleCalendarUrl: googleCalendarUrl || ''
   };
 
   // Fetch templates (with fallback to hardcoded)
@@ -809,11 +863,12 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
             <p style="text-align: center; font-size: 12px; color: #666; margin-top: -8px;">${meetLink}</p>
             ` : ''}
             <p style="text-align: center; margin: 16px 0;">
-              <span style="background: #e0f2fe; color: #0369a1; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Calendar invite attached - open the .ics file to add to your calendar</span>
+              ${googleCalendarUrl ? `<a href="${googleCalendarUrl}" style="background: #1a73e8; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; margin-right: 8px;">📅 Add to Google Calendar</a>` : ''}
+              <span style="background: #e0f2fe; color: #0369a1; padding: 10px 16px; border-radius: 6px; font-size: 14px; display: inline-block;">📎 .ics file attached for other calendars</span>
             </p>
             <p><strong>Next Steps:</strong></p>
             <ul>
-              <li>Open the attached calendar invite to add this session</li>
+              ${googleCalendarUrl ? '<li>Click "Add to Google Calendar" above, or open the attached .ics file for other calendar apps</li>' : '<li>Open the attached calendar invite to add this session</li>'}
               <li>Prepare any questions or topics you'd like to discuss</li>
               <li>Join the session at the scheduled time</li>
             </ul>
@@ -868,7 +923,7 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
  * Sends cancellation emails when a registration status changes to 'cancelled'.
  * Notifies both the participant and the coach.
  */
-exports.onCoachingCancellation = require("firebase-functions/v2/firestore").onDocumentUpdated("coaching_registrations/{registrationId}", async (event) => {
+exports.onCoachingCancellationEvent = require("firebase-functions/v2/firestore").onDocumentUpdated("coaching_registrations/{registrationId}", async (event) => {
   const beforeData = event.data.before.data();
   const afterData = event.data.after.data();
   
@@ -1038,7 +1093,7 @@ exports.onCoachingCancellation = require("firebase-functions/v2/firestore").onDo
  * COMMUNITY SESSION REGISTRATION
  * Sends confirmation emails to community session hosts and participants on new registration.
  */
-exports.onCommunityRegistration = require("firebase-functions/v2/firestore").onDocumentWritten("community_registrations/{registrationId}", async (event) => {
+exports.onCommunityRegistrationEvent = require("firebase-functions/v2/firestore").onDocumentWritten("community_registrations/{registrationId}", async (event) => {
   const afterSnapshot = event.data?.after;
   const beforeSnapshot = event.data?.before;
 
@@ -1106,6 +1161,39 @@ exports.onCommunityRegistration = require("firebase-functions/v2/firestore").onD
     ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : 'Date TBD';
   const sessionTime = registration.sessionTime || 'Time TBD';
+
+  // Build Google Calendar URL
+  const buildCommGoogleCalendarUrl = () => {
+    try {
+      const title = encodeURIComponent(`LeaderReps: ${registration.sessionTitle || 'Community Session'}`);
+      const description = encodeURIComponent(
+        `Community session${registration.host ? ` hosted by ${registration.host}` : ''}` +
+        (meetLink ? `\n\nGoogle Meet: ${meetLink}` : `\n\nOpen LeaderReps: ${appUrl}`)
+      );
+      const location = encodeURIComponent(meetLink || 'Virtual Session');
+      let startDt = null;
+      if (registration.sessionDate) {
+        const dateParts = registration.sessionDate.split('T')[0].split('-');
+        const timeParts = registration.sessionTime
+          ? registration.sessionTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i)
+          : null;
+        if (dateParts.length === 3) {
+          let h = timeParts ? parseInt(timeParts[1]) : 12;
+          const m = timeParts ? parseInt(timeParts[2]) : 0;
+          const period = timeParts && timeParts[3] ? timeParts[3].toUpperCase() : null;
+          if (period === 'PM' && h !== 12) h += 12;
+          if (period === 'AM' && h === 12) h = 0;
+          startDt = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]), h, m);
+        }
+      }
+      if (!startDt) return null;
+      const endDt = new Date(startDt.getTime() + 60 * 60 * 1000);
+      const pad = n => String(n).padStart(2, '0');
+      const fmt = dt => `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(startDt)}/${fmt(endDt)}&details=${description}&location=${location}`;
+    } catch (e) { return null; }
+  };
+  const googleCalendarUrl = buildCommGoogleCalendarUrl();
 
   const meetLinkButtonHtml = meetLink
     ? `<p style="text-align: center; margin: 16px 0;">
@@ -1193,10 +1281,14 @@ exports.onCommunityRegistration = require("firebase-functions/v2/firestore").onD
             <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
             ${registration.host ? `<p style="margin: 8px 0;"><strong>Host:</strong> ${registration.host}</p>` : ''}
           </div>
-          ${meetLinkButtonHtml || `<p style="text-align: center; margin: 16px 0;"><span style="background: #e0f2fe; color: #0369a1; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Calendar invite attached</span></p>`}
+          ${meetLinkButtonHtml}
+          <p style="text-align: center; margin: 16px 0;">
+            ${googleCalendarUrl ? `<a href="${googleCalendarUrl}" style="background: #1a73e8; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; margin-right: 8px;">📅 Add to Google Calendar</a>` : ''}
+            <span style="background: #e0f2fe; color: #0369a1; padding: 10px 16px; border-radius: 6px; font-size: 14px; display: inline-block;">📎 .ics file attached for other calendars</span>
+          </p>
           <p><strong>Next Steps:</strong></p>
           <ul>
-            <li>Open the attached calendar invite to save this session to your calendar</li>
+            ${googleCalendarUrl ? '<li>Click "Add to Google Calendar" above, or open the attached .ics file for other calendar apps</li>' : '<li>Open the attached calendar invite to save this session to your calendar</li>'}
             ${meetLink ? `<li>Use the Google Meet link above to join at the scheduled time</li>` : '<li>Join details will be provided before the session</li>'}
             <li>Come ready to connect and grow with your peer leaders</li>
           </ul>
@@ -1241,7 +1333,7 @@ exports.onCommunityRegistration = require("firebase-functions/v2/firestore").onD
  * COMMUNITY SESSION CANCELLATION
  * Sends cancellation emails to host and participant when status changes to CANCELLED.
  */
-exports.onCommunityCancellation = require("firebase-functions/v2/firestore").onDocumentUpdated("community_registrations/{registrationId}", async (event) => {
+exports.onCommunityCancellationEvent = require("firebase-functions/v2/firestore").onDocumentUpdated("community_registrations/{registrationId}", async (event) => {
   const beforeData = event.data.before.data();
   const afterData = event.data.after.data();
 
@@ -1351,7 +1443,11 @@ exports.onCommunityCancellation = require("firebase-functions/v2/firestore").onD
             <p style="margin: 8px 0;"><strong>Session:</strong> ${afterData.sessionTitle || 'Community Session'}</p>
             <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
             <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+            ${afterData.host ? `<p style="margin: 8px 0;"><strong>Host:</strong> ${afterData.host}</p>` : ''}
           </div>
+          <p style="text-align: center; margin: 16px 0;">
+            <span style="background: #fef2f2; color: #991b1b; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Please remove this from your calendar</span>
+          </p>
           <p>You can register for other upcoming sessions from the Community Hub.</p>
           <p style="text-align: center; margin-top: 24px;">
             <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Browse Sessions</a>
@@ -9000,7 +9096,7 @@ function getNextSendWindowStart(fromDate, startHour, endHour, tz, weekdaysOnly) 
  * onBugReport: Firestore trigger on bug_reports collection.
  * Sends an email notification to rob@leaderreps.com when a user submits a bug report.
  */
-exports.onBugReport = require("firebase-functions/v2/firestore").onDocumentCreated("bug_reports/{reportId}", async (event) => {
+exports.onBugReportCreated = require("firebase-functions/v2/firestore").onDocumentCreated("bug_reports/{reportId}", async (event) => {
   const snapshot = event.data;
   if (!snapshot) {
     logger.error("onBugReport: No data associated with the event");
