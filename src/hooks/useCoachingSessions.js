@@ -125,9 +125,13 @@ export const useCoachingSessions = (options = {}) => {
 
     const sessionsRef = collection(db, COACHING_SESSIONS_COLLECTION);
     
-    // Build query - start simple, filter client-side for flexibility
-    // Firestore composite indexes would be needed for complex server-side queries
-    let q = query(sessionsRef, orderBy('date', 'asc'));
+    // Filter to sessions from 60 days ago onwards to prevent the limit from
+    // cutting off future sessions when many past sessions accumulate.
+    // where + orderBy on the same field uses the auto-created single-field index.
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const sixtyDaysAgoStr = `${sixtyDaysAgo.getFullYear()}-${String(sixtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(sixtyDaysAgo.getDate()).padStart(2, '0')}`;
+    let q = query(sessionsRef, where('date', '>=', sixtyDaysAgoStr), orderBy('date', 'asc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       let items = snapshot.docs.map(doc => ({
