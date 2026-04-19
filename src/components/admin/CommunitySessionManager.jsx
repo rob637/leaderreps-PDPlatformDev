@@ -54,7 +54,7 @@ import {
   COMMUNITY_RECURRENCE,
   SESSION_STATUS
 } from '../../data/Constants';
-import { generateFacilitatorCalendarUrl, isMeetLink } from '../../services/calendarUtils';
+import { generateFacilitatorCalendarUrl, isMeetLink, extractMeetLink } from '../../services/calendarUtils';
 import { COMMUNITY_SESSION_TYPE_CONFIG } from '../../services/communityService';
 
 // Format date for display - handles YYYY-MM-DD as local date (not UTC)
@@ -945,11 +945,16 @@ const SessionEditForm = ({ session, setSession, isNew, onSave, onCancel }) => {
           </label>
           <div className="flex gap-2">
             <input
-              type="url"
+              type="text"
               value={session.zoomLink || ''}
               onChange={(e) => setSession({...session, zoomLink: e.target.value})}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pasted = e.clipboardData.getData('text');
+                setSession({...session, zoomLink: extractMeetLink(pasted)});
+              }}
               className="flex-1 pl-3 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal/20 text-sm"
-              placeholder="https://meet.google.com/xxx-xxxx-xxx"
+              placeholder="Paste Meet link or full Google Calendar joining info"
             />
             {session.zoomLink && (
               <a

@@ -28,6 +28,21 @@ export const isMeetLink = (url) => {
 };
 
 /**
+ * Extract a Google Meet URL from a pasted string.
+ * Handles plain URLs and the full "Copy joining info" block from Google Calendar.
+ * Returns the cleaned URL, or the original string if no Meet link is found.
+ */
+export const extractMeetLink = (text) => {
+  if (!text) return '';
+  const trimmed = text.trim();
+  // Already a clean meet URL
+  if (isMeetLink(trimmed)) return trimmed;
+  // Scan for a meet.google.com URL anywhere in the pasted block
+  const match = trimmed.match(/https:\/\/meet\.google\.com\/[a-z0-9-]+/i);
+  return match ? match[0] : trimmed;
+};
+
+/**
  * Generate Google Calendar event-creation URL for facilitators.
  * Pre-fills session details so the facilitator can add Meet conferencing from Calendar,
  * copy the Meet URL, and paste it back into the session form.

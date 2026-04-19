@@ -53,7 +53,7 @@ import {
   SESSION_TYPES,
   SESSION_STATUS
 } from '../../data/Constants';
-import { generateFacilitatorCalendarUrl, isMeetLink } from '../../services/calendarUtils';
+import { generateFacilitatorCalendarUrl, isMeetLink, extractMeetLink } from '../../services/calendarUtils';
 
 // Cohort access modes
 const COHORT_ACCESS = {
@@ -1219,11 +1219,16 @@ const SessionEditForm = ({ session, setSession, isNew, cohorts, onSave, onCancel
           </label>
           <div className="flex gap-2">
             <input
-              type="url"
+              type="text"
               value={session.zoomLink || ''}
               onChange={(e) => setSession({ ...session, zoomLink: e.target.value })}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pasted = e.clipboardData.getData('text');
+                setSession({ ...session, zoomLink: extractMeetLink(pasted) });
+              }}
               className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal text-sm"
-              placeholder="https://meet.google.com/xxx-xxxx-xxx"
+              placeholder="Paste Meet link or full Google Calendar joining info"
             />
             {session.zoomLink && (
               <a
