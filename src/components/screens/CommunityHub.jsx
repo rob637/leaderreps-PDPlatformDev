@@ -171,7 +171,7 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
                     Join Meet
                   </a>
                 )}
-                <button onClick={() => onCancel(session)} className="px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 transition-colors">Cancel</button>
+                <button onClick={() => onCancel(session.id)} className="px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 transition-colors">Cancel</button>
               </div>
             ) : (
               <button onClick={() => onRegister(session)} className="px-3 py-1.5 text-xs font-bold text-white bg-corporate-teal rounded hover:bg-teal-700 transition-colors">Register</button>
