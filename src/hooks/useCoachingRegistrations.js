@@ -313,6 +313,7 @@ export const useCoachingRegistrations = () => {
         sessionTime: session.time || null,
         coach: session.coach || null,
         coachEmail: session.coachEmail || null, // For facilitator notifications
+        zoomLink: session.zoomLink || null, // For calendar invites and email
         skillFocus: session.skillFocus || session.skills || [],
         
         // Additional metadata (e.g. coachingItemId from dev plan)

@@ -23,7 +23,7 @@ const admin = require("firebase-admin");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Anthropic = require("@anthropic-ai/sdk");
 const nodemailer = require("nodemailer");
-const twilio = require("twilio");
+const Telnyx = require("telnyx");
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
@@ -679,7 +679,8 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
     sessionDate,
     sessionTime,
     coach: registration.coach || '',
-    coachingItemId: registration.coachingItemId || ''
+    coachingItemId: registration.coachingItemId || '',
+    meetLink: registration.zoomLink || ''
   };
 
   // Fetch templates (with fallback to hardcoded)
@@ -722,6 +723,10 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
               <p style="margin: 8px 0;"><strong>Email:</strong> ${registration.userEmail || 'Not provided'}</p>
               ${registration.coachingItemId ? `<p style="margin: 8px 0;"><strong>Milestone:</strong> ${registration.coachingItemId}</p>` : ''}
             </div>
+            ${registration.zoomLink ? `
+            <p style="text-align: center; margin: 16px 0;">
+              <a href="${registration.zoomLink}" style="background: #34a853; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">📹 Join Google Meet</a>
+            </p>` : ''}
             <p style="text-align: center; margin-top: 24px;">
               <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
             </p>
@@ -758,8 +763,8 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
   // Generate ICS calendar content for attachments
   const icsContent = generateICSContent({
     title: `LeaderReps: ${registration.sessionTitle || 'Coaching Session'}`,
-    description: `Coaching session${registration.coach ? ` with ${registration.coach}` : ''}\\n\\nJoin via LeaderReps: ${appUrl}`,
-    location: 'Virtual Session',
+    description: `Coaching session${registration.coach ? ` with ${registration.coach}` : ''}${registration.zoomLink ? `\\n\\nGoogle Meet: ${registration.zoomLink}` : `\\n\\nJoin via LeaderReps: ${appUrl}`}`,
+    location: registration.zoomLink || 'Virtual Session',
     startDate: registration.sessionDate,
     startTime: registration.sessionTime,
     durationMinutes: 60,
@@ -797,6 +802,12 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
               <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
               ${registration.coach ? `<p style="margin: 8px 0;"><strong>Trainer:</strong> ${registration.coach}</p>` : ''}
             </div>
+            ${meetLink ? `
+            <p style="text-align: center; margin: 16px 0;">
+              <a href="${meetLink}" style="background: #34a853; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">📹 Join Google Meet</a>
+            </p>
+            <p style="text-align: center; font-size: 12px; color: #666; margin-top: -8px;">${meetLink}</p>
+            ` : ''}
             <p style="text-align: center; margin: 16px 0;">
               <span style="background: #e0f2fe; color: #0369a1; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Calendar invite attached - open the .ics file to add to your calendar</span>
             </p>
@@ -844,7 +855,7 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
 
   // Update registration to mark notification sent
   try {
-    await snapshot.ref.update({
+    await afterSnapshot.ref.update({
       notificationSentAt: admin.firestore.FieldValue.serverTimestamp()
     });
   } catch (error) {
@@ -1020,6 +1031,357 @@ exports.onCoachingCancellation = require("firebase-functions/v2/firestore").onDo
     });
   } catch (error) {
     logger.error("Failed to update registration with cancellation timestamp:", error);
+  }
+});
+
+/**
+ * COMMUNITY SESSION REGISTRATION
+ * Sends confirmation emails to community session hosts and participants on new registration.
+ */
+exports.onCommunityRegistration = require("firebase-functions/v2/firestore").onDocumentWritten("community_registrations/{registrationId}", async (event) => {
+  const afterSnapshot = event.data?.after;
+  const beforeSnapshot = event.data?.before;
+
+  if (!afterSnapshot || !afterSnapshot.exists) {
+    return;
+  }
+
+  const registration = afterSnapshot.data();
+  const beforeRegistration = beforeSnapshot && beforeSnapshot.exists ? beforeSnapshot.data() : null;
+
+  // Only fire on new registrations (not cancellations or updates to already-registered docs)
+  const currentStatus = (registration.status || '').toUpperCase();
+  const previousStatus = beforeRegistration ? (beforeRegistration.status || '').toUpperCase() : '';
+
+  const isNowRegistered = currentStatus !== 'CANCELLED' && currentStatus !== 'NO_SHOW';
+  const wasRegistered = beforeRegistration ? (previousStatus !== 'CANCELLED' && previousStatus !== 'NO_SHOW') : false;
+
+  if (!isNowRegistered || wasRegistered) {
+    return;
+  }
+
+  logger.info("New community registration:", { id: event.params.registrationId, sessionId: registration.sessionId });
+
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+
+  if (!emailUser || !emailPass) {
+    logger.warn("Email credentials not configured. Skipping community notification.");
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: emailUser, pass: emailPass },
+  });
+
+  const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+  const appDomain = projectId === 'leaderreps-prod'
+    ? 'arena.leaderreps.com'
+    : projectId === 'leaderreps-test'
+      ? 'leaderreps-test.web.app'
+      : 'leaderreps-pd-platform.web.app';
+  const appUrl = `https://${appDomain}`;
+
+  const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps';
+  const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
+
+  // Look up the session to get fields not stored on the registration (durationMinutes, hostEmail, zoomLink fallback)
+  let sessionData = {};
+  if (registration.sessionId) {
+    try {
+      const sessionDoc = await admin.firestore().collection('community_sessions').doc(registration.sessionId).get();
+      if (sessionDoc.exists) {
+        sessionData = sessionDoc.data();
+      }
+    } catch (lookupErr) {
+      logger.warn("Could not look up community session:", lookupErr.message);
+    }
+  }
+
+  const meetLink = registration.zoomLink || sessionData.zoomLink || null;
+  const hostEmail = registration.hostEmail || sessionData.hostEmail || null;
+
+  const sessionDate = registration.sessionDate
+    ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    : 'Date TBD';
+  const sessionTime = registration.sessionTime || 'Time TBD';
+
+  const meetLinkButtonHtml = meetLink
+    ? `<p style="text-align: center; margin: 16px 0;">
+        <a href="${meetLink}" style="background: #34a853; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">📹 Join Google Meet</a>
+      </p>
+      <p style="text-align: center; font-size: 12px; color: #666; margin-top: -8px;">${meetLink}</p>`
+    : '';
+
+  // Build ICS attachment for participant
+  const icsContent = generateICSContent({
+    title: `LeaderReps: ${registration.sessionTitle || 'Community Session'}`,
+    description: `Community session${registration.host ? ` hosted by ${registration.host}` : ''}${meetLink ? `\\n\\nGoogle Meet: ${meetLink}` : `\\n\\nJoin via LeaderReps: ${appUrl}`}`,
+    location: meetLink || 'Virtual Session',
+    startDate: registration.sessionDate,
+    startTime: registration.sessionTime,
+    durationMinutes: sessionData.durationMinutes || 60,
+    uid: `${event.params.registrationId}@leaderreps.com`,
+    organizerEmail: hostEmail || emailUser,
+    organizerName: registration.host || 'LeaderReps',
+    attendeeEmail: registration.userEmail,
+    attendeeName: registration.userName,
+  });
+
+  // 1. Notify session host
+  if (hostEmail) {
+    const hostSubject = `📅 New Registration: ${registration.userName || 'A participant'} – ${registration.sessionTitle || 'Community Session'}`;
+    const hostHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">New Session Registration</h2>
+        </div>
+        <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin-top: 0;"><strong>${registration.userName || 'A participant'}</strong> has registered for your community session.</p>
+          <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Community Session'}</p>
+            <p style="margin: 8px 0;"><strong>Type:</strong> ${(registration.sessionType || '').replace(/_/g, ' ')}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+          </div>
+          <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #002E47;">Participant</h3>
+            <p style="margin: 8px 0;"><strong>Name:</strong> ${registration.userName || 'Not provided'}</p>
+            <p style="margin: 8px 0;"><strong>Email:</strong> ${registration.userEmail || 'Not provided'}</p>
+          </div>
+          ${meetLinkButtonHtml}
+          <p style="text-align: center; margin-top: 24px;">
+            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
+          </p>
+        </div>
+        <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin: 0; color: #64748b; font-size: 12px;">Automated notification from LeaderReps.</p>
+        </div>
+      </div>
+    `;
+    try {
+      await transporter.sendMail({
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: hostEmail,
+        subject: hostSubject,
+        html: hostHtml,
+      });
+      logger.info(`Community host notification sent to ${hostEmail}`);
+    } catch (error) {
+      logger.error(`Failed to send community host notification:`, error);
+    }
+  }
+
+  // 2. Send confirmation + ICS to participant
+  if (registration.userEmail) {
+    const userSubject = `✅ You're registered: ${registration.sessionTitle || 'Community Session'}`;
+    const userHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">You're In!</h2>
+        </div>
+        <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin-top: 0;">Hi ${registration.userName || 'there'},</p>
+          <p>You're registered for the upcoming community session!</p>
+          <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Community Session'}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+            ${registration.host ? `<p style="margin: 8px 0;"><strong>Host:</strong> ${registration.host}</p>` : ''}
+          </div>
+          ${meetLinkButtonHtml || `<p style="text-align: center; margin: 16px 0;"><span style="background: #e0f2fe; color: #0369a1; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Calendar invite attached</span></p>`}
+          <p><strong>Next Steps:</strong></p>
+          <ul>
+            <li>Open the attached calendar invite to save this session to your calendar</li>
+            ${meetLink ? `<li>Use the Google Meet link above to join at the scheduled time</li>` : '<li>Join details will be provided before the session</li>'}
+            <li>Come ready to connect and grow with your peer leaders</li>
+          </ul>
+          <p style="text-align: center; margin-top: 24px;">
+            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
+          </p>
+        </div>
+        <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email or contact your session host.</p>
+        </div>
+      </div>
+    `;
+    try {
+      await transporter.sendMail({
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: registration.userEmail,
+        subject: userSubject,
+        attachments: [{
+          filename: 'community-session.ics',
+          content: icsContent,
+          contentType: 'text/calendar; charset=utf-8; method=REQUEST',
+        }],
+        html: userHtml,
+      });
+      logger.info(`Community user confirmation sent to ${registration.userEmail}`);
+    } catch (error) {
+      logger.error(`Failed to send community user confirmation:`, error);
+    }
+  }
+
+  try {
+    await afterSnapshot.ref.update({
+      notificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    logger.error("Failed to update community registration with notification timestamp:", error);
+  }
+});
+
+/**
+ * COMMUNITY SESSION CANCELLATION
+ * Sends cancellation emails to host and participant when status changes to CANCELLED.
+ */
+exports.onCommunityCancellation = require("firebase-functions/v2/firestore").onDocumentUpdated("community_registrations/{registrationId}", async (event) => {
+  const beforeData = event.data.before.data();
+  const afterData = event.data.after.data();
+
+  const wasCancelled = (beforeData.status || '').toUpperCase() === 'CANCELLED';
+  const isCancelled = (afterData.status || '').toUpperCase() === 'CANCELLED';
+
+  if (wasCancelled || !isCancelled) {
+    return;
+  }
+
+  logger.info("Community registration cancelled:", { id: event.params.registrationId, sessionId: afterData.sessionId });
+
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+
+  if (!emailUser || !emailPass) {
+    logger.warn("Email credentials not configured. Skipping community cancellation notification.");
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: emailUser, pass: emailPass },
+  });
+
+  const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+  const appDomain = projectId === 'leaderreps-prod'
+    ? 'arena.leaderreps.com'
+    : projectId === 'leaderreps-test'
+      ? 'leaderreps-test.web.app'
+      : 'leaderreps-pd-platform.web.app';
+  const appUrl = `https://${appDomain}`;
+
+  const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps';
+  const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
+
+  const sessionDate = afterData.sessionDate
+    ? new Date(afterData.sessionDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    : 'Date TBD';
+  const sessionTime = afterData.sessionTime || 'Time TBD';
+
+  // Look up hostEmail from session doc if not already stored on the registration
+  let hostEmail = afterData.hostEmail;
+  if (!hostEmail && afterData.sessionId) {
+    try {
+      const sessionDoc = await admin.firestore().collection('community_sessions').doc(afterData.sessionId).get();
+      if (sessionDoc.exists) {
+        hostEmail = sessionDoc.data().hostEmail;
+      }
+    } catch (lookupErr) {
+      logger.warn("Could not look up hostEmail from community session:", lookupErr.message);
+    }
+  }
+
+  // 1. Notify host
+  if (hostEmail) {
+    const hostSubject = `❌ Registration Cancelled: ${afterData.userName || 'A participant'} – ${afterData.sessionTitle || 'Community Session'}`;
+    const hostHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">Registration Cancelled</h2>
+        </div>
+        <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin-top: 0;"><strong>${afterData.userName || 'A participant'}</strong> has cancelled their registration for your session.</p>
+          <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #fecaca; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #991b1b;">Session</h3>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${afterData.sessionTitle || 'Community Session'}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+          </div>
+          <p style="text-align: center; margin-top: 24px;">
+            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
+          </p>
+        </div>
+        <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin: 0; color: #64748b; font-size: 12px;">LeaderReps Platform</p>
+        </div>
+      </div>
+    `;
+    try {
+      await transporter.sendMail({
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: hostEmail,
+        subject: hostSubject,
+        html: hostHtml,
+      });
+      logger.info(`Community host cancellation notification sent to ${hostEmail}`);
+    } catch (error) {
+      logger.error(`Failed to send community host cancellation notification:`, error);
+    }
+  }
+
+  // 2. Confirm cancellation to participant
+  if (afterData.userEmail) {
+    const userSubject = `❌ Registration Cancelled: ${afterData.sessionTitle || 'Community Session'}`;
+    const userHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">Registration Cancelled</h2>
+        </div>
+        <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin-top: 0;">Hi ${afterData.userName || 'there'},</p>
+          <p>Your registration for the following session has been cancelled.</p>
+          <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #fecaca; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #991b1b;">Cancelled Session</h3>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${afterData.sessionTitle || 'Community Session'}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+          </div>
+          <p>You can register for other upcoming sessions from the Community Hub.</p>
+          <p style="text-align: center; margin-top: 24px;">
+            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Browse Sessions</a>
+          </p>
+        </div>
+        <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email.</p>
+        </div>
+      </div>
+    `;
+    try {
+      await transporter.sendMail({
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: afterData.userEmail,
+        subject: userSubject,
+        html: userHtml,
+      });
+      logger.info(`Community user cancellation confirmation sent to ${afterData.userEmail}`);
+    } catch (error) {
+      logger.error(`Failed to send community user cancellation confirmation:`, error);
+    }
+  }
+
+  try {
+    await event.data.after.ref.update({
+      cancellationNotificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    logger.error("Failed to update community registration with cancellation timestamp:", error);
   }
 });
 
@@ -4860,8 +5222,8 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
   }
 });
 
-// Helper to send SMS via Twilio
-// NOTE: SMS functionality is disabled for go-live. Uncomment all sendSms references when Twilio is configured.
+// Helper to send SMS via Telnyx
+// NOTE: SMS functionality is disabled for go-live. Uncomment all sendSms references when Telnyx is configured.
 // Options can include: { linkText, linkUrl } to append a link to the message
 async function sendSmsNotification(phoneNumber, message, options = {}) {
   // SMS disabled for go-live - early return
@@ -4870,13 +5232,12 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
   
   // Original implementation below (disabled until 10DLC campaign approved)
   /*
-  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
-  const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
-  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-  const twilioFrom = process.env.TWILIO_PHONE_NUMBER;
+  const apiKey = process.env.TELNYX_API_KEY;
+  const messagingProfileId = process.env.TELNYX_MESSAGING_PROFILE_ID;
+  const telnyxFrom = process.env.TELNYX_PHONE_NUMBER;
 
-  if (!twilioSid || !twilioAuth || (!messagingServiceSid && !twilioFrom)) {
-    logger.warn("Twilio credentials not configured. SMS not sent.");
+  if (!apiKey || (!messagingProfileId && !telnyxFrom)) {
+    logger.warn("Telnyx credentials not configured. SMS not sent.");
     return;
   }
 
@@ -4898,18 +5259,19 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
   }
 
   try {
-    const client = twilio(twilioSid, twilioAuth);
+    const telnyx = Telnyx(apiKey);
     const msgOptions = {
-      body: `LeaderReps: ${message} ${linkToInclude}`,
+      text: `LeaderReps: ${message} ${linkToInclude}`,
       to: phoneNumber
     };
-    if (messagingServiceSid) {
-      msgOptions.messagingServiceSid = messagingServiceSid;
+    if (messagingProfileId) {
+      msgOptions.messaging_profile_id = messagingProfileId;
+      if (telnyxFrom) msgOptions.from = telnyxFrom;
     } else {
-      msgOptions.from = twilioFrom;
+      msgOptions.from = telnyxFrom;
     }
-    const result = await client.messages.create(msgOptions);
-    logger.info(`SMS sent to ${phoneNumber}: ${result.sid}`);
+    const result = await telnyx.messages.create(msgOptions);
+    logger.info(`SMS sent to ${phoneNumber}: ${result.data?.id}`);
   } catch (e) {
     logger.error(`Failed to send SMS to ${phoneNumber}`, e);
   }
@@ -13461,26 +13823,28 @@ async function processLabMessage(uid, text, options = {}) {
  * @returns {Promise<string>} Twilio message SID
  */
 async function sendLabSms(to, body) {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const auth = process.env.TWILIO_AUTH_TOKEN;
-  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-  const from = process.env.TWILIO_PHONE_NUMBER;
+  const apiKey = process.env.TELNYX_API_KEY;
+  const from = process.env.TELNYX_PHONE_NUMBER;
+  const messagingProfileId = process.env.TELNYX_MESSAGING_PROFILE_ID;
 
-  if (!sid || !auth || (!messagingServiceSid && !from)) {
-    logger.error("Twilio credentials not configured for Lab SMS");
+  if (!apiKey || (!from && !messagingProfileId)) {
+    logger.error("Telnyx credentials not configured for Lab SMS");
     throw new Error("SMS service not configured");
   }
 
-  const client = twilio(sid, auth);
-  const msgOptions = { body, to };
-  if (messagingServiceSid) {
-    msgOptions.messagingServiceSid = messagingServiceSid;
+  const telnyx = Telnyx(apiKey);
+  const msgOptions = { text: body, to };
+  if (messagingProfileId) {
+    msgOptions.messaging_profile_id = messagingProfileId;
+    // from is optional when using a messaging profile — Telnyx picks the number
+    if (from) msgOptions.from = from;
   } else {
     msgOptions.from = from;
   }
-  const result = await client.messages.create(msgOptions);
-  logger.info("Lab SMS sent", { to: maskPhone(to), sid: result.sid });
-  return result.sid;
+  const result = await telnyx.messages.create(msgOptions);
+  const sid = result.data?.id || result.id;
+  logger.info("Lab SMS sent via Telnyx", { to: maskPhone(to), id: sid });
+  return sid;
 }
 
 /**
@@ -14243,15 +14607,15 @@ async function transcribeVoiceMemo(mediaUrl, mimeType) {
 }
 
 /**
- * labSmsWebhook — Receives inbound SMS from Twilio.
+ * labSmsWebhook — Receives inbound SMS from Telnyx.
  *
  * Flow:
- * 1. Twilio POSTs to this endpoint when a user texts the Lab number.
+ * 1. Telnyx POSTs to this endpoint when a user texts the Lab number.
  * 2. Look up user by phone number in ll-users.
  * 3. If unknown number, reply with a "not enrolled" message.
  * 4. If user hasn't completed onboarding, route to onboarding mode.
  * 5. Otherwise find/create today's active SMS conversation and route through AI.
- * 6. Reply via TwiML.
+ * 6. Reply via Telnyx Messages API.
  */
 exports.labSmsWebhook = onRequest(
   {
@@ -14262,32 +14626,50 @@ exports.labSmsWebhook = onRequest(
   async (req, res) => {
     validateLabEnvironment();
 
-    // Twilio sends POST requests
+    // Telnyx sends POST requests
     if (req.method !== "POST") {
       res.status(405).send("Method not allowed");
       return;
     }
 
-    // Validate Twilio signature — MANDATORY for production security
-    const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
-    if (!twilioAuth) {
-      logger.error("TWILIO_AUTH_TOKEN not configured — rejecting webhook");
+    // Validate Telnyx Ed25519 signature — MANDATORY for production security
+    const telnyxPublicKey = process.env.TELNYX_PUBLIC_KEY;
+    if (!telnyxPublicKey) {
+      logger.error("TELNYX_PUBLIC_KEY not configured — rejecting webhook");
       res.status(500).send("Server misconfiguration");
       return;
     }
-    const signature = req.headers["x-twilio-signature"];
-    const url = `https://${req.headers.host}${req.originalUrl}`;
-    const valid = twilio.validateRequest(twilioAuth, signature, url, req.body);
-    if (!valid) {
-      logger.warn("Invalid Twilio signature on labSmsWebhook", { from: maskPhone(req.body?.From) });
+    const signature = req.headers["telnyx-signature-ed25519"];
+    const timestamp = req.headers["telnyx-timestamp"];
+    if (!signature || !timestamp) {
+      logger.warn("Missing Telnyx signature headers on labSmsWebhook");
+      res.status(403).send("Forbidden");
+      return;
+    }
+    try {
+      const crypto = require("crypto");
+      const rawBody = (req.rawBody || Buffer.from(JSON.stringify(req.body))).toString("utf8");
+      const message = `${timestamp}|${rawBody}`;
+      const keyDer = Buffer.from(telnyxPublicKey, "base64");
+      const sigBytes = Buffer.from(signature, "base64");
+      const valid = crypto.verify(null, Buffer.from(message), { key: keyDer, format: "der", type: "spki" }, sigBytes);
+      if (!valid) {
+        logger.warn("Invalid Telnyx signature on labSmsWebhook");
+        res.status(403).send("Forbidden");
+        return;
+      }
+    } catch (sigErr) {
+      logger.warn("Telnyx signature verification error on labSmsWebhook", { error: sigErr.message });
       res.status(403).send("Forbidden");
       return;
     }
 
-    const fromPhone = req.body.From; // E.164
-    const body = (req.body.Body || "").trim();
-    const numMedia = parseInt(req.body.NumMedia || "0", 10);
-    const smsSid = req.body.MessageSid || req.body.SmsSid;
+    // Parse Telnyx webhook payload
+    const payload = req.body?.data?.payload || {};
+    const fromPhone = payload?.from?.phone_number; // E.164
+    const body = (payload?.text || "").trim();
+    const numMedia = (payload?.media || []).length;
+    const smsSid = payload?.id;
 
     // --- IDEMPOTENCY: Prevent duplicate processing on Twilio retries ---
     if (smsSid) {
@@ -14295,8 +14677,7 @@ exports.labSmsWebhook = onRequest(
       const dedupSnap = await dedupRef.get();
       if (dedupSnap.exists) {
         logger.info("Duplicate SMS webhook ignored", { smsSid, from: maskPhone(fromPhone) });
-        res.set("Content-Type", "text/xml");
-        res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+        res.status(200).json({ success: true });
         return;
       }
       // Mark as processing immediately (before AI call)
@@ -14305,12 +14686,14 @@ exports.labSmsWebhook = onRequest(
 
     logger.info("Lab SMS received", { from: maskPhone(fromPhone), bodyLength: body.length, numMedia });
 
-    // TwiML helper
-    const twiml = (message) => {
-      res.set("Content-Type", "text/xml");
-      res.status(200).send(
-        `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(message)}</Message></Response>`
-      );
+    // Telnyx reply helper — sends SMS via Telnyx API and acknowledges webhook
+    const reply = async (message) => {
+      try {
+        await sendLabSms(fromPhone, message);
+      } catch (smsErr) {
+        logger.error("Failed to send Telnyx reply", { to: maskPhone(fromPhone), error: smsErr.message });
+      }
+      res.status(200).json({ success: true });
     };
 
     // --- TCPA COMPLIANCE: Handle opt-out and help keywords ---
@@ -14329,13 +14712,13 @@ exports.labSmsWebhook = onRequest(
       } catch (optOutErr) {
         logger.error("Failed to record opt-out", { phone: maskPhone(fromPhone), error: optOutErr.message });
       }
-      // Twilio auto-handles STOP for toll-free/short codes, but we send confirmation anyway
-      twiml("You've been unsubscribed from Leadership Lab texts. Reply START to re-subscribe anytime.");
+      // With Telnyx, STOP opt-outs are handled by the carrier automatically, but we still send confirmation
+      await reply("You've been unsubscribed from Leadership Lab texts. Reply START to re-subscribe anytime.");
       return;
     }
 
     if (["HELP", "INFO"].includes(upperBody)) {
-      twiml("Leadership Lab \u2014 AI leadership coaching via text. Reply STOP to unsubscribe. For support, contact your facilitator or email support@leaderreps.com.");
+      await reply("Leadership Lab \u2014 AI leadership coaching via text. Reply STOP to unsubscribe. For support, contact your facilitator or email support@leaderreps.com.");
       return;
     }
 
@@ -14353,7 +14736,7 @@ exports.labSmsWebhook = onRequest(
       } catch (startErr) {
         logger.error("Failed to record re-subscribe", { phone: maskPhone(fromPhone), error: startErr.message });
       }
-      twiml("Welcome back! You're re-subscribed to Leadership Lab. Your coach is here whenever you need.");
+      await reply("Welcome back! You're re-subscribed to Leadership Lab. Your coach is here whenever you need.");
       return;
     }
 
@@ -14373,7 +14756,7 @@ exports.labSmsWebhook = onRequest(
       } catch (engErr) {
         logger.error("Failed to update engagement level", { phone: maskPhone(fromPhone), error: engErr.message });
       }
-      twiml(`Got it — switched to ${upperBody.toLowerCase()} mode (${descMap[upperBody]}). You can change anytime by texting LIGHT, MEDIUM, or HEAVY.`);
+      await reply(`Got it — switched to ${upperBody.toLowerCase()} mode (${descMap[upperBody]}). You can change anytime by texting LIGHT, MEDIUM, or HEAVY.`);
       return;
     }
 
@@ -14382,7 +14765,7 @@ exports.labSmsWebhook = onRequest(
       const user = await lookupLabUserByPhone(fromPhone);
 
       if (!user) {
-        twiml("Hey — this number isn't enrolled in Leadership Lab yet. If you think this is a mistake, reach out to your facilitator.");
+        await reply("Hey — this number isn't enrolled in Leadership Lab yet. If you think this is a mistake, reach out to your facilitator.");
         return;
       }
 
@@ -14392,11 +14775,11 @@ exports.labSmsWebhook = onRequest(
       let messageText = body;
       let isVoiceMemo = false;
       if (numMedia > 0) {
-        const mediaType = req.body.MediaContentType0 || "";
+        const mediaType = payload?.media?.[0]?.content_type || "";
         if (mediaType.startsWith("audio/")) {
           // Voice memo — transcribe via Gemini
           try {
-            const mediaUrl = req.body.MediaUrl0;
+            const mediaUrl = payload?.media?.[0]?.url;
             const transcription = await transcribeVoiceMemo(mediaUrl, mediaType);
             // Use transcription as the message (append to any accompanying text)
             messageText = body
@@ -14408,7 +14791,7 @@ exports.labSmsWebhook = onRequest(
             logger.warn("Voice memo transcription failed", { uid, error: transcribeErr.message });
             // Graceful fallback — let them know we heard them
             if (!body) {
-              twiml("I got your voice memo but had trouble understanding it. Could you text me what you were saying?");
+              await reply("I got your voice memo but had trouble understanding it. Could you text me what you were saying?");
               return;
             }
             // If they sent text + voice, just process the text
@@ -14419,7 +14802,7 @@ exports.labSmsWebhook = onRequest(
       }
 
       if (!messageText) {
-        twiml("Got it. Text me anytime you want to talk leadership.");
+        await reply("Got it. Text me anytime you want to talk leadership.");
         return;
       }
 
@@ -14484,11 +14867,8 @@ exports.labSmsWebhook = onRequest(
             });
 
             // Reply with the simulation's first message (already sent via SMS by initiateSimulation)
-            // Return empty TwiML since the SMS was already sent
-            res.set("Content-Type", "text/xml");
-            res.status(200).send(
-              `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`
-            );
+            // Just acknowledge the webhook — Telnyx reply was already sent inside initiateSimulation
+            res.status(200).json({ success: true });
             return;
           }
         } catch (simErr) {
@@ -14557,15 +14937,15 @@ exports.labSmsWebhook = onRequest(
         }
       }
 
-      twiml(result.response);
+      await reply(result.response);
     } catch (error) {
       logger.error("labSmsWebhook error", error);
-      twiml("Something went wrong on my end. Try again in a minute.");
+      await reply("Something went wrong on my end. Try again in a minute.");
     }
   }
 );
 
-/** Escape XML special characters for TwiML */
+/** Escape XML special characters (kept for any legacy XML generation) */
 function escapeXml(str) {
   return str
     .replace(/&/g, "&amp;")

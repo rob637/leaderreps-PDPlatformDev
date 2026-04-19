@@ -14,6 +14,7 @@ import {
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { NoWidgetsEnabled, TabButton } from '../ui';
+import { generateGoogleCalendarUrl } from '../../services/calendarUtils';
 
 // Helper to get derived session type for Open Gym variants
 const getDerivedSessionType = (sessionTitle, sessionType) => {
@@ -283,12 +284,25 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
             </div>
             
             {isRegistered ? (
-              <button 
-                onClick={() => onCancel(session)}
-                className="px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 transition-colors"
-              >
-                Cancel
-              </button>
+              <div className="flex items-center gap-2">
+                {session.zoomLink && (
+                  <a
+                    href={session.zoomLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 text-xs font-bold text-white bg-corporate-teal rounded hover:bg-teal-700 transition-colors flex items-center gap-1"
+                  >
+                    <Video className="w-3 h-3" />
+                    Join Meet
+                  </a>
+                )}
+                <button 
+                  onClick={() => onCancel(session)}
+                  className="px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             ) : (() => {
               const maxAttendees = session.maxAttendees || getDefaultMaxAttendees(session.sessionType);
               const isFull = (session.registrationCount || 0) >= maxAttendees;
@@ -306,14 +320,38 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
               );
             })()}
           </div>
+
+          {/* Calendar link — shown after registration */}
+          {isRegistered && (
+            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+              <a
+                href={generateGoogleCalendarUrl({
+                  title: `[LeaderReps] ${session.title}`,
+                  description: session.description,
+                  startDate: session.date,
+                  startTime: typeof session.time === 'string' ? session.time.replace(/(\d{1,2}):(\d{2})\s*(AM|PM)/i, (_, h, m, p) => {
+                    let hr = parseInt(h);
+                    if (p.toUpperCase() === 'PM' && hr !== 12) hr += 12;
+                    if (p.toUpperCase() === 'AM' && hr === 12) hr = 0;
+                    return `${String(hr).padStart(2, '0')}:${m}`;
+                  }) : session.time,
+                  durationMinutes: session.durationMinutes || 60,
+                  meetLink: session.zoomLink
+                })}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-corporate-teal hover:text-teal-700 font-medium"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                Add to Google Calendar
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
-
-// ============================================
-// ON-DEMAND COACHING SECTION
 // ============================================
 const OnDemandSection = ({ navigate }) => (
   <div className="space-y-6">
@@ -487,6 +525,39 @@ const MyCoachingSection = ({ registrations = [], sessions = [], pastSessions = [
           </div>
         </div>
         
+        {/* Join + Calendar actions — always shown for scheduled sessions */}
+        {(registration.status || '').toLowerCase() === 'registered' && (
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex flex-wrap gap-2">
+            {session?.zoomLink && (
+              <a
+                href={session.zoomLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-corporate-teal text-white text-xs font-bold rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                <Video className="w-3.5 h-3.5" />
+                Join Meet
+              </a>
+            )}
+            <a
+              href={generateGoogleCalendarUrl({
+                title: `[LeaderReps] ${registration.sessionTitle || session?.title || 'Coaching Session'}`,
+                description: session?.description || '',
+                startDate: registration.sessionDate,
+                startTime: registration.sessionTime,
+                durationMinutes: session?.durationMinutes || 60,
+                meetLink: session?.zoomLink
+              })}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-lg border border-blue-200 dark:border-blue-700 hover:bg-blue-100 transition-colors"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              Add to Calendar
+            </a>
+          </div>
+        )}
+
         {/* Progress indicator for certification flow */}
         {registration.coachingItemId && ((() => {
           const status = (registration.status || '').toLowerCase();
