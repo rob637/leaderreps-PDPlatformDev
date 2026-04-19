@@ -377,7 +377,12 @@ const CommunityHub = () => {
   const isRegistered = (sessionId) => registeredIds.has(sessionId);
 
   const handleRegister = async (session) => {
-    await registerForSession(session);
+    const result = await registerForSession(session);
+    if (result && result.success === false) {
+      alert(result.error || 'Failed to register. Please try again.');
+      return;
+    }
+    alert("You're registered! A confirmation email has been sent to you with the Google Meet link and a calendar invite.");
   };
 
   const handleCancel = async (sessionId) => {

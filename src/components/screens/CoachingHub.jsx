@@ -967,7 +967,9 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
     
     // Success feedback
     if (isExclusiveSession && existingRegistration) {
-      alert('Session switched! You will receive a confirmation email.');
+      alert('Session switched! A confirmation email has been sent to you with the Google Meet link and a calendar invite.');
+    } else {
+      alert("You're registered! A confirmation email has been sent to you with the Google Meet link and a calendar invite.");
     }
   };
 
