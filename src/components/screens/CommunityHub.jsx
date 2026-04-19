@@ -211,8 +211,8 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
 };
 // ============================================
 const MyEventsSection = ({ registrations = [], sessions = [], onCancel, navigate }) => {
-  const activeRegistrations = registrations.filter(r => r.status !== 'CANCELLED' && r.status !== 'NO_SHOW');
-  const scheduledRegistrations = activeRegistrations.filter(r => r.status === 'REGISTERED');
+  const activeRegistrations = registrations.filter(r => r.status !== 'cancelled' && r.status !== 'no_show');
+  const scheduledRegistrations = activeRegistrations.filter(r => r.status === 'registered');
   const attendedRegistrations = activeRegistrations.filter(r => r.status === 'ATTENDED');
   const completedRegistrations = activeRegistrations.filter(r => r.status === 'COMPLETED');
 
@@ -245,7 +245,7 @@ const MyEventsSection = ({ registrations = [], sessions = [], onCancel, navigate
           </div>
           <StatusBadge status={registration.status} />
         </div>
-        {registration.status === 'REGISTERED' && (
+        {registration.status === 'registered' && (
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex flex-wrap gap-2">
             {(session?.zoomLink) && (
               <a
@@ -373,7 +373,7 @@ const CommunityHub = () => {
   }, [sessions]);
 
   // Registration check
-  const registeredIds = new Set((registrations || []).filter(r => r.status !== 'CANCELLED').map(r => r.sessionId));
+  const registeredIds = new Set((registrations || []).filter(r => r.status !== 'cancelled').map(r => r.sessionId));
   const isRegistered = (sessionId) => registeredIds.has(sessionId);
 
   const handleRegister = async (session) => {
@@ -416,7 +416,7 @@ const CommunityHub = () => {
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto">
           <div className="flex">
             {isFeatureEnabled('community-my-registrations') && (
-              <TabButton active={activeTab === 'my'} onClick={() => setActiveTab('my')} icon={UserCheck} label="My Events" badge={(registrations || []).filter(r => r.status !== 'CANCELLED' && r.status !== 'NO_SHOW').length} />
+              <TabButton active={activeTab === 'my'} onClick={() => setActiveTab('my')} icon={UserCheck} label="My Events" badge={(registrations || []).filter(r => r.status !== 'cancelled' && r.status !== 'no_show').length} />
             )}
             {isFeatureEnabled('community-upcoming-sessions') && (
               <TabButton active={activeTab === 'browse'} onClick={() => setActiveTab('browse')} icon={Calendar} label="Browse Events" badge={upcomingSessions.length} />
