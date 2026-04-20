@@ -48,7 +48,7 @@ export const useCRMNavigation = () => {
 // Navigation items
 const NAV_ITEMS = [
   { key: 'prospects', icon: Users, label: 'Prospects' },
-  { key: 'apollo', icon: Sparkles, label: 'Apollo Search' },
+  { key: 'apollo', icon: Sparkles, label: 'Jeff Search' },
   { key: 'outreach', icon: Mail, label: 'Outreach' },
   { key: 'activities', icon: Activity, label: 'Activities' },
   { key: 'analytics', icon: BarChart3, label: 'Analytics' },

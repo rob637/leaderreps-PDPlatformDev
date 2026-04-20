@@ -15,6 +15,76 @@ const formatCalendarDate = (date) => {
 };
 
 /**
+ * Check if a URL is a valid Google Meet link.
+ */
+export const isMeetLink = (url) => {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === 'meet.google.com';
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Extract a Google Meet URL from a pasted string.
+ * Handles plain URLs and the full "Copy joining info" block from Google Calendar.
+ * Returns the cleaned URL, or the original string if no Meet link is found.
+ */
+export const extractMeetLink = (text) => {
+  if (!text) return '';
+  const trimmed = text.trim();
+  // Already a clean meet URL
+  if (isMeetLink(trimmed)) return trimmed;
+  // Scan for a meet.google.com URL anywhere in the pasted block
+  const match = trimmed.match(/https:\/\/meet\.google\.com\/[a-z0-9-]+/i);
+  return match ? match[0] : trimmed;
+};
+
+/**
+ * Generate Google Calendar event-creation URL for facilitators.
+ * Pre-fills session details so the facilitator can add Meet conferencing from Calendar,
+ * copy the Meet URL, and paste it back into the session form.
+ */
+export const generateFacilitatorCalendarUrl = ({
+  title,
+  description,
+  startDate,
+  startTime,
+  durationMinutes = 60,
+  meetLink
+}) => {
+  // Parse YYYY-MM-DD as local date to avoid timezone shift
+  const parts = (startDate || '').split('-');
+  const base = parts.length === 3
+    ? new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]))
+    : new Date(startDate || Date.now());
+
+  if (startTime) {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    base.setHours(hours, minutes, 0, 0);
+  }
+
+  const end = new Date(base.getTime() + durationMinutes * 60 * 1000);
+
+  const details = [
+    description || '',
+    meetLink ? `\nGoogle Meet: ${meetLink}` : ''
+  ].filter(Boolean).join('').trim();
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title || 'LeaderReps Session',
+    dates: `${formatCalendarDate(base)}/${formatCalendarDate(end)}`,
+    details,
+    location: meetLink || 'Google Meet'
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+};
+
+/**
  * Generate Google Calendar URL for an event
  */
 export const generateGoogleCalendarUrl = ({
@@ -24,7 +94,8 @@ export const generateGoogleCalendarUrl = ({
   startDate,
   endDate,
   startTime,
-  durationMinutes = 60
+  durationMinutes = 60,
+  meetLink
 }) => {
   // Parse date and time
   let start = startDate?.toDate?.() || new Date(startDate);
@@ -35,12 +106,17 @@ export const generateGoogleCalendarUrl = ({
   
   // Calculate end time
   const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+
+  const details = [
+    description || '',
+    meetLink ? `\nJoin Google Meet: ${meetLink}` : ''
+  ].filter(Boolean).join('').trim();
   
   const params = new URLSearchParams({
     action: 'TEMPLATE',
     text: title,
-    details: description || '',
-    location: location || '',
+    details,
+    location: meetLink || location || '',
     dates: `${formatCalendarDate(start)}/${formatCalendarDate(end)}`
   });
   
@@ -143,13 +219,15 @@ export const downloadICSFile = (eventData, filename = 'event.ics') => {
  * Returns object with Google, Outlook, and ICS download links
  */
 export const generateSessionCalendarLinks = (session, registration) => {
+  const meetLink = session.zoomLink || session.meetLink || '';
   const eventData = {
     title: `[LeaderReps] ${session.title} - ${registration.userName || 'Participant'}`,
     description: `Coaching session with ${registration.userName || registration.userEmail}\n\nSession Type: ${session.sessionType || 'Coaching'}\nParticipant Email: ${registration.userEmail}\n\nMilestone: ${registration.coachingItemId || 'N/A'}`,
-    location: session.location || 'Virtual',
+    location: meetLink || session.location || 'Virtual',
     startDate: session.date,
     startTime: session.time,
     durationMinutes: session.durationMinutes || 60,
+    meetLink,
     uid: `${session.id}-${registration.userId}@leaderreps.com`
   };
   
@@ -234,6 +312,8 @@ This is an automated notification from LeaderReps.
 };
 
 export default {
+  isMeetLink,
+  generateFacilitatorCalendarUrl,
   generateGoogleCalendarUrl,
   generateOutlookCalendarUrl,
   generateICSContent,

@@ -128,6 +128,8 @@ export const useCommunityRegistrations = () => {
         sessionDate: session.date || null,
         sessionTime: session.time || null,
         host: session.host || null,
+        hostEmail: session.hostEmail || null, // For host notifications
+        zoomLink: session.zoomLink || null, // For calendar invites and email
         topicFocus: session.topicFocus || session.topics || [],
         
         // Additional metadata (e.g. communityItemId from dev plan)

@@ -213,6 +213,7 @@ const SessionPickerModal = ({
       });
       
       if (result.success) {
+        alert("You're registered! A confirmation email has been sent to you with the Google Meet link and a calendar invite.");
         onRegister?.(session);
       } else {
         alert(result.error || 'Failed to register');

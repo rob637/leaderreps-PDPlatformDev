@@ -53,6 +53,7 @@ import {
   SESSION_TYPES,
   SESSION_STATUS
 } from '../../data/Constants';
+import { generateFacilitatorCalendarUrl, isMeetLink, extractMeetLink } from '../../services/calendarUtils';
 
 // Cohort access modes
 const COHORT_ACCESS = {
@@ -377,6 +378,14 @@ const SessionManager = () => {
     if (hasRecurrence && !editingSession.endDate) {
       alert('Please specify an End Date for recurring sessions.');
       return;
+    }
+
+    // Warn if no meeting link is set
+    if (!editingSession.zoomLink) {
+      const proceed = window.confirm(
+        'No Google Meet link has been set for this session.\n\nParticipants will not have a link to join. Continue saving without a meeting link?'
+      );
+      if (!proceed) return;
     }
 
     try {
@@ -1192,19 +1201,77 @@ const SessionEditForm = ({ session, setSession, isNew, cohorts, onSave, onCancel
           />
         </div>
         
-        {/* Zoom Link */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-            <Video className="w-4 h-4 inline mr-1" />
-            Zoom/Meeting Link
+        {/* Google Meet Link */}
+        <div className="md:col-span-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+            <Video className="w-4 h-4" />
+            Google Meet Link
+            {!session.zoomLink && (
+              <span className="text-xs font-normal text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-700">
+                Required
+              </span>
+            )}
+            {isMeetLink(session.zoomLink) && (
+              <span className="text-xs font-normal text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full border border-green-200 dark:border-green-700">
+                ✓ Meet linked
+              </span>
+            )}
           </label>
-          <input
-            type="url"
-            value={session.zoomLink || ''}
-            onChange={(e) => setSession({ ...session, zoomLink: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal"
-            placeholder="https://zoom.us/j/..."
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={session.zoomLink || ''}
+              onChange={(e) => setSession({ ...session, zoomLink: e.target.value })}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pasted = e.clipboardData.getData('text');
+                setSession({ ...session, zoomLink: extractMeetLink(pasted) });
+              }}
+              className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal text-sm"
+              placeholder="Paste Meet link or full Google Calendar joining info"
+            />
+            {session.zoomLink && (
+              <a
+                href={session.zoomLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-2 bg-corporate-teal text-white rounded-lg hover:bg-opacity-90 transition-colors text-sm font-medium whitespace-nowrap"
+              >
+                <Video className="w-3.5 h-3.5" />
+                Join
+              </a>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <a
+              href={generateFacilitatorCalendarUrl({
+                title: session.title || 'New Coaching Session',
+                description: session.description,
+                startDate: session.date,
+                startTime: session.time,
+                durationMinutes: session.durationMinutes || 60,
+                meetLink: session.zoomLink
+              })}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              Create in Google Calendar
+            </a>
+            <a
+              href="https://meet.new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg border border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+            >
+              <Video className="w-3.5 h-3.5" />
+              New Instant Meet
+            </a>
+          </div>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">
+            Start a Meet or create a Calendar event, then paste the meet.google.com URL above.
+          </p>
         </div>
         
         {/* Replay URL */}

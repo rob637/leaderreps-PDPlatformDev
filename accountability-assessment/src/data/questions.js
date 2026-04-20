@@ -1,390 +1,154 @@
-/**
- * Accountability Assessment Questions
- * 
- * Designed to assess 5 core accountability dimensions:
- * 1. Ownership Mindset - Taking full responsibility for outcomes
- * 2. Commitment Reliability - Following through on promises and deadlines
- * 3. Transparent Communication - Honest, proactive updates on progress/challenges
- * 4. Standards & Expectations - Setting and maintaining high performance standards
- * 5. Feedback & Growth - Giving/receiving feedback, continuous improvement
- */
+export const ASSESSMENT_TITLE =
+  "How Strong Is Your Team's Accountability System?";
 
-export const ACCOUNTABILITY_DIMENSIONS = {
-  ownership: {
-    id: 'ownership',
-    name: 'Ownership Mindset',
-    shortName: 'Owner',
-    icon: '🎯',
-    color: '#E04E1B', // Orange (LeaderReps brand)
-    description: 'You take full responsibility for outcomes—successes AND failures. You never pass blame or make excuses.',
-    strengths: ['Takes initiative', 'Accepts responsibility', 'Solves problems proactively', 'Leads by example'],
-    growth: ['May take on too much', 'Can be hard on yourself'],
-  },
-  reliability: {
-    id: 'reliability',
-    name: 'Commitment Reliability',
-    shortName: 'Reliable',
-    icon: '✅',
-    color: '#47A88D', // Teal (LeaderReps brand)
-    description: 'When you commit, you deliver. People know they can count on you to do what you say.',
-    strengths: ['Meets deadlines', 'Keeps promises', 'Consistent follow-through', 'Builds trust'],
-    growth: ['May over-commit', 'Can struggle to say no'],
-  },
-  transparency: {
-    id: 'transparency',
-    name: 'Transparent Communication',
-    shortName: 'Open',
-    icon: '🔍',
-    color: '#06B6D4', // Cyan
-    description: 'You proactively share progress, challenges, and mistakes. No surprises, no hidden agendas.',
-    strengths: ['Proactive updates', 'Honest about challenges', 'Builds psychological safety', 'Earns trust through openness'],
-    growth: ['May overshare', 'Can create unnecessary worry'],
-  },
-  standards: {
-    id: 'standards',
-    name: 'Standards & Expectations',
-    shortName: 'Standard-Setter',
-    icon: '📏',
-    color: '#8B5CF6', // Purple
-    description: 'You set clear, high expectations—for yourself and others. Mediocrity is not acceptable.',
-    strengths: ['Clear expectations', 'High performance standards', 'Quality-focused', 'Drives excellence'],
-    growth: ['May seem demanding', 'Can be perceived as perfectionist'],
-  },
-  feedback: {
-    id: 'feedback',
-    name: 'Feedback & Growth',
-    shortName: 'Coach',
-    icon: '💪',
-    color: '#10B981', // Green
-    description: 'You give direct feedback and welcome it in return. You see accountability as a growth tool, not punishment.',
-    strengths: ['Gives constructive feedback', 'Receives feedback well', 'Develops others', 'Continuous improvement'],
-    growth: ['Feedback delivery can sting', 'May push too hard for growth'],
-  },
-};
+export const START_ASSESSMENT_URL = 'https://leaderreps-accountability.web.app';
 
 export const ASSESSMENT_QUESTIONS = [
-  // SECTION 1: Leadership Scenarios (4 questions)
   {
-    id: 'scenario_1',
-    type: 'scenario',
-    section: 1,
-    question: "A project you led missed its deadline due to multiple factors including your delayed decision-making. How do you respond?",
-    options: [
-      { id: 'a', text: "Acknowledge your role first, then work with the team to fix it", scores: { ownership: 3 } },
-      { id: 'b', text: "Immediately notify stakeholders and reset expectations transparently", scores: { transparency: 3 } },
-      { id: 'c', text: "Analyze what happened and establish clearer checkpoints going forward", scores: { standards: 2, reliability: 1 } },
-      { id: 'd', text: "Have honest conversations with team members about what could improve", scores: { feedback: 2, transparency: 1 } },
-    ],
+    id: 'shared-understanding',
+    shortLabel: 'Shared Understanding',
+    prompt:
+      "If you stopped your direct report right now and asked, \"What does success look like for your #1 priority?\", would their answer match yours?",
+    ifYes:
+      'Strong foundation. Shared expectations reduce friction before it starts. This is the bedrock of accountability.',
+    ifNotYet:
+      "When the definition of success lives only in your head, your team cannot hit a target they cannot see. This is the most common source of rework and missed expectations. The fix is not a longer explanation. It is a shared definition of success before work starts.",
   },
   {
-    id: 'scenario_2',
-    type: 'scenario',
-    section: 2,
-    question: "A team member consistently delivers work that's 'good enough' but not up to the standards you've set. What do you do?",
-    options: [
-      { id: 'a', text: "Have a direct conversation about the gap between current and expected performance", scores: { feedback: 3 } },
-      { id: 'b', text: "Review whether the standards were clear and communicated properly", scores: { standards: 2, ownership: 1 } },
-      { id: 'c', text: "Document specific examples and create an improvement plan with deadlines", scores: { reliability: 2, standards: 1 } },
-      { id: 'd', text: "Share openly how this impacts the team and ask what support they need", scores: { transparency: 2, feedback: 1 } },
-    ],
+    id: 'ownership-language',
+    shortLabel: 'Ownership Language',
+    prompt:
+      "When assigning work, do you require clear ownership language from your direct report? \"I'll have this done by Friday\" instead of \"I'm on it\" or \"I'll try\"?",
+    ifYes:
+      'Ownership language locks in commitment and makes accountability explicit. You are making it easy for people to be accountable and hard to slide through on vague agreements.',
+    ifNotYet:
+      '"I\'ll get to it" is not a commitment, it is a placeholder. Every time you accept vague language, you take ownership back. The fix is simple: make the ask explicit and require an ownership claim.',
   },
   {
-    id: 'scenario_3',
-    type: 'scenario',
-    section: 1,
-    question: "You realize you can't deliver on a commitment you made two weeks ago. What's your first move?",
-    options: [
-      { id: 'a', text: "Immediately communicate the delay and propose a new realistic timeline", scores: { transparency: 3 } },
-      { id: 'b', text: "Take ownership of the miss and ask for help to get back on track", scores: { ownership: 2, feedback: 1 } },
-      { id: 'c', text: "Reassess your commitments and build in buffers going forward", scores: { reliability: 3 } },
-      { id: 'd', text: "Reflect on what caused the slip and create systems to prevent it", scores: { standards: 2, ownership: 1 } },
-    ],
+    id: 'ownership-discipline',
+    shortLabel: 'Ownership Discipline',
+    prompt:
+      'Do you keep ownership with your direct report, even when it would be faster to step in and do the work yourself?',
+    ifYes:
+      'Keeping ownership with your team builds their competence and your capacity. You are doing what a leader should do, holding the line even when it is uncomfortable.',
+    ifNotYet:
+      'Stepping in feels efficient. It is not. Every time you take work back, you signal that you do not trust the handoff and you make yourself the bottleneck. This one compounds fast.',
   },
   {
-    id: 'scenario_4',
-    type: 'scenario',
-    section: 1,
-    question: "Your team knows about a problem but no one wants to bring it up with leadership. How do you handle it?",
-    options: [
-      { id: 'a', text: "Create a safe space for honest conversation about the issue", scores: { transparency: 2, feedback: 1 } },
-      { id: 'b', text: "Model vulnerability by sharing your own observations and concerns first", scores: { ownership: 3 } },
-      { id: 'c', text: "Establish an expectation that problems are raised early, not hidden", scores: { standards: 3 } },
-      { id: 'd', text: "Follow up individually to understand the root cause of the silence", scores: { feedback: 2, transparency: 1 } },
-    ],
-  },
-
-  // SECTION 2: Self-Assessment (5 questions - rate 1-5)
-  {
-    id: 'self_1',
-    type: 'rating',
-    section: 2,
-    question: "When something goes wrong on my watch, I immediately own it—even when others contributed to the problem.",
-    dimension: 'ownership',
+    id: 'timely-feedback',
+    shortLabel: 'Timely Feedback',
+    prompt:
+      'The last few times something was off, did you address it soon after you noticed, ideally within 24 hours?',
+    note: "❗ Softening it significantly or letting it go counts as a 'Not yet.'",
+    ifYes:
+      'Addressing issues quickly signals that standards are real. It also keeps small problems from becoming big ones.',
+    ifNotYet:
+      'Delayed feedback often feels kinder in the moment. It rarely is. The longer you wait, the more the team learns that standards are flexible, and the harder the conversation becomes when you finally have it.',
   },
   {
-    id: 'self_2',
-    type: 'rating',
-    section: 2,
-    question: "People know they can count on me to do exactly what I said I would do.",
-    dimension: 'reliability',
-  },
-  {
-    id: 'self_3',
-    type: 'rating',
-    section: 2,
-    question: "I proactively share bad news and challenges rather than waiting to be asked.",
-    dimension: 'transparency',
-  },
-  {
-    id: 'self_4',
-    type: 'rating',
-    section: 2,
-    question: "I set clear expectations and don't accept 'good enough' when excellence is achievable.",
-    dimension: 'standards',
-  },
-  {
-    id: 'self_5',
-    type: 'rating',
-    section: 2,
-    question: "I give direct, honest feedback even when it's uncomfortable—and I actively seek feedback on myself.",
-    dimension: 'feedback',
-  },
-
-  // SECTION 3: Additional Assessment (3 questions)
-  {
-    id: 'behavior_1',
-    type: 'rating',
-    section: 2,
-    question: "When I commit to a deadline, I treat it as a promise—not a rough estimate.",
-    dimension: 'reliability',
-  },
-  {
-    id: 'behavior_2',
-    type: 'rating',
-    section: 2,
-    question: "I never blame others, circumstances, or 'the system' for outcomes I could have influenced.",
-    dimension: 'ownership',
-  },
-  {
-    id: 'behavior_3',
-    type: 'rating',
-    section: 2,
-    question: "I address accountability gaps quickly rather than hoping they'll resolve themselves.",
-    dimension: 'feedback',
-  },
-
-  // SECTION 4: Energy & Preference (2 questions)
-  {
-    id: 'energy_1',
-    type: 'ranking',
-    section: 3,
-    question: "Which accountability behaviors come most naturally to you? (Rank your top 3)",
-    options: [
-      { id: 'ownership', text: "Taking full ownership of outcomes, win or lose", emoji: "🎯" },
-      { id: 'reliability', text: "Following through on every commitment I make", emoji: "✅" },
-      { id: 'transparency', text: "Being upfront about progress, challenges, and mistakes", emoji: "🔍" },
-      { id: 'standards', text: "Setting and maintaining high performance standards", emoji: "📏" },
-      { id: 'feedback', text: "Giving and receiving direct, honest feedback", emoji: "💪" },
-    ],
-  },
-  {
-    id: 'challenge_1',
-    type: 'multi-select',
-    section: 3,
-    question: "Which accountability areas do you most want to strengthen? (Select up to 2)",
-    maxSelect: 2,
-    options: [
-      { id: 'ownership', text: "Stop making excuses and own my results completely", emoji: "🎯" },
-      { id: 'reliability', text: "Become someone people can always count on", emoji: "✅" },
-      { id: 'transparency', text: "Be more proactive about sharing challenges and progress", emoji: "🔍" },
-      { id: 'standards', text: "Set clearer expectations and hold people to them", emoji: "📏" },
-      { id: 'feedback', text: "Get better at giving and receiving difficult feedback", emoji: "💪" },
-    ],
+    id: 'pattern-feedback',
+    shortLabel: 'Pattern Feedback vs. Task Feedback',
+    prompt:
+      'When a standard is missed more than once, do you address the underlying behavior pattern, not just the immediate task?',
+    ifYes:
+      'Pattern-level feedback changes behavior. Task-level feedback fixes the immediate problem. Both are valuable. You are having the right conversations at the right times.',
+    ifNotYet:
+      'If the same issue keeps coming back, it is not a task problem, it is a behavior pattern. Fixing the task without naming the pattern means you will have the same conversation again next month. The pattern is what needs to change, and you cannot change what you have not named.',
   },
 ];
 
-export const ACCOUNTABILITY_ARCHETYPES = {
-  'ownership-champion': {
-    name: 'The Ownership Champion',
-    tagline: 'Takes full responsibility, no excuses, no blame',
-    description: 'You embody the principle that leaders own outcomes—period. When things go wrong, you look in the mirror first. When things go right, you credit others. This mindset inspires trust and respect from everyone around you.',
-    famousLeaders: ['Jocko Willink', 'Angela Duckworth', 'Admiral William McRaven'],
-    superpower: 'Extreme ownership that transforms team culture',
-    leaderRepsPath: 'Building on your ownership strength, LeaderReps will help you cascade this mindset through your team while avoiding the trap of taking on too much.',
+export const SCORE_BANDS = {
+  '4-5': {
+    key: 'execution-engine',
+    label: 'Execution Engine',
+    kitTag: 'ASA 4-5',
+    headline: 'Your system is doing real work.',
+    summary:
+      'The system structure is holding, which means you have capacity to sharpen the edges. Too many managers carry their team\'s accountability on their own, stepping in when they should hold back, accepting vague commitments because it\'s faster, delaying feedback because the moment never feels quite right. You are not doing that. That means your team has something many teams do not: a system that carries some of the load so you do not have to.\n\nBelow, you’ll see all five questions with the full if yes / if not yet analysis.\n\nOne question worth sitting with as you read through the analysis: if your team took this quiz about you, would their answers match yours? The gap between how you see your system and how your team experiences it is where the most useful work lives.',
   },
-  'reliable-executor': {
-    name: 'The Reliable Executor',
-    tagline: 'When you commit, consider it done',
-    description: 'Your word is your bond. People know that when you say you\'ll do something, it\'s as good as done. This reliability creates a ripple effect—your consistency raises the bar for everyone.',
-    famousLeaders: ['Sheryl Sandberg', 'Tim Cook', 'Warren Buffett'],
-    superpower: 'Building trust through consistent follow-through',
-    leaderRepsPath: 'LeaderReps will help you teach your team to be equally reliable while ensuring you don\'t over-commit in your dedication to delivery.',
+  '2-3': {
+    key: 'leaky-system',
+    label: 'Leaky System',
+    kitTag: 'ASA 2-3',
+    headline: 'Your system is leaking in a few places.',
+    summary:
+      'You have a system, but it\'s leaking in a few places. The gaps probably show up as recurring issues, more follow-up than you want, or a nagging sense that accountability is inconsistent. These are fixable.\n\nYou\'re not starting from zero. Some of the system is already in place through the expectations you set, follow-up you do, or feedback you give.\n\nBut a few answers came back “not yet.” Those show your gaps, and in an accountability system, gaps compound. One unclear expectation leads to a missed handoff. One delayed piece of feedback becomes a pattern the team learns to expect. The load comes back to you.\n\nThese aren\'t character flaws. They\'re system gaps, and systems get fixed through practice. Below, you’ll see all five questions with the full if yes / if not yet analysis.\n\nStart with the not-yet answers that show up most in your actual work week. Not all of them at once. Start with the one that costs you the most time or energy when it\'s missing. One rep, repeated, until it\'s consistent.',
   },
-  'transparent-communicator': {
-    name: 'The Transparent Leader',
-    tagline: 'No surprises, no hidden agendas, just truth',
-    description: 'You believe that problems hidden are problems multiplied. Your proactive communication about challenges, progress, and even mistakes creates psychological safety and prevents expensive surprises.',
-    famousLeaders: ['Ray Dalio', 'Brené Brown', 'Kim Scott'],
-    superpower: 'Creating trust through radical honesty',
-    leaderRepsPath: 'LeaderReps will help you foster this same transparency in your team culture while teaching you to deliver hard truths with empathy.',
-  },
-  'standards-setter': {
-    name: 'The Standards Setter',
-    tagline: 'Excellence is the only acceptable outcome',
-    description: 'You don\'t accept mediocrity—from yourself or others. Your clear expectations and high standards drive performance that others thought impossible. You prove that what gets measured gets managed.',
-    famousLeaders: ['Steve Jobs', 'Indra Nooyi', 'Bill Belichick'],
-    superpower: 'Elevating performance through clear, high expectations',
-    leaderRepsPath: 'LeaderReps will help you set standards that inspire rather than intimidate, and build systems that make excellence sustainable.',
-  },
-  'accountability-coach': {
-    name: 'The Accountability Coach',
-    tagline: 'Develops others through direct feedback and growth',
-    description: 'You see accountability as a gift, not a punishment. Your willingness to have difficult conversations—and receive tough feedback yourself—accelerates growth for everyone. You build accountable people, not just accountable processes.',
-    famousLeaders: ['Bill Campbell', 'Pat Summitt', 'Marshall Goldsmith'],
-    superpower: 'Developing accountable leaders through coaching',
-    leaderRepsPath: 'LeaderReps will enhance your coaching skills with frameworks for accountability conversations that drive results without damaging relationships.',
-  },
-  'balanced-accountable': {
-    name: 'The Balanced Accountable Leader',
-    tagline: 'Strong across all accountability dimensions',
-    description: 'You demonstrate strong capability across the accountability spectrum—from ownership to follow-through to feedback. This balance makes you effective in any situation and a model for others to emulate.',
-    famousLeaders: ['Satya Nadella', 'Mary Barra', 'Alan Mulally'],
-    superpower: 'Comprehensive accountability that adapts to context',
-    leaderRepsPath: 'LeaderReps will help you systematically develop each dimension while teaching you to identify and close accountability gaps in your team.',
+  '0-1': {
+    key: 'system-not-yet-installed',
+    label: 'System Not Yet Installed',
+    kitTag: 'ASA 0-1',
+    headline: 'Your system needs a rebuild.',
+    summary:
+      'This isn\'t about how much you care or how hard you work. Many managers score exactly where you did. Not because they\'re bad at their jobs, but because nobody taught them how to build an accountability system.\n\nSo they do what feels natural: work harder, step in faster, over-explain. It works until it doesn\'t — because the load becomes unsustainable and the team never fully owns its work. That\'s not a people problem. It\'s a missing system.\n\nBelow, you’ll see all five questions with the full if yes / if not yet analysis.\n\nFind the “not yet” that costs you the most time or energy. One behavior, practiced consistently for two weeks, will do more than five behaviors practiced inconsistently. Build the system one rep at a time.',
   },
 };
 
-// Calculate results from answers
+const SCORE_LABELS_BY_KEY = {
+  'shared-understanding': 'Shared Understanding',
+  'ownership-language': 'Ownership Language',
+  'ownership-discipline': 'Ownership Discipline',
+  'timely-feedback': 'Timely Feedback',
+  'pattern-feedback': 'Pattern Feedback',
+};
+
+const getBandForYesCount = (yesCount) => {
+  if (yesCount >= 4) return SCORE_BANDS['4-5'];
+  if (yesCount >= 2) return SCORE_BANDS['2-3'];
+  return SCORE_BANDS['0-1'];
+};
+
 export const calculateResults = (answers) => {
-  const scores = {
-    ownership: 0,
-    reliability: 0,
-    transparency: 0,
-    standards: 0,
-    feedback: 0,
-  };
+  const answerMap = Object.fromEntries(
+    answers.map((entry) => [entry.questionId, entry.value]),
+  );
 
-  // Process each answer
-  for (const answer of answers) {
-    const question = ASSESSMENT_QUESTIONS.find(q => q.id === answer.questionId);
-    if (!question) continue;
+  const yesCount = ASSESSMENT_QUESTIONS.reduce(
+    (sum, question) => sum + (answerMap[question.id] === 'yes' ? 1 : 0),
+    0,
+  );
+  const totalQuestions = ASSESSMENT_QUESTIONS.length;
+  const notYetCount = totalQuestions - yesCount;
+  const scoreBand = getBandForYesCount(yesCount);
 
-    if (question.type === 'scenario') {
-      const selected = question.options.find(o => o.id === answer.value);
-      if (selected?.scores) {
-        for (const [dim, score] of Object.entries(selected.scores)) {
-          scores[dim] += score;
-        }
-      }
-    } else if (question.type === 'rating') {
-      scores[question.dimension] += answer.value; // 1-5 scale
-    } else if (question.type === 'ranking') {
-      // Top 3 ranking: 1st = 3 points, 2nd = 2 points, 3rd = 1 point
-      answer.value.forEach((dimId, index) => {
-        scores[dimId] += (3 - index);
-      });
-    } else if (question.type === 'multi-select') {
-      // Challenges selected = areas for growth (inverse of strength)
-      // We note these for the AI analysis but don't subtract
-    }
-  }
+  const questionResults = ASSESSMENT_QUESTIONS.map((question) => {
+    const answer = answerMap[question.id] === 'yes' ? 'yes' : 'not-yet';
+    return {
+      id: question.id,
+      shortLabel: question.shortLabel,
+      prompt: question.prompt,
+      note: question.note || '',
+      answer,
+      answerLabel: answer === 'yes' ? 'Yes' : 'Inconsistent / Not Yet',
+      ifYes: question.ifYes,
+      ifNotYet: question.ifNotYet,
+    };
+  });
 
-  // Normalize to percentages
-  const maxPossible = 18; // Rough max per dimension (adjusted for 5 dimensions)
-  const normalized = {};
-  
-  for (const [dim, score] of Object.entries(scores)) {
-    normalized[dim] = Math.min(100, Math.round((score / maxPossible) * 100));
-  }
-
-  // Calculate overall accountability score (weighted average)
-  const totalScore = Object.values(normalized).reduce((a, b) => a + b, 0);
-  const overallScore = Math.round(totalScore / 5);
-
-  // Find top 2 dimensions
-  const sorted = Object.entries(normalized)
-    .sort((a, b) => b[1] - a[1]);
-  
-  const [top1, top2] = sorted.slice(0, 2).map(([dim]) => dim);
-  
-  // Find bottom dimension (growth area)
-  const bottom = sorted[sorted.length - 1][0];
-
-  // Determine archetype based on top dimensions
-  let archetype;
-  if (top1 === 'ownership') archetype = 'ownership-champion';
-  else if (top1 === 'reliability') archetype = 'reliable-executor';
-  else if (top1 === 'transparency') archetype = 'transparent-communicator';
-  else if (top1 === 'standards') archetype = 'standards-setter';
-  else if (top1 === 'feedback') archetype = 'accountability-coach';
-  else archetype = 'balanced-accountable';
-
-  // Check for balanced leader (if scores are close)
-  const scoreValues = Object.values(normalized);
-  const maxScore = Math.max(...scoreValues);
-  const minScore = Math.min(...scoreValues);
-  if (maxScore - minScore < 15) {
-    archetype = 'balanced-accountable';
-  }
-
-  // Determine accountability maturity level
-  let maturityLevel;
-  let maturityDescription;
-  if (overallScore >= 80) {
-    maturityLevel = 'Exemplary';
-    maturityDescription = 'You model exceptional accountability. Focus on cascading this to your team.';
-  } else if (overallScore >= 65) {
-    maturityLevel = 'Strong';
-    maturityDescription = 'Your accountability is above average. A few targeted improvements will make you exceptional.';
-  } else if (overallScore >= 50) {
-    maturityLevel = 'Developing';
-    maturityDescription = 'You have solid foundations. Focused work on 1-2 areas will accelerate your growth.';
-  } else {
-    maturityLevel = 'Emerging';
-    maturityDescription = 'Accountability is a significant growth opportunity. The good news: this is learnable.';
-  }
+  const scores = Object.fromEntries(
+    questionResults.map((result) => [
+      SCORE_LABELS_BY_KEY[result.id],
+      result.answer === 'yes' ? 100 : 0,
+    ]),
+  );
 
   return {
-    scores: normalized,
-    sortedDimensions: sorted,
-    topDimensions: [top1, top2],
-    weakestDimension: bottom,
-    archetype,
-    archetypeData: ACCOUNTABILITY_ARCHETYPES[archetype],
-    overallScore,
-    maturityLevel,
-    maturityDescription,
+    totalQuestions,
+    yesCount,
+    notYetCount,
+    scoreBand:
+      yesCount >= 4 ? '4-5' : yesCount >= 2 ? '2-3' : '0-1',
+    scoreLabel: scoreBand.label,
+    headline: scoreBand.headline,
+    summary: scoreBand.summary,
+    archetype: scoreBand.key,
+    archetypeName: scoreBand.label,
+    kitTag: scoreBand.kitTag,
+    overallScore: Math.round((yesCount / totalQuestions) * 100),
+    questionResults,
+    scores,
   };
 };
 
-// Get growth recommendations based on weak dimension
-export const getGrowthRecommendations = (weakestDimension) => {
-  const recommendations = {
-    ownership: [
-      "Practice saying 'I own this' before explaining contributing factors",
-      "When things go wrong, list what YOU could have done differently first",
-      "End each week reviewing outcomes you influenced but didn't fully own",
-    ],
-    reliability: [
-      "Under-promise, over-deliver: add 20% buffer to every commitment",
-      "Create a single source of truth for all your commitments",
-      "Set up weekly reviews to proactively flag at-risk deliverables",
-    ],
-    transparency: [
-      "Implement 'no surprises'—share challenges within 24 hours of discovery",
-      "Start team meetings with 'what I'm struggling with this week'",
-      "Practice radical candor: care personally, challenge directly",
-    ],
-    standards: [
-      "Document your expectations explicitly—what 'good' and 'great' look like",
-      "Have a 'standards conversation' early in every project or relationship",
-      "Stop accepting 'good enough'—name it when you see it",
-    ],
-    feedback: [
-      "Schedule recurring 1:1s with a standing feedback agenda item",
-      "Practice receiving feedback with 'thank you' before explaining",
-      "Use the SBI model: Situation, Behavior, Impact for all feedback",
-    ],
-  };
-  return recommendations[weakestDimension] || recommendations.ownership;
-};
+export const getLinkedInShareText = () =>
+  "I took the Accountability System Pulse Check from LeaderReps. Find out how strong your team's accountability system really is in 3 minutes!";

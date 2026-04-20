@@ -194,7 +194,7 @@ export default function ApolloSearchPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100">Apollo Search</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100">Jeff Search</h1>
           <p className="text-slate-600 dark:text-slate-400 dark:text-slate-400">Find and import prospects from Apollo.io</p>
         </div>
         <div className="flex items-center gap-3">

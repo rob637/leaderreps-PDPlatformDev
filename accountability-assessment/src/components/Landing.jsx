@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Sparkles, Clock, Target, Award, ChevronRight, Users, TrendingUp, CheckCircle2, AlertTriangle, Shield } from 'lucide-react';
+import { ChevronRight, Clock3, ShieldCheck, Target } from 'lucide-react';
+import { ASSESSMENT_TITLE } from '../data/questions';
 
 const Landing = ({ onStart }) => {
   return (
@@ -14,7 +15,7 @@ const Landing = ({ onStart }) => {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img 
-              src="/logo-white.png" 
+              src="/logo-full.png" 
               alt="LeaderReps" 
               className="h-8 md:h-10"
             />
@@ -28,268 +29,65 @@ const Landing = ({ onStart }) => {
         </div>
       </header>
 
-      {/* Hero */}
-      <main className="flex-1 flex items-center justify-center px-4 py-8 md:py-12">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Badge */}
+      <main className="flex-1 flex items-center justify-center px-4 py-10">
+        <div className="max-w-3xl w-full">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-orange mb-8"
+            className="bg-white rounded-3xl border border-slate-200 p-6 md:p-10 shadow-xl"
           >
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium">AI-Powered Assessment</span>
-          </motion.div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#B84825]/10 text-[#B84825] text-sm font-semibold mb-6">
+              <ShieldCheck className="w-4 h-4" />
+              The Accountability System Pulse Check
+            </div>
 
-          {/* Main headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight"
-          >
-            How Accountable{' '}
-            <span className="gradient-text-orange">Are You, Really?</span>
-          </motion.h1>
+            <h1 className="text-3xl md:text-5xl font-bold text-[#002E47] leading-tight mb-4">
+              {ASSESSMENT_TITLE}
+              <span className="block text-[#B84825] mt-2">Take the 3-Minute Assessment</span>
+            </h1>
 
-          {/* Subheadline */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-lg md:text-xl text-white/70 mb-10 max-w-2xl mx-auto"
-          >
-            Discover your accountability strengths and blindspots in 5 minutes. Get personalized AI insights and a clear path to becoming the leader others can truly count on.
-          </motion.p>
+            <p className="text-slate-700 text-lg leading-relaxed mb-4">
+              When issues arise, it's tempting to blame your team: problems with attitude, urgency, follow-through. Sometimes that's true.
+            </p>
 
-          {/* CTA Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
+            <p className="text-slate-700 text-lg leading-relaxed mb-4">
+              But more often, the system is broken. And when the system breaks, even great teams produce inconsistent results.
+            </p>
+
+            <p className="text-slate-700 text-lg leading-relaxed mb-8">
+              Find out where your system is strong, and where it's leaking.
+            </p>
+
+            <div className="grid sm:grid-cols-3 gap-3 mb-8">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 flex items-center gap-2">
+                <Clock3 className="w-4 h-4 text-[#277A68]" />
+                3 minutes
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 flex items-center gap-2">
+                <Target className="w-4 h-4 text-[#277A68]" />
+                5 questions
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#277A68]" />
+                Instant score + analysis
+              </div>
+            </div>
+
             <button
               onClick={onStart}
-              className="group relative inline-flex items-center gap-3 px-8 py-4 bg-orange hover:bg-orange/90 text-white font-bold text-lg rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-orange/20 pulse-ring-orange"
+              className="group inline-flex items-center gap-2 rounded-xl px-6 py-4 text-white font-bold shadow-lg"
+              style={{ backgroundColor: '#B84825' }}
             >
-              <span>Take the Assessment</span>
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              Start the Pulse Check
+              <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition" />
             </button>
-          </motion.div>
-
-          {/* Trust indicators */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="flex flex-wrap items-center justify-center gap-6 md:gap-8 mt-10 text-white/50 text-sm"
-          >
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              <span>5 minutes</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Target className="w-4 h-4" />
-              <span>12 questions</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Award className="w-4 h-4" />
-              <span>Free forever</span>
-            </div>
           </motion.div>
         </div>
       </main>
 
-      {/* The Problem Section */}
-      <section className="px-4 py-12 md:py-16 bg-white/5">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-              The #1 Reason Teams Underperform
-            </h2>
-            <p className="text-white/60 max-w-2xl mx-auto">
-              It's not strategy. It's not talent. It's accountability gaps—and most leaders don't know where theirs are.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: <AlertTriangle className="w-6 h-6" />,
-                stat: '82%',
-                label: 'of leaders overestimate their accountability',
-                subtext: 'Gallup Research',
-              },
-              {
-                icon: <Users className="w-6 h-6" />,
-                stat: '3x',
-                label: 'more likely to hit goals with accountability systems',
-                subtext: 'American Society of Training',
-              },
-              {
-                icon: <TrendingUp className="w-6 h-6" />,
-                stat: '91%',
-                label: 'of high-performing teams cite accountability as key',
-                subtext: 'Partners In Leadership',
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={item.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="glass rounded-2xl p-6 text-center"
-              >
-                <div className="w-12 h-12 rounded-xl bg-orange/20 flex items-center justify-center mx-auto mb-4 text-orange">
-                  {item.icon}
-                </div>
-                <div className="text-4xl font-bold text-white mb-2">{item.stat}</div>
-                <p className="text-white/70 text-sm mb-2">{item.label}</p>
-                <p className="text-white/40 text-xs">{item.subtext}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* What you'll discover section */}
-      <section className="px-4 py-12 md:py-20">
-        <div className="max-w-5xl mx-auto">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-2xl md:text-3xl font-bold text-white text-center mb-12"
-          >
-            What You'll Discover
-          </motion.h2>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: <Shield className="w-6 h-6" />,
-                title: 'Your Accountability Profile',
-                description: 'See exactly where you excel and where you have blindspots across 5 core accountability dimensions.',
-              },
-              {
-                icon: <TrendingUp className="w-6 h-6" />,
-                title: 'Your Maturity Level',
-                description: 'Get an honest assessment of where you stand: Emerging, Developing, Strong, or Exemplary.',
-              },
-              {
-                icon: <CheckCircle2 className="w-6 h-6" />,
-                title: 'Your Growth Path',
-                description: 'Receive AI-generated recommendations tailored to your specific gaps and strengths.',
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="glass rounded-2xl p-6 text-center"
-              >
-                <div className="w-12 h-12 rounded-xl bg-teal/20 flex items-center justify-center mx-auto mb-4 text-teal">
-                  {item.icon}
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
-                <p className="text-white/60 text-sm">{item.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 5 Dimensions Preview */}
-      <section className="px-4 py-12 md:py-16 bg-white/5">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-              5 Dimensions of Accountability
-            </h2>
-            <p className="text-white/60 max-w-2xl mx-auto">
-              We measure the specific behaviors that separate accountable leaders from the rest.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-5 gap-4">
-            {[
-              { emoji: '🎯', name: 'Ownership', desc: 'Taking full responsibility' },
-              { emoji: '✅', name: 'Reliability', desc: 'Following through always' },
-              { emoji: '🔍', name: 'Transparency', desc: 'Proactive communication' },
-              { emoji: '📏', name: 'Standards', desc: 'Clear expectations' },
-              { emoji: '💪', name: 'Feedback', desc: 'Growth through honesty' },
-            ].map((dim, i) => (
-              <motion.div
-                key={dim.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="glass rounded-xl p-4 text-center"
-              >
-                <div className="text-3xl mb-2">{dim.emoji}</div>
-                <div className="font-semibold text-white text-sm mb-1">{dim.name}</div>
-                <div className="text-white/50 text-xs">{dim.desc}</div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="px-4 py-16 md:py-24">
-        <div className="max-w-3xl mx-auto text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-2xl md:text-4xl font-bold text-white mb-6"
-          >
-            Ready to Know Where You Stand?
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-white/60 mb-8 text-lg"
-          >
-            Join thousands of leaders who've discovered their accountability profile. Takes just 5 minutes.
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-          >
-            <button
-              onClick={onStart}
-              className="group relative inline-flex items-center gap-3 px-8 py-4 bg-orange hover:bg-orange/90 text-white font-bold text-lg rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-orange/20"
-            >
-              <span>Start Free Assessment</span>
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </motion.div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="p-6 text-center text-white/40 text-sm">
-        <p>© {new Date().getFullYear()} LeaderReps. Building accountable leaders.</p>
+        <p>© {new Date().getFullYear()} LeaderReps. All rights reserved.</p>
       </footer>
     </motion.div>
   );

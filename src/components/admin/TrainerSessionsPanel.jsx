@@ -6,7 +6,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Calendar, Clock, Users, Video, CheckCircle, AlertCircle,
   ChevronDown, ChevronUp, Search, Loader, User, UserCheck,
-  CalendarDays, Filter, ExternalLink, RefreshCw, Eye
+  CalendarDays, Filter, RefreshCw, Eye
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { Card } from '../ui';
@@ -20,6 +20,7 @@ import {
   SESSION_STATUS,
   REGISTRATION_STATUS
 } from '../../data/Constants';
+import { generateFacilitatorCalendarUrl } from '../../services/calendarUtils';
 
 // ============================================
 // SESSION TYPE CONFIG
@@ -181,19 +182,41 @@ const SessionCard = ({ session, registrations, expanded, onToggle }) => {
       {/* Expanded: Show Registrations */}
       {expanded && (
         <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4">
-          {session.zoomLink && (
-            <a 
-              href={session.zoomLink}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {session.zoomLink && (
+              <a
+                href={session.zoomLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-corporate-teal text-white text-sm rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                <Video className="w-4 h-4" />
+                Join Meet
+              </a>
+            )}
+            <a
+              href={generateFacilitatorCalendarUrl({
+                title: session.title,
+                description: session.description,
+                startDate: session.date,
+                startTime: session.time,
+                durationMinutes: session.durationMinutes || 60,
+                meetLink: session.zoomLink
+              })}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3 py-1.5 mb-4 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm rounded-lg border border-blue-200 dark:border-blue-700 hover:bg-blue-100 transition-colors"
             >
-              <Video className="w-4 h-4" />
-              Join Zoom
-              <ExternalLink className="w-3 h-3" />
+              <Calendar className="w-4 h-4" />
+              Add to Calendar
             </a>
-          )}
-          
+            {!session.zoomLink && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs rounded-lg border border-amber-200 dark:border-amber-700">
+                ⚠ No Meet link set
+              </span>
+            )}
+          </div>
+
           <h4 className="font-medium text-sm text-slate-700 dark:text-slate-200 mb-2">
             Registered Leaders ({registeredCount})
           </h4>

@@ -15,6 +15,7 @@ import { CommunityIcon } from '../icons';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { NoWidgetsEnabled, TabButton } from '../ui';
+import { generateGoogleCalendarUrl } from '../../services/calendarUtils';
 
 // ============================================
 // STATUS COMPONENTS
@@ -158,23 +159,60 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
               {session.spotsLeft !== undefined && <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {session.spotsLeft} spots</span>}
             </div>
             {isRegistered ? (
-              <button onClick={() => onCancel(session)} className="px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 transition-colors">Cancel</button>
+              <div className="flex items-center gap-2">
+                {session.zoomLink && (
+                  <a
+                    href={session.zoomLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 text-xs font-bold text-white bg-corporate-teal rounded hover:bg-teal-700 transition-colors flex items-center gap-1"
+                  >
+                    <Video className="w-3 h-3" />
+                    Join Meet
+                  </a>
+                )}
+                <button onClick={() => onCancel(session.id)} className="px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 transition-colors">Cancel</button>
+              </div>
             ) : (
               <button onClick={() => onRegister(session)} className="px-3 py-1.5 text-xs font-bold text-white bg-corporate-teal rounded hover:bg-teal-700 transition-colors">Register</button>
             )}
           </div>
+
+          {/* Calendar link — shown after registration */}
+          {isRegistered && (
+            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+              <a
+                href={generateGoogleCalendarUrl({
+                  title: `[LeaderReps] ${session.title}`,
+                  description: session.description,
+                  startDate: session.date,
+                  startTime: typeof session.time === 'string' ? session.time.replace(/(\d{1,2}):(\d{2})\s*(AM|PM)/i, (_, h, m, p) => {
+                    let hr = parseInt(h);
+                    if (p.toUpperCase() === 'PM' && hr !== 12) hr += 12;
+                    if (p.toUpperCase() === 'AM' && hr === 12) hr = 0;
+                    return `${String(hr).padStart(2, '0')}:${m}`;
+                  }) : session.time,
+                  durationMinutes: session.durationMinutes || 60,
+                  meetLink: session.zoomLink
+                })}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-corporate-teal hover:text-teal-700 font-medium"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                Add to Google Calendar
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
-
-// ============================================
-// MY EVENTS SECTION (like MyCoachingSection)
 // ============================================
 const MyEventsSection = ({ registrations = [], sessions = [], onCancel, navigate }) => {
-  const activeRegistrations = registrations.filter(r => r.status !== 'CANCELLED' && r.status !== 'NO_SHOW');
-  const scheduledRegistrations = activeRegistrations.filter(r => r.status === 'REGISTERED');
+  const activeRegistrations = registrations.filter(r => r.status !== 'cancelled' && r.status !== 'no_show');
+  const scheduledRegistrations = activeRegistrations.filter(r => r.status === 'registered');
   const attendedRegistrations = activeRegistrations.filter(r => r.status === 'ATTENDED');
   const completedRegistrations = activeRegistrations.filter(r => r.status === 'COMPLETED');
 
@@ -207,15 +245,43 @@ const MyEventsSection = ({ registrations = [], sessions = [], onCancel, navigate
           </div>
           <StatusBadge status={registration.status} />
         </div>
-        {registration.status === 'REGISTERED' && session?.meetingLink && isToday && (
-          <div className="mt-3 flex gap-2">
-            <a href={session.meetingLink} target="_blank" rel="noopener noreferrer" className="flex-1 py-2 bg-corporate-teal text-white text-center text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors">Join Event</a>
-            {onCancel && <button onClick={() => onCancel(registration.sessionId)} className="px-3 py-2 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 transition-colors">Cancel</button>}
-          </div>
-        )}
-        {registration.status === 'REGISTERED' && !isToday && onCancel && (
-          <div className="mt-3">
-            <button onClick={() => onCancel(registration.sessionId)} className="px-3 py-2 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 transition-colors">Cancel Registration</button>
+        {registration.status === 'registered' && (
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex flex-wrap gap-2">
+            {(session?.zoomLink) && (
+              <a
+                href={session.zoomLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-corporate-teal text-white text-xs font-bold rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                <Video className="w-3.5 h-3.5" />
+                {isToday ? 'Join Now' : 'Join Meet'}
+              </a>
+            )}
+            <a
+              href={generateGoogleCalendarUrl({
+                title: `[LeaderReps] ${registration.sessionTitle || session?.title || 'Community Event'}`,
+                description: session?.description || '',
+                startDate: registration.sessionDate,
+                startTime: registration.sessionTime,
+                durationMinutes: session?.durationMinutes || 60,
+                meetLink: session?.zoomLink
+              })}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-lg border border-blue-200 dark:border-blue-700 hover:bg-blue-100 transition-colors"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              Add to Calendar
+            </a>
+            {onCancel && (
+              <button
+                onClick={() => onCancel(registration.sessionId)}
+                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -307,11 +373,16 @@ const CommunityHub = () => {
   }, [sessions]);
 
   // Registration check
-  const registeredIds = new Set((registrations || []).filter(r => r.status !== 'CANCELLED').map(r => r.sessionId));
+  const registeredIds = new Set((registrations || []).filter(r => r.status !== 'cancelled').map(r => r.sessionId));
   const isRegistered = (sessionId) => registeredIds.has(sessionId);
 
   const handleRegister = async (session) => {
-    await registerForSession(session);
+    const result = await registerForSession(session);
+    if (result && result.success === false) {
+      alert(result.error || 'Failed to register. Please try again.');
+      return;
+    }
+    alert("You're registered! A confirmation email has been sent to you with the Google Meet link and a calendar invite.");
   };
 
   const handleCancel = async (sessionId) => {
@@ -350,7 +421,7 @@ const CommunityHub = () => {
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto">
           <div className="flex">
             {isFeatureEnabled('community-my-registrations') && (
-              <TabButton active={activeTab === 'my'} onClick={() => setActiveTab('my')} icon={UserCheck} label="My Events" badge={(registrations || []).filter(r => r.status !== 'CANCELLED' && r.status !== 'NO_SHOW').length} />
+              <TabButton active={activeTab === 'my'} onClick={() => setActiveTab('my')} icon={UserCheck} label="My Events" badge={(registrations || []).filter(r => r.status !== 'cancelled' && r.status !== 'no_show').length} />
             )}
             {isFeatureEnabled('community-upcoming-sessions') && (
               <TabButton active={activeTab === 'browse'} onClick={() => setActiveTab('browse')} icon={Calendar} label="Browse Events" badge={upcomingSessions.length} />

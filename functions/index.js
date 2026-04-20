@@ -23,7 +23,7 @@ const admin = require("firebase-admin");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Anthropic = require("@anthropic-ai/sdk");
 const nodemailer = require("nodemailer");
-const twilio = require("twilio");
+const Telnyx = require("telnyx");
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
@@ -138,7 +138,25 @@ const generateEmailHtml = (template, variables, appUrl) => {
     }
     return line ? `<p style="margin: 8px 0;">${line}</p>` : '';
   }).join('');
-  
+
+  // Inject Meet link / Google Calendar buttons when those variables are provided.
+  // This keeps ALL templated emails (coaching, community, etc.) consistent without
+  // requiring template authors to hand-write button HTML.
+  const meetLink = variables && variables.meetLink ? variables.meetLink : '';
+  const googleCalendarUrl = variables && variables.googleCalendarUrl ? variables.googleCalendarUrl : '';
+  const meetLinkHtml = meetLink ? `
+        <p style="text-align: center; margin: 16px 0;">
+          <a href="${meetLink}" style="background: #34a853; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">📹 Join Google Meet</a>
+        </p>
+        <p style="text-align: center; font-size: 12px; color: #666; margin-top: -8px;">${meetLink}</p>
+  ` : '';
+  const calendarHtml = (googleCalendarUrl || meetLink) ? `
+        <p style="text-align: center; margin: 16px 0;">
+          ${googleCalendarUrl ? `<a href="${googleCalendarUrl}" style="background: #1a73e8; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; margin-right: 8px;">📅 Add to Google Calendar</a>` : ''}
+          <span style="background: #e0f2fe; color: #0369a1; padding: 10px 16px; border-radius: 6px; font-size: 14px; display: inline-block;">📎 .ics file attached for other calendars</span>
+        </p>
+  ` : '';
+
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
@@ -146,7 +164,8 @@ const generateEmailHtml = (template, variables, appUrl) => {
       </div>
       <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
         ${bodyHtml}
-        
+        ${meetLinkHtml}
+        ${calendarHtml}
         <p style="text-align: center; margin-top: 24px;">
           <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">${buttonText}</a>
         </p>
@@ -611,7 +630,7 @@ const generateICSContent = ({ title, description, location, startDate, startTime
  * Sends email notifications to facilitators when a user registers for a coaching session.
  * Also sends confirmation to the user with calendar attachment.
  */
-exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDocumentWritten("coaching_registrations/{registrationId}", async (event) => {
+exports.onCoachingRegistrationEvent = require("firebase-functions/v2/firestore").onDocumentWritten("coaching_registrations/{registrationId}", async (event) => {
   const afterSnapshot = event.data?.after;
   const beforeSnapshot = event.data?.before;
   
@@ -670,6 +689,40 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
     : 'Date TBD';
   const sessionTime = registration.sessionTime || 'Time TBD';
 
+  // Build Google Calendar "add to calendar" URL (used in both templated and fallback emails).
+  const buildGoogleCalendarUrl = () => {
+    try {
+      const title = encodeURIComponent(`LeaderReps: ${registration.sessionTitle || 'Coaching Session'}`);
+      const description = encodeURIComponent(
+        `Coaching session${registration.coach ? ` with ${registration.coach}` : ''}` +
+        (registration.zoomLink ? `\n\nGoogle Meet: ${registration.zoomLink}` : `\n\nOpen LeaderReps: ${appUrl}`)
+      );
+      const location = encodeURIComponent(registration.zoomLink || 'Virtual Session');
+      let startDt = null;
+      if (registration.sessionDate) {
+        const dateParts = registration.sessionDate.split('T')[0].split('-');
+        const timeParts = registration.sessionTime
+          ? registration.sessionTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i)
+          : null;
+        if (dateParts.length === 3) {
+          let h = timeParts ? parseInt(timeParts[1]) : 12;
+          const m = timeParts ? parseInt(timeParts[2]) : 0;
+          const period = timeParts && timeParts[3] ? timeParts[3].toUpperCase() : null;
+          if (period === 'PM' && h !== 12) h += 12;
+          if (period === 'AM' && h === 12) h = 0;
+          startDt = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]), h, m);
+        }
+      }
+      if (!startDt) return null;
+      const endDt = new Date(startDt.getTime() + 60 * 60 * 1000);
+      const pad = n => String(n).padStart(2, '0');
+      const fmt = dt => `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(startDt)}/${fmt(endDt)}&details=${description}&location=${location}`;
+    } catch (e) { return null; }
+  };
+  const googleCalendarUrl = buildGoogleCalendarUrl();
+  const meetLink = registration.zoomLink || null;
+
   // Build template variables
   const templateVars = {
     userName: registration.userName || 'there',
@@ -679,7 +732,9 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
     sessionDate,
     sessionTime,
     coach: registration.coach || '',
-    coachingItemId: registration.coachingItemId || ''
+    coachingItemId: registration.coachingItemId || '',
+    meetLink: meetLink || '',
+    googleCalendarUrl: googleCalendarUrl || ''
   };
 
   // Fetch templates (with fallback to hardcoded)
@@ -722,6 +777,10 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
               <p style="margin: 8px 0;"><strong>Email:</strong> ${registration.userEmail || 'Not provided'}</p>
               ${registration.coachingItemId ? `<p style="margin: 8px 0;"><strong>Milestone:</strong> ${registration.coachingItemId}</p>` : ''}
             </div>
+            ${registration.zoomLink ? `
+            <p style="text-align: center; margin: 16px 0;">
+              <a href="${registration.zoomLink}" style="background: #34a853; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">📹 Join Google Meet</a>
+            </p>` : ''}
             <p style="text-align: center; margin-top: 24px;">
               <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
             </p>
@@ -758,8 +817,8 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
   // Generate ICS calendar content for attachments
   const icsContent = generateICSContent({
     title: `LeaderReps: ${registration.sessionTitle || 'Coaching Session'}`,
-    description: `Coaching session${registration.coach ? ` with ${registration.coach}` : ''}\\n\\nJoin via LeaderReps: ${appUrl}`,
-    location: 'Virtual Session',
+    description: `Coaching session${registration.coach ? ` with ${registration.coach}` : ''}${registration.zoomLink ? `\\n\\nGoogle Meet: ${registration.zoomLink}` : `\\n\\nJoin via LeaderReps: ${appUrl}`}`,
+    location: registration.zoomLink || 'Virtual Session',
     startDate: registration.sessionDate,
     startTime: registration.sessionTime,
     durationMinutes: 60,
@@ -797,12 +856,19 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
               <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
               ${registration.coach ? `<p style="margin: 8px 0;"><strong>Trainer:</strong> ${registration.coach}</p>` : ''}
             </div>
+            ${meetLink ? `
             <p style="text-align: center; margin: 16px 0;">
-              <span style="background: #e0f2fe; color: #0369a1; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Calendar invite attached - open the .ics file to add to your calendar</span>
+              <a href="${meetLink}" style="background: #34a853; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">📹 Join Google Meet</a>
+            </p>
+            <p style="text-align: center; font-size: 12px; color: #666; margin-top: -8px;">${meetLink}</p>
+            ` : ''}
+            <p style="text-align: center; margin: 16px 0;">
+              ${googleCalendarUrl ? `<a href="${googleCalendarUrl}" style="background: #1a73e8; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; margin-right: 8px;">📅 Add to Google Calendar</a>` : ''}
+              <span style="background: #e0f2fe; color: #0369a1; padding: 10px 16px; border-radius: 6px; font-size: 14px; display: inline-block;">📎 .ics file attached for other calendars</span>
             </p>
             <p><strong>Next Steps:</strong></p>
             <ul>
-              <li>Open the attached calendar invite to add this session</li>
+              ${googleCalendarUrl ? '<li>Click "Add to Google Calendar" above, or open the attached .ics file for other calendar apps</li>' : '<li>Open the attached calendar invite to add this session</li>'}
               <li>Prepare any questions or topics you'd like to discuss</li>
               <li>Join the session at the scheduled time</li>
             </ul>
@@ -844,7 +910,7 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
 
   // Update registration to mark notification sent
   try {
-    await snapshot.ref.update({
+    await afterSnapshot.ref.update({
       notificationSentAt: admin.firestore.FieldValue.serverTimestamp()
     });
   } catch (error) {
@@ -857,7 +923,7 @@ exports.onCoachingRegistration = require("firebase-functions/v2/firestore").onDo
  * Sends cancellation emails when a registration status changes to 'cancelled'.
  * Notifies both the participant and the coach.
  */
-exports.onCoachingCancellation = require("firebase-functions/v2/firestore").onDocumentUpdated("coaching_registrations/{registrationId}", async (event) => {
+exports.onCoachingCancellationEvent = require("firebase-functions/v2/firestore").onDocumentUpdated("coaching_registrations/{registrationId}", async (event) => {
   const beforeData = event.data.before.data();
   const afterData = event.data.after.data();
   
@@ -1020,6 +1086,398 @@ exports.onCoachingCancellation = require("firebase-functions/v2/firestore").onDo
     });
   } catch (error) {
     logger.error("Failed to update registration with cancellation timestamp:", error);
+  }
+});
+
+/**
+ * COMMUNITY SESSION REGISTRATION
+ * Sends confirmation emails to community session hosts and participants on new registration.
+ */
+exports.onCommunityRegistrationEvent = require("firebase-functions/v2/firestore").onDocumentWritten("community_registrations/{registrationId}", async (event) => {
+  const afterSnapshot = event.data?.after;
+  const beforeSnapshot = event.data?.before;
+
+  if (!afterSnapshot || !afterSnapshot.exists) {
+    return;
+  }
+
+  const registration = afterSnapshot.data();
+  const beforeRegistration = beforeSnapshot && beforeSnapshot.exists ? beforeSnapshot.data() : null;
+
+  // Only fire on new registrations (not cancellations or updates to already-registered docs)
+  const currentStatus = (registration.status || '').toUpperCase();
+  const previousStatus = beforeRegistration ? (beforeRegistration.status || '').toUpperCase() : '';
+
+  const isNowRegistered = currentStatus !== 'CANCELLED' && currentStatus !== 'NO_SHOW';
+  const wasRegistered = beforeRegistration ? (previousStatus !== 'CANCELLED' && previousStatus !== 'NO_SHOW') : false;
+
+  if (!isNowRegistered || wasRegistered) {
+    return;
+  }
+
+  logger.info("New community registration:", { id: event.params.registrationId, sessionId: registration.sessionId });
+
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+
+  if (!emailUser || !emailPass) {
+    logger.warn("Email credentials not configured. Skipping community notification.");
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: emailUser, pass: emailPass },
+  });
+
+  const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+  const appDomain = projectId === 'leaderreps-prod'
+    ? 'arena.leaderreps.com'
+    : projectId === 'leaderreps-test'
+      ? 'leaderreps-test.web.app'
+      : 'leaderreps-pd-platform.web.app';
+  const appUrl = `https://${appDomain}`;
+
+  const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps';
+  const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
+
+  // Look up the session to get fields not stored on the registration (durationMinutes, hostEmail, zoomLink fallback)
+  let sessionData = {};
+  if (registration.sessionId) {
+    try {
+      const sessionDoc = await admin.firestore().collection('community_sessions').doc(registration.sessionId).get();
+      if (sessionDoc.exists) {
+        sessionData = sessionDoc.data();
+      }
+    } catch (lookupErr) {
+      logger.warn("Could not look up community session:", lookupErr.message);
+    }
+  }
+
+  const meetLink = registration.zoomLink || sessionData.zoomLink || null;
+  const hostEmail = registration.hostEmail || sessionData.hostEmail || null;
+
+  const sessionDate = registration.sessionDate
+    ? new Date(registration.sessionDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    : 'Date TBD';
+  const sessionTime = registration.sessionTime || 'Time TBD';
+
+  // Build Google Calendar URL
+  const buildCommGoogleCalendarUrl = () => {
+    try {
+      const title = encodeURIComponent(`LeaderReps: ${registration.sessionTitle || 'Community Session'}`);
+      const description = encodeURIComponent(
+        `Community session${registration.host ? ` hosted by ${registration.host}` : ''}` +
+        (meetLink ? `\n\nGoogle Meet: ${meetLink}` : `\n\nOpen LeaderReps: ${appUrl}`)
+      );
+      const location = encodeURIComponent(meetLink || 'Virtual Session');
+      let startDt = null;
+      if (registration.sessionDate) {
+        const dateParts = registration.sessionDate.split('T')[0].split('-');
+        const timeParts = registration.sessionTime
+          ? registration.sessionTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i)
+          : null;
+        if (dateParts.length === 3) {
+          let h = timeParts ? parseInt(timeParts[1]) : 12;
+          const m = timeParts ? parseInt(timeParts[2]) : 0;
+          const period = timeParts && timeParts[3] ? timeParts[3].toUpperCase() : null;
+          if (period === 'PM' && h !== 12) h += 12;
+          if (period === 'AM' && h === 12) h = 0;
+          startDt = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]), h, m);
+        }
+      }
+      if (!startDt) return null;
+      const endDt = new Date(startDt.getTime() + 60 * 60 * 1000);
+      const pad = n => String(n).padStart(2, '0');
+      const fmt = dt => `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(startDt)}/${fmt(endDt)}&details=${description}&location=${location}`;
+    } catch (e) { return null; }
+  };
+  const googleCalendarUrl = buildCommGoogleCalendarUrl();
+
+  const meetLinkButtonHtml = meetLink
+    ? `<p style="text-align: center; margin: 16px 0;">
+        <a href="${meetLink}" style="background: #34a853; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">📹 Join Google Meet</a>
+      </p>
+      <p style="text-align: center; font-size: 12px; color: #666; margin-top: -8px;">${meetLink}</p>`
+    : '';
+
+  // Build ICS attachment for participant
+  const icsContent = generateICSContent({
+    title: `LeaderReps: ${registration.sessionTitle || 'Community Session'}`,
+    description: `Community session${registration.host ? ` hosted by ${registration.host}` : ''}${meetLink ? `\\n\\nGoogle Meet: ${meetLink}` : `\\n\\nJoin via LeaderReps: ${appUrl}`}`,
+    location: meetLink || 'Virtual Session',
+    startDate: registration.sessionDate,
+    startTime: registration.sessionTime,
+    durationMinutes: sessionData.durationMinutes || 60,
+    uid: `${event.params.registrationId}@leaderreps.com`,
+    organizerEmail: hostEmail || emailUser,
+    organizerName: registration.host || 'LeaderReps',
+    attendeeEmail: registration.userEmail,
+    attendeeName: registration.userName,
+  });
+
+  // 1. Notify session host
+  if (hostEmail) {
+    const hostSubject = `📅 New Registration: ${registration.userName || 'A participant'} – ${registration.sessionTitle || 'Community Session'}`;
+    const hostHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">New Session Registration</h2>
+        </div>
+        <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin-top: 0;"><strong>${registration.userName || 'A participant'}</strong> has registered for your community session.</p>
+          <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Community Session'}</p>
+            <p style="margin: 8px 0;"><strong>Type:</strong> ${(registration.sessionType || '').replace(/_/g, ' ')}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+          </div>
+          <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #002E47;">Participant</h3>
+            <p style="margin: 8px 0;"><strong>Name:</strong> ${registration.userName || 'Not provided'}</p>
+            <p style="margin: 8px 0;"><strong>Email:</strong> ${registration.userEmail || 'Not provided'}</p>
+          </div>
+          ${meetLinkButtonHtml}
+          <p style="text-align: center; margin-top: 24px;">
+            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
+          </p>
+        </div>
+        <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin: 0; color: #64748b; font-size: 12px;">Automated notification from LeaderReps.</p>
+        </div>
+      </div>
+    `;
+    try {
+      await transporter.sendMail({
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: hostEmail,
+        subject: hostSubject,
+        html: hostHtml,
+      });
+      logger.info(`Community host notification sent to ${hostEmail}`);
+    } catch (error) {
+      logger.error(`Failed to send community host notification:`, error);
+    }
+  }
+
+  // 2. Send confirmation + ICS to participant
+  if (registration.userEmail) {
+    const userSubject = `✅ You're registered: ${registration.sessionTitle || 'Community Session'}`;
+    const userHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">You're In!</h2>
+        </div>
+        <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin-top: 0;">Hi ${registration.userName || 'there'},</p>
+          <p>You're registered for the upcoming community session!</p>
+          <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Community Session'}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+            ${registration.host ? `<p style="margin: 8px 0;"><strong>Host:</strong> ${registration.host}</p>` : ''}
+          </div>
+          ${meetLinkButtonHtml}
+          <p style="text-align: center; margin: 16px 0;">
+            ${googleCalendarUrl ? `<a href="${googleCalendarUrl}" style="background: #1a73e8; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; margin-right: 8px;">📅 Add to Google Calendar</a>` : ''}
+            <span style="background: #e0f2fe; color: #0369a1; padding: 10px 16px; border-radius: 6px; font-size: 14px; display: inline-block;">📎 .ics file attached for other calendars</span>
+          </p>
+          <p><strong>Next Steps:</strong></p>
+          <ul>
+            ${googleCalendarUrl ? '<li>Click "Add to Google Calendar" above, or open the attached .ics file for other calendar apps</li>' : '<li>Open the attached calendar invite to save this session to your calendar</li>'}
+            ${meetLink ? `<li>Use the Google Meet link above to join at the scheduled time</li>` : '<li>Join details will be provided before the session</li>'}
+            <li>Come ready to connect and grow with your peer leaders</li>
+          </ul>
+          <p style="text-align: center; margin-top: 24px;">
+            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
+          </p>
+        </div>
+        <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email or contact your session host.</p>
+        </div>
+      </div>
+    `;
+    try {
+      await transporter.sendMail({
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: registration.userEmail,
+        subject: userSubject,
+        attachments: [{
+          filename: 'community-session.ics',
+          content: icsContent,
+          contentType: 'text/calendar; charset=utf-8; method=REQUEST',
+        }],
+        html: userHtml,
+      });
+      logger.info(`Community user confirmation sent to ${registration.userEmail}`);
+    } catch (error) {
+      logger.error(`Failed to send community user confirmation:`, error);
+    }
+  }
+
+  try {
+    await afterSnapshot.ref.update({
+      notificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    logger.error("Failed to update community registration with notification timestamp:", error);
+  }
+});
+
+/**
+ * COMMUNITY SESSION CANCELLATION
+ * Sends cancellation emails to host and participant when status changes to CANCELLED.
+ */
+exports.onCommunityCancellationEvent = require("firebase-functions/v2/firestore").onDocumentUpdated("community_registrations/{registrationId}", async (event) => {
+  const beforeData = event.data.before.data();
+  const afterData = event.data.after.data();
+
+  const wasCancelled = (beforeData.status || '').toUpperCase() === 'CANCELLED';
+  const isCancelled = (afterData.status || '').toUpperCase() === 'CANCELLED';
+
+  if (wasCancelled || !isCancelled) {
+    return;
+  }
+
+  logger.info("Community registration cancelled:", { id: event.params.registrationId, sessionId: afterData.sessionId });
+
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+
+  if (!emailUser || !emailPass) {
+    logger.warn("Email credentials not configured. Skipping community cancellation notification.");
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: emailUser, pass: emailPass },
+  });
+
+  const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+  const appDomain = projectId === 'leaderreps-prod'
+    ? 'arena.leaderreps.com'
+    : projectId === 'leaderreps-test'
+      ? 'leaderreps-test.web.app'
+      : 'leaderreps-pd-platform.web.app';
+  const appUrl = `https://${appDomain}`;
+
+  const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps';
+  const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
+
+  const sessionDate = afterData.sessionDate
+    ? new Date(afterData.sessionDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    : 'Date TBD';
+  const sessionTime = afterData.sessionTime || 'Time TBD';
+
+  // Look up hostEmail from session doc if not already stored on the registration
+  let hostEmail = afterData.hostEmail;
+  if (!hostEmail && afterData.sessionId) {
+    try {
+      const sessionDoc = await admin.firestore().collection('community_sessions').doc(afterData.sessionId).get();
+      if (sessionDoc.exists) {
+        hostEmail = sessionDoc.data().hostEmail;
+      }
+    } catch (lookupErr) {
+      logger.warn("Could not look up hostEmail from community session:", lookupErr.message);
+    }
+  }
+
+  // 1. Notify host
+  if (hostEmail) {
+    const hostSubject = `❌ Registration Cancelled: ${afterData.userName || 'A participant'} – ${afterData.sessionTitle || 'Community Session'}`;
+    const hostHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">Registration Cancelled</h2>
+        </div>
+        <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin-top: 0;"><strong>${afterData.userName || 'A participant'}</strong> has cancelled their registration for your session.</p>
+          <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #fecaca; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #991b1b;">Session</h3>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${afterData.sessionTitle || 'Community Session'}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+          </div>
+          <p style="text-align: center; margin-top: 24px;">
+            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
+          </p>
+        </div>
+        <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin: 0; color: #64748b; font-size: 12px;">LeaderReps Platform</p>
+        </div>
+      </div>
+    `;
+    try {
+      await transporter.sendMail({
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: hostEmail,
+        subject: hostSubject,
+        html: hostHtml,
+      });
+      logger.info(`Community host cancellation notification sent to ${hostEmail}`);
+    } catch (error) {
+      logger.error(`Failed to send community host cancellation notification:`, error);
+    }
+  }
+
+  // 2. Confirm cancellation to participant
+  if (afterData.userEmail) {
+    const userSubject = `❌ Registration Cancelled: ${afterData.sessionTitle || 'Community Session'}`;
+    const userHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">Registration Cancelled</h2>
+        </div>
+        <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin-top: 0;">Hi ${afterData.userName || 'there'},</p>
+          <p>Your registration for the following session has been cancelled.</p>
+          <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #fecaca; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #991b1b;">Cancelled Session</h3>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${afterData.sessionTitle || 'Community Session'}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
+            ${afterData.host ? `<p style="margin: 8px 0;"><strong>Host:</strong> ${afterData.host}</p>` : ''}
+          </div>
+          <p style="text-align: center; margin: 16px 0;">
+            <span style="background: #fef2f2; color: #991b1b; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Please remove this from your calendar</span>
+          </p>
+          <p>You can register for other upcoming sessions from the Community Hub.</p>
+          <p style="text-align: center; margin-top: 24px;">
+            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Browse Sessions</a>
+          </p>
+        </div>
+        <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email.</p>
+        </div>
+      </div>
+    `;
+    try {
+      await transporter.sendMail({
+        from: `"${emailFromName}" <${emailUser}>`,
+        replyTo: emailReplyTo,
+        to: afterData.userEmail,
+        subject: userSubject,
+        html: userHtml,
+      });
+      logger.info(`Community user cancellation confirmation sent to ${afterData.userEmail}`);
+    } catch (error) {
+      logger.error(`Failed to send community user cancellation confirmation:`, error);
+    }
+  }
+
+  try {
+    await event.data.after.ref.update({
+      cancellationNotificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    logger.error("Failed to update community registration with cancellation timestamp:", error);
   }
 });
 
@@ -4860,8 +5318,8 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
   }
 });
 
-// Helper to send SMS via Twilio
-// NOTE: SMS functionality is disabled for go-live. Uncomment all sendSms references when Twilio is configured.
+// Helper to send SMS via Telnyx
+// NOTE: SMS functionality is disabled for go-live. Uncomment all sendSms references when Telnyx is configured.
 // Options can include: { linkText, linkUrl } to append a link to the message
 async function sendSmsNotification(phoneNumber, message, options = {}) {
   // SMS disabled for go-live - early return
@@ -4870,13 +5328,12 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
   
   // Original implementation below (disabled until 10DLC campaign approved)
   /*
-  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
-  const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
-  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-  const twilioFrom = process.env.TWILIO_PHONE_NUMBER;
+  const apiKey = process.env.TELNYX_API_KEY;
+  const messagingProfileId = process.env.TELNYX_MESSAGING_PROFILE_ID;
+  const telnyxFrom = process.env.TELNYX_PHONE_NUMBER;
 
-  if (!twilioSid || !twilioAuth || (!messagingServiceSid && !twilioFrom)) {
-    logger.warn("Twilio credentials not configured. SMS not sent.");
+  if (!apiKey || (!messagingProfileId && !telnyxFrom)) {
+    logger.warn("Telnyx credentials not configured. SMS not sent.");
     return;
   }
 
@@ -4898,18 +5355,19 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
   }
 
   try {
-    const client = twilio(twilioSid, twilioAuth);
+    const telnyx = Telnyx(apiKey);
     const msgOptions = {
-      body: `LeaderReps: ${message} ${linkToInclude}`,
+      text: `LeaderReps: ${message} ${linkToInclude}`,
       to: phoneNumber
     };
-    if (messagingServiceSid) {
-      msgOptions.messagingServiceSid = messagingServiceSid;
+    if (messagingProfileId) {
+      msgOptions.messaging_profile_id = messagingProfileId;
+      if (telnyxFrom) msgOptions.from = telnyxFrom;
     } else {
-      msgOptions.from = twilioFrom;
+      msgOptions.from = telnyxFrom;
     }
-    const result = await client.messages.create(msgOptions);
-    logger.info(`SMS sent to ${phoneNumber}: ${result.sid}`);
+    const result = await telnyx.messages.create(msgOptions);
+    logger.info(`SMS sent to ${phoneNumber}: ${result.data?.id}`);
   } catch (e) {
     logger.error(`Failed to send SMS to ${phoneNumber}`, e);
   }
@@ -8638,7 +9096,7 @@ function getNextSendWindowStart(fromDate, startHour, endHour, tz, weekdaysOnly) 
  * onBugReport: Firestore trigger on bug_reports collection.
  * Sends an email notification to rob@leaderreps.com when a user submits a bug report.
  */
-exports.onBugReport = require("firebase-functions/v2/firestore").onDocumentCreated("bug_reports/{reportId}", async (event) => {
+exports.onBugReportCreated = require("firebase-functions/v2/firestore").onDocumentCreated("bug_reports/{reportId}", async (event) => {
   const snapshot = event.data;
   if (!snapshot) {
     logger.error("onBugReport: No data associated with the event");
@@ -10010,6 +10468,12 @@ exports.analyzeLeadershipAssessment = onRequest(
       const emailPass = process.env.EMAIL_PASS;
       let emailSent = false;
 
+      const yesCount = Number(results.yesCount || 0);
+      const totalQuestions = Number(results.totalQuestions || 5);
+      const scoreBand = results.scoreBand || (yesCount >= 4 ? '4-5' : (yesCount >= 2 ? '2-3' : '0-1'));
+      const scoreLabel = results.scoreLabel || (yesCount >= 4 ? 'Execution Engine' : (yesCount >= 2 ? 'Leaky System' : 'System Not Yet Installed'));
+      const kitTag = results.kitTag || `ASA ${scoreBand}`;
+
       if (emailUser && emailPass) {
         const transporter = nodemailer.createTransport({
           service: "gmail",
@@ -10453,30 +10917,31 @@ const generateAccountabilityInsights = async (results, firstName) => {
   const genAI = new GoogleGenerativeAI(geminiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-  const topDims = results.topDimensions || [];
-  const weakestDim = results.weakestDimension || 'ownership';
-  const scores = results.scores || {};
-  const archetype = results.archetypeData?.name || "Accountable Leader";
-  const overallScore = results.overallScore || 50;
-  const maturityLevel = results.maturityLevel || "Developing";
+  const yesCount = Number(results.yesCount || 0);
+  const totalQuestions = Number(results.totalQuestions || 5);
+  const scoreBand = results.scoreBand || (yesCount >= 4 ? '4-5' : (yesCount >= 2 ? '2-3' : '0-1'));
+  const scoreLabel = results.scoreLabel || (scoreBand === '4-5' ? 'Execution Engine' : (scoreBand === '2-3' ? 'Leaky System' : 'System Not Yet Installed'));
+  const questionResults = Array.isArray(results.questionResults) ? results.questionResults : [];
+
+  const notYetItems = questionResults
+    .filter(item => item.answer === 'not-yet')
+    .map(item => item.shortLabel)
+    .join(', ');
 
   const prompt = `You are a world-class executive coach specializing in accountability and leadership development, providing personalized feedback to ${firstName || "a leader"}.
 
-Based on their Accountability Assessment results:
-- Overall Score: ${overallScore}/100 (${maturityLevel})
-- Archetype: ${archetype}
-- Top strengths: ${topDims.map(d => ACCOUNTABILITY_DIMENSIONS_DATA[d]?.name).join(', ')}
-- Biggest growth area: ${ACCOUNTABILITY_DIMENSIONS_DATA[weakestDim]?.name}
-- Dimension scores: ${Object.entries(scores).map(([k, v]) => `${ACCOUNTABILITY_DIMENSIONS_DATA[k]?.name}: ${v}%`).join(', ')}
+Based on their Accountability System Assessment results:
+- Yes answers: ${yesCount}/${totalQuestions}
+- Score band: ${scoreBand} (${scoreLabel})
+- Not yet areas: ${notYetItems || 'None flagged'}
 
-Write a personalized accountability coaching insight (250-300 words) that:
-1. Acknowledges their current accountability level honestly but encouragingly
-2. Highlights their top accountability strength and how to leverage it
-3. Identifies their biggest accountability gap with one specific, actionable practice to start THIS WEEK
-4. Explains how LeaderReps' 8-week program builds accountability through daily micro-practices, AI coaching, and peer accountability partners
-5. Ends with an inspiring but direct call to action about choosing accountability
+Write a personalized coaching insight (160-220 words) that:
+1. Names what this score suggests about their current system
+2. Picks one high-leverage behavior to improve this week
+3. Encourages a repeatable weekly practice instead of trying to fix everything at once
+4. Ends with a direct call to action to keep ownership on their team
 
-Be direct and honest—accountability requires facing the truth. Use "you" language. Don't use headings or bullet points - make it feel like a personal message from a tough but caring coach who believes in their potential.`;
+Be direct and honest. Use "you" language. Do not use headings or bullets.`;
 
   try {
     const result = await model.generateContent(prompt);
@@ -10487,159 +10952,482 @@ Be direct and honest—accountability requires facing the truth. Use "you" langu
   }
 };
 
+// ─── PDF Generation ────────────────────────────────────────────────────────
+
+const PDFDocument = require('pdfkit');
+
+// LeaderReps logo — embedded as base64 so it works in Cloud Function runtime
+// without any file path dependency
+const LEADERREPS_LOGO_BASE64 = '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';
+
+/**
+ * Generate a personalized Results PDF buffer from the user's assessment answers.
+ */
+const generateResultsPdf = (firstName, results) => {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50, size: 'A4', info: { Title: 'Your Accountability System Pulse Check Results', Author: 'LeaderReps' } });
+    const chunks = [];
+    doc.on('data', (c) => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const NAVY = '#002E47';
+    const TEAL = '#277A68';
+    const SIENNA = '#B84825';
+    const PAGE_W = doc.page.width - 100; // usable width
+
+    // ── Header — white background with logo, then navy accent bar ─────
+    const logoBuffer = Buffer.from(LEADERREPS_LOGO_BASE64, 'base64');
+    doc.rect(0, 0, doc.page.width, 70).fill('#FFFFFF');
+    doc.image(logoBuffer, 50, 17, { height: 36 });
+    // Thin navy accent line under the header
+    doc.rect(0, 70, doc.page.width, 4).fill(NAVY);
+
+    // ── Title ────────────────────────────────────────────────────────
+    doc.y = 90;
+    doc.fontSize(20).fillColor(NAVY).font('Helvetica-Bold')
+      .text('Your Accountability System Pulse Check Results', 50, doc.y, { width: PAGE_W });
+    doc.moveDown(1);
+
+    // ── Score: answer count first then status ────────────────────────
+    const yesCount = Number(results.yesCount || 0);
+    const total = Number(results.totalQuestions || 5);
+    const scoreLabel = results.scoreLabel || '';
+    const pillColor = results.archetype === 'execution-engine' ? TEAL : results.archetype === 'system-not-yet-installed' ? NAVY : SIENNA;
+
+    doc.fontSize(13).fillColor(NAVY).font('Helvetica-Bold')
+      .text(`You answered Yes to ${yesCount} of ${total} Questions`, 50, doc.y, { width: PAGE_W });
+    doc.moveDown(0.4);
+
+    // Status pill
+    const pillY = doc.y;
+    doc.roundedRect(50, pillY, PAGE_W, 32, 6).fill(pillColor);
+    doc.fontSize(11).fillColor('#fff').font('Helvetica-Bold')
+      .text(`Status: ${scoreLabel}`, 62, pillY + 9, { width: PAGE_W - 24 });
+    doc.y = pillY + 44;
+    doc.moveDown(1);
+
+    // ── Divider ──────────────────────────────────────────────────────
+    doc.moveTo(50, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+    doc.moveDown(0.8);
+
+    // ── Question by Question ─────────────────────────────────────────
+    doc.fontSize(8).fillColor('#94a3b8').font('Helvetica-Bold')
+      .text('QUESTION BY QUESTION', { width: PAGE_W, characterSpacing: 1.5 });
+    doc.moveDown(0.8);
+
+    const questionResults = Array.isArray(results.questionResults) ? results.questionResults : [];
+    questionResults.forEach((item, i) => {
+      if (doc.y > 700) doc.addPage();
+
+      const isYes = item.answer === 'yes';
+      const answerColor = isYes ? TEAL : SIENNA;
+      const answerLabel = isYes ? 'Yes' : 'Inconsistent / Not Yet';
+
+      // Question number + short label (navy bold)
+      doc.fontSize(11).fillColor(NAVY).font('Helvetica-Bold')
+        .text(`${i + 1}. ${item.shortLabel || ''}`, 50, doc.y, { width: PAGE_W });
+      doc.moveDown(0.3);
+
+      // Prompt (oblique)
+      doc.fontSize(9).fillColor('#475569').font('Helvetica-Oblique')
+        .text(item.prompt || '', 50, doc.y, { width: PAGE_W, lineGap: 2 });
+      doc.moveDown(0.5);
+
+      // Your Answer label (colored)
+      doc.fontSize(9).fillColor(answerColor).font('Helvetica-Bold')
+        .text(`Your Answer: ${answerLabel}`, 50, doc.y, { width: PAGE_W });
+      doc.moveDown(0.3);
+
+      // Analysis for their answer
+      const analysis = isYes ? item.ifYes : item.ifNotYet;
+      doc.fontSize(9).fillColor('#374151').font('Helvetica')
+        .text(analysis || '', 50, doc.y, { width: PAGE_W, lineGap: 3 });
+      doc.moveDown(0.8);
+
+      // Gray horizontal divider between questions
+      if (i < questionResults.length - 1) {
+        doc.moveTo(50, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor('#CBD5E1').lineWidth(0.75).stroke();
+        doc.moveDown(0.8);
+      }
+    });
+
+    // ── Footer — pinned to page bottom ────────────────────────────────
+    const footerY = doc.page.height - doc.page.margins.bottom - 12;
+    doc.fontSize(8).fillColor('#94a3b8').font('Helvetica')
+      .text('© LeaderReps  ·  leaderreps.com', 50, footerY, { width: PAGE_W, align: 'center' });
+
+    doc.end();
+  });
+};
+
+/**
+ * Generate the static Accountability System Blueprint PDF (one-pager).
+ */
+const generateBlueprintPdf = () => {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50, size: 'A4', info: { Title: 'The Accountability System Blueprint', Author: 'LeaderReps' } });
+    const chunks = [];
+    doc.on('data', (c) => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const NAVY = '#002E47';
+    const TEAL = '#277A68';
+    const ORANGE = '#B84825';
+    const PAGE_W = doc.page.width - 100;
+
+    // ── Header ───────────────────────────────────────────────────────
+    doc.rect(0, 0, doc.page.width, 85).fill(NAVY);
+    doc.fontSize(24).fillColor('#FFFFFF').font('Helvetica-Bold')
+      .text('The Accountability System Blueprint', 50, 18, { width: PAGE_W });
+    doc.fontSize(10).fillColor('rgba(255,255,255,0.65)').font('Helvetica')
+      .text('What a fully functioning accountability system looks like in practice  ·  LeaderReps', 50, 52, { width: PAGE_W });
+
+    doc.y = 105;
+
+    const components = [
+      {
+        num: '1',
+        title: 'Shared Understanding',
+        color: TEAL,
+        practice: 'Before work starts, define success explicitly. Ask: "What does done look like?" Get alignment — not just acknowledgment.',
+        signal: 'Your direct report can describe their #1 priority\'s success criteria as clearly as you can.',
+      },
+      {
+        num: '2',
+        title: 'Ownership Language',
+        color: TEAL,
+        practice: 'Require a specific ownership claim for every assignment.\n"I\'ll have X done by Friday" — not "I\'m on it" or "I\'ll try."',
+        signal: 'Vague language triggers a follow-up question, not acceptance.',
+      },
+      {
+        num: '3',
+        title: 'Ownership Discipline',
+        color: TEAL,
+        practice: 'When it\'s faster to step in — don\'t. Return the work. Stay the coach. Every time you take work back, you signal you don\'t trust the handoff.',
+        signal: 'Your team solves problems without bringing them back to you.',
+      },
+      {
+        num: '4',
+        title: 'Timely Feedback',
+        color: ORANGE,
+        practice: 'Address issues within 24 hours of noticing them. Short, direct, no softening. Delayed feedback teaches your team that standards are flexible.',
+        signal: 'Standards feel real. Small problems don\'t accumulate into patterns.',
+      },
+      {
+        num: '5',
+        title: 'Pattern Feedback',
+        color: ORANGE,
+        practice: 'When the same issue appears more than once, name the behavior pattern — not just the task. The pattern is what needs to change.',
+        signal: 'You\'re having the same conversation less often.',
+      },
+    ];
+
+    components.forEach((c, i) => {
+      if (doc.y > 720) doc.addPage();
+
+      const rowTop = doc.y;
+
+      // Number badge
+      doc.circle(68, rowTop + 12, 11).fill(c.color);
+      doc.fontSize(10).fillColor('#fff').font('Helvetica-Bold')
+        .text(c.num, 63, rowTop + 7, { width: 12, align: 'center' });
+
+      // Title
+      doc.fontSize(12).fillColor(NAVY).font('Helvetica-Bold')
+        .text(c.title, 88, rowTop, { width: PAGE_W - 38 });
+      doc.moveDown(0.15);
+
+      // Practice block
+      doc.fontSize(9).fillColor('#374151').font('Helvetica')
+        .text(c.practice, 88, doc.y, { width: PAGE_W - 38, lineGap: 2 });
+      doc.moveDown(0.25);
+
+      // Signal line
+      doc.fontSize(8.5).fillColor(c.color).font('Helvetica-Bold')
+        .text('✓  Signal it\'s working: ', 88, doc.y, { continued: true, width: PAGE_W - 38 });
+      doc.fillColor('#374151').font('Helvetica')
+        .text(c.signal, { width: PAGE_W - 38, lineGap: 2 });
+      doc.moveDown(0.7);
+
+      if (i < components.length - 1) {
+        doc.moveTo(88, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+        doc.moveDown(0.5);
+      }
+    });
+
+    // ── Bottom CTA ────────────────────────────────────────────────────
+    doc.moveDown(1);
+    doc.rect(50, doc.y, PAGE_W, 48).fill(`${NAVY}10`).stroke('#e2e8f0');
+    const ctaY = doc.y;
+    doc.fontSize(10).fillColor(NAVY).font('Helvetica-Bold')
+      .text('Foundation — Build this system through practice, not lectures.', 60, ctaY + 10, { width: PAGE_W - 20 });
+    doc.fontSize(9).fillColor(TEAL).font('Helvetica')
+      .text('leaderreps.com', 60, ctaY + 28, { width: PAGE_W - 20 });
+    doc.y = ctaY + 62;
+
+    // ── Footer — pinned to page bottom ────────────────────────────────
+    const footerY = doc.page.height - doc.page.margins.bottom - 12;
+    doc.fontSize(8).fillColor('#94a3b8').font('Helvetica')
+      .text('© LeaderReps  ·  leaderreps.com  ·  Building accountable leaders', 50, footerY, { width: PAGE_W, align: 'center' });
+
+    doc.end();
+  });
+};
+
+/**
+ * Upload a PDF buffer to Firebase Storage and return a 30-day signed URL.
+ */
+const uploadPdfAndGetUrl = async (buffer, storagePath) => {
+  const bucket = admin.storage().bucket();
+  const file = bucket.file(storagePath);
+  await file.save(buffer, {
+    metadata: { contentType: 'application/pdf', cacheControl: 'private, max-age=2592000' },
+  });
+  const [url] = await file.getSignedUrl({
+    action: 'read',
+    expires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
+  });
+  return url;
+};
+
+// ─── End PDF Generation ────────────────────────────────────────────────────
+
 /**
  * Build HTML email for accountability assessment results
  */
-const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights) => {
-  const archetype = results.archetypeData || {};
-  const sortedDimensions = results.sortedDimensions || [];
-  const overallScore = results.overallScore || 50;
-  const maturityLevel = results.maturityLevel || 'Developing';
-  const weakestDim = results.weakestDimension || 'ownership';
-  const weakestDimData = ACCOUNTABILITY_DIMENSIONS_DATA[weakestDim] || {};
-  
-  const dimensionBars = sortedDimensions.map(([dim, score]) => {
-    const data = ACCOUNTABILITY_DIMENSIONS_DATA[dim];
+const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfUrls = {}) => {
+  const yesCount = Number(results.yesCount || 0);
+  const totalQuestions = Number(results.totalQuestions || 5);
+  const scoreLabel = results.scoreLabel || 'Accountability System Score';
+  const summary = results.summary || '';
+  const questionResults = Array.isArray(results.questionResults) ? results.questionResults : [];
+
+  // Pill color based on archetype — matches results page design
+  const archetype = results.archetype || 'leaky-system';
+  let pillBg, pillText;
+  if (archetype === 'execution-engine') {
+    pillBg = 'rgba(39,122,104,0.12)';
+    pillText = '#277A68';
+  } else if (archetype === 'system-not-yet-installed') {
+    pillBg = 'rgba(0,46,71,0.1)';
+    pillText = '#002E47';
+  } else {
+    pillBg = 'rgba(184,72,37,0.12)';
+    pillText = '#B84825';
+  }
+
+  const questionRows = questionResults.map((item, index) => {
+    const answerLabel = item.answer === 'yes' ? 'Yes' : 'Inconsistent / Not Yet';
     return `
-      <div style="margin-bottom: 12px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-          <span style="color: #fff; font-weight: 500;">${data.icon} ${data.name}</span>
-          <span style="color: rgba(255,255,255,0.7);">${score}%</span>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); border-radius: 8px; height: 8px; overflow: hidden;">
-          <div style="background: ${data.color}; height: 100%; width: ${score}%; border-radius: 8px;"></div>
-        </div>
-      </div>
+      <tr>
+        <td style="padding: 10px 0; border-bottom: 1px solid rgba(0,46,71,0.1); color: #002E47; font-size: 14px;">
+          ${index + 1}. ${item.shortLabel || 'Question'}
+        </td>
+        <td style="padding: 10px 0; border-bottom: 1px solid rgba(0,46,71,0.1); color: ${item.answer === 'yes' ? '#349881' : '#C85530'}; font-size: 14px; font-weight: 700; text-align: right;">
+          ${answerLabel}
+        </td>
+      </tr>
     `;
   }).join('');
 
-  // Color for score
-  const getScoreColor = () => {
-    if (overallScore >= 80) return '#10B981';
-    if (overallScore >= 65) return '#47A88D';
-    if (overallScore >= 50) return '#F59E0B';
-    return '#E04E1B';
-  };
+  // Summary paragraphs with spacing
+  const summaryHtml = summary.split('\n\n').map(para =>
+    `<p style="margin: 0 0 16px 0; color: #002E47; font-size: 15px; line-height: 1.7;">${para}</p>`
+  ).join('');
+
+  const primaryPdfUrl = pdfUrls.resultsPdf || pdfUrls.blueprint || null;
 
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Accountability Assessment Results</title>
+  <title>Your Accountability System Pulse Check Results</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a;">
-  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-    
-    <!-- Header -->
-    <div style="background: linear-gradient(135deg, #002E47 0%, #001a2b 100%); border-radius: 16px 16px 0 0; padding: 32px; text-align: center;">
-      <div style="display: inline-block; padding: 8px 16px; background: rgba(224,78,27,0.2); border-radius: 20px; color: #E04E1B; font-size: 12px; font-weight: 600; margin-bottom: 16px;">
-        🎯 YOUR ACCOUNTABILITY PROFILE
-      </div>
-      <h1 style="margin: 0; color: #fff; font-size: 28px; font-weight: 700;">
-        Hi ${firstName || 'Leader'}, here are<br/>your results
-      </h1>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #FFFFFF;">
+  <div style="max-width: 600px; margin: 0 auto; background: #FFFFFF;">
+
+    <!-- Logo Header — white background -->
+    <div style="background: #FFFFFF; padding: 32px; text-align: center;">
+      <img src="https://leaderreps-prod.web.app/logo-email.png" alt="LeaderReps" style="height: 40px;">
     </div>
-    
-    <!-- Score Card -->
-    <div style="background: linear-gradient(135deg, #002E47 0%, #003d5c 100%); padding: 32px; text-align: center;">
-      <div style="display: inline-block; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 4px solid ${getScoreColor()}; line-height: 1;">
-        <div style="padding-top: 30px;">
-          <span style="color: #fff; font-size: 42px; font-weight: 700;">${overallScore}</span>
-          <span style="color: rgba(255,255,255,0.6); font-size: 14px; display: block;">/100</span>
-        </div>
-      </div>
-      <div style="margin-top: 16px;">
-        <span style="display: inline-block; padding: 8px 20px; background: ${getScoreColor()}; color: #fff; border-radius: 20px; font-weight: 700; font-size: 16px;">
-          ${maturityLevel}
+
+    <!-- Score / Results — cream background -->
+    <div style="background: #FAF8F5; padding: 32px 28px 8px 28px; text-align: center;">
+      <h1 style="margin: 0 0 16px 0; color: #002E47; font-size: 22px; font-weight: 700; line-height: 1.4;">
+        You answered Yes to <span style="color: #C85530;">${yesCount} out of ${totalQuestions}</span> questions on the Accountability System Pulse Check.
+      </h1>
+      <div style="margin-bottom: 24px;">
+        <span style="display: inline-block; padding: 8px 18px; background: ${pillBg}; color: ${pillText}; border-radius: 8px; font-weight: 900; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;">
+          ${scoreLabel}
         </span>
       </div>
     </div>
-    
-    <!-- Archetype Card -->
-    <div style="background: #002E47; padding: 24px;">
-      <div style="color: rgba(255,255,255,0.6); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-        Your Accountability Archetype
-      </div>
-      <h2 style="margin: 0 0 8px 0; color: #fff; font-size: 22px; font-weight: 700;">
-        ${archetype.name || 'Accountable Leader'}
-      </h2>
-      <p style="margin: 0 0 12px 0; color: #E04E1B; font-size: 14px; font-weight: 600;">
-        ${archetype.tagline || ''}
-      </p>
-      ${archetype.superpower ? `
-      <div style="display: inline-block; padding: 8px 16px; background: rgba(255,255,255,0.1); border-radius: 20px; color: #fff; font-size: 13px; margin-bottom: 16px;">
-        ⚡ Superpower: <strong>${archetype.superpower}</strong>
-      </div>
-      ` : ''}
-      <p style="margin: 0; color: rgba(255,255,255,0.8); font-size: 14px; line-height: 1.6;">
-        ${archetype.description || ''}
-      </p>
+
+    <!-- Summary — cream background -->
+    <div style="background: #FAF8F5; padding: 0 28px 16px 28px;">
+      ${summaryHtml}
     </div>
-    
-    <!-- Dimensions -->
-    <div style="background: linear-gradient(135deg, #002E47 0%, #001a2b 100%); padding: 24px;">
-      <h3 style="margin: 0 0 20px 0; color: #fff; font-size: 16px; font-weight: 600;">
-        Your 5 Accountability Dimensions
-      </h3>
-      ${dimensionBars}
+
+    <!-- Question by Question — cream background -->
+    <div style="background: #FAF8F5; padding: 0 28px 32px 28px;">
+      <p style="margin: 0 0 16px 0; color: #002E47; font-size: 11px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase;">Question by Question</p>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tbody>
+          ${questionRows}
+        </tbody>
+      </table>
     </div>
-    
-    <!-- Growth Focus -->
-    <div style="background: #002E47; padding: 24px;">
-      <h3 style="margin: 0 0 12px 0; color: #E04E1B; font-size: 16px; font-weight: 600;">
-        ⚠️ Your #1 Growth Focus
-      </h3>
-      <p style="margin: 0; color: #fff; font-size: 14px; font-weight: 600;">
-        ${weakestDimData.icon || '🎯'} ${weakestDimData.name || 'Accountability'}
-      </p>
-      <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.7); font-size: 13px; line-height: 1.5;">
-        This is your biggest opportunity for growth. Small improvements here will have an outsized impact on your effectiveness as a leader.
-      </p>
-    </div>
-    
-    <!-- AI Insights -->
+
+    <!-- AI Insights — cream background -->
     ${aiInsights ? `
-    <div style="background: linear-gradient(135deg, #002E47 0%, #003d5c 100%); padding: 24px;">
-      <div style="display: flex; align-items: center; margin-bottom: 16px;">
-        <span style="margin-right: 8px;">✨</span>
-        <h3 style="margin: 0; color: #fff; font-size: 16px; font-weight: 600;">
-          Your Personalized Coaching
-        </h3>
-      </div>
-      <p style="margin: 0; color: rgba(255,255,255,0.85); font-size: 14px; line-height: 1.7; white-space: pre-wrap;">
-${aiInsights}
-      </p>
+    <div style="background: #FAF8F5; padding: 0 28px 32px 28px; border-top: 1px solid rgba(0,46,71,0.08);">
+      <p style="margin: 0 0 12px 0; color: #002E47; font-size: 16px; font-weight: 700;">✨ Your Personalized Coaching</p>
+      <p style="margin: 0; color: #002E47; font-size: 14px; line-height: 1.7; white-space: pre-wrap;">${aiInsights}</p>
     </div>
     ` : ''}
-    
-    <!-- CTA -->
-    <div style="background: linear-gradient(135deg, #E04E1B 0%, #c43d12 100%); padding: 32px; text-align: center; border-radius: 0 0 16px 16px;">
-      <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 20px; font-weight: 700;">
-        Ready to Build Unshakeable Accountability?
+
+    <!-- Download Section — navy background, white font -->
+    ${primaryPdfUrl ? `
+    <div style="background: #002E47; padding: 32px; text-align: center;">
+      <h3 style="margin: 0 0 20px 0; color: #fff; font-size: 20px; font-weight: 700;">
+        Download Your Free Resources
       </h3>
-      <p style="margin: 0 0 20px 0; color: rgba(255,255,255,0.9); font-size: 14px;">
-        Join LeaderReps' 8-week program with daily accountability practices, AI coaching, and peer accountability partners.
-      </p>
-      <a href="https://www.leaderreps.com" style="display: inline-block; padding: 14px 28px; background: #fff; color: #002E47; font-weight: 700; text-decoration: none; border-radius: 10px; font-size: 14px;">
-        Explore LeaderReps Programs →
+      <a href="${primaryPdfUrl}" style="display: inline-block; padding: 14px 24px; background: #C85530; color: #fff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 700;">
+        Your Results and Accountability System Blueprint
       </a>
     </div>
-    
-    <!-- Footer -->
-    <div style="padding: 24px; text-align: center;">
-      <p style="margin: 0 0 8px 0; color: rgba(255,255,255,0.5); font-size: 12px;">
-        © 2026 LeaderReps. Building accountable leaders.
+    ` : ''}
+
+    <!-- CTA Section — cream background, navy font -->
+    <div style="background: #FAF8F5; padding: 32px 28px;">
+      <p style="margin: 0 0 16px 0; color: #002E47; font-size: 15px; line-height: 1.7;">
+        <strong>Your assessment showed you the gaps. Foundation is where you close them.</strong> A small cohort. Live practice on the exact behaviors you just assessed. If you&apos;re ready to build the system, reply to this email with &ldquo;Foundation&rdquo; for details and to get on the waitlist.
       </p>
-      <a href="https://www.leaderreps.com" style="color: #E04E1B; font-size: 12px; text-decoration: none;">
-        www.leaderreps.com
-      </a>
+      <p style="margin: 0;">
+        <a href="https://www.leaderreps.com" style="color: #277A68; font-weight: 700; text-decoration: none; font-size: 15px;">Learn More &rarr;</a>
+      </p>
     </div>
-    
+
+    <!-- Footer — white background -->
+    <div style="background: #FFFFFF; padding: 24px; text-align: center;">
+      <p style="margin: 0; color: #aaa; font-size: 12px;">
+        &copy; ${new Date().getFullYear()} LeaderReps. All rights reserved.
+      </p>
+    </div>
+
   </div>
 </body>
 </html>`;
 };
+
+/**
+ * Cloud Function: Record an A2P 10DLC SMS opt-in (consent record).
+ *
+ * Used by the standalone /sms-enroll.html page. Carriers (and Telnyx) require
+ * us to keep a per-subscriber consent audit trail with timestamp, the exact
+ * disclosure text shown, the source URL, and IP/User-Agent of the request.
+ *
+ * Writes one document to the `sms_opt_ins` Firestore collection per submission.
+ * Idempotent on (email, phone) — repeat submissions update the existing record.
+ *
+ * No SMS is sent from this function. Wiring up the welcome SMS happens in a
+ * separate step once the Telnyx number is approved.
+ */
+exports.submitSmsOptIn = onRequest(
+  {
+    region: "us-central1",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (req, res) => {
+    if (req.method === 'OPTIONS') {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'POST');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+      res.status(204).send('');
+      return;
+    }
+
+    res.set('Access-Control-Allow-Origin', '*');
+
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const {
+      email,
+      firstName,
+      phone,
+      smsConsent,
+      consentText,
+      source,
+    } = req.body || {};
+
+    // Hard validation. Carriers reject programs that accept opt-ins
+    // without an explicit checked consent flag.
+    if (!phone || typeof phone !== 'string' || phone.trim().length < 10) {
+      res.status(400).json({ error: 'A valid mobile phone number is required.' });
+      return;
+    }
+    if (smsConsent !== true) {
+      res.status(400).json({ error: 'SMS consent checkbox must be checked.' });
+      return;
+    }
+
+    const normalizedPhone = String(phone).replace(/[^\d+]/g, '');
+    const normalizedEmail = email ? String(email).trim().toLowerCase() : '';
+
+    try {
+      const consentRecord = {
+        phone: normalizedPhone,
+        email: normalizedEmail || null,
+        firstName: firstName ? String(firstName).trim() : '',
+        consent: true,
+        consentText: consentText || '',
+        source: source || 'sms-enroll-form',
+        ipAddress: req.headers['x-forwarded-for'] || req.ip || null,
+        userAgent: req.headers['user-agent'] || null,
+        recordedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      // Upsert by phone — keep one consent record per subscriber.
+      const existing = await db.collection('sms_opt_ins')
+        .where('phone', '==', normalizedPhone)
+        .limit(1)
+        .get();
+
+      let docId;
+      if (!existing.empty) {
+        docId = existing.docs[0].id;
+        await existing.docs[0].ref.update({
+          ...consentRecord,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } else {
+        const docRef = await db.collection('sms_opt_ins').add({
+          ...consentRecord,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        docId = docRef.id;
+      }
+
+      logger.info(`SMS opt-in recorded for ${normalizedPhone} (docId: ${docId})`);
+
+      res.json({
+        success: true,
+        message: 'You\'re subscribed. Reply STOP to any message to opt out.',
+      });
+    } catch (err) {
+      logger.error('submitSmsOptIn error:', err);
+      res.status(500).json({ error: 'Could not record opt-in. Please try again.' });
+    }
+  }
+);
 
 /**
  * Cloud Function: Analyze accountability assessment and send results email
@@ -10648,8 +11436,8 @@ ${aiInsights}
 exports.analyzeAccountabilityAssessment = onRequest(
   {
     region: "us-central1",
-    timeoutSeconds: 60,
-    memory: "256MiB",
+    timeoutSeconds: 120,
+    memory: "512MiB",
     cors: true,
   },
   async (req, res) => {
@@ -10669,7 +11457,19 @@ exports.analyzeAccountabilityAssessment = onRequest(
       return;
     }
 
-    const { email, firstName, answers, results } = req.body;
+    const {
+      email,
+      firstName,
+      answers,
+      results,
+      // Optional A2P 10DLC SMS opt-in fields. Only present if the user
+      // explicitly checked the SMS consent checkbox on the form.
+      phone,
+      smsConsent,
+      smsConsentText,
+      smsConsentTimestamp,
+      smsConsentSource,
+    } = req.body;
 
     if (!email || !results) {
       res.status(400).json({ error: 'Missing required fields: email and results' });
@@ -10678,14 +11478,40 @@ exports.analyzeAccountabilityAssessment = onRequest(
 
     logger.info(`Processing accountability assessment for ${email}`);
 
+    // Destructure scoring fields from results object
+    const { yesCount = 0, totalQuestions = 5, scoreBand = '0-1', scoreLabel = '', kitTag = '' } = results;
+
     try {
       // 1. Generate AI insights
       const aiInsights = await generateAccountabilityInsights(results, firstName);
       logger.info(`AI insights generated: ${aiInsights ? 'yes' : 'no'}`);
 
-      // 2. Send email
-      const emailUser = process.env.EMAIL_USER;
-      const emailPass = process.env.EMAIL_PASS;
+      // 2. Generate PDFs and upload to Storage
+      let pdfUrls = {};
+      try {
+        const [resultsPdfBuffer, blueprintBuffer] = await Promise.all([
+          generateResultsPdf(firstName, results),
+          generateBlueprintPdf(),
+        ]);
+
+        const safeEmail = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const timestamp = Date.now();
+        const [resultsPdfUrl, blueprintUrl] = await Promise.all([
+          uploadPdfAndGetUrl(resultsPdfBuffer, `accountability-pdfs/${safeEmail}/${timestamp}-results.pdf`),
+          uploadPdfAndGetUrl(blueprintBuffer, `accountability-pdfs/${safeEmail}/${timestamp}-blueprint.pdf`),
+        ]);
+
+        pdfUrls = { resultsPdf: resultsPdfUrl, blueprint: blueprintUrl };
+        logger.info(`PDFs generated and uploaded for ${email}`);
+      } catch (pdfErr) {
+        logger.error(`PDF generation failed for ${email}:`, pdfErr.message);
+        // Non-fatal — email still sends without download links
+      }
+
+      // 3. Send email
+      // Use dedicated team@ credentials if available, otherwise fall back to EMAIL_USER
+      const emailUser = process.env.EMAIL_TEAM_USER || process.env.EMAIL_USER;
+      const emailPass = process.env.EMAIL_TEAM_PASS || process.env.EMAIL_PASS;
       let emailSent = false;
 
       if (emailUser && emailPass) {
@@ -10694,12 +11520,12 @@ exports.analyzeAccountabilityAssessment = onRequest(
           auth: { user: emailUser, pass: emailPass },
         });
 
-        const htmlEmail = buildAccountabilityAssessmentEmail(firstName, results, aiInsights);
+        const htmlEmail = buildAccountabilityAssessmentEmail(firstName, results, aiInsights, pdfUrls);
 
         await transporter.sendMail({
-          from: `"LeaderReps" <arena@leaderreps.com>`,
+          from: `"LeaderReps" <team@leaderreps.com>`,
           to: email,
-          subject: `🎯 ${firstName ? firstName + ', your' : 'Your'} Accountability Assessment: ${results.overallScore || 0}/100`,
+          subject: `Your Accountability System Pulse Check Results from LeaderReps`,
           html: htmlEmail,
         });
         
@@ -10712,36 +11538,92 @@ exports.analyzeAccountabilityAssessment = onRequest(
       // 3. Store the lead in Firestore
       const sanitizedResults = {
         scores: results.scores || {},
-        topDimensions: results.topDimensions || [],
-        weakestDimension: results.weakestDimension || '',
-        archetype: results.archetype || 'balanced-accountable',
-        archetypeName: results.archetypeData?.name || '',
+        yesCount,
+        totalQuestions,
+        scoreBand,
+        scoreLabel,
+        archetype: results.archetype || (scoreBand === '4-5' ? 'execution-engine' : (scoreBand === '2-3' ? 'leaky-system' : 'system-not-yet-installed')),
+        archetypeName: scoreLabel,
         overallScore: results.overallScore || 0,
-        maturityLevel: results.maturityLevel || '',
+        summary: results.summary || '',
       };
 
       try {
-        const docRef = await db.collection('accountability-leads').add({
+        // Upsert by email — query for existing lead, update if found, create if not
+        const existingSnapshot = await db.collection('accountability-leads')
+          .where('email', '==', email.toLowerCase())
+          .limit(1)
+          .get();
+
+        let docRef;
+        const leadData = {
           email: email.toLowerCase(),
           firstName: firstName || '',
           results: sanitizedResults,
           aiInsights: aiInsights || null,
           source: 'accountability-assessment',
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           marketingOptIn: true,
           emailSent,
-        });
-        logger.info(`Accountability lead stored for ${email}, docId: ${docRef.id}`);
+          kitTag,
+          runCount: admin.firestore.FieldValue.increment(1),
+        };
 
-        // Sync to Kit (non-blocking)
-        syncLeadToKit(email, firstName, 'accountability', {
-          archetype: sanitizedResults.archetype,
-          score: String(sanitizedResults.overallScore || ''),
-        }).then(kitResult => {
+        // A2P 10DLC SMS consent record — required for carrier compliance.
+        // Only attach when the user explicitly checked the consent box.
+        if (phone && smsConsent === true) {
+          leadData.phone = String(phone).trim();
+          leadData.smsOptIn = {
+            consent: true,
+            consentText: smsConsentText || '',
+            consentTimestamp: smsConsentTimestamp || new Date().toISOString(),
+            source: smsConsentSource || 'accountability-assessment-results',
+            ipAddress: req.headers['x-forwarded-for'] || req.ip || null,
+            userAgent: req.headers['user-agent'] || null,
+            recordedAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
+          logger.info(`SMS opt-in consent recorded for ${email}`);
+        }
+
+        if (!existingSnapshot.empty) {
+          docRef = existingSnapshot.docs[0].ref;
+          await docRef.update(leadData);
+          logger.info(`Accountability lead updated (upsert) for ${email}, docId: ${docRef.id}`);
+        } else {
+          const { runCount, updatedAt, ...createData } = leadData;
+          docRef = await db.collection('accountability-leads').add({
+            ...createData,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            runCount: 1,
+          });
+          logger.info(`Accountability lead created for ${email}, docId: ${docRef.id}`);
+        }
+
+        // Sync to Kit — must be awaited before res.json() in Gen 2 functions
+        // (process terminates on response, so non-blocking .then() never runs)
+        const kitSource = scoreBand === '4-5'
+          ? 'accountability-asa-4-5'
+          : scoreBand === '2-3'
+            ? 'accountability-asa-2-3'
+            : 'accountability-asa-0-1';
+
+        try {
+          const kitResult = await syncLeadToKit(email, firstName, kitSource, {
+            archetype: sanitizedResults.archetype,
+            score: String(sanitizedResults.overallScore || ''),
+            yes_count: String(yesCount),
+            score_band: scoreBand,
+            asa_tag: kitTag,
+          });
           if (kitResult.success) {
-            docRef.update({ kitSyncedAt: admin.firestore.FieldValue.serverTimestamp(), kitSubscriberId: kitResult.subscriberId });
+            await docRef.update({ kitSyncedAt: admin.firestore.FieldValue.serverTimestamp(), kitSubscriberId: kitResult.subscriberId });
+            logger.info(`Kit sync complete for ${email}, subscriberId: ${kitResult.subscriberId}`);
+          } else {
+            logger.warn(`Kit sync skipped for ${email}: ${kitResult.reason}`);
           }
-        }).catch(err => logger.warn('Kit sync error (non-blocking):', err.message));
+        } catch (kitErr) {
+          logger.warn(`Kit sync error for ${email}:`, kitErr.message);
+        }
       } catch (firestoreErr) {
         logger.error(`Firestore write FAILED for ${email}:`, firestoreErr);
       }
@@ -11138,8 +12020,18 @@ exports.analyzeReadinessAssessment = onRequest(
 const KIT_TAG_MAPPINGS = {
   'leadership-dna': 'leadership-dna-assessment',
   'accountability': 'accountability-assessment',
+  'accountability-asa-4-5': 'ASA 4-5',
+  'accountability-asa-2-3': 'ASA 2-3',
+  'accountability-asa-0-1': 'ASA 0-1',
   'roi-calculator': 'roi-calculator',
   'readiness': 'leadership-readiness-assessment',
+};
+
+// Kit tag IDs (numeric IDs from app.kit.com)
+const KIT_TAG_IDS = {
+  'ASA 4-5': 18928677,
+  'ASA 2-3': 18928684,
+  'ASA 0-1': 18928687,
 };
 
 /**
@@ -11190,10 +12082,24 @@ async function syncLeadToKit(email, firstName, source, customFields = {}) {
 
     // Step 2: Add tag based on source (if tag ID is configured)
     const tagName = KIT_TAG_MAPPINGS[source];
-    if (tagName && subscriberId) {
-      // Note: You'll need to create these tags in Kit and get their IDs
-      // For now, we log the intent - tags can be added via Kit's tag API
-      logger.info(`Kit: Would tag subscriber ${subscriberId} with '${tagName}'`);
+    const tagId = tagName ? KIT_TAG_IDS[tagName] : null;
+    if (tagId && subscriberId) {
+      const tagResponse = await fetch(`https://api.kit.com/v4/tags/${tagId}/subscribers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${kitApiKey}`,
+        },
+        body: JSON.stringify({ subscriber_id: subscriberId }),
+      });
+      if (tagResponse.ok) {
+        logger.info(`Kit: Tagged subscriber ${subscriberId} with '${tagName}' (id: ${tagId})`);
+      } else {
+        const tagError = await tagResponse.text();
+        logger.warn(`Kit: Failed to apply tag '${tagName}': ${tagResponse.status} - ${tagError}`);
+      }
+    } else if (tagName) {
+      logger.info(`Kit: No tag ID configured for '${tagName}' - skipping tag`);
     }
 
     return { 
@@ -13147,26 +14053,28 @@ async function processLabMessage(uid, text, options = {}) {
  * @returns {Promise<string>} Twilio message SID
  */
 async function sendLabSms(to, body) {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const auth = process.env.TWILIO_AUTH_TOKEN;
-  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-  const from = process.env.TWILIO_PHONE_NUMBER;
+  const apiKey = process.env.TELNYX_API_KEY;
+  const from = process.env.TELNYX_PHONE_NUMBER;
+  const messagingProfileId = process.env.TELNYX_MESSAGING_PROFILE_ID;
 
-  if (!sid || !auth || (!messagingServiceSid && !from)) {
-    logger.error("Twilio credentials not configured for Lab SMS");
+  if (!apiKey || (!from && !messagingProfileId)) {
+    logger.error("Telnyx credentials not configured for Lab SMS");
     throw new Error("SMS service not configured");
   }
 
-  const client = twilio(sid, auth);
-  const msgOptions = { body, to };
-  if (messagingServiceSid) {
-    msgOptions.messagingServiceSid = messagingServiceSid;
+  const telnyx = Telnyx(apiKey);
+  const msgOptions = { text: body, to };
+  if (messagingProfileId) {
+    msgOptions.messaging_profile_id = messagingProfileId;
+    // from is optional when using a messaging profile — Telnyx picks the number
+    if (from) msgOptions.from = from;
   } else {
     msgOptions.from = from;
   }
-  const result = await client.messages.create(msgOptions);
-  logger.info("Lab SMS sent", { to: maskPhone(to), sid: result.sid });
-  return result.sid;
+  const result = await telnyx.messages.create(msgOptions);
+  const sid = result.data?.id || result.id;
+  logger.info("Lab SMS sent via Telnyx", { to: maskPhone(to), id: sid });
+  return sid;
 }
 
 /**
@@ -13929,15 +14837,15 @@ async function transcribeVoiceMemo(mediaUrl, mimeType) {
 }
 
 /**
- * labSmsWebhook — Receives inbound SMS from Twilio.
+ * labSmsWebhook — Receives inbound SMS from Telnyx.
  *
  * Flow:
- * 1. Twilio POSTs to this endpoint when a user texts the Lab number.
+ * 1. Telnyx POSTs to this endpoint when a user texts the Lab number.
  * 2. Look up user by phone number in ll-users.
  * 3. If unknown number, reply with a "not enrolled" message.
  * 4. If user hasn't completed onboarding, route to onboarding mode.
  * 5. Otherwise find/create today's active SMS conversation and route through AI.
- * 6. Reply via TwiML.
+ * 6. Reply via Telnyx Messages API.
  */
 exports.labSmsWebhook = onRequest(
   {
@@ -13948,32 +14856,50 @@ exports.labSmsWebhook = onRequest(
   async (req, res) => {
     validateLabEnvironment();
 
-    // Twilio sends POST requests
+    // Telnyx sends POST requests
     if (req.method !== "POST") {
       res.status(405).send("Method not allowed");
       return;
     }
 
-    // Validate Twilio signature — MANDATORY for production security
-    const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
-    if (!twilioAuth) {
-      logger.error("TWILIO_AUTH_TOKEN not configured — rejecting webhook");
+    // Validate Telnyx Ed25519 signature — MANDATORY for production security
+    const telnyxPublicKey = process.env.TELNYX_PUBLIC_KEY;
+    if (!telnyxPublicKey) {
+      logger.error("TELNYX_PUBLIC_KEY not configured — rejecting webhook");
       res.status(500).send("Server misconfiguration");
       return;
     }
-    const signature = req.headers["x-twilio-signature"];
-    const url = `https://${req.headers.host}${req.originalUrl}`;
-    const valid = twilio.validateRequest(twilioAuth, signature, url, req.body);
-    if (!valid) {
-      logger.warn("Invalid Twilio signature on labSmsWebhook", { from: maskPhone(req.body?.From) });
+    const signature = req.headers["telnyx-signature-ed25519"];
+    const timestamp = req.headers["telnyx-timestamp"];
+    if (!signature || !timestamp) {
+      logger.warn("Missing Telnyx signature headers on labSmsWebhook");
+      res.status(403).send("Forbidden");
+      return;
+    }
+    try {
+      const crypto = require("crypto");
+      const rawBody = (req.rawBody || Buffer.from(JSON.stringify(req.body))).toString("utf8");
+      const message = `${timestamp}|${rawBody}`;
+      const keyDer = Buffer.from(telnyxPublicKey, "base64");
+      const sigBytes = Buffer.from(signature, "base64");
+      const valid = crypto.verify(null, Buffer.from(message), { key: keyDer, format: "der", type: "spki" }, sigBytes);
+      if (!valid) {
+        logger.warn("Invalid Telnyx signature on labSmsWebhook");
+        res.status(403).send("Forbidden");
+        return;
+      }
+    } catch (sigErr) {
+      logger.warn("Telnyx signature verification error on labSmsWebhook", { error: sigErr.message });
       res.status(403).send("Forbidden");
       return;
     }
 
-    const fromPhone = req.body.From; // E.164
-    const body = (req.body.Body || "").trim();
-    const numMedia = parseInt(req.body.NumMedia || "0", 10);
-    const smsSid = req.body.MessageSid || req.body.SmsSid;
+    // Parse Telnyx webhook payload
+    const payload = req.body?.data?.payload || {};
+    const fromPhone = payload?.from?.phone_number; // E.164
+    const body = (payload?.text || "").trim();
+    const numMedia = (payload?.media || []).length;
+    const smsSid = payload?.id;
 
     // --- IDEMPOTENCY: Prevent duplicate processing on Twilio retries ---
     if (smsSid) {
@@ -13981,8 +14907,7 @@ exports.labSmsWebhook = onRequest(
       const dedupSnap = await dedupRef.get();
       if (dedupSnap.exists) {
         logger.info("Duplicate SMS webhook ignored", { smsSid, from: maskPhone(fromPhone) });
-        res.set("Content-Type", "text/xml");
-        res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+        res.status(200).json({ success: true });
         return;
       }
       // Mark as processing immediately (before AI call)
@@ -13991,12 +14916,14 @@ exports.labSmsWebhook = onRequest(
 
     logger.info("Lab SMS received", { from: maskPhone(fromPhone), bodyLength: body.length, numMedia });
 
-    // TwiML helper
-    const twiml = (message) => {
-      res.set("Content-Type", "text/xml");
-      res.status(200).send(
-        `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(message)}</Message></Response>`
-      );
+    // Telnyx reply helper — sends SMS via Telnyx API and acknowledges webhook
+    const reply = async (message) => {
+      try {
+        await sendLabSms(fromPhone, message);
+      } catch (smsErr) {
+        logger.error("Failed to send Telnyx reply", { to: maskPhone(fromPhone), error: smsErr.message });
+      }
+      res.status(200).json({ success: true });
     };
 
     // --- TCPA COMPLIANCE: Handle opt-out and help keywords ---
@@ -14015,13 +14942,13 @@ exports.labSmsWebhook = onRequest(
       } catch (optOutErr) {
         logger.error("Failed to record opt-out", { phone: maskPhone(fromPhone), error: optOutErr.message });
       }
-      // Twilio auto-handles STOP for toll-free/short codes, but we send confirmation anyway
-      twiml("You've been unsubscribed from Leadership Lab texts. Reply START to re-subscribe anytime.");
+      // With Telnyx, STOP opt-outs are handled by the carrier automatically, but we still send confirmation
+      await reply("You've been unsubscribed from Leadership Lab texts. Reply START to re-subscribe anytime.");
       return;
     }
 
     if (["HELP", "INFO"].includes(upperBody)) {
-      twiml("Leadership Lab \u2014 AI leadership coaching via text. Reply STOP to unsubscribe. For support, contact your facilitator or email support@leaderreps.com.");
+      await reply("Leadership Lab \u2014 AI leadership coaching via text. Reply STOP to unsubscribe. For support, contact your facilitator or email support@leaderreps.com.");
       return;
     }
 
@@ -14039,7 +14966,7 @@ exports.labSmsWebhook = onRequest(
       } catch (startErr) {
         logger.error("Failed to record re-subscribe", { phone: maskPhone(fromPhone), error: startErr.message });
       }
-      twiml("Welcome back! You're re-subscribed to Leadership Lab. Your coach is here whenever you need.");
+      await reply("Welcome back! You're re-subscribed to Leadership Lab. Your coach is here whenever you need.");
       return;
     }
 
@@ -14059,7 +14986,7 @@ exports.labSmsWebhook = onRequest(
       } catch (engErr) {
         logger.error("Failed to update engagement level", { phone: maskPhone(fromPhone), error: engErr.message });
       }
-      twiml(`Got it — switched to ${upperBody.toLowerCase()} mode (${descMap[upperBody]}). You can change anytime by texting LIGHT, MEDIUM, or HEAVY.`);
+      await reply(`Got it — switched to ${upperBody.toLowerCase()} mode (${descMap[upperBody]}). You can change anytime by texting LIGHT, MEDIUM, or HEAVY.`);
       return;
     }
 
@@ -14068,7 +14995,7 @@ exports.labSmsWebhook = onRequest(
       const user = await lookupLabUserByPhone(fromPhone);
 
       if (!user) {
-        twiml("Hey — this number isn't enrolled in Leadership Lab yet. If you think this is a mistake, reach out to your facilitator.");
+        await reply("Hey — this number isn't enrolled in Leadership Lab yet. If you think this is a mistake, reach out to your facilitator.");
         return;
       }
 
@@ -14078,11 +15005,11 @@ exports.labSmsWebhook = onRequest(
       let messageText = body;
       let isVoiceMemo = false;
       if (numMedia > 0) {
-        const mediaType = req.body.MediaContentType0 || "";
+        const mediaType = payload?.media?.[0]?.content_type || "";
         if (mediaType.startsWith("audio/")) {
           // Voice memo — transcribe via Gemini
           try {
-            const mediaUrl = req.body.MediaUrl0;
+            const mediaUrl = payload?.media?.[0]?.url;
             const transcription = await transcribeVoiceMemo(mediaUrl, mediaType);
             // Use transcription as the message (append to any accompanying text)
             messageText = body
@@ -14094,7 +15021,7 @@ exports.labSmsWebhook = onRequest(
             logger.warn("Voice memo transcription failed", { uid, error: transcribeErr.message });
             // Graceful fallback — let them know we heard them
             if (!body) {
-              twiml("I got your voice memo but had trouble understanding it. Could you text me what you were saying?");
+              await reply("I got your voice memo but had trouble understanding it. Could you text me what you were saying?");
               return;
             }
             // If they sent text + voice, just process the text
@@ -14105,7 +15032,7 @@ exports.labSmsWebhook = onRequest(
       }
 
       if (!messageText) {
-        twiml("Got it. Text me anytime you want to talk leadership.");
+        await reply("Got it. Text me anytime you want to talk leadership.");
         return;
       }
 
@@ -14170,11 +15097,8 @@ exports.labSmsWebhook = onRequest(
             });
 
             // Reply with the simulation's first message (already sent via SMS by initiateSimulation)
-            // Return empty TwiML since the SMS was already sent
-            res.set("Content-Type", "text/xml");
-            res.status(200).send(
-              `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`
-            );
+            // Just acknowledge the webhook — Telnyx reply was already sent inside initiateSimulation
+            res.status(200).json({ success: true });
             return;
           }
         } catch (simErr) {
@@ -14243,15 +15167,15 @@ exports.labSmsWebhook = onRequest(
         }
       }
 
-      twiml(result.response);
+      await reply(result.response);
     } catch (error) {
       logger.error("labSmsWebhook error", error);
-      twiml("Something went wrong on my end. Try again in a minute.");
+      await reply("Something went wrong on my end. Try again in a minute.");
     }
   }
 );
 
-/** Escape XML special characters for TwiML */
+/** Escape XML special characters (kept for any legacy XML generation) */
 function escapeXml(str) {
   return str
     .replace(/&/g, "&amp;")
