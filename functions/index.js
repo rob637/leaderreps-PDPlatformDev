@@ -12052,12 +12052,12 @@ async function syncLeadToKit(email, firstName, source, customFields = {}) {
 
   try {
     // Step 1: Create or update the subscriber
-    // Kit v4 API uses the API Key as a Bearer token
+    // Kit v4 API: API keys use X-Kit-Api-Key header (Bearer is for OAuth tokens only)
     const subscriberResponse = await fetch('https://api.kit.com/v4/subscribers', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${kitApiKey}`,
+        'X-Kit-Api-Key': kitApiKey,
       },
       body: JSON.stringify({
         email_address: email.toLowerCase(),
@@ -12088,7 +12088,7 @@ async function syncLeadToKit(email, firstName, source, customFields = {}) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${kitApiKey}`,
+          'X-Kit-Api-Key': kitApiKey,
         },
         body: JSON.stringify({ subscriber_id: subscriberId }),
       });
