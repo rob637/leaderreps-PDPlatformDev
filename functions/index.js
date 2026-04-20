@@ -11543,7 +11543,7 @@ exports.analyzeAccountabilityAssessment = onRequest(
         const htmlEmail = buildAccountabilityAssessmentEmail(firstName, results, aiInsights, pdfUrls);
 
         await transporter.sendMail({
-          from: `"LeaderReps" <team@leaderreps.com>`,
+          from: `"LeaderReps" <arena@leaderreps.com>`,
           to: email,
           subject: `Your Accountability System Pulse Check Results from LeaderReps`,
           html: htmlEmail,
