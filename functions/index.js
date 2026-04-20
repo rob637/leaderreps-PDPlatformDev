@@ -11290,14 +11290,21 @@ const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfU
     ` : ''}
 
     <!-- Download Section — navy background, white font -->
-    ${primaryPdfUrl ? `
+    ${(pdfUrls.resultsPdf || pdfUrls.blueprint) ? `
     <div style="background: #002E47; padding: 32px; text-align: center;">
       <h3 style="margin: 0 0 20px 0; color: #fff; font-size: 20px; font-weight: 700;">
         Download Your Free Resources
       </h3>
-      <a href="${primaryPdfUrl}" style="display: inline-block; padding: 14px 24px; background: #C85530; color: #fff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 700;">
-        Your Results and Accountability System Blueprint
+      ${pdfUrls.resultsPdf ? `
+      <a href="${pdfUrls.resultsPdf}" style="display: inline-block; margin: 0 6px 12px 6px; padding: 14px 24px; background: #C85530; color: #fff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 700;">
+        Your Results
       </a>
+      ` : ''}
+      ${pdfUrls.blueprint ? `
+      <a href="${pdfUrls.blueprint}" style="display: inline-block; margin: 0 6px 12px 6px; padding: 14px 24px; background: #C85530; color: #fff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 700;">
+        Accountability System Blueprint
+      </a>
+      ` : ''}
     </div>
     ` : ''}
 
