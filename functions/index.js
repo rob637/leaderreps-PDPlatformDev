@@ -11324,6 +11324,112 @@ const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfU
 };
 
 /**
+ * Cloud Function: Record an A2P 10DLC SMS opt-in (consent record).
+ *
+ * Used by the standalone /sms-enroll.html page. Carriers (and Telnyx) require
+ * us to keep a per-subscriber consent audit trail with timestamp, the exact
+ * disclosure text shown, the source URL, and IP/User-Agent of the request.
+ *
+ * Writes one document to the `sms_opt_ins` Firestore collection per submission.
+ * Idempotent on (email, phone) — repeat submissions update the existing record.
+ *
+ * No SMS is sent from this function. Wiring up the welcome SMS happens in a
+ * separate step once the Telnyx number is approved.
+ */
+exports.submitSmsOptIn = onRequest(
+  {
+    region: "us-central1",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (req, res) => {
+    if (req.method === 'OPTIONS') {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'POST');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+      res.status(204).send('');
+      return;
+    }
+
+    res.set('Access-Control-Allow-Origin', '*');
+
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const {
+      email,
+      firstName,
+      phone,
+      smsConsent,
+      consentText,
+      source,
+    } = req.body || {};
+
+    // Hard validation. Carriers reject programs that accept opt-ins
+    // without an explicit checked consent flag.
+    if (!phone || typeof phone !== 'string' || phone.trim().length < 10) {
+      res.status(400).json({ error: 'A valid mobile phone number is required.' });
+      return;
+    }
+    if (smsConsent !== true) {
+      res.status(400).json({ error: 'SMS consent checkbox must be checked.' });
+      return;
+    }
+
+    const normalizedPhone = String(phone).replace(/[^\d+]/g, '');
+    const normalizedEmail = email ? String(email).trim().toLowerCase() : '';
+
+    try {
+      const consentRecord = {
+        phone: normalizedPhone,
+        email: normalizedEmail || null,
+        firstName: firstName ? String(firstName).trim() : '',
+        consent: true,
+        consentText: consentText || '',
+        source: source || 'sms-enroll-form',
+        ipAddress: req.headers['x-forwarded-for'] || req.ip || null,
+        userAgent: req.headers['user-agent'] || null,
+        recordedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      // Upsert by phone — keep one consent record per subscriber.
+      const existing = await db.collection('sms_opt_ins')
+        .where('phone', '==', normalizedPhone)
+        .limit(1)
+        .get();
+
+      let docId;
+      if (!existing.empty) {
+        docId = existing.docs[0].id;
+        await existing.docs[0].ref.update({
+          ...consentRecord,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } else {
+        const docRef = await db.collection('sms_opt_ins').add({
+          ...consentRecord,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        docId = docRef.id;
+      }
+
+      logger.info(`SMS opt-in recorded for ${normalizedPhone} (docId: ${docId})`);
+
+      res.json({
+        success: true,
+        message: 'You\'re subscribed. Reply STOP to any message to opt out.',
+      });
+    } catch (err) {
+      logger.error('submitSmsOptIn error:', err);
+      res.status(500).json({ error: 'Could not record opt-in. Please try again.' });
+    }
+  }
+);
+
+/**
  * Cloud Function: Analyze accountability assessment and send results email
  * Called from the accountability assessment app after email capture
  */
@@ -11351,7 +11457,19 @@ exports.analyzeAccountabilityAssessment = onRequest(
       return;
     }
 
-    const { email, firstName, answers, results } = req.body;
+    const {
+      email,
+      firstName,
+      answers,
+      results,
+      // Optional A2P 10DLC SMS opt-in fields. Only present if the user
+      // explicitly checked the SMS consent checkbox on the form.
+      phone,
+      smsConsent,
+      smsConsentText,
+      smsConsentTimestamp,
+      smsConsentSource,
+    } = req.body;
 
     if (!email || !results) {
       res.status(400).json({ error: 'Missing required fields: email and results' });
@@ -11450,6 +11568,22 @@ exports.analyzeAccountabilityAssessment = onRequest(
           kitTag,
           runCount: admin.firestore.FieldValue.increment(1),
         };
+
+        // A2P 10DLC SMS consent record — required for carrier compliance.
+        // Only attach when the user explicitly checked the consent box.
+        if (phone && smsConsent === true) {
+          leadData.phone = String(phone).trim();
+          leadData.smsOptIn = {
+            consent: true,
+            consentText: smsConsentText || '',
+            consentTimestamp: smsConsentTimestamp || new Date().toISOString(),
+            source: smsConsentSource || 'accountability-assessment-results',
+            ipAddress: req.headers['x-forwarded-for'] || req.ip || null,
+            userAgent: req.headers['user-agent'] || null,
+            recordedAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
+          logger.info(`SMS opt-in consent recorded for ${email}`);
+        }
 
         if (!existingSnapshot.empty) {
           docRef = existingSnapshot.docs[0].ref;

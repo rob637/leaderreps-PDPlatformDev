@@ -27,7 +27,7 @@ function App() {
     setStage('results');
   }, []);
 
-  const handleEmailSubmit = useCallback(async (submittedEmail, firstName = '') => {
+  const handleEmailSubmit = useCallback(async (submittedEmail, firstName = '', smsOptIn = {}) => {
     setIsLoading(true);
     setSubmitState('idle');
 
@@ -40,6 +40,8 @@ function App() {
           firstName,
           answers,
           results,
+          // Optional A2P 10DLC SMS opt-in payload (only present when user checked consent box)
+          ...smsOptIn,
         }),
       });
 
