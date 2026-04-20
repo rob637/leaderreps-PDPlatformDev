@@ -1,0 +1,42 @@
+name: Enforce Branch Ownership
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+jobs:
+  enforce-branch-ownership:
+    name: Validate branch owner matches PR actor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch naming convention
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -e
+
+          # Require source branch format: <github-username>/<work-item>
+          if [[ "$HEAD_REF" != */* ]]; then
+            echo "Branch '$HEAD_REF' is invalid."
+            echo "Use branch format: <github-username>/<work-item>."
+            exit 1
+          fi
+
+          BRANCH_OWNER="${HEAD_REF%%/*}"
+          BRANCH_OWNER_LC="${BRANCH_OWNER,,}"
+          ACTOR_LC="${ACTOR,,}"
+
+          if [[ "$BRANCH_OWNER_LC" != "$ACTOR_LC" ]]; then
+            echo "Branch owner '$BRANCH_OWNER' does not match PR actor '$ACTOR'."
+            echo "Create a branch prefixed with your own username, e.g. '$ACTOR/feature-name'."
+            exit 1
+          fi
+
+          echo "Branch ownership check passed for '$HEAD_REF'."

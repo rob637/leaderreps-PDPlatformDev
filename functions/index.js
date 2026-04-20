@@ -13680,6 +13680,7 @@ async function processLabMessage(uid, text, options = {}) {
     weekNumber = 1,
     channel = "app",
     interactionType,
+    experimentContext,
   } = options;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -13903,6 +13904,19 @@ async function processLabMessage(uid, text, options = {}) {
   const userMessage = { role: "user", content: sanitizedText, timestamp: nowISO, channel };
   existingMessages.push(userMessage);
 
+  // --- Load personalized experiment from challenges doc if not provided ---
+  let resolvedExperimentContext = experimentContext || null;
+  if (!resolvedExperimentContext) {
+    try {
+      const challengeSnap = await db.doc(`${LL_PREFIX}users/${uid}/challenges/${weekNumber}`).get();
+      if (challengeSnap.exists && challengeSnap.data().personalizedExperiment) {
+        resolvedExperimentContext = challengeSnap.data().personalizedExperiment;
+      }
+    } catch {
+      // OK if challenge doc doesn't exist
+    }
+  }
+
   // --- Build system prompt ---
   // Use stored simulation prompt for practice-mode SMS, otherwise build standard prompt
   const wIdx = weekIdx(weekNumber);
@@ -13912,6 +13926,7 @@ async function processLabMessage(uid, text, options = {}) {
     weekNumber,
     weekTheme: LL_WEEK_THEMES[wIdx],
     experiment: LL_EXPERIMENTS[wIdx],
+    personalizedExperiment: resolvedExperimentContext,
     leadershipProfile,
     recentEvidence,
     activeReveal,
@@ -14185,7 +14200,7 @@ exports.labCoach = onCall(
     }
 
     const authUid = request.auth.uid;
-    const { text, conversationId, mode = "coach", weekNumber = 1 } = request.data || {};
+    const { text, conversationId, mode = "coach", weekNumber = 1, experimentContext } = request.data || {};
 
     if (!text || typeof text !== "string" || text.trim().length === 0) {
       throw new HttpsError("invalid-argument", "Message text is required");
@@ -14212,6 +14227,7 @@ exports.labCoach = onCall(
         mode,
         weekNumber,
         channel: "app",
+        experimentContext: experimentContext ? String(experimentContext).slice(0, 1000) : undefined,
       });
 
       // Auto-complete onboarding after enough exchanges
@@ -14444,7 +14460,7 @@ Return ONLY valid JSON. No markdown, no explanation.`,
 /**
  * Build the system prompt for Leadership Lab coaching modes.
  */
-function buildLabSystemPrompt({ mode, userName, weekNumber, weekTheme, experiment, leadershipProfile, recentEvidence, activeReveal, recentSummaries, engagementSignals, currentWeekContext, messageCount, channel, interactionType, phase }) {
+function buildLabSystemPrompt({ mode, userName, weekNumber, weekTheme, experiment, personalizedExperiment, leadershipProfile, recentEvidence, activeReveal, recentSummaries, engagementSignals, currentWeekContext, messageCount, channel, interactionType, phase }) {
   // --- Base context ---
   const isAscent = phase === "ascent" || weekNumber > 5;
 
@@ -14463,7 +14479,10 @@ The program has 5 milestones: Reinforcing → One-on-One → Redirecting → Rea
 
 ${weekNumber > 0 ? `You are coaching ${userName}, who is currently in Milestone ${weekNumber}: "${weekTheme}".
 
-This week's practice challenge: "${experiment}"` : `You are coaching ${userName}, who is just beginning the program.`}
+This week's practice challenge: "${experiment}"${personalizedExperiment ? `
+
+THEIR PERSONALIZED VERSION OF THIS CHALLENGE: "${personalizedExperiment}"
+Use this personalized version when discussing the experiment — it was tailored to their specific patterns and growth edges.` : ""}` : `You are coaching ${userName}, who is just beginning the program.`}
 
 Your purpose: reinforce the concepts being taught in live sessions, help leaders practice between meetings, and build a model of who they are as a leader — then use that to create moments of genuine self-awareness.
 `;

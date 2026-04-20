@@ -9,6 +9,7 @@ export default function ConversationScreen({
   mode: initialMode = 'coach',
   conversationId: existingConversationId = null,
   firstMessage = null,
+  experimentContext = null,
 }) {
   const { goBack, canGoBack } = useNavigation();
   const { user, userProfile } = useAuth();
@@ -99,6 +100,7 @@ export default function ConversationScreen({
         conversationId,
         mode,
         weekNumber: currentWeek,
+        experimentContext: !conversationId ? experimentContext : undefined,
       });
 
       // Store the conversation ID for subsequent messages
@@ -194,7 +196,7 @@ export default function ConversationScreen({
           <div className="flex justify-start">
             <div className="bubble-ai">
               <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                {getOpeningPrompt(mode)}
+                {getOpeningPrompt(mode, experimentContext)}
               </p>
             </div>
           </div>
@@ -315,7 +317,10 @@ function ModeSelector({ currentMode, onModeChange }) {
   );
 }
 
-function getOpeningPrompt(mode) {
+function getOpeningPrompt(mode, experimentContext) {
+  if (mode === 'debrief' && experimentContext) {
+    return `Your experiment this week: "${experimentContext}"\n\nHow's it going? Tell me what happened — even if you haven't tried it yet, I want to hear where you're at with it.`;
+  }
   const prompts = {
     coach: "What's on your mind? I'm here to help you think through whatever you're facing as a leader right now.",
     practice: "Let's rehearse a real situation. Tell me about a conversation or moment coming up that you want to prepare for — I'll play the other person.",

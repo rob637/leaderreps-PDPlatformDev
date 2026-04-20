@@ -230,14 +230,10 @@ export default function FeedScreen() {
 
       {/* Current Experiment Card — Foundation only */}
       {!isAscent && (
-        <button
-          onClick={() => navigate(SCREENS.LAB)}
-          className="w-full text-left glass-card p-5 mb-4 hover:shadow-card-hover transition-shadow"
-        >
+        <div className="w-full glass-card p-5 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <FlaskConical className="text-lab-amber" size={18} />
             <h3 className="font-semibold text-lab-navy text-sm">This Week&apos;s Experiment</h3>
-            <ChevronRight className="text-stone-400 ml-auto" size={16} />
           </div>
           <p className="text-stone-700 leading-relaxed">
             {experiment?.personalizedExperiment || getExperimentPreview(currentWeek)}
@@ -247,7 +243,7 @@ export default function FeedScreen() {
               {experiment.whyThisMatters}
             </p>
           )}
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-3 mt-4">
             <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
               experiment?.status === 'completed'
                 ? 'bg-lab-teal/10 text-lab-teal'
@@ -255,8 +251,18 @@ export default function FeedScreen() {
             }`}>
               {experiment?.status === 'completed' ? 'Completed' : 'In Progress'}
             </span>
+            <button
+              onClick={() => navigate(SCREENS.CONVERSATION, {
+                mode: 'debrief',
+                experimentContext: experiment?.personalizedExperiment || getExperimentPreview(currentWeek),
+              })}
+              className="ml-auto text-xs font-semibold text-lab-teal hover:text-lab-teal-dark flex items-center gap-1 transition-colors"
+            >
+              <MessageCircle size={14} />
+              {experiment?.status === 'completed' ? 'Discuss with coach' : 'How did it go?'}
+            </button>
           </div>
-        </button>
+        </div>
       )}
 
       {/* Recent Conversations — from Firestore */}
