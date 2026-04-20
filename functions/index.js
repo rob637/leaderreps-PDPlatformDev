@@ -10979,7 +10979,12 @@ const generateResultsPdf = (firstName, results) => {
     // ── Header — white background with logo, then navy accent bar ─────
     const logoBuffer = Buffer.from(LEADERREPS_LOGO_BASE64, 'base64');
     doc.rect(0, 0, doc.page.width, 70).fill('#FFFFFF');
-    doc.image(logoBuffer, 50, 17, { height: 36 });
+    const logoX = 50, logoY = 17, logoH = 36;
+    // Embed image first; specifying height auto-scales width. The PNG aspect
+    // ratio (831 × 209) yields a width of ~143pt at 36pt height.
+    doc.image(logoBuffer, logoX, logoY, { height: logoH });
+    // Make the logo a clickable link to the homepage
+    doc.link(logoX, logoY, 143, logoH, 'https://www.leaderreps.com');
     // Thin navy accent line under the header
     doc.rect(0, 70, doc.page.width, 4).fill(NAVY);
 
@@ -10999,12 +11004,20 @@ const generateResultsPdf = (firstName, results) => {
       .text(`You answered Yes to ${yesCount} of ${total} Questions`, 50, doc.y, { width: PAGE_W });
     doc.moveDown(0.4);
 
-    // Status pill
+    // Status pill — compact, sized to text (matches results page + email)
+    const pillLabel = (scoreLabel || '').toUpperCase();
     const pillY = doc.y;
-    doc.roundedRect(50, pillY, PAGE_W, 32, 6).fill(pillColor);
-    doc.fontSize(11).fillColor('#fff').font('Helvetica-Bold')
-      .text(`Status: ${scoreLabel}`, 62, pillY + 9, { width: PAGE_W - 24 });
-    doc.y = pillY + 44;
+    const pillPadX = 14;
+    const pillPadY = 7;
+    const pillFontSize = 9;
+    doc.fontSize(pillFontSize).font('Helvetica-Bold');
+    const textW = doc.widthOfString(pillLabel, { characterSpacing: 1.2 });
+    const pillW = textW + pillPadX * 2;
+    const pillH = pillFontSize + pillPadY * 2;
+    doc.roundedRect(50, pillY, pillW, pillH, 6).fill(pillColor);
+    doc.fontSize(pillFontSize).fillColor('#fff').font('Helvetica-Bold')
+      .text(pillLabel, 50 + pillPadX, pillY + pillPadY, { width: textW + 2, characterSpacing: 1.2, lineBreak: false });
+    doc.y = pillY + pillH + 12;
     doc.moveDown(1);
 
     // ── Divider ──────────────────────────────────────────────────────
