@@ -15,7 +15,8 @@ import {
   Wrench,
   AlertTriangle,
   Sparkles,
-  Megaphone
+  Megaphone,
+  Mountain
 } from 'lucide-react';
 import { CommunityIcon, LockerIcon } from '../icons';
 import PWAInstall from '../ui/PWAInstall.jsx';
@@ -78,6 +79,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     enableConditioning: isConditioningAvailable, // Conditioning only in Foundation
     enableCommunity: isAscent, // Community only available during Ascent phase
     enableCoaching: isCoachingAvailable, // Coaching only in Foundation
+    enableAscentArena: false, // Ascent Arena not yet released — hidden in prod
     
     // FUTURE SCOPE FEATURES (DISABLED)
     enableLabs: false,
@@ -88,6 +90,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
   const menuItems = [
     // Rep Coach removed from sidebar - access via floating AI Coach button (password protected)
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'ascent-arena', label: 'Ascent Arena', icon: Mountain, flag: 'enableAscentArena', highlight: true },
     { id: 'conditioning', label: 'Conditioning', icon: Zap, flag: 'enableConditioning' },
     // Conditioning accessed via both Dashboard and sidebar - only during Foundation
     { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
