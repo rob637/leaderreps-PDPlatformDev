@@ -13,6 +13,8 @@ const ScreenMap = {
     import('../components/screens/RoadmapTracker.jsx')
   ),
   dashboard: lazy(() => import('../components/screens/Dashboard.jsx')),
+  // Ascent Arena is not yet released — route falls through to Dashboard.
+  'ascent-arena': lazy(() => import('../components/screens/Dashboard.jsx')),
   'conditioning': lazy(() => import('../components/screens/Conditioning.jsx')),
   'development-plan': lazy(() =>
     import('../components/screens/DevelopmentPlan.jsx')
