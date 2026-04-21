@@ -1840,27 +1840,27 @@ exports.sendMilestoneCompletionEmail = onCall(async (request) => {
       subject = applyTemplateVariables(graduationTemplate.subject, templateVars);
       bodyHtml = generateEmailHtml(graduationTemplate, templateVars, appUrl);
     } else {
-      subject = `🎓 Congratulations! You've Graduated from LeaderReps!`;
+      subject = `� Congratulations! You've Completed the LeaderReps Foundation Program!`;
       bodyHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">🎓 Congratulations!</h1>
-            <p style="color: #9CE0C8; margin: 10px 0 0 0; font-size: 18px;">You've Graduated!</p>
+            <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Foundation Complete!</h1>
+            <p style="color: #9CE0C8; margin: 10px 0 0 0; font-size: 18px;">Welcome to Ascent</p>
           </div>
           <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none;">
             <p style="margin-top: 0; font-size: 18px;">Hi ${userName || 'there'},</p>
-            <p style="font-size: 16px;">You've successfully completed all 5 milestones and earned your <strong>LeaderReps Leadership Certification</strong>!</p>
+            <p style="font-size: 16px;">You've successfully completed all 5 milestones of the <strong>LeaderReps Foundation Program</strong> and earned your <strong>Foundation Leader Certification</strong>.</p>
             <div style="background: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #D4AF37 100%); padding: 4px; border-radius: 12px; margin: 24px 0;">
               <div style="background: white; padding: 24px; border-radius: 10px; text-align: center;">
-                <p style="margin: 0 0 8px 0; font-size: 14px; color: #666;">CERTIFICATE OF COMPLETION</p>
-                <p style="margin: 0; font-size: 24px; font-weight: bold; color: #002E47;">LeaderReps Leadership Program</p>
+                <p style="margin: 0 0 8px 0; font-size: 14px; color: #666;">FOUNDATION LEADER CERTIFICATION</p>
+                <p style="margin: 0; font-size: 24px; font-weight: bold; color: #002E47;">LeaderReps Foundation Program</p>
                 <p style="margin: 8px 0 0 0; font-size: 16px; color: #47A88D;">All 5 Milestones Complete</p>
               </div>
             </div>
             <p style="text-align: center; margin-top: 24px;">
-              <a href="${appUrl}?screen=certificates" style="background: #47A88D; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">View Your Certificate</a>
+              <a href="${appUrl}?screen=certificates" style="background: #47A88D; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">View Your Foundation Certificate</a>
             </p>
-            <p style="margin-top: 24px; color: #666; font-size: 14px;">You can print or share your certificate from the app. Thank you for your dedication to becoming a better leader!</p>
+            <p style="margin-top: 24px; color: #666; font-size: 14px;">You can print or share your certificate from the app. Thank you for your dedication to becoming a better leader — your Ascent begins now.</p>
           </div>
           <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
             <p style="margin: 0; color: #64748b; font-size: 12px;">Congratulations from the LeaderReps Team!</p>
@@ -12101,6 +12101,7 @@ async function syncLeadToKit(email, firstName, source, customFields = {}) {
     logger.info(`Kit subscriber created/updated: ${email}, id: ${subscriberId}`);
 
     // Step 2: Add tag based on source (if tag ID is configured)
+    // Kit v4 API requires `email_address` in the body — `subscriber_id` is rejected with HTTP 422.
     const tagName = KIT_TAG_MAPPINGS[source];
     const tagId = tagName ? KIT_TAG_IDS[tagName] : null;
     if (tagId && subscriberId) {
@@ -12110,7 +12111,7 @@ async function syncLeadToKit(email, firstName, source, customFields = {}) {
           'Content-Type': 'application/json',
           'X-Kit-Api-Key': kitApiKey,
         },
-        body: JSON.stringify({ subscriber_id: subscriberId }),
+        body: JSON.stringify({ email_address: email.toLowerCase() }),
       });
       if (tagResponse.ok) {
         logger.info(`Kit: Tagged subscriber ${subscriberId} with '${tagName}' (id: ${tagId})`);
@@ -13524,7 +13525,7 @@ const LL_WEEK_THEMES = [
   "One-on-One — Mastering the 1:1 Conversation",
   "Redirecting — Giving Feedback That Actually Lands",
   "Readiness — Handling Pushback & Resistance",
-  "Graduation — Leading With Confidence",
+  "Capstone — Leading With Confidence",
 ];
 
 const LL_EXPERIMENTS = [
@@ -14495,7 +14496,7 @@ They are in Week ${weekNumber} overall. There is no end date. You are their perm
   } else {
     prompt = `You are the AI coach for Leadership Lab — a text-based coaching companion that supports leaders going through the Arena Foundations in-person training program. Your job is to fill the gap between live training sessions: reinforce what was taught, provide quick practice moments, and keep leaders engaged between sessions. Be warm, concise, a little fun — never annoying.
 
-The program has 5 milestones: Reinforcing → One-on-One → Redirecting → Readiness → Graduation. Each milestone is gated by an in-person training session.
+The program has 5 milestones: Reinforcing → One-on-One → Redirecting → Readiness → Capstone. Each milestone is gated by an in-person training session.
 
 ${weekNumber > 0 ? `You are coaching ${userName}, who is currently in Milestone ${weekNumber}: "${weekTheme}".
 
