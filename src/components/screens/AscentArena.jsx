@@ -20,20 +20,14 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import {
   Mountain, Compass, Activity, Flame, Users, Briefcase, Heart,
   Sparkles, ArrowRight, Lock, CheckCircle2, Bell, Calendar, ChevronRight,
-  Map as MapIcon, Telescope,
 } from 'lucide-react';
 
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useAnchors } from '../../hooks/useAnchors';
 import { useAscentJourney } from '../../hooks/useAscentJourney.js';
-import { getConversationById } from './ascent/conversationLibrary.js';
 import ConversationModal from './ascent/ConversationModal.jsx';
 import SkillModal from './ascent/SkillModal.jsx';
-import FocusPicker from './ascent/FocusPicker.jsx';
-import JourneyCard from './ascent/JourneyCard.jsx';
 import PillarPath from './ascent/PillarPath.jsx';
-import JourneyResumeBar from './ascent/JourneyResumeBar.jsx';
-import ExploreTab from './ascent/ExploreTab.jsx';
 
 // ---------- Lead Work compressed (Foundation reinforcement) ----------
 
@@ -269,17 +263,12 @@ const LeadSelfTeaser = ({ db, userId, userEmail }) => {
 
 // ---------- Main screen ----------
 
-const COHORT_IDS = ['lead-team-live', 'lead-self-live'];
-
 const AscentArena = ({ navigate }) => {
   const { user, db } = useAppServices();
   const journey = useAscentJourney();
 
   const [openConvo, setOpenConvo] = useState(null);
   const [openSkill, setOpenSkill] = useState(null);
-  const [showPicker, setShowPicker] = useState(false);
-  const [activeTab, setActiveTab] = useState('journey'); // 'journey' | 'explore'
-  const [cohortWaitlists, setCohortWaitlists] = useState({}); // { [cohortId]: true, busy: cohortId|null }
 
   const userId = user?.uid || user?.userId || null;
 
@@ -290,94 +279,9 @@ const AscentArena = ({ navigate }) => {
     return `Q${q} ${now.getFullYear()}`;
   }, []);
 
-  // Open the picker on first visit (after hydration, no focus set)
-  useEffect(() => {
-    if (journey.hydrated && !journey.focusId) {
-      setShowPicker(true);
-    }
-  }, [journey.hydrated, journey.focusId]);
-
-  // Hydrate existing cohort waitlist signups
-  useEffect(() => {
-    let cancelled = false;
-    if (!db || !userId) return undefined;
-    (async () => {
-      const next = {};
-      for (const cohortId of COHORT_IDS) {
-        try {
-          const ref = doc(db, 'waitlists', cohortId, 'signups', userId);
-          const snap = await getDoc(ref);
-          if (snap.exists()) next[cohortId] = true;
-        } catch (e) {
-          console.warn('[AscentArena] cohort check failed:', cohortId, e?.message || e);
-        }
-      }
-      if (!cancelled) setCohortWaitlists((prev) => ({ ...prev, ...next }));
-    })();
-    return () => { cancelled = true; };
-  }, [db, userId]);
-
-  const focusConvo = journey.focusId ? getConversationById(journey.focusId) : null;
-
-  const handlePickFocus = async (conversationId) => {
-    await journey.actions.setFocus(conversationId);
-    setShowPicker(false);
-    setActiveTab('journey');
+  const handlePickFocus = (conversationId) => {
+    journey.actions.setFocus(conversationId);
   };
-
-  const handleStepCta = (stepKey) => {
-    if (!focusConvo) return;
-    if (stepKey === 'learn') {
-      setOpenConvo(focusConvo); // opens modal with the script
-    } else if (stepKey === 'prep') {
-      setOpenConvo(focusConvo);
-    } else if (stepKey === 'practice') {
-      navigate?.('coaching-hub');
-    } else if (stepKey === 'reflect') {
-      navigate?.('rep-coach');
-    }
-  };
-
-  const handleToggleStep = (stepKey) => {
-    if (!journey.focusId) return;
-    journey.actions.toggleStep(journey.focusId, stepKey);
-  };
-
-  const handleJoinCohort = async (cohortId) => {
-    if (!db || !userId || cohortWaitlists[cohortId]) return;
-    setCohortWaitlists((prev) => ({ ...prev, busy: cohortId }));
-    try {
-      const ref = doc(db, 'waitlists', cohortId, 'signups', userId);
-      await setDoc(ref, {
-        userId,
-        email: user?.email || null,
-        cohortId,
-        source: 'ascent-arena-explore',
-        signedUpAt: serverTimestamp(),
-      }, { merge: true });
-      setCohortWaitlists((prev) => ({ ...prev, [cohortId]: true, busy: null }));
-    } catch (e) {
-      console.warn('[AscentArena] cohort join failed:', cohortId, e?.message || e);
-      setCohortWaitlists((prev) => ({ ...prev, busy: null }));
-    }
-  };
-
-  const handleAddFoundationToLearn = () => {
-    if (!journey.focusId || !journey.focusJourney) return;
-    if (!journey.focusJourney.steps?.learn) {
-      journey.actions.toggleStep(journey.focusId, 'learn');
-    }
-  };
-
-  const handleResumeJourney = () => {
-    setActiveTab('journey');
-    // Smooth scroll to top so the JourneyCard is visible
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const isLearnDone = !!journey.focusJourney?.steps?.learn;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -418,119 +322,43 @@ const AscentArena = ({ navigate }) => {
         focusId={journey.focusId}
         getJourney={journey.actions.getJourney}
         onPickConversation={handlePickFocus}
-        onOpenConvo={(convo) => setOpenConvo(convo)}
+        onOpenConvo={(convo) => { handlePickFocus(convo.id); setOpenConvo(convo); }}
         onOpenSkill={(skill) => setOpenSkill(skill)}
       />
 
-      {/* Tab toggle — step in/out of the journey */}
-      <div className="flex items-center justify-center">
-        <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          <button
-            onClick={() => setActiveTab('journey')}
-            className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'journey'
-                ? 'bg-white dark:bg-slate-700 text-corporate-navy dark:text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-corporate-navy'
-            }`}
-          >
-            <MapIcon className="w-4 h-4" /> My Journey
-          </button>
-          <button
-            onClick={() => setActiveTab('explore')}
-            className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'explore'
-                ? 'bg-white dark:bg-slate-700 text-corporate-navy dark:text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-corporate-navy'
-            }`}
-          >
-            <Telescope className="w-4 h-4" /> Explore
-          </button>
+      {/* Lead Work + Community side-by-side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div id="lead-work-card">
+          <LeadWorkCompressed navigate={navigate} />
         </div>
+        <CommunityCard navigate={navigate} />
       </div>
 
-      {activeTab === 'journey' ? (
-        <>
-          {/* Your Next Step — the heart of the journey */}
-          {focusConvo ? (
-            <JourneyCard
-              conversation={focusConvo}
-              journey={journey.focusJourney}
-              nextStepKey={journey.nextStepKey}
-              onStepCta={handleStepCta}
-              onToggleStep={handleToggleStep}
-              onChangeFocus={() => setShowPicker(true)}
-              onPickNext={() => setShowPicker(true)}
-            />
-          ) : (
-            <div className="rounded-2xl border-2 border-dashed border-corporate-teal/40 bg-corporate-teal/5 p-6 text-center">
-              <Sparkles className="w-8 h-8 mx-auto text-corporate-teal" />
-              <h3 className="font-extrabold text-corporate-navy dark:text-white mt-2">
-                Pick your first focus
-              </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-md mx-auto">
-                Ascent is built around one conversation at a time. Choose where to start.
-              </p>
-              <button
-                onClick={() => setShowPicker(true)}
-                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-sm text-white bg-corporate-teal hover:bg-corporate-teal/90"
-              >
-                Pick a conversation <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+      {/* Lead Self teaser */}
+      <div id="lead-self-card">
+        <LeadSelfTeaser
+          db={db}
+          userId={userId}
+          userEmail={user?.email || null}
+        />
+      </div>
 
-          {/* Lead Work + Community side-by-side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div id="lead-work-card">
-              <LeadWorkCompressed navigate={navigate} />
-            </div>
-            <CommunityCard navigate={navigate} />
-          </div>
-
-          {/* Lead Self teaser */}
-          <div id="lead-self-card">
-            <LeadSelfTeaser
-              db={db}
-              userId={userId}
-              userEmail={user?.email || null}
-            />
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Sticky resume bar so the journey is always one tap away */}
-          {focusConvo && (
-            <JourneyResumeBar
-              focusId={journey.focusId}
-              nextStepKey={journey.nextStepKey}
-              onResume={handleResumeJourney}
-            />
-          )}
-
-          <ExploreTab
-            focusId={journey.focusId}
-            navigate={navigate}
-            onOpenConvo={setOpenConvo}
-            onMakeFocus={handlePickFocus}
-            onAddFoundationToLearn={handleAddFoundationToLearn}
-            isLearnDone={isLearnDone}
-            cohortWaitlists={cohortWaitlists}
-            onJoinCohort={handleJoinCohort}
-          />
-        </>
-      )}
-
-      {/* First-run / change-focus picker */}
-      <FocusPicker
-        open={showPicker}
-        firstName={firstName}
-        onPick={handlePickFocus}
-      />
-
-      {/* Conversation drill-down (Lead Team conversations) */}
+      {/* Conversation drill-down — content + 4-step journey progress in one card */}
       {openConvo && (
         <ConversationModal
           conversation={openConvo}
+          journey={journey.actions.getJourney(openConvo.id)}
+          onToggleStep={(stepKey) => journey.actions.toggleStep(openConvo.id, stepKey)}
+          onStepCta={(stepKey) => {
+            if (stepKey === 'practice') {
+              setOpenConvo(null);
+              navigate?.('coaching-hub');
+            } else if (stepKey === 'reflect') {
+              setOpenConvo(null);
+              navigate?.('rep-coach', { mode: 'practice', skillTitle: openConvo.title, skillTagline: openConvo.tagline });
+            }
+          }}
+          onPickNext={() => setOpenConvo(null)}
           onClose={() => setOpenConvo(null)}
           navigate={navigate}
         />
