@@ -166,8 +166,8 @@ const AppContent = ({
                   }
                 >
                   {/* Page Transition Animation */}
-                  <PageTransition pageKey={currentScreen}>
-                    <div id="main-content">
+                  <PageTransition pageKey={currentScreen} className="h-full">
+                    <div id="main-content" className="h-full">
                       <ScreenRouter
                         currentScreen={currentScreen}
                         navParams={navParams}
