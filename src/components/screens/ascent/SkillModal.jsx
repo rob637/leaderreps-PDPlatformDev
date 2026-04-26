@@ -22,7 +22,6 @@ const ICONS = {
 
 const SkillModal = ({ skill, onClose, navigate }) => {
   const [copiedIdx, setCopiedIdx] = useState(null);
-  const bodyRef = useRef(null);
   const scriptRef = useRef(null);
 
   if (!skill) return null;
@@ -92,7 +91,7 @@ const SkillModal = ({ skill, onClose, navigate }) => {
           </div>
 
           {/* Body */}
-          <div ref={bodyRef} className="overflow-y-auto px-6 py-5 space-y-5">
+          <div className="overflow-y-auto px-6 py-5 space-y-5">
 
             {/* Foundation note (Lead Work only) */}
             {skill.foundationNote && (
@@ -209,11 +208,7 @@ const SkillModal = ({ skill, onClose, navigate }) => {
                 </button>
               ) : (
                 <button
-                  onClick={() => {
-                    if (scriptRef.current && bodyRef.current) {
-                      bodyRef.current.scrollTo({ top: scriptRef.current.offsetTop - 12, behavior: 'smooth' });
-                    }
-                  }}
+                  onClick={() => scriptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border border-slate-300 dark:border-slate-600 text-corporate-navy dark:text-white hover:bg-white dark:hover:bg-slate-800"
                 >
                   <Video className="w-4 h-4" /> Read the transcript

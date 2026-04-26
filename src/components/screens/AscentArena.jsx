@@ -264,8 +264,8 @@ const LeadSelfTeaser = ({ db, userId, userEmail }) => {
 
 // ---------- Main screen ----------
 
-const AscentArena = ({ navigate }) => {
-  const { user, db } = useAppServices();
+const AscentArena = () => {
+  const { user, db, navigate } = useAppServices();
   const journey = useAscentJourney();
 
   const [openConvo, setOpenConvo] = useState(null);
